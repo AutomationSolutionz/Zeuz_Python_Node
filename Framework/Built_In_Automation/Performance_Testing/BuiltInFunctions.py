@@ -46,11 +46,12 @@ def locust_config(data_set):
                     elif "autoquit" == left and right in ("True", "true", "Yes", "yes", "Y", "y"):
                         autoquit = True
                     elif "html" == left:
+                        # Todo: change to the performance directory
                         html = AutomationLog_DIR / "".join([right.replace(" ", "_"), ".html"])
                 elif "action" == mid.strip().lower():
                     if "locust config" == left:
                         losust_var_name = right.strip()
-            if None in [losust_var_name,swarm,spawn]: 
+            if None in [losust_var_name, swarm, spawn]:
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
             locust_var = {
@@ -60,7 +61,7 @@ def locust_config(data_set):
                                 "run_time": run_time,
                                 "autostart": autostart,
                                 "autoquit": autoquit,
-                                "html": html.resolve()
+                                "html": str(html.resolve())
                             },
                             "task_sets": {},
                             "users": {}
@@ -298,13 +299,19 @@ def run_performance_test(data_set):
                    "-t", locust_var_config.get('run_time'),
                    "--autostart" if locust_var_config.get('autostart') else "",
                    "--autoquit" if locust_var_config.get('autoquit') else "", "1" if locust_var_config.get('autoquit') else "",
-                   f"--html {locust_var_config.get('html')}" if locust_var_config.get('html') else ""]
+                   "--html" if locust_var_config.get('html') else "", locust_var_config.get('html') if locust_var_config else ""]
         print(" ".join(command))
         sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        rtrn = sp.wait()
+        # rtrn = sp.wait()
         out, err = sp.communicate()
         print(out)
-
+        print(err)
+        # print(sp.pid)
+        # if rtrn == 0:
+        #     print("Locust subprocess command worked")
+        # elif rtrn != 0:
+        #     print(rtrn)
+        #     print("Locust subprocess command did not work")
         return "passed"
 
     except Exception as e:
@@ -321,7 +328,7 @@ def generate_performance_test(data_set):
 
     try:
         locust_var_name = None
-        # Todo: output file needs to renmaed each time by either run_id or debug_id
+        # Todo: output file needs to be renamed each time by either run_id or debug_id
         locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}gen_locust_python_file.py"
         jinja2_temp_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
 
