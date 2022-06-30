@@ -1468,6 +1468,9 @@ def main(device_dict, user_info_object):
 
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
 
+        # FIXME: Need to decide what to do with the following code or how to
+        # handle it differently in case there are residual folders from previous
+        # test cases inside the attachments folder.
         get_json, all_file_specific_steps = True, {}
         cnt = 0
         # for i in os.walk(save_path):

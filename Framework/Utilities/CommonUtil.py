@@ -553,7 +553,7 @@ def ExecLog(
             browser_log_handler = None
             if os.name == "posix":
                 try:
-                    browser_log_handler = logging.FileHandler(BrowserConsoleLogFile)
+                    browser_log_handler = logging.FileHandler(BrowserConsoleLogFile, encoding="utf-8")
                 except:
                     pass
             elif os.name == "nt":
