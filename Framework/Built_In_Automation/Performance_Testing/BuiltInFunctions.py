@@ -1,10 +1,12 @@
 import os
+import traceback
+import inspect,sys,random
 import subprocess
 from jinja2 import Environment, FileSystemLoader
+
+from settings import PROJECT_ROOT, AutomationLog_DIR
 from Framework.Utilities.decorators import logger, deprecated
-import inspect,sys,random
 from Framework.Utilities import CommonUtil, ConfigModule
-import traceback
 global sr
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
@@ -28,15 +30,23 @@ def locust_config(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        locust_var = losust_var_name = swarm = spawn = None
+        locust_var = losust_var_name = swarm = spawn = run_time = autostart = autoquit = html = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if mid.strip().lower() in ["element parameter","input parameter"]:
+                if mid.strip().lower() in ["element parameter", "input parameter"]:
                     if "swarm" == left:
-                        swarm = float(right.strip().lower())
+                        swarm = int(right.strip().lower())
                     elif "spawn" == left:
-                        spawn = float(right.strip().lower())
+                        spawn = int(right.strip().lower())
+                    elif "run time" == left:
+                        run_time = right.strip().lower()
+                    elif "autostart" == left and right in ("True", "true", "Yes", "yes", "Y", "y"):
+                        autostart = True
+                    elif "autoquit" == left and right in ("True", "true", "Yes", "yes", "Y", "y"):
+                        autoquit = True
+                    elif "html" == left:
+                        html = AutomationLog_DIR / "".join([right.replace(" ", "_"), ".html"])
                 elif "action" == mid.strip().lower():
                     if "locust config" == left:
                         losust_var_name = right.strip()
@@ -46,7 +56,11 @@ def locust_config(data_set):
             locust_var = {
                             "locust_config": {
                                 "swarm": swarm,
-                                "spawn": spawn
+                                "spawn": spawn,
+                                "run_time": run_time,
+                                "autostart": autostart,
+                                "autoquit": autoquit,
+                                "html": html.resolve()
                             },
                             "task_sets": {},
                             "users": {}
@@ -269,20 +283,28 @@ def run_performance_test(data_set):
             traceback.print_exc()
             return "zeuz_failed"
 
+        locust_var = sr.Get_Shared_Variables(locust_var_name, log=False)
+        locust_var_config = locust_var.get('locust_config')
         # Load templates folder and then load the template file then render the template
         load_jinja_template_and_generate_locust_py(jinja_template_dir=jinja2_temp_dir,
                                                    jinja_file_path="performance_template.txt",
-                                                   jinja2_template_variable=sr.Get_Shared_Variables(locust_var_name, log=False),
+                                                   jinja2_template_variable=locust_var,
                                                    output_file_path=locust_output_file)
 
         # Todo: Run the locust python file
-        command = ["locust", "-f", locust_output_file]
-        sp = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-
-        # rtrn = sp.wait()
-
+        command = ["locust", "-f", locust_output_file,
+                   "-u", str(locust_var_config.get('swarm')),
+                   "-r", str(locust_var_config.get('spawn')),
+                   "-t", locust_var_config.get('run_time'),
+                   "--autostart" if locust_var_config.get('autostart') else "",
+                   "--autoquit" if locust_var_config.get('autoquit') else "", "1" if locust_var_config.get('autoquit') else "",
+                   f"--html {locust_var_config.get('html')}" if locust_var_config.get('html') else ""]
+        print(" ".join(command))
+        sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        rtrn = sp.wait()
         out, err = sp.communicate()
         print(out)
+
         return "passed"
 
     except Exception as e:
@@ -314,10 +336,11 @@ def generate_performance_test(data_set):
             traceback.print_exc()
             return "zeuz_failed"
 
+        locust_var = sr.Get_Shared_Variables(locust_var_name, log=False)
         # Load templates folder and then load the template file then render the template
         load_jinja_template_and_generate_locust_py(jinja_template_dir=jinja2_temp_dir,
                                                    jinja_file_path="performance_template.txt",
-                                                   jinja2_template_variable=sr.Get_Shared_Variables(locust_var_name, log=False),
+                                                   jinja2_template_variable=locust_var,
                                                    output_file_path=locust_output_file)
 
         return "passed"
