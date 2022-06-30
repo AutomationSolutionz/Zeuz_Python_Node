@@ -170,9 +170,9 @@ def db_get_connection():
         if ":" in db_host:
             db_host, db_port = db_host.rsplit(":", 1)
             db_port = int(db_port)
-
-        db_sid = g(DB_SID)
-        db_service_name = g(DB_SERVICE_NAME)
+        if "oracle" in db_type:
+            db_sid = g(DB_SID)
+            db_service_name = g(DB_SERVICE_NAME)
 
         if "postgres" in db_type:
             import psycopg2
