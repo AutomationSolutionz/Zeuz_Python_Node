@@ -4,7 +4,7 @@ import inspect,sys,random
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 
-from settings import PROJECT_ROOT, AutomationLog_DIR, performance_report_dir
+from settings import performance_report_dir, temp_ini_file
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Utilities import CommonUtil, ConfigModule
 global sr
@@ -47,7 +47,8 @@ def locust_config(data_set):
                         autoquit = True
                     elif "html" == left:
                         # Todo: change to the performance directory
-                        html = performance_report_dir + os.sep + "".join([right.replace(" ", "_"), ".html"])
+                        # html = performance_report_dir + os.sep + "".join([right.replace(" ", "_"), ".html"])
+                        html = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file) + os.sep + "".join([right.replace(" ", "_"), ".html"])
                 elif "action" == mid.strip().lower():
                     if "locust config" == left:
                         losust_var_name = right.strip()
