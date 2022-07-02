@@ -816,10 +816,8 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
             driver = shared.Remove_From_Shared_Variables("appium_details")
             if driver not in failed_tag_list:
                 Appium.teardown_appium()
-
     except:
         pass
-
 
 def set_important_variables():
     try:

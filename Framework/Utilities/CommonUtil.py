@@ -20,6 +20,7 @@ from rich import print_json
 
 
 from Framework.Utilities import live_log_service
+tmp_perf = {}
 import concurrent.futures
 
 

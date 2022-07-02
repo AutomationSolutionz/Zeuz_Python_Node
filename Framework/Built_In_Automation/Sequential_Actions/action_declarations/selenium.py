@@ -59,6 +59,7 @@ declarations = (
     { "name": "check uncheck",                 "function": "check_uncheck",                 "screenshot": "web" },
     { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",        "screenshot": "web" },
     { "name": "slider bar",                    "function": "slider_bar",                    "screenshot": "web" },
+    { "name": "_devtools_end",                    "function": "_devtools_end",                    "screenshot": "web" },
 ) # yapf: disable
 
 module_name = "selenium"

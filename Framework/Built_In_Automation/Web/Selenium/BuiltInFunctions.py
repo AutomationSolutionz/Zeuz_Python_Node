@@ -18,7 +18,6 @@ import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
 import psutil
-
 sys.path.append("..")
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
@@ -364,6 +363,49 @@ def Open_Electron_App(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+from selenium.webdriver.common.devtools.v101.performance import  enable, disable, get_metrics
+from selenium.webdriver.chrome.webdriver import ChromiumDriver
+
+@logger
+def _dev_tools_start(*args):
+    try:
+        # enable()
+        # selenium_driver.execute_cdp_cmd("Performance.enable", {})
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def _devtools_end(*args):
+    try:
+        # a= get_metrics()
+        c = selenium_driver.get_log('performance')
+        b = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
+        if "perf2" not in CommonUtil.tmp_perf:
+            CommonUtil.tmp_perf["perf2"] = b
+        else:
+            CommonUtil.tmp_perf["perf3"] = b
+            d=b
+            b=CommonUtil.tmp_perf["perf2"]
+        print(c)
+        print(b)
+        a = CommonUtil.tmp_perf["perf"]
+        print("METRICES", " "*25, "After 1st action", " "*7, "After 5 actions")
+        for i in range(len(a["metrics"])):
+            print(
+                a["metrics"][i]["name"],
+                " " * (31 - len(a["metrics"][i]["name"])),
+                a["metrics"][i]["value"], " " * (17 - len(str(a["metrics"][i]["value"]))),
+                b["metrics"][i]["value"], " " * (17 - len(str(a["metrics"][i]["value"]))),
+                d["metrics"][i]["value"] if "perf3" in CommonUtil.tmp_perf else ""
+            )
+        print()
+        # disable()
+        # selenium_driver.execute_cdp_cmd("Performance.disable", {})
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -380,7 +422,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             "Dependency not set for browser. Please set the Apply Filter value to YES."
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-    
+
     remote_host = None
     remote_browser_version = None
     if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
@@ -398,7 +440,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 if remote_host == None:
                     CommonUtil.ExecLog(
                     sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
-                )       
+                )
     # try:
     #     selenium_driver.close()
     # except:
@@ -530,7 +572,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
-            
+
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
 
@@ -606,7 +648,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
             download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options = webdriver.EdgeOptions()
-            
+
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
             capabilities = webdriver.EdgeOptions().capabilities
@@ -858,7 +900,7 @@ def Go_To_Link(step_data, page_title=False):
                 else:
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
-                
+
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
@@ -906,7 +948,11 @@ def Go_To_Link(step_data, page_title=False):
 
     # Open URL in browser
     try:
+        selenium_driver.execute_cdp_cmd("Performance.enable", {})
         selenium_driver.get(web_link)  # Open in browser
+        b = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
+        CommonUtil.tmp_perf["perf"] = b
+        # selenium_driver.execute_cdp_cmd("Performance.disable", {})
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
         return "passed"
