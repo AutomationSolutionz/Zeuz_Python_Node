@@ -170,7 +170,7 @@ def db_get_connection():
         if ":" in db_host:
             db_host, db_port = db_host.rsplit(":", 1)
             db_port = int(db_port)
-        if "oracle" in db_type:
+        if "oracle" in db_type.lower():
             db_sid = g(DB_SID)
             db_service_name = g(DB_SERVICE_NAME)
 
