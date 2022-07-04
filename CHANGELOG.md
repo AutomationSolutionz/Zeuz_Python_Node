@@ -37,6 +37,9 @@
 - **[Fix]** Convert all timestamps into UTC timezone to match server timezone.
   This fixes all runid related time issues like showing a negative date and time
   difference.
+- **[Fix]** SID and service name is required for Oracle database only. 
+  Previously error was showing when user didn't input SID and service name for 
+  other database(for example MySQL etc.). Now this has been fixed.
 
 ### [15.2.0][Jun 07, 2022]
 - **[Add]** Add profile functionality for Chrome
