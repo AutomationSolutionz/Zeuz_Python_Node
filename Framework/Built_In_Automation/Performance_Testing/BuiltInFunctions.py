@@ -69,7 +69,6 @@ def locust_config(data_set):
                     }    
         except:
             CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
-            traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(losust_var_name, locust_var)
         return "passed"
@@ -122,7 +121,6 @@ def assign_locust_user(data_set):
             locust_var['users'][user_name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[],'user_task_sets':[]}
         except:
             CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
-            traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(losust_var_name, locust_var)
         return "passed"
@@ -173,7 +171,6 @@ def assign_locust_taskset(data_set):
                 locust_var['users'][user_name]['user_task_sets'].append(taskset_name)
         except:
             CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
-            traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(losust_var_name, locust_var)
         return "passed"
@@ -236,7 +233,6 @@ def assign_locust_task(data_set):
                 locust_var['task_sets'][taskset_name]['tasks'].append(task_data)
         except:
             CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
-            traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(locust_var_name, locust_var)
         return "passed"
@@ -282,7 +278,6 @@ def run_performance_test(data_set):
                         locust_var_name = right.strip()
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
-            traceback.print_exc()
             return "zeuz_failed"
 
         locust_var = sr.Get_Shared_Variables(locust_var_name, log=False)
@@ -341,7 +336,6 @@ def generate_performance_test(data_set):
                         locust_var_name = right.strip()
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
-            traceback.print_exc()
             return "zeuz_failed"
 
         locust_var = sr.Get_Shared_Variables(locust_var_name, log=False)
