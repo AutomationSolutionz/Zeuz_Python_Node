@@ -2,7 +2,9 @@ import os
 import subprocess
 import sys
 import traceback
-
+import json
+import concurrent.futures
+from time import sleep
 # NULL output device for disabling print output of pip installs
 try:
     from subprocess import DEVNULL # py3k
@@ -10,14 +12,14 @@ except ImportError:
     import os
     DEVNULL = open(os.devnull, 'wb')
 
-
 def install_missing_modules():
     """
     Purpose: This function will check all the installed modules, compare with what is in requirements-win.txt file
     If anything is missing from requirements-win.txt file, it will install them only
     """
     try:
-        print("\nmodule_installer: Checking for missing modules...")
+    
+        # print("\nmodule_installer: Checking for missing modules...")
 
         import platform
 
@@ -70,7 +72,16 @@ def install_missing_modules():
             if module_name.lower() not in alredy_installed_list:
                 try:
                     print("module_installer: Installing module: %s" % module_name)
-                    subprocess.check_call([sys.executable, "-m", "pip", "install","--trusted-host=pypi.org", "--trusted-host=files.pythonhosted.org", module_name], stderr=DEVNULL, stdout=DEVNULL,)
+                    subprocess.check_call([
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "--trusted-host=pypi.org",
+                        "--trusted-host=pypi.python.org",
+                        "--trusted-host=files.pythonhosted.org",
+                        module_name
+                    ], stderr=DEVNULL, stdout=DEVNULL,)
                     print("module_installer: Installed missing module: %s" % module_name)
                     installed = True
                 except:
@@ -79,9 +90,53 @@ def install_missing_modules():
         if installed:
             print("module_installer: New modules installed.")
         else:
-            print(
-                "module_installer: All required modules are already installed. Continuing..."
-            )
+            print("module_installer: All required modules are already installed. Continuing...")
+        
+        # Upgrading outdated modules found in last run
+        outdated_modules_filepath = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + 'AutomationLog') + os.sep + 'outdated_modules.json'
+        needs_to_be_updated = None
+        if os.path.exists(outdated_modules_filepath):
+            try:
+                needs_to_be_updated = json.load(open(outdated_modules_filepath))
+            except:
+                traceback.print_exc()
+            if needs_to_be_updated:
+                for module in needs_to_be_updated:
+                    try:
+                        module_name = module['name']
+                        print("module_installer: Upgrading module: %s" % module_name)
+                        subprocess.check_call([
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            "--trusted-host=pypi.org",
+                            "--trusted-host=pypi.python.org"
+                            "--trusted-host=files.pythonhosted.org",
+                            module_name,
+                            "--upgrade"
+                        ], stderr=DEVNULL, stdout=DEVNULL,)
+                        print("module_installer: Upgraded outdated module: %s" % module_name)
+                    except Exception:
+                        print("module_installer: Failed to upgrade module: %s" % module_name)
+        def get_outdated_modules(): 
+            # Storing outdated modules to upgrade on the next run
+            sleep(15)
+            try:
+                # print("module_installer: Checking for outdated modules")
+                p1 = subprocess.run([sys.executable, "-m",'pip','list','--outdated','--format','json'],capture_output=True)
+                outdated_modules = json.loads(p1.stdout)
+                update_required = [module for module in outdated_modules if module['name'] in req_list]
+
+                with open(outdated_modules_filepath, 'w') as f:
+                    json.dump(update_required, f)
+                # print("module_installer: Saved the list of outdated modules")
+            except:
+                # print("Failed to gather outdated modules...")
+                traceback.print_exc()
+        executor = concurrent.futures.ThreadPoolExecutor()
+        executor.submit(get_outdated_modules)
+        executor.shutdown(wait=False)
     except:
         print("Failed to install missing modules...")
         traceback.print_exc()

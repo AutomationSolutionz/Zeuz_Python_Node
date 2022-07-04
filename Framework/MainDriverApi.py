@@ -6,6 +6,7 @@ import inspect
 import os
 import time
 import sys
+from typing import Any, Dict
 import urllib.request, urllib.error, urllib.parse
 import queue
 import shutil
@@ -24,6 +25,7 @@ from datetime import datetime
 from datetime import timedelta
 import pytz
 from threading import Timer
+from Framework.attachment_db import AttachmentDB
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -471,7 +473,7 @@ def run_all_test_steps_in_a_test_case(
         attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
         for tc_attachment in testcase_info['attachments']:
-            var_name = Path(tc_attachment).name
+            var_name = Path(tc_attachment["path"]).name
             path = str(attachment_path / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
@@ -540,7 +542,7 @@ def run_all_test_steps_in_a_test_case(
             step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                attachment_name = Path(attachment).name
+                attachment_name = Path(attachment["path"]).name
                 path = str(attachment_path / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
@@ -789,7 +791,7 @@ def zip_and_delete_tc_folder(
             all_steps = CommonUtil.all_logs_json[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]["steps"]
             for step in all_steps:
                 json_filename = Path(ConfigModule.get_config_value("sectionOne", "json_report", temp_ini_file))/(str(step["step_sequence"])+".json")
-                with open(json_filename, "w") as f:
+                with open(json_filename, "w", encoding="utf-8") as f:
                     json.dump(step, f)
 
             zip_name = run_id.replace(":", "-") + "_" + TestCaseID.replace(":", "-") + ".zip"
@@ -1153,7 +1155,7 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
         zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
         path = zip_path / "execution_log.json"
         json_report = CommonUtil.get_all_logs(json=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(json_report, f)
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1202,7 +1204,7 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
                     print("Could not Upload the report to server of run_id '%s'" % run_id)
             # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(json_report, f, indent=2)
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1298,7 +1300,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             else:
                 print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
 
-        with open(zip_dir / "execution_log_old_format.json", "w") as f:
+        with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1333,8 +1335,47 @@ def split_testcases(run_id_info, max_tc_in_single_session):
     return all_sessions
 
 
-def download_url(url):
-    """Downloads a given url into the 'attachments' folder."""
+def download_attachment(attachment_info: Dict[str, Any]):
+    """
+    Downloads a given attachment into the 'attachments' folder.
+
+    Benchmark for downloading large files: bigfile.zip (575.2 MB)
+
+    chunk size               | time (seconds)
+    ----------------------------------------------
+    1 byte                   | 56.872249603271484
+    1 KB   (1024)            | 7.789804697036743
+    512 KB (512*1024)        | 0.2882239818572998
+    1 MB   (1024*1024)       | 0.51566481590271
+    8 MB   (8*1024*1024)     | 0.46999025344848633
+    1 GB   (1024*1024*1024)  | 0.6988034248352051
+    shutil.copyfileobj       | 0.6343142986297607
+
+    We can see that 512KB is the ideal chunk size for large file downloads.
+    """
+
+    # assumes that the last segment after the / represents the file name
+    # if url is abc/xyz/file.txt, the file name will be file.txt
+    url = attachment_info["url"]
+    file_name_start_pos = url.rfind("/") + 1
+    file_name = url[file_name_start_pos:]
+    file_path = attachment_info["download_dir"] / file_name
+
+    r = requests.get(url, stream=True)
+    if r.status_code == requests.codes.ok:
+        with open(file_path, 'wb') as f:
+            for data in r.iter_content(chunk_size=512*1024):
+                f.write(data)
+
+    # Return the hash of the file and the path where its stored.
+    return {
+        "hash": attachment_info["attachment"]["hash"],
+        "path": file_path,
+    }
+
+
+def download_attachments(testcase_info):
+    """Download test case and step attachments for the given test case."""
 
     temp_ini_file = os.path.join(
         os.path.join(
@@ -1346,38 +1387,62 @@ def download_url(url):
         )
     )
     attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-
-    # assumes that the last segment after the / represents the file name
-    # if url is abc/xyz/file.txt, the file name will be file.txt
-    file_name_start_pos = url.rfind("/") + 1
-    file_name = url[file_name_start_pos:]
-
-    r = requests.get(url, stream=True)
-    if r.status_code == requests.codes.ok:
-        with open(attachment_path / file_name, 'wb') as f:
-            for data in r:
-                f.write(data)
-    return url
-
-
-def download_attachments(testcase_info):
-    """Download test case and step attachments for the given test case."""
+    attachment_db_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments_db"
 
     url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
     urls = []
 
+    db = AttachmentDB(attachment_db_path)
+
+    def download_or_copy(attachment):
+        """
+        Puts the given attachment to the "to be downloaded" list or if its found
+        in the attachment db, it'll copy it from the db to the "attachments"
+        folder.
+        """
+
+        entry = db.exists(attachment["hash"])
+        to_append = {
+            "url": url_prefix + attachment["path"],
+            "download_dir": attachment_path,
+            "attachment": attachment,
+        }
+        if entry is None:
+            urls.append(to_append)
+        else:
+            try:
+                shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"]).name)
+            except:
+                # If copy fails, the file either does not exist or we don't have
+                # permission. Download the file again and remove from db.
+                urls.append(to_append)
+                db.remove(entry["hash"])
+
     # Test case attachments
-    for attachment_url in testcase_info["attachments"]:
-        urls.append(url_prefix + attachment_url)
+    for attachment in testcase_info["attachments"]:
+        download_or_copy(attachment)
 
     # Step attachments
     for step in testcase_info["steps"]:
-        for attachment_url in step["attachments"]:
-            urls.append(url_prefix + attachment_url)
+        for attachment in step["attachments"]:
+            download_or_copy(attachment)
 
-    results = ThreadPool(4).imap_unordered(download_url, urls)
+    results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
         print("Downloaded: %s" % r)
+
+        # Copy into the attachments db.
+        attachment_path_in_db = attachment_db_path / r["path"].name
+
+        put = db.put(attachment_path_in_db, r["hash"])
+        if put:
+            # If entry is successful, we copy the downloaded attachment to the
+            # db directory.
+            try:
+                shutil.copyfile(r["path"], put["path"])
+            except:
+                # If copying the attachment fails, we remove the entry.
+                db.remove(r["hash"])
 
 
 # main function
@@ -1401,24 +1466,28 @@ def main(device_dict, user_info_object):
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-        get_json, all_file_specific_steps = True, {}
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+
+        # FIXME: Need to decide what to do with the following code or how to
+        # handle it differently in case there are residual folders from previous
+        # test cases inside the attachments folder.
+        get_json, all_file_specific_steps = True, {}
         cnt = 0
-        for i in os.walk(save_path):
-            if get_json:
-                get_json = False
-                folder_list = i[1]
-                for j in folder_list:
-                    all_file_specific_steps[j] = {}
-            else:
-                for j in i[2]:
-                    all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
-                cnt += 1
+        # for i in os.walk(save_path):
+        #     if get_json:
+        #         get_json = False
+        #         folder_list = i[1]
+        #         for j in folder_list:
+        #             all_file_specific_steps[j] = {}
+        #     else:
+        #         for j in i[2]:
+        #             all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
+        #         cnt += 1
         # TODO: Remove all_file_specific_steps at a later period. keeping this
         # only for custom driver purpose
 
         json_path = save_path.glob("*.zeuz.json").__next__()
-        with open(json_path, "r") as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             all_run_id_info = json.loads(f.read())
 
         if len(all_run_id_info) == 0:
