@@ -41,3 +41,4 @@ html-diff
 pdf2image
 protobuf
 pytz
+rauth
