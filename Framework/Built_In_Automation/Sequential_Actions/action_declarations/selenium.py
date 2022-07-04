@@ -25,6 +25,7 @@ declarations = (
     { "name": "go to link",                    "function": "Go_To_Link",                    "screenshot": "web" },
     { "name": "tear down browser",             "function": "Tear_Down_Selenium",            "screenshot": "none"},
     { "name": "switch browser",                "function": "Switch_Browser",                "screenshot": "none"},
+    { "name": "get current url",               "function": "Get_Current_URL",               "screenshot": "none"},
     { "name": "navigate",                      "function": "Navigate",                      "screenshot": "web" },
     { "name": "get location",                  "function": "get_location_of_element",       "screenshot": "web" },
     { "name": "validate table",                "function": "validate_table",                "screenshot": "web" },
