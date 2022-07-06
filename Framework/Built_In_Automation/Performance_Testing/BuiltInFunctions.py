@@ -15,6 +15,10 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def get_run_id(json_file_path):
+    """
+    Gets the run_id for the current session.
+    If there is no run_id then the default is `no_run_id`.
+    """
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
     with open(json_file_path, "r") as f:
@@ -264,6 +268,10 @@ def assign_locust_task(data_set):
 @logger
 def load_jinja_template_and_generate_locust_py(jinja_template_dir="", jinja_file_path="",
                                                jinja2_template_variable=None, output_file_path=""):
+    """
+    Loads the jinja template and generate the locust python file using the variable parameter
+    Also saves the python file to the given output_file_path.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     file_loader = FileSystemLoader(jinja_template_dir)
@@ -325,7 +333,7 @@ def run_performance_test(data_set):
         out, err = sp.communicate()
         print(out)
         print(err)
-        
+
         return "passed"
 
     except Exception as e:
