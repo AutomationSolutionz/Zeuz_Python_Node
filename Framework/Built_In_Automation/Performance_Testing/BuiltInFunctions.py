@@ -15,6 +15,8 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def get_run_id(json_file_path):
+    Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
+
     with open(json_file_path, "r") as f:
         all_run_id_info = json.load(f)
 
@@ -323,12 +325,7 @@ def run_performance_test(data_set):
         out, err = sp.communicate()
         print(out)
         print(err)
-        # print(sp.pid)
-        # if rtrn == 0:
-        #     print("Locust subprocess command worked")
-        # elif rtrn != 0:
-        #     print(rtrn)
-        #     print("Locust subprocess command did not work")
+        
         return "passed"
 
     except Exception as e:
