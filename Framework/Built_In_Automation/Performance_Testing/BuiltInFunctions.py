@@ -1,16 +1,29 @@
+import json
 import os
 import traceback
 import inspect,sys,random
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 
-from settings import performance_report_dir, temp_ini_file
+from settings import performance_report_dir, temp_ini_file, attachments_DIR
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Utilities import CommonUtil, ConfigModule
 global sr
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 MODULE_NAME = inspect.getmodulename(__file__)
+
+
+def get_run_id(json_file_path):
+    with open(json_file_path, "r") as f:
+        all_run_id_info = json.load(f)
+
+    if len(all_run_id_info) == 0:
+        CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
+        return "no_run_id"
+    run_id = all_run_id_info[0]["run_id"].replace(":", "-")
+    return run_id
+
 
 @logger
 def locust_config(data_set):
@@ -28,9 +41,12 @@ def locust_config(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    attachment_json_file = attachments_DIR.glob("*.zeuz.json").__next__()
 
     try:
-        locust_var = losust_var_name = swarm = spawn = run_time = autostart = autoquit = html = None
+        locust_var = losust_var_name = swarm = spawn = run_time = autostart = autoquit = None
+        html = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file) + os.sep + get_run_id(json_file_path=attachment_json_file) + ".html"
+        csv = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file) + os.sep + get_run_id(json_file_path=attachment_json_file)
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -48,7 +64,9 @@ def locust_config(data_set):
                     elif "html" == left:
                         # Todo: change to the performance directory
                         # html = performance_report_dir + os.sep + "".join([right.replace(" ", "_"), ".html"])
-                        html = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file) + os.sep + "".join([right.replace(" ", "_"), ".html"])
+                        html = html.replace(".html", "") + "".join(["_", right.replace(" ", "_"), ".html"])
+                    elif "csv" == left:
+                        csv = csv + "_" + right.replace(" ", "_")
                 elif "action" == mid.strip().lower():
                     if "locust config" == left:
                         losust_var_name = right.strip()
@@ -62,7 +80,8 @@ def locust_config(data_set):
                                 "run_time": run_time,
                                 "autostart": autostart,
                                 "autoquit": autoquit,
-                                "html": html
+                                "html": html,
+                                "csv": csv
                             },
                             "task_sets": {},
                             "users": {}
@@ -295,7 +314,9 @@ def run_performance_test(data_set):
                    "-t", locust_var_config.get('run_time'),
                    "--autostart" if locust_var_config.get('autostart') else "",
                    "--autoquit" if locust_var_config.get('autoquit') else "", "1" if locust_var_config.get('autoquit') else "",
-                   "--html" if locust_var_config.get('html') else "", locust_var_config.get('html') if locust_var_config else ""]
+                   "--html", locust_var_config.get('html'),
+                   "--csv", locust_var_config.get('csv'),
+                   "--csv-full-history"]
         print(" ".join(command))
         sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         # rtrn = sp.wait()
