@@ -541,12 +541,20 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
-            selenium_driver = webdriver.Firefox(
-                executable_path=firefox_path,
-                capabilities=capabilities,
-                options=options,
-                firefox_profile=profile
-            )
+            if(remote_host):
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=capabilities,
+                    browser_profile=profile
+                )
+            else:
+                selenium_driver = webdriver.Firefox(
+                    executable_path=firefox_path,
+                    capabilities=capabilities,
+                    options=options,
+                    firefox_profile=profile
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -573,15 +581,25 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             """
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
             download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            options = EdgeOptions()
-            capabilities = EdgeOptions().capabilities
+            options = webdriver.EdgeOptions()
+            capabilities = webdriver.EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
             options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--Zeuz_pid_finder')
-            selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
-
+            if(remote_host):
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=capabilities
+                )
+            else:
+                selenium_driver = Edge(
+                    executable_path=edge_path,
+                    options=options,
+                    capabilities=capabilities
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
