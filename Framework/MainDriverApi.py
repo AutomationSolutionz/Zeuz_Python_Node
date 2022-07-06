@@ -1407,16 +1407,17 @@ def download_attachments(testcase_info):
             "download_dir": attachment_path,
             "attachment": attachment,
         }
-        if entry is None:
-            urls.append(to_append)
-        else:
-            try:
-                shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"]).name)
-            except:
-                # If copy fails, the file either does not exist or we don't have
-                # permission. Download the file again and remove from db.
-                urls.append(to_append)
-                db.remove(entry["hash"])
+        urls.append(to_append)
+        # if entry is None:
+        #     urls.append(to_append)
+        # else:
+        #     try:
+        #         shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"]).name)
+        #     except:
+        #         # If copy fails, the file either does not exist or we don't have
+        #         # permission. Download the file again and remove from db.
+        #         urls.append(to_append)
+        #         db.remove(entry["hash"])
 
     # Test case attachments
     for attachment in testcase_info["attachments"]:
@@ -1431,18 +1432,18 @@ def download_attachments(testcase_info):
     for r in results:
         print("Downloaded: %s" % r)
 
-        # Copy into the attachments db.
-        attachment_path_in_db = attachment_db_path / r["path"].name
-
-        put = db.put(attachment_path_in_db, r["hash"])
-        if put:
-            # If entry is successful, we copy the downloaded attachment to the
-            # db directory.
-            try:
-                shutil.copyfile(r["path"], put["path"])
-            except:
-                # If copying the attachment fails, we remove the entry.
-                db.remove(r["hash"])
+        # # Copy into the attachments db.
+        # attachment_path_in_db = attachment_db_path / r["path"].name
+        #
+        # put = db.put(attachment_path_in_db, r["hash"])
+        # if put:
+        #     # If entry is successful, we copy the downloaded attachment to the
+        #     # db directory.
+        #     try:
+        #         shutil.copyfile(r["path"], put["path"])
+        #     except:
+        #         # If copying the attachment fails, we remove the entry.
+        #         db.remove(r["hash"])
 
 
 # main function
