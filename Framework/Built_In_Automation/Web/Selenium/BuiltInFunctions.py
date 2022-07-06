@@ -375,6 +375,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     try:
         browser = dependency["Browser"]
+        remote_host = dependency['remote_host']
     except Exception:
         ErrorMessage = (
             "Dependency not set for browser. Please set the Apply Filter value to YES."
@@ -474,11 +475,18 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "download.directory_upgrade": True
             }
             options.add_experimental_option('prefs', prefs)
-            selenium_driver = webdriver.Chrome(
-                executable_path=chrome_path,
-                chrome_options=options,
-                desired_capabilities=d
-            )
+            if remote_host:
+                selenium_driver = webdriver.Remote(
+                    command_executor=dependency['remote_host'] + "wd/hub",
+                    options=options,
+                    desired_capabilities=d
+                )
+            else:
+                selenium_driver = webdriver.Chrome(
+                    executable_path=chrome_path,
+                    chrome_options=options,
+                    desired_capabilities=d
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -784,6 +792,7 @@ def Go_To_Link(step_data, page_title=False):
 
     try:
         driver_id = ""
+        dependency['remote_host'] = None
         for left, mid, right in step_data:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "gotolink":
@@ -803,7 +812,11 @@ def Go_To_Link(step_data, page_title=False):
                 else:
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
+            elif mid.strip().lower() == "element parameter":
+                if left.strip().lower() in ("remotewebdriver"):
+                    dependency['remote_host'] = right.strip().lower()
 
+                
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
