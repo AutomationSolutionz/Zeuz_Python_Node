@@ -375,12 +375,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     try:
         browser = dependency["Browser"]
-        remote_host = Shared_Resources.Get_Shared_Variables('run_time_params').get('remote_server')
     except Exception:
         ErrorMessage = (
             "Dependency not set for browser. Please set the Apply Filter value to YES."
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+    
+    try:
+        run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
+        if(run_time_params):
+            remote_config = run_time_params.get("remote_config")
+            if(remote_config):
+                remote_host = remote_config['host']
+                remote_browser_version = remote_config['browser_version']
+    except:
+        # return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+        remote_host = None
+        remote_browser_version = None
+
     # try:
     #     selenium_driver.close()
     # except:
@@ -431,6 +443,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
 
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
             # capability
             if capability:
                 for key, value in capability.items():
@@ -510,6 +524,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
+            
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
+
             if "headless" in browser:
                 options.headless = True
             if _platform == "win32":
@@ -582,6 +600,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
             download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options = webdriver.EdgeOptions()
+            
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
             capabilities = webdriver.EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
