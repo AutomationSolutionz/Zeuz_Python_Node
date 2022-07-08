@@ -3,6 +3,25 @@
 # Version 16
 
 ### [Current changes]
+
+- **[Add]** Authenticator code generator action is added for windows
+- **[Improve]** Function handle capability inside csv cells is implemented
+- **[Fix]** Windows_pid issue solved for image searching
+- **[Add]** Don't download the same attachments multiple times. This is achieved
+  by keeping track of hashes of the attachment files sent from the server.
+
+  Technical note: protobuf definitions updated.
+
+- **[Add]** Add support for multiple certificates in API actions. Use them like
+  so:
+
+    - cert | optional parameter | filename.pem
+    - cert | optional parameter | filename.cert, filename.key
+
+  Certificates are best used by pairing with the `session` optional parameter.
+
+- **[Fix]** Fixed return for common screenshot action
+
 - **[Change]** Change the deploy system. This change replaces the old deploy
   system code with a new one that is compatible with the v3 engine on the server
   side.  This works by connecting with a persistent websocket connection that is
@@ -15,6 +34,12 @@
   connection got disrupted. Run cancellations work properly. In deploy API you
   can also specify preferred nodes so that some test cases are always run in
   those preferred nodes.
+- **[Fix]** Convert all timestamps into UTC timezone to match server timezone.
+  This fixes all runid related time issues like showing a negative date and time
+  difference.
+- **[Fix]** SID and service name is required for Oracle database only. 
+  Previously error was showing when user didn't input SID and service name for 
+  other database(for example MySQL etc.). Now this has been fixed.
 
 ### [15.2.0][Jun 07, 2022]
 - **[Add]** Add profile functionality for Chrome
@@ -28,6 +53,7 @@
 ### [15.1.0][Jun 03, 2022]
 - **[Add]** Added swipe by uiautomator action for android
 - **[Add]** Added uiautomatorviewer.bat inside App directory
+
 
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action

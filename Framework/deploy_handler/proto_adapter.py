@@ -35,6 +35,16 @@ def read_actions(actions_pb) -> List[Dict]:
 def read_steps(steps_pb) -> List[Dict]:
     steps = []
     for step in steps_pb:
+        attachments = []
+        for attachment in step.step_info.attachments:
+            attachments.append({
+                "id": attachment.id,
+                "path": attachment.path,
+                "uploaded_by": attachment.uploaded_by,
+                "uploaded_at": attachment.uploaded_at,
+                "hash": attachment.hash,
+            })
+
         steps.append(
             {
                 "step_id": step.step_id, # TODO: verify if it should be step.id or step.step_id
@@ -47,7 +57,7 @@ def read_steps(steps_pb) -> List[Dict]:
                 "step_function": "Sequential Actions",
                 "step_driver": step.step_info.driver,
                 "type": step.type,
-                "attachments": list(step.step_info.attachments),
+                "attachments": attachments,
                 "verify_point": step.step_info.verify_point,
                 "continue_on_fail": step.step_info.step_continue,
                 "step_time": step.time,
@@ -60,12 +70,22 @@ def read_steps(steps_pb) -> List[Dict]:
 def read_test_cases(test_cases_pb) -> List[Dict]:
     test_cases = []
     for tc in test_cases_pb:
+        attachments = []
+        for attachment in tc.attachments:
+            attachments.append({
+                "id": attachment.id,
+                "path": attachment.path,
+                "uploaded_by": attachment.uploaded_by,
+                "uploaded_at": attachment.uploaded_at,
+                "hash": attachment.hash,
+            })
+
         test_cases.append({
             "testcase_no": tc.test_case_detail.id,
             "title": tc.test_case_detail.name,
             "automatability": tc.test_case_detail.automatability,
             "debug_steps": [],
-            "attachments": list(tc.attachments),
+            "attachments": attachments,
             "steps": read_steps(tc.steps),
         })
     return test_cases

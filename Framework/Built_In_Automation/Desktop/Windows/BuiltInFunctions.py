@@ -1114,7 +1114,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 _get_main_window(window_name)
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
                     if i[1]:
-                        if type(i[1]) == list and len(i[1]) == 2:
+                        if type(i[1]) == list and len(i[1]) >= 2:
                             data = (i[1][1] + i[0], "parent parameter", i[1][0])
                         else:
                             data = (i[0], "parent parameter", i[1])

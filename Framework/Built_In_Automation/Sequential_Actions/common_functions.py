@@ -8,6 +8,7 @@
 import difflib
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
 import itertools
+import platform
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -2439,7 +2440,6 @@ def excel_write(data_set):
                 expand = right.strip().lower()
             elif "write into excel" in left:
                 value = CommonUtil.parse_value_into_object(right)
-                # print("......1......", type(value), ".......", value)
             elif "file path" in left:
                 filepath = right.strip()
                 excel_file_path = Path(CommonUtil.path_parser(filepath))
@@ -3503,6 +3503,7 @@ def csv_read(data_set):
         allowed_list = None
         map_key_names = None
         Integer, Float, Bool = [], [], []
+        Python_mod = False
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
@@ -3548,6 +3549,18 @@ def csv_read(data_set):
                         Bool += fields
                 elif "str" in left:
                     pass    # every field is already in string in csv
+            elif "pythonmodule" == left.replace(" ", "").replace("_", "").replace("-", "").lower():
+                r = right.strip()
+                sys.path.append(os.path.dirname(r))
+                try:
+                    filename = os.path.basename(r)
+                    filename = filename[:filename.find(".")] if "." in filename else filename
+                    exec("import " + filename)
+                    module = eval(filename)
+                    fun_list = dict(inspect.getmembers(module, inspect.isfunction))
+                    Python_mod = True
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
             elif "read from csv" == left:
                 var_name = right.strip()
 
@@ -3606,6 +3619,13 @@ def csv_read(data_set):
                             elif i not in not_exist:
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to boolean" % i, 2)
+                    if Python_mod:
+                        for i in line:
+                            temp = line[i].strip()
+                            if "(" in temp and temp.endswith(")") and temp.split("(")[0] in fun_list:
+                                line[i] = fun_list[temp.split("(")[0]](*eval("["+temp.split("(")[1][:-1] + "]"))
+
+
                     data_to_save.append(line)
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
@@ -4438,20 +4458,27 @@ def upload_attachment_to_global(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_path = None
+        replace = False
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "attachment path" == left:
                var_path = CommonUtil.path_parser(right)
+            if "replace" == left:
+                replace = right.lower().strip() == "true"
 
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
+
         headers = RequestFormatter.add_api_key_to_headers({})
         res = requests.post(
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
             verify=False,
+            data={"replace": replace},
             **headers)
+
+
         CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
         return "passed"
 
@@ -5398,6 +5425,62 @@ def extract_text_from_scanned_pdf(data_set):
             full_pdf_text.append(texts)
 
         return sr.Set_Shared_Variables(var_name, full_pdf_text)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def authenticator_code_generator(data_set):
+    """
+    This function reads the authenticator secret code and generate tfa code in every 30 sec
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            |app_name   		            |path		    | %|os.environ["AUTH_CODE"]|%
+            |authenticator code generator	|common action	| variable_name
+            ------------------------------------------------------------------------------
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        var_name = app_name = secret_code = ""
+
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "input parameter":
+                app_name = left.strip()
+                secret_code = right.strip()
+            elif left.strip().lower() == "authenticator code generator":
+                var_name = right.strip()
+
+        if "" in (app_name, secret_code):
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the app name and authenticator secret key", 3)
+            return "zeuz_failed"
+
+        app_dir = Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Authenticator"
+        csv_path = app_dir/"gauth.csv"
+        with open(csv_path,"w") as file:
+            file.write(app_name + ":" + secret_code)
+
+        if platform.system() == "Windows":
+            cmd = str(app_dir)
+            cmd = f'{cmd[:2]} && cd "{cmd}" && gauth.exe -csv'
+        elif platform.system() == "Darwin":
+            cmd = str(app_dir/"gauth.mac")
+        else:
+            cmd = str(app_dir/"gauth.lin")
+
+        CommonUtil.ExecLog(sModuleInfo, f"Running the following command:\n{cmd}", 1)
+        # output = os.system(cmd)
+        output = subprocess.check_output(cmd, shell=True, encoding="utf-8").strip()
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{output}", 1)
+
+        return sr.Set_Shared_Variables(var_name, output.split(",")[-4])
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

@@ -808,8 +808,8 @@ def Go_To_Link(step_data, page_title=False):
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
 
-        CommonUtil.ExecLog(sModuleInfo, "Got these browser_options", 2)
-        CommonUtil.ExecLog(sModuleInfo, browser_options, 2)
+        if browser_options:
+            CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
 
         if not driver_id:
             driver_id = "default"
