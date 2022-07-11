@@ -14,6 +14,7 @@ import time
 import inspect
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
+from rauth import OAuth2Service
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -1562,6 +1563,98 @@ def Insert_Tuple_Into_List(step_data):
             result_list.append(each_tuple)
 
         Shared_Resources.Set_Shared_Variables(list_name, result_list)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def Get_Oauth2_Access_Token_URl(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        client_id = ''
+        client_secret = ''
+        access_point = ''
+        grant_type = ''
+        base_uri = ''
+        redirect_uri = ''
+        authorize_uri = ''
+        request_token_uri = ''
+        token_name = ''
+        var_name='access_token_url'
+
+        for row in step_data:
+            if row[0] == "client id":
+                client_id = str(row[2]).strip()
+            elif row[0] == "client secret":
+                client_secret = str(row[2]).strip()
+            elif row[0] == "access point":
+                access_point = str(row[2]).strip()
+            elif row[0] == "grant type":
+                grant_type = str(row[2]).strip()
+            elif row[0] == "base uri":
+                base_uri = str(row[2]).strip()
+            elif row[0] == "authorize uri":
+                authorize_uri = str(row[2]).strip()
+            elif row[0] == "redirect uri":
+                redirect_uri = str(row[2]).strip()
+            elif row[0] == "request token uri":
+                request_token_uri = str(row[2]).strip()
+            elif row[0] == "token name":
+                token_name = str(row[2]).strip()
+            elif row[1] == "rest action":
+                var_name = str(row[2]).strip()
+        if client_id == '':
+            CommonUtil.ExecLog(sModuleInfo, "client id  must be provided.", 3)
+            return "zeuz_failed"
+
+        if client_secret == '':
+            CommonUtil.ExecLog(sModuleInfo, "client secret  must be provided.", 3)
+            return "zeuz_failed"
+
+        if access_point == '':
+            CommonUtil.ExecLog(sModuleInfo, "access point  must be provided.", 3)
+            return "zeuz_failed"
+
+        if grant_type == '':
+            CommonUtil.ExecLog(sModuleInfo, "grant type  must be provided.", 3)
+            return "zeuz_failed"
+
+        if base_uri == '':
+            CommonUtil.ExecLog(sModuleInfo, "base uri must be provided.", 3)
+            return "zeuz_failed"
+
+        if redirect_uri == '':
+            CommonUtil.ExecLog(sModuleInfo, "redirect uri must be provided.", 3)
+            return "zeuz_failed"
+        # if authorize_uri is '':
+        #     CommonUtil.ExecLog(sModuleInfo, "authorize uri must be provided.", 3)
+        #     return "zeuz_failed"
+        if request_token_uri == '':
+            CommonUtil.ExecLog(sModuleInfo, "request token  uri must be provided.", 3)
+            return "zeuz_failed"
+
+        service = OAuth2Service(
+            name=token_name,
+            client_id=client_id,
+            client_secret=client_secret,
+            access_token_url=access_point,
+            authorize_url=authorize_uri,
+            base_url=base_uri,
+        )
+
+        data = {
+            'code': 'test',
+            'response_type': 'code',
+            'grant_type': grant_type,
+            'redirect_uri': redirect_uri
+        }
+        params = data
+        url = service.get_authorize_url(**params)
+        # print(request_token_uri + url)
+
+        Shared_Resources.Set_Shared_Variables(var_name,request_token_uri + url )
 
         return "passed"
     except Exception:

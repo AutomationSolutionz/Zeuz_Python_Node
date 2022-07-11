@@ -3352,6 +3352,29 @@ def Switch_Browser(step_data):
         return "passed"
 
 
+
+
+@logger
+def Get_Current_URL(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        var_name="saved_url"
+        for left, mid, right in step_data:
+            if right != "":
+                var_name = right.strip()
+        current_url=selenium_driver.current_url
+        Shared_Resources.Set_Shared_Variables(var_name, current_url)
+        CommonUtil.ExecLog(sModuleInfo, "Current url saved in a variable named '%s'" % var_name, 1)
+
+        return "passed"
+    except Exception:
+        errMsg = "Unable to saved current url "
+        # return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+        return "passed"
+
+
 ##@Riz and @Sreejoy: More work is needed here. Please investigate further.
 @logger
 def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
