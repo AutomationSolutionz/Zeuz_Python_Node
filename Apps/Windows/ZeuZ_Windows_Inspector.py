@@ -8,6 +8,11 @@ import inspect
 from colorama import init as colorama_init
 from colorama import Fore
 
+#Importing rich library to print in an organized manner
+from rich import print
+from rich.text import Text
+from rich.tree import Tree
+
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
 
@@ -165,7 +170,6 @@ def _child_search2(ParentElement):
                 if temp:
                     return path + temp
             create_index(index_trace, each_child)
-
         return path
 
     except Exception:
@@ -531,10 +535,19 @@ try:
 except:
     No_of_level_to_skip = 0
 
+def printTree(root,tree):
+    for child in root:
+        if (child.get('zeuz')) == "aiplugin":
+            tree.add(f"[bold green]{str(child.attrib)[1:-1]}", guide_style="red")
+            break
+        else:
+            temp = tree.add(f"[yellow]{str(child.attrib)[1:-1]}",guide_style="red")
+            printTree(child, temp)
+    return tree
 
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
+        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count, list_path
         auth_thread = Authenticate()
         while True:
             if debugger_is_active():
@@ -567,7 +580,10 @@ def main():
             xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
 
             print("************* Exact Path *************")
+            print("============= COPY =============")
             print(path)
+            print("============= COPY =============")
+            # printTree(path)           #Printing the path in rich tree format
             # print("************* path_priority *************")
             # print("Path priority =", path_priority, "\n\n")
             with open("Element.xml", "w") as f:
@@ -578,6 +594,7 @@ def main():
             except: pass
             sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
+            tree = Tree(f"[cyan]{str(root.attrib)[1:-1]}", guide_style="red")  # root of rich tree python
             if sibling.strip().lower() == "ok":
                 print("Hover over the SIBLING and press control")
                 keyboard.wait("ctrl")
@@ -589,8 +606,10 @@ def main():
             Remove_coordinate(root)
             Remove_coordinate_time = round(time.perf_counter() - start, 3)
             xml_str = ET.tostring(root).decode()
+            print(printTree(root,tree))
             with open("Sibling.xml", "w") as f:
                 f.write(xml_str)
+
 
             start = time.perf_counter()
             Upload(auth_thread, window_name)
