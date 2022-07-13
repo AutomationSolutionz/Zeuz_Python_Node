@@ -8,6 +8,11 @@ import inspect
 from colorama import init as colorama_init
 from colorama import Fore
 
+#Importing rich library to print in an organized manner
+from rich import print
+from rich.text import Text
+from rich.tree import Tree
+
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
 
@@ -35,6 +40,7 @@ x, y = -1, -1
 path_priority = 0
 xml_str = ""
 path = ""
+list_path = []
 from System.Windows.Automation import *
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
@@ -165,7 +171,6 @@ def _child_search2(ParentElement):
                 if temp:
                     return path + temp
             create_index(index_trace, each_child)
-
         return path
 
     except Exception:
@@ -531,10 +536,60 @@ try:
 except:
     No_of_level_to_skip = 0
 
+def printTree(path):
+    listtree = list(path.split("\n"))
+    tree = Tree("[cyan]"+listtree[0][:-1])
+    temp = tree.add(listtree[1][:-1], style = f"color({1})")
+    for i in range(2,len(listtree)-1):
+        temp = temp.add(listtree[i][:-1], style = f"color({i})")
+    print(tree)
+
+def printFullTree(root,tree):
+    for child in root:
+        if (child.get('zeuz')) == "aiplugin":
+            tree.add(f"[magenta]{str(child.attrib)[1:-1]}", guide_style="red")
+            break
+        else:
+            temp = tree.add(f"[yellow]{str(child.attrib)[1:-1]}",guide_style="red")
+            printFullTree(child, temp)
+    return tree
+
+def findDesiredChild(root):
+    for child in root:
+        if (child.get('zeuz')) == "aiplugin":
+            list_path.append(str(child.attrib)[1:-1])
+            list_path.append(str(root.attrib)[1:-1])
+        else:
+            findDesiredChild(child)
+    return
+
+def findDesiredParent(desired_child,root):
+    for child in root:
+        if str(child.attrib)[1:-1] == desired_child:
+            list_path.append(str(root.attrib)[1:-1])
+        else:
+            findDesiredParent(desired_child,child)
+    return
+
+def printElementTree(root,tree):
+    temp = tree
+    for i in range(1,len(list_path)):
+        for child in root:
+            if str(child.attrib)[1:-1] == list_path[i]:
+                next_child = child
+                if i == len(list_path)-1:
+                    temp = temp.add(f"[bold green blink]{str(child.attrib)[1:-1]}", guide_style="red")
+                    break
+                temp = temp.add(f"[yellow]{str(child.attrib)[1:-1]}", guide_style="red")
+
+            else:
+                temp.add(f"[white]{str(child.attrib)[1:-1]}", guide_style="red")
+        root = next_child
+    print(tree)
 
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
+        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count, list_path
         auth_thread = Authenticate()
         while True:
             if debugger_is_active():
@@ -567,7 +622,10 @@ def main():
             xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
 
             print("************* Exact Path *************")
+            print("============= COPY =============")
             print(path)
+            print("============= COPY =============")
+            # printTree(path)           #Printing the path in rich tree format
             # print("************* path_priority *************")
             # print("Path priority =", path_priority, "\n\n")
             with open("Element.xml", "w") as f:
@@ -578,6 +636,7 @@ def main():
             except: pass
             sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
+
             if sibling.strip().lower() == "ok":
                 print("Hover over the SIBLING and press control")
                 keyboard.wait("ctrl")
@@ -589,8 +648,16 @@ def main():
             Remove_coordinate(root)
             Remove_coordinate_time = round(time.perf_counter() - start, 3)
             xml_str = ET.tostring(root).decode()
+            tree = Tree(f"[cyan]{str(root.attrib)[1:-1]}",guide_style="red")     #root of rich tree python
+            #print(printFullTree(root,tree)) #Printing full tree in rich tree format
+            findDesiredChild(root)
+            for i in range(1,path.count('>')):
+                findDesiredParent(list_path[i],root)
+            list_path.reverse()                #This is a sorted list of elements from root to desired child
+            printElementTree(root, tree)        #This function is called to print element tree in rich tree format
             with open("Sibling.xml", "w") as f:
                 f.write(xml_str)
+
 
             start = time.perf_counter()
             Upload(auth_thread, window_name)
