@@ -872,6 +872,8 @@ def Go_To_Link(step_data, page_title=False):
                 result = Open_Browser(dependency, window_size_X, capability=capabilities)
             else:
                 result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
+        else:
+            result = "zeuz_failed"
 
         if result == "zeuz_failed":
             ErrorMessage = "failed to open your link with driver_id='%s: %s" % (driver_id, web_link)
