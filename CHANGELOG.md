@@ -3,6 +3,10 @@
 # Version 16
 
 ### [Current changes]
+- **[Fix]** Compare data *ignore_list_order* bug fix
+- **[Fix]** Zeuz_auto_teardown variable bug fix
+- **[Fix]** Mobile browser update bug fix
+- **[Fix]** zeuz_pid_finder bug fix for chrome
 
 - **[Add]** Authenticator code generator action is added for windows
 - **[Improve]** Function handle capability inside csv cells is implemented

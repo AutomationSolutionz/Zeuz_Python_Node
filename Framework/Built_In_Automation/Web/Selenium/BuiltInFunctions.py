@@ -442,7 +442,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
                 options.add_argument('--ignore-ssl-errors')
-                options.add_argument('--Zeuz_pid_finder')
+                options.add_argument('--zeuz_pid_finder')
 
             # Todo: profile, add_argument => open_browser
             if browser_options:
@@ -571,7 +571,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             options.use_chromium = True
             options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
-            options.add_argument('--Zeuz_pid_finder')
+            options.add_argument('--zeuz_pid_finder')
             selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
@@ -692,7 +692,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
                 2
             )
-            if browser in ("chrome", "chromeheadless"):
+            if browser in ("android", "chrome", "chromeheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
@@ -872,6 +872,8 @@ def Go_To_Link(step_data, page_title=False):
                 result = Open_Browser(dependency, window_size_X, capability=capabilities)
             else:
                 result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
+        else:
+            result = "zeuz_failed"
 
         if result == "zeuz_failed":
             ErrorMessage = "failed to open your link with driver_id='%s: %s" % (driver_id, web_link)
@@ -3821,7 +3823,7 @@ def upload_file_through_window(step_data):
     The upload API is searched by their pid
     The main problem is there are multiple process which open while when launching driver having multiple pid. but we need to find out the main browsers pid
     Firefox driver provides the pid inside capabilities
-    For Chrome and Opera we added a custom args named "--ZeuZ_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
+    For Chrome and Opera we added a custom args named "--zeuz_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
     For MS Edge browser We extracted selenium.title and searched in Microsoft System API with that window title and fetch all the pids with that window title.
     Also we had extracted all the pids from psutil having "--test-type=webdriver" arg and then matched the pids with previous one to find the genuin pid
 
