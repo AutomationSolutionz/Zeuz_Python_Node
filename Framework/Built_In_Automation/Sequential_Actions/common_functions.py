@@ -1226,7 +1226,8 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "not found":
                         continue
                     if found_status == "all found":
-                        return "all found"
+                        # return "all found"
+                        break
                     if found_status == "2nd list larger":
                         return "2nd list larger"
                     if found_status == "1st list larger":
@@ -1249,7 +1250,8 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "not found":
                         continue
                     if found_status == "all found":
-                        return "all found"
+                        # return "all found"
+                        break
                     if found_status == "2nd list larger":
                         return "2nd list larger"
                     if found_status == "1st list larger":
