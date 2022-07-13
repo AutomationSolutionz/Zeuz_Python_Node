@@ -692,7 +692,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
                 2
             )
-            if browser in ("chrome", "chromeheadless"):
+            if browser in ("android", "chrome", "chromeheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
