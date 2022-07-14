@@ -381,7 +381,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     
-    if Shared_Resources.Test_Shared_Variables('run_time_params'):
+    if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
         run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
         remote_config = run_time_params.get("remote_config")
         if(remote_config):
