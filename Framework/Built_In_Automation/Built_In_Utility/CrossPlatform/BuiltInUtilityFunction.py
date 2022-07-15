@@ -3848,3 +3848,120 @@ def extract_num_from_str(
         out_variable_value = in_variable_value
 
     return out_variable_value
+
+@logger
+def new_compare_images(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        from glob import glob
+        from pathlib import Path
+        import cv2
+        import imutils
+        import numpy as np
+
+        action_result_file_found = 'pass'
+        action_result_file_not_found = 'pass'
+
+
+        for left,mid,right in data_set:
+            if left == "image1":
+                image1_path = right.strip()
+            elif left == "image2":
+                image2_path = right.strip()
+            elif left == "border_thickness":
+                border_thikness = right.strip()
+            elif left == "border_color":
+                border_color = right.strip()
+            elif left == "resize_height":
+                resize_height = right.strip()
+            elif left == "resize_width":
+                resize_width = right.strip()
+            elif left == "action_result_file_found":
+                action_result_file_found = right.strip()
+            elif left == "action_result_file_not_found":
+                action_result_file_not_found = right.strip()
+            elif left == "output_path":
+                output_path = right.strip()
+            elif left == "output_file_name":
+                file_name = right.strip()
+
+        resize_height_n = int(resize_height)
+        resize_width_n = int(resize_width)
+        border_thikness_n = int(border_thikness)
+        border_color_n = tuple(map(lambda x : int(x) , border_color.split(',')))
+        print(border_color_n)
+
+        img1 = cv2.imread(image1_path)
+        img2 = cv2.imread(image2_path)
+
+        img1 = cv2.resize(img1, (resize_width_n, resize_height_n))
+        img2 = cv2.resize(img2, (resize_width_n, resize_height_n))
+
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+        diff = cv2.absdiff(gray1, gray2)
+        # cv2.imshow("diff(img1 , img2)",diff)
+
+        thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        # cv2.imshow("Threshold",thresh)
+
+        kernel = np.ones((5, 5), np.uint8)
+        dilate = cv2.dilate(thresh, kernel, iterations=2)
+        # cv2.imshow("Dialation",dilate)
+
+        contours = cv2.findContours(dilate.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = imutils.grab_contours(contours)
+
+        for contour in contours:
+            if cv2.contourArea(contour) > 100:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(img1, (x, y), (x + w, y + h), border_color_n, border_thikness_n)
+                cv2.rectangle(img2, (x, y), (x + w, y + h), border_color_n, border_thikness_n)
+
+        x = np.zeros((resize_height_n, 10, 3), np.uint8)
+        result = np.hstack((img1, x, img2))
+        # print(result)
+
+        # cv2.imshow("Differences", result)
+
+        # path = r"C:\Users\Sazid\Desktop\imcompare\gun5.png"
+
+        output_path = output_path + "\\" + file_name + ".png"
+        for contour in contours:
+            if cv2.contourArea(contour) > 100:
+                cv2.imwrite(output_path, result)
+
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        count = 0
+        d = None
+        try:
+            image_file = glob(output_path)[0]
+            file_found_result = "pass"
+
+            if file_found_result == action_result_file_found:
+                CommonUtil.ExecLog(sModuleInfo, "File found step passed", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
+                return "zeuz_failed"
+
+
+        except IndexError:
+
+            file_not_found_result = "pass"
+
+            if file_not_found_result == action_result_file_not_found:
+                CommonUtil.ExecLog(sModuleInfo, "File not found - step passed", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
+                return "zeuz_failed"
+
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't compare images", 3)
+        return "zeuz_failed"
