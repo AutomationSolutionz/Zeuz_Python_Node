@@ -1363,12 +1363,12 @@ def save_built_in_time_variable(string):
 
         input = str(string).lower().strip()
 
-        if os.name == "nt":
-            datetime_format = datetime_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
-
         if input == "currentepochtime":
             return int(time.time())
         elif input.startswith("today"):
+            if os.name == "nt":
+                datetime_format = datetime_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+
             if input.lower().strip() == "today":
                 return datetime.today().strftime(datetime_format)
             elif "+" in input:
