@@ -15,6 +15,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from Framework.Utilities.decorators import logger, deprecated
 from .data_collector import DataCollector
+from Framework.Utilities import RequestFormatter
+import requests
 
 
 global shared_variables
@@ -698,7 +700,28 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     3
                 )
                 return "zeuz_failed"
-
+            
+            elif var_name.startswith("global_attachements["):
+                sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+                path_to_global_attachment_folder = Get_Shared_Variables("zeuz_download_folder").split("/AutomationLog/")[0] + "/AutomationLog/attachments/global/"
+                os.makedirs(path_to_global_attachment_folder, exist_ok=True)
+                key_name = var_name.split("[\"")[-1].split("\"]")[0]
+                file_name = var_name.replace("\'","\"").split('[\"')[-1].split("\"")[0].strip()
+                global_attachements = Get_Shared_Variables("global_attachements")
+                global_attachements[key_name] = generated_value = path_to_global_attachment_folder + key_name
+                Set_Shared_Variables("global_attachements",global_attachements)
+                try:
+                    headers = RequestFormatter.add_api_key_to_headers({})
+                    url = RequestFormatter.form_uri(f"static/global_folder/{file_name}")
+                    local_filename = url.split('/')[-1]
+                    with requests.get(url, stream=True, verify=False,**headers) as r:
+                        r.raise_for_status()
+                        with open(path_to_global_attachment_folder+'/'+local_filename, 'wb') as f:
+                            for chunk in r.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                    CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from Global Attachments" % var_name, 1)
+                except Exception as e:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
             else:
                 if var_name.startswith("rest_response"):        # Todo: Remove this variable from Rest files 3 months later from 18 January, 2022
                     CommonUtil.ExecLog(
