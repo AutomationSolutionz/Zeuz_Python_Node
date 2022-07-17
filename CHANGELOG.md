@@ -2,6 +2,8 @@
 
 ### [16.1.0][Jun 07, 2022]
 - **[Add]** Basic performance testing functions for rest calls
+- **[Add]** Action for get access token url (oauth 2.0) with documentation
+- **[Add]** Browser action for get current url from address bar with documentation
 
 # Version 16
 
