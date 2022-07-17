@@ -1,5 +1,8 @@
 # Changelog
 
+### [16.1.0][Jun 07, 2022]
+- **[Add]** Basic performance testing functions for rest calls
+
 # Version 16
 
 ### [Current changes]
