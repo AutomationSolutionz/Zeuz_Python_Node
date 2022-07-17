@@ -3,6 +3,12 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Added selenium grid functionality. Usage:
+
+  ```shell
+  cd .../Framework/Built_In_Automation/Web/Selenium
+  docker-compose -f docker-compose-v3.yml up
+  ```
 
 - **[Add]** Authenticator code generator action is added for windows
 - **[Improve]** Function handle capability inside csv cells is implemented
