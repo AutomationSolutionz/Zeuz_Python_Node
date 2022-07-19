@@ -52,6 +52,7 @@ action_support = (
     "destination element parameter", "destination parent parameter", "destination sibling parameter", "destination child parameter",
     "optional parameter",
     "iframe parameter",
+    "frame parameter",
     "method",
     "url",
     "body",

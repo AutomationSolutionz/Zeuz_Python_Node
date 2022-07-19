@@ -7,7 +7,7 @@
             Add to the actions dictionary - module and name must be lowercase with single spaces, function should be the exact spelling of the function name
             
         Adding new Sub-Field keywords
-            Add to the action_suport list - must be lowercase with single spaces
+            Add to the action_support list - must be lowercase with single spaces
             
         Adding a new dynamically called module
             Add to the load_sa_modules() function, follow same format as other sections
