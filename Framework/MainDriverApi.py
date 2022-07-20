@@ -19,7 +19,7 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 import threading
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
@@ -473,8 +473,8 @@ def run_all_test_steps_in_a_test_case(
         attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
         for tc_attachment in testcase_info['attachments']:
-            var_name = Path(tc_attachment["path"]).name
-            path = str(attachment_path / var_name)
+            var_name = PurePosixPath(tc_attachment["path"]).name
+            path = str(attachment_path / tc_attachment["id"] / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
@@ -542,8 +542,8 @@ def run_all_test_steps_in_a_test_case(
             step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                attachment_name = Path(attachment["path"]).name
-                path = str(attachment_path / attachment_name)
+                attachment_name = PurePosixPath(attachment["path"]).name
+                path = str(attachment_path / f"STEP-{attachment['id']}" / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
@@ -865,6 +865,7 @@ def run_test_case(
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
+        shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
 
         # log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
         # print("#"*(len(log_line)))
@@ -1401,17 +1402,27 @@ def download_attachments(testcase_info):
         folder.
         """
 
+        download_dir = attachment_path
+        if "tc_folder" in attachment["path"]:
+            download_dir = attachment_path / attachment["id"]
+        elif "step_folder" in attachment["path"]:
+            download_dir = attachment_path / f"STEP-{attachment['id']}"
+        elif "global_folder" in attachment["path"]:
+            download_dir = attachment_path / "global"
+
+        download_dir.mkdir(parents=True, exist_ok=True)
+
         entry = db.exists(attachment["hash"])
         to_append = {
             "url": url_prefix + attachment["path"],
-            "download_dir": attachment_path,
+            "download_dir": download_dir,
             "attachment": attachment,
         }
         if entry is None:
             urls.append(to_append)
         else:
             try:
-                shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"]).name)
+                shutil.copyfile(str(entry["path"]), download_dir / Path(attachment["path"]).name)
             except:
                 # If copy fails, the file either does not exist or we don't have
                 # permission. Download the file again and remove from db.

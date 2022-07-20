@@ -464,7 +464,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
                 options.add_argument('--ignore-ssl-errors')
-                options.add_argument('--Zeuz_pid_finder')
+                options.add_argument('--zeuz_pid_finder')
 
             # Todo: profile, add_argument => open_browser
             if browser_options:
@@ -615,7 +615,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             options.use_chromium = True
             options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
-            options.add_argument('--Zeuz_pid_finder')
+            options.add_argument('--zeuz_pid_finder')
             if(remote_host):
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
@@ -746,7 +746,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
                 2
             )
-            if browser in ("chrome", "chromeheadless"):
+            if browser in ("android", "chrome", "chromeheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
@@ -926,6 +926,8 @@ def Go_To_Link(step_data, page_title=False):
                 result = Open_Browser(dependency, window_size_X, capability=capabilities)
             else:
                 result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
+        else:
+            result = "zeuz_failed"
 
         if result == "zeuz_failed":
             ErrorMessage = "failed to open your link with driver_id='%s: %s" % (driver_id, web_link)
@@ -3406,6 +3408,29 @@ def Switch_Browser(step_data):
         return "passed"
 
 
+
+
+@logger
+def Get_Current_URL(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        var_name="saved_url"
+        for left, mid, right in step_data:
+            if right != "":
+                var_name = right.strip()
+        current_url=selenium_driver.current_url
+        Shared_Resources.Set_Shared_Variables(var_name, current_url)
+        CommonUtil.ExecLog(sModuleInfo, "Current url saved in a variable named '%s'" % var_name, 1)
+
+        return "passed"
+    except Exception:
+        errMsg = "Unable to saved current url "
+        # return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+        return "passed"
+
+
 ##@Riz and @Sreejoy: More work is needed here. Please investigate further.
 @logger
 def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
@@ -3852,7 +3877,7 @@ def upload_file_through_window(step_data):
     The upload API is searched by their pid
     The main problem is there are multiple process which open while when launching driver having multiple pid. but we need to find out the main browsers pid
     Firefox driver provides the pid inside capabilities
-    For Chrome and Opera we added a custom args named "--ZeuZ_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
+    For Chrome and Opera we added a custom args named "--zeuz_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
     For MS Edge browser We extracted selenium.title and searched in Microsoft System API with that window title and fetch all the pids with that window title.
     Also we had extracted all the pids from psutil having "--test-type=webdriver" arg and then matched the pids with previous one to find the genuin pid
 
