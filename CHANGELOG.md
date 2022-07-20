@@ -5,6 +5,8 @@
 
 ### [Current changes]
 - **[Add]** 'frame parameter' support is added into Switch_Iframe action
+- **[Add]** Action for get access token url (oauth 2.0) with documentation
+- **[Add]** Browser action for get current url from address bar with documentation
 - **[Add]** Basic performance testing functions for rest calls
 - **[Add]** Added selenium grid functionality. Usage:
   ```shell

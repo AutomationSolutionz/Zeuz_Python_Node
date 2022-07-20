@@ -1571,6 +1571,23 @@ def Insert_Tuple_Into_List(step_data):
 
 @logger
 def Get_Oauth2_Access_Token_URl(step_data):
+    """
+    This action takes the data given below as input and returns us an access token url. This url will open a popup
+    window asking for username and password for authentication.
+
+    client id           element parameter        <takes client id for generating an access token url>
+    client secret       element parameter        <takes client secret for generating an access token url>
+    access point        element parameter        <takes the access point for generating an access token url>
+    grant type          element parameter        <takes the type of grant, ex: Authorization Code (With PKCE)>
+    base uri            element parameter        <takes the base uri for generating an access token url>
+    request token uri   element parameter        <takes the request token uri for generating an access token url>
+    redirect uri        element parameter        <takes the redirect uri for generating an access token url>
+    token name          element parameter        <takes the name of token for generating an access token url>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
+
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         client_id = ''

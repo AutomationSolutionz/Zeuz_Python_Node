@@ -3412,6 +3412,14 @@ def Switch_Browser(step_data):
 
 @logger
 def Get_Current_URL(step_data):
+    """
+    This action saves the current url the browser is in by inspecting the address bar.
+
+    get current url         selenium action     <saves the current url by inspecting the address bar of the browser>
+
+    :param data_set: Action data set
+    :return: string: "Current url saved in a variable named '%s'" or "zeuz_failed" depending on the outcome
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
