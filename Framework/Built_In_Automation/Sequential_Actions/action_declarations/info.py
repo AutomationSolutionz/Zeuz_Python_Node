@@ -8,6 +8,7 @@ from . import (
     windows,
     xml,
     database,
+    performance
 )
 
 modules = (
@@ -20,6 +21,7 @@ modules = (
     windows,
     xml,
     database,
+    performance
 )
 
 # This will be exported and contains all the actions.

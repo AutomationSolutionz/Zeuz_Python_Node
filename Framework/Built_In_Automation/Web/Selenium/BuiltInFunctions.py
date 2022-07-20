@@ -380,6 +380,26 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             "Dependency not set for browser. Please set the Apply Filter value to YES."
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+    
+    if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
+        run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
+        remote_config = run_time_params.get("remote_config")
+        if(remote_config):
+            remote_host = remote_config.get('host')
+            remote_browser_version = remote_config.get('browser_version')
+            if(remote_host):
+                try:
+                    if requests.get(remote_host).status_code != 200:
+                        remote_host = None
+                except requests.exceptions.RequestException as e:
+                    remote_host = None
+                if remote_host == None:
+                    CommonUtil.ExecLog(
+                    sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
+                )       
+    else:
+        remote_host = None
+        remote_browser_version = None
     # try:
     #     selenium_driver.close()
     # except:
@@ -430,6 +450,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
 
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
             # capability
             if capability:
                 for key, value in capability.items():
@@ -474,11 +496,18 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "download.directory_upgrade": True
             }
             options.add_experimental_option('prefs', prefs)
-            selenium_driver = webdriver.Chrome(
-                executable_path=chrome_path,
-                chrome_options=options,
-                desired_capabilities=d
-            )
+            if remote_host:
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=d
+                )
+            else:
+                selenium_driver = webdriver.Chrome(
+                    executable_path=chrome_path,
+                    chrome_options=options,
+                    desired_capabilities=d
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -502,6 +531,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
+            
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
+
             if "headless" in browser:
                 options.headless = True
             if _platform == "win32":
@@ -533,12 +566,20 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
-            selenium_driver = webdriver.Firefox(
-                executable_path=firefox_path,
-                capabilities=capabilities,
-                options=options,
-                firefox_profile=profile
-            )
+            if(remote_host):
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=capabilities,
+                    browser_profile=profile
+                )
+            else:
+                selenium_driver = webdriver.Firefox(
+                    executable_path=firefox_path,
+                    capabilities=capabilities,
+                    options=options,
+                    firefox_profile=profile
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -565,15 +606,28 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             """
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
             download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            options = EdgeOptions()
-            capabilities = EdgeOptions().capabilities
+            options = webdriver.EdgeOptions()
+            
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
+            capabilities = webdriver.EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
             options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
-            selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
-
+            if(remote_host):
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=capabilities
+                )
+            else:
+                selenium_driver = Edge(
+                    executable_path=edge_path,
+                    options=options,
+                    capabilities=capabilities
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -803,7 +857,7 @@ def Go_To_Link(step_data, page_title=False):
                 else:
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
-
+                
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
