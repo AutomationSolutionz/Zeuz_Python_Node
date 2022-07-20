@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 import time
 from typing import Any, Dict, Union
-
+import os
+import requests
+import sys
+from Framework.Utilities.ConfigModule import get_config_value
+from Framework.Utilities import RequestFormatter
+from Framework.Utilities import CommonUtil
 
 class AttachmentDB:
     def __init__(self, db_directory: Path) -> None:
@@ -102,3 +107,32 @@ class AttachmentDB:
         data = {}
         with open(self.db_file, "w", encoding="utf-8") as f:
             f.write(json.dumps(data))
+
+class GlobalAttachment:
+    
+
+    def __init__(self):
+        pass
+
+    def __getitem__(self, file_name: str):
+        url_prefix = get_config_value("Authentication", "server_address") + "/static/global_folder/"
+        return str(self.download_attachment(url_prefix + file_name))
+
+    def download_attachment(self, url: str):
+        try:
+            path_to_global_attachment_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "AutomationLog", "attachments", "global")
+            file_name = url.split("/")[-1].strip()
+            path_to_downloaded_attachment = os.path.join(path_to_global_attachment_folder, file_name)
+            os.makedirs(path_to_global_attachment_folder, exist_ok=True)
+
+            headers = RequestFormatter.add_api_key_to_headers({})
+            
+            with requests.get(url, stream=True, verify=False,**headers) as r:
+                r.raise_for_status()
+                with open(path_to_downloaded_attachment, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+        except Exception as e:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+        
+        return path_to_downloaded_attachment
