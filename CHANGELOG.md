@@ -1,11 +1,11 @@
 # Changelog
 
-### [16.1.0][Jun 07, 2022]
-- **[Add]** Basic performance testing functions for rest calls
 
 # Version 16
 
 ### [Current changes]
+- **[Add]** 'frame parameter' support is added into Switch_Iframe action
+- **[Add]** Basic performance testing functions for rest calls
 - **[Add]** Added selenium grid functionality. Usage:
   ```shell
   cd .../Framework/Built_In_Automation/Web/Selenium
