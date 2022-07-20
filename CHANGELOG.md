@@ -1,18 +1,22 @@
 # Changelog
 
-### [16.1.0][Jun 07, 2022]
-- **[Add]** Basic performance testing functions for rest calls
-- **[Add]** Action for get access token url (oauth 2.0) with documentation
-- **[Add]** Browser action for get current url from address bar with documentation
 
 # Version 16
 
 ### [Current changes]
+- **[Add]** 'frame parameter' support is added into Switch_Iframe action
+- **[Add]** Action for get access token url (oauth 2.0) with documentation
+- **[Add]** Browser action for get current url from address bar with documentation
+- **[Add]** Basic performance testing functions for rest calls
+- **[Add]** Added selenium grid functionality. Usage:
+  ```shell
+  cd .../Framework/Built_In_Automation/Web/Selenium
+  docker-compose -f docker-compose-v3.yml up
+  ```
 - **[Fix]** Compare data *ignore_list_order* bug fix
 - **[Fix]** Zeuz_auto_teardown variable bug fix
 - **[Fix]** Mobile browser update bug fix
 - **[Fix]** zeuz_pid_finder bug fix for chrome
-
 - **[Add]** Authenticator code generator action is added for windows
 - **[Improve]** Function handle capability inside csv cells is implemented
 - **[Fix]** Windows_pid issue solved for image searching

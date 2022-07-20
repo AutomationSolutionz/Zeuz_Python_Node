@@ -19,7 +19,7 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 import threading
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
@@ -473,8 +473,8 @@ def run_all_test_steps_in_a_test_case(
         attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
         for tc_attachment in testcase_info['attachments']:
-            var_name = Path(tc_attachment["path"]).name
-            path = str(attachment_path / var_name)
+            var_name = PurePosixPath(tc_attachment["path"]).name
+            path = str(attachment_path / tc_attachment["id"] / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
@@ -542,8 +542,8 @@ def run_all_test_steps_in_a_test_case(
             step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                attachment_name = Path(attachment["path"]).name
-                path = str(attachment_path / attachment_name)
+                attachment_name = PurePosixPath(attachment["path"]).name
+                path = str(attachment_path / f"STEP-{attachment['id']}" / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
@@ -1402,23 +1402,32 @@ def download_attachments(testcase_info):
         folder.
         """
 
+        download_dir = attachment_path
+        if "tc_folder" in attachment["path"]:
+            download_dir = attachment_path / attachment["id"]
+        elif "step_folder" in attachment["path"]:
+            download_dir = attachment_path / f"STEP-{attachment['id']}"
+        elif "global_folder" in attachment["path"]:
+            download_dir = attachment_path / "global"
+
+        download_dir.mkdir(parents=True, exist_ok=True)
+
         entry = db.exists(attachment["hash"])
         to_append = {
             "url": url_prefix + attachment["path"],
-            "download_dir": attachment_path,
+            "download_dir": download_dir,
             "attachment": attachment,
         }
-        urls.append(to_append)
-        # if entry is None:
-        #     urls.append(to_append)
-        # else:
-        #     try:
-        #         shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"]).name)
-        #     except:
-        #         # If copy fails, the file either does not exist or we don't have
-        #         # permission. Download the file again and remove from db.
-        #         urls.append(to_append)
-        #         db.remove(entry["hash"])
+        if entry is None:
+            urls.append(to_append)
+        else:
+            try:
+                shutil.copyfile(str(entry["path"]), download_dir / Path(attachment["path"]).name)
+            except:
+                # If copy fails, the file either does not exist or we don't have
+                # permission. Download the file again and remove from db.
+                urls.append(to_append)
+                db.remove(entry["hash"])
 
     # Test case attachments
     for attachment in testcase_info["attachments"]:
@@ -1433,18 +1442,18 @@ def download_attachments(testcase_info):
     for r in results:
         print("Downloaded: %s" % r)
 
-        # # Copy into the attachments db.
-        # attachment_path_in_db = attachment_db_path / r["path"].name
-        #
-        # put = db.put(attachment_path_in_db, r["hash"])
-        # if put:
-        #     # If entry is successful, we copy the downloaded attachment to the
-        #     # db directory.
-        #     try:
-        #         shutil.copyfile(r["path"], put["path"])
-        #     except:
-        #         # If copying the attachment fails, we remove the entry.
-        #         db.remove(r["hash"])
+        # Copy into the attachments db.
+        attachment_path_in_db = attachment_db_path / r["path"].name
+
+        put = db.put(attachment_path_in_db, r["hash"])
+        if put:
+            # If entry is successful, we copy the downloaded attachment to the
+            # db directory.
+            try:
+                shutil.copyfile(r["path"], put["path"])
+            except:
+                # If copying the attachment fails, we remove the entry.
+                db.remove(r["hash"])
 
 
 # main function

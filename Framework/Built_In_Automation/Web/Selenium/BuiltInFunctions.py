@@ -380,6 +380,26 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             "Dependency not set for browser. Please set the Apply Filter value to YES."
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+    
+    if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
+        run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
+        remote_config = run_time_params.get("remote_config")
+        if(remote_config):
+            remote_host = remote_config.get('host')
+            remote_browser_version = remote_config.get('browser_version')
+            if(remote_host):
+                try:
+                    if requests.get(remote_host).status_code != 200:
+                        remote_host = None
+                except requests.exceptions.RequestException as e:
+                    remote_host = None
+                if remote_host == None:
+                    CommonUtil.ExecLog(
+                    sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
+                )       
+    else:
+        remote_host = None
+        remote_browser_version = None
     # try:
     #     selenium_driver.close()
     # except:
@@ -430,6 +450,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
 
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
             # capability
             if capability:
                 for key, value in capability.items():
@@ -474,11 +496,18 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "download.directory_upgrade": True
             }
             options.add_experimental_option('prefs', prefs)
-            selenium_driver = webdriver.Chrome(
-                executable_path=chrome_path,
-                chrome_options=options,
-                desired_capabilities=d
-            )
+            if remote_host:
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=d
+                )
+            else:
+                selenium_driver = webdriver.Chrome(
+                    executable_path=chrome_path,
+                    chrome_options=options,
+                    desired_capabilities=d
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -502,6 +531,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
+            
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
+
             if "headless" in browser:
                 options.headless = True
             if _platform == "win32":
@@ -533,12 +566,20 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
-            selenium_driver = webdriver.Firefox(
-                executable_path=firefox_path,
-                capabilities=capabilities,
-                options=options,
-                firefox_profile=profile
-            )
+            if(remote_host):
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=capabilities,
+                    browser_profile=profile
+                )
+            else:
+                selenium_driver = webdriver.Firefox(
+                    executable_path=firefox_path,
+                    capabilities=capabilities,
+                    options=options,
+                    firefox_profile=profile
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -565,15 +606,28 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             """
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
             download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            options = EdgeOptions()
-            capabilities = EdgeOptions().capabilities
+            options = webdriver.EdgeOptions()
+            
+            if remote_browser_version:
+                options.set_capability("browserVersion",remote_browser_version)
+            capabilities = webdriver.EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
             options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
-            selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
-
+            if(remote_host):
+                selenium_driver = webdriver.Remote(
+                    command_executor= remote_host + "wd/hub",
+                    options=options,
+                    desired_capabilities=capabilities
+                )
+            else:
+                selenium_driver = Edge(
+                    executable_path=edge_path,
+                    options=options,
+                    capabilities=capabilities
+                )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -772,7 +826,7 @@ def Go_To_Link(step_data, page_title=False):
 
     # options for add_argument or add_extension etc
     browser_options = []
-    
+
     # Open browser and create driver if user has not already done so
     global dependency
     global selenium_driver
@@ -803,7 +857,7 @@ def Go_To_Link(step_data, page_title=False):
                 else:
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
-
+                
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
@@ -3710,54 +3764,100 @@ def switch_iframe(step_data):
                 selenium_driver.switch_to.default_content()
                 CommonUtil.ExecLog(sModuleInfo, "Exited all iframes and switched to default content", 1)
             elif left == "index":
-                for i in range(5):
-                    iframes = selenium_driver.find_elements_by_tag_name("iframe")
-                    idx = int(right.strip())
-                    if -len(iframes) <= idx < len(iframes):
-                        CommonUtil.ExecLog(sModuleInfo, "Iframe switched to index %s" % right.strip(), 1)
-                        break
-                    CommonUtil.ExecLog(sModuleInfo, "Iframe index = %s not found. retrying after 2 sec wait" % right.strip(), 2)
-                    time.sleep(2)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Index out of range. Total %s iframes found." % len(iframes), 3)
-                    return "zeuz_failed"
-                if idx < 0:
-                    idx = len(iframes) + idx
-                try:
-                    frame_attribute = iframes[idx].get_attribute('outerHTML')
-                    i, c = 0, 0
-                    for i in range(len(frame_attribute)):
-                        if frame_attribute[i] == '"':
-                            c += 1
-                        if (frame_attribute[i] == ">" and c % 2 == 0):
+                if mid == "iframe parameter":
+                    for i in range(5):
+                        iframes = selenium_driver.find_elements(By.TAG_NAME, "iframe")
+                        idx = int(right.strip())
+                        if -len(iframes) <= idx < len(iframes):
+                            CommonUtil.ExecLog(sModuleInfo, "Iframe switched to index %s" % right.strip(), 1)
                             break
-                    frame_attribute =  frame_attribute[:i+1]
-                    CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
-                except:
-                    pass
-                selenium_driver.switch_to.frame(idx)
+                        CommonUtil.ExecLog(sModuleInfo,
+                                         "Iframe index = %s not found. retrying after 2 sec wait" % right.strip(), 2)
+                        time.sleep(2)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Index out of range. Total %s iframes found." % len(iframes), 3)
+                        return "zeuz_failed"
+                    if idx < 0:
+                        idx = len(iframes) + idx
+                    try:
+                        frame_attribute = iframes[idx].get_attribute('outerHTML')
+                        i, c = 0, 0
+                        for i in range(len(frame_attribute)):
+                            if frame_attribute[i] == '"':
+                                c += 1
+                            if (frame_attribute[i] == ">" and c % 2 == 0):
+                                break
+                        frame_attribute = frame_attribute[:i + 1]
+                        CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
+                    except:
+                        pass
+                    selenium_driver.switch_to.frame(idx)
+                elif mid == "frame parameter":
+                    for i in range(5):
+                        frames = selenium_driver.find_elements(By.TAG_NAME, "frame")
+                        idx = int(right.strip())
+                        if -len(frames) <= idx < len(frames):
+                            CommonUtil.ExecLog(sModuleInfo, "Frame switched to index %s" % right.strip(), 1)
+                            break
+                        CommonUtil.ExecLog(sModuleInfo,
+                                         "Frame index = %s not found. retrying after 2 sec wait" % right.strip(), 2)
+                        time.sleep(2)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Index out of range. Total %s frames found." % len(frames), 3)
+                        return "zeuz_failed"
+                    if idx < 0:
+                        idx = len(frames) + idx
+                    try:
+                        frame_attribute = frames[idx].get_attribute('outerHTML')
+                        i, c = 0, 0
+                        for i in range(len(frame_attribute)):
+                            if frame_attribute[i] == '"':
+                                c += 1
+                            if (frame_attribute[i] == ">" and c % 2 == 0):
+                                break
+                        frame_attribute = frame_attribute[:i + 1]
+                        CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
+                    except:
+                        pass
+                    selenium_driver.switch_to.frame(idx)
 
             elif "default" in right.lower():
                 try:
                     iframe_data = [(left, "element parameter", right)]
                     if left != "xpath":
-                        iframe_data.append(("tag", "element parameter", "iframe"))
-                    Element = LocateElement.Get_Element(iframe_data, selenium_driver)
-                    selenium_driver.switch_to.frame(Element)
+                        if mid == "iframe parameter":
+                            iframe_data.append(("tag", "element parameter", "iframe"))
+                        elif mid == "frame parameter":
+                            iframe_data.append(("tag", "element parameter", "frame"))
+                    element = LocateElement.Get_Element(iframe_data, selenium_driver)
+                    selenium_driver.switch_to.frame(element)
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
-                    CommonUtil.ExecLog(sModuleInfo, "No such iframe found. Exited all iframes and switched to default content", 2)
+                    if mid == "iframe parameter":
+                        CommonUtil.ExecLog(sModuleInfo,
+                                           "No such iframe found. Exited all iframes and switched to default content",
+                                           2)
+                    elif mid == "frame parameter":
+                        CommonUtil.ExecLog(sModuleInfo,
+                                           "No such frame found. Exited all frames and switched to default content",
+                                           2)
                     selenium_driver.switch_to.default_content()
             else:
                 try:
                     iframe_data = [(left, "element parameter", right)]
                     if left != "xpath":
-                        iframe_data.append(("tag", "element parameter", "iframe"))
-                    Element = LocateElement.Get_Element(iframe_data, selenium_driver)
-                    selenium_driver.switch_to.frame(Element)
+                        if mid == "iframe parameter":
+                            iframe_data.append(("tag", "element parameter", "iframe"))
+                        elif mid == "frame parameter":
+                            iframe_data.append(("tag", "element parameter", "frame"))
+                    element = LocateElement.Get_Element(iframe_data, selenium_driver)
+                    selenium_driver.switch_to.frame(element)
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
-                    CommonUtil.ExecLog(sModuleInfo, "No such iframe found using above Xpath", 3)
+                    if mid == "iframe parameter":
+                        CommonUtil.ExecLog(sModuleInfo, "No such iframe found using above Xpath", 3)
+                    elif mid == "frame parameter":
+                        CommonUtil.ExecLog(sModuleInfo, "No such frame found using above Xpath", 3)
                     return "zeuz_failed"
         return "passed"
     except Exception:
