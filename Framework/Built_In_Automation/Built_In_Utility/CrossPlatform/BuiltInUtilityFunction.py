@@ -4068,7 +4068,7 @@ def create_and_edit_screenshot(data_set):
     template_image = []
     template_image_location = ''
     edited_image_location = ''
-    previous_cordinate = ''
+    previous_coordinate = ''
     current_coordinate = []
     variable_name = None
     full_screenshot = ''
@@ -4104,7 +4104,7 @@ def create_and_edit_screenshot(data_set):
         elif left == 'template_image_location':
             template_image.append(right.strip())
         elif left == 'previous_coordinate':
-            previous_cordinate = eval(right)
+            previous_coordinate = CommonUtil.parse_value_into_object(right.strip())
         elif left == 'screenshot_save_location':
             screenshot_save_location = right.strip()
         elif left == 'screenshot_name':
@@ -4121,6 +4121,7 @@ def create_and_edit_screenshot(data_set):
             threshold_n = float(right.strip())
     try:
         output_path = screenshot_save_location + "\\" + screenshot_name + ".png"
+        # window_specific_screenshot = window_specific_screenshot
 
         if full_screenshot == 'yes':
             snapshot = ImageGrab.grab()
@@ -4150,15 +4151,15 @@ def create_and_edit_screenshot(data_set):
                 count = 'yes'
             else:
                 count = 'no'
-        if template_image != [] or previous_cordinate != '':
+        if template_image != [] or previous_coordinate != '':
 
             edited_image_location = edited_image_location + "\\" + edited_image_file_name +".png"
 
-            if template_image == [] and isinstance(previous_cordinate,list) == True:
+            if template_image == [] and isinstance(previous_coordinate,list) == True:
 
 
-                if len(previous_cordinate) > 1:
-                    for i in previous_cordinate:
+                if len(previous_coordinate) > 1:
+                    for i in previous_coordinate:
                         image1 = Image.open(main_image_location).convert('RGB')
                         img_arr = np.array(image1)
                         img_arr[i[1]: i[1] + i[2], i[0]: i[0] + i[3]] = (0, 0, 0)
@@ -4171,7 +4172,7 @@ def create_and_edit_screenshot(data_set):
                 else:
                     image1 = Image.open(main_image_location).convert('RGB')
                     img_arr = np.array(image1)
-                    img_arr[previous_cordinate[0][1]: previous_cordinate[0][1] + previous_cordinate[0][2], previous_cordinate[0][0]: previous_cordinate[0][0] + previous_cordinate[0][3]] = (0, 0, 0)
+                    img_arr[previous_coordinate[0][1]: previous_coordinate[0][1] + previous_coordinate[0][2], previous_coordinate[0][0]: previous_coordinate[0][0] + previous_coordinate[0][3]] = (0, 0, 0)
                     image1 = Image.fromarray(img_arr)
                     image1.save(edited_image_location)
                     CommonUtil.ExecLog(sModuleInfo, "passed", 1)
@@ -4197,7 +4198,7 @@ def create_and_edit_screenshot(data_set):
 
                     for pt in zip(*loc[::-1]):
                         img_arr = np.array(image1)
-                        if previous_cordinate == '':
+                        if previous_coordinate == '':
                             img_arr[pt[1]: pt[1] + h, pt[0]:pt[0] + w] = (0, 0, 0)
                             x_location = pt[0]
                             y_location = pt[1]
@@ -4209,7 +4210,7 @@ def create_and_edit_screenshot(data_set):
                             image1 = Image.fromarray(img_arr)
                             image1.save(edited_image_location)
 
-                        elif template_image != [] and isinstance(previous_cordinate,list) == True:
+                        elif template_image != [] and isinstance(previous_coordinate,list) == True:
                             img_arr[pt[1]: pt[1] + h, pt[0]:pt[0] + w] = (0, 0, 0)
                             x_location = pt[0]
                             y_location = pt[1]
@@ -4226,8 +4227,8 @@ def create_and_edit_screenshot(data_set):
                             image1 = Image.open(main_image_location).convert('RGB')
                             img_arr = np.array(image1)
 
-                            if len(previous_cordinate) > 1:
-                                for i in previous_cordinate:
+                            if len(previous_coordinate) > 1:
+                                for i in previous_coordinate:
                                     image1 = Image.open(main_image_location).convert('RGB')
                                     img_arr = np.array(image1)
                                     img_arr[i[1]: i[1] + i[2], i[0]: i[0] + i[3]] = (0, 0, 0)
@@ -4238,8 +4239,8 @@ def create_and_edit_screenshot(data_set):
                             else:
                                 image1 = Image.open(main_image_location).convert('RGB')
                                 img_arr = np.array(image1)
-                                img_arr[previous_cordinate[0][1]: previous_cordinate[0][1] + previous_cordinate[0][2],
-                                previous_cordinate[0][0]: previous_cordinate[0][0] + previous_cordinate[0][3]] = (0, 0, 0)
+                                img_arr[previous_coordinate[0][1]: previous_coordinate[0][1] + previous_coordinate[0][2],
+                                previous_coordinate[0][0]: previous_coordinate[0][0] + previous_coordinate[0][3]] = (0, 0, 0)
                                 image1 = Image.fromarray(img_arr)
                                 image1.save(edited_image_location)
 
