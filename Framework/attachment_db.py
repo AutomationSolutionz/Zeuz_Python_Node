@@ -109,8 +109,8 @@ class AttachmentDB:
             f.write(json.dumps(data))
 
 class GlobalAttachment:
-    
-
+    # Download attachment from global when global_attachments variable is called
+    # Returns the path to the local file
     def __init__(self):
         pass
 
