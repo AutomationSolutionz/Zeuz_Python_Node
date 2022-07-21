@@ -17,6 +17,8 @@
 import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast, hashlib
 import platform
 
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+
 sys.path.append("..")
 
 from math import ceil, floor
@@ -3854,114 +3856,422 @@ def new_compare_images(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
-    try:
-        from glob import glob
-        from pathlib import Path
-        import cv2
-        import imutils
-        import numpy as np
 
-        action_result_file_found = 'pass'
-        action_result_file_not_found = 'pass'
+    from glob import glob
+    from pathlib import Path
+    import cv2
+    import imutils
+    import numpy as np
+
+    action_result_file_found = 'pass'
+    action_result_file_not_found = 'pass'
 
 
-        for left,mid,right in data_set:
-            if left == "image1":
-                image1_path = right.strip()
-            elif left == "image2":
-                image2_path = right.strip()
-            elif left == "border_thickness":
-                border_thikness = right.strip()
-            elif left == "border_color":
-                border_color = right.strip()
-            elif left == "resize_height":
-                resize_height = right.strip()
-            elif left == "resize_width":
-                resize_width = right.strip()
-            elif left == "action_result_file_found":
-                action_result_file_found = right.strip()
-            elif left == "action_result_file_not_found":
-                action_result_file_not_found = right.strip()
-            elif left == "output_path":
-                output_path = right.strip()
-            elif left == "output_file_name":
-                file_name = right.strip()
+    for left,mid,right in data_set:
+        if left == "image1":
+            image1_path = right.strip()
+        elif left == "image2":
+            image2_path = right.strip()
+        elif left == "border_thickness":
+            border_thikness = right.strip()
+        elif left == "border_color":
+            border_color = right.strip()
+        elif left == "resize_height":
+            resize_height = right.strip()
+        elif left == "resize_width":
+            resize_width = right.strip()
+        elif left == "action_result_file_found":
+            action_result_file_found = right.strip()
+        elif left == "action_result_file_not_found":
+            action_result_file_not_found = right.strip()
+        elif left == "output_path":
+            output_path = right.strip()
+        elif left == "output_file_name":
+            file_name = right.strip()
+        elif left == 'method':
+            method = right.strip()
 
-        resize_height_n = int(resize_height)
-        resize_width_n = int(resize_width)
-        border_thikness_n = int(border_thikness)
-        border_color_n = tuple(map(lambda x : int(x) , border_color.split(',')))
-        print(border_color_n)
+    resize_height_n = int(resize_height)
+    resize_width_n = int(resize_width)
+    border_thikness_n = int(border_thikness)
+    border_color_n = tuple(map(lambda x : int(x) , border_color.split(',')))
 
-        img1 = cv2.imread(image1_path)
-        img2 = cv2.imread(image2_path)
 
-        img1 = cv2.resize(img1, (resize_width_n, resize_height_n))
-        img2 = cv2.resize(img2, (resize_width_n, resize_height_n))
+    if method == 'method_1':
 
-        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+        try:
 
-        diff = cv2.absdiff(gray1, gray2)
-        # cv2.imshow("diff(img1 , img2)",diff)
+            img1 = cv2.imread(image1_path)
+            img2 = cv2.imread(image2_path)
 
-        thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-        # cv2.imshow("Threshold",thresh)
+            img1 = cv2.resize(img1, (resize_width_n, resize_height_n))
+            img2 = cv2.resize(img2, (resize_width_n, resize_height_n))
 
-        kernel = np.ones((5, 5), np.uint8)
-        dilate = cv2.dilate(thresh, kernel, iterations=2)
-        # cv2.imshow("Dialation",dilate)
+            gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+            gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
-        contours = cv2.findContours(dilate.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = imutils.grab_contours(contours)
+            diff = cv2.absdiff(gray1, gray2)
 
-        for contour in contours:
-            if cv2.contourArea(contour) > 100:
-                x, y, w, h = cv2.boundingRect(contour)
+
+            thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+
+
+            kernel = np.ones((5, 5), np.uint8)
+            dilate = cv2.dilate(thresh, kernel, iterations=2)
+
+
+            contours = cv2.findContours(dilate.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours = imutils.grab_contours(contours)
+
+            for contour in contours:
+                if cv2.contourArea(contour):
+                    x, y, w, h = cv2.boundingRect(contour)
+                    cv2.rectangle(img1, (x, y), (x + w, y + h), border_color_n, border_thikness_n)
+                    cv2.rectangle(img2, (x, y), (x + w, y + h), border_color_n, border_thikness_n)
+
+            x = np.zeros((resize_height_n, 10, 3), np.uint8)
+            result = np.hstack((img1, x, img2))
+
+
+            output_path = output_path + "\\" + file_name + ".png"
+            for contour in contours:
+                if cv2.contourArea(contour):
+                    cv2.imwrite(output_path, result)
+
+
+
+
+            try:
+                image_file = glob(output_path)[0]
+                file_found_result = "pass"
+
+                if file_found_result == action_result_file_found:
+                    CommonUtil.ExecLog(sModuleInfo, "File found step passed", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
+                    return "zeuz_failed"
+
+
+            except IndexError:
+
+                file_not_found_result = "pass"
+
+                if file_not_found_result == action_result_file_not_found:
+                    CommonUtil.ExecLog(sModuleInfo, "File not found - step passed", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
+                    return "zeuz_failed"
+
+
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't compare images", 3)
+            return "zeuz_failed"
+
+    elif method == 'method_2':
+
+
+        try:
+
+            import skimage, cv2, imutils
+            from skimage.metrics import structural_similarity as ssim
+
+
+            img1 = cv2.imread(image1_path)  # Read first image
+            img2 = cv2.imread(image2_path)  # Read second image
+
+            img1 = cv2.resize(img1, (resize_width_n, resize_height_n))
+            img2 = cv2.resize(img2, (resize_width_n, resize_height_n))
+
+            gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+            gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+            # compute the structural similarity index (SSIM), and return difference image
+            # Perfect match SSIM = 1
+            # diff image contains the actual image differences between the two images
+            (ssim_match, diff) = ssim(gray1, gray2, full=True)
+            diff = (diff * 255).astype(
+                "uint8"
+            )  # convert diff image from floating point data 8-bit unsigned integers in range [0, 255] to process using OpenCV
+
+            # threshold the difference image, followed by finding contours to
+            # obtain the regions of the two input images that differ
+            thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+            cnts = cv2.findContours(
+                thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
+            cnts = imutils.grab_contours(cnts)
+
+
+            # loop over the contours
+            for c in cnts:
+                # compute the bounding box of the contour and then draw the
+                # bounding box on both input images to represent where the two
+                # images differ
+                (x, y, w, h) = cv2.boundingRect(c)
                 cv2.rectangle(img1, (x, y), (x + w, y + h), border_color_n, border_thikness_n)
                 cv2.rectangle(img2, (x, y), (x + w, y + h), border_color_n, border_thikness_n)
 
-        x = np.zeros((resize_height_n, 10, 3), np.uint8)
-        result = np.hstack((img1, x, img2))
-        # print(result)
+            x = np.zeros((resize_height_n, 10, 3), np.uint8)
 
-        # cv2.imshow("Differences", result)
+            result = np.hstack((img1, x, img2))
+            # show an output concatenated result comparing the two images and their difference
 
-        # path = r"C:\Users\Sazid\Desktop\imcompare\gun5.png"
+            output_path = output_path + "\\" + file_name + ".png"
+            for contour in cnts:
+                if cv2.contourArea(contour):
+                    cv2.imwrite(output_path, result)
 
-        output_path = output_path + "\\" + file_name + ".png"
-        for contour in contours:
-            if cv2.contourArea(contour) > 100:
-                cv2.imwrite(output_path, result)
+            try:
 
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+                image_file = glob(output_path)[0]
+                file_found_result = "pass"
 
-        count = 0
-        d = None
-        try:
-            image_file = glob(output_path)[0]
-            file_found_result = "pass"
+                if file_found_result == action_result_file_found:
+                    CommonUtil.ExecLog(sModuleInfo, "File found step passed", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
+                    return "zeuz_failed"
 
-            if file_found_result == action_result_file_found:
-                CommonUtil.ExecLog(sModuleInfo, "File found step passed", 1)
-                return "passed"
+
+            except IndexError:
+
+                file_not_found_result = "pass"
+
+                if file_not_found_result == action_result_file_not_found:
+                    CommonUtil.ExecLog(sModuleInfo, "File not found - step passed", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
+                    return "zeuz_failed"
+
+
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't compare images", 3)
+            return "zeuz_failed"
+
+@logger
+def create_and_edit_screenshot(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    from PIL import ImageGrab,Image
+    import pyautogui
+    import pygetwindow
+    import numpy as np
+    import cv2
+
+    take_screenshot = ''
+    main_image_location = ''
+    template_image = []
+    template_image_location = ''
+    edited_image_location = ''
+    previous_cordinate = ''
+    current_coordinate = []
+    variable_name = None
+    full_screenshot = ''
+    window_screenshot = ''
+    window_name =''
+    edited_image_file_name =''
+    screenshot_save_location =''
+    screenshot_name =''
+    threshold_n = 0.9
+
+    adjust_left_border = ''
+    adjust_top_border = ''
+    adjust_width_border = ''
+    adjust_height_border = ''
+
+
+    for left,mid,right in data_set:
+
+        if left == 'full_screenshot':
+            full_screenshot = right.strip()
+        elif left == 'widnow_screenshot':
+            window_screenshot = right.strip()
+        elif left == 'adjust_top_border':
+            adjust_top_border = right.strip()
+        elif left == 'adjust_left_border':
+            adjust_left_border = right.strip()
+        elif left == 'adjust_width_border':
+            adjust_width_border = right.strip()
+        elif left == 'adjust_height_border':
+            adjust_height_border = right.strip()
+        elif left == 'main_image_location':
+            main_image_location = right.strip()
+        elif left == 'template_image_location':
+            template_image.append(right.strip())
+        elif left == 'previous_coordinate':
+            previous_cordinate = eval(right)
+        elif left == 'screenshot_save_location':
+            screenshot_save_location = right.strip()
+        elif left == 'screenshot_name':
+            screenshot_name = right.strip()
+        elif left == 'window_name':
+            window_name = right.strip()
+        elif left == 'edited_image_location':
+            edited_image_location = right.strip()
+        elif left == 'edited_image_file_name':
+            edited_image_file_name = right.strip()
+        elif "action" in mid:
+            variable_name = right.strip()
+        elif left == 'threshold':
+            threshold_n = float(right.strip())
+    try:
+        output_path = screenshot_save_location + "\\" + screenshot_name + ".png"
+
+        if full_screenshot == 'yes':
+            snapshot = ImageGrab.grab()
+            snapshot.save(output_path)
+        elif window_screenshot == 'yes':
+
+            window_name = pygetwindow.getWindowsWithTitle(window_name)[0]
+            left = int(eval(str(window_name.left) + adjust_left_border))
+            top = int(eval(str(window_name.top) + adjust_top_border))
+            width = int(eval(str(window_name.width) + adjust_width_border))
+            height = int(eval(str(window_name.height) + adjust_height_border))
+            # left = int(window_name.left)
+            # top = int(window_name.top)
+            # width = int(window_name.width)
+            # height = int(window_name.height)
+
+            im = ImageGrab.grab(bbox=(left, top, width, height))  # X1,Y1,X2,Y2
+            im.save(output_path)
+
+
+        if main_image_location == '':
+            main_image_location = output_path
+        else:
+            pass
+        if template_image != []:
+            if len(template_image) > 1:
+                count = 'yes'
             else:
-                CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
-                return "zeuz_failed"
+                count = 'no'
+        if template_image != [] or previous_cordinate != '':
+
+            edited_image_location = edited_image_location + "\\" + edited_image_file_name +".png"
+
+            if template_image == [] and isinstance(previous_cordinate,list) == True:
 
 
-        except IndexError:
+                if len(previous_cordinate) > 1:
+                    for i in previous_cordinate:
+                        image1 = Image.open(main_image_location).convert('RGB')
+                        img_arr = np.array(image1)
+                        img_arr[i[1]: i[1] + i[2], i[0]: i[0] + i[3]] = (0, 0, 0)
+                        image1 = Image.fromarray(img_arr)
+                        image1.save(edited_image_location)
+                        main_image_location = edited_image_location
+                    CommonUtil.ExecLog(sModuleInfo, "passed", 1)
+                    return "passed"
 
-            file_not_found_result = "pass"
+                else:
+                    image1 = Image.open(main_image_location).convert('RGB')
+                    img_arr = np.array(image1)
+                    img_arr[previous_cordinate[0][1]: previous_cordinate[0][1] + previous_cordinate[0][2], previous_cordinate[0][0]: previous_cordinate[0][0] + previous_cordinate[0][3]] = (0, 0, 0)
+                    image1 = Image.fromarray(img_arr)
+                    image1.save(edited_image_location)
+                    CommonUtil.ExecLog(sModuleInfo, "passed", 1)
+                    return "passed"
 
-            if file_not_found_result == action_result_file_not_found:
-                CommonUtil.ExecLog(sModuleInfo, "File not found - step passed", 1)
-                return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "step failed", 3)
-                return "zeuz_failed"
 
+                for template in template_image:
+
+                    image = cv2.imread(main_image_location)
+                    grey_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    template_n = cv2.imread(template, 0)
+                    # cv2.imshow('template',template)
+
+                    w, h = template_n.shape[::-1]
+
+                    res = cv2.matchTemplate(grey_img, template_n, cv2.TM_CCOEFF_NORMED)
+
+                    threshold = threshold_n
+                    loc = np.where(res >= threshold)
+
+                    image1 = Image.open(main_image_location).convert('RGB')
+
+                    for pt in zip(*loc[::-1]):
+                        img_arr = np.array(image1)
+                        if previous_cordinate == '':
+                            img_arr[pt[1]: pt[1] + h, pt[0]:pt[0] + w] = (0, 0, 0)
+                            x_location = pt[0]
+                            y_location = pt[1]
+                            height_n = h
+                            width_n = w
+                            # for coord in x_location,y_location,height_n,width_n:
+                            #     current_coordinate.append(coord(range(0,4)))
+                            current_coordinate.append([x_location,y_location,height_n,width_n])
+                            image1 = Image.fromarray(img_arr)
+                            image1.save(edited_image_location)
+
+                        elif template_image != [] and isinstance(previous_cordinate,list) == True:
+                            img_arr[pt[1]: pt[1] + h, pt[0]:pt[0] + w] = (0, 0, 0)
+                            x_location = pt[0]
+                            y_location = pt[1]
+                            height_n = h
+                            width_n = w
+                            # for coord in x_location, y_location, height_n, width_n:
+                            #     current_coordinate.append(coord(range(0,4)))
+                            current_coordinate.append([x_location,y_location,height_n,width_n])
+
+                            image1 = Image.fromarray(img_arr)
+                            image1.save(edited_image_location)
+                            main_image_location = edited_image_location
+
+                            image1 = Image.open(main_image_location).convert('RGB')
+                            img_arr = np.array(image1)
+
+                            if len(previous_cordinate) > 1:
+                                for i in previous_cordinate:
+                                    image1 = Image.open(main_image_location).convert('RGB')
+                                    img_arr = np.array(image1)
+                                    img_arr[i[1]: i[1] + i[2], i[0]: i[0] + i[3]] = (0, 0, 0)
+                                    image1 = Image.fromarray(img_arr)
+                                    image1.save(edited_image_location)
+                                    main_image_location = edited_image_location
+
+                            else:
+                                image1 = Image.open(main_image_location).convert('RGB')
+                                img_arr = np.array(image1)
+                                img_arr[previous_cordinate[0][1]: previous_cordinate[0][1] + previous_cordinate[0][2],
+                                previous_cordinate[0][0]: previous_cordinate[0][0] + previous_cordinate[0][3]] = (0, 0, 0)
+                                image1 = Image.fromarray(img_arr)
+                                image1.save(edited_image_location)
+
+
+
+
+                        if count == 'yes':
+                            main_image_location = edited_image_location
+                            sr.Set_Shared_Variables(variable_name, current_coordinate)
+                        elif count == 'no':
+                            sr.Set_Shared_Variables(variable_name, current_coordinate)
+            CommonUtil.ExecLog(sModuleInfo, "passed", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "passed", 1)
+            return "passed"
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Couldn't compare images", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't take screenshot or edit the image", 3)
         return "zeuz_failed"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

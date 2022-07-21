@@ -2024,6 +2024,7 @@ def save_attribute_values_in_list(data_set):
                     if i == len(variable_value):
                         break
                     scroll_value += temp
+
                 win32api.SetCursorPos(get_coords(Element))
                 autoit.mouse_wheel("down", scroll_count)
 
