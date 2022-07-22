@@ -4088,9 +4088,9 @@ def create_and_edit_screenshot(data_set):
     for left,mid,right in data_set:
 
         if left == 'full_screenshot':
-            full_screenshot = CommonUtil.parse_value_into_object(right.strip())
+            full_screenshot = right.strip()
         elif left == 'widnow_screenshot':
-            window_screenshot = CommonUtil.parse_value_into_object(right.strip())
+            window_screenshot = right.strip()
         elif left == 'adjust_top_border':
             adjust_top_border = int(right.strip())
         elif left == 'adjust_left_border':
@@ -4100,21 +4100,21 @@ def create_and_edit_screenshot(data_set):
         elif left == 'adjust_height_border':
             adjust_height_border = int(right.strip())
         elif left == 'main_image_location':
-            main_image_location = CommonUtil.parse_value_into_object(right.strip())
+            main_image_location = right.strip()
         elif left == 'template_image_location':
             template_image.append(right.strip())
         elif left == 'previous_coordinate':
             previous_coordinate = CommonUtil.parse_value_into_object(right.strip())
         elif left == 'screenshot_save_location':
-            screenshot_save_location = CommonUtil.parse_value_into_object(right.strip())
+            screenshot_save_location = right.strip()
         elif left == 'screenshot_name':
-            screenshot_name = CommonUtil.parse_value_into_object(right.strip())
+            screenshot_name = right.strip()
         elif left == 'window_name':
-            window_name = CommonUtil.parse_value_into_object(right.strip())
+            window_name = right.strip()
         elif left == 'edited_image_location':
-            edited_image_location = CommonUtil.parse_value_into_object(right.strip())
+            edited_image_location = right.strip()
         elif left == 'edited_image_file_name':
-            edited_image_file_name = CommonUtil.parse_value_into_object(right.strip())
+            edited_image_file_name = right.strip()
         elif "action" in mid:
             variable_name = right.strip()
         elif left == 'threshold':
