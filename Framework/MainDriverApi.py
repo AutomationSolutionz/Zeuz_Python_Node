@@ -866,6 +866,8 @@ def run_test_case(
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+        if not shared.Test_Shared_Variables("element_wait"):
+            shared.Set_Shared_Variables("element_wait", 10)
 
         # log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
         # print("#"*(len(log_line)))
