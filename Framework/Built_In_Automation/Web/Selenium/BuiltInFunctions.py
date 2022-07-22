@@ -4379,9 +4379,9 @@ def slider_bar(data_set):
         for left, mid, right in data_set:
             if "action" in mid:
                 value = int(right.strip())
-        if value not in range(0, 100):
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
-            return "zeuz_failed"
+        # if value not in range(0, 100):
+        #     CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
+        #     return "zeuz_failed"
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
