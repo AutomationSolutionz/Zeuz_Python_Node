@@ -844,6 +844,8 @@ def Go_To_Link(step_data, page_title=False):
                 web_link = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
+            elif left == "waittimetoappearelement":
+                Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
 
             # checks for capabilities and modifies them by the given step_data
             elif mid.strip().lower() == "shared capability":

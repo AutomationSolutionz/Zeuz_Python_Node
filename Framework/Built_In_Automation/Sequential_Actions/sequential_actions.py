@@ -216,13 +216,6 @@ def Sequential_Actions(
             device_info = _device_info
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
-        element_wait = ConfigModule.get_config_value("Advanced Options", "element_wait")
-        try:
-            element_wait = float(element_wait)
-        except:
-            element_wait = 10.0
-        sr.Set_Shared_Variables("element_wait", element_wait)
-
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
         # step_data = common.sanitize(step_data)  # Sanitize Sub-Field
