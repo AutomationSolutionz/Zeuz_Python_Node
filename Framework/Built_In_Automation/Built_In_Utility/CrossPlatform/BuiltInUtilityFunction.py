@@ -4079,10 +4079,10 @@ def create_and_edit_screenshot(data_set):
     screenshot_name =''
     threshold_n = 0.9
 
-    adjust_left_border = ''
-    adjust_top_border = ''
-    adjust_width_border = ''
-    adjust_height_border = ''
+    adjust_left_border = 0
+    adjust_top_border = 0
+    adjust_width_border = 0
+    adjust_height_border = 0
 
 
     for left,mid,right in data_set:
@@ -4092,13 +4092,13 @@ def create_and_edit_screenshot(data_set):
         elif left == 'widnow_screenshot':
             window_screenshot = right.strip()
         elif left == 'adjust_top_border':
-            adjust_top_border = right.strip()
+            adjust_top_border = int(right.strip())
         elif left == 'adjust_left_border':
-            adjust_left_border = right.strip()
+            adjust_left_border = int(right.strip())
         elif left == 'adjust_width_border':
-            adjust_width_border = right.strip()
+            adjust_width_border = int(right.strip())
         elif left == 'adjust_height_border':
-            adjust_height_border = right.strip()
+            adjust_height_border = int(right.strip())
         elif left == 'main_image_location':
             main_image_location = right.strip()
         elif left == 'template_image_location':
@@ -4129,10 +4129,10 @@ def create_and_edit_screenshot(data_set):
         elif window_screenshot == 'yes':
 
             window_name = pygetwindow.getWindowsWithTitle(window_name)[0]
-            left = int(eval(str(window_name.left) + adjust_left_border))
-            top = int(eval(str(window_name.top) + adjust_top_border))
-            width = int(eval(str(window_name.width) + adjust_width_border))
-            height = int(eval(str(window_name.height) + adjust_height_border))
+            left = window_name.left + adjust_left_border
+            top = window_name.top + adjust_top_border
+            width = window_name.width + adjust_width_border
+            height = window_name.height + adjust_height_border
             # left = int(window_name.left)
             # top = int(window_name.top)
             # width = int(window_name.width)
