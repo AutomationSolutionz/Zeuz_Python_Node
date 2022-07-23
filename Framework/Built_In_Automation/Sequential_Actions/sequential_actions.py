@@ -961,6 +961,7 @@ def Run_Sequential_Actions(
                 Action_name = ": '" + test_action_info[dataset_cnt]["Action name"] + "'"
                 Action_disabled = test_action_info[dataset_cnt]["Action disabled"]
                 CommonUtil.current_action_no = str(dataset_cnt + 1)
+                CommonUtil.current_action_name = test_action_info[dataset_cnt]["Action name"]
             else:
                 Action_name = ""
                 Action_disabled = False
