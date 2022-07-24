@@ -100,6 +100,7 @@ def install_missing_modules():
                 needs_to_be_updated = json.load(open(outdated_modules_filepath))
             except:
                 traceback.print_exc()
+            os.remove(outdated_modules_filepath)
             if needs_to_be_updated:
                 for module in needs_to_be_updated:
                     try:
@@ -132,8 +133,7 @@ def install_missing_modules():
                     json.dump(update_required, f)
                 # print("module_installer: Saved the list of outdated modules")
             except:
-                # print("Failed to gather outdated modules...")
-                traceback.print_exc()
+                print("module_installer: Failed to gather outdated modules...")
         executor = concurrent.futures.ThreadPoolExecutor()
         executor.submit(get_outdated_modules)
         executor.shutdown(wait=False)
