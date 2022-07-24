@@ -10,7 +10,13 @@ import sys
 from Framework.Utilities.ConfigModule import get_config_value
 from Framework.Utilities import RequestFormatter
 from Framework.Utilities import CommonUtil
+from Framework.Utilities import ConfigModule
 
+temp_ini_file = (
+    Path.cwd().parent 
+    / "AutomationLog"
+    / ConfigModule.get_config_value("Advanced Options", "_file")
+)
 class AttachmentDB:
     def __init__(self, db_directory: Path) -> None:
         self.db_directory = db_directory
@@ -120,11 +126,12 @@ class GlobalAttachment:
 
     def download_attachment(self, url: str):
         try:
-            path_to_global_attachment_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "AutomationLog", "attachments", "global")
-            file_name = url.split("/")[-1].strip()
-            path_to_downloaded_attachment = os.path.join(path_to_global_attachment_folder, file_name)
-            os.makedirs(path_to_global_attachment_folder, exist_ok=True)
+            path_to_global_attachment_folder = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments" / "global"
+            path_to_global_attachment_folder.mkdir(parents=True, exist_ok=True)
 
+            file_name = url.split("/")[-1].strip()
+            path_to_downloaded_attachment = Path.joinpath(path_to_global_attachment_folder,file_name)
+            
             headers = RequestFormatter.add_api_key_to_headers({})
             
             with requests.get(url, stream=True, verify=False,**headers) as r:
