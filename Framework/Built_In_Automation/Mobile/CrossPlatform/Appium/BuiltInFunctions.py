@@ -878,8 +878,8 @@ def start_appium_driver(
                         ),
                         encoding=encoding,
                     ).strip()
-
-                    desired_caps["app"] = app  # Use set_value() for writing to element
+                    if kwargs["re_install"]:
+                        desired_caps["app"] = app  # Use set_value() for writing to element
                     desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
                 desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
@@ -906,12 +906,15 @@ def start_appium_driver(
                 encoding = "utf-8"
                 bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
 
+                if kwargs["re_install"]:
+                    desired_caps["bundleId"] = ios  # Use set_value() for writing to element
+                desired_caps["bundleId"] = bundle_id.replace("\\n", "")
+
                 desired_caps["platformName"] = "iOS"
                 desired_caps["automationName"] = "XCUITest"
                 desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
                 desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
                 desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
-                desired_caps["bundleId"] = ios
                 desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
         else:
             CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
