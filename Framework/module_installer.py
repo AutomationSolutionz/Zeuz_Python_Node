@@ -49,7 +49,7 @@ def install_missing_modules():
         with open(req_file_path) as fd:
             for i in fd.read().splitlines():
                 if not i.startswith("http"):
-                    req_list.append(i.split("==")[0])
+                    req_list.append(i.strip())
 
         # get all the modules installed from freeze
         try:
@@ -59,17 +59,19 @@ def install_missing_modules():
             from pip.operations import freeze
 
         freeze_list = freeze.freeze()
-        alredy_installed_list = []
+        alredy_installed_list_version = []
+        alredy_installed_list_no_version = []
         for p in freeze_list:
             name = p.split("==")[0]
             if "@" not in name:
                 # '@' symbol appears in some python modules in Windows
-                alredy_installed_list.append(str(name).lower())
+                alredy_installed_list_version.append(str(p).lower())
+                alredy_installed_list_no_version.append(str(name).lower())
 
         # installing any missing modules
         installed = False
         for module_name in req_list:
-            if module_name.lower() not in alredy_installed_list:
+            if ("==" not in module_name.lower() and module_name.lower() not in alredy_installed_list_no_version) or ("==" in module_name.lower() and module_name.lower() not in alredy_installed_list_version):
                 try:
                     print("module_installer: Installing module: %s" % module_name)
                     subprocess.check_call([

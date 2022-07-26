@@ -9,7 +9,7 @@ uiautomator
 requests
 wheel
 colorama
-Appium-Python-Client
+Appium-Python-Client==2.5.0
 lxml
 pyscreenshot
 image

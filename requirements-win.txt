@@ -16,7 +16,7 @@ SpeechRecognition
 colorama
 pyodbc
 python-dateutil
-Appium-Python-Client
+Appium-Python-Client==2.5.0
 xlwings
 image
 tzlocal

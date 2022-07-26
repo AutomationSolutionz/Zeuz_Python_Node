@@ -10,7 +10,7 @@ python-dateutil
 requests
 wheel
 pyautogui
-Appium-Python-Client
+Appium-Python-Client==2.5.0
 uiautomator
 lxml
 tzlocal
