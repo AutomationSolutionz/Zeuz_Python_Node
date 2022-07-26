@@ -125,8 +125,11 @@ def install_missing_modules():
             sleep(15)
             try:
                 # print("module_installer: Checking for outdated modules")
-                p1 = subprocess.run([sys.executable, "-m",'pip','list','--outdated','--format','json'],capture_output=True)
-                outdated_modules = json.loads(p1.stdout)
+                pip_cmnd = subprocess.run([sys.executable, "-m",'pip','list','--outdated','--format','json'],capture_output=True)
+                pip_stdout = pip_cmnd.stdout
+                if type(pip_stdout) == bytes:
+                    pip_stdout = pip_stdout.decode("utf-8")
+                outdated_modules = json.loads(pip_stdout.split("}]")[0] + "}]")
                 update_required = [module for module in outdated_modules if module['name'] in req_list]
 
                 with open(outdated_modules_filepath, 'w') as f:
