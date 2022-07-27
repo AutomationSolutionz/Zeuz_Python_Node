@@ -381,6 +381,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     
+    remote_host = None
+    remote_browser_version = None
     if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
         run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
         remote_config = run_time_params.get("remote_config")
@@ -397,9 +399,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     CommonUtil.ExecLog(
                     sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
                 )       
-    else:
-        remote_host = None
-        remote_browser_version = None
     # try:
     #     selenium_driver.close()
     # except:
