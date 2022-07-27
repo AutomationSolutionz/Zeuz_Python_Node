@@ -725,7 +725,20 @@ def TakeScreenShot(function_name, local_run=False):
             "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method),
             4,
         )
-        image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
+        if current_action_name.strip().lower() in ("none", "undefined"):
+            image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
+        else:
+            filename = ""; c = 0
+            for i in current_action_name.strip():
+                if i in ("<", ">", ":", '"', "/", "\\", "|", "?", "*", ".", " "):
+                    filename += "_"
+                else:
+                    filename += i
+                c += 1
+                if c >= 100:
+                    break
+            image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + filename
+
         thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
         SaveThread("screenshot", thread)
 

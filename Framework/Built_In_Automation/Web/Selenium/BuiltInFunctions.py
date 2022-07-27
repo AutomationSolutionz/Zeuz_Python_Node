@@ -843,6 +843,8 @@ def Go_To_Link(step_data, page_title=False):
                 web_link = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
+            elif left == "waittimetoappearelement":
+                Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
 
             # checks for capabilities and modifies them by the given step_data
             elif mid.strip().lower() == "shared capability":
@@ -4378,9 +4380,9 @@ def slider_bar(data_set):
         for left, mid, right in data_set:
             if "action" in mid:
                 value = int(right.strip())
-        if value not in range(0, 100):
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
-            return "zeuz_failed"
+        # if value not in range(0, 100):
+        #     CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
+        #     return "zeuz_failed"
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)

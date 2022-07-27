@@ -216,13 +216,6 @@ def Sequential_Actions(
             device_info = _device_info
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
-        element_wait = ConfigModule.get_config_value("Advanced Options", "element_wait")
-        try:
-            element_wait = float(element_wait)
-        except:
-            element_wait = 10.0
-        sr.Set_Shared_Variables("element_wait", element_wait)
-
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
         # step_data = common.sanitize(step_data)  # Sanitize Sub-Field
@@ -968,6 +961,7 @@ def Run_Sequential_Actions(
                 Action_name = ": '" + test_action_info[dataset_cnt]["Action name"] + "'"
                 Action_disabled = test_action_info[dataset_cnt]["Action disabled"]
                 CommonUtil.current_action_no = str(dataset_cnt + 1)
+                CommonUtil.current_action_name = test_action_info[dataset_cnt]["Action name"]
             else:
                 Action_name = ""
                 Action_disabled = False
