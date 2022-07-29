@@ -25,7 +25,7 @@ from datetime import datetime
 from datetime import timedelta
 import pytz
 from threading import Timer
-from Framework.attachment_db import AttachmentDB
+from Framework.attachment_db import AttachmentDB, GlobalAttachment
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -1587,6 +1587,8 @@ def main(device_dict, user_info_object):
             rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
             shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+            global_attachment = GlobalAttachment()
+            shared.Set_Shared_Variables("global_attachements", global_attachment)
 
             all_testcases_info = run_id_info["test_cases"]
             TestSetStartTime = time.time()

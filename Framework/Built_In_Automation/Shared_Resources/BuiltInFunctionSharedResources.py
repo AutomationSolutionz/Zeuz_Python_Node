@@ -698,7 +698,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     3
                 )
                 return "zeuz_failed"
-
             else:
                 if var_name.startswith("rest_response"):        # Todo: Remove this variable from Rest files 3 months later from 18 January, 2022
                     CommonUtil.ExecLog(
