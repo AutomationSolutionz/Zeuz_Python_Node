@@ -49,7 +49,7 @@ def install_missing_modules():
         with open(req_file_path) as fd:
             for i in fd.read().splitlines():
                 if not i.startswith("http"):
-                    req_list.append(i.split("==")[0])
+                    req_list.append(i.strip())
 
         # get all the modules installed from freeze
         try:
@@ -59,17 +59,19 @@ def install_missing_modules():
             from pip.operations import freeze
 
         freeze_list = freeze.freeze()
-        alredy_installed_list = []
+        alredy_installed_list_version = []
+        alredy_installed_list_no_version = []
         for p in freeze_list:
             name = p.split("==")[0]
             if "@" not in name:
                 # '@' symbol appears in some python modules in Windows
-                alredy_installed_list.append(str(name).lower())
+                alredy_installed_list_version.append(str(p).lower())
+                alredy_installed_list_no_version.append(str(name).lower())
 
         # installing any missing modules
         installed = False
         for module_name in req_list:
-            if module_name.lower() not in alredy_installed_list:
+            if ("==" not in module_name.lower() and module_name.lower() not in alredy_installed_list_no_version) or ("==" in module_name.lower() and module_name.lower() not in alredy_installed_list_version):
                 try:
                     print("module_installer: Installing module: %s" % module_name)
                     subprocess.check_call([
@@ -100,6 +102,7 @@ def install_missing_modules():
                 needs_to_be_updated = json.load(open(outdated_modules_filepath))
             except:
                 traceback.print_exc()
+            os.remove(outdated_modules_filepath)
             if needs_to_be_updated:
                 for module in needs_to_be_updated:
                     try:
@@ -124,16 +127,18 @@ def install_missing_modules():
             sleep(15)
             try:
                 # print("module_installer: Checking for outdated modules")
-                p1 = subprocess.run([sys.executable, "-m",'pip','list','--outdated','--format','json'],capture_output=True)
-                outdated_modules = json.loads(p1.stdout)
+                pip_cmnd = subprocess.run([sys.executable, "-m",'pip','list','--outdated','--format','json'],capture_output=True)
+                pip_stdout = pip_cmnd.stdout
+                if type(pip_stdout) == bytes:
+                    pip_stdout = pip_stdout.decode("utf-8")
+                outdated_modules = json.loads(pip_stdout.split("}]")[0] + "}]")
                 update_required = [module for module in outdated_modules if module['name'] in req_list]
 
                 with open(outdated_modules_filepath, 'w') as f:
                     json.dump(update_required, f)
                 # print("module_installer: Saved the list of outdated modules")
             except:
-                # print("Failed to gather outdated modules...")
-                traceback.print_exc()
+                print("module_installer: Failed to gather outdated modules...")
         executor = concurrent.futures.ThreadPoolExecutor()
         executor.submit(get_outdated_modules)
         executor.shutdown(wait=False)
