@@ -3463,8 +3463,6 @@ def Switch_Browser(step_data):
         return "passed"
 
 
-
-
 @logger
 def Get_Current_URL(step_data):
     """
@@ -3476,13 +3474,12 @@ def Get_Current_URL(step_data):
     :return: string: "Current url saved in a variable named '%s'" or "zeuz_failed" depending on the outcome
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
     try:
-        var_name="saved_url"
+        var_name = ""
         for left, mid, right in step_data:
-            if right != "":
+            if "action" in mid:
                 var_name = right.strip()
-        current_url=selenium_driver.current_url
+        current_url = selenium_driver.current_url
         Shared_Resources.Set_Shared_Variables(var_name, current_url)
         CommonUtil.ExecLog(sModuleInfo, "Current url saved in a variable named '%s'" % var_name, 1)
 
