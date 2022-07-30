@@ -923,6 +923,7 @@ def Go_To_Link(step_data, page_title=False):
                 return "zeuz_failed"
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
+            selenium_driver.execute_cdp_cmd("Performance.enable", {})
 
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
@@ -934,11 +935,7 @@ def Go_To_Link(step_data, page_title=False):
 
     # Open URL in browser
     try:
-        selenium_driver.execute_cdp_cmd("Performance.enable", {})
-        selenium_driver.get(web_link)  # Open in browser
-        b = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-        CommonUtil.tmp_perf["perf"] = b
-        # selenium_driver.execute_cdp_cmd("Performance.disable", {})
+        selenium_driver.get(web_link)
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
         return "passed"
@@ -3390,7 +3387,6 @@ def Tear_Down_Selenium(step_data=[]):
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
             selenium_details = {}
             selenium_driver = None
-            CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
             CommonUtil.teardown = False
 
         elif driver_id not in selenium_details:
