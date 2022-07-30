@@ -949,13 +949,13 @@ def Go_To_Link(step_data, page_title=False):
             else:
                 return CommonUtil.Exception_Handler(sys.exc_info())
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities)
+                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options)
         else:
             result = "zeuz_failed"
 
