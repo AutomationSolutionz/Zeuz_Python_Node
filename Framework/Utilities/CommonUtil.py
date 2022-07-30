@@ -60,7 +60,7 @@ temp_config = Path(
     )
 )
 
-common_modules = ["os", "sys", "platform", "time", "datetime", "random", "re", "pathlib", "json", "ast", "yaml", "csv", "xml", "xlwings", "requests", "sr"]
+common_modules = ["os", "sys", "platform", "time", "datetime", "random", "re", "uuid", "pathlib", "json", "ast", "yaml", "csv", "xml", "xlwings", "requests", "sr"]
 
 passed_tag_list = [
     "Pass",
