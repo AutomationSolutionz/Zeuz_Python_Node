@@ -3463,7 +3463,7 @@ def execute_python_code(data_set):
         elif left == "execute python code":
             Code = right
     Code = filepath_code if filepath_code else Code
-    try: exec(Code, globals())          # Todo: pass only sr.shared_variables and {"sr":sr}
+    try: exec(Code, sr.shared_variables)
     except: return CommonUtil.Exception_Handler(sys.exc_info())
 
     if main_function:
