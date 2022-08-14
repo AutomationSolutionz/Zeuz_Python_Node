@@ -14,10 +14,11 @@
 #                       #
 #########################
 import platform
-import sys, os, time, inspect, shutil, subprocess
+import sys, os, time, inspect, shutil, subprocess, json
 import socket
 import requests
 import psutil
+from pathlib import Path
 
 sys.path.append("..")
 from selenium import webdriver
@@ -51,6 +52,7 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
     skipped_tag_list,
 )
+from settings import temp_ini_file
 
 #########################
 #                       #
@@ -72,12 +74,10 @@ temp_config = os.path.join(
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
 
-global WebDriver_Wait
 WebDriver_Wait = 1
-global WebDriver_Wait_Short
 WebDriver_Wait_Short = 1
 
-global selenium_driver
+current_driver_id = None
 selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
@@ -297,6 +297,7 @@ def Open_Electron_App(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     global selenium_details
+    global current_driver_id
 
     try:
         desktop_app_path = ""
@@ -360,10 +361,35 @@ def Open_Electron_App(data_set):
             pass    # we need to decide later based on the situation
         else:
             selenium_details[driver_id] = {"driver": selenium_driver}
+        current_driver_id = driver_id
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def get_performance_metrics(dataset):
+    try:
+        driver_id = ""
+        for left, mid, right in dataset:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            if left == "driverid":
+                driver_id = right.strip()
+            elif left == "getperformancemetrics":
+                var_name = right.strip()
+
+        if not driver_id:
+            driver_id = current_driver_id
+
+        # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
+        # from selenium.webdriver.chrome.webdriver import ChromiumDriver
+
+        metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+        perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
+        Shared_Resources.Set_Shared_Variables(var_name,perf_json_data)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -380,7 +406,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             "Dependency not set for browser. Please set the Apply Filter value to YES."
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-    
+
     remote_host = None
     remote_browser_version = None
     if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
@@ -398,7 +424,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 if remote_host == None:
                     CommonUtil.ExecLog(
                     sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
-                )       
+                )
     # try:
     #     selenium_driver.close()
     # except:
@@ -530,7 +556,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
-            
+
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
 
@@ -606,7 +632,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
             download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options = webdriver.EdgeOptions()
-            
+
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
             capabilities = webdriver.EdgeOptions().capabilities
@@ -830,6 +856,7 @@ def Go_To_Link(step_data, page_title=False):
     global dependency
     global selenium_driver
     global selenium_details
+    global current_driver_id
     if Shared_Resources.Test_Shared_Variables("dependency"):
         dependency = Shared_Resources.Get_Shared_Variables("dependency")
     else:
@@ -858,7 +885,7 @@ def Go_To_Link(step_data, page_title=False):
                 else:
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
-                
+
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
@@ -896,17 +923,19 @@ def Go_To_Link(step_data, page_title=False):
                 return "zeuz_failed"
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
+            selenium_driver.execute_cdp_cmd("Performance.enable", {})
 
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        current_driver_id = driver_id
     except Exception:
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
     # Open URL in browser
     try:
-        selenium_driver.get(web_link)  # Open in browser
+        selenium_driver.get(web_link)
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
         return "passed"
@@ -920,13 +949,13 @@ def Go_To_Link(step_data, page_title=False):
             else:
                 return CommonUtil.Exception_Handler(sys.exc_info())
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities)
+                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options)
         else:
             result = "zeuz_failed"
 
@@ -1058,9 +1087,6 @@ def save_screenshot(driver, path):
 @logger
 def take_screenshot_selenium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    from pathlib import Path
-    import time
 
     try:
         filename_format = "%Y_%m_%d_%H-%M-%S"
@@ -1524,6 +1550,7 @@ def Click_and_Download(data_set):
 
             else:
                 # Todo: Test this on Mac and Linux
+                import pyautogui
                 pyautogui.hotkey("down")
                 pyautogui.hotkey("enter")
 
@@ -1549,7 +1576,6 @@ def Click_and_Download(data_set):
         time.sleep(3)
 
         if filepath:
-            from pathlib import Path
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
             source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
@@ -3325,6 +3351,7 @@ def Tear_Down_Selenium(step_data=[]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     global selenium_details
+    global current_driver_id
     try:
         driver_id = ""
         for left, mid, right in step_data:
@@ -3339,15 +3366,27 @@ def Tear_Down_Selenium(step_data=[]):
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:
+                    perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
+                    perf_file = Path(perf_folder)/("matrices_"+driver+".json")
+                    metrics = selenium_details[driver]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+                    perf_json_data = {data["name"]:data["value"] for data in metrics["metrics"]}
+                    with open(perf_file, "w", encoding="utf-8") as f:
+                        json.dump(perf_json_data, f, indent=2)
+                    selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                except:
+                    errMsg = "Unable to extract performance metrics of driver_id='%s'" % driver
+                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                    CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
                     selenium_details[driver]["driver"].quit()
                     CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver, 1)
                 except:
-                    errMsg = "Unable to tear down driver_id='%s'. may already be killed" % driver
+                    errMsg = "Unable to tear down driver_id='%s'. may already been killed" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                    CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
             selenium_details = {}
             selenium_driver = None
-            CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
             CommonUtil.teardown = False
 
         elif driver_id not in selenium_details:
@@ -3355,20 +3394,29 @@ def Tear_Down_Selenium(step_data=[]):
 
         else:
             try:
+                perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
+                perf_file = Path(perf_folder) / ("matrices_" + driver_id + ".json")
+                metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+                perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
+                with open(perf_file, "w", encoding="utf-8") as f:
+                    json.dump(perf_json_data, f, indent=2)
+                selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
                 selenium_details[driver_id]["driver"].quit()
                 CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
             except:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to tear down driver_id='%s'. may already be killed" % driver_id, 2)
+                CommonUtil.ExecLog(sModuleInfo, "Unable to tear down driver_id='%s'. may already been killed" % driver_id, 2)
             del selenium_details[driver_id]
             if selenium_details:
                 for driver in selenium_details:
                     selenium_driver = selenium_details[driver]["driver"]
                     Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
                     CommonUtil.ExecLog(sModuleInfo, "Current driver is set to driver_id='%s'" % driver, 1)
+                    current_driver_id = driver
                     break
             else:
                 Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
                 selenium_driver = None
+                current_driver_id = driver_id
 
         return "passed"
     except Exception:
@@ -3383,6 +3431,7 @@ def Switch_Browser(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     global selenium_details
+    global current_driver_id
     try:
         driver_id = ""
         for left, mid, right in step_data:
@@ -3399,6 +3448,7 @@ def Switch_Browser(step_data):
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            current_driver_id = driver_id
             CommonUtil.ExecLog(sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1)
 
         return "passed"
@@ -3407,8 +3457,6 @@ def Switch_Browser(step_data):
         # return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
         CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
         return "passed"
-
-
 
 
 @logger
@@ -3422,13 +3470,12 @@ def Get_Current_URL(step_data):
     :return: string: "Current url saved in a variable named '%s'" or "zeuz_failed" depending on the outcome
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
     try:
-        var_name="saved_url"
+        var_name = ""
         for left, mid, right in step_data:
-            if right != "":
+            if "action" in mid:
                 var_name = right.strip()
-        current_url=selenium_driver.current_url
+        current_url = selenium_driver.current_url
         Shared_Resources.Set_Shared_Variables(var_name, current_url)
         CommonUtil.ExecLog(sModuleInfo, "Current url saved in a variable named '%s'" % var_name, 1)
 
