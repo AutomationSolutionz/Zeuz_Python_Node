@@ -1588,7 +1588,7 @@ def main(device_dict, user_info_object):
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
             shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
             global_attachment = GlobalAttachment()
-            shared.Set_Shared_Variables("global_attachements", global_attachment)
+            shared.Set_Shared_Variables("global_attachments", global_attachment)
 
             all_testcases_info = run_id_info["test_cases"]
             TestSetStartTime = time.time()
