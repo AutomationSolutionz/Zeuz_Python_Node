@@ -3442,42 +3442,60 @@ def validate_list_order(data_set):
         )
         return "zeuz_failed"
 
+
 @logger
 def execute_python_code(data_set):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    inp, out_var, main_function, Code, filepath_code = "", "", "", "", ""
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        inp, out_var, main_function, Code, filepath_code = "", "", "", "", ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if left == "file path":
+                filepath = right.strip()
+                filepath = Path(CommonUtil.path_parser(filepath))
+                with open(filepath, "r") as file:
+                    filepath_code = file.read()
+            elif left == "import files":
+                import_paths = CommonUtil.parse_value_into_object(right.strip())
+                if type(import_paths) == str:
+                    import_paths = [import_paths]
+                for path in import_paths:
+                    if Path(path).is_dir() and path not in sys.path:
+                        sys.path.append(path)
+                    if Path(path).is_file():
+                        if Path(path).parent.__str__() not in sys.path:
+                            sys.path.append(Path(path).parent.__str__())
+                        # import importlib
+                        # module = Path(path).name.split(".")[0]
+                        # sr.Set_Shared_Variables(module, importlib.import_module(module))
+            elif left == "input data":
+                inp = right
+            elif left == "output variable":
+                out_var = right.strip()
+            elif left == "main function":
+                main_function = right.strip().split("(")[0]
+            elif left == "execute python code":
+                Code = right
 
-    for left, mid, right in data_set:
-        left = left.strip().lower()
-        if left == "file path":
-            filepath = right.strip()
-            filepath = Path(CommonUtil.path_parser(filepath))
-            with open(filepath, "r") as file:
-                filepath_code = file.read()
-        elif left == "input data":
-            inp = right
-        elif left == "output variable":
-            out_var = right.strip()
-        elif left == "main function":
-            main_function = right.strip().split("(")[0]
-        elif left == "execute python code":
-            Code = right
-    Code = filepath_code if filepath_code else Code
-    try: exec(Code, sr.shared_variables)
-    except: return CommonUtil.Exception_Handler(sys.exc_info())
-
-    if main_function:
-        code = main_function + "(" + inp + ")"
-        try: out_val = eval(code)
+        Code = filepath_code if filepath_code else Code
+        try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
-        if out_var:
-            CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
-            return sr.Set_Shared_Variables(out_var, out_val)
-        CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
 
-    return "passed"
+        if main_function:
+            CommonUtil.ExecLog(sModuleInfo, "This method is deprecated. You can now save any output directly by assigning a variable inside Code", 2)
+            # Todo: deprecated on 15 August, 2022. Remove 4 months later
+            # code = main_function + "(" + inp + ")"
+            # try: out_val = eval(code)
+            # except: return CommonUtil.Exception_Handler(sys.exc_info())
+            # if out_var:
+            #     CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
+            #     return sr.Set_Shared_Variables(out_var, out_val)
+            # CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
