@@ -854,7 +854,7 @@ def run_test_case(
     try:
         TestCaseStartTime = time.time()
         shared.Set_Shared_Variables("run_id", run_id)
-        test_case = str(TestCaseID).replace("#", "no") # FIXME: Why are we replacing '#' with 'no'?
+        test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
@@ -864,6 +864,8 @@ def run_test_case(
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+        # shared.Set_Shared_Variables("zeuz_automation_log", Path(temp_ini_file).parent.__str__())
+        shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
 
@@ -1588,7 +1590,7 @@ def main(device_dict, user_info_object):
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
             shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
             global_attachment = GlobalAttachment()
-            shared.Set_Shared_Variables("global_attachements", global_attachment)
+            shared.Set_Shared_Variables("global_attachments", global_attachment)
 
             all_testcases_info = run_id_info["test_cases"]
             TestSetStartTime = time.time()
