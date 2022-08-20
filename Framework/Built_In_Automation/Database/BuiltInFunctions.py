@@ -161,9 +161,6 @@ def db_get_connection(session_name):
         import pyodbc
         db_con = None
 
-        # Alias for Shared_Resources.Get_Shared_Variables
-        g = sr.Get_Shared_Variables
-
         # Get the values
         db_type = db_params.get(DB_TYPE)
         db_name = db_params.get(DB_NAME)
@@ -176,8 +173,8 @@ def db_get_connection(session_name):
             db_host, db_port = db_host.rsplit(":", 1)
             db_port = int(db_port)
         if "oracle" in db_type.lower():
-            db_sid = g(DB_SID)
-            db_service_name = g(DB_SERVICE_NAME)
+            db_sid = db_params.get(DB_SID)
+            db_service_name = db_params.get(DB_SERVICE_NAME)
 
         if "postgres" in db_type:
             import psycopg2
@@ -305,6 +302,7 @@ def connect_to_db(data_set):
                 db_service_name = right.strip()
             if left == DB_ODBC_DRIVER:
                 db_odbc_driver = right.strip()
+                sr.Set_Shared_Variables(DB_ODBC_DRIVER,right.strip())
             if "session" in left:
                 session_name = right.strip()
         db_params = {DB_TYPE:db_type,DB_NAME:db_name,DB_USER_ID:db_user_id,DB_PASSWORD:db_password,
