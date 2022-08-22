@@ -938,7 +938,6 @@ def Go_To_Link(step_data, page_title=False):
         selenium_driver.get(web_link)
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
-        return "passed"
     except WebDriverException as e:
         browser = selenium_driver.capabilities["browserName"].strip().lower()
         if (browser in ("chrome", "msedge", "opera") and e.msg.lower().startswith("chrome not reachable")) or (browser == "firefox" and e.msg.lower().startswith("tried to run command without establishing a connection")):
@@ -964,16 +963,23 @@ def Go_To_Link(step_data, page_title=False):
             return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
         try:
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
-            selenium_driver.get(web_link)  # Open in browser
-            selenium_driver.implicitly_wait(0.5)  # Wait for page to load
+            selenium_driver.get(web_link)
+            selenium_driver.implicitly_wait(0.5)
             CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
-            return "passed"
         except Exception:
             ErrorMessage = "failed to open your link: %s" % (web_link)
             return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+    try:
+        if current_driver_id not in CommonUtil.tmp_perf:
+            metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
+            CommonUtil.tmp_perf[current_driver_id] = [{data["name"]: data["value"] for data in metrics["metrics"]}]
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 @logger
