@@ -227,8 +227,8 @@ def zeuz_authentication_prompts_for_cli():
             display_text = prompt.replace("_", " ").capitalize()
             value = input(f"{display_text}: ")
             if prompt == "server_address":
-                if value[-1] == "/":
-                    value = value[:-1]
+                value = urlparse(value)
+                value = f"{value.scheme}://{value.netloc}"
             ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
         values.append(value)
     return values
