@@ -4,6 +4,9 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Added Browser Performance metrics, Step metrics, Action metrics
+- **[Add]** Import files in Execute Python Code action
+- **[Add]** Added a reserved variable `zeuz_attachments_dir`
 - **[Add]** Enabling connection for two of more database simultaneously
 - **[Add]** 'uuid' module is inserted into variable parsing
 - **[Add]** 'frame parameter' support is added into Switch_Iframe action
