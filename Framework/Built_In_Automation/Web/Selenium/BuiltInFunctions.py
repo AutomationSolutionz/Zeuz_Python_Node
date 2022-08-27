@@ -973,9 +973,9 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     try:
-        if current_driver_id not in CommonUtil.tmp_perf:
+        if current_driver_id not in CommonUtil.browser_perf:
             metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-            CommonUtil.tmp_perf[current_driver_id] = [{data["name"]: data["value"] for data in metrics["metrics"]}]
+            CommonUtil.browser_perf[current_driver_id] = [{data["name"]: data["value"] for data in metrics["metrics"]}]
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

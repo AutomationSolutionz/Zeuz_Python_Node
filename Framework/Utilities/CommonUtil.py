@@ -20,7 +20,6 @@ from rich import print_json
 
 
 from Framework.Utilities import live_log_service
-tmp_perf = {}
 import concurrent.futures
 
 
@@ -133,6 +132,11 @@ max_char = 0
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
+
+# Metrics variables
+browser_perf = {}
+action_perf = []
+step_perf = []
 
 
 def GetExecutor():

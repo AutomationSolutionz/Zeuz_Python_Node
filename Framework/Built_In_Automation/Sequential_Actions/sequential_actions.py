@@ -2194,7 +2194,10 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             return "zeuz_failed"
 
         run_function = getattr(eval(module), function)  # create a reference to the function
+        start_time = time.perf_counter()
         result = run_function(data_set)  # Execute function, providing all rows in the data set
+        action_duration = round(time.perf_counter() - start_time, 5)
+        CommonUtil.action_perf.append({"module": action_subfield.split(" ")[0], "name": action_name, "runtime": action_duration})
         CommonUtil.TakeScreenShot(function)
         if _bypass_bug:
             CommonUtil.print_execlog = False

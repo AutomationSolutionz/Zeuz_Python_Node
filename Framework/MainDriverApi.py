@@ -555,12 +555,6 @@ def run_all_test_steps_in_a_test_case(
                 temp_ini_file,
             )
             CommonUtil.current_step_no = str(current_step_sequence)
-            # add log
-            # log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
-            # print("-"*len(log_line))
-            # CommonUtil.ExecLog(sModuleInfo, log_line, 4)
-            # print("-"*len(log_line))
-
             _color = "yellow"
             # _style = Style(color="yellow", blink=False, bold=True)
             table = Table(border_style=_color, box=ASCII_DOUBLE_HEAD, expand=False)
@@ -618,7 +612,7 @@ def run_all_test_steps_in_a_test_case(
                 step_time = 59
 
             # get step start time
-            TestStepStartTime = time.time()
+            TestStepStartTime = time.perf_counter()
             sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
@@ -640,9 +634,15 @@ def run_all_test_steps_in_a_test_case(
                     debug_actions,
                 )
 
-            TestStepEndTime = time.time()
+            TestStepEndTime = time.perf_counter()
             sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
+            CommonUtil.step_perf.append({
+                "id": current_step_id,
+                "name": current_step_name,
+                "sequence": current_step_sequence,
+                "runtime": round(TestStepEndTime - TestStepStartTime, 5),
+            })
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
                 CommonUtil.custom_step_duration = ""
@@ -857,6 +857,8 @@ def run_test_case(
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
+        CommonUtil.action_perf = []
+        CommonUtil.step_perf = []
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
@@ -951,7 +953,13 @@ def run_test_case(
                 + ".zip"
             )
             after_execution_dict["logid"] = TCLogFile
-        after_execution_dict["metrics"] = {"browser_performance": CommonUtil.tmp_perf}
+        after_execution_dict["metrics"] = {
+            "browser_performance": CommonUtil.browser_perf,
+            "Node": {
+                "actions": CommonUtil.action_perf,
+                "step": CommonUtil.step_perf
+            }
+        }
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
 
@@ -1250,7 +1258,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         break
                     else:
                         print(f"Failed to upload the execution report of run_id {run_id}")
-                        print(f"Status: {res.status_code} Response: {res.text}")
+                        print(f"Status: {res.status_code}")
                         print("Retrying...")
                     time.sleep(4)
                 except:
