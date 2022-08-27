@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Enabling connection for two of more database simultaneously
 - **[Add]** 'uuid' module is inserted into variable parsing
 - **[Add]** 'frame parameter' support is added into Switch_Iframe action
 - **[Add]** Action for get access token url (oauth 2.0) with documentation
