@@ -475,7 +475,7 @@ def select_from_db(data_set):
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
                 # Commit the changes
-                db_con.commit()
+                # db_con.commit()
                 # Fetch all rows and convert into list
                 db_rows = []
                 while True:
