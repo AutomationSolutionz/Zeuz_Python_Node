@@ -857,6 +857,7 @@ def run_test_case(
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
+        CommonUtil.browser_perf = {}
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
