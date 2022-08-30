@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Added secondary random mailbox
 - **[Add]** Enabling connection for two of more database simultaneously
 - **[Add]** 'uuid' module is inserted into variable parsing
 - **[Add]** 'frame parameter' support is added into Switch_Iframe action
