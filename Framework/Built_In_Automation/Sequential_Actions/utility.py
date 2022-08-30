@@ -21,7 +21,7 @@ from email.header import decode_header
 from Framework.Utilities import CommonUtil
 import inspect
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
-
+from bs4 import BeautifulSoup
 
 # using IMAP protocol
 from Framework.Utilities.CommonUtil import MODULE_NAME
@@ -357,7 +357,7 @@ class RandomMailBoxExporter(ABC):
     
     @abstractmethod
     def checkMails(self):
-        """Get a list of messages from the mailbox"""
+        """Returns a list of messages from the mailbox"""
 
     @abstractmethod
     def deleteMailBox(self):
@@ -458,7 +458,7 @@ class TempEmailDevelopermail(RandomMailBoxExporter):
   'accept': 'application/json'
     }
     all_mail_ids = []
-    var_mails = []
+    
     
     def get_random_mailbox(self):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -488,7 +488,7 @@ class TempEmailDevelopermail(RandomMailBoxExporter):
         self.headers["Content-Type"] = "application/json"
         response = requests.request("POST", url, headers=self.headers, data=payload)
         response_body = json.loads(response.text)
-        
+        var_mails = []
         results = response_body['result']
         if results:
             for result in results:
@@ -498,11 +498,11 @@ class TempEmailDevelopermail(RandomMailBoxExporter):
                 var_mail_info['sender']  = value.split("\r\nFrom:")[-1].split("\r\nDate:")[0].split("<")[-1].split('>')[0].strip()
                 var_mail_info['subject'] = value.split("\r\nSubject:")[-1].split("\r\nTo:")[0].strip()
                 var_mail_info['date'] = value.split("\r\nDate:")[-1].split("\r\n")[0].strip()
-                var_mail_info['content'] = value.split("Content-Type: text/plain;")[-1].split('--')[0].strip().split('\r\n\r\n')[-1].strip()
                 var_mail_info['body'] = value.split("Content-Type: text/html;")[-1].split('--')[0].strip().split('\r\n\r\n')[-1].strip()
+                var_mail_info['content'] = BeautifulSoup(var_mail_info["body"],'html.parser').get_text(separator="\n")
 
-                self.var_mails.append(var_mail_info)
-        return {creds['email']: self.var_mails}
+                var_mails.append(var_mail_info)
+        return {creds['email']: var_mails}
         
     def deleteMailBox(self,creds):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -517,7 +517,7 @@ class TempEmailDevelopermail(RandomMailBoxExporter):
 def random_mail_factory() -> RandomMailBoxExporter:
     """Constructs an exporter factory based on service availability"""
 
-    factories = [RandomEmail1SecMail(),TempEmailDevelopermail()]
+    factories = [TempEmailDevelopermail(),RandomEmail1SecMail()]
 
     for factory in factories:
         if factory.connection_creds == None:
