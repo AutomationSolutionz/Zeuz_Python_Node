@@ -517,7 +517,7 @@ class TempEmailDevelopermail(RandomMailBoxExporter):
 def random_mail_factory() -> RandomMailBoxExporter:
     """Constructs an exporter factory based on service availability"""
 
-    factories = [TempEmailDevelopermail(),RandomEmail1SecMail()]
+    factories = [RandomEmail1SecMail(),TempEmailDevelopermail()]
 
     for factory in factories:
         if factory.connection_creds == None:
