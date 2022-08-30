@@ -4171,6 +4171,10 @@ def random_email_generator(data_set):
         mail_fac = random_mail_factory()
         var_email_creds = mail_fac.connection_creds #return random email address
 
+        if var_email_creds == {}:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
+            return "zeuz_failed"
+            
         CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
         sr.Set_Shared_Variables("random_email_factory", mail_fac)
         return sr.Set_Shared_Variables(var_variable, var_email_creds) #saved in shared variable inside variable key
