@@ -4265,7 +4265,7 @@ def random_email_delete(data_set):
         if var_email is None:
             CommonUtil.ExecLog(sModuleInfo, "Please provide email address", 3)
             return "zeuz_failed"
-        mail_fac = random_mail_factory()
+        mail_fac = sr.Get_Shared_Variables("random_email_factory")
         if isinstance(var_email,str):
             var_email = eval(var_email)
         res = mail_fac.deleteMailBox(var_email)
