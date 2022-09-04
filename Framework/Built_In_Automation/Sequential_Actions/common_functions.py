@@ -5504,3 +5504,88 @@ def authenticator_code_generator(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def save_folder_structure(data_set):
+    """
+    This function reads the authenticator secret code and generate tfa code in every 30 sec
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            |app_name   		            |path		    | %|os.environ["AUTH_CODE"]|%
+            |authenticator code generator	|common action	| variable_name
+            ------------------------------------------------------------------------------
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    class DirectoryTree:
+
+        listOfFiles = None
+
+        def __init__(self,dir) -> None:
+            self.dir = dir
+
+        def get_directory_list(self):
+            self.listOfFiles = list()
+            for (dirpath, dirnames, filenames) in os.walk(self.dir):
+                self.listOfFiles += [os.path.join(dirpath, file).replace(str(self.dir),'') for file in filenames]
+            return self.listOfFiles
+
+        def print_directory_tree(self):
+            root = {}
+            for path in self.listOfFiles:
+                # separate by slashes, disregarding the first `/`
+                path = path.lstrip("/").split("/")
+                # pop off the last key-value component
+                key, _, val = path.pop(-1).partition("=")
+                # find the target dict starting from the root
+                target_dict = root
+                for component in path:
+                    target_dict = target_dict.setdefault(component, {})
+                # assign key-value
+                target_dict[key] = val
+
+            def tree(paths: dict, prefix: str = ''):
+                space =  '    '
+                branch = '│   '
+                # pointers:
+                tee =    '├── '
+                last =   '└── '
+                """A recursive generator, given a directory Path object
+                will yield a visual tree structure line by line
+                with each line prefixed by the same characters
+                """
+                # contents each get pointers that are ├── with a final └── :
+                pointers = [tee] * (len(paths) - 1) + [last]
+                for pointer, path in zip(pointers, paths):
+                    yield prefix + pointer + path
+                    if isinstance(paths[path], dict): # extend the prefix and recurse:
+                        extension = branch if pointer == tee else space
+                        # i.e. space because last, └── , above so no more |
+                        yield from tree(paths[path], prefix=prefix+extension)
+            
+            for line in tree(root):
+                print(line)
+            return root
+
+    try:
+        var_name = app_name = secret_code = ""
+        for left, mid, right in data_set:
+            if 'directory' in left.lower().strip():
+                directory = right.strip()
+                directory_path = Path(CommonUtil.path_parser(directory))
+            if 'save folder structure' in left.lower().strip():
+                var_name = right.strip()
+        directory_object = DirectoryTree(directory_path)
+        directory_data = directory_object.get_directory_list()
+        directory_object.print_directory_tree()
+        return sr.Set_Shared_Variables(var_name,directory_data)
+        # return sr.Set_Shared_Variables(var_name, output.split(",")[-4])
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

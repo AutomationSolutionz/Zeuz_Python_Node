@@ -47,6 +47,7 @@ declarations = (
     { "name": "execute python code",                         "function": "execute_python_code",                   "screenshot": "none" },
     { "name": "replace string",                              "function": "replace_string",                        "screenshot": "none" },
     { "name": "search text",                                 "function": "search_and_save_text",                  "screenshot": "none" },
+    { "name": "save folder structure",                       "function": "save_folder_structure",                 "screenshot": "none" },
     { "name": "custom step duration",                        "function": "custom_step_duration",                  "screenshot": "none" },
     { "name": "disable step",                                "function": "disable_step",                          "screenshot": "none" },
 
