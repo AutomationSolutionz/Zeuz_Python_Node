@@ -976,7 +976,10 @@ def Go_To_Link(step_data, page_title=False):
         if current_driver_id not in CommonUtil.browser_perf:
             metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
             metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
-            metrics_dict["first-contentful-paint"] = selenium_driver.execute_script('return performance.getEntriesByName("first-contentful-paint")[0].startTime')
+            try:
+                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script('return performance.getEntriesByName("first-contentful-paint")[0].startTime')
+            except:
+                metrics_dict["first-contentful-paint"] = 0
             CommonUtil.browser_perf[current_driver_id] = [metrics_dict]
         return "passed"
     except:
