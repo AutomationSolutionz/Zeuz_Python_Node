@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Added secondary random mailbox
 - **[Add]** Added Browser Performance metrics, Step metrics, Action metrics
 - **[Add]** Import files in Execute Python Code action
 - **[Add]** Added a reserved variable `zeuz_attachments_dir`

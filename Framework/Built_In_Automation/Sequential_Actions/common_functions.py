@@ -40,7 +40,7 @@ import datefinder
 import traceback
 import json
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email, delete_mail, save_mail, RandomEmail1SecMail
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
 
 months = [
@@ -4168,11 +4168,17 @@ def random_email_generator(data_set):
         if var_variable is None:
             CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
             return "zeuz_failed"
+        mail_fac = random_mail_factory()
+        var_email_creds = mail_fac.connection_creds #return random email address
 
-        var_email = RandomEmail1SecMail.create_random_email_address() #return random email address
-
-        CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email), 1)
-        return sr.Set_Shared_Variables(var_variable, var_email) #saved in shared variable inside variable key
+        if var_email_creds == {}:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
+            return "zeuz_failed"
+            
+        CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
+        sr.Set_Shared_Variables("random_email_factory", mail_fac)
+        return sr.Set_Shared_Variables(var_variable, var_email_creds) #saved in shared variable inside variable key
+        
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -4219,8 +4225,11 @@ def random_email_read(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Waiting for %s seconds to receive the mail" % (wait), 1)
         start = time.time()
         while True:
-            res = RandomEmail1SecMail.checkMails(var_email)
-            if len(res[var_email]) > 0:
+            mail_fac = sr.Get_Shared_Variables("random_email_factory")
+            if isinstance(var_email,str):
+                var_email = eval(var_email)
+            res = mail_fac.checkMails(var_email)
+            if len(res[var_email['email']]) > 0:
                 break
             if start + wait < time.time():
                 CommonUtil.ExecLog(sModuleInfo, "No email found  for '%s' after waiting %s seconds. You may need to increase wait time" % (var_email, wait), 1)
@@ -4256,8 +4265,10 @@ def random_email_delete(data_set):
         if var_email is None:
             CommonUtil.ExecLog(sModuleInfo, "Please provide email address", 3)
             return "zeuz_failed"
-
-        res = RandomEmail1SecMail.deleteMail(var_email)
+        mail_fac = sr.Get_Shared_Variables("random_email_factory")
+        if isinstance(var_email,str):
+            var_email = eval(var_email)
+        res = mail_fac.deleteMailBox(var_email)
 
         if res:
             CommonUtil.ExecLog(sModuleInfo, "'%s' is deleted" % (var_email), 1)
