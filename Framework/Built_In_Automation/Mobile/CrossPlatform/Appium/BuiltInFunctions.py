@@ -1971,9 +1971,7 @@ def get_window_size(read_type=False):
 
     try:
         if read_type:
-            return appium_driver.find_element_by_xpath(
-                "//*[not(*)]"
-            ).size  # Works well at reading height in full screen mode, but Appium may complain if you work outside the boundaries it has set
+            return appium_driver.find_element("xpath", "//*[not(*)]").size  # Works well at reading height in full screen mode, but Appium may complain if you work outside the boundaries it has set
         else:
             return (
                 appium_driver.get_window_size()
@@ -3286,17 +3284,18 @@ def get_program_names(search_name):
 
         # Get activity name
         cmd = "adb %s shell pm dump %s" % (serial, package_name)
-        res = subprocess.check_output(cmd, shell=True, encoding="utf-8")
-        res = str(res).replace("\\r", "")  # Remove \r text if any
-        res = str(res).replace("\\n", "\n")  # replace \n text with line feed
-        res = str(res).replace("\r", "")  # Remove \r carriage return if any
-        p = re.compile("MAIN:.*?\s+([\w\.]+)/([\w\.]+)", re.S)
-        m = p.search(str(res))
-        try:
-            if m.group(1) != "" and m.group(2) != "":
-                return m.group(1), m.group(2)
-        except:
-            pass  # Error handling by calling function
+        from subprocess import Popen, PIPE, STDOUT
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, encoding="utf-8")
+        res = ""
+        for line in p.stdout:
+            res += line.replace("\\r", "").replace("\r", "").replace("\\n", "\n")
+            p = re.compile("MAIN:.*?\s+([\w\.]+)/([\w\.]+)", re.S)
+            m = p.search(str(res))
+            try:
+                if m.group(1) != "" and m.group(2) != "":
+                    return m.group(1), m.group(2)
+            except:
+                pass  # Error handling by calling function
 
         # !!! This does work, but if the above works for everything, then we can delete this, and the find_activity() function above
         #         # Close program if running, so we get the first activity name
