@@ -5631,7 +5631,7 @@ def data_store_read(data_set):
         headers['headers']['content-type']='application/json'
         headers['headers']['X-API-KEY']='4ffcc915-70ab-4ffa-89bb-d68ac1c91101'
         res = requests.get(
-            'http://localhost/data_store/data_store/custom_operation/',
+            RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
             verify=False,
             **headers
@@ -5701,7 +5701,7 @@ def data_store_write(data_set):
         headers['headers']['content-type']='application/json'
         headers['headers']['X-API-KEY']='4ffcc915-70ab-4ffa-89bb-d68ac1c91101'
         res = requests.patch(
-            'http://localhost/data_store/data_store/custom_operation/',
+            RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
             data=json.dumps(data),
             verify=False,
