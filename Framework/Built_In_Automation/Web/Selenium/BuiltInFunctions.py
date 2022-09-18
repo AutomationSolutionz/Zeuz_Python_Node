@@ -2301,9 +2301,9 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
 
         variable_value = []
-        all_tr = Element.find_elements_by_tag_name("tr")
+        all_tr = Element.find_elements("tag name", "tr")
         for row in all_tr:
-            all_td = row.find_elements_by_tag_name("td")
+            all_td = row.find_elements("tag name", "td")
             td_data = []
             for td in all_td:
                 text_data = td.get_property("textContent").strip()
@@ -3127,7 +3127,7 @@ def validate_table_row_size(data_set):
 
         all_rows = []
         if table_type == "html":  # HTML type table
-            all_rows = table.find_elements_by_tag_name(
+            all_rows = table.find_elements("tag name",
                 "tr"
             )  # Get element list for all rows
         elif table_type == "css":  # CSS type table
@@ -3192,17 +3192,17 @@ def validate_table_column_size(data_set):
         all_rows = []
         all_cols = []
         if table_type == "html":  # HTML type table
-            all_rows = table.find_elements_by_tag_name(
+            all_rows = table.find_elements("tag name",
                 "tr"
             )  # Get element list for all rows
             if len(all_rows) > 0:
-                all_cols = all_rows[0].find_elements_by_tag_name(
+                all_cols = all_rows[0].find_elements("tag name",
                     "td"
                 )  # Get element list for all columns in this row
                 if (
                         len(all_cols) == 0
                 ):  # No <TD> type columns, so check if there were header type columns, and use those instead
-                    all_cols = all_rows[0].find_elements_by_tag_name(
+                    all_cols = all_rows[0].find_elements("tag name",
                         "th"
                     )  # Get element list for all header columns in this row
         elif table_type == "css":  # CSS type table
@@ -3255,17 +3255,17 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
 
         master_text_table = {}
         table_row = 0
-        tr_list = table.find_elements_by_tag_name("tr")  # Get element list for all rows
+        tr_list = table.find_elements("tag name", "tr")  # Get element list for all rows
         for tr in tr_list:  # For each row element
             table_row += 1
             table_col = 0
-            td_list = tr.find_elements_by_tag_name(
+            td_list = tr.find_elements("tag name",
                 "td"
             )  # Get element list for all columns in this row
             if (
                     len(td_list) == 0
             ):  # No <TD> type columns, so check if there were header type columns, and use those instead
-                td_list = tr.find_elements_by_tag_name(
+                td_list = tr.find_elements("tag name",
                     "th"
                 )  # Get element list for all header columns in this row
             for td in td_list:  # For each column element
