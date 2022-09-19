@@ -392,6 +392,7 @@ def get_performance_metrics(dataset):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None):
     """ Launch browser and create instance """
@@ -513,7 +514,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            global initial_download_folder
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             prefs = {
                 "profile.default_content_settings.popups": 0,
                 "download.default_directory": download_dir,
@@ -583,7 +585,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
             profile = webdriver.FirefoxProfile()
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             profile.set_preference("browser.download.folderList", 2)
             profile.set_preference("browser.download.manager.showWhenStarting", False)
             profile.set_preference("browser.download.dir", download_dir)
@@ -631,7 +633,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             Since this module inherits Selenium module so all updates will be inherited as well
             """
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options = webdriver.EdgeOptions()
 
             if remote_browser_version:
@@ -680,7 +682,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from selenium.webdriver.opera.options import Options
             options = Options()
             options.add_argument("--zeuz_pid_finder")
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})  # This does not work
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
@@ -1576,7 +1578,7 @@ def Click_and_Download(data_set):
             else:
                 ext = ".crdownload"
             while True:
-                ld = os.listdir(ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config))
+                ld = os.listdir(initial_download_folder)
                 if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
                     CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
                     break
@@ -1589,7 +1591,7 @@ def Click_and_Download(data_set):
 
         if filepath:
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
-            source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            source_folder = initial_download_folder
             all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
             new_path = filepath
             for file_to_be_moved in all_source_dir:
