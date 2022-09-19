@@ -518,7 +518,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "profile.default_content_settings.popups": 0,
                 "download.default_directory": download_dir,
                 "download.prompt_for_download": False,
-                "download.directory_upgrade": True
+                "download.directory_upgrade": True,
+                'safebrowsing.enabled': 'false'
             }
             options.add_experimental_option('prefs', prefs)
             if remote_host:
