@@ -5515,3 +5515,139 @@ def authenticator_code_generator(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def data_store_read(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                where            | input parameter    | $col1 = 'Hello' AND name = 'Mini'
+                columns          | optional parameter | name, age
+                data store: read | common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `list of datastore` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = ""
+        params = {}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'where':
+                q = right.strip()
+                temp = q.lower().replace('and', ',').replace('or', ',').split(',')
+
+                t = temp[0].split('=')
+                params['and_' + t[0].strip()] = t[1].strip()
+                i = 1
+                for s in q.split():
+                    if s.lower() == 'and':
+                        t = temp[i].split('=')
+                        params['and_' + t[0].strip()] = t[1].strip()
+                        i+=1
+
+                    if s.lower() == 'or':
+                        t = temp[i].split('=')
+                        params['or_'+t[0].strip()] = t[1].strip()
+
+                        i += 1
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type']='application/json'
+        headers['headers']['X-API-KEY']='4ffcc915-70ab-4ffa-89bb-d68ac1c91101'
+        res = requests.get(
+            RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
+            params=json.dumps(params),
+            verify=False,
+            **headers
+        )
+        #
+
+        # print(res.text)
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
+
+        return sr.Set_Shared_Variables(var_name, json.loads(res.text))
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def data_store_write(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                where            | input parameter    | $col1 = 'Hello' AND name = 'Mini'
+                columns          | optional parameter | name, age
+                data             | element parameter  | column_name=Arifa
+                data store: write| common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `list of datastore` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = ""
+        params = {}
+        data={}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'where':
+                q = right.strip()
+                temp = q.lower().replace('and', ',').replace('or', ',').split(',')
+
+                t = temp[0].split('=')
+                params['and_' + t[0].strip()] = t[1].strip()
+                i = 1
+                for s in q.split():
+                    if s.lower() == 'and':
+                        t = temp[i].split('=')
+                        params['and_' + t[0].strip()] = t[1].strip()
+                        i+=1
+
+                    if s.lower() == 'or':
+                        t = temp[i].split('=')
+                        params['or_'+t[0].strip()] = t[1].strip()
+
+                        i += 1
+            if left.strip() == 'data':
+                temp = right.strip().split(',')
+                for t in temp:
+                    tt=t.split('=')
+                    data[tt[0].strip()]=tt[1].strip()
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type']='application/json'
+        headers['headers']['X-API-KEY']='4ffcc915-70ab-4ffa-89bb-d68ac1c91101'
+        res = requests.patch(
+            RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
+            params=json.dumps(params),
+            data=json.dumps(data),
+            verify=False,
+            **headers
+        )
+        #
+
+        # print(res.text)
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
+
+        return sr.Set_Shared_Variables(var_name, json.loads(res.text))
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

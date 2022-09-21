@@ -1600,7 +1600,7 @@ def Get_Oauth2_Access_Token_URl(step_data):
         request_token_uri = ''
         token_name = ''
         var_name='access_token_url'
-
+        scope = ''
         for row in step_data:
             if row[0] == "client id":
                 client_id = str(row[2]).strip()
@@ -1608,6 +1608,8 @@ def Get_Oauth2_Access_Token_URl(step_data):
                 client_secret = str(row[2]).strip()
             elif row[0] == "access point":
                 access_point = str(row[2]).strip()
+            elif row[0] == "scope":
+                scope = str(row[2]).strip()
             elif row[0] == "grant type":
                 grant_type = str(row[2]).strip()
             elif row[0] == "base uri":
@@ -1662,10 +1664,11 @@ def Get_Oauth2_Access_Token_URl(step_data):
         )
 
         data = {
-            'code': 'test',
+            'state': 'test',
             'response_type': 'code',
-            'grant_type': grant_type,
-            'redirect_uri': redirect_uri
+            # 'grant_type': grant_type,
+            'redirect_uri': redirect_uri,
+            'scope':scope,
         }
         params = data
         url = service.get_authorize_url(**params)
