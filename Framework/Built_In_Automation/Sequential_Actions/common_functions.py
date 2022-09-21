@@ -5563,8 +5563,8 @@ def data_store_read(data_set):
                         i += 1
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        headers['headers']['content-type']='application/json'
-        headers['headers']['X-API-KEY']='4ffcc915-70ab-4ffa-89bb-d68ac1c91101'
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
         res = requests.get(
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
@@ -5633,8 +5633,8 @@ def data_store_write(data_set):
                     tt=t.split('=')
                     data[tt[0].strip()]=tt[1].strip()
         headers = RequestFormatter.add_api_key_to_headers({})
-        headers['headers']['content-type']='application/json'
-        headers['headers']['X-API-KEY']='4ffcc915-70ab-4ffa-89bb-d68ac1c91101'
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
         res = requests.patch(
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
