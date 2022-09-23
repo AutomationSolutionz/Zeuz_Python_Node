@@ -392,6 +392,7 @@ def get_performance_metrics(dataset):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None):
     """ Launch browser and create instance """
@@ -513,12 +514,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            global initial_download_folder
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             prefs = {
                 "profile.default_content_settings.popups": 0,
                 "download.default_directory": download_dir,
                 "download.prompt_for_download": False,
-                "download.directory_upgrade": True
+                "download.directory_upgrade": True,
+                'safebrowsing.enabled': 'false'
             }
             options.add_experimental_option('prefs', prefs)
             if remote_host:
@@ -582,7 +585,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
             profile = webdriver.FirefoxProfile()
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             profile.set_preference("browser.download.folderList", 2)
             profile.set_preference("browser.download.manager.showWhenStarting", False)
             profile.set_preference("browser.download.dir", download_dir)
@@ -630,7 +633,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             Since this module inherits Selenium module so all updates will be inherited as well
             """
             from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options = webdriver.EdgeOptions()
 
             if remote_browser_version:
@@ -679,7 +682,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from selenium.webdriver.opera.options import Options
             options = Options()
             options.add_argument("--zeuz_pid_finder")
-            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})  # This does not work
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
@@ -1575,7 +1578,7 @@ def Click_and_Download(data_set):
             else:
                 ext = ".crdownload"
             while True:
-                ld = os.listdir(ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config))
+                ld = os.listdir(initial_download_folder)
                 if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
                     CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
                     break
@@ -1588,7 +1591,7 @@ def Click_and_Download(data_set):
 
         if filepath:
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
-            source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            source_folder = initial_download_folder
             all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
             new_path = filepath
             for file_to_be_moved in all_source_dir:
@@ -2301,9 +2304,9 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
 
         variable_value = []
-        all_tr = Element.find_elements_by_tag_name("tr")
+        all_tr = Element.find_elements("tag name", "tr")
         for row in all_tr:
-            all_td = row.find_elements_by_tag_name("td")
+            all_td = row.find_elements("tag name", "td")
             td_data = []
             for td in all_td:
                 text_data = td.get_property("textContent").strip()
@@ -3127,7 +3130,7 @@ def validate_table_row_size(data_set):
 
         all_rows = []
         if table_type == "html":  # HTML type table
-            all_rows = table.find_elements_by_tag_name(
+            all_rows = table.find_elements("tag name",
                 "tr"
             )  # Get element list for all rows
         elif table_type == "css":  # CSS type table
@@ -3192,17 +3195,17 @@ def validate_table_column_size(data_set):
         all_rows = []
         all_cols = []
         if table_type == "html":  # HTML type table
-            all_rows = table.find_elements_by_tag_name(
+            all_rows = table.find_elements("tag name",
                 "tr"
             )  # Get element list for all rows
             if len(all_rows) > 0:
-                all_cols = all_rows[0].find_elements_by_tag_name(
+                all_cols = all_rows[0].find_elements("tag name",
                     "td"
                 )  # Get element list for all columns in this row
                 if (
                         len(all_cols) == 0
                 ):  # No <TD> type columns, so check if there were header type columns, and use those instead
-                    all_cols = all_rows[0].find_elements_by_tag_name(
+                    all_cols = all_rows[0].find_elements("tag name",
                         "th"
                     )  # Get element list for all header columns in this row
         elif table_type == "css":  # CSS type table
@@ -3255,17 +3258,17 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
 
         master_text_table = {}
         table_row = 0
-        tr_list = table.find_elements_by_tag_name("tr")  # Get element list for all rows
+        tr_list = table.find_elements("tag name", "tr")  # Get element list for all rows
         for tr in tr_list:  # For each row element
             table_row += 1
             table_col = 0
-            td_list = tr.find_elements_by_tag_name(
+            td_list = tr.find_elements("tag name",
                 "td"
             )  # Get element list for all columns in this row
             if (
                     len(td_list) == 0
             ):  # No <TD> type columns, so check if there were header type columns, and use those instead
-                td_list = tr.find_elements_by_tag_name(
+                td_list = tr.find_elements("tag name",
                     "th"
                 )  # Get element list for all header columns in this row
             for td in td_list:  # For each column element
