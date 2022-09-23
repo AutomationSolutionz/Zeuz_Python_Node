@@ -1167,7 +1167,7 @@ def Enter_Text_In_Text_Box(step_data):
             selenium_driver.execute_script("arguments[0].click();", Element)
         else:
             try:
-                handle_clickability_and_click(step_data, Element)
+                Element = handle_clickability_and_click(step_data, Element)
             except:
                 CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
             if clear:
@@ -1370,24 +1370,26 @@ def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.web
     log_flag = True
     log_flag2 = True
     start = time.perf_counter()
+    stale_i = 0
     while True:
         try:
             Element.click()
             CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
-            break
+            return Element
         except ElementClickInterceptedException:
             if log_flag:
                 CommonUtil.ExecLog(sModuleInfo, "Click is Intercepted. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
                 log_flag = False
-            if time.perf_counter() > start + wait_clickable:
-                raise Exception     # not ElementClickInterceptedException. we dont want js to perform click
         except StaleElementReferenceException:
             if log_flag2:
                 CommonUtil.ExecLog(sModuleInfo, "Element is stale. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
                 log_flag2 = False
-            if time.perf_counter() > start + wait_clickable:
-                raise Exception     # not StaleElementReferenceException. we dont want js to perform click
-
+            Element = LocateElement.Get_Element(dataset, selenium_driver)  # Element may need to be relocated in stale
+            if stale_i == 0:
+                stale_i += 1
+                continue
+        if time.perf_counter() > start + wait_clickable:
+            raise Exception     # not StaleElementReferenceException. we don't want js to perform click
 
 # Method to click on element; step data passed on by the user
 @logger
