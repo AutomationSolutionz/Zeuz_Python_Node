@@ -1358,27 +1358,35 @@ def execute_javascript(data_set):
 
 def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.webelement.WebElement):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    wait_clickable = 0
-    for left, mid, right in dataset:
-        if mid.strip().lower() == "option":
-            left = left.strip().lower()
-            if "wait" in left and "clickable" in left:
-                wait_clickable = int(right.strip())
-    if not wait_clickable:
-        Element.click()     # no need of try except here. we need to return the exact exception upto this point
-    else:
-        log_flag = True
-        start = time.time()
-        while True:
-            try:
-                Element.click()
-                break
-            except ElementClickInterceptedException:
-                if log_flag:
-                    CommonUtil.ExecLog(sModuleInfo, "The Element is overlapped. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
-                    log_flag = False
-                if time.time() > start + wait_clickable:
-                    raise Exception     # not ElementClickInterceptedException. we dont want js to perform click
+    wait_clickable = Shared_Resources.Get_Shared_Variables("element_wait")
+    # for left, mid, right in dataset:
+    #     if mid.strip().lower() == "option":
+    #         left = left.strip().lower()
+    #         if "wait" in left and "clickable" in left:
+    #             wait_clickable = int(right.strip())
+    # if not wait_clickable:
+    #     Element.click()     # no need of try except here. we need to return the exact exception upto this point
+    # else:
+    log_flag = True
+    log_flag2 = True
+    start = time.perf_counter()
+    while True:
+        try:
+            Element.click()
+            CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
+            break
+        except ElementClickInterceptedException:
+            if log_flag:
+                CommonUtil.ExecLog(sModuleInfo, "Click is Intercepted. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                log_flag = False
+            if time.perf_counter() > start + wait_clickable:
+                raise Exception     # not ElementClickInterceptedException. we dont want js to perform click
+        except StaleElementReferenceException:
+            if log_flag2:
+                CommonUtil.ExecLog(sModuleInfo, "Element is stale. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                log_flag2 = False
+            if time.perf_counter() > start + wait_clickable:
+                raise Exception     # not StaleElementReferenceException. we dont want js to perform click
 
 
 # Method to click on element; step data passed on by the user
