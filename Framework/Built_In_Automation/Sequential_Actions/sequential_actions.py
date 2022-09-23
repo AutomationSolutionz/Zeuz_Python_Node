@@ -587,7 +587,7 @@ def for_loop_action(step_data, data_set_no):
                         iterable = CommonUtil.ZeuZ_map_code_decoder(iterable)   # Decode if this is a ZeuZ_map_code
                     else:
                         iterable = CommonUtil.parse_value_into_object(left)
-                    CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
             elif row[0].strip().lower().startswith("exit loop"):
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(
@@ -2135,6 +2135,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             return "zeuz_failed" 
 
     module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute
+    CommonUtil.prettify_limit = sr.Get_Shared_Variables("zeuz_prettify_limit")
 
     if module in failed_tag_list or module == "" or function == "":  # New, make sure we have a function
         CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 3)
@@ -2157,11 +2158,16 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
-        if row[1].strip().lower() in ("optional parameter", "optional option") and row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
-            screenshot = row[2].strip().lower()
-            if screenshot in ("false", "no", "none", "disable"):
-                screenshot = "none"
-            continue
+        if row[1].strip().lower() in ("optional parameter", "optional option"):
+            if row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
+                screenshot = row[2].strip().lower()
+                if screenshot in ("false", "no", "none", "disable"):
+                    screenshot = "none"
+                continue
+            if row[0].replace(" ", "").lower() in ("prettifylimit"):
+                CommonUtil.prettify_limit = int(row[2].split(" ")[-1])
+                continue
+
         if "optional" in row[1]:
             new_row[1] = new_row[1].replace("optional", "").strip()
         if "bypass" in row[1]:
