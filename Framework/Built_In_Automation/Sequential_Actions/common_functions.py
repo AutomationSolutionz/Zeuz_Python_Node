@@ -3873,7 +3873,8 @@ def modify_datetime(data_set):
                     data = parser.parse(right.strip())
                 else:
                     if date_format:
-                        data = datetime.strptime(right.strip(),date_format)
+                        _date_format = date_format.replace("%-d","%d").replace("%#d","%d").replace("%-m","%m").replace("%#m","%m").replace("%-Y","%Y").replace("%#Y","%Y")
+                        data = datetime.strptime(right.strip(),_date_format)
                     else:
                         data = parser.parse(right.strip())
                 continue
