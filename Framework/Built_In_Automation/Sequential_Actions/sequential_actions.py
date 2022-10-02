@@ -2165,7 +2165,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                     screenshot = "none"
                 continue
             if row[0].replace(" ", "").lower() in ("prettifylimit"):
-                CommonUtil.prettify_limit = int(row[2].split(" ")[-1])
+                CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
                 continue
 
         if "optional" in row[1]:
