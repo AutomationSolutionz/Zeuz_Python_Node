@@ -224,7 +224,7 @@ def prettify(key, val):
             print_json(data=val)
         else:
             print(color + "%s = " % (key), end="")
-            print(str(val)[:prettify_limit])
+            print(json.dumps(val,indent=2)[:prettify_limit])
 
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
         if debug_status and key not in dont_prettify_on_server:
