@@ -219,6 +219,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     pass
             if save_parameter != "":  # save element to a variable
                 sr.Set_Shared_Variables(save_parameter, result)
+            sr.Set_Shared_Variables("zeuz_element", result)
             return result  # Return on pass
         elif result == "zeuz_failed":
             try:

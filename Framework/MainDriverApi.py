@@ -867,6 +867,10 @@ def run_test_case(
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+        if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
+            shared.Set_Shared_Variables("zeuz_prettify_limit", None)
+            CommonUtil.prettify_limit = None
+
         # shared.Set_Shared_Variables("zeuz_automation_log", Path(temp_ini_file).parent.__str__())
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):

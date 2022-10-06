@@ -82,6 +82,31 @@ selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
 
+# JavaScript for collecting First Contentful Paint value.
+JS_FCP = '''
+return performance.getEntriesByName("first-contentful-paint")[0].startTime
+'''
+
+# JavaScript for collecting Largest Contentful Paint value.
+JS_LCP = '''
+var args = arguments;
+const po = new PerformanceObserver(list => {
+    const entries = list.getEntries();
+    const entry = entries[entries.length - 1];
+    // Process entry as the latest LCP candidate
+    // LCP is accurate when the renderTime is available.
+    // Try to avoid this being false by adding Timing-Allow-Origin headers!
+    const accurateLCP = entry.renderTime ? true : false;
+    // Use startTime as the LCP timestamp. It will be renderTime if available, or loadTime otherwise.
+    const largestPaintTime = entry.startTime;
+    // Send the LCP information for processing.
+
+    console.log("[ZeuZ Node] Largest Contentful Paint: ", largestPaintTime);
+    args[0](largestPaintTime);
+});
+po.observe({ type: 'largest-contentful-paint', buffered: true });
+'''
+
 # if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
 #    selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
 
@@ -387,6 +412,7 @@ def get_performance_metrics(dataset):
         metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
         perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
         Shared_Resources.Set_Shared_Variables(var_name,perf_json_data)
+        CommonUtil.browser_perf[current_driver_id].append(perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -975,15 +1001,28 @@ def Go_To_Link(step_data, page_title=False):
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+    # Collect custom performance metrics
     try:
         if current_driver_id not in CommonUtil.browser_perf:
             metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
             metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
+
+            # FCP - First Contentful Paint
             try:
-                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script('return performance.getEntriesByName("first-contentful-paint")[0].startTime')
+                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
             except:
                 metrics_dict["first-contentful-paint"] = 0
+
+            # LCP - Largest Contenful Paint
+            try:
+                metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
+            except:
+                metrics_dict["largest-contentful-paint"] = 0
+
             CommonUtil.browser_perf[current_driver_id] = [metrics_dict]
+
+            # CommonUtil.prettify(key="metrics", val=metrics_dict)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1167,7 +1206,7 @@ def Enter_Text_In_Text_Box(step_data):
             selenium_driver.execute_script("arguments[0].click();", Element)
         else:
             try:
-                handle_clickability_and_click(step_data, Element)
+                Element = handle_clickability_and_click(step_data, Element)
             except:
                 CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
             if clear:
@@ -1358,28 +1397,38 @@ def execute_javascript(data_set):
 
 def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.webelement.WebElement):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    wait_clickable = 0
-    for left, mid, right in dataset:
-        if mid.strip().lower() == "option":
-            left = left.strip().lower()
-            if "wait" in left and "clickable" in left:
-                wait_clickable = int(right.strip())
-    if not wait_clickable:
-        Element.click()     # no need of try except here. we need to return the exact exception upto this point
-    else:
-        log_flag = True
-        start = time.time()
-        while True:
-            try:
-                Element.click()
-                break
-            except ElementClickInterceptedException:
-                if log_flag:
-                    CommonUtil.ExecLog(sModuleInfo, "The Element is overlapped. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
-                    log_flag = False
-                if time.time() > start + wait_clickable:
-                    raise Exception     # not ElementClickInterceptedException. we dont want js to perform click
-
+    wait_clickable = Shared_Resources.Get_Shared_Variables("element_wait")
+    # for left, mid, right in dataset:
+    #     if mid.strip().lower() == "option":
+    #         left = left.strip().lower()
+    #         if "wait" in left and "clickable" in left:
+    #             wait_clickable = int(right.strip())
+    # if not wait_clickable:
+    #     Element.click()     # no need of try except here. we need to return the exact exception upto this point
+    # else:
+    log_flag = True
+    log_flag2 = True
+    start = time.perf_counter()
+    stale_i = 0
+    while True:
+        try:
+            Element.click()
+            CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
+            return Element
+        except ElementClickInterceptedException:
+            if log_flag:
+                CommonUtil.ExecLog(sModuleInfo, "Click is Intercepted. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                log_flag = False
+        except StaleElementReferenceException:
+            if log_flag2:
+                CommonUtil.ExecLog(sModuleInfo, "Element is stale. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                log_flag2 = False
+            Element = LocateElement.Get_Element(dataset, selenium_driver)  # Element may need to be relocated in stale
+            if stale_i == 0:
+                stale_i += 1
+                continue
+        if time.perf_counter() > start + wait_clickable:
+            raise Exception     # not StaleElementReferenceException. we don't want js to perform click
 
 # Method to click on element; step data passed on by the user
 @logger

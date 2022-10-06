@@ -790,7 +790,9 @@ def save_into_variable(data_set):
 
         try:
             if extra_operation:
-                if "length" in extra_operation:
+                if "path" in extra_operation or "directory" in extra_operation:
+                    variable_value = CommonUtil.path_parser(variable_value)
+                elif "length" in extra_operation:
                     variable_value = len(variable_value)
                 elif "no duplicate" in extra_operation:
                     variable_value = list(set(variable_value))

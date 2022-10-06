@@ -106,6 +106,7 @@ performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": 
 previous_log_line = None
 teardown = True
 print_execlog = True
+prettify_limit = None
 
 step_module_name = None
 
@@ -216,17 +217,22 @@ def prettify(key, val):
     """Tries to pretty print the given value."""
     color = Fore.MAGENTA
     try:
-        if type(val) == str:
-            val = parse_value_into_object(val)
-        print(color + "%s = " % (key), end="")
-        print_json(data=val)
-        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
+        if prettify_limit is None:
+            if type(val) == str:
+                val = parse_value_into_object(val)
+            print(color + "%s = " % (key), end="")
+            print_json(data=val)
+        else:
+            print(color + "%s = " % (key), end="")
+            print(json.dumps(val,indent=2)[:prettify_limit])
+
+        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
         if debug_status and key not in dont_prettify_on_server:
             live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
     except:
         # expression = "%s" % (key, val)
-        print(color + str(val))
+        print(color + str(val)[:prettify_limit])
         if debug_status and key not in dont_prettify_on_server:
             live_log_service.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
 
