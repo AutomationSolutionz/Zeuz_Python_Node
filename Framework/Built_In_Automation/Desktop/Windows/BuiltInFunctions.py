@@ -896,7 +896,7 @@ def image_search(step_data_set):
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
-            if parent == "zeuz_failed":
+            if type(parent) == str and parent == "zeuz_failed":
                 return parent
             left = parent.Current.BoundingRectangle.Left
             top = parent.Current.BoundingRectangle.Top
