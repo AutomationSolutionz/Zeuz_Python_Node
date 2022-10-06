@@ -1927,18 +1927,22 @@ def Save_Attribute(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
+        variable_name = None
         for each_step_data_item in step_data:
             if "parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
                 attribute_name = each_step_data_item[0].strip().lower()
 
-        if attribute_name == "text":
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(step_data, selenium_driver)
+        if Element == "zeuz_failed":
+            attribute_value = input(f"Could not find the value for '{variable_name}'. Enter manually:")
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+
+        elif attribute_name == "text":
             attribute_value = Element.text
         elif attribute_name == "tag":
             attribute_value = Element.tag_name
