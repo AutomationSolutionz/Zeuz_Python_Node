@@ -82,6 +82,31 @@ selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
 
+# JavaScript for collecting First Contentful Paint value.
+JS_FCP = '''
+return performance.getEntriesByName("first-contentful-paint")[0].startTime
+'''
+
+# JavaScript for collecting Largest Contentful Paint value.
+JS_LCP = '''
+var args = arguments;
+const po = new PerformanceObserver(list => {
+    const entries = list.getEntries();
+    const entry = entries[entries.length - 1];
+    // Process entry as the latest LCP candidate
+    // LCP is accurate when the renderTime is available.
+    // Try to avoid this being false by adding Timing-Allow-Origin headers!
+    const accurateLCP = entry.renderTime ? true : false;
+    // Use startTime as the LCP timestamp. It will be renderTime if available, or loadTime otherwise.
+    const largestPaintTime = entry.startTime;
+    // Send the LCP information for processing.
+
+    console.log("[ZeuZ Node] Largest Contentful Paint: ", largestPaintTime);
+    args[0](largestPaintTime);
+});
+po.observe({ type: 'largest-contentful-paint', buffered: true });
+'''
+
 # if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
 #    selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
 
@@ -387,6 +412,7 @@ def get_performance_metrics(dataset):
         metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
         perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
         Shared_Resources.Set_Shared_Variables(var_name,perf_json_data)
+        CommonUtil.browser_perf[current_driver_id].append(perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -975,15 +1001,28 @@ def Go_To_Link(step_data, page_title=False):
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+    # Collect custom performance metrics
     try:
         if current_driver_id not in CommonUtil.browser_perf:
             metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
             metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
+
+            # FCP - First Contentful Paint
             try:
-                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script('return performance.getEntriesByName("first-contentful-paint")[0].startTime')
+                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
             except:
                 metrics_dict["first-contentful-paint"] = 0
+
+            # LCP - Largest Contenful Paint
+            try:
+                metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
+            except:
+                metrics_dict["largest-contentful-paint"] = 0
+
             CommonUtil.browser_perf[current_driver_id] = [metrics_dict]
+
+            # CommonUtil.prettify(key="metrics", val=metrics_dict)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
