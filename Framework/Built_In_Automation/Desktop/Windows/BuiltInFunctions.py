@@ -4,6 +4,8 @@
 #        Modules        #
 #                       #
 #########################
+import pdb
+
 code_debug = False
 tabs = 0
 import sys, os, subprocess
@@ -1369,12 +1371,13 @@ def Save_Attribute(data_set):
             if "Toggle" not in pattern_list:
                 CommonUtil.ExecLog(sModuleInfo, "Toggle pattern is not found for this Element", 3)
                 return "zeuz_failed"
-            actual_text = True if Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState else False
+
+            actual_text = True if str(Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState) == "On"  else False
         elif "select" in field and "pattern" in field:
             if not "SelectionItem" in pattern_list:
                 CommonUtil.ExecLog(sModuleInfo, "SelectionItemPattern is not found for this Element", 3)
                 return "zeuz_failed"
-            actual_text = Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected
+            actual_text = True if str(Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected) == "True" else False
         elif "name" in field:
             actual_text = str(Element.Current.Name).strip()
         elif "class" in field:
@@ -1384,7 +1387,7 @@ def Save_Attribute(data_set):
         elif "type" in field or "control" in field:
             actual_text = str(Element.Current.LocalizedControlType).strip()
         else:
-            actual_text = eval("Element.Current." + field2)
+            actual_text = CommonUtil.parse_value_into_object("Element.Current." + field2)
 
         Shared_Resources.Set_Shared_Variables(variable_name, actual_text)
 
