@@ -1233,12 +1233,12 @@ def Drag_and_Drop_Element(data_set):
                 destination.append((left.replace("dst", "").replace("destination", ""), mid, right))
 
         Element1 = Get_Element(source)
-        if Element1 == "zeuz_failed":
+        if type(Element1) == str and Element1 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find source element", 3)
             return "zeuz_failed"
 
         Element2 = Get_Element(destination)
-        if Element2 == "zeuz_failed":
+        if type(Element2) == str and Element2 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not destination element", 3)
             return "zeuz_failed"
 
