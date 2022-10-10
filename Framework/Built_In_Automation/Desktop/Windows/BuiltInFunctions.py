@@ -1387,7 +1387,7 @@ def Save_Attribute(data_set):
         elif "type" in field or "control" in field:
             actual_text = str(Element.Current.LocalizedControlType).strip()
         else:
-            actual_text = CommonUtil.parse_value_into_object("Element.Current." + field2)
+            actual_text = eval("Element.Current." + field2)
 
         Shared_Resources.Set_Shared_Variables(variable_name, actual_text)
 
