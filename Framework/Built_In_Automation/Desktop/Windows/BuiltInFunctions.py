@@ -1565,7 +1565,7 @@ def Scroll_to_element(dataset):
         win32api.SetCursorPos((x, y))
 
         desired_Element = Get_Element(desired_dataset, 0)
-        if not(type(Element) == str and Element == "zeuz_failed"):
+        if not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
             CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
         else:
             count = 0
