@@ -1567,6 +1567,7 @@ def Scroll_to_element(dataset):
         desired_Element = Get_Element(desired_dataset, 0)
         if not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
             CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
+            return "passed"
         else:
             count = 0
             while True:
@@ -1582,13 +1583,14 @@ def Scroll_to_element(dataset):
                     autoit.mouse_wheel(direction, scroll_count)
                 desired_Element = Get_Element(desired_dataset, 0)
                 count += 1
-                if count >= max_try or not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
+                if count > max_try or not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
                     break
 
             if count < max_try:
                 CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
                 return "passed"
             else:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
                 return "zeuz_failed"
         time.sleep(unnecessary_sleep)
 
