@@ -1582,11 +1582,19 @@ def Scroll_to_element(dataset):
                     autoit.mouse_wheel(direction, scroll_count)
                 desired_Element = Get_Element(desired_dataset, 0)
                 count += 1
-                if count >= max_try or desired_Element != "zeuz_failed":
+                if count >= max_try or not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
                     break
-            CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+
+            if count < max_try:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+                return "passed"
+            else:
+                return "zeuz_failed"
         time.sleep(unnecessary_sleep)
-        return "passed"
+
+
+
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
 
