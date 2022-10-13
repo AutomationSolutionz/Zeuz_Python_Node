@@ -23,7 +23,8 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
-from appium.webdriver.common.appiumby import AppiumBy
+# from appium.webdriver.common.appiumby import AppiumBy
+from appium.webdriver.common.mobileby import MobileBy
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
@@ -509,7 +510,7 @@ def launch_application(data_set):
             # desired capabilities for specific platforms
             desiredcaps = dict()
             # Set the global variable for the preferred connected device
-            if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
+            if "browser_stack" in device_info and find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
                 return "zeuz_failed"
 
             device_type = appium_details[device_id]["type"].lower().strip()
@@ -1669,7 +1670,7 @@ def scroll_to_element_by_uiautomator(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
-        element = appium_driver.find_element(AppiumBy.ANDROID_UIAUTOMATOR, final_string)
+        element = appium_driver.find_element(MobileBy.ANDROID_UIAUTOMATOR, final_string)
         if element.text == '' or element == None :
             CommonUtil.ExecLog(sModuleInfo, "Desired element is not found in scrollable element", 3)
             return "zeuz_failed"

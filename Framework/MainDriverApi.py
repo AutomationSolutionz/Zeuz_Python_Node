@@ -958,13 +958,13 @@ def run_test_case(
                 + ".zip"
             )
             after_execution_dict["logid"] = TCLogFile
-        after_execution_dict["metrics"] = {
-            "browser_performance": CommonUtil.browser_perf,
-            "Node": {
-                "actions": CommonUtil.action_perf,
-                "step": CommonUtil.step_perf
-            }
-        }
+        # after_execution_dict["metrics"] = {
+        #     "browser_performance": CommonUtil.browser_perf,
+        #     "Node": {
+        #         "actions": CommonUtil.action_perf,
+        #         "step": CommonUtil.step_perf
+        #     }
+        # }
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
 
@@ -1034,7 +1034,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
                 ]
         except:
             pass
-    elif "browser_stack" in device_order and device_order["browser_stack"]:
+    # elif "browser_stack" in device_order and device_order["browser_stack"]:
+    elif "browser_stack" in device_order:
         project = user_info_object["project"]
         team = user_info_object["team"]
 
@@ -1042,22 +1043,36 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
         build = test_case_no + " :: " + test_case_name
         name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
         device_info = {
+            "browser_stack": True,
             "browserstack device 1": {
                 "basic": {
-                    "browserstack.user": device_order["browser_stack"]["1"]["username"],
-                    "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
-                    # "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
-                    "app": device_order["browser_stack"]["1"]["app_url"],
+                    "browserstack.user": os.environ.get("browser_stack_user"),
+                    # "browserstack.user": device_order["browser_stack"]["1"]["username"],
 
-                    "device": device_order["browser_stack"]["1"]["device"],
-                    "os_version": device_order["browser_stack"]["1"]["os_version"],
+                    "browserstack.key": os.environ.get("browser_stack_key"),
+                    # "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
+
+                    # "app": "bs://3147e10b85505d711f6ed7cd1ff134d78ec23bdc", # ios bbconnect.app
+                    # "app": "bs://444bd0308813ae0dc236f8cd461c02d3afa7901d", # ios example
+                    "app": "bs://7cc67e0642c77f7cf51d4d198a9a5d58528d8b30", # ios bbconnectparent.app
+                    # "app": device_order["browser_stack"]["1"]["app_url"],
+
+                    # "device": "iPad 9th",
+                    # "device": "iPad Pro 12.9 2018",
+                    "device": "iPhone 11 Pro Max",
+                    # "device": device_order["browser_stack"]["1"]["device"],
+
+                    # "os_version": "15",
+                    "os_version": "16.0",
+                    # "os_version": device_order["browser_stack"]["1"]["os_version"],
 
                     "project": project,  # zeuz project + team name
                     "build": build,  # test case no + test case name
                     "name": name  # Userid + datetime
                 },
                 "other": {
-                    "app_name": device_order["browser_stack"]["1"]["app_name"],
+                    "app_name": "BBConnect.ipa ( 1.0.7 )"
+                    # "app_name": device_order["browser_stack"]["1"]["app_name"],
                 },
 
             }

@@ -5,7 +5,7 @@ setuptools
 pyserial
 simplejson
 urllib3
-selenium
+selenium==3.141.0
 uiautomator
 requests
 wheel
@@ -16,7 +16,8 @@ SpeechRecognition
 colorama
 pyodbc
 python-dateutil
-Appium-Python-Client==2.5.0
+Appium-Python-Client==1.0.2
+browserstack-local==1.2.2
 xlwings
 image
 tzlocal
