@@ -271,12 +271,12 @@ def Check_uncheck(data_set):
 
     pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
     if "Toggle" in pattern_list:
-        is_selected = Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState
+        is_selected = str(Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState)
     else:
         CommonUtil.ExecLog(sModuleInfo, "No Toggle pattern found for the Element", 3)
         return "zeuz_failed"
 
-    if command == "check" and is_selected:
+    if command == "check" and is_selected == "On":
         CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
         return "passed"
     elif command == "uncheck" and not is_selected:
