@@ -31,6 +31,7 @@ from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFor
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
+from settings import PROJECT_ROOT
 from reporting import junit_report
 
 from rich.style import Style
@@ -1019,9 +1020,10 @@ def run_test_case(
         return "passed"
 
 
-def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid):
+def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
     # Need to set device_info for browserstack here
     global device_info
+    shared.Set_Shared_Variables("device_order", device_order)
     if isinstance(device_order, list):
         try:
             # FIXME: The device info needs to be fixed for deploy v3
@@ -1034,38 +1036,75 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
                 ]
         except:
             pass
-    elif "browser_stack" in device_order and device_order["browser_stack"]:
-        project = user_info_object["project"]
-        team = user_info_object["team"]
 
-        project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
-        build = test_case_no + " :: " + test_case_name
-        name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
-        device_info = {
-            "browserstack device 1": {
-                "basic": {
-                    "browserstack.user": device_order["browser_stack"]["1"]["username"],
-                    "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
-                    # "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
-                    "app": device_order["browser_stack"]["1"]["app_url"],
+    # Todo: check the device_order if it is mobile or web (reimagine after deploy v3)
+    elif "web" in device_order:
+        print("found web from new device_info")
+    elif "mobile" in device_order:
+        if "local" in device_order["mobile"]:
+            pass
+        elif "browser_stack" in device_order["mobile"]:
+            project = f"PROJECT: {user_info_object['project']} & TEAM: {user_info_object['team']}"
+            build = f"{test_case_no} : {test_case_name}"
+            # Todo: session_name will be the run_id of the test case. So, we can reference with our zeuz better
+            session_name = kwargs['run_id']
+            # Fixme: Currently only one device will run. Need to optimize for parallel test on multiple device.
+            device_info = {
+                # set URL of the application under test. URL should be unique for each test case
+                "app": device_order["mobile"]["browser_stack"]["app"],
 
-                    "device": device_order["browser_stack"]["1"]["device"],
-                    "os_version": device_order["browser_stack"]["1"]["os_version"],
+                # specify device and os for testing
+                "deviceName": device_order["mobile"]["browser_stack"]["environments"][0]["deviceName"],
+                "platformVersion": device_order["mobile"]["browser_stack"]["environments"][0]["platformVersion"],
 
-                    "project": project,  # zeuz project + team name
-                    "build": build,  # test case no + test case name
-                    "name": name  # Userid + datetime
-                },
-                "other": {
-                    "app_name": device_order["browser_stack"]["1"]["app_name"],
-                },
-
+                # set other browserstack capabilities updated in appium v2
+                "bstack:options": {
+                    "userName": os.environ.get("browser_stack_user"),
+                    "accessKey": os.environ.get("browser_stack_key"),
+                    "projectName": project,
+                    "buildName": build,
+                    "sessionName": session_name
+                }
             }
-        }
-    elif "aws" in device_order:
-        device_info = {
-            "aws device 1": {}
-        }
+
+        elif "aws" in device_order["mobile"]:
+            device_info = {
+                "aws device 1": {}
+            }
+    # Todo: remove this section. Changing this for new device_info.
+    # elif "browser_stack" in device_order and device_order["browser_stack"]:
+    #     project = user_info_object["project"]
+    #     team = user_info_object["team"]
+    #
+    #     project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
+    #     build = test_case_no + " :: " + test_case_name
+    #     name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
+    #     device_info = {
+    #         "browserstack device 1": {
+    #             "basic": {
+    #                 "browserstack.user": device_order["browser_stack"]["1"]["username"],
+    #                 "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
+    #                 # "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
+    #                 "app": device_order["browser_stack"]["1"]["app_url"],
+    #
+    #                 "device": device_order["browser_stack"]["1"]["device"],
+    #                 "os_version": device_order["browser_stack"]["1"]["os_version"],
+    #
+    #                 "project": project,  # zeuz project + team name
+    #                 "build": build,  # test case no + test case name
+    #                 "name": name  # Userid + datetime
+    #             },
+    #             "other": {
+    #                 "app_name": device_order["browser_stack"]["1"]["app_name"],
+    #             },
+    #
+    #         }
+    #     }
+    # Todo: remove this section. Changing this for new device_info.
+    # elif "aws" in device_order:
+    #     device_info = {
+    #         "aws device 1": {}
+    #     }
     elif "local" in device_order:
         device_order = device_order["local"]
         for each in device_order:
@@ -1551,7 +1590,12 @@ def main(device_dict, user_info_object):
                 cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
 
-            device_order = run_id_info["device_info"]
+            # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
+            # device_order = run_id_info["device_info"]
+            # or
+            with open(PROJECT_ROOT / "temp/device_info_in_node_v2.json", "r") as device_info_file:
+                device_order = json.load(device_info_file)
+
             final_dependency = run_id_info["dependency_list"]
             # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
@@ -1645,7 +1689,7 @@ def main(device_dict, user_info_object):
                         performance_test_case = True
                     test_case_no = testcase_info["testcase_no"]
                     test_case_name = testcase_info["title"]
-                    set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
+                    set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid, run_id=run_id)
                     CommonUtil.disabled_step = []
 
                     # Download test case and step attachments

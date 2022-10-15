@@ -12,6 +12,8 @@
 #########################
 
 from appium import webdriver
+from appium.options.android import UiAutomator2Options
+from appium.options.ios import XCUITestOptions
 import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
@@ -451,6 +453,8 @@ def launch_application(data_set):
     # Recall appium details
     if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
         device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retrieve device_info
+    if Shared_Resources.Test_Shared_Variables("device_order"):
+        device_order = Shared_Resources.Get_Shared_Variables("device_order")
 
     # Parse data set
     try:
@@ -459,16 +463,17 @@ def launch_application(data_set):
         browserstack_run = False
         aws_run = False
 
-        for did in device_info:
-            if "browserstack" in did:
-                browserstack_run = True
-                break
-            elif "aws" in did:
-                aws_run = True
-                break
-        if browserstack_run:
-            desiredcaps = device_info["browserstack device 1"]["basic"]
-        elif aws_run:
+        # Todo: set browser_stack desired_capabilities
+        if "browser_stack" in device_order["mobile"]:
+            browserstack_run = True
+            if device_order["mobile"]["browser_stack"]["platformName"] == "android":
+                desiredcaps = UiAutomator2Options().load_capabilities(device_info)
+
+            elif device_order["mobile"]["browser_stack"]["platformName"] == "ios":
+                desiredcaps = XCUITestOptions().load_capabilities(device_info)
+
+        elif "aws" in device_order["mobile"]:
+            aws_run = True
             desiredcaps = {
                 # New iOS devices may have a '-' (hyphen) in their UDID
                 # which do not work with carthage (the tool that appium
@@ -558,8 +563,9 @@ def launch_application(data_set):
                 desiredcaps=desiredcaps,
                 browserstack_run=browserstack_run,
             )
-            app_name = device_info["browserstack device 1"]["other"]["app_name"]
-            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+            # app_name = device_info["browserstack device 1"]["other"]["app_name"]
+            # CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Launched app successfully in Browserstack.", 1)
         elif aws_run:
             result, launch_app = start_appium_driver(
                 desiredcaps=desiredcaps,
@@ -764,7 +770,7 @@ def start_appium_driver(
         if browserstack_run:
             appium_driver = webdriver.Remote(
                 command_executor="http://hub-cloud.browserstack.com/wd/hub",
-                desired_capabilities=desiredcaps
+                options=desiredcaps
             )
             appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
             Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
