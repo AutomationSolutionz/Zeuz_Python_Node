@@ -1818,10 +1818,10 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                     data_set, wait
                 )  # Get the element object or "zeuz_failed"
 
-                if (Element not in failed_tag_list) or (time.time() >= end_time):
+                if (type(Element) == str and Element not in failed_tag_list) or (time.time() >= end_time):
                     break
 
-            if Element in failed_tag_list:
+            if type(Element) == str and Element in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Conditional Actions could not find the element", 3
                 )
