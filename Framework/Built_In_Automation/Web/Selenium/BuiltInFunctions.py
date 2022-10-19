@@ -1559,7 +1559,8 @@ def Click_and_Download(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     try:
-        Click_Element(click_dataset)
+        if Click_Element(click_dataset) == "zeuz_failed":
+            return "zeuz_failed"
         if selenium_driver.capabilities["browserName"].strip().lower() == "firefox" and automate_firefox:
             if platform.system() == "Windows":
                 try:
