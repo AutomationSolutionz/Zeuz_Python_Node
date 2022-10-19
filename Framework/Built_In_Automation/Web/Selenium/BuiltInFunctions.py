@@ -952,7 +952,8 @@ def Go_To_Link(step_data, page_title=False):
                 return "zeuz_failed"
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
-            selenium_driver.execute_cdp_cmd("Performance.enable", {})
+            if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
+                selenium_driver.execute_cdp_cmd("Performance.enable", {})
 
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
@@ -1004,7 +1005,7 @@ def Go_To_Link(step_data, page_title=False):
 
     # Collect custom performance metrics
     try:
-        if current_driver_id not in CommonUtil.browser_perf:
+        if current_driver_id not in CommonUtil.browser_perf and selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
             metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
             metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
 
@@ -3439,11 +3440,12 @@ def Tear_Down_Selenium(step_data=[]):
                 try:
                     perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
                     perf_file = Path(perf_folder)/("matrices_"+driver+".json")
-                    metrics = selenium_details[driver]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-                    perf_json_data = {data["name"]:data["value"] for data in metrics["metrics"]}
-                    with open(perf_file, "w", encoding="utf-8") as f:
-                        json.dump(perf_json_data, f, indent=2)
-                    selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                    # metrics = selenium_details[driver]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+                    # perf_json_data = {data["name"]:data["value"] for data in metrics["metrics"]}
+                    # with open(perf_file, "w", encoding="utf-8") as f:
+                    #     json.dump(perf_json_data, f, indent=2)
+                    if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
+                        selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
                 except:
                     errMsg = "Unable to extract performance metrics of driver_id='%s'" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
@@ -3467,11 +3469,12 @@ def Tear_Down_Selenium(step_data=[]):
             try:
                 perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
                 perf_file = Path(perf_folder) / ("matrices_" + driver_id + ".json")
-                metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-                perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
-                with open(perf_file, "w", encoding="utf-8") as f:
-                    json.dump(perf_json_data, f, indent=2)
-                selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
+                # metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+                # perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
+                # with open(perf_file, "w", encoding="utf-8") as f:
+                #     json.dump(perf_json_data, f, indent=2)
+                if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
+                    selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
                 selenium_details[driver_id]["driver"].quit()
                 CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
             except:
