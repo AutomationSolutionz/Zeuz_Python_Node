@@ -1045,9 +1045,11 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             pass
         elif "browser_stack" in device_order["mobile"]:
             project = f"PROJECT: {user_info_object['project']} & TEAM: {user_info_object['team']}"
-            build = f"{test_case_no} : {test_case_name}"
+            # build = f"{test_case_no} : {test_case_name}"
+            build = kwargs['run_id']
             # Todo: session_name will be the run_id of the test case. So, we can reference with our zeuz better
-            session_name = kwargs['run_id']
+            # session_name = kwargs['run_id']
+            session_name = f"{test_case_no} : {test_case_name}"
             # Fixme: Currently only one device will run. Need to optimize for parallel test on multiple device.
             device_info = {
                 # set URL of the application under test. URL should be unique for each test case
