@@ -4,6 +4,8 @@
 #        Modules        #
 #                       #
 #########################
+import pdb
+
 code_debug = False
 tabs = 0
 import sys, os, subprocess
@@ -136,7 +138,8 @@ def Click_Element(data_set):
         return "zeuz_failed"
 
     Element = Get_Element(data_set)
-    if Element == "zeuz_failed":
+    # if Element == "zeuz_failed":
+    if type(Element) == str and Element == "zeuz_failed":
         return "zeuz_failed"
 
     # If found Click element
@@ -261,18 +264,19 @@ def Check_uncheck(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = Get_Element(data_set)
-    if Element == "zeuz_failed":
+    # if Element == "zeuz_failed":
+    if type(Element) == str and Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
         return "zeuz_failed"
 
     pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
     if "Toggle" in pattern_list:
-        is_selected = Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState
+        is_selected = str(Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState)
     else:
         CommonUtil.ExecLog(sModuleInfo, "No Toggle pattern found for the Element", 3)
         return "zeuz_failed"
 
-    if command == "check" and is_selected:
+    if command == "check" and is_selected == "On":
         CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
         return "passed"
     elif command == "uncheck" and not is_selected:
@@ -299,7 +303,8 @@ def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         x, y = get_coords(Element)
@@ -893,7 +898,7 @@ def image_search(step_data_set):
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
-            if parent == "zeuz_failed":
+            if type(parent) == str and parent == "zeuz_failed":
                 return parent
             left = parent.Current.BoundingRectangle.Left
             top = parent.Current.BoundingRectangle.Top
@@ -1230,12 +1235,12 @@ def Drag_and_Drop_Element(data_set):
                 destination.append((left.replace("dst", "").replace("destination", ""), mid, right))
 
         Element1 = Get_Element(source)
-        if Element1 == "zeuz_failed":
+        if type(Element1) == str and Element1 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find source element", 3)
             return "zeuz_failed"
 
         Element2 = Get_Element(destination)
-        if Element2 == "zeuz_failed":
+        if type(Element2) == str and Element2 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not destination element", 3)
             return "zeuz_failed"
 
@@ -1262,7 +1267,8 @@ def Double_Click_Element(data_set):
                 Gui = True
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         patter_list = Element.GetSupportedPatterns()
@@ -1295,7 +1301,8 @@ def Hover_Over_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
         x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
@@ -1317,7 +1324,8 @@ def Validate_Text(data_set):
                 expected_text = right
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip().lower()
@@ -1346,7 +1354,8 @@ def Save_Attribute(data_set):
                 variable_name = right.strip()
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
@@ -1362,12 +1371,13 @@ def Save_Attribute(data_set):
             if "Toggle" not in pattern_list:
                 CommonUtil.ExecLog(sModuleInfo, "Toggle pattern is not found for this Element", 3)
                 return "zeuz_failed"
-            actual_text = True if Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState else False
+
+            actual_text = True if str(Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState) == "On"  else False
         elif "select" in field and "pattern" in field:
             if not "SelectionItem" in pattern_list:
                 CommonUtil.ExecLog(sModuleInfo, "SelectionItemPattern is not found for this Element", 3)
                 return "zeuz_failed"
-            actual_text = Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected
+            actual_text = True if str(Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected) == "True" else False
         elif "name" in field:
             actual_text = str(Element.Current.Name).strip()
         elif "class" in field:
@@ -1441,7 +1451,8 @@ def Enter_Text_In_Text_Box(data_set):
                 keystroke = True
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         if keystroke:
@@ -1479,7 +1490,8 @@ def Swipe(data_set):
         scroll_count = 1
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
         try:
             for left, mid, right in data_set:
@@ -1524,7 +1536,8 @@ def Scroll_to_element(dataset):
         desired_dataset = []
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(dataset)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
         try:
             for left, mid, right in dataset:
@@ -1552,8 +1565,9 @@ def Scroll_to_element(dataset):
         win32api.SetCursorPos((x, y))
 
         desired_Element = Get_Element(desired_dataset, 0)
-        if desired_Element != "zeuz_failed":
+        if not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
             CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
+            return "passed"
         else:
             count = 0
             while True:
@@ -1569,11 +1583,20 @@ def Scroll_to_element(dataset):
                     autoit.mouse_wheel(direction, scroll_count)
                 desired_Element = Get_Element(desired_dataset, 0)
                 count += 1
-                if count >= max_try or desired_Element != "zeuz_failed":
+                if count > max_try or not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
                     break
-            CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+
+            if count < max_try:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+                return "zeuz_failed"
         time.sleep(unnecessary_sleep)
-        return "passed"
+
+
+
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
 
@@ -1852,10 +1875,10 @@ def wait_for_element(data_set):
         end_time = time.time() + timeout_duration
         while time.time() <= end_time:
             Element = Get_Element(data_set, 0)
-            if appear_condition and Element != "zeuz_failed":  # Element found
+            if appear_condition and not (type(Element) == str and Element == "zeuz_failed") :  # Element found
                 CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
                 return "passed"
-            elif not appear_condition and Element == "zeuz_failed":  # Element removed
+            elif not appear_condition and type(Element) == str and Element == "zeuz_failed":  # Element removed
                 CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
                 return "passed"
             time.sleep(1)
@@ -1872,7 +1895,8 @@ def save_attribute_values_in_list(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the main Element. We are searching for targets through out the whole desktop", 2)
             Element = AutomationElement.RootElement
 
