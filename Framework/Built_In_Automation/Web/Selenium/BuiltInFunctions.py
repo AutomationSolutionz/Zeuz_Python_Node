@@ -1978,10 +1978,11 @@ def Save_Attribute(step_data):
 
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element == "zeuz_failed":
-            attribute_value = input(f"Could not find the value for '{variable_name}'. Enter manually:")
-            if attribute_value == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-                return "zeuz_failed"
+            # attribute_value = input(f"Could not find the value for '{variable_name}'. Enter manually:")
+            # if attribute_value == "zeuz_failed":
+            #     CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            #     return "zeuz_failed"
+            return "zeuz_failed"
 
         elif attribute_name == "text":
             attribute_value = Element.text
