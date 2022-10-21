@@ -2655,7 +2655,7 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    selenium_driver.switch_to_default_content()
+    selenium_driver.switch_to.default_content()
     try:
         scroll_inside_element = False
         scroll_window_name = "window"
