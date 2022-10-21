@@ -18,7 +18,7 @@ from rich.console import Console
 # from rich import print
 from rich import print_json
 
-
+ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import live_log_service
 import concurrent.futures
 
@@ -227,13 +227,13 @@ def prettify(key, val):
             print(json.dumps(val,indent=2)[:prettify_limit])
 
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
-        if debug_status and key not in dont_prettify_on_server:
+        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
             live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
     except:
         # expression = "%s" % (key, val)
         print(color + str(val)[:prettify_limit])
-        if debug_status and key not in dont_prettify_on_server:
+        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
             live_log_service.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 
@@ -537,7 +537,7 @@ def ExecLog(
     # Set current log as the next previous log
     previous_log_line = current_log_line
 
-    if debug_status:
+    if debug_status and ws_ss_log:
         live_log_service.log(sModuleInfo, iLogLevel, sDetails)
 
     if iLogLevel > 0:
@@ -703,7 +703,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-    # if debug_status: return     # Todo: Comment this line out
+    if not ws_ss_log: return
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
