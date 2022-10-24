@@ -3859,20 +3859,30 @@ def modify_datetime(data_set):
 
             return t
 
+        for left,mid,right in data_set:
+            if "format" in left:
+                date_format = right
+                
+        if date_format:
+            if os.name == "nt":
+                date_format = date_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+        
         for left, mid, right in data_set:
             left = left.strip().lower()
-
             if "data" in left:
                 if right.strip().lower() == "today":
                     data = datetime.today()
-                else:
+                elif right.strip().lower() in ("monday","tuesday","wednesday","thursday","friday","saturday","sunday"):
                     data = parser.parse(right.strip())
+                else:
+                    if date_format:
+                        _date_format = date_format.replace("%-","%").replace("%#","%")
+                        data = datetime.strptime(right.strip(),_date_format)
+                    else:
+                        data = parser.parse(right.strip())
                 continue
             if "action" in mid:
                 var_name = right.strip()
-                continue
-            if "format" in left:
-                date_format = right
                 continue
 
             right = right.strip()
