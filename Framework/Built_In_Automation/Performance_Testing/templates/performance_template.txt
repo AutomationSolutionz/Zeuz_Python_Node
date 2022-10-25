@@ -1,0 +1,14 @@
+from locust import HttpUser, task, between, User
+
+{% for user in PERF_VARIABLE.users %}
+class {{user}}({{PERF_VARIABLE.users[user].type}}):
+    host = "{{PERF_VARIABLE.users[user].host}}"
+    wait_time = {{PERF_VARIABLE.users[user].wait_time}}
+    {% for task in  PERF_VARIABLE.users[user].tasks%}
+    @task
+    def {{ task.name }}(self):{% if task.action == "post" %}
+        self.client.post(url="{{ task.url }}", data=None)
+    {% elif task.action == "get" %}
+        self.client.get(url="{{ task.url }}")
+    {% endif %}{% endfor %}
+{% endfor %}

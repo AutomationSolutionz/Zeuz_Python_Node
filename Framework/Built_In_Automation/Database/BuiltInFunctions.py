@@ -144,35 +144,37 @@ def handle_db_exception(sModuleInfo, e):
 
 # [NON ACTION]
 @logger
-def db_get_connection():
+def db_get_connection(session_name):
     """
     Convenience function for getting the cursor for db access
     :return: pyodbc.Cursor
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    db_sessions = sr.Get_Shared_Variables('db_sessions')
+    if session_name in db_sessions.keys():
+        db_params = db_sessions[session_name]
+    else:
+        CommonUtil.ExecLog(sModuleInfo,f"Invalid session name provided - {session_name}",3)
+        return "zeuz_failed"
     try:
         import pyodbc
         db_con = None
 
-        # Alias for Shared_Resources.Get_Shared_Variables
-        g = sr.Get_Shared_Variables
-
         # Get the values
-        db_type = g(DB_TYPE)
-        db_name = g(DB_NAME)
-        db_user_id = g(DB_USER_ID)
-        db_password = g(DB_PASSWORD)
-        db_host = g(DB_HOST)
-        db_port = int(g(DB_PORT))
+        db_type = db_params.get(DB_TYPE)
+        db_name = db_params.get(DB_NAME)
+        db_user_id = db_params.get(DB_USER_ID)
+        db_password = db_params.get(DB_PASSWORD)
+        db_host = db_params.get(DB_HOST)
+        db_port = int(db_params.get(DB_PORT))
 
         if ":" in db_host:
             db_host, db_port = db_host.rsplit(":", 1)
             db_port = int(db_port)
-
-        db_sid = g(DB_SID)
-        db_service_name = g(DB_SERVICE_NAME)
+        if "oracle" in db_type.lower():
+            db_sid = db_params.get(DB_SID)
+            db_service_name = db_params.get(DB_SERVICE_NAME)
 
         if "postgres" in db_type:
             import psycopg2
@@ -279,28 +281,41 @@ def connect_to_db(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        db_type = db_name = db_user_id = db_password = db_host = db_port = db_sid = db_service_name = db_odbc_driver = db_params = None
+        session_name = "default"
         for left, _, right in data_set:
             if left == DB_TYPE:
-                sr.Set_Shared_Variables(DB_TYPE, right)
+                db_type = right.strip()
             if left == DB_NAME:
-                sr.Set_Shared_Variables(DB_NAME, right)
+                db_name = right.strip()
             if left == DB_USER_ID:
-                sr.Set_Shared_Variables(DB_USER_ID, right)
+                db_user_id = right.strip()
             if left == DB_PASSWORD:
-                sr.Set_Shared_Variables(DB_PASSWORD, right)
+                db_password = right.strip()
             if left == DB_HOST:
-                sr.Set_Shared_Variables(DB_HOST, right)
+                db_host = right.strip()
             if left == DB_PORT:
-                sr.Set_Shared_Variables(DB_PORT, right)
+                db_port = right.strip()
             if left == DB_SID:
-                sr.Set_Shared_Variables(DB_SID, right)
+                db_sid = right.strip()
             if left == DB_SERVICE_NAME:
-                sr.Set_Shared_Variables(DB_SERVICE_NAME, right)
+                db_service_name = right.strip()
             if left == DB_ODBC_DRIVER:
-                sr.Set_Shared_Variables(DB_ODBC_DRIVER, right)
+                db_odbc_driver = right.strip()
+                sr.Set_Shared_Variables(DB_ODBC_DRIVER,right.strip())
+            if "session" in left:
+                session_name = right.strip()
+        db_params = {DB_TYPE:db_type,DB_NAME:db_name,DB_USER_ID:db_user_id,DB_PASSWORD:db_password,
+                    DB_HOST:db_host,DB_PORT:db_port,DB_SID:db_sid,DB_SERVICE_NAME:db_service_name,DB_ODBC_DRIVER:db_odbc_driver}
+        if sr.Test_Shared_Variables('db_sessions'):
+            sessions = sr.Get_Shared_Variables('db_sessions')
+            sessions[session_name] = db_params
+            sr.Set_Shared_Variables('db_sessions',sessions)
+        else:
+            sr.Set_Shared_Variables('db_sessions',{session_name:db_params})
 
         CommonUtil.ExecLog(sModuleInfo, "Trying to establish connection to the database.", 1)
-        db_get_connection()
+        db_get_connection(session_name)
 
         return "passed"
     except Exception:
@@ -327,14 +342,16 @@ def db_select(data_set):
     try:
         variable_name = None
         query = None
+        session_name = 'default'
 
         for left, mid, right in data_set:
             if left == "query":
                 # Get the and query, and remove any whitespaces
                 query = right.strip()
-
             if "action" in mid:
                 variable_name = right.strip()
+            if 'session' in left.lower():
+                session_name = right.strip() 
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -347,7 +364,7 @@ def db_select(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
-        db_con = db_get_connection()
+        db_con = db_get_connection(session_name)
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -401,7 +418,8 @@ def select_from_db(data_set):
         group_by=None
         order_by=None
         order=" "
-
+        session_name = "default"
+        
         for left, mid, right in data_set:
             if "table" in left.lower():
                 # Get the and query, and remove any whitespaces
@@ -414,11 +432,12 @@ def select_from_db(data_set):
                 group_by=right.split(',')
             if "order" in left.lower():
                 order_by=right.split(',')
-
             if "columns" in left.lower():
                 if right=="" or right=="*":
                     columns=["*"]
                 columns=right.split(',')
+            if "session" in left.lower():
+                session_name = right.strip()
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -451,12 +470,12 @@ def select_from_db(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
-        db_con = db_get_connection()
+        db_con = db_get_connection(session_name)
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
                 # Commit the changes
-                db_con.commit()
+                # db_con.commit()
                 # Fetch all rows and convert into list
                 db_rows = []
                 while True:
@@ -506,6 +525,7 @@ def insert_into_db(data_set):
         values=None
         columns=None
         variable_name=None
+        session_name = 'default'
 
         for left, mid, right in data_set:
             if "table" in left.lower():
@@ -517,6 +537,8 @@ def insert_into_db(data_set):
                 variable_name = right.strip()
             if "columns" in left.lower():
                 columns=right.split(',')
+            if "session" in left.lower():
+                session_name = right.strip()
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -536,7 +558,7 @@ def insert_into_db(data_set):
 
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
-        db_con = db_get_connection()
+        db_con = db_get_connection(session_name)
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -584,6 +606,7 @@ def delete_from_db(data_set):
         query = None
         where = None
         variable_name = None
+        session_name = "default"
 
         for left, mid, right in data_set:
             if "table" in left.lower():
@@ -593,6 +616,8 @@ def delete_from_db(data_set):
                 where = right.strip()
             if "action" in mid:
                 variable_name = right.strip()
+            if "session" in left.lower():
+                session_name = right.strip()
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -605,7 +630,7 @@ def delete_from_db(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
-        db_con = db_get_connection()
+        db_con = db_get_connection(session_name)
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -657,6 +682,7 @@ def update_into_db(data_set):
         columns=None
         values=None
         variable_name=None
+        session_name = "default"
 
         for left, mid, right in data_set:
             if "table" in left.lower():
@@ -670,6 +696,8 @@ def update_into_db(data_set):
                 columns=right.split(',')
             if "values" in left.lower():
                 values=right.split(',')
+            if "session" in left.lower():
+                session_name = right.strip()
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -687,7 +715,7 @@ def update_into_db(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
-        db_con = db_get_connection()
+        db_con = db_get_connection(session_name)
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -730,14 +758,16 @@ def db_non_query(data_set):
     try:
         variable_name = None
         query = None
+        session_name = "default"
 
         for left, mid, right in data_set:
             if left == "query":
                 # Get the query, and remove any whitespaces
                 query = right.strip()
-
             if "action" in mid:
                 variable_name = right.strip()
+            if "session" in left.lower():
+                session_name = right.strip()
         
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -750,7 +780,7 @@ def db_non_query(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
-        db_con = db_get_connection()
+        db_con = db_get_connection(session_name)
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)

@@ -8,6 +8,7 @@ from . import (
     windows,
     xml,
     database,
+    performance
 )
 
 modules = (
@@ -20,6 +21,7 @@ modules = (
     windows,
     xml,
     database,
+    performance
 )
 
 # This will be exported and contains all the actions.
@@ -52,6 +54,7 @@ action_support = (
     "destination element parameter", "destination parent parameter", "destination sibling parameter", "destination child parameter",
     "optional parameter",
     "iframe parameter",
+    "frame parameter",
     "method",
     "url",
     "body",
@@ -75,7 +78,9 @@ action_support = (
     "attribute constrain",
     "optional option",
     "graphql",
-    "shared capability"
+    "shared capability",
+    "chrome option",
+    "chrome options"
 )
 
 # List of supported mobile platforms - must be lower case

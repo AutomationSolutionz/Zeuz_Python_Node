@@ -18,8 +18,8 @@ from rich.console import Console
 # from rich import print
 from rich import print_json
 
-
-from Framework.Utilities import ws
+ws_ss_log = True    # todo: Always keep it True
+from Framework.Utilities import live_log_service
 import concurrent.futures
 
 
@@ -60,7 +60,7 @@ temp_config = Path(
     )
 )
 
-common_modules = ["os", "sys", "platform", "time", "datetime", "random", "re", "pathlib", "json", "ast", "yaml", "csv", "xml", "xlwings", "requests", "sr"]
+common_modules = ["os", "sys", "platform", "time", "datetime", "random", "re", "uuid", "pathlib", "json", "ast", "yaml", "csv", "xml", "xlwings", "requests", "sr"]
 
 passed_tag_list = [
     "Pass",
@@ -106,6 +106,7 @@ performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": 
 previous_log_line = None
 teardown = True
 print_execlog = True
+prettify_limit = None
 
 step_module_name = None
 
@@ -132,6 +133,11 @@ max_char = 0
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
+
+# Metrics variables
+browser_perf = {}
+action_perf = []
+step_perf = []
 
 
 def GetExecutor():
@@ -211,19 +217,24 @@ def prettify(key, val):
     """Tries to pretty print the given value."""
     color = Fore.MAGENTA
     try:
-        if type(val) == str:
-            val = parse_value_into_object(val)
-        print(color + "%s = " % (key), end="")
-        print_json(data=val)
-        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
-        if key not in dont_prettify_on_server:
-            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
+        if prettify_limit is None:
+            if type(val) == str:
+                val = parse_value_into_object(val)
+            print(color + "%s = " % (key), end="")
+            print_json(data=val)
+        else:
+            print(color + "%s = " % (key), end="")
+            print(json.dumps(val,indent=2)[:prettify_limit])
+
+        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
+        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
+            live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
     except:
         # expression = "%s" % (key, val)
-        print(color + str(val))
-        if key not in dont_prettify_on_server:
-            ws.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
+        print(color + str(val)[:prettify_limit])
+        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
+            live_log_service.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 
 def Add_Folder_To_Current_Test_Case_Log(src):
@@ -526,7 +537,8 @@ def ExecLog(
     # Set current log as the next previous log
     previous_log_line = current_log_line
 
-    ws.log(sModuleInfo, iLogLevel, sDetails)
+    if debug_status and ws_ss_log:
+        live_log_service.log(sModuleInfo, iLogLevel, sDetails)
 
     if iLogLevel > 0:
         if iLogLevel == 6:
@@ -552,11 +564,11 @@ def ExecLog(
             browser_log_handler = None
             if os.name == "posix":
                 try:
-                    browser_log_handler = logging.FileHandler(BrowserConsoleLogFile)
+                    browser_log_handler = logging.FileHandler(BrowserConsoleLogFile, encoding="utf-8")
                 except:
                     pass
             elif os.name == "nt":
-                browser_log_handler = logging.FileHandler(BrowserConsoleLogFile)
+                browser_log_handler = logging.FileHandler(BrowserConsoleLogFile, encoding="utf-8")
 
             formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
@@ -691,7 +703,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-    # if debug_status: return     # Todo: Comment this line out
+    if not ws_ss_log: return
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
@@ -724,7 +736,20 @@ def TakeScreenShot(function_name, local_run=False):
             "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method),
             4,
         )
-        image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
+        if current_action_name.strip().lower() in ("none", "undefined"):
+            image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
+        else:
+            filename = ""; c = 0
+            for i in current_action_name.strip():
+                if i in ("<", ">", ":", '"', "/", "\\", "|", "?", "*", ".", " "):
+                    filename += "_"
+                else:
+                    filename += i
+                c += 1
+                if c >= 100:
+                    break
+            image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + filename
+
         thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
         SaveThread("screenshot", thread)
 
@@ -802,9 +827,11 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
             image.thumbnail(picture_size, Image.ANTIALIAS)  # Resize picture to lower file size
             image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
 
-            # Convert image to bytearray and send it to ws for streaming.
-            image_byte_array = pil_image_to_bytearray(image)
-            ws.binary(image_byte_array)
+            if debug_status:
+                # Convert image to bytearray and send it to live_log_service for streaming.
+                image_byte_array = pil_image_to_bytearray(image)
+
+                live_log_service.binary(image_byte_array)
         else:
             ExecLog(
                 "",

@@ -10,7 +10,7 @@ python-dateutil
 requests
 wheel
 pyautogui
-Appium-Python-Client
+Appium-Python-Client==2.5.0
 uiautomator
 lxml
 tzlocal
@@ -37,7 +37,7 @@ pyrsistent
 attrs
 pytest==6.1.2
 yapf
-websocket-client
+websocket-client==1.3.3
 tqdm
 pyscreenshot
 pyyaml
@@ -48,3 +48,6 @@ rich
 beautifulsoup4
 premailer
 html-diff
+protobuf
+pytz
+rauth

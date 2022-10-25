@@ -1,9 +1,78 @@
 # Changelog
 
-# Version 15
+
+# Version 16
 
 ### [Current changes]
-- _
+-
+### [16.1.0][Oct 25, 2022]
+- **[Add]** Continue to next iter feature is implemented in For Loop Action
+- **[Fix]** datatype fix and checkbox/toggle item fix for windows
+- **[Fix]** browser performance matrices is confined to chrome and edge browsers only
+- **[Add]** Largest Contentful Paint is added in browser performance matrices
+- **[Improve]** Stale element error is handled in click and check action
+- **[Add]** `zeuz_prettify_limit` variable can limit prettify characters
+- **[Add]** Added secondary random mailbox
+- **[Add]** Added Browser Performance metrics, Step metrics, Action metrics
+- **[Add]** Import files in Execute Python Code action
+- **[Add]** Added a reserved variable `zeuz_attachments_dir`
+- **[Add]** Enabling connection for two of more database simultaneously
+- **[Add]** 'uuid' module is inserted into variable parsing
+- **[Add]** 'frame parameter' support is added into Switch_Iframe action
+- **[Add]** Action for get access token url (oauth 2.0) with documentation
+- **[Add]** Browser action for get current url from address bar with documentation
+- **[Add]** Basic performance testing functions for rest calls
+- **[Add]** Added selenium grid functionality. Usage:
+  ```shell
+  cd .../Framework/Built_In_Automation/Web/Selenium
+  docker-compose -f docker-compose-v3.yml up
+  ```
+- **[Fix]** Compare data *ignore_list_order* bug fix
+- **[Fix]** Zeuz_auto_teardown variable bug fix
+- **[Fix]** Mobile browser update bug fix
+- **[Fix]** zeuz_pid_finder bug fix for chrome
+- **[Add]** Authenticator code generator action is added for windows
+- **[Improve]** Function handle capability inside csv cells is implemented
+- **[Fix]** Windows_pid issue solved for image searching
+- **[Add]** Don't download the same attachments multiple times. This is achieved
+  by keeping track of hashes of the attachment files sent from the server.
+
+  Technical note: protobuf definitions updated.
+
+- **[Add]** Add support for multiple certificates in API actions. Use them like
+  so:
+
+    - cert | optional parameter | filename.pem
+    - cert | optional parameter | filename.cert, filename.key
+
+  Certificates are best used by pairing with the `session` optional parameter.
+
+- **[Fix]** Fixed return for common screenshot action
+### [16.0.0]
+- **[Change]** Change the deploy system. This change replaces the old deploy
+  system code with a new one that is compatible with the v3 engine on the server
+  side.  This works by connecting with a persistent websocket connection that is
+  forcefully disconnected every 30 seconds from the server side. This makes sure
+  that we don't have long persistent but unstable connections. There are also
+  other mechanisms in place to make sure we always receive test cases in proper
+  order. If for some reason, node's connection breaks when test cases are
+  in-flight (being sent from server to node), they'll be automatically restored
+  back to the run id so that node can run the same test case even though the
+  connection got disrupted. Run cancellations work properly. In deploy API you
+  can also specify preferred nodes so that some test cases are always run in
+  those preferred nodes.
+- **[Fix]** Convert all timestamps into UTC timezone to match server timezone.
+  This fixes all runid related time issues like showing a negative date and time
+  difference.
+- **[Fix]** SID and service name is required for Oracle database only. 
+  Previously error was showing when user didn't input SID and service name for 
+  other database(for example MySQL etc.). Now this has been fixed.
+
+# Version 15
+### [15.2.0][Jun 07, 2022]
+- **[Add]** Add profile functionality for Chrome
+- **[Add]** Add extension functionality for Chrome
+- **[Improve]** Chrome browser options and arguments
 
 ### [15.1.1][Jun 07, 2022]
 - **[Add]** Upload window is automated with pyautogui for MAC
@@ -12,6 +81,7 @@
 ### [15.1.0][Jun 03, 2022]
 - **[Add]** Added swipe by uiautomator action for android
 - **[Add]** Added uiautomatorviewer.bat inside App directory
+
 
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action

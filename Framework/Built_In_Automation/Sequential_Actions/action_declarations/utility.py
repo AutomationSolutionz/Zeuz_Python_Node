@@ -36,6 +36,8 @@ declarations = (
     { "name": "convert date format",   "function": "convert_date_format",         "screenshot": "none" },
     { "name": "compare images",        "function": "compare_images",              "screenshot": "none" },
     { "name": "datatype conversion",   "function": "datatype_conversion",         "screenshot": "none" },
+    {"name": "new compare images",         "function": "new_compare_images",              "screenshot": "none"},
+    {"name": "create and edit screenshot", "function": "create_and_edit_screenshot",      "screenshot": "none"},
 ) # yapf: disable
 
 module_name = "utility"

@@ -82,8 +82,12 @@ declarations = (
     {"name":"download attachment from testcase",             "function": "download_attachment_from_testcase",     "screenshot": "none" },
     {"name":"upload attachment to step",                     "function": "upload_attachment_to_step",             "screenshot": "none" },
     {"name":"download attachment from step",                 "function": "download_attachment_from_step",         "screenshot": "none" },
-    {"name":"upload attachment to global",                   "function": "upload_attachment_to_global",         "screenshot": "none" },
-    {"name":"download attachment from global",               "function": "download_attachment_from_global",     "screenshot": "none" },
+    {"name":"upload attachment to global",                   "function": "upload_attachment_to_global",           "screenshot": "none" },
+    {"name":"download attachment from global",               "function": "download_attachment_from_global",       "screenshot": "none" },
+
+    # data-store actions
+    {"name": "data store: read", "function": "data_store_read", "screenshot": "none"},
+    {"name": "data store: write", "function": "data_store_write", "screenshot": "none"},
 
     # Client specific actions
     {"name": "write into text file",                         "function": "text_write",                            "screenshot": "none" },
@@ -94,7 +98,10 @@ declarations = (
     {"name": "compare file with tag",                        "function": "compare_file_with_tag",                 "screenshot": "none" },
     {"name": "extract text from pdf",                        "function": "extract_text_from_pdf",                 "screenshot": "none" },
     {"name": "search text and font",                         "function": "search_text_and_font",                  "screenshot": "none" },
-    {"name": "read scanned pdf",                            "function": "extract_text_from_scanned_pdf",        "screenshot": "none"},
+    {"name": "read scanned pdf",                             "function": "extract_text_from_scanned_pdf",         "screenshot": "none" },
+
+    # Authenticator code generator action
+    {"name": "authenticator code generator",                 "function": "authenticator_code_generator",          "screenshot": "none" },
 
 ) # yapf: disable
 

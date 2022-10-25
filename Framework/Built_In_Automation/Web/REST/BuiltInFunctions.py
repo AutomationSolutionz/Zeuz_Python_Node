@@ -6,13 +6,15 @@ REST API actions.
 import os
 from pathlib import Path
 import sys
-from typing import Tuple, Union
+import traceback
+from typing import Dict, Union
 import requests
 import ast
 import time
 import inspect
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
+from rauth import OAuth2Service
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -615,13 +617,62 @@ def search_condition_wrapper(data, condition_string):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+ENV_ZEUZ_NODE_CLIENT_CERT = "ZEUZ_NODE_CLIENT_CERT"
+def get_client_certificates() -> Dict[str, Union[str, str]]:
+    """
+    Gets the client-side certificate if there's any.
+
+    Location to the certificate(s) file(s) is resolved in the following way:
+
+    1. Checks for `ZEUZ_NODE_CLIENT_CERT` environment variable which should
+       point to the directory containing the certificate(s).
+    2. Tries to search for a `certificates` folder in the current `PYTHON PATH`.
+
+    Returns the certificates as a dictionary where 'key' is the file name with
+    the extension and 'value' is the filepath of the certificate.
+
+    Use one of the following formats to specify the certificate(s) to use:
+
+    - cert | optional parameter | filename.pem
+    - cert | optional parameter | filename.cert, filename.key
+
+    **NOTE**: `requests` module supports loading only **UNENCRYPTED** files.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    certificates_dir: Path = None
+    try:
+        env_value = os.environ[ENV_ZEUZ_NODE_CLIENT_CERT]
+        certificates_dir = Path(env_value)
+        if not certificates_dir.exists():
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f'The directory "{env_value}" specified by the environment variable "ZEUZ_NODE_CLIENT_CERT" does not exist.\n'
+                f'Trying to locate certificates from "{Path.cwd() / "certificates"}" dir.',
+                3,
+            )
+            raise Exception(f"{env_value} does not exist.")
+    except:
+        # Try to find inside the "certificates" folder.
+        certificates_dir = Path.cwd() / "certificates"
+
+    certificates = {}
+    for filepath in certificates_dir.glob("*"):
+        certificates[filepath.name] = str(filepath)
+
+    return certificates
+
+
 KEY_ZEUZ_API_SESSIONS = "zeuz_api_sessions"
-def get_session(session_name: Union[str, None] = None) -> Union[requests.Request, requests.Session]:
+def get_session(session_name: Union[str, None] = None, cert: str = None) -> Union[requests.Request, requests.Session]:
     """
     Fetches either an old session or creates a new session if it does not exist
     with the provided `session_name`. A value of `None` means, we won't return
     any session - we'll simply return the top level `requests` module.
     """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     # This dictionary contains a mapping between session names and session objects.
     # Whenever a session with a new name is requested, it must first be created and
@@ -647,67 +698,37 @@ def get_session(session_name: Union[str, None] = None) -> Union[requests.Request
             print_variable=False
         )
 
-    return sessions[session_name]
+    selected_session: Union[requests.Request, requests.Session] = sessions[session_name]
 
+    if not cert:
+        return selected_session
 
-ENV_ZEUZ_NODE_CLIENT_CERT = "ZEUZ_NODE_CLIENT_CERT"
-def get_client_certificate() -> Union[str, Tuple[str, str], None]:
-    """
-    Gets the client-side certificate if there's any.
-
-    Location to the certificate(s) file(s) is resolved in the following way:
-
-    1. Checks for `ZEUZ_NODE_CLIENT_CERT` environment variable which should
-       point to the directory containing the certificate(s).
-    2. Tries to search for a `certificates` folder in the current `PYTHON PATH`.
-
-    If there are multiple type of certificates, they're resolved according to
-    the following priorities - 1 being the highest (pick first):
-
-    1. If there's a ".pem" file, it'll take the highest priority as the only
-       certificate file.
-    2. If there's a pair of ".cert" and ".key" files, pick them.
-    3. If there's a pair of ".crt" and ".key" files, pick them.
-    4. If there's a pair of ".cer" and ".key" files, pick them.
-    5. Otherwise we pick nothing and return `None`.
-
-    **NOTE**: `requests` module supports loading only **UNENCRYPTED** files.
-    """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    certificates_dir: Path = None
+    # Add certificate(s) to the session object if provided.
     try:
-        env_value = os.environ[ENV_ZEUZ_NODE_CLIENT_CERT]
-        certificates_dir = Path(env_value)
-        if not certificates_dir.exists():
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                f'The directory "{env_value}" specified by the environment variable "ZEUZ_NODE_CLIENT_CERT" does not exist.\n'
-                f'Trying to locate certificates from "{Path.cwd() / "certificates"}" dir.',
-                3,
-            )
-            raise Exception(f"{env_value} does not exist.")
-    except:
-        # Try to find inside the "certificates" folder.
-        certificates_dir = Path.cwd() / "certificates"
+        loaded_certificates = get_client_certificates()
 
-    def get_len(pattern: str) -> int:
-        return len(list(certificates_dir.glob(pattern)))
-
-    if get_len("*.pem") > 0:
-        str(next(certificates_dir.glob("*.pem")))
-    elif get_len("*.key") > 0:
-        cert_file_exts = ["cert", "crt", "cer"]
-        for cfe in cert_file_exts:
-            cfe_name = f"*.{cfe}"
-            if get_len(cfe_name) > 0:
-                return (
-                    str(next(certificates_dir.glob(cfe_name))),
-                    str(next(certificates_dir.glob("*.key"))),
+        cert = [i.strip() for i in cert.split(",")]
+        for i, name in enumerate(cert):
+            try:
+                cert[i] = loaded_certificates[name]
+            except:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"No certificates found with the name: {name}\nLoaded certificates: {loaded_certificates}",
+                    3,
                 )
+                return selected_session
 
-    return None
+        cert = tuple(cert)
+        if len(cert) == 1:
+            cert = cert[0]
+
+        selected_session.cert = cert
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to load certificate. Printing traceback...", 3)
+        traceback.print_exc()
+
+    return selected_session
 
 
 # Method to handle rest calls
@@ -728,6 +749,7 @@ def handle_rest_call(
     files=None,
     session_name=None,
     allow_redirects=True,
+    cert=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -760,11 +782,11 @@ def handle_rest_call(
         count = 0
 
         # Decide whether we should use a Session object or a one-off request.
-        session = get_session(session_name)
+        session = get_session(session_name, cert)
 
         # Get client-side certificates if it exists in the
         # `ZEUZ_NODE_CLIENT_CERT` or `PYTHON PATH`.
-        cert = get_client_certificate()
+        # cert = get_client_certificates()
 
         result = None
         status_code = 1  # dummy value
@@ -785,7 +807,6 @@ def handle_rest_call(
                             json=body,
                             headers=headers,
                             verify=False,
-                            cert=cert,
                             timeout=timeout,
                             allow_redirects=allow_redirects,
                         )
@@ -800,7 +821,6 @@ def handle_rest_call(
                                 files=files,
                                 headers=headers,
                                 verify=False,
-                                cert=cert,
                                 timeout=timeout,
                                 allow_redirects=allow_redirects,
                             )
@@ -811,7 +831,6 @@ def handle_rest_call(
                                 data=body,
                                 headers=headers,
                                 verify=False,
-                                cert=cert,
                                 timeout=timeout,
                                 allow_redirects=allow_redirects,
                             )
@@ -822,7 +841,6 @@ def handle_rest_call(
                             data=body,
                             headers=headers,
                             verify=False,
-                            cert=cert,
                             timeout=timeout,
                             allow_redirects=allow_redirects,
                         )
@@ -834,7 +852,6 @@ def handle_rest_call(
                             data=payload,
                             headers=headers,
                             verify=False,
-                            cert=cert,
                             timeout=timeout,
                             allow_redirects=allow_redirects,
                         )
@@ -846,7 +863,6 @@ def handle_rest_call(
                         data=payload,
                         headers=headers,
                         verify=False,
-                        cert=cert,
                         timeout=timeout,
                         allow_redirects=allow_redirects,
                     )
@@ -856,7 +872,6 @@ def handle_rest_call(
                     url=url,
                     headers=headers,
                     verify=False,
-                    cert=cert,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
                 )
@@ -867,7 +882,6 @@ def handle_rest_call(
                     json=body,
                     headers=headers,
                     verify=False,
-                    cert=cert,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
                 )
@@ -939,7 +953,7 @@ def handle_rest_call(
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", result.json())
+                Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_raw=True),
                 CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
@@ -1032,7 +1046,8 @@ def handle_rest_call(
                         "rest_response", json_of_response, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", json_of_response
+                        "http_response", json_of_response,
+                        print_raw=True,
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -1051,7 +1066,8 @@ def handle_rest_call(
                         "rest_response", response_text, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", CommonUtil.parse_value_into_object(response_text)
+                        "http_response", CommonUtil.parse_value_into_object(response_text),
+                        print_raw=True,
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -1074,7 +1090,7 @@ def handle_rest_call(
                 )
                 json_of_response = ast.literal_eval(response_text)
                 Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", json_of_response)
+                Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_raw=True)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text converted to json and saved in 'http_response' shared variable",
@@ -1088,7 +1104,7 @@ def handle_rest_call(
                     2,
                 )
                 Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", response_text)
+                Shared_Resources.Set_Shared_Variables("http_response", response_text, print_raw=True)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text saved in 'http_response' shared variable",
@@ -1130,6 +1146,8 @@ def Get_Response(step_data, save_cookie=False):
         files = None
         session_name = None
         allow_redirects = True
+        cert = None
+
         for left, mid, right in step_data:
             left = left.lower()
 
@@ -1148,6 +1166,11 @@ def Get_Response(step_data, save_cookie=False):
                 # related data automatically among all the requests in that
                 # session.
                 session_name = right.strip()
+            elif "cert" in left:
+                # Allow the user to specify a certificate ('.pem') file or a
+                # ('cert', key) pair. The specified certificate information will
+                # be associated with the currently selected session object.
+                cert = right.strip()
             elif "allow redirect" in left:
                 allow_redirects = True if "true" in right.lower() else False
 
@@ -1168,6 +1191,7 @@ def Get_Response(step_data, save_cookie=False):
                     files=files,
                     session_name=session_name,
                     allow_redirects=allow_redirects,
+                    cert=cert,
                 )
                 return return_result
             except Exception:
@@ -1539,6 +1563,118 @@ def Insert_Tuple_Into_List(step_data):
             result_list.append(each_tuple)
 
         Shared_Resources.Set_Shared_Variables(list_name, result_list)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def Get_Oauth2_Access_Token_URl(step_data):
+    """
+    This action takes the data given below as input and returns us an access token url. This url will open a popup
+    window asking for username and password for authentication.
+
+    client id           element parameter        <takes client id for generating an access token url>
+    client secret       element parameter        <takes client secret for generating an access token url>
+    access point        element parameter        <takes the access point for generating an access token url>
+    grant type          element parameter        <takes the type of grant, ex: Authorization Code (With PKCE)>
+    base uri            element parameter        <takes the base uri for generating an access token url>
+    request token uri   element parameter        <takes the request token uri for generating an access token url>
+    redirect uri        element parameter        <takes the redirect uri for generating an access token url>
+    token name          element parameter        <takes the name of token for generating an access token url>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        client_id = ''
+        client_secret = ''
+        access_point = ''
+        grant_type = ''
+        base_uri = ''
+        redirect_uri = ''
+        authorize_uri = ''
+        request_token_uri = ''
+        token_name = ''
+        var_name='access_token_url'
+        scope = ''
+        for row in step_data:
+            if row[0] == "client id":
+                client_id = str(row[2]).strip()
+            elif row[0] == "client secret":
+                client_secret = str(row[2]).strip()
+            elif row[0] == "access point":
+                access_point = str(row[2]).strip()
+            elif row[0] == "scope":
+                scope = str(row[2]).strip()
+            elif row[0] == "grant type":
+                grant_type = str(row[2]).strip()
+            elif row[0] == "base uri":
+                base_uri = str(row[2]).strip()
+            elif row[0] == "authorize uri":
+                authorize_uri = str(row[2]).strip()
+            elif row[0] == "redirect uri":
+                redirect_uri = str(row[2]).strip()
+            elif row[0] == "request token uri":
+                request_token_uri = str(row[2]).strip()
+            elif row[0] == "token name":
+                token_name = str(row[2]).strip()
+            elif row[1] == "rest action":
+                var_name = str(row[2]).strip()
+        if client_id == '':
+            CommonUtil.ExecLog(sModuleInfo, "client id  must be provided.", 3)
+            return "zeuz_failed"
+
+        if client_secret == '':
+            CommonUtil.ExecLog(sModuleInfo, "client secret  must be provided.", 3)
+            return "zeuz_failed"
+
+        if access_point == '':
+            CommonUtil.ExecLog(sModuleInfo, "access point  must be provided.", 3)
+            return "zeuz_failed"
+
+        if grant_type == '':
+            CommonUtil.ExecLog(sModuleInfo, "grant type  must be provided.", 3)
+            return "zeuz_failed"
+
+        if base_uri == '':
+            CommonUtil.ExecLog(sModuleInfo, "base uri must be provided.", 3)
+            return "zeuz_failed"
+
+        if redirect_uri == '':
+            CommonUtil.ExecLog(sModuleInfo, "redirect uri must be provided.", 3)
+            return "zeuz_failed"
+        # if authorize_uri is '':
+        #     CommonUtil.ExecLog(sModuleInfo, "authorize uri must be provided.", 3)
+        #     return "zeuz_failed"
+        if request_token_uri == '':
+            CommonUtil.ExecLog(sModuleInfo, "request token  uri must be provided.", 3)
+            return "zeuz_failed"
+
+        service = OAuth2Service(
+            name=token_name,
+            client_id=client_id,
+            client_secret=client_secret,
+            access_token_url=access_point,
+            authorize_url=authorize_uri,
+            base_url=base_uri,
+        )
+
+        data = {
+            'state': 'test',
+            'response_type': 'code',
+            # 'grant_type': grant_type,
+            'redirect_uri': redirect_uri,
+            'scope':scope,
+        }
+        params = data
+        url = service.get_authorize_url(**params)
+        # print(request_token_uri + url)
+
+        Shared_Resources.Set_Shared_Variables(var_name,request_token_uri + url )
 
         return "passed"
     except Exception:

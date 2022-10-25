@@ -21,7 +21,7 @@ from email.header import decode_header
 from Framework.Utilities import CommonUtil
 import inspect
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
-
+from bs4 import BeautifulSoup
 
 # using IMAP protocol
 from Framework.Utilities.CommonUtil import MODULE_NAME
@@ -185,100 +185,6 @@ def send_email(
         server.sendmail(sender_email, receiver_email, text)
         print("email sent successfully")
 
-
-class RandomEmail1SecMail:
-
-    """
-    usage: This class is used for randomly creating email,read inbox emails from that email and delete that email
-    sources: 1secmail api services
-    """
-
-
-    @staticmethod
-    def generateRandomUserName():        #this function used for generating random username
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        name = string.ascii_lowercase + string.digits #name with letters and digits
-        username = ''.join(random.choice(name) for i in range(10)) #randomly generating username
-        return username
-
-    @staticmethod
-    def extract(newMail): #this function is used for getting username and domain part from modified api
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        getUserName = re.search(r'login=(.*)&',newMail).group(1) #parseUsername part
-        getDomain = re.search(r'domain=(.*)', newMail).group(1) #parseDomainname part
-        return [getUserName, getDomain]
-
-    @staticmethod
-    def create_random_email_address(): #this function is used for creating random email address
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        API = 'https://www.1secmail.com/api/v1/' #1secmail api for creating random email
-        domainList = ['1secmail.com', '1secmail.net', '1secmail.org'] # 1secmail domain list
-        domain = random.choice(domainList) #randomly selecting a domain
-        newMail = f"{API}?login={RandomEmail1SecMail.generateRandomUserName()}&domain={domain}" #generateRandomUserName() return random username and call api to create
-        reqMail = requests.get(newMail)
-        mail = f"{RandomEmail1SecMail.extract(newMail)[0]}@{RandomEmail1SecMail.extract(newMail)[1]}" #extract(newMail) return list[username,domain_name]
-        return mail
-
-    @staticmethod
-    def checkMails(newMail): #this function is used for getting all the inbox mails for that random email
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        API = 'https://www.1secmail.com/api/v1/' #1secmail api
-        var_mails=[]
-        reqLink = f'{API}?action=getMessages&login={newMail.split("@")[0]}&domain={newMail.split("@")[1]}' #Api for getting mail list
-        req = requests.get(reqLink).json()
-        length = len(req)
-        if length == 0:
-            return {newMail:[]}
-        else:
-            idList = []
-            for i in req:
-                for k,v in i.items():
-                    if k == 'id':
-                        mailId = v
-                        idList.append(mailId) #collecting all mailid which is in Inbox
-
-            for i in idList:
-                var_mail_info = {}
-                msgRead = f'{API}?action=readMessage&login={newMail.split("@")[0]}&domain={newMail.split("@")[1]}&id={i}' #api for collect msgbody using mailid
-                req = requests.get(msgRead).json()
-                var_mail_info['id']=i
-                for k,v in req.items(): #sepating elements from mail
-                    if k == 'from':
-                        sender = v
-                        var_mail_info['sender']=sender
-                    elif k == 'subject':
-                        subject = v
-                        var_mail_info['subject']=subject
-                    elif k == 'date':
-                        date = v
-                        var_mail_info['date']=date
-                    elif k == 'textBody':
-                        content = v
-                        var_mail_info['content']=content
-                    elif k == 'body':
-                        body = v
-                        var_mail_info['body']=body
-                    elif k == 'htmlBody':
-                        htmlBody = v
-                        var_mail_info['content']=htmlBody
-                var_mails.append(var_mail_info)
-
-            return {newMail:var_mails}
-
-    @staticmethod
-    def deleteMail(newMail): #this function is used for delete that random email
-        url = 'https://www.1secmail.com/mailbox'
-        data = {
-            'action': 'deleteMailbox',
-            'login': f'{newMail.split("@")[0]}',
-            'domain': f'{newMail.split("@")[1]}'
-        }
-        req = requests.post(url, data=data)
-        if req.status_code==200:
-            return True
-        return False
-
-
 def delete_mail(
         imap_host,
         imap_user,
@@ -437,3 +343,190 @@ def save_mail(
                     f.write(att.payload)
 
         return value
+
+import string,re,random,requests,json
+from abc import ABC, abstractmethod
+
+class RandomMailBoxExporter(ABC):
+    
+    connection_creds = None
+
+    @abstractmethod
+    def get_random_mailbox(self):
+        """Create MailBox on the service. Returns credentials in form of dict"""
+    
+    @abstractmethod
+    def checkMails(self):
+        """Returns a list of messages from the mailbox"""
+
+    @abstractmethod
+    def deleteMailBox(self):
+        """Delete mailbox. Returns True or False"""
+
+class RandomEmail1SecMail(RandomMailBoxExporter):
+
+    @staticmethod
+    def generateRandomUserName():        #this function used for generating random username
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        name = string.ascii_lowercase + string.digits #name with letters and digits
+        username = ''.join(random.choice(name) for i in range(10)) #randomly generating username
+        return username
+
+    @staticmethod
+    def extract(newMail): #this function is used for getting username and domain part from modified api
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        getUserName = re.search(r'login=(.*)&',newMail).group(1) #parseUsername part
+        getDomain = re.search(r'domain=(.*)', newMail).group(1) #parseDomainname part
+        return [getUserName, getDomain]
+
+    @staticmethod
+    def get_random_mailbox(): #this function is used for creating random email address
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        API = 'https://www.1secmail.com/api/v1/' #1secmail api for creating random email
+        domainList = ['1secmail.com', '1secmail.net', '1secmail.org'] # 1secmail domain list
+        domain = random.choice(domainList) #randomly selecting a domain
+        newMail = f"{API}?login={RandomEmail1SecMail.generateRandomUserName()}&domain={domain}" #generateRandomUserName() return random username and call api to create
+        reqMail = requests.get(newMail)
+        mail = f"{RandomEmail1SecMail.extract(newMail)[0]}@{RandomEmail1SecMail.extract(newMail)[1]}" #extract(newMail) return list[username,domain_name]
+        return {'email':mail,'api_key':''}
+
+    @staticmethod
+    def checkMails(newMailCreds): #this function is used for getting all the inbox mails for that random email
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        newMail = newMailCreds['email']
+        API = 'https://www.1secmail.com/api/v1/' #1secmail api
+        var_mails=[]
+        reqLink = f'{API}?action=getMessages&login={newMail.split("@")[0]}&domain={newMail.split("@")[1]}' #Api for getting mail list
+        req = requests.get(reqLink).json()
+        length = len(req)
+        if length == 0:
+            return {newMail:[]}
+        else:
+            idList = []
+            for i in req:
+                for k,v in i.items():
+                    if k == 'id':
+                        mailId = v
+                        idList.append(mailId) #collecting all mailid which is in Inbox
+
+            for i in idList:
+                var_mail_info = {}
+                msgRead = f'{API}?action=readMessage&login={newMail.split("@")[0]}&domain={newMail.split("@")[1]}&id={i}' #api for collect msgbody using mailid
+                req = requests.get(msgRead).json()
+                var_mail_info['id']=i
+                for k,v in req.items(): #sepating elements from mail
+                    if k == 'from':
+                        sender = v
+                        var_mail_info['sender']=sender
+                    elif k == 'subject':
+                        subject = v
+                        var_mail_info['subject']=subject
+                    elif k == 'date':
+                        date = v
+                        var_mail_info['date']=date
+                    elif k == 'textBody':
+                        content = v
+                        var_mail_info['content']=content
+                    elif k == 'body':
+                        body = v
+                        var_mail_info['body']=body
+                    elif k == 'htmlBody':
+                        htmlBody = v
+                        var_mail_info['content']=htmlBody
+                var_mails.append(var_mail_info)
+
+            return {newMail:var_mails}
+
+    @staticmethod
+    def deleteMailBox(newMailCreds): #this function is used for delete that random email
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        newMail = newMailCreds['email']
+        url = 'https://www.1secmail.com/mailbox'
+        data = {
+            'action': 'deleteMailbox',
+            'login': f'{newMail.split("@")[0]}',
+            'domain': f'{newMail.split("@")[1]}'
+        }
+        req = requests.post(url, data=data)
+        if req.status_code==200:
+            return True
+        return False
+
+class TempEmailDevelopermail(RandomMailBoxExporter):
+    name = None
+    headers = {
+  'accept': 'application/json'
+    }
+    all_mail_ids = []
+    
+    
+    def get_random_mailbox(self):
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        url = "https://www.developermail.com/api/v1/mailbox"
+        response = requests.request("PUT", url, headers=self.headers)
+        response_body = json.loads(response.text)
+        self.name = response_body["result"]["name"]
+        token = response_body["result"]["token"]
+        random_email_creds = {"email":self.name + "@developermail.com","api_key":token}
+        return random_email_creds
+            
+    
+    def check_mailbox(self,creds):
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        self.name = creds['email'].split('@')[0].strip()
+        self.headers['X-MailboxToken'] = creds['api_key']
+        url = f"https://www.developermail.com/api/v1/mailbox/{self.name}"
+        response = requests.request("GET", url, headers=self.headers)
+        response_body = json.loads(response.text)
+        self.all_mail_ids = response_body['result']
+
+    def checkMails(self,creds):
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        self.check_mailbox(creds)
+        url = f"https://www.developermail.com/api/v1/mailbox/{self.name}/messages"
+        payload = json.dumps(self.all_mail_ids)
+        self.headers["Content-Type"] = "application/json"
+        response = requests.request("POST", url, headers=self.headers, data=payload)
+        response_body = json.loads(response.text)
+        var_mails = []
+        results = response_body['result']
+        if results:
+            for result in results:
+                var_mail_info = dict()
+                value = result["value"]
+                var_mail_info['id'] = result["key"]
+                var_mail_info['sender']  = value.split("\r\nFrom:")[-1].split("\r\nDate:")[0].split("<")[-1].split('>')[0].strip()
+                var_mail_info['subject'] = value.split("\r\nSubject:")[-1].split("\r\nTo:")[0].strip()
+                var_mail_info['date'] = value.split("\r\nDate:")[-1].split("\r\n")[0].strip()
+                var_mail_info['body'] = value.split("Content-Type: text/html;")[-1].split('--')[0].strip().split('\r\n\r\n')[-1].strip()
+                var_mail_info['content'] = BeautifulSoup(var_mail_info["body"],'html.parser').get_text(separator="\n")
+
+                var_mails.append(var_mail_info)
+        return {creds['email']: var_mails}
+        
+    def deleteMailBox(self,creds):
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        self.name = creds['email'].split('@')[0].strip()
+        url = f"https://www.developermail.com/api/v1/mailbox/{self.name}"
+        self.headers['X-MailboxToken'] = creds['api_key']
+        response = requests.request("DELETE", url, headers=self.headers)
+        response_body = json.loads(response.text)
+        return response_body.get('success')
+
+
+def random_mail_factory() -> RandomMailBoxExporter:
+    """Constructs an exporter factory based on service availability"""
+
+    factories = [RandomEmail1SecMail(),TempEmailDevelopermail()]
+
+    for factory in factories:
+        if factory.connection_creds == None:
+            try:
+                mail_creds = factory.get_random_mailbox()
+            except:
+                mail_creds = {}
+            factory.connection_creds = mail_creds
+            if mail_creds.get('email'):
+                return factory
+        else:
+            return factory

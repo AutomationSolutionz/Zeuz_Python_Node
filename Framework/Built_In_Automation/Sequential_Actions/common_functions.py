@@ -8,6 +8,7 @@
 import difflib
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
 import itertools
+import platform
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -39,7 +40,7 @@ import datefinder
 import traceback
 import json
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email, delete_mail, save_mail, RandomEmail1SecMail
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
 
 months = [
@@ -789,7 +790,9 @@ def save_into_variable(data_set):
 
         try:
             if extra_operation:
-                if "length" in extra_operation:
+                if "path" in extra_operation or "directory" in extra_operation:
+                    variable_value = CommonUtil.path_parser(variable_value)
+                elif "length" in extra_operation:
                     variable_value = len(variable_value)
                 elif "no duplicate" in extra_operation:
                     variable_value = list(set(variable_value))
@@ -1225,7 +1228,8 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "not found":
                         continue
                     if found_status == "all found":
-                        return "all found"
+                        # return "all found"
+                        break
                     if found_status == "2nd list larger":
                         return "2nd list larger"
                     if found_status == "1st list larger":
@@ -1248,7 +1252,8 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "not found":
                         continue
                     if found_status == "all found":
-                        return "all found"
+                        # return "all found"
+                        break
                     if found_status == "2nd list larger":
                         return "2nd list larger"
                     if found_status == "1st list larger":
@@ -2439,7 +2444,6 @@ def excel_write(data_set):
                 expand = right.strip().lower()
             elif "write into excel" in left:
                 value = CommonUtil.parse_value_into_object(right)
-                # print("......1......", type(value), ".......", value)
             elif "file path" in left:
                 filepath = right.strip()
                 excel_file_path = Path(CommonUtil.path_parser(filepath))
@@ -3440,42 +3444,60 @@ def validate_list_order(data_set):
         )
         return "zeuz_failed"
 
+
 @logger
 def execute_python_code(data_set):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    inp, out_var, main_function, Code, filepath_code = "", "", "", "", ""
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        inp, out_var, main_function, Code, filepath_code = "", "", "", "", ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if left == "file path":
+                filepath = right.strip()
+                filepath = Path(CommonUtil.path_parser(filepath))
+                with open(filepath, "r") as file:
+                    filepath_code = file.read()
+            elif left == "import files":
+                import_paths = CommonUtil.parse_value_into_object(right.strip())
+                if type(import_paths) == str:
+                    import_paths = [import_paths]
+                for path in import_paths:
+                    if Path(path).is_dir() and path not in sys.path:
+                        sys.path.append(path)
+                    if Path(path).is_file():
+                        if Path(path).parent.__str__() not in sys.path:
+                            sys.path.append(Path(path).parent.__str__())
+                        # import importlib
+                        # module = Path(path).name.split(".")[0]
+                        # sr.Set_Shared_Variables(module, importlib.import_module(module))
+            elif left == "input data":
+                inp = right
+            elif left == "output variable":
+                out_var = right.strip()
+            elif left == "main function":
+                main_function = right.strip().split("(")[0]
+            elif left == "execute python code":
+                Code = right
 
-    for left, mid, right in data_set:
-        left = left.strip().lower()
-        if left == "file path":
-            filepath = right.strip()
-            filepath = Path(CommonUtil.path_parser(filepath))
-            with open(filepath, "r") as file:
-                filepath_code = file.read()
-        elif left == "input data":
-            inp = right
-        elif left == "output variable":
-            out_var = right.strip()
-        elif left == "main function":
-            main_function = right.strip().split("(")[0]
-        elif left == "execute python code":
-            Code = right
-    Code = filepath_code if filepath_code else Code
-    try: exec(Code, globals())          # Todo: pass only sr.shared_variables and {"sr":sr}
-    except: return CommonUtil.Exception_Handler(sys.exc_info())
-
-    if main_function:
-        code = main_function + "(" + inp + ")"
-        try: out_val = eval(code)
+        Code = filepath_code if filepath_code else Code
+        try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
-        if out_var:
-            CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
-            return sr.Set_Shared_Variables(out_var, out_val)
-        CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
 
-    return "passed"
+        if main_function:
+            CommonUtil.ExecLog(sModuleInfo, "This method is deprecated. You can now save any output directly by assigning a variable inside Code", 2)
+            # Todo: deprecated on 15 August, 2022. Remove 4 months later
+            # code = main_function + "(" + inp + ")"
+            # try: out_val = eval(code)
+            # except: return CommonUtil.Exception_Handler(sys.exc_info())
+            # if out_var:
+            #     CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
+            #     return sr.Set_Shared_Variables(out_var, out_val)
+            # CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -3503,6 +3525,7 @@ def csv_read(data_set):
         allowed_list = None
         map_key_names = None
         Integer, Float, Bool = [], [], []
+        Python_mod = False
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
@@ -3548,6 +3571,18 @@ def csv_read(data_set):
                         Bool += fields
                 elif "str" in left:
                     pass    # every field is already in string in csv
+            elif "pythonmodule" == left.replace(" ", "").replace("_", "").replace("-", "").lower():
+                r = right.strip()
+                sys.path.append(os.path.dirname(r))
+                try:
+                    filename = os.path.basename(r)
+                    filename = filename[:filename.find(".")] if "." in filename else filename
+                    exec("import " + filename)
+                    module = eval(filename)
+                    fun_list = dict(inspect.getmembers(module, inspect.isfunction))
+                    Python_mod = True
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
             elif "read from csv" == left:
                 var_name = right.strip()
 
@@ -3606,6 +3641,13 @@ def csv_read(data_set):
                             elif i not in not_exist:
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to boolean" % i, 2)
+                    if Python_mod:
+                        for i in line:
+                            temp = line[i].strip()
+                            if "(" in temp and temp.endswith(")") and temp.split("(")[0] in fun_list:
+                                line[i] = fun_list[temp.split("(")[0]](*eval("["+temp.split("(")[1][:-1] + "]"))
+
+
                     data_to_save.append(line)
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
@@ -3817,20 +3859,30 @@ def modify_datetime(data_set):
 
             return t
 
+        for left,mid,right in data_set:
+            if "format" in left:
+                date_format = right
+                
+        if date_format:
+            if os.name == "nt":
+                date_format = date_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+        
         for left, mid, right in data_set:
             left = left.strip().lower()
-
             if "data" in left:
                 if right.strip().lower() == "today":
                     data = datetime.today()
-                else:
+                elif right.strip().lower() in ("monday","tuesday","wednesday","thursday","friday","saturday","sunday"):
                     data = parser.parse(right.strip())
+                else:
+                    if date_format:
+                        _date_format = date_format.replace("%-","%").replace("%#","%")
+                        data = datetime.strptime(right.strip(),_date_format)
+                    else:
+                        data = parser.parse(right.strip())
                 continue
             if "action" in mid:
                 var_name = right.strip()
-                continue
-            if "format" in left:
-                date_format = right
                 continue
 
             right = right.strip()
@@ -4128,11 +4180,17 @@ def random_email_generator(data_set):
         if var_variable is None:
             CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
             return "zeuz_failed"
+        mail_fac = random_mail_factory()
+        var_email_creds = mail_fac.connection_creds #return random email address
 
-        var_email = RandomEmail1SecMail.create_random_email_address() #return random email address
-
-        CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email), 1)
-        return sr.Set_Shared_Variables(var_variable, var_email) #saved in shared variable inside variable key
+        if var_email_creds == {}:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
+            return "zeuz_failed"
+            
+        CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
+        sr.Set_Shared_Variables("random_email_factory", mail_fac)
+        return sr.Set_Shared_Variables(var_variable, var_email_creds) #saved in shared variable inside variable key
+        
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -4179,8 +4237,11 @@ def random_email_read(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Waiting for %s seconds to receive the mail" % (wait), 1)
         start = time.time()
         while True:
-            res = RandomEmail1SecMail.checkMails(var_email)
-            if len(res[var_email]) > 0:
+            mail_fac = sr.Get_Shared_Variables("random_email_factory")
+            if isinstance(var_email,str):
+                var_email = eval(var_email)
+            res = mail_fac.checkMails(var_email)
+            if len(res[var_email['email']]) > 0:
                 break
             if start + wait < time.time():
                 CommonUtil.ExecLog(sModuleInfo, "No email found  for '%s' after waiting %s seconds. You may need to increase wait time" % (var_email, wait), 1)
@@ -4216,8 +4277,10 @@ def random_email_delete(data_set):
         if var_email is None:
             CommonUtil.ExecLog(sModuleInfo, "Please provide email address", 3)
             return "zeuz_failed"
-
-        res = RandomEmail1SecMail.deleteMail(var_email)
+        mail_fac = sr.Get_Shared_Variables("random_email_factory")
+        if isinstance(var_email,str):
+            var_email = eval(var_email)
+        res = mail_fac.deleteMailBox(var_email)
 
         if res:
             CommonUtil.ExecLog(sModuleInfo, "'%s' is deleted" % (var_email), 1)
@@ -4438,20 +4501,27 @@ def upload_attachment_to_global(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_path = None
+        replace = False
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "attachment path" == left:
                var_path = CommonUtil.path_parser(right)
+            if "replace" == left:
+                replace = right.lower().strip() == "true"
 
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
+
         headers = RequestFormatter.add_api_key_to_headers({})
         res = requests.post(
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
             verify=False,
+            data={"replace": replace},
             **headers)
+
+
         CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
         return "passed"
 
@@ -5398,6 +5468,198 @@ def extract_text_from_scanned_pdf(data_set):
             full_pdf_text.append(texts)
 
         return sr.Set_Shared_Variables(var_name, full_pdf_text)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def authenticator_code_generator(data_set):
+    """
+    This function reads the authenticator secret code and generate tfa code in every 30 sec
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            |app_name   		            |path		    | %|os.environ["AUTH_CODE"]|%
+            |authenticator code generator	|common action	| variable_name
+            ------------------------------------------------------------------------------
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        var_name = app_name = secret_code = ""
+
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "input parameter":
+                app_name = left.strip()
+                secret_code = right.strip()
+            elif left.strip().lower() == "authenticator code generator":
+                var_name = right.strip()
+
+        if "" in (app_name, secret_code):
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the app name and authenticator secret key", 3)
+            return "zeuz_failed"
+
+        app_dir = Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Authenticator"
+        csv_path = app_dir/"gauth.csv"
+        with open(csv_path,"w") as file:
+            file.write(app_name + ":" + secret_code)
+
+        if platform.system() == "Windows":
+            cmd = str(app_dir)
+            cmd = f'{cmd[:2]} && cd "{cmd}" && gauth.exe -csv'
+        elif platform.system() == "Darwin":
+            cmd = str(app_dir/"gauth.mac")
+        else:
+            cmd = str(app_dir/"gauth.lin")
+
+        CommonUtil.ExecLog(sModuleInfo, f"Running the following command:\n{cmd}", 1)
+        # output = os.system(cmd)
+        output = subprocess.check_output(cmd, shell=True, encoding="utf-8").strip()
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{output}", 1)
+
+        return sr.Set_Shared_Variables(var_name, output.split(",")[-4])
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def data_store_read(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                where            | input parameter    | $col1 = 'Hello' AND name = 'Mini'
+                columns          | optional parameter | name, age
+                data store: read | common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `list of datastore` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = ""
+        params = {}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'where':
+                q = right.strip()
+                temp = q.lower().replace('and', ',').replace('or', ',').split(',')
+
+                t = temp[0].split('=')
+                params['and_' + t[0].strip()] = t[1].strip()
+                i = 1
+                for s in q.split():
+                    if s.lower() == 'and':
+                        t = temp[i].split('=')
+                        params['and_' + t[0].strip()] = t[1].strip()
+                        i+=1
+
+                    if s.lower() == 'or':
+                        t = temp[i].split('=')
+                        params['or_'+t[0].strip()] = t[1].strip()
+
+                        i += 1
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        res = requests.get(
+            RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
+            params=json.dumps(params),
+            verify=False,
+            **headers
+        )
+        #
+
+        # print(res.text)
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
+
+        return sr.Set_Shared_Variables(var_name, json.loads(res.text))
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def data_store_write(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                where            | input parameter    | $col1 = 'Hello' AND name = 'Mini'
+                columns          | optional parameter | name, age
+                data             | element parameter  | column_name=Arifa
+                data store: write| common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `list of datastore` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = ""
+        params = {}
+        data={}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'where':
+                q = right.strip()
+                temp = q.lower().replace('and', ',').replace('or', ',').split(',')
+
+                t = temp[0].split('=')
+                params['and_' + t[0].strip()] = t[1].strip()
+                i = 1
+                for s in q.split():
+                    if s.lower() == 'and':
+                        t = temp[i].split('=')
+                        params['and_' + t[0].strip()] = t[1].strip()
+                        i+=1
+
+                    if s.lower() == 'or':
+                        t = temp[i].split('=')
+                        params['or_'+t[0].strip()] = t[1].strip()
+
+                        i += 1
+            if left.strip() == 'data':
+                temp = right.strip().split(',')
+                for t in temp:
+                    tt=t.split('=')
+                    data[tt[0].strip()]=tt[1].strip()
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        res = requests.patch(
+            RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
+            params=json.dumps(params),
+            data=json.dumps(data),
+            verify=False,
+            **headers
+        )
+        #
+
+        # print(res.text)
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
+
+        return sr.Set_Shared_Variables(var_name, json.loads(res.text))
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

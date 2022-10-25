@@ -27,7 +27,15 @@ MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
 
 
-def Set_Shared_Variables(key, value, protected=False, attachment_var=False, print_variable=True, pretty=True):
+def Set_Shared_Variables(
+    key,
+    value,
+    protected=False,
+    attachment_var=False,
+    print_variable=True,
+    pretty=True,
+    print_raw=False,
+):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
@@ -78,8 +86,17 @@ def Set_Shared_Variables(key, value, protected=False, attachment_var=False, prin
             shared_variables[key] = value
 
         if print_variable:
+            if print_raw:
+                try:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Raw variable data: %s" % value, 4,
+                    )
+                except:
+                    pass
+
             try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
             except: val = str(value)
+
             CommonUtil.ExecLog(
                 sModuleInfo, "Saved variable: %s" % key, 1,
                 variable={
@@ -589,7 +606,8 @@ def parse_variable(name):
         else:
             val = eval(name, shared_variables)
             # Print to console.
-            CommonUtil.prettify(copy_of_name, val)
+            if not "os.environ" in name:
+                CommonUtil.prettify(copy_of_name, val)
             return generate_zeuz_code_if_not_json_obj(val)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -680,7 +698,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     3
                 )
                 return "zeuz_failed"
-
             else:
                 if var_name.startswith("rest_response"):        # Todo: Remove this variable from Rest files 3 months later from 18 January, 2022
                     CommonUtil.ExecLog(
@@ -1348,9 +1365,10 @@ def save_built_in_time_variable(string):
         if input == "currentepochtime":
             return int(time.time())
         elif input.startswith("today"):
+            if os.name == "nt":
+                datetime_format = datetime_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+
             if input.lower().strip() == "today":
-                if os.name == "nt":
-                    datetime_format = datetime_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
                 return datetime.today().strftime(datetime_format)
             elif "+" in input:
                 l = input.split("+")

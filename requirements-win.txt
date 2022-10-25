@@ -16,7 +16,7 @@ SpeechRecognition
 colorama
 pyodbc
 python-dateutil
-Appium-Python-Client
+Appium-Python-Client==2.5.0
 xlwings
 image
 tzlocal
@@ -40,7 +40,7 @@ pyrsistent
 attrs
 pytest==6.1.2
 yapf
-websocket-client
+websocket-client==1.3.3
 tqdm
 pyscreenshot
 pyyaml
@@ -56,4 +56,7 @@ premailer
 html-diff
 openpyxl
 pytesseract
+protobuf
 pdf2image
+pytz
+rauth

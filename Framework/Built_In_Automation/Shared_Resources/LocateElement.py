@@ -219,6 +219,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     pass
             if save_parameter != "":  # save element to a variable
                 sr.Set_Shared_Variables(save_parameter, result)
+            sr.Set_Shared_Variables("zeuz_element", result)
             return result  # Return on pass
         elif result == "zeuz_failed":
             try:
@@ -558,7 +559,7 @@ def _switch(step_data_set):
                 if isinstance(each_frame, str) and each_frame.strip().lower() == "default content":
                     continue
                 else:
-                    generic_driver.switch_to_frame(each_frame)
+                    generic_driver.switch_to.frame(each_frame)
 
             return True
             """

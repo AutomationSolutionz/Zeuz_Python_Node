@@ -8,6 +8,11 @@ import inspect
 from colorama import init as colorama_init
 from colorama import Fore
 
+#Importing rich library to print in an organized manner
+from rich import print
+from rich.text import Text
+from rich.tree import Tree
+
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
 
@@ -165,7 +170,6 @@ def _child_search2(ParentElement):
                 if temp:
                     return path + temp
             create_index(index_trace, each_child)
-
         return path
 
     except Exception:
@@ -531,10 +535,29 @@ try:
 except:
     No_of_level_to_skip = 0
 
+def create_tag(elem):
+    s = "<"
+    for i in elem.attrib:
+        s = s + i + '="' + elem.attrib[i] + '" '
+    s = s[:-1] + ">"
+    return s
+
+
+def printTree(root,tree):
+    for child in root:
+        if child.get('zeuz') == "aiplugin":
+            tree.add(f"[bold green]{create_tag(child)}", guide_style="red")
+            return
+        elif child.findall(".//*[@zeuz='aiplugin']"):
+            temp = tree.add(f"[yellow]{create_tag(child)}", guide_style="red")
+            printTree(child, temp)
+        else:
+            tree.add(f"[white]{create_tag(child)}", guide_style="red")
+
 
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
+        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count, list_path
         auth_thread = Authenticate()
         while True:
             if debugger_is_active():
@@ -553,9 +576,14 @@ def main():
             if windows.Count == 0:
                 return
             for window in windows:
+                if window.Current.Name.strip() in ("Annotation - Zoom"): continue
                 if _found(window):
                     window_name = window.Current.Name
-                    xml_str += '<body Window="%s">' % window_name
+                    try:
+                        pid = window.Current.ProcessId
+                    except:
+                        pid = ""
+                    xml_str += '<body Window="%s" pid="%s">' % (window_name, pid)
                     path = create_path({}, window, True)
                     break
             else:
@@ -566,8 +594,9 @@ def main():
 
             xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
 
-            print("************* Exact Path *************")
+            print("======== COPY Exact Path ========")
             print(path)
+            print("============= COPY ==============")
             # print("************* path_priority *************")
             # print("Path priority =", path_priority, "\n\n")
             with open("Element.xml", "w") as f:
@@ -578,6 +607,7 @@ def main():
             except: pass
             sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
+            tree = Tree(f"[cyan]{create_tag(root)}", guide_style="red")  # root of rich tree python
             if sibling.strip().lower() == "ok":
                 print("Hover over the SIBLING and press control")
                 keyboard.wait("ctrl")
@@ -589,6 +619,8 @@ def main():
             Remove_coordinate(root)
             Remove_coordinate_time = round(time.perf_counter() - start, 3)
             xml_str = ET.tostring(root).decode()
+            printTree(root, tree)
+            print(tree)
             with open("Sibling.xml", "w") as f:
                 f.write(xml_str)
 
@@ -596,12 +628,12 @@ def main():
             Upload(auth_thread, window_name)
             Upload_time = round(time.perf_counter()-start, 3)
 
-            print("\nElement searching time =", element_time, "sec")
-            print("Sibling searching time =", sibling_time, "sec")
-            print("Coordinate remove time =", Remove_coordinate_time, "sec")
-            print("Uploading to API  time =", Upload_time, "sec")
-            print("start_findall time =", round(findall_time, 3), "sec", "Findall count =", findall_count)
-            print("each__findall_time (Each_Element_find_time, finall_time, child_count)")
+            # print("\nElement searching time =", element_time, "sec")
+            # print("Sibling searching time =", sibling_time, "sec")
+            # print("Coordinate remove time =", Remove_coordinate_time, "sec")
+            # print("Uploading to API  time =", Upload_time, "sec")
+            # print("start_findall time =", round(findall_time, 3), "sec", "Findall count =", findall_count)
+            # print("each__findall_time (Each_Element_find_time, finall_time, child_count)")
             from operator import itemgetter
             global each_findall_time
             each_findall_time = sorted(each_findall_time, key=itemgetter(0), reverse=True)
