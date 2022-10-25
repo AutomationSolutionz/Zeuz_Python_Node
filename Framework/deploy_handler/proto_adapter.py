@@ -59,7 +59,7 @@ def read_steps(steps_pb) -> List[Dict]:
                 "type": step.type,
                 "attachments": attachments,
                 "verify_point": step.step_info.verify_point,
-                "continue_on_fail": step.step_info.step_continue,
+                "continue_on_fail": step.continue_point,
                 "step_time": step.time,
                 "actions": read_actions(step.actions),
             }
