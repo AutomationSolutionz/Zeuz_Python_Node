@@ -576,6 +576,7 @@ def main():
             if windows.Count == 0:
                 return
             for window in windows:
+                if window.Current.Name.strip() in ("Annotation - Zoom"): continue
                 if _found(window):
                     window_name = window.Current.Name
                     try:
