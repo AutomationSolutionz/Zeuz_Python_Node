@@ -4,6 +4,14 @@
 # Version 16
 
 ### [Current changes]
+-
+### [16.1.0][Oct 25, 2022]
+- **[Add]** Continue to next iter feature is implemented in For Loop Action
+- **[Fix]** datatype fix and checkbox/toggle item fix for windows
+- **[Fix]** browser performance matrices is confined to chrome and edge browsers only
+- **[Add]** Largest Contentful Paint is added in browser performance matrices
+- **[Improve]** Stale element error is handled in click and check action
+- **[Add]** `zeuz_prettify_limit` variable can limit prettify characters
 - **[Add]** Added secondary random mailbox
 - **[Add]** Added Browser Performance metrics, Step metrics, Action metrics
 - **[Add]** Import files in Execute Python Code action
@@ -59,7 +67,11 @@
 - **[Fix]** SID and service name is required for Oracle database only. 
   Previously error was showing when user didn't input SID and service name for 
   other database(for example MySQL etc.). Now this has been fixed.
+- 
+### [16.0.0]
+- **[Improve]** Deploying testcases to node is done with websockets
 
+# Version 15
 ### [15.2.0][Jun 07, 2022]
 - **[Add]** Add profile functionality for Chrome
 - **[Add]** Add extension functionality for Chrome
