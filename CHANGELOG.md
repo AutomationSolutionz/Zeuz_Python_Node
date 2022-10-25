@@ -48,7 +48,7 @@
   Certificates are best used by pairing with the `session` optional parameter.
 
 - **[Fix]** Fixed return for common screenshot action
-
+### [16.0.0]
 - **[Change]** Change the deploy system. This change replaces the old deploy
   system code with a new one that is compatible with the v3 engine on the server
   side.  This works by connecting with a persistent websocket connection that is
@@ -67,9 +67,6 @@
 - **[Fix]** SID and service name is required for Oracle database only. 
   Previously error was showing when user didn't input SID and service name for 
   other database(for example MySQL etc.). Now this has been fixed.
-- 
-### [16.0.0]
-- **[Improve]** Deploying testcases to node is done with websockets
 
 # Version 15
 ### [15.2.0][Jun 07, 2022]
