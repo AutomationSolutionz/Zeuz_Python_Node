@@ -1658,7 +1658,8 @@ def Run_Application(data_set):
             s = time.time()
             while time.time() - s < wait:
                 # if len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:     # This is case in-sensitive
-                if Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
+                # if Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
+                if Desktop_app is not None:
                     break
                 time.sleep(0.5)
             else:
