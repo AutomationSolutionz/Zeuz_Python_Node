@@ -487,6 +487,7 @@ def launch_application(data_set):
             no_reset = False
             work_profile = False
             re_install = True
+            bundle_id = None
 
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -500,6 +501,9 @@ def launch_application(data_set):
 
                     elif left in ("ios", "ios simulator"):
                         ios = right
+
+                    elif left in ("bundle id", "bundle", "bundle_id"):
+                        bundle_id = right
 
                     elif left in ("reinstall", "re install", "re_install"):
                         if right.strip().lower() in ("no", "false", "na"):
@@ -595,6 +599,7 @@ def launch_application(data_set):
                 work_profile=work_profile,
                 desiredcaps=desiredcaps,
                 re_install=re_install,
+                bundle_id=bundle_id
             )
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -878,6 +883,10 @@ def start_appium_driver(
                         ),
                         encoding=encoding,
                     ).strip()
+
+                    if kwargs["bundle_id"]:
+                        bundle_id = kwargs["bundle_id"].strip()
+
                     if kwargs["re_install"]:
                         desired_caps["app"] = app  # Use set_value() for writing to element
                     desired_caps["bundleId"] = bundle_id.replace("\\n", "")
@@ -905,6 +914,9 @@ def start_appium_driver(
                 app = os.path.join(app, ios)
                 encoding = "utf-8"
                 bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
+
+                if kwargs["bundle_id"]:
+                    bundle_id = kwargs["bundle_id"].strip()
 
                 if kwargs["re_install"]:
                     desired_caps["bundleId"] = ios  # Use set_value() for writing to element
