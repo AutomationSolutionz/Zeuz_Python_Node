@@ -703,7 +703,10 @@ def _element_path_parser(element_path: str):
     try:
         element_name, element_control, element_automation, element_class, element_index = None, None, None, None, 0
         element_path = element_path.strip()
-        if element_path.startswith(".."):
+        if element_path.lower().startswith("parent"):
+            element_path = element_path[element_path.find(">") + 1:].strip()
+            return element_path, "parent", None, None, None, None, 0
+        elif element_path.startswith("..."):
             exact = False
             element_path = element_path[element_path.find(">") + 1:].strip()
         else:
@@ -756,7 +759,8 @@ def Element_path_search(window_name, element_path):
             ParentElement,
             element_path,
             sModuleInfo,
-            True if window_name is None else False
+            [ParentElement],
+            True if window_name is None else False,
         )
         if temp == []: temp = "zeuz_failed"
         return temp
@@ -769,12 +773,20 @@ def _child_search_by_path(
     ParentElement,
     element_path,
     sModuleInfo,
-    switch_window=False
+    Ancestor,
+    switch_window=False,
 ):
     element_name, element_class, element_automation, element_control = None, None, None, None
     global tabs
     try:
         element_path, exact, element_name, element_control, element_automation, element_class, element_index = _element_path_parser(element_path)
+        if exact == "parent":
+            return _child_search_by_path(
+                Ancestor[-2],
+                element_path,
+                sModuleInfo,
+                Ancestor[:-1]
+            )
         if exact == "error":
             return []
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
@@ -817,7 +829,8 @@ def _child_search_by_path(
                 return _child_search_by_path(
                     all_elements[element_index],
                     element_path,
-                    sModuleInfo
+                    sModuleInfo,
+                    Ancestor + [all_elements[element_index]]
                 )
             else:
                 return [all_elements[element_index]]
@@ -838,7 +851,8 @@ def _child_search_by_path(
                 return _child_search_by_path(
                     temp[element_index],
                     element_path,
-                    sModuleInfo
+                    sModuleInfo,
+                    Ancestor + [temp[element_index]]
                 )
             else:
                 return [temp[element_index]]
