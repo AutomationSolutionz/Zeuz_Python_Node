@@ -4,7 +4,8 @@
 # Version 16
 
 ### [Current changes]
--
+- **[Add]** Immediate parent support in windows path
+
 ### [16.1.0][Oct 25, 2022]
 - **[Add]** Continue to next iter feature is implemented in For Loop Action
 - **[Fix]** datatype fix and checkbox/toggle item fix for windows
