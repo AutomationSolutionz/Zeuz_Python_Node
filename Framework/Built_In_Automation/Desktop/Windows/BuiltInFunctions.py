@@ -780,13 +780,15 @@ def _child_search_by_path(
     global tabs
     try:
         element_path, exact, element_name, element_control, element_automation, element_class, element_index = _element_path_parser(element_path)
-        if exact == "parent":
+        if exact == "parent" and element_path:
             return _child_search_by_path(
                 Ancestor[-2],
                 element_path,
                 sModuleInfo,
                 Ancestor[:-1]
             )
+        elif exact == "parent" and not element_path:
+            return [Ancestor[-2]]
         if exact == "error":
             return []
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
