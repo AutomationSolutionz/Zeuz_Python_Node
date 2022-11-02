@@ -1593,10 +1593,11 @@ def main(device_dict, user_info_object):
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
-            # device_order = run_id_info["device_info"]
+            string_device_order = run_id_info["device_info"].replace("\'", "\"")
+            device_order = json.loads(string_device_order)
             # or
-            with open(PROJECT_ROOT / "temp/device_info_in_node_v2.json", "r") as device_info_file:
-                device_order = json.load(device_info_file)
+            # with open(PROJECT_ROOT / "temp/device_info_in_node_v2.json", "r") as device_info_file:
+            #     device_order = json.load(device_info_file)
 
             final_dependency = run_id_info["dependency_list"]
             # is_linked = run_id_info["is_linked"]
