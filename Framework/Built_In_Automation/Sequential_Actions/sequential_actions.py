@@ -1192,8 +1192,8 @@ def Run_Sequential_Actions(
                 # If middle column = action, call action handler
                 elif "action" in action_name:  # Must be last, since it's a single word that also exists in other action types
                     result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
-                    if row[0].lower().strip() == "step exit":
-                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                    if row[0].lower().strip() in ("step exit", "testcase exit"):
+                        CommonUtil.ExecLog(sModuleInfo, f"{row[0].lower().strip()} Exit called. Stopping Test Step.", 1)
                         skip_all = [i for i in range(len(step_data))]
                         return result, skip_all
 

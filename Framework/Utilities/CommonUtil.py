@@ -129,6 +129,7 @@ custom_step_duration = ""
 run_cancel = ""
 run_cancelled = False
 disabled_step = []
+testcase_exit = ""
 max_char = 0
 
 executor = concurrent.futures.ThreadPoolExecutor()

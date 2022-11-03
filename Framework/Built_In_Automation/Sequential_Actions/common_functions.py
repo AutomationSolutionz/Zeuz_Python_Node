@@ -538,20 +538,53 @@ def step_exit(data_set):
 
     try:
         action_value = ""
-        for row in data_set:
-            if row[0] == "step exit" and row[1] == "action":
-                action_value = row[2]
+        for left, mid, right in data_set:
+            if left.lower().strip() == "step exit":
+                action_value = right.strip().lower()
+                break
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-    if (
-        action_value in failed_tag_list
-    ):  # Convert user specified pass/fail into standard result
+    if "fail" in action_value:
         return "zeuz_failed"
-    elif action_value in skipped_tag_list:
-        return "skipped"
-    elif action_value in passed_tag_list:
+    elif "pass" in action_value:
         return "passed"
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
+        return "zeuz_failed"
+
+
+def testcase_exit(data_set):
+    """ Exits a Test Step wtih passed/failed in the standard format, when the user specifies it in the step data """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        action_value = ""
+        for left, mid, right in data_set:
+            if left.lower().strip() == "testcase exit":
+                action_value = right.strip().lower()
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+    if "skip" in action_value:
+        CommonUtil.testcase_exit = "Skipped"
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Skipped", 2)
+        return "passed"
+    elif "fail" in action_value:
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Failed", 2)
+        CommonUtil.testcase_exit = "Failed"
+        return "zeuz_failed"
+    elif "pass" in action_value:
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Passed", 2)
+        CommonUtil.testcase_exit = "Passed"
+        return "passed"
+    elif "block" in action_value:
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Blocked", 2)
+        CommonUtil.testcase_exit = "Blocked"
+        return "zeuz_failed"
     else:
         CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
         return "zeuz_failed"
@@ -5408,7 +5441,7 @@ def disable_step(data_set):
         if len(steps) == 0:
             CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
+            CommonUtil.ExecLog(sModuleInfo, "%s steps have been disabled" % steps, 1)
             CommonUtil.disabled_step = steps
 
         return "passed"

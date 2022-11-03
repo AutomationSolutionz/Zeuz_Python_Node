@@ -619,6 +619,9 @@ def run_all_test_steps_in_a_test_case(
             if StepSeq in CommonUtil.disabled_step:
                 CommonUtil.ExecLog(sModuleInfo, "STEP-%s is disabled" % StepSeq, 2)
                 sStepResult = "skipped"
+            elif CommonUtil.testcase_exit:
+                CommonUtil.ExecLog(sModuleInfo, "STEP-%s is skipped" % StepSeq, 2)
+                sStepResult = "skipped"
             else:
                 sStepResult = call_driver_function_of_test_step(
                     sModuleInfo,
@@ -712,7 +715,10 @@ def run_all_test_steps_in_a_test_case(
 
 # from the returned step results, it finds out the test case result
 def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList, testcase_info):
-    if "BLOCKED" in sTestStepResultList:
+    if CommonUtil.testcase_exit:
+        sTestCaseStatus = CommonUtil.testcase_exit
+        CommonUtil.ExecLog(sModuleInfo, f"Test Case {CommonUtil.testcase_exit}", 1)
+    elif "BLOCKED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
         sTestCaseStatus = "Blocked"
     elif "CANCELLED" in sTestStepResultList or "Cancelled" in sTestStepResultList:
@@ -1647,6 +1653,7 @@ def main(device_dict, user_info_object):
                     test_case_name = testcase_info["title"]
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
                     CommonUtil.disabled_step = []
+                    CommonUtil.testcase_exit = ""
 
                     # Download test case and step attachments
                     download_attachments(testcase_info)
