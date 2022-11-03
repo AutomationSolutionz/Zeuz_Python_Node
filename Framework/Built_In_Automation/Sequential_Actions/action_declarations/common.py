@@ -12,6 +12,7 @@ declarations = (
     { "name": "delete shared variables",                     "function": "delete_all_shared_variables",           "screenshot": "none" },
     { "name": "settings",                                    "function": "sequential_actions_settings",           "screenshot": "none" },
     { "name": "step exit",                                   "function": "step_exit",                             "screenshot": "none" },
+    { "name": "testcase exit",                               "function": "testcase_exit",                             "screenshot": "none" },
     { "name": "save time",                                   "function": "Save_Current_Time",                     "screenshot": "none" },
     { "name": "create or append list into list",             "function": "insert_list_into_another_list",         "screenshot": "none" },
     { "name": "validate order",                              "function": "validate_list_order",                   "screenshot": "none" },
