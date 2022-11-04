@@ -33,6 +33,8 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from reporting import junit_report
 
+from google.cloud import bigquery
+
 from rich.style import Style
 from rich.table import Table
 from rich.console import Console
@@ -835,6 +837,29 @@ def set_important_variables():
         raise Exception
 
 
+def send_to_bigquery(execution_log, metrics):
+    client = bigquery.Client()
+    table_id = "node-bigquery-367604.zeuz_node.reports"
+    # TODO: Create table if not already exists using client.create_table(). If
+    # there are errors related to a table already existing, we can safely
+    # ignore.
+
+    rows_to_insert = [
+        {
+            "run_id": execution_log["run_id"],
+            "tc_id": execution_log["test_cases"][0]["testcase_no"],
+            "metrics": json.dumps(metrics),
+            "execution_log": json.dumps(execution_log),
+        }
+    ]
+    
+    errors = client.insert_rows_json(table_id, rows_to_insert)
+    if len(errors) == 0:
+        print("Sent execution report to BigQuery")
+    else:
+        print(f"Encountered errors while inserting rows: {errors}")
+
+
 def run_test_case(
     TestCaseID,
     sModuleInfo,
@@ -958,13 +983,17 @@ def run_test_case(
                 + ".zip"
             )
             after_execution_dict["logid"] = TCLogFile
-        after_execution_dict["metrics"] = {
+
+        metrics = {
             "browser_performance": CommonUtil.browser_perf,
-            "Node": {
+            "node": {
                 "actions": CommonUtil.action_perf,
-                "step": CommonUtil.step_perf
+                "steps": CommonUtil.step_perf
             }
         }
+        send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+
+        after_execution_dict["metrics"] = metrics
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
 

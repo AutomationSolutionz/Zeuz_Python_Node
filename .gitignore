@@ -16,6 +16,7 @@ pid.txt
 
 # Zeuz Node specific ignores
 Framework/settings.conf
+node-bigquery-privkey.json
 AutomationLog/
 iosSimulator/*
 node_state.json

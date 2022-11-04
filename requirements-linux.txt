@@ -46,3 +46,5 @@ PyPDF2
 protobuf
 pytz
 rauth
+google-cloud-bigquery
+google-cloud-bigquery-storage
