@@ -840,7 +840,13 @@ def _child_search_by_path(
                     ClassE = elem.Current.ClassName
                     AutomationE = elem.Current.AutomationId
                     LocalizedControlTypeE = elem.Current.LocalizedControlType
-                    print(f"> Name='{NameE}', Control='{ClassE}', Automationid='{AutomationE}', class='{LocalizedControlTypeE}'")
+                    print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+                elem =all_elements[element_index]
+                NameE = elem.Current.Name
+                ClassE = elem.Current.ClassName
+                AutomationE = elem.Current.AutomationId
+                LocalizedControlTypeE = elem.Current.LocalizedControlType
+                print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
 
                 return [all_elements[element_index]]
 
@@ -869,7 +875,13 @@ def _child_search_by_path(
                     ClassE = elem.Current.ClassName
                     AutomationE = elem.Current.AutomationId
                     LocalizedControlTypeE = elem.Current.LocalizedControlType
-                    print(f"> Name='{NameE}', Control='{ClassE}', Automationid='{AutomationE}', class='{LocalizedControlTypeE}'")
+                    print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+                elem = temp[element_index]
+                NameE = elem.Current.Name
+                ClassE = elem.Current.ClassName
+                AutomationE = elem.Current.AutomationId
+                LocalizedControlTypeE = elem.Current.LocalizedControlType
+                print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
                 return [temp[element_index]]
 
     except:
