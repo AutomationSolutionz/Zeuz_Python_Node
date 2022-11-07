@@ -390,15 +390,16 @@ def Element_only_search(
             return "zeuz_failed"
 
         all_elements = []
-        all_elements += _child_search(
+        tmp_elements, tmp_ancestor = _child_search(
             ParentElement,
             element_name,
             element_class,
             element_automation,
             element_control,
-            element_index
-        )
+            element_index,
 
+        )
+        all_elements += tmp_elements
         if all_elements:
             return all_elements
         else:
@@ -458,20 +459,13 @@ def _child_search(
     element_class,
     element_automation,
     element_control,
-    element_index
+    element_index,
 ):
     try:
-        """
-        global recur_count
-        recur_count = recur_count +1
-        print recur_count
-        
-        if recur_count is 100:
-            time.sleep(5)
-        """
+        tmp_ancestor = []
         # Name, Class, AutomationID, LocalizedControlType
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
-            return []
+            return [], []
         NameE = ParentElement.Current.Name
         ClassE = ParentElement.Current.ClassName
         AutomationE = ParentElement.Current.AutomationId
@@ -493,16 +487,16 @@ def _child_search(
             all_elements += [ParentElement]
             if len(all_elements) - 1 == element_index:
                 if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
-                return all_elements
+                return all_elements, []
         # if found: return [ParentElement]          # 2nd method
 
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
 
         if child_elements.Count == 0:
-            return all_elements
+            return all_elements, []
 
         for each_child in child_elements:
-            all_elements += _child_search(
+            tmp_elements, tmp_ancestor = _child_search(
                 each_child,
                 element_name,
                 element_class,
@@ -510,13 +504,14 @@ def _child_search(
                 element_control,
                 element_index
             )
+            all_elements += tmp_elements
             if 0 <= element_index == len(all_elements) - 1:
                 if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
-                return all_elements
+                return all_elements, [each_child] + tmp_ancestor
         if all_elements:
             if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
 
-        return all_elements
+        return all_elements, [ParentElement] + tmp_ancestor
 
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -780,13 +775,15 @@ def _child_search_by_path(
     global tabs
     try:
         element_path, exact, element_name, element_control, element_automation, element_class, element_index = _element_path_parser(element_path)
-        if exact == "parent":
+        if exact == "parent" and element_path:
             return _child_search_by_path(
                 Ancestor[-2],
                 element_path,
                 sModuleInfo,
                 Ancestor[:-1]
             )
+        elif exact == "parent" and not element_path:
+            return [Ancestor[-2]]
         if exact == "error":
             return []
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
@@ -833,16 +830,30 @@ def _child_search_by_path(
                     Ancestor + [all_elements[element_index]]
                 )
             else:
+                if code_debug:
+                    for elem in Ancestor:
+                        NameE = elem.Current.Name
+                        ClassE = elem.Current.ClassName
+                        AutomationE = elem.Current.AutomationId
+                        LocalizedControlTypeE = elem.Current.LocalizedControlType
+                        print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+                    elem =all_elements[element_index]
+                    NameE = elem.Current.Name
+                    ClassE = elem.Current.ClassName
+                    AutomationE = elem.Current.AutomationId
+                    LocalizedControlTypeE = elem.Current.LocalizedControlType
+                    print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+
                 return [all_elements[element_index]]
 
         else:
-            temp = _child_search(
+            temp, tmp_ancestor = _child_search(
                 ParentElement,
                 element_name,
                 element_class,
                 element_automation,
                 element_control,
-                element_index
+                element_index,
             )
             if temp == []:
                 CommonUtil.ExecLog(sModuleInfo, _not_found_log(element_name, element_class, element_automation, element_control), 3)
@@ -852,9 +863,22 @@ def _child_search_by_path(
                     temp[element_index],
                     element_path,
                     sModuleInfo,
-                    Ancestor + [temp[element_index]]
+                    Ancestor + tmp_ancestor
                 )
             else:
+                if code_debug:
+                    for elem in Ancestor:
+                        NameE = elem.Current.Name
+                        ClassE = elem.Current.ClassName
+                        AutomationE = elem.Current.AutomationId
+                        LocalizedControlTypeE = elem.Current.LocalizedControlType
+                        print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+                    elem = temp[element_index]
+                    NameE = elem.Current.Name
+                    ClassE = elem.Current.ClassName
+                    AutomationE = elem.Current.AutomationId
+                    LocalizedControlTypeE = elem.Current.LocalizedControlType
+                    print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
                 return [temp[element_index]]
 
     except:
