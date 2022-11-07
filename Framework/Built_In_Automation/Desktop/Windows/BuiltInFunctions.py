@@ -835,6 +835,13 @@ def _child_search_by_path(
                     Ancestor + [all_elements[element_index]]
                 )
             else:
+                for elem in Ancestor:
+                    NameE = elem.Current.Name
+                    ClassE = elem.Current.ClassName
+                    AutomationE = elem.Current.AutomationId
+                    LocalizedControlTypeE = elem.Current.LocalizedControlType
+                    print(f"> Name='{NameE}', Control='{ClassE}', Automationid='{AutomationE}', class='{LocalizedControlTypeE}'")
+
                 return [all_elements[element_index]]
 
         else:
@@ -857,6 +864,12 @@ def _child_search_by_path(
                     Ancestor + [temp[element_index]]
                 )
             else:
+                for elem in Ancestor:
+                    NameE = elem.Current.Name
+                    ClassE = elem.Current.ClassName
+                    AutomationE = elem.Current.AutomationId
+                    LocalizedControlTypeE = elem.Current.LocalizedControlType
+                    print(f"> Name='{NameE}', Control='{ClassE}', Automationid='{AutomationE}', class='{LocalizedControlTypeE}'")
                 return [temp[element_index]]
 
     except:
