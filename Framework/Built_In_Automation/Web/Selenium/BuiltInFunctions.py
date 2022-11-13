@@ -2354,7 +2354,8 @@ def save_attribute_values_in_list(step_data):
                                 return item.get_attribute(search_by_attribute)
 
                         item_value = value_check(search_by_attribute)
-
+                        if Attribute_value == None:
+                            break
                         if Attribute_value in item_value:
                             for val in variable_value:
                                 if val[0] in item_value:
