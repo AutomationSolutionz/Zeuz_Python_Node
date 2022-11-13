@@ -13,6 +13,7 @@
 #        Modules        #
 #                       #
 #########################
+import pickle
 import platform
 import sys, os, time, inspect, shutil, subprocess, json
 import socket
@@ -2238,6 +2239,9 @@ def save_attribute_values_in_list(step_data):
         target_index = 0
         target = []
         paired = True
+        target_scope =""
+        single_scope_attribute = ""
+        import pickle
 
         try:
             for left, mid, right in step_data:
@@ -2263,6 +2267,8 @@ def save_attribute_values_in_list(step_data):
                             target[target_index][2].append(Right)
                         elif Left == "return_does_not_contain":
                             target[target_index][3].append(Right)
+                        # elif Left == "single_scope":
+                        #     target[target_index][4].append((Left, 'element parameter', Right))
                         else:
                             target[target_index][0].append((Left, 'element parameter', Right))
 
@@ -2271,6 +2277,10 @@ def save_attribute_values_in_list(step_data):
                     variable_name = right
                 elif left == "paired":
                     paired = False if right.lower() == "no" else True
+                elif "single body parameter" in mid:
+                    target_scope = right
+                    single_scope_attribute = left
+
 
         except:
             CommonUtil.ExecLog(
@@ -2290,9 +2300,12 @@ def save_attribute_values_in_list(step_data):
             variable_value.append([])
 
         i = 0
+        items = LocateElement.Get_Element([(single_scope_attribute , 'element parameter', target_scope)], Element, return_all_elements=True)
+
         for each in all_elements:
             search_by_attribute = target[i][1]
             j = 0
+            k = j
             for elem in each:
                 if search_by_attribute == "text":
                     Attribute_value = elem.text
@@ -2317,7 +2330,44 @@ def save_attribute_values_in_list(step_data):
                     CommonUtil.ExecLog(
                         sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
                     )
-                variable_value[j].append(Attribute_value)
+
+
+                if i > 0:
+                    if target_scope == "":
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Please provide attribute name of a single scope to fetchdata properly", 3
+                        )
+                        return "zeuz_failed"
+                    counting = 0
+
+                    for item in items:
+                        if counting == 1:
+                            break
+                        def value_check(search_by_attribute):
+                            if search_by_attribute == 'text':
+                                return item.text
+                            elif search_by_attribute == 'tag':
+                                return item.tag
+                            elif search_by_attribute == 'checked':
+                                return item.is_selected()
+                            else:
+                                return item.get_attribute(search_by_attribute)
+
+                        item_value = value_check(search_by_attribute)
+
+                        if Attribute_value in item_value:
+                            for val in variable_value:
+                                if val[0] in item_value:
+                                    j  = variable_value.index(val)
+                                    variable_value[j].append(Attribute_value)
+                                    items.remove(item)
+                                    j = k
+                                    counting = 1
+                                    break
+                        else:
+                            continue
+                else:
+                    variable_value[j].append(Attribute_value)
                 j = j + 1
             i = i + 1
         if target_index == 1:
