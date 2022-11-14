@@ -959,13 +959,13 @@ def run_test_case(
                 + ".zip"
             )
             after_execution_dict["logid"] = TCLogFile
-        # after_execution_dict["metrics"] = {
-        #     "browser_performance": CommonUtil.browser_perf,
-        #     "Node": {
-        #         "actions": CommonUtil.action_perf,
-        #         "step": CommonUtil.step_perf
-        #     }
-        # }
+        after_execution_dict["metrics"] = {
+            "browser_performance": CommonUtil.browser_perf,
+            "Node": {
+                "actions": CommonUtil.action_perf,
+                "step": CommonUtil.step_perf
+            }
+        }
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
 
