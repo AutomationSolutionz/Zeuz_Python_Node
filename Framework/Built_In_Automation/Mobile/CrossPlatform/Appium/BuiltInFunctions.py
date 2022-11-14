@@ -563,8 +563,9 @@ def launch_application(data_set):
                 desiredcaps=desiredcaps,
                 browserstack_run=browserstack_run,
             )
-            app_name = device_order["mobile"]["browser_stack"]["appName"]
-            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+            # app_name = device_info["browserstack device 1"]["other"]["app_name"]
+            # CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Launched app successfully in Browserstack.", 1)
         elif aws_run:
             result, launch_app = start_appium_driver(
                 desiredcaps=desiredcaps,
