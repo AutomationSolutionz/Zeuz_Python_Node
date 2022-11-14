@@ -5703,13 +5703,12 @@ def data_store_insert(data_set):
     try:
         table_name = columns = var_name = ""
         params = {}
-        data={}
         for left, mid, right in data_set:
             if left.strip() == 'table name':
                 table_name = right.strip()
                 params['table_name'] = table_name
             if left.strip() == 'data':
-                l = eval(right.strip())
+                l = CommonUtil.parse_value_into_object(right.strip())
             if mid.strip() == "action":
                 var_name = right.strip()
         data={
@@ -5726,88 +5725,14 @@ def data_store_insert(data_set):
             verify=False,
             **headers
         )
-        #
-
-        # print(res.text)
         if res.status_code==201:
             CommonUtil.ExecLog(sModuleInfo, "data inserted successfully", 1)
             return "passed"
             # return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
         else:
             CommonUtil.ExecLog(sModuleInfo, "Cant insert , please check your dataset", 1)
-        return "passed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-
-
-
-
-
-
-
-def data_store_insert(data_set):
-    """
-    This function reads data from datastore
-
-    Args:
-        data_set:
-            ------------------------------------------------------------------------------
-                table name       | input parameter    | xyz
-                data             | element parameter  | list
-                data store: insert| common action      | variable_name_to_save_data_to
-            ------------------------------------------------------------------------------
-    Return:
-        `list of datastore` if success
-        `zeuz_failed` if fails
-    """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    try:
-        table_name = columns = var_name = ""
-        params = {}
-        data={}
-        for left, mid, right in data_set:
-            if left.strip() == 'table name':
-                table_name = right.strip()
-                params['table_name'] = table_name
-            if left.strip() == 'data':
-                l = eval(right.strip())
-            if mid.strip() == "action":
-                var_name = right.strip()
-        data={
-            'table_name':table_name,
-            'data_list':l
-        }
-        headers = RequestFormatter.add_api_key_to_headers({})
-        headers['headers']['content-type'] = 'application/json'
-        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
-
-        res = requests.post(
-            RequestFormatter.form_uri('data_store/data_store/data_store_list/'),
-            data=json.dumps(data),
-            verify=False,
-            **headers
-        )
-        #
-
-        # print(res.text)
-        if res.status_code==201:
-            CommonUtil.ExecLog(sModuleInfo, "data inserted successfully", 1)
-            return "passed"
-            # return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Cant insert , please check your dataset", 1)
-        return "passed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-
-
-
 
