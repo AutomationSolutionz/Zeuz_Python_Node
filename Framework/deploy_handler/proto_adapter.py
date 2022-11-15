@@ -146,7 +146,8 @@ def adapt(message: str, node_id: str) -> List[Dict]:
     #         r.deploy_info.device_info = "[[1, 1]]"
     # else:
     #     r.deploy_info.device_info = "[[1, 1]]"
-    if r.deploy_info.device_info.strip() == "":
+    if r.deploy_info.device_info.strip() == "" \
+            or r.deploy_info.device_info.strip() == "local_device":
         # r.deploy_info.device_info = json.dumps([])
         r.deploy_info.device_info = json.dumps([[1, 1]])
 
