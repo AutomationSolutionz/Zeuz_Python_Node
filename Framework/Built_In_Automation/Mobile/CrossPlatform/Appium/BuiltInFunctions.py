@@ -463,24 +463,25 @@ def launch_application(data_set):
         browserstack_run = False
         aws_run = False
 
-        # Todo: set browser_stack desired_capabilities
-        if "browser_stack" in device_order["mobile"]:
-            browserstack_run = True
-            if device_order["mobile"]["browser_stack"]["platformName"] == "android":
-                desiredcaps = UiAutomator2Options().load_capabilities(device_info)
+        if isinstance(device_order, dict):
+            # Todo: set browser_stack desired_capabilities
+            if "browser_stack" in device_order["mobile"]:
+                browserstack_run = True
+                if device_order["mobile"]["browser_stack"]["platformName"] == "android":
+                    desiredcaps = UiAutomator2Options().load_capabilities(device_info)
 
-            elif device_order["mobile"]["browser_stack"]["platformName"] == "ios":
-                desiredcaps = XCUITestOptions().load_capabilities(device_info)
+                elif device_order["mobile"]["browser_stack"]["platformName"] == "ios":
+                    desiredcaps = XCUITestOptions().load_capabilities(device_info)
 
-        elif "aws" in device_order["mobile"]:
-            aws_run = True
-            desiredcaps = {
-                # New iOS devices may have a '-' (hyphen) in their UDID
-                # which do not work with carthage (the tool that appium
-                # uses to build packages).
-                # TODO: Fix for Android here later on.
-                "appium:udid": os.environ["DEVICEFARM_DEVICE_UDID"].replace("-", "")
-            }
+            elif "aws" in device_order["mobile"]:
+                aws_run = True
+                desiredcaps = {
+                    # New iOS devices may have a '-' (hyphen) in their UDID
+                    # which do not work with carthage (the tool that appium
+                    # uses to build packages).
+                    # TODO: Fix for Android here later on.
+                    "appium:udid": os.environ["DEVICEFARM_DEVICE_UDID"].replace("-", "")
+                }
 
         else:
             package_name = ""  # Name of application package
