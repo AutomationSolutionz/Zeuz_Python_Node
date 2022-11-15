@@ -118,9 +118,7 @@ def adapt(message: str, node_id: str) -> List[Dict]:
             "Mobile": r.deploy_info.dependency.mobile,
         },
 
-        "device_info": {
-            "browser_stack": {},
-        },
+        "device_info": None,
 
         "run_time": {},
         "file_name": f"{node_id}_1",
@@ -149,7 +147,8 @@ def adapt(message: str, node_id: str) -> List[Dict]:
     # else:
     #     r.deploy_info.device_info = "[[1, 1]]"
     if r.deploy_info.device_info.strip() == "":
-        r.deploy_info.device_info = "[]"
+        # r.deploy_info.device_info = json.dumps([])
+        r.deploy_info.device_info = json.dumps([[1, 1]])
 
     result["device_info"] = json.loads(r.deploy_info.device_info)
 
