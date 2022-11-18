@@ -991,7 +991,8 @@ def run_test_case(
                 "steps": CommonUtil.step_perf
             }
         }
-        # send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+        if not CommonUtil.debug_status:
+            send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
 
         for i in range(100):
             fname = Path(f"~/Desktop/{CommonUtil.current_tc_no}_{i}.csv").expanduser()
