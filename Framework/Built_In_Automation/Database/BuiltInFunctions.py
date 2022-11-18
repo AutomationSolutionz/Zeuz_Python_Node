@@ -390,6 +390,7 @@ def db_select(data_set):
     except Exception as e:
         sr.Set_Shared_Variables(variable_name, e)
         return handle_db_exception(sModuleInfo, e)
+    #change
 
 
 @logger
