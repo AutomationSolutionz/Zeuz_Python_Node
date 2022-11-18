@@ -2231,6 +2231,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         action_duration = round(time.perf_counter() - start_time, 5)
         CommonUtil.action_perf.append({"module": action_subfield.split(" ")[0], "name": action_name, "runtime": action_duration})
         CommonUtil.TakeScreenShot(function)
+        CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False
             bypass_bug(action_name, action_subfield)

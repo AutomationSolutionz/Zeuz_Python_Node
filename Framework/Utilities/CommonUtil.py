@@ -121,6 +121,7 @@ tc_index = 0
 step_index = 0
 current_action_no = ""
 current_action_name = ""
+previous_action_name = ""   # It requires for labelling get_performance_metrics. because performance_metrics is called on next action
 current_step_no = ""
 current_step_name = ""
 current_tc_no = ""
