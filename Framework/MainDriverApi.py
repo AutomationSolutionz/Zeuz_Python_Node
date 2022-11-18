@@ -839,7 +839,7 @@ def set_important_variables():
 
 def send_to_bigquery(execution_log, metrics):
     client = bigquery.Client()
-    table_id = "node-bigquery-367604.zeuz_node.reports"
+    table_id = "agora-project-6a43e62c.zeuz_node.reports_new"
     # TODO: Create table if not already exists using client.create_table(). If
     # there are errors related to a table already existing, we can safely
     # ignore.
@@ -991,7 +991,16 @@ def run_test_case(
                 "steps": CommonUtil.step_perf
             }
         }
-        send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+        # send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+
+        for i in range(100):
+            fname = Path(f"~/Desktop/{CommonUtil.current_tc_no}_{i}.csv").expanduser()
+            if not fname.is_file(): break
+        with open(Path(f"~/Desktop/{CommonUtil.current_tc_no}.csv").expanduser(), 'w', newline='') as output_file:
+            import csv
+            dict_writer = csv.DictWriter(output_file, CommonUtil.browser_perf[list(CommonUtil.browser_perf.keys())[0]][0].keys())
+            dict_writer.writeheader()
+            dict_writer.writerows(CommonUtil.browser_perf[list(CommonUtil.browser_perf.keys())[0]])
 
         after_execution_dict["metrics"] = metrics
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)

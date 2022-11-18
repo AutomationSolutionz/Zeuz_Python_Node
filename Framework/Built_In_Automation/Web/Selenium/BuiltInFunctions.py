@@ -408,11 +408,9 @@ def get_performance_metrics(dataset):
 
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
-
-        metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-        perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
-        Shared_Resources.Set_Shared_Variables(var_name,perf_json_data)
-        CommonUtil.browser_perf[current_driver_id].append(perf_json_data)
+        # time.sleep(5)
+        perf_json_data = collect_browser_metrics(driver_id)
+        Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1003,28 +1001,32 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+    collect_browser_metrics(current_driver_id)
+    return "passed"
+
+
+def collect_browser_metrics(driver_id):
     # Collect custom performance metrics
     try:
-        if current_driver_id not in CommonUtil.browser_perf and selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-            metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-            metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
+        if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge"):
+            return "passed"
 
-            # FCP - First Contentful Paint
-            try:
-                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
-            except:
-                metrics_dict["first-contentful-paint"] = 0
+        metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
+        metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
+        # FCP - First Contentful Paint
+        try: metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
+        except: metrics_dict["first-contentful-paint"] = 0
+        # LCP - Largest Contenful Paint
+        try: metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
+        except: metrics_dict["largest-contentful-paint"] = 0
 
-            # LCP - Largest Contenful Paint
-            try:
-                metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
-            except:
-                metrics_dict["largest-contentful-paint"] = 0
-
-            CommonUtil.browser_perf[current_driver_id] = [metrics_dict]
+        if driver_id not in CommonUtil.browser_perf:
+            CommonUtil.browser_perf[driver_id] = [metrics_dict]
+        else:
+            CommonUtil.browser_perf[driver_id].append(metrics_dict)
 
             # CommonUtil.prettify(key="metrics", val=metrics_dict)
-        return "passed"
+        return metrics_dict
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
