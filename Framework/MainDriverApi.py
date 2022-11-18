@@ -848,8 +848,8 @@ def send_to_bigquery(execution_log, metrics):
         {
             "run_id": execution_log["run_id"],
             "tc_id": execution_log["test_cases"][0]["testcase_no"],
-            "tc_title": execution_log["test_cases"][0]["title"],
-            "tc_duration": execution_log["test_cases"][0]["execution_detail"]["duration"],
+            # "tc_title": execution_log["test_cases"][0]["title"],
+            # "tc_duration": execution_log["test_cases"][0]["execution_detail"]["duration"],
             "metrics": json.dumps(metrics),
             "execution_log": json.dumps(execution_log),
         }
