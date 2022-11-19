@@ -1599,6 +1599,28 @@ def main(device_dict, user_info_object):
             # with open(PROJECT_ROOT / "temp/device_info_in_node_v2.json", "r") as device_info_file:
             #     device_order = json.load(device_info_file)
 
+            if isinstance(device_order, dict):
+                if device_order["deploy_target"] == "browser_stack":
+                    platform_name, platform_version, device_name, device_type = device_order["values"].split(':')
+                    app_name, app_url = device_order["app_info"].split('+')
+                    formated_device_order = {
+                        "mobile": {
+                            "browser_stack": {
+                                "platformName": platform_name,
+                                "appName": app_name,
+                                "app": app_url,
+                                "environments": [
+                                    {
+                                        "platformVersion": platform_version,
+                                        "deviceName": device_name,
+                                        "deviceType": device_type
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    device_order = formated_device_order
+
             final_dependency = run_id_info["dependency_list"]
             # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
