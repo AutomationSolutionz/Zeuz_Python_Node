@@ -839,7 +839,7 @@ def set_important_variables():
 
 def send_to_bigquery(execution_log, metrics):
     client = bigquery.Client()
-    table_id = "agora-project-6a43e62c.zeuz_node.reports_new"
+    table_id = "agora-project-6a43e62c.zeuz_node.reports"
     # TODO: Create table if not already exists using client.create_table(). If
     # there are errors related to a table already existing, we can safely
     # ignore.
@@ -848,10 +848,11 @@ def send_to_bigquery(execution_log, metrics):
         {
             "run_id": execution_log["run_id"],
             "tc_id": execution_log["test_cases"][0]["testcase_no"],
-            # "tc_title": execution_log["test_cases"][0]["title"],
+            "tc_title": execution_log["test_cases"][0]["title"],
             # "tc_duration": execution_log["test_cases"][0]["execution_detail"]["duration"],
             "metrics": json.dumps(metrics),
             "execution_log": json.dumps(execution_log),
+            "errors": None,
         }
     ]
     
