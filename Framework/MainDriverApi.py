@@ -1061,8 +1061,10 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
 
                 # set other browserstack capabilities updated in appium v2
                 "bstack:options": {
-                    "userName": os.environ.get("browser_stack_user"),
-                    "accessKey": os.environ.get("browser_stack_key"),
+                    # "userName": os.environ.get("browser_stack_user"),
+                    "userName": device_order["mobile"]["browser_stack"]["username"],
+                    # "accessKey": os.environ.get("browser_stack_key"),
+                    "accessKey": device_order["mobile"]["browser_stack"]["access_key"],
                     "projectName": project,
                     "buildName": build,
                     "sessionName": session_name
@@ -1606,6 +1608,8 @@ def main(device_dict, user_info_object):
                     formated_device_order = {
                         "mobile": {
                             "browser_stack": {
+                                "username": device_order['username'],
+                                "access_key": device_order['access_key'],
                                 "platformName": platform_name,
                                 "appName": app_name,
                                 "app": app_url,
