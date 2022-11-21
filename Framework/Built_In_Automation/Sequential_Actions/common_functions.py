@@ -3768,18 +3768,18 @@ def text_write(data_set):
                     return "zeuz_failed"
 
         if line_no is not None:
-            with open(filepath) as text_file:
+            with open(filepath, encoding="utf-8") as text_file:
                 lines = text_file.readlines()
             if not value.endswith("\n"):
                 value = value + "\n"
             lines[line_no] = value
-            with open(filepath, "w") as text_file:
+            with open(filepath, "w", encoding="utf-8") as text_file:
                 text_file.writelines(lines)
             CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (str(line_no), str(filepath)), 1)
 
         elif operation == "append":
             exist = os.path.exists(filepath)
-            with open(filepath, 'a') as text_file:
+            with open(filepath, 'a', encoding="utf-8") as text_file:
                 text_file.write(value)
             if exist:
                 CommonUtil.ExecLog(sModuleInfo, "Appended the given text into: %s" % str(filepath), 1)
@@ -3788,7 +3788,7 @@ def text_write(data_set):
 
         elif operation == "overwrite":
             exist = os.path.exists(filepath)
-            with open(filepath, 'w') as text_file:
+            with open(filepath, 'w', encoding="utf-8") as text_file:
                 text_file.write(value)
             if exist:
                 CommonUtil.ExecLog(sModuleInfo, "Overwritten the given text into: %s" % str(filepath), 1)
