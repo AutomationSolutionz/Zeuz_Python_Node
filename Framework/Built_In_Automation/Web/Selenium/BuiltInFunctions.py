@@ -395,13 +395,15 @@ def Open_Electron_App(data_set):
 @logger
 def get_performance_metrics(dataset):
     try:
-        driver_id = ""
+        label = driver_id = ""
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "driverid":
                 driver_id = right.strip()
             elif left == "getperformancemetrics":
                 var_name = right.strip()
+            elif left == "label":
+                label = right.strip()
 
         if not driver_id:
             driver_id = current_driver_id
@@ -409,7 +411,7 @@ def get_performance_metrics(dataset):
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
         # time.sleep(5)
-        perf_json_data = collect_browser_metrics(driver_id, CommonUtil.previous_action_name)
+        perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
         Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
@@ -1001,7 +1003,7 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    collect_browser_metrics(current_driver_id, CommonUtil.current_action_name)
+    # collect_browser_metrics(current_driver_id, CommonUtil.current_action_name)
     return "passed"
 
 

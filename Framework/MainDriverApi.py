@@ -488,10 +488,10 @@ def run_all_test_steps_in_a_test_case(
             for action_info in all_Action_info:
                 action_dataset = action_info["step_actions"]
                 all_action_data_set.append(action_dataset)
-                dict = {}
-                dict["Action disabled"] = action_info["action_disabled"]
-                dict["Action name"] = action_info["action_name"]
-                all_action_Info.append(dict)
+                Dict = {}
+                Dict["Action disabled"] = action_info["action_disabled"]
+                Dict["Action name"] = action_info["action_name"]
+                all_action_Info.append(Dict)
             all_step_dataset.append(all_action_data_set)
             all_action_info.append(all_action_Info)
         # loop through the steps
@@ -537,8 +537,9 @@ def run_all_test_steps_in_a_test_case(
 
             # get step info
             current_step_name = all_step_info[StepSeq - 1]["step_name"]
-            current_step_id = all_step_info[StepSeq - 1]["step_id"]
-            current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+            CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
+            CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
             step_attachments = all_step_info[StepSeq - 1]['attachments']
@@ -644,6 +645,7 @@ def run_all_test_steps_in_a_test_case(
                 "name": current_step_name,
                 "sequence": current_step_sequence,
                 "runtime": round(TestStepEndTime - TestStepStartTime, 5),
+                "actions": [i for i in CommonUtil.action_perf if i["step_id"] == current_step_id],
             })
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
