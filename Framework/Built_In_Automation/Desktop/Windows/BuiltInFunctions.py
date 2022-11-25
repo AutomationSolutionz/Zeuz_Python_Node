@@ -915,6 +915,11 @@ def image_search(step_data_set):
         confidence = 0.85
         parent_dataset = []
         image_text = ""
+        left_width = 1
+        top_height = 1
+        colour_state = "black_white"
+
+
         for left, mid, right in step_data_set:
             left = left.strip().lower()
             mid = mid.strip().lower()
@@ -927,6 +932,12 @@ def image_search(step_data_set):
                     confidence = float(right.replace("%", "").replace(" ", "").lower()) / 100
                 elif "text" in left:
                     image_text = right
+                elif "left+width" in left:
+                    left_width = right
+                elif "top+height" in left:
+                    top_height = right
+                elif "colour" in left:
+                    colour_state = right
                 else:
                     file_name = right.strip()
                     if "~" in file_name:
@@ -968,11 +979,14 @@ def image_search(step_data_set):
             pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
             image_text = image_text.replace(" ", "").lower()
-            PIL.ImageGrab.grab().crop((left, top, left + width, top + height)).save("sample.jpg")
+            PIL.ImageGrab.grab().crop((left, top, left + width * left_width, top + height * top_height)).save("sample.jpg")
             imge = cv2.imread("sample.jpg")
             gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
 
-            data = pytesseract.image_to_boxes(gray)
+            if colour_state == "black_white":
+                data = pytesseract.image_to_boxes(gray)
+            else:
+                data = pytesseract.image_to_boxes(imge)
             all_letters = data.split("\n")
             print(all_letters)
             full_string = ""
