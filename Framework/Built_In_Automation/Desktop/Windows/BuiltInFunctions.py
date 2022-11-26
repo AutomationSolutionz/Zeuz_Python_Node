@@ -1122,6 +1122,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "path" in left: element_path = right.strip()
                 elif "image" in left:
                     element_image.append((left, mid, right))
+                elif "imagetext" in left:
+                    element_image.append((left, mid, right))
 
             elif mid == "parent parameter":
                 parent = True
