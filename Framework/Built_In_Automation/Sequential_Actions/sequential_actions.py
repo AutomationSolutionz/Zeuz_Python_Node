@@ -2237,6 +2237,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             "name": action_name,
             "runtime": action_duration,
             "page_reload": CommonUtil.action_perf[-1]["runtime"] if len(CommonUtil.action_perf) > 0 and action_name == "get performance metrics" else None,    # only valid for get_performance_metrics
+            "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S.%f"),
         })
         CommonUtil.TakeScreenShot(function)
         CommonUtil.previous_action_name = CommonUtil.current_action_name
