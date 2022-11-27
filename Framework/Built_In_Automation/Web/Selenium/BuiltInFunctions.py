@@ -1022,7 +1022,7 @@ def collect_browser_metrics(driver_id, label):
         # LCP - Largest Contenful Paint
         try: metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
         except: metrics_dict["largest-contentful-paint"] = 0
-        metrics_dict["timestamp"] = datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S.%f")
+        metrics_dict["time_stamp"] = datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S.%f")
         metrics_dict.update({data["name"]: data["value"] for data in metrics["metrics"]})
 
         if driver_id not in CommonUtil.browser_perf:

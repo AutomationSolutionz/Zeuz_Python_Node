@@ -1,0 +1,37 @@
+[
+    {
+        "name": "run_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "tc_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_id",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_sequence",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "runtime",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "time_stamp",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    }
+]

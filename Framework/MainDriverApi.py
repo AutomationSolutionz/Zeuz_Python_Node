@@ -846,23 +846,60 @@ def send_to_bigquery(execution_log, metrics):
     # there are errors related to a table already existing, we can safely
     # ignore.
 
-    rows_to_insert = [
-        {
-            "run_id": execution_log["run_id"],
-            "tc_id": execution_log["test_cases"][0]["testcase_no"],
-            "tc_title": execution_log["test_cases"][0]["title"],
-            # "tc_duration": execution_log["test_cases"][0]["execution_detail"]["duration"],
-            "metrics": json.dumps(metrics),
-            "execution_log": json.dumps(execution_log),
-            "errors": None,
-        }
-    ]
-    
-    errors = client.insert_rows_json(table_id, rows_to_insert)
-    if len(errors) == 0:
-        print("Sent execution report to BigQuery")
-    else:
-        print(f"Encountered errors while inserting rows: {errors}")
+    run_id = execution_log["run_id"]
+    tc_id = execution_log["test_cases"][0]["testcase_no"]
+
+    actions = metrics["node"]["actions"]
+    steps = metrics["node"]["steps"]
+    browser_perf = metrics["browser_performance"]["default"]
+
+    # A dict of step id to step name
+    step_names = {}
+    for step in steps:
+        step_names[step["id"]] = step["name"]
+
+
+    def send_actions_metrics():
+        for action in actions:
+            action["run_id"] = run_id
+            action["tc_id"] = tc_id
+            action["step_name"] = step_names[action["step_id"]]
+
+        rows_to_insert = json.dumps(actions)
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if len(errors) == 0:
+            print("Sent execution report to BigQuery")
+        else:
+            print(f"Encountered errors while inserting rows: {errors}")
+
+
+    def send_steps_metrics():
+        rows_to_insert = json.dumps(steps)
+
+
+    def send_browser_perf_metrics():
+        rows_to_insert = json.dumps(browser_perf)
+
+
+    # rows_to_insert = [
+    #     {
+    #         "run_id": run_id,
+    #         "tc_id": tc_id,
+    #         "tc_title": execution_log["test_cases"][0]["title"],
+    #         # "tc_duration": execution_log["test_cases"][0]["execution_detail"]["duration"],
+    #         "metrics": json.dumps(metrics),
+    #         "execution_log": json.dumps(execution_log),
+    #         "errors": None,
+    #     }
+    # ]
+
+
+
+    # errors = client.insert_rows_json(table_id, rows_to_insert)
+    # if len(errors) == 0:
+    #     print("Sent execution report to BigQuery")
+    # else:
+    #     print(f"Encountered errors while inserting rows: {errors}")
 
 
 def run_test_case(
