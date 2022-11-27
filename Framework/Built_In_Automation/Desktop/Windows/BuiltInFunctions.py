@@ -34,6 +34,7 @@ import PIL
 from PIL import Image, ImageGrab
 
 
+
 python_folder = []
 for location in subprocess.getoutput("where python").split("\n"):
     if "Microsoft" not in location:
@@ -915,9 +916,12 @@ def image_search(step_data_set):
         confidence = 0.85
         parent_dataset = []
         image_text = ""
-        left_width = 1
-        top_height = 1
-        colour_state = "black_white"
+        left_width = ""
+        top_height = ""
+        colour_state = ""
+        method_image = ""
+        language = ""
+
 
 
         for left, mid, right in step_data_set:
@@ -932,18 +936,37 @@ def image_search(step_data_set):
                     confidence = float(right.replace("%", "").replace(" ", "").lower()) / 100
                 elif "text" in left:
                     image_text = right
-                elif "left+width" in left:
-                    left_width = right
-                elif "top+height" in left:
-                    top_height = right
+                elif "left_width" in left:
+                    left_width = float(right)
+                elif "top_height" in left:
+                    top_height = float(right)
                 elif "colour" in left:
                     colour_state = right
+                elif 'language' in left:
+                    language = right
+                elif 'method' in left:
+                    method_image = right
+
                 else:
-                    file_name = right.strip()
-                    if "~" in file_name:
-                        file_name = str(Path(os.path.expanduser(file_name)))
+                    if not image_text:
+                        pass
+                    else:
+                        file_name = right.strip()
+                        if "~" in file_name:
+                            file_name = str(Path(os.path.expanduser(file_name)))
             if mid == "parent parameter":
                 parent_dataset.append((left, "element parameter", right))
+        if left_width == '':
+            left_width = 1
+        if top_height == '':
+            top_height = 1
+        if colour_state == '':
+            colour_state = 'black_white'
+        if method_image == '':
+            method = 'method_1'
+        if language == '':
+            language = 'en'
+
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
@@ -974,53 +997,95 @@ def image_search(step_data_set):
     # Find element information
     try:
         if image_text:
-            import cv2
-            from pytesseract import pytesseract
-            pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-            image_text = image_text.replace(" ", "").lower()
-            PIL.ImageGrab.grab().crop((left, top, left + width * left_width, top + height * top_height)).save("sample.jpg")
-            imge = cv2.imread("sample.jpg")
-            gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
+            if method_image == 'method_1':
+                import cv2
+                from pytesseract import pytesseract
+                pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-            if colour_state == "black_white":
-                data = pytesseract.image_to_boxes(gray)
+                image_text = image_text.replace(" ", "").lower()
+                PIL.ImageGrab.grab().crop((left, top, left + width * left_width, top + height * top_height)).save("sample.jpg")
+                imge = cv2.imread("sample.jpg")
+                gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
+
+                if colour_state == "black_white":
+                    data = pytesseract.image_to_boxes(gray)
+                else:
+                    data = pytesseract.image_to_boxes(imge)
+                all_letters = data.split("\n")
+                print(all_letters)
+                full_string = ""
+                for i in all_letters:
+                    full_string += i[0] if len(i) > 0 else "~"
+                full_string = full_string.lower()
+
+                all_pos = [m.start() for m in re.finditer(image_text, full_string)]
+
+                if -len(all_pos) <= idx < len(all_pos):
+                    CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
+                    i = all_pos[idx]
+                elif len(all_pos) != 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
+                    return "zeuz_failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                    return "zeuz_failed"
+
+                msg = ""
+                a = all_letters[i:i + len(image_text)]
+                for i in a:
+                    msg += i + "\n"
+                left_top = list(map(int, a[0].split(" ")[1:3]))
+                right_bottom = list(map(int, a[-1].split(" ")[3:5]))
+                center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
+                msg += "Center = " + str(center) + "\n"
+                # pyautogui.moveTo(center)
+
+                element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
+                msg += "Coordinates = " + str(element) + "\n"
+                CommonUtil.ExecLog(sModuleInfo, msg, 5)
+
+                return _Element(element)
+
             else:
-                data = pytesseract.image_to_boxes(imge)
-            all_letters = data.split("\n")
-            print(all_letters)
-            full_string = ""
-            for i in all_letters:
-                full_string += i[0] if len(i) > 0 else "~"
-            full_string = full_string.lower()
+                import easyocr
+                import numpy as np
+                import cv2
+                from pytesseract import pytesseract
+                import matplotlib.pyplot as plt
 
-            all_pos = [m.start() for m in re.finditer(image_text, full_string)]
+                pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-            if -len(all_pos) <= idx < len(all_pos):
-                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
-                i = all_pos[idx]
-            elif len(all_pos) != 0:
-                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
-                return "zeuz_failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
-                return "zeuz_failed"
+                PIL.ImageGrab.grab().save("sample.png")
+                reader = easyocr.Reader([language])
+                output = reader.readtext("sample.png")
+                item = []
+                for text in output:
+                    if image_text in text:
+                        item.append([text])
+                        print(text)
+                cord = np.array(item[idx][0])
+                cord1 = cord.tolist()
 
-            msg = ""
-            a = all_letters[i:i + len(image_text)]
-            for i in a:
-                msg += i + "\n"
-            left_top = list(map(int, a[0].split(" ")[1:3]))
-            right_bottom = list(map(int, a[-1].split(" ")[3:5]))
-            center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
-            msg += "Center = " + str(center) + "\n"
-            # pyautogui.moveTo(center)
+                x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
+                x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
+                img = cv2.imread('sample.png')
+                x = cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
 
-            element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
-            msg += "Coordinates = " + str(element) + "\n"
-            CommonUtil.ExecLog(sModuleInfo, msg, 5)
+                img = cv2.imread("sample.png")
+                cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
+                image1 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-            return _Element(element)
+                plt.imshow(image1)
+                plt.show()
+                return _Element(element)
+
+
+
+
+
+
+
         else:
             # Scale image if required
             regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
@@ -1125,6 +1190,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "imagetext" in left:
                     element_image.append((left, mid, right))
 
+
             elif mid == "parent parameter":
                 parent = True
                 if "class" in left: parent_class = [right, _count_star(left)]
@@ -1170,6 +1236,30 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
         s = time.time()
         while True:
             if element_image:
+
+                left_width = 1
+                top_height = 1
+                colour_state = 'black_white'
+                method = 'method_1'
+                language = 'en'
+                for left, mid, right in data_set:
+                    left = left.strip().lower()
+                    mid = mid.strip().lower()
+                    if mid == "element parameter":
+                        if "left_width" in left:
+                            left_width = right
+                        elif "top_height" in left:
+                            top_height = right
+                        elif "colour" in left:
+                            colour_state = right
+                        elif 'language' in left:
+                            language = right
+                        elif 'method_image' in left:
+                            method_image = right
+
+
+
+
                 _get_main_window(window_name)
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
                     if i[1]:
@@ -1179,6 +1269,11 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             data = (i[0], "parent parameter", i[1])
                         element_image.append(data)
                 element_image.append(("index", "element parameter", str(element_index)))
+                element_image.append(("left_width", "element parameter", str(left_width)))
+                element_image.append(("top_height", "element parameter", str(top_height)))
+                element_image.append(("colour_state", "element parameter", str(colour_state)))
+                element_image.append(("language", "element parameter", str(language)))
+                element_image.append(("method_image", "element parameter", str(method_image)))
                 result = image_search(element_image)
                 return result
             if element_path:
