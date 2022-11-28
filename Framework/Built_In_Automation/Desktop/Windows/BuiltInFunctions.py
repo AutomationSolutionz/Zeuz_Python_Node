@@ -1060,31 +1060,34 @@ def image_search(step_data_set):
                 reader = easyocr.Reader([language])
                 output = reader.readtext("sample.png")
                 item = []
+                count = 0
                 for text in output:
-                    if image_text in text:
+                    if not image_text in text:
+                        continue
+                    else:
                         item.append([text])
                         print(text)
+                        CommonUtil.ExecLog(sModuleInfo,"Found %s text. Returning element of index %s" % (image_text, count), 1)
+                        count = count + 1
+                if item == []:
+                    CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                    return "zeuz_failed"
                 cord = np.array(item[idx][0])
                 cord1 = cord.tolist()
 
                 x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
                 x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
-                img = cv2.imread('sample.png')
-                x = cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
-
-                img = cv2.imread("sample.png")
-                cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
-                image1 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-                plt.imshow(image1)
-                plt.show()
+                # img = cv2.imread("sample.png")
+                # cropping = img[y_min:y_max , x_min:x_max]
+                # cv2.imwrite(r"C:\Users\Sazid\Desktop\final_csv_result\crop_{0}.png".format(idx), cropping)
+                #
+                # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
+                # image1 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                #
+                # plt.imshow(image1)
+                # plt.show()
+                element = x_min,y_min,x_max-x_min,y_max-y_min
                 return _Element(element)
-
-
-
-
-
-
 
         else:
             # Scale image if required
@@ -1240,7 +1243,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 left_width = 1
                 top_height = 1
                 colour_state = 'black_white'
-                method = 'method_1'
+                method_image = 'method_1'
                 language = 'en'
                 for left, mid, right in data_set:
                     left = left.strip().lower()
