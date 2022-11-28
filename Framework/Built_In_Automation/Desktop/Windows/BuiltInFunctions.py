@@ -1053,6 +1053,7 @@ def image_search(step_data_set):
                 import cv2
                 from pytesseract import pytesseract
                 import matplotlib.pyplot as plt
+                from difflib import SequenceMatcher
 
                 pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
@@ -1062,13 +1063,24 @@ def image_search(step_data_set):
                 item = []
                 count = 0
                 for text in output:
-                    if not image_text in text:
-                        continue
-                    else:
+                    def seq(a, b):
+                        c = SequenceMatcher(a=a, b=b).ratio()
+                        if c > 0.8:
+                            return c
+                        else:
+                            return .00004
+
+                    rslt = seq(image_text, text[1])
+                    if rslt > 0.8:
+                    # if image_text in text[1]:
                         item.append([text])
                         print(text)
-                        CommonUtil.ExecLog(sModuleInfo,"Found %s text. Returning element of index %s" % (image_text, count), 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Found %s text. Returning element of index %s" % (image_text, count), 1)
                         count = count + 1
+                    else:
+                        print(text)
+                        continue
+
                 if item == []:
                     CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
                     return "zeuz_failed"
