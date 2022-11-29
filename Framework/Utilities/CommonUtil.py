@@ -858,7 +858,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
 
 def get_timestamp() -> datetime:
     """Get UTC-0 times tamps for metrics and other purposes."""
-    return datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S.%f")
+    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 def TimeStamp(format):
