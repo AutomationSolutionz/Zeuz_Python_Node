@@ -841,12 +841,12 @@ def set_important_variables():
 
 def send_to_bigquery(execution_log, metrics):
     client = bigquery.Client()
-    table_id = "agora-project-6a43e62c.zeuz_node.reports"
+
+    # Table identifiers - these should be coming from zeuz server.
+    # table_id = "agora-project-6a43e62c.zeuz_node.reports"
     action_table_id = "node-bigquery-367604.zeuz_node.zeuz_metrics_node_actions"
     steps_table_id = "node-bigquery-367604.zeuz_node.zeuz_metrics_node_steps"
-    # TODO: Create table if not already exists using client.create_table(). If
-    # there are errors related to a table already existing, we can safely
-    # ignore.
+    browser_perf_table_id = "node-bigquery-367604.zeuz_node.zeuz_metrics_browser_perf"
 
     run_id = execution_log["run_id"]
     tc_id = execution_log["test_cases"][0]["testcase_no"]
@@ -864,18 +864,21 @@ def send_to_bigquery(execution_log, metrics):
         step_names[step["id"]] = step["name"]
 
 
+    def send(table, rows, msg):
+        errors = client.insert_rows_json(table, rows)
+        if len(errors) == 0:
+            print(f"Sent {msg} metrics report to BigQuery")
+        else:
+            print(f"Encountered errors while inserting rows for {msg}: {errors}")
+
+
     def send_actions_metrics():
         for action in actions:
             action["run_id"] = run_id
             action["tc_id"] = tc_id
             action["step_name"] = step_names[action["step_id"]]
 
-        rows_to_insert = actions
-        errors = client.insert_rows_json(action_table_id, rows_to_insert)
-        if len(errors) == 0:
-            print("Sent action metrics report to BigQuery")
-        else:
-            print(f"Encountered errors while inserting rows: {errors}")
+        send(action_table_id, actions, "actions")
 
 
     def send_steps_metrics():
@@ -889,42 +892,22 @@ def send_to_bigquery(execution_log, metrics):
             step["step_sequence"] = step["sequence"]
             del step["sequence"]
 
-        rows_to_insert = steps
-        errors = client.insert_rows_json(steps_table_id, rows_to_insert)
-        if len(errors) == 0:
-            print("Sent step metrics report to BigQuery")
-        else:
-            print(f"Encountered errors while inserting rows: {errors}")
+        send(steps_table_id, steps, "step")
 
 
     def send_browser_perf_metrics():
-        rows_to_insert = json.dumps(browser_perf)
+        if len(browser_perf) == 0:
+            return
+
+        for entry in browser_perf:
+            entry["run_id"] = run_id
+
+        send(browser_perf_table_id, browser_perf, "browser perf")
 
 
     send_actions_metrics()
     send_steps_metrics()
     send_browser_perf_metrics()
-
-
-    # rows_to_insert = [
-    #     {
-    #         "run_id": run_id,
-    #         "tc_id": tc_id,
-    #         "tc_title": execution_log["test_cases"][0]["title"],
-    #         # "tc_duration": execution_log["test_cases"][0]["execution_detail"]["duration"],
-    #         "metrics": json.dumps(metrics),
-    #         "execution_log": json.dumps(execution_log),
-    #         "errors": None,
-    #     }
-    # ]
-
-
-
-    # errors = client.insert_rows_json(table_id, rows_to_insert)
-    # if len(errors) == 0:
-    #     print("Sent execution report to BigQuery")
-    # else:
-    #     print(f"Encountered errors while inserting rows: {errors}")
 
 
 def run_test_case(

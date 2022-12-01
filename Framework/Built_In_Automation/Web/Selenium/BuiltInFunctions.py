@@ -1015,15 +1015,22 @@ def collect_browser_metrics(driver_id, label):
             return {}
 
         metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-        metrics_dict = {"label": label}
+        metrics_dict = {}
         # FCP - First Contentful Paint
-        try: metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
-        except: metrics_dict["first-contentful-paint"] = 0
+        try: metrics_dict["first_contentful_paint"] = selenium_driver.execute_script(JS_FCP)
+        except: metrics_dict["first_contentful_paint"] = 0
         # LCP - Largest Contenful Paint
-        try: metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
-        except: metrics_dict["largest-contentful-paint"] = 0
-        metrics_dict["time_stamp"] = CommonUtil.get_timestamp()
+        try: metrics_dict["largest_contentful_paint"] = selenium_driver.execute_async_script(JS_LCP)
+        except: metrics_dict["largest_contentful_paint"] = 0
         metrics_dict.update({data["name"]: data["value"] for data in metrics["metrics"]})
+
+        # Collect identifying information
+        metrics_dict["label"] = label
+        metrics_dict["tc_id"] = CommonUtil.current_tc_no
+        metrics_dict["step_name"] = CommonUtil.current_step_name
+        metrics_dict["step_sequence"] = CommonUtil.current_step_sequence
+        metrics_dict["step_id"] = CommonUtil.current_step_id
+        metrics_dict["time_stamp"] = CommonUtil.get_timestamp()
 
         if driver_id not in CommonUtil.browser_perf:
             CommonUtil.browser_perf[driver_id] = [metrics_dict]
