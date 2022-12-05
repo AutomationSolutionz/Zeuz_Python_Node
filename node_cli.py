@@ -6,6 +6,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 import platform
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
 

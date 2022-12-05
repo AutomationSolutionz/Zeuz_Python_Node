@@ -1,3 +1,6 @@
+# Environment variables file
+.env
+
 *.pyc
 *.conf
 *.ini

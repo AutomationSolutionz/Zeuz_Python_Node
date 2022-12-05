@@ -42,3 +42,4 @@ pdf2image
 protobuf
 pytz
 rauth
+python-dotenv
