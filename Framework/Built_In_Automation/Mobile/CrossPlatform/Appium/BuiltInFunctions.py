@@ -4014,7 +4014,7 @@ def save_attribute_values_appium(step_data):
                     temp = right.strip(",").split(",")
                     data = []
                     for each in temp:
-                        data.append(each.strip().split("="))
+                        data.append(each.strip().split("=", maxsplit=1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
