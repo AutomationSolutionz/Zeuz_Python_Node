@@ -40,9 +40,6 @@ PROJECT_ROOT = os.path.abspath(os.curdir)
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
 sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 
-credential_path = Path.cwd() / 'node-bigquery-privkey.json'
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = str(credential_path)
-
 # kill any process that is running  from the same node folder
 pid = os.getpid()
 

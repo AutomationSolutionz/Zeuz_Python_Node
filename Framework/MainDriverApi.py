@@ -844,9 +844,9 @@ def send_to_bigquery(execution_log, metrics):
 
     # Table identifiers - these should be coming from zeuz server.
     # table_id = "agora-project-6a43e62c.zeuz_node.reports"
-    action_table_id = "node-bigquery-367604.zeuz_node.zeuz_metrics_node_actions"
-    steps_table_id = "node-bigquery-367604.zeuz_node.zeuz_metrics_node_steps"
-    browser_perf_table_id = "node-bigquery-367604.zeuz_node.zeuz_metrics_browser_perf"
+    actions_table_id = str(os.environ["GCP_BIGQUERY_ACTIONS_TABLE_ID"])
+    steps_table_id = str(os.environ["GCP_BIGQUERY_STEPS_TABLE_ID"])
+    browser_perf_table_id = str(os.environ["GCP_BIGQUERY_BROWSER_PERF_TABLE_ID"])
 
     run_id = execution_log["run_id"]
     tc_id = execution_log["test_cases"][0]["testcase_no"]
@@ -878,7 +878,7 @@ def send_to_bigquery(execution_log, metrics):
             action["tc_id"] = tc_id
             action["step_name"] = step_names[action["step_id"]]
 
-        send(action_table_id, actions, "actions")
+        send(actions_table_id, actions, "actions")
 
 
     def send_steps_metrics():
