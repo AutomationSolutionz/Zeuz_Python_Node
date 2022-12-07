@@ -10,18 +10,8 @@
         "mode": "REQUIRED"
     },
     {
-        "name": "step_id",
-        "type": "INTEGER",
-        "mode": "REQUIRED"
-    },
-    {
-        "name": "step_name",
+        "name": "status",
         "type": "STRING",
-        "mode": "REQUIRED"
-    },
-    {
-        "name": "step_sequence",
-        "type": "INTEGER",
         "mode": "REQUIRED"
     },
     {
@@ -30,9 +20,9 @@
         "mode": "NULLABLE"
     },
     {
-        "name": "status",
-        "type": "STRING",
-        "mode": "REQUIRED"
+        "name": "errors",
+        "type": "JSON",
+        "mode": "NULLABLE"
     },
     {
         "name": "time_stamp",
