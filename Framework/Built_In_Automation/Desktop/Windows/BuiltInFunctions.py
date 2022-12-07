@@ -921,7 +921,7 @@ def image_search(step_data_set):
         colour_state = ""
         method_image = ""
         language = ""
-        easy_ocr_conf = ""
+        image_conf = 0.8
 
 
 
@@ -947,8 +947,8 @@ def image_search(step_data_set):
                     language = right
                 elif 'method_image' in left:
                     method_image = right
-                elif 'easy_ocr_conf' in left:
-                    easy_ocr_conf = float(right)
+                elif 'image_conf' in left:
+                    image_conf = float(right)
 
                 else:
                     if not image_text:
@@ -969,6 +969,7 @@ def image_search(step_data_set):
             method = 'method_1'
         if language == '':
             language = 'en'
+
 
 
         if parent_dataset:
@@ -1068,13 +1069,13 @@ def image_search(step_data_set):
                 for text in output:
                     def seq(a, b):
                         c = SequenceMatcher(a=a, b=b).ratio()
-                        if c > easy_ocr_conf:
+                        if c > 0.8:
                             return c
                         else:
                             return .00004
 
                     rslt = seq(image_text, text[1])
-                    if rslt > easy_ocr_conf:
+                    if rslt >= float(image_conf):
                     # if image_text in text[1]:
                         item.append([text])
                         print(text)
@@ -1255,12 +1256,11 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
         s = time.time()
         while True:
             if element_image:
-
                 left_width = 1
                 top_height = 1
                 colour_state = 'black_white'
                 method_image = 'method_1'
-                easy_ocr_conf = 0.8
+                image_conf = 0.8
                 language = 'en'
                 for left, mid, right in data_set:
                     left = left.strip().lower()
@@ -1276,8 +1276,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             language = right
                         elif 'method_image' in left:
                             method_image = right
-                        elif 'easey_ocr_conf' in left:
-                            easy_ocr_conf = right
+                        elif 'image_conf' in left:
+                            image_conf = right
 
 
 
@@ -1296,6 +1296,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("colour_state", "element parameter", str(colour_state)))
                 element_image.append(("language", "element parameter", str(language)))
                 element_image.append(("method_image", "element parameter", str(method_image)))
+                element_image.append(("image_conf", "element parameter", str(image_conf)))
+
                 result = image_search(element_image)
                 return result
             if element_path:
