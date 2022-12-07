@@ -646,6 +646,7 @@ def run_all_test_steps_in_a_test_case(
                 "sequence": current_step_sequence,
                 "runtime": round(TestStepEndTime - TestStepStartTime, 5),
                 "time_stamp": CommonUtil.get_timestamp(),
+                "status": sStepResult,
             })
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
@@ -935,6 +936,12 @@ def run_test_case(
         CommonUtil.browser_perf = {}
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
+        # FIXME: Remove these lines
+        # import random
+        # CommonUtil.d_day = random.randint(1, 4)
+        # CommonUtil.d_hours = random.randint(1, 11)
+        # CommonUtil.d_minutes = random.randint(0, 39)
+        # CommonUtil.d_seconds = random.randint(0, 50)
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
@@ -981,6 +988,8 @@ def run_test_case(
             debug_info,
             performance
         )
+
+        # TODO: Test case run is completed here somewhere.
 
         ConfigModule.add_config_value(
             "sectionOne",
