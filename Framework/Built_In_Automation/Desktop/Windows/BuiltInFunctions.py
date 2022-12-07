@@ -921,6 +921,7 @@ def image_search(step_data_set):
         colour_state = ""
         method_image = ""
         language = ""
+        easy_ocr_conf = ""
 
 
 
@@ -944,8 +945,10 @@ def image_search(step_data_set):
                     colour_state = right
                 elif 'language' in left:
                     language = right
-                elif 'method' in left:
+                elif 'method_image' in left:
                     method_image = right
+                elif 'easy_ocr_conf' in left:
+                    easy_ocr_conf = float(right)
 
                 else:
                     if not image_text:
@@ -1065,13 +1068,13 @@ def image_search(step_data_set):
                 for text in output:
                     def seq(a, b):
                         c = SequenceMatcher(a=a, b=b).ratio()
-                        if c > 0.8:
+                        if c > easy_ocr_conf:
                             return c
                         else:
                             return .00004
 
                     rslt = seq(image_text, text[1])
-                    if rslt > 0.8:
+                    if rslt > easy_ocr_conf:
                     # if image_text in text[1]:
                         item.append([text])
                         print(text)
@@ -1086,9 +1089,10 @@ def image_search(step_data_set):
                     return "zeuz_failed"
                 cord = np.array(item[idx][0])
                 cord1 = cord.tolist()
-
+                #
                 x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
                 x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
+
                 # img = cv2.imread("sample.png")
                 # cropping = img[y_min:y_max , x_min:x_max]
                 # cv2.imwrite(r"C:\Users\Sazid\Desktop\final_csv_result\crop_{0}.png".format(idx), cropping)
@@ -1256,6 +1260,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 top_height = 1
                 colour_state = 'black_white'
                 method_image = 'method_1'
+                easy_ocr_conf = 0.8
                 language = 'en'
                 for left, mid, right in data_set:
                     left = left.strip().lower()
@@ -1271,6 +1276,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             language = right
                         elif 'method_image' in left:
                             method_image = right
+                        elif 'easey_ocr_conf' in left:
+                            easy_ocr_conf = right
 
 
 
