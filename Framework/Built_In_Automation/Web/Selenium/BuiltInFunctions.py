@@ -1481,10 +1481,7 @@ def Click_Element(data_set, retry=0):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info())
         except StaleElementReferenceException:
             if retry == 5:
                 CommonUtil.ExecLog(sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3)
@@ -1494,10 +1491,7 @@ def Click_Element(data_set, retry=0):
             return Click_Element(data_set, retry + 1)
 
         except Exception:
-            element_attributes = Element.get_attribute("outerHTML")
-            CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
-            errMsg = "Could not select/click your element."
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+            return CommonUtil.Exception_Handler(sys.exc_info())
 
     # Click using location
     else:
