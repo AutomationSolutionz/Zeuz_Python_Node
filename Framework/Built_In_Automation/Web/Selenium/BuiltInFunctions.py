@@ -22,6 +22,8 @@ from pathlib import Path
 
 sys.path.append("..")
 from selenium import webdriver
+from selenium import webdriver
+from xvfbwrapper import Xvfb
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import IEDriverManager
@@ -81,6 +83,7 @@ current_driver_id = None
 selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
+vdisplay = None
 
 # JavaScript for collecting First Contentful Paint value.
 JS_FCP = '''
@@ -537,6 +540,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
             if "chromeheadless" in browser:
+             if platform == "linux" or platform == "linux2":
+                 vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+                 vdisplay.start()
+            else:
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
@@ -591,6 +598,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             if "headless" in browser:
                 options.headless = True
+            if platform == "linux" or platform == "linux2":
+                 vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+                 vdisplay.start()
             if _platform == "win32":
                 try:
                     import winreg
@@ -3502,6 +3512,9 @@ def Tear_Down_Selenium(step_data=[]):
                 Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
                 selenium_driver = None
                 current_driver_id = driver_id
+            if vdisplay:
+                 vdisplay.stop()
+                 vdisplay = None
 
         return "passed"
     except Exception:
