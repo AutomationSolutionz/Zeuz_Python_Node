@@ -844,16 +844,17 @@ def send_to_bigquery(execution_log, metrics):
     client = bigquery.Client()
 
     # Table identifiers - these should be coming from zeuz server.
-    # table_id = "agora-project-6a43e62c.zeuz_node.reports"
     actions_table_id = str(os.environ["GCP_BIGQUERY_ACTIONS_TABLE_ID"])
     steps_table_id = str(os.environ["GCP_BIGQUERY_STEPS_TABLE_ID"])
     browser_perf_table_id = str(os.environ["GCP_BIGQUERY_BROWSER_PERF_TABLE_ID"])
+    test_cases_table_id = str(os.environ["GCP_BIGQUERY_TEST_CASES_TABLE_ID"])
 
     run_id = execution_log["run_id"]
     tc_id = execution_log["test_cases"][0]["testcase_no"]
 
     steps = metrics["node"]["steps"]
     actions = metrics["node"]["actions"]
+    test_cases = metrics["node"]["test_cases"]
     try:
         browser_perf = metrics["browser_performance"]["default"]
     except:
@@ -896,6 +897,10 @@ def send_to_bigquery(execution_log, metrics):
         send(steps_table_id, steps, "step")
 
 
+    def send_test_case_metrics():
+        send(test_cases_table_id, test_cases, "test case")
+
+
     def send_browser_perf_metrics():
         if len(browser_perf) == 0:
             return
@@ -908,6 +913,7 @@ def send_to_bigquery(execution_log, metrics):
 
     send_actions_metrics()
     send_steps_metrics()
+    send_test_case_metrics()
     send_browser_perf_metrics()
 
 
@@ -1031,6 +1037,14 @@ def run_test_case(
             "status": sTestCaseStatus,
             "failreason": ""
         }
+        CommonUtil.test_case_perf.append({
+            "run_id": run_id,
+            "tc_id": TestCaseID,
+            "status": sTestCaseStatus,
+            "runtime": float(TimeDiff),
+            "errors": None,
+            "time_stamp": CommonUtil.get_timestamp(),
+        })
         if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
             TCLogFile = (
                 os.sep
@@ -1047,7 +1061,8 @@ def run_test_case(
             "browser_performance": CommonUtil.browser_perf,
             "node": {
                 "actions": CommonUtil.action_perf,
-                "steps": CommonUtil.step_perf
+                "steps": CommonUtil.step_perf,
+                "test_cases": CommonUtil.test_case_perf,
             }
         }
 
