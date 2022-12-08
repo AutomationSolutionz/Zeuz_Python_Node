@@ -1215,11 +1215,12 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
             return found_list
 
     elif not match_by_index:
-        if nested and len(list1) != len(list2):
-            if len(list2) > len(list1):
-                return "2nd list larger"
-            elif len(list1) > len(list2):
-                return "1st list larger"
+        '''Matching list length causes many edge case failure. So removing it'''
+        # if nested and len(list1) != len(list2):
+        #     if len(list2) > len(list1):
+        #         return "2nd list larger"
+        #     elif len(list1) > len(list2):
+        #         return "1st list larger"
         for each1 in list1:
             if isinstance(each1, list) or isinstance(each1, tuple):
                 nested = True
@@ -1230,10 +1231,10 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "all found":
                         # return "all found"
                         break
-                    if found_status == "2nd list larger":
-                        return "2nd list larger"
-                    if found_status == "1st list larger":
-                        return "1st list larger"
+                    # if found_status == "2nd list larger":
+                    #     return "2nd list larger"
+                    # if found_status == "1st list larger":
+                    #     return "1st list larger"
                 else:
                     return "not found"
             elif nested and str(each1).strip().lower() not in [str(i).strip().lower() for i in list2]:
@@ -1254,10 +1255,10 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "all found":
                         # return "all found"
                         break
-                    if found_status == "2nd list larger":
-                        return "2nd list larger"
-                    if found_status == "1st list larger":
-                        return "1st list larger"
+                    # if found_status == "2nd list larger":
+                    #     return "2nd list larger"
+                    # if found_status == "1st list larger":
+                    #     return "1st list larger"
                 else:
                     return "not found"
             elif nested and str(each2).strip().lower() not in [str(i).strip().lower() for i in list1]:
