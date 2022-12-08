@@ -1481,7 +1481,13 @@ def Click_Element(data_set, retry=0):
                 )
                 return "passed"
             except Exception:
-                return CommonUtil.Exception_Handler(sys.exc_info())
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         except StaleElementReferenceException:
             if retry == 5:
                 CommonUtil.ExecLog(sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3)
@@ -1491,7 +1497,13 @@ def Click_Element(data_set, retry=0):
             return Click_Element(data_set, retry + 1)
 
         except Exception:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+            try:
+                element_attributes = Element.get_attribute("outerHTML")
+                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                errMsg = "Could not click and hold your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
 
     # Click using location
     else:
@@ -1760,12 +1772,13 @@ def Click_and_Hold_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not click and hold your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1793,12 +1806,13 @@ def Context_Click_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not right click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1826,12 +1840,13 @@ def Double_Click_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not double click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1858,12 +1873,13 @@ def Move_To_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not move to your element your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1891,12 +1907,13 @@ def Hover_Over_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not select/hover over your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not select/hover your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
