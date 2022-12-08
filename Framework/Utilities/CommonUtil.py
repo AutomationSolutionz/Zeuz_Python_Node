@@ -141,6 +141,7 @@ all_threads = {}
 browser_perf = {}
 action_perf = []
 step_perf = []
+test_case_perf = []
 
 
 def GetExecutor():
@@ -855,10 +856,16 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
             4,
         )
 
+d_day = 0
+d_hours = 0
+d_minutes = 0
+d_seconds = 0
 
 def get_timestamp() -> datetime:
     """Get UTC-0 times tamps for metrics and other purposes."""
-    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+    d = datetime.datetime.utcnow()
+    d += datetime.timedelta(days=d_day, hours=d_hours, minutes=d_minutes, seconds=d_seconds)
+    return d.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 def TimeStamp(format):
