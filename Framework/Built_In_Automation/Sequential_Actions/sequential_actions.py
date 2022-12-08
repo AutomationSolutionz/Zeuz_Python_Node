@@ -714,7 +714,7 @@ def for_loop_action(step_data, data_set_no):
                 #         "(exit loop and fail, optional loop settings, if %s fails)" % str(data_set_index + 1),
                 #         2
                 #     )
-                elif operand_matching != "":
+                elif operand_matching != "" and operator in operand_matching[2]:
                     operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
                     data = [(operand_matching[0], "optional parameter", operand_matching_2)]
                     RandL = common.shared_variable_to_value(data)[0][2]
