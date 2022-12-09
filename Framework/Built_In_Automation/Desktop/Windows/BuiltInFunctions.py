@@ -922,6 +922,7 @@ def image_search(step_data_set):
         method_image = ""
         language = ""
         image_conf = 0.8
+        text_screenshot = ''
 
 
 
@@ -949,6 +950,8 @@ def image_search(step_data_set):
                     method_image = right
                 elif 'image_conf' in left:
                     image_conf = float(right)
+                elif 't_screenshot' in left:
+                    text_screenshot = right
 
                 else:
                     if not image_text:
@@ -1063,14 +1066,16 @@ def image_search(step_data_set):
 
                 PIL.ImageGrab.grab().save("sample.png")
                 reader = easyocr.Reader([language])
-                output = reader.readtext("sample.png")
+                output = reader.readtext("sample.png",paragraph=False)
                 item = []
                 count = 0
                 for text in output:
                     def seq(a, b):
                         c = SequenceMatcher(a=a, b=b).ratio()
+                        print(c)
                         if c > 0.8:
                             return c
+
                         else:
                             return .00004
 
@@ -1094,9 +1099,12 @@ def image_search(step_data_set):
                 x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
                 x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
 
-                # img = cv2.imread("sample.png")
-                # cropping = img[y_min:y_max , x_min:x_max]
-                # cv2.imwrite(r"C:\Users\Sazid\Desktop\final_csv_result\crop_{0}.png".format(idx), cropping)
+                if text_screenshot !='':
+                    img = cv2.imread("sample.png")
+                    cropping = img[y_min:y_max , x_min:x_max]
+                    cv2.imwrite(text_screenshot, cropping)
+                else:
+                    pass
                 #
                 # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
                 # image1 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -1262,6 +1270,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 method_image = 'method_1'
                 image_conf = 0.8
                 language = 'en'
+                text_screenshot = ''
                 for left, mid, right in data_set:
                     left = left.strip().lower()
                     mid = mid.strip().lower()
@@ -1278,6 +1287,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             method_image = right
                         elif 'image_conf' in left:
                             image_conf = right
+                        elif 't_screenshot' in left:
+                            text_screenshot = right
 
 
 
@@ -1297,6 +1308,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("language", "element parameter", str(language)))
                 element_image.append(("method_image", "element parameter", str(method_image)))
                 element_image.append(("image_conf", "element parameter", str(image_conf)))
+                element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
+
 
                 result = image_search(element_image)
                 return result
