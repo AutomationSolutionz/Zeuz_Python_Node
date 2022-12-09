@@ -921,7 +921,7 @@ def image_search(step_data_set):
         colour_state = ""
         method_image = ""
         language = ""
-        image_conf = 0.8
+        image_conf = 0.9
         text_screenshot = ''
         easyocr_paragraph = ''
 
@@ -1275,7 +1275,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 top_height = 1
                 colour_state = 'black_white'
                 method_image = 'method_1'
-                image_conf = 0.8
+                image_conf = 0.9
                 language = 'en'
                 text_screenshot = ''
                 easyocr_paragraph = ''
