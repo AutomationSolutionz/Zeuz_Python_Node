@@ -923,6 +923,7 @@ def image_search(step_data_set):
         language = ""
         image_conf = 0.8
         text_screenshot = ''
+        easyocr_paragraph = ''
 
 
 
@@ -952,6 +953,8 @@ def image_search(step_data_set):
                     image_conf = float(right)
                 elif 't_screenshot' in left:
                     text_screenshot = right
+                elif 'easyocr_paragraph' in left:
+                    easyocr_paragraph = right
 
                 else:
                     if not image_text:
@@ -1066,7 +1069,11 @@ def image_search(step_data_set):
 
                 PIL.ImageGrab.grab().save("sample.png")
                 reader = easyocr.Reader([language])
-                output = reader.readtext("sample.png",paragraph=False)
+                if easyocr_paragraph == 'true':
+                    output = reader.readtext("sample.png",paragraph=True)
+                else:
+                    output = reader.readtext("sample.png", paragraph=False)
+
                 item = []
                 count = 0
                 for text in output:
@@ -1271,6 +1278,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 image_conf = 0.8
                 language = 'en'
                 text_screenshot = ''
+                easyocr_paragraph = ''
                 for left, mid, right in data_set:
                     left = left.strip().lower()
                     mid = mid.strip().lower()
@@ -1289,6 +1297,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             image_conf = right
                         elif 't_screenshot' in left:
                             text_screenshot = right
+                        elif 'easyocr_paragraph' in left:
+                            easyocr_paragraph = right
 
 
 
@@ -1309,6 +1319,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("method_image", "element parameter", str(method_image)))
                 element_image.append(("image_conf", "element parameter", str(image_conf)))
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
+                element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
+
 
 
                 result = image_search(element_image)
