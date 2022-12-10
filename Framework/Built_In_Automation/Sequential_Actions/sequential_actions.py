@@ -35,6 +35,7 @@ import time
 import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 from datetime import datetime
 import pytz
 
@@ -956,6 +957,69 @@ def While_Loop_Action(step_data, data_set_no):
         return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
+def ticker_linear_shape(seconds, callable, *args, **kwargs):
+    while seconds > 0:
+        callable(*args, **kwargs)
+        time.sleep(1)
+        seconds -= 1
+
+
+from typing import List, Tuple
+def performance_action(data_set: List[List[str]], row: List[str]) -> Tuple[str, List[int]]:
+    spawn_rate = 1
+    timeout = 1
+    time_to_run = 1
+    max_workers = None
+    actions_to_execute: List[int] = []
+
+    for left, _, right in data_set:
+        left, right = left.strip(), right.strip()
+        if "spawn rate" in left:
+            spawn_rate = int(right)
+        elif "timeout" in left:
+            timeout = int(right)
+        elif "time to run" in left:
+            time_to_run = int(right)
+        elif "max workers" in left:
+            max_workers = int(right)
+            if max_workers <= 1:
+                # max workers cannot be less than 2 otherwise we'll have a
+                # deadlock
+                max_workers = 2
+        elif "performance action" in left:
+            l, r = map(int, right.split("-"))
+            actions_to_execute = [i-1 for i in range(l, r+1)]
+
+    # result, executed_actions = Run_Sequential_Actions(data_set_list=actions_to_execute)
+    # print(result, executed_actions)
+
+    pool = ThreadPoolExecutor(
+        max_workers=max_workers,
+        thread_name_prefix="performance_action",
+    )
+
+    future_callables = list()
+
+    while time_to_run > 0:
+        # For every "tick", we spawn the specified number of callables.
+        for i in range(spawn_rate):
+            future_callables.append(
+                pool.submit(
+                    Run_Sequential_Actions,
+                    data_set_list=actions_to_execute,
+                )
+            )
+        time.sleep(1)
+        time_to_run -= 1
+
+    results = []
+    for f in concurrent.futures.as_completed(future_callables, timeout=timeout):
+        results.append(f.result())
+
+    print(results)
+    return "passed", actions_to_execute
+
+
 def Run_Sequential_Actions(
     data_set_list=None, debug_actions=None
 ):  # data_set_no will used in recursive conditional action call
@@ -1033,6 +1097,10 @@ def Run_Sequential_Actions(
                 # Don't process these suport items right now, but also don't fail
                 if action_name.lower().strip() in action_support and "custom" not in action_name:
                     continue
+
+                elif "performance action" in action_name:
+                    result, skip_for_loop = performance_action(data_set, row)
+                    skip = skip_for_loop
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:
@@ -1579,8 +1647,6 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     break  # Stop processing this while loop, and go back to regular SA
 
             elif loop_method == "exact":
-                for ndc in range(len(new_step_data)):  # For each data set in the sub-set
-                    # Build the sub-set and execute
                     if load_testing:
                         thread_pool.submit(build_subset, [new_step_data[ndc]])
                         if not loop_result_for_load_testing:
