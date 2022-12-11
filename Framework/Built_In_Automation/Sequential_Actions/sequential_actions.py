@@ -1647,6 +1647,8 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     break  # Stop processing this while loop, and go back to regular SA
 
             elif loop_method == "exact":
+                for ndc in range(len(new_step_data)):  # For each data set in the sub-set
+                    # Build the sub-set and execute
                     if load_testing:
                         thread_pool.submit(build_subset, [new_step_data[ndc]])
                         if not loop_result_for_load_testing:
