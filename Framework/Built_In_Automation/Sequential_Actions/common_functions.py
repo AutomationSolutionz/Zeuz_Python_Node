@@ -5709,7 +5709,8 @@ def data_store_insert(data_set):
                 table_name = right.strip()
                 params['table_name'] = table_name
             if left.strip() == 'data':
-                l = CommonUtil.parse_value_into_object(right.strip())
+                l = ast.literal_eval(right.strip())
+                print(l)
             if mid.strip() == "action":
                 var_name = right.strip()
         data={
