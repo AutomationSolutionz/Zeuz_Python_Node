@@ -550,23 +550,16 @@ def for_loop_action(step_data, data_set_no):
     try:
         data_set = step_data[data_set_no]
         loop_this_data_sets = []
-        passing_data_sets = []
-        failing_data_sets = []
         outer_skip, inner_skip = [], []
-        operand_matching = ""
         global step_exit_fail_called, step_exit_pass_called
         step_exit_fail_called = False
         step_exit_pass_called = False
-        exit_loop_and_fail = []
-        exit_loop_nd_fail_operation = []
-        continue_pass = []
-        continue_fail = []
-        continue_operand = []
+        exit_loop_and_fail = {"pass": [], "fail": [], "cond": []}
+        exit_loop_and_cont = {"pass": [], "fail": [], "cond": []}
+        continue_next_iter = {"pass": [], "fail": [], "cond": []}
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "zeuz_failed", []
-        operators = ["|==|", "==", "|!=|", "|<=|", "|>=|", "|>|", "|<|", "|in|"]
-        operator = ""
 
         for row in data_set:
             if row[1].strip().lower() == "for loop action":
@@ -592,7 +585,7 @@ def for_loop_action(step_data, data_set_no):
                     else:
                         iterable = CommonUtil.parse_value_into_object(left)
                         CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
-            elif row[0].strip().lower().startswith("exit loop"):
+            elif row[0].strip().lower().startswith("exit loop and fail"):
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -600,27 +593,41 @@ def for_loop_action(step_data, data_set_no):
                         3
                     )
                     return "zeuz_failed", []
-                for i in operators:
-                    if i in row[2]:
-                        operator = i
-                        break
                 value = row[2].strip()
-                if "pass" in value.lower() and not operator:
-                    if "any" in value.lower(): passing_data_sets += loop_this_data_sets
-                    else: passing_data_sets += get_data_set_nums(value)
-                    if row[0].strip().lower() == "exit loop and fail":
-                        if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
-                        else: exit_loop_and_fail += get_data_set_nums(value)
-                elif "fail" in value.lower() and not operator:
-                    if "any" in value.lower(): failing_data_sets += loop_this_data_sets
-                    else: failing_data_sets += get_data_set_nums(value)
-                    if row[0].strip().lower() == "exit loop and fail":
-                        if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
-                        else: exit_loop_and_fail += get_data_set_nums(value)
-                elif operator and "optional loop settings" in row[1].strip().lower():
-                    operand_matching = row
-                    if row[0].strip().lower() == "exit loop and fail":
-                        exit_loop_nd_fail_operation.append(operand_matching)
+                if re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower()):
+                    '''if 49 pass'''
+                    '''if 4-9 pass'''
+                    '''if 4,9 pass'''
+                    '''if 1,4-9 pass'''
+                    '''if  4  ,9 ,10 pass'''
+                    '''if  4  ,9 ,10, 120-20 passes'''
+                    '''if any passes'''
+                    '''if any any passes'''
+                    '''if ay passes'''
+                    if "any" in value.lower(): exit_loop_and_fail["pass"] += loop_this_data_sets
+                    else: exit_loop_and_fail["pass"] += get_data_set_nums(value)
+                elif re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower()):
+                    if "any" in value.lower(): exit_loop_and_fail["fail"] += loop_this_data_sets
+                    else: exit_loop_and_fail["fail"] += get_data_set_nums(value)
+                else:
+                    exit_loop_and_fail["cond"].append(row[2])
+            elif row[0].strip().lower().startswith("exit loop"): # exit loop or exit loop and continue
+                if not row[2].lower().startswith("if"):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "'if' keyword is not provided at beginning",
+                        3
+                    )
+                    return "zeuz_failed", []
+                value = row[2].strip()
+                if re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower()):
+                    if "any" in value.lower(): exit_loop_and_cont["pass"] += loop_this_data_sets
+                    else: exit_loop_and_cont["pass"] += get_data_set_nums(value)
+                elif re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower()):
+                    if "any" in value.lower(): exit_loop_and_cont["fail"] += loop_this_data_sets
+                    else: exit_loop_and_cont["fail"] += get_data_set_nums(value)
+                else:
+                    exit_loop_and_cont["cond"].append(row[2])
             elif row[0].strip().lower().startswith("continue to next iter"):
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(
@@ -629,22 +636,17 @@ def for_loop_action(step_data, data_set_no):
                         3
                     )
                     return "zeuz_failed", []
-                for i in operators:
-                    if i in row[2]:
-                        operator = i
-                        break
                 value = row[2].strip()
-                if "pass" in value.lower() and not operator:
-                    if "any" in value.lower(): continue_pass += loop_this_data_sets
-                    else: continue_pass += get_data_set_nums(value)
-                elif "fail" in value.lower() and not operator:
-                    if "any" in value.lower(): continue_fail += loop_this_data_sets
-                    else: continue_fail += get_data_set_nums(value)
-                elif operator and "optional loop settings" in row[1].strip().lower():
-                    operand_matching = row
-                    continue_operand.append(operand_matching)
+                if re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower()):
+                    if "any" in value.lower(): continue_next_iter["pass"] += loop_this_data_sets
+                    else: continue_next_iter["pass"] += get_data_set_nums(value)
+                elif re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower()):
+                    if "any" in value.lower(): continue_next_iter["fail"] += loop_this_data_sets
+                    else: continue_next_iter["fail"] += get_data_set_nums(value)
+                elif "optional loop settings" in row[1].strip().lower():
+                    continue_next_iter["cond"].append(row[2])
 
-        if loop_this_data_sets == []:
+        if len(loop_this_data_sets) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action help for more info", 3)
             return "zeuz_failed", []
 
@@ -674,35 +676,39 @@ def for_loop_action(step_data, data_set_no):
                     outer_skip = list(set(outer_skip + inner_skip))
                 else:
                     continue
-                if result == "passed" and data_set_index in passing_data_sets:
+                if result == "passed" and data_set_index in exit_loop_and_cont["pass"]:
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Loop exit condition satisfied. Action %s passed. Exiting loop" % str(data_set_index + 1),
                         1
                     )
-                    if data_set_index in exit_loop_and_fail:
-                        CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
-                        step_exit_fail_called = True
-                        step_exit_pass_called = False
                     die = True
                     break
-                elif result == "zeuz_failed" and data_set_index in failing_data_sets:
+                elif result == "passed" and data_set_index in exit_loop_and_fail["pass"]:
+                    CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the step. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                    step_exit_fail_called = True
+                    step_exit_pass_called = False
+                    die = True
+                    break
+                elif result == "zeuz_failed" and data_set_index in exit_loop_and_cont["fail"]:
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Loop exit condition satisfied. Action %s failed. Exiting loop" % str(data_set_index + 1),
                         1
                     )
-                    if data_set_index in exit_loop_and_fail:
-                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                        step_exit_fail_called = True
-                        step_exit_pass_called = False
                     die = True
                     break
-                elif result == "zeuz_failed" and data_set_index in continue_fail:
-                    CommonUtil.ExecLog(sModuleInfo, "Action %s failed. Continuing to next iteration." % str(data_set_index + 1), 1)
+                elif result == "zeuz_failed" and data_set_index in exit_loop_and_fail["fail"]:
+                    CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                    step_exit_fail_called = True
+                    step_exit_pass_called = False
+                    die = True
                     break
-                elif result == "passed" and data_set_index in continue_pass:
+                elif result == "passed" and data_set_index in continue_next_iter["pass"]:
                     CommonUtil.ExecLog(sModuleInfo, "Action %s passed. Continuing to next iteration." % str(data_set_index + 1), 1)
+                    break
+                elif result == "zeuz_failed" and data_set_index in continue_next_iter["fail"]:
+                    CommonUtil.ExecLog(sModuleInfo, "Action %s failed. Continuing to next iteration." % str(data_set_index + 1), 1)
                     break
                 # elif result == "zeuz_failed" and not step_exit_fail_called and not step_exit_pass_called:
                 #     CommonUtil.ExecLog(
@@ -714,37 +720,21 @@ def for_loop_action(step_data, data_set_no):
                 #         "(exit loop and fail, optional loop settings, if %s fails)" % str(data_set_index + 1),
                 #         2
                 #     )
-                elif operand_matching != "" and operator in operand_matching[2]:
-                    operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
-                    data = [(operand_matching[0], "optional parameter", operand_matching_2)]
-                    RandL = common.shared_variable_to_value(data)[0][2]
-                    if operator == "":
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
-                            3,
-                        )
-                        return "zeuz_failed", []
-                    Lvalue, Rvalue = RandL.split(operator)
-                    Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
-                    Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
-                    Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
-                    if eval("Lvalue %s Rvalue" % operator.strip("|")):
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Loop exit condition satisfied. Left and Right operands compared. Exiting loop",
-                            1,
-                        )
-                        if operand_matching in continue_operand:
-                            CommonUtil.ExecLog(sModuleInfo, "Condition matched. Continuing to next iteration", 1)
-                            break
-
-                        if operand_matching in exit_loop_nd_fail_operation:
-                            CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
-                            step_exit_fail_called = True
-                            step_exit_pass_called = False
-
+                if exit_loop_and_cont["cond"]:
+                    if any([eval(cond.strip()[2:].strip(), sr.shared_variables) for cond in exit_loop_and_cont["cond"]]):
+                        CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop and continuing", 1)
                         die = True
+                        break
+                if exit_loop_and_fail["cond"]:
+                    if any([eval(cond.strip()[2:].strip(), sr.shared_variables) for cond in exit_loop_and_fail["cond"]]):
+                        CommonUtil.ExecLog(sModuleInfo, 'Step Fail called. So failing the step. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                        step_exit_fail_called = True
+                        step_exit_pass_called = False
+                        die = True
+                        break
+                if continue_next_iter["cond"]:
+                    if any([eval(cond.strip()[2:].strip(), sr.shared_variables) for cond in continue_next_iter["cond"]]):
+                        CommonUtil.ExecLog(sModuleInfo, "Condition matched. Continuing to next iteration", 1)
                         break
 
                 if step_exit_fail_called or step_exit_pass_called:
@@ -876,7 +866,7 @@ def While_Loop_Action(step_data, data_set_no):
                         1
                     )
                     if data_set_index in exit_loop_and_fail:
-                        CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                        CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the step. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
                         step_exit_fail_called = True
                         step_exit_pass_called = False
                     die = True
@@ -925,7 +915,7 @@ def While_Loop_Action(step_data, data_set_no):
                             1,
                         )
                         if exit_loop_nd_fail_operation:
-                            CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                            CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the step. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
                             step_exit_fail_called = True
                             step_exit_pass_called = False
                         die = True
