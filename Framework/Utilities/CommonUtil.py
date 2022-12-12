@@ -121,8 +121,11 @@ tc_index = 0
 step_index = 0
 current_action_no = ""
 current_action_name = ""
+previous_action_name = ""   # It requires for labelling get_performance_metrics. because performance_metrics is called on next action
 current_step_no = ""
 current_step_name = ""
+current_step_id = None
+current_step_sequence = None
 current_tc_no = ""
 current_session_name = ""
 custom_step_duration = ""
@@ -138,6 +141,7 @@ all_threads = {}
 browser_perf = {}
 action_perf = []
 step_perf = []
+test_case_perf = []
 
 
 def GetExecutor():
@@ -851,6 +855,17 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
             "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
             4,
         )
+
+d_day = 0
+d_hours = 0
+d_minutes = 0
+d_seconds = 0
+
+def get_timestamp() -> datetime:
+    """Get UTC-0 times tamps for metrics and other purposes."""
+    d = datetime.datetime.utcnow()
+    d += datetime.timedelta(days=d_day, hours=d_hours, minutes=d_minutes, seconds=d_seconds)
+    return d.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 def TimeStamp(format):

@@ -19,6 +19,7 @@ import socket
 import requests
 import psutil
 from pathlib import Path
+from datetime import datetime
 
 sys.path.append("..")
 from selenium import webdriver
@@ -395,24 +396,24 @@ def Open_Electron_App(data_set):
 @logger
 def get_performance_metrics(dataset):
     try:
-        driver_id = ""
+        label = driver_id = ""
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "driverid":
                 driver_id = right.strip()
             elif left == "getperformancemetrics":
                 var_name = right.strip()
+            elif left == "label":
+                label = right.strip()
 
         if not driver_id:
             driver_id = current_driver_id
 
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
-
-        metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-        perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
-        Shared_Resources.Set_Shared_Variables(var_name,perf_json_data)
-        CommonUtil.browser_perf[current_driver_id].append(perf_json_data)
+        # time.sleep(5)
+        perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
+        Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1003,28 +1004,41 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+    # collect_browser_metrics(current_driver_id, CommonUtil.current_action_name)
+    return "passed"
+
+
+def collect_browser_metrics(driver_id, label):
     # Collect custom performance metrics
     try:
-        if current_driver_id not in CommonUtil.browser_perf and selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-            metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-            metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
+        if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge"):
+            return {}
 
-            # FCP - First Contentful Paint
-            try:
-                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
-            except:
-                metrics_dict["first-contentful-paint"] = 0
+        metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
+        metrics_dict = {}
+        # FCP - First Contentful Paint
+        try: metrics_dict["first_contentful_paint"] = selenium_driver.execute_script(JS_FCP)
+        except: metrics_dict["first_contentful_paint"] = 0
+        # LCP - Largest Contenful Paint
+        try: metrics_dict["largest_contentful_paint"] = selenium_driver.execute_async_script(JS_LCP)
+        except: metrics_dict["largest_contentful_paint"] = 0
+        metrics_dict.update({data["name"]: data["value"] for data in metrics["metrics"]})
 
-            # LCP - Largest Contenful Paint
-            try:
-                metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
-            except:
-                metrics_dict["largest-contentful-paint"] = 0
+        # Collect identifying information
+        metrics_dict["label"] = label
+        metrics_dict["tc_id"] = CommonUtil.current_tc_no
+        metrics_dict["step_name"] = CommonUtil.current_step_name
+        metrics_dict["step_sequence"] = CommonUtil.current_step_sequence
+        metrics_dict["step_id"] = CommonUtil.current_step_id
+        metrics_dict["time_stamp"] = CommonUtil.get_timestamp()
 
-            CommonUtil.browser_perf[current_driver_id] = [metrics_dict]
+        if driver_id not in CommonUtil.browser_perf:
+            CommonUtil.browser_perf[driver_id] = [metrics_dict]
+        else:
+            CommonUtil.browser_perf[driver_id].append(metrics_dict)
 
             # CommonUtil.prettify(key="metrics", val=metrics_dict)
-        return "passed"
+        return metrics_dict
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

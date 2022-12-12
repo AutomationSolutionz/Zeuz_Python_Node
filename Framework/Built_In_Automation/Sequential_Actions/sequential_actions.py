@@ -2297,8 +2297,18 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         start_time = time.perf_counter()
         result = run_function(data_set)  # Execute function, providing all rows in the data set
         action_duration = round(time.perf_counter() - start_time, 5)
-        CommonUtil.action_perf.append({"module": action_subfield.split(" ")[0], "name": action_name, "runtime": action_duration})
+        CommonUtil.action_perf.append({
+            "step_sequence": CommonUtil.current_step_sequence,
+            "step_id": CommonUtil.current_step_id ,
+            "label": CommonUtil.current_action_name,
+            "module": action_subfield.split(" ")[0],
+            "name": action_name,
+            "runtime": action_duration,
+            "page_reload": CommonUtil.action_perf[-1]["runtime"] if len(CommonUtil.action_perf) > 0 and action_name == "get performance metrics" else None,    # only valid for get_performance_metrics
+            "time_stamp": CommonUtil.get_timestamp(),
+        })
         CommonUtil.TakeScreenShot(function)
+        CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False
             bypass_bug(action_name, action_subfield)
