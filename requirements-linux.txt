@@ -46,3 +46,4 @@ PyPDF2
 protobuf
 pytz
 rauth
+xvfbwrapper
