@@ -22,7 +22,6 @@ from pathlib import Path
 
 sys.path.append("..")
 from selenium import webdriver
-from selenium import webdriver
 from xvfbwrapper import Xvfb
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
