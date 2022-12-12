@@ -3,24 +3,51 @@ from concurrent import futures
 from typing import Callable, List, Tuple
 
 
+class LoadShape:
+    def __init__(self, callback: Callable[[], None]):
+        self.callback = callback
+
+
+    def tick(self):
+        pass
+
+
+class CycleLoadShape(LoadShape):
+    def __init__(self, callback: Callable[[], None], number_of_cycles=0, step_increment=1, ramp=None):
+        self.callback = callback
+        self.number_of_cycles = number_of_cycles
+        self.step_increment = step_increment
+        self.ramp = ramp
+
+
+    def run(self):
+        cycle = 0
+        while cycle < self.number_of_cycles:
+            cycle += 1
+
+
+    def tick(self):
+        self.callback()
+
+
 def performance_action_handler(
     data_set: List[List[str]],
     run_sequential_actions: Callable[[List[int]], None],
 ) -> Tuple[str, List[int]]:
-    spawn_rate = 1
-    timeout = 1
-    time_to_run = 1
+    number_of_cycles = 0
+    step_increment = 1
+    ramp = None
     max_workers = None
     actions_to_execute: List[int] = []
 
     for left, _, right in data_set:
         left, right = left.strip(), right.strip()
-        if "spawn rate" in left:
-            spawn_rate = int(right)
-        elif "timeout" in left:
-            timeout = int(right)
-        elif "time to run" in left:
-            time_to_run = int(right)
+        if "number of cycles" in left:
+            number_of_cycles = int(right)
+        elif "step_increment" in left:
+            step_increment = int(right)
+        elif "ramp" in left:
+            ramp = right.strip()
         elif "max workers" in left:
             max_workers = int(right)
             if max_workers <= 1:
@@ -54,7 +81,7 @@ def performance_action_handler(
         time_to_run -= 1
 
     results = []
-    for f in futures.as_completed(future_callables, timeout=timeout):
+    for f in futures.as_completed(future_callables):
         results.append(f.result())
 
     print(results)
