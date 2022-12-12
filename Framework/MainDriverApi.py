@@ -841,13 +841,17 @@ def set_important_variables():
 
 
 def send_to_bigquery(execution_log, metrics):
+    # Skip sending to gcp if credentials not available in environment.
+    if "GCP_BIGQUERY_ACTIONS_TABLE_ID" not in os.environ:
+        return
+
     client = bigquery.Client()
 
     # Table identifiers - these should be coming from zeuz server.
-    actions_table_id = str(os.environ["GCP_BIGQUERY_ACTIONS_TABLE_ID"])
-    steps_table_id = str(os.environ["GCP_BIGQUERY_STEPS_TABLE_ID"])
-    browser_perf_table_id = str(os.environ["GCP_BIGQUERY_BROWSER_PERF_TABLE_ID"])
-    test_cases_table_id = str(os.environ["GCP_BIGQUERY_TEST_CASES_TABLE_ID"])
+    actions_table_id = os.environ["GCP_BIGQUERY_ACTIONS_TABLE_ID"]
+    steps_table_id = os.environ["GCP_BIGQUERY_STEPS_TABLE_ID"]
+    browser_perf_table_id = os.environ["GCP_BIGQUERY_BROWSER_PERF_TABLE_ID"]
+    test_cases_table_id = os.environ["GCP_BIGQUERY_TEST_CASES_TABLE_ID"]
 
     run_id = execution_log["run_id"]
     tc_id = execution_log["test_cases"][0]["testcase_no"]
