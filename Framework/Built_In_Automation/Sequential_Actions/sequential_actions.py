@@ -37,6 +37,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import pytz
+import re
 
 from . import common_functions as common  # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
