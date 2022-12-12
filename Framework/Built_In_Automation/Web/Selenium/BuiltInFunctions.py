@@ -3539,6 +3539,8 @@ def Tear_Down_Selenium(step_data=[]):
                 Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
                 selenium_driver = None
                 current_driver_id = driver_id
+
+            global vdisplay
             if vdisplay:
                  vdisplay.stop()
                  vdisplay = None
