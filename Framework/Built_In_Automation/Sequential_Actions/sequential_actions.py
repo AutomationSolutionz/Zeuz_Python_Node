@@ -1044,8 +1044,14 @@ def Run_Sequential_Actions(
                     continue
 
                 elif "performance action" in action_name:
-                    result, skip_for_loop = performance_action_handler(data_set, Run_Sequential_Actions, CommonUtil.get_timestamp)
-                    skip = skip_for_loop
+                    result, skip, perf_result = performance_action_handler(
+                        data_set,
+                        Run_Sequential_Actions,
+                        CommonUtil.get_timestamp,
+                    )
+                    CommonUtil.perf_test_perf = {
+                        "performance_result": perf_result,
+                    }
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:

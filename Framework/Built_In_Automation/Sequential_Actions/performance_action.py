@@ -1,6 +1,6 @@
 import time
 from concurrent import futures
-from typing import Callable, List, Tuple, Literal, Union
+from typing import Callable, List, Tuple, Literal, Union, Any
 
 
 class LoadShape:
@@ -48,10 +48,10 @@ class CycleLoadShape(LoadShape):
 
         # loop until the target number of cycles are executed
         while cycle < self.number_of_cycles:
-            launch_count = max(
-                self.step_increment,
-                launch_count + (self.step_increment * self._cycle_ramp(cycle))
-            )
+            launch_count = launch_count + (self.step_increment * self._cycle_ramp(cycle))
+            # never let the launch count fall below zero
+            if launch_count <= 0:
+                launch_count = self.step_increment
 
             # this is going to block the loop and let the tick handler decide
             # when to move on to the next iteration
@@ -68,7 +68,7 @@ def performance_action_handler(
     data_set: List[List[str]],
     run_sequential_actions: Callable[[List[int]], None],
     timestamp_func: Callable[[], str],
-) -> Tuple[str, List[int]]:
+) -> Tuple[str, List[int], List[Any]]:
     number_of_cycles = 0
     step_increment = 1
     ramp = None
@@ -79,7 +79,7 @@ def performance_action_handler(
         left, right = left.strip(), right.strip()
         if "number of cycles" in left:
             number_of_cycles = int(right)
-        elif "step_increment" in left:
+        elif "step increment" in left:
             step_increment = int(right)
         elif "ramp" in left:
             ramp = right.strip()
@@ -114,13 +114,16 @@ def performance_action_handler(
 
 
     future_callables = list()
+    results = []
     def tick_handler(cycle: int, launch_count: int):
         for _ in range(launch_count):
             future_callables.append(
                 pool.submit(task, cycle=cycle),
             )
-        # TODO: perhaps we need to wait for the current cycle to complete before
-        # starting the next cycle?
+
+        # wait for a cycle to complete by waiting on all the submitted tasks
+        for f in futures.as_completed(future_callables):
+            results.append(f.result())
 
 
     load_shape = CycleLoadShape(
@@ -132,8 +135,4 @@ def performance_action_handler(
 
     load_shape.run()
 
-    results = []
-    for f in futures.as_completed(future_callables):
-        print(f.result())
-
-    return "passed", actions_to_execute
+    return "passed", actions_to_execute, results

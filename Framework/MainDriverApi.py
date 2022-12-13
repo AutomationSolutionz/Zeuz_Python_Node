@@ -1061,12 +1061,17 @@ def run_test_case(
             )
             after_execution_dict["logid"] = TCLogFile
 
+        CommonUtil.perf_test_perf.update({
+            "run_id": run_id,
+            "tc_id": TestCaseID,
+        })
         metrics = {
             "browser_performance": CommonUtil.browser_perf,
             "node": {
                 "actions": CommonUtil.action_perf,
                 "steps": CommonUtil.step_perf,
                 "test_cases": CommonUtil.test_case_perf,
+                "performance_test": CommonUtil.perf_test_perf,
             }
         }
 

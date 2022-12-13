@@ -142,6 +142,7 @@ browser_perf = {}
 action_perf = []
 step_perf = []
 test_case_perf = []
+perf_test_perf = {}
 
 
 def GetExecutor():
