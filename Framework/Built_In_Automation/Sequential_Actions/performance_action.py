@@ -32,10 +32,10 @@ class CycleLoadShape(LoadShape):
 
     def _cycle_ramp(self, cycle: int) -> Literal[-1, 1]:
         percentage = cycle / self.number_of_cycles
-        for i in range(1, len(self.ramp_list)):
+        for i in range(0, len(self.ramp_list)-1):
             rp_i = self.ramp_list[i]
-            rp_i1 = self.ramp_list[i-1]
-            if rp_i1 <= percentage <= rp_i:
+            rp_i1 = self.ramp_list[i+1]
+            if rp_i <= percentage <= rp_i1:
                 return -1 if i % 2 == 1 else 1
         return 1
 
@@ -113,9 +113,9 @@ def performance_action_handler(
         return (result, timestamp, end_time - start_time, cycle)
 
 
-    future_callables = list()
     results = []
     def tick_handler(cycle: int, launch_count: int):
+        future_callables = list()
         for _ in range(launch_count):
             future_callables.append(
                 pool.submit(task, cycle=cycle),

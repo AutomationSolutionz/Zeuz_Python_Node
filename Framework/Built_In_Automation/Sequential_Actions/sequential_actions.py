@@ -1049,9 +1049,7 @@ def Run_Sequential_Actions(
                         Run_Sequential_Actions,
                         CommonUtil.get_timestamp,
                     )
-                    CommonUtil.perf_test_perf = {
-                        "performance_result": perf_result,
-                    }
+                    CommonUtil.perf_test_perf = perf_result
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:
