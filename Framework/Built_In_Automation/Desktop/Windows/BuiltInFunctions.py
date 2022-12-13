@@ -1076,6 +1076,7 @@ def image_search(step_data_set):
 
                 item = []
                 count = 0
+                crop_counter = 0
                 for text in output:
                     def seq(a, b):
                         c = SequenceMatcher(a=a, b=b).ratio()
@@ -1109,7 +1110,25 @@ def image_search(step_data_set):
                 if text_screenshot !='':
                     img = cv2.imread("sample.png")
                     cropping = img[y_min:y_max , x_min:x_max]
-                    cv2.imwrite(text_screenshot, cropping)
+                    cv2.imwrite('cropped_image.png', cropping)
+                    from PIL import Image
+
+                    image = Image.open('cropped_image.png')
+                    gray_image = image.convert('L')
+                    output_2 = pytesseract.image_to_string(gray_image)
+                    print(output_2)
+
+                    if output_2 in image_text or image_text in output_2:
+                        element = x_min, y_min, x_max - x_min, y_max - y_min
+                        crop_counter = 1
+                        return _Element(element)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                        return "zeuz_failed"
+
+
+
+
                 else:
                     pass
                 #
@@ -1118,8 +1137,11 @@ def image_search(step_data_set):
                 #
                 # plt.imshow(image1)
                 # plt.show()
-                element = x_min,y_min,x_max-x_min,y_max-y_min
-                return _Element(element)
+                if crop_counter == 0:
+                    element = x_min,y_min,x_max-x_min,y_max-y_min
+                    return _Element(element)
+                else:
+                    pass
 
         else:
             # Scale image if required
