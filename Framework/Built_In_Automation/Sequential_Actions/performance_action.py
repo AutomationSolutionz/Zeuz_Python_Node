@@ -66,7 +66,7 @@ class CycleLoadShape(LoadShape):
 
 def performance_action_handler(
     data_set: List[List[str]],
-    run_sequential_actions: Callable[[List[int]], None],
+    run_sequential_actions: Callable[[List[int]], Tuple[str, List[int]]],
     timestamp_func: Callable[[], str],
 ) -> Tuple[str, List[int], List[Any]]:
     number_of_cycles = 0
@@ -110,7 +110,7 @@ def performance_action_handler(
         start_time = time.perf_counter_ns()
         result = run_sequential_actions(actions_to_execute)
         end_time = time.perf_counter_ns()
-        return (result, timestamp, end_time - start_time, cycle)
+        return (result[0] == "passed", timestamp, end_time - start_time, cycle)
 
 
     results = []
