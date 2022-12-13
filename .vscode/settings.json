@@ -1,5 +1,5 @@
 {
     "python.linting.enabled": true,
     "python.formatting.provider": "yapf",
-    "python.analysis.typeCheckingMode": "off"
+    "python.analysis.typeCheckingMode": "basic"
 }

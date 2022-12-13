@@ -1,38 +1,73 @@
 import time
 from concurrent import futures
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Literal, Union
 
 
 class LoadShape:
-    def __init__(self, callback: Callable[[], None]):
-        self.callback = callback
+    def run(self):
+        raise Exception("this method needs to be called from one of its sub-classes")
 
 
-    def tick(self):
-        pass
+    def tick(self, cycle, launch_count):
+        raise Exception("this method needs to be called from one of its sub-classes")
 
 
 class CycleLoadShape(LoadShape):
-    def __init__(self, callback: Callable[[], None], number_of_cycles=0, step_increment=1, ramp=None):
+    def __init__(self, callback: Callable[[int, int], None], number_of_cycles=0, step_increment=1, ramp: Union[str, None]=None):
         self.callback = callback
         self.number_of_cycles = number_of_cycles
         self.step_increment = step_increment
-        self.ramp = ramp
+
+        if ramp:
+            self.ramp_list = [
+                float(i.strip().replace('%', '')) / 100
+                for i in ramp.split(',')
+            ]
+        else:
+            self.ramp_list = []
+
+        # convert to set so that we remove duplicates of 0.0 and 1.0 if present
+        self.ramp_list = sorted(list(set([0.0, *self.ramp_list, 1.0])))
+
+
+    def _cycle_ramp(self, cycle: int) -> Literal[-1, 1]:
+        percentage = cycle / self.number_of_cycles
+        for i in range(1, len(self.ramp_list)):
+            rp_i = self.ramp_list[i]
+            rp_i1 = self.ramp_list[i-1]
+            if rp_i1 <= percentage <= rp_i:
+                return -1 if i % 2 == 1 else 1
+        return 1
 
 
     def run(self):
+        # current cycle count
         cycle = 0
+        # number of threads to launch per cycle
+        launch_count = 0
+
+        # loop until the target number of cycles are executed
         while cycle < self.number_of_cycles:
+            launch_count = max(
+                self.step_increment,
+                launch_count + (self.step_increment * self._cycle_ramp(cycle))
+            )
+
+            # this is going to block the loop and let the tick handler decide
+            # when to move on to the next iteration
+            self.tick(cycle, launch_count)
+
             cycle += 1
 
 
-    def tick(self):
-        self.callback()
+    def tick(self, cycle: int, launch_count: int):
+        self.callback(cycle, launch_count)
 
 
 def performance_action_handler(
     data_set: List[List[str]],
     run_sequential_actions: Callable[[List[int]], None],
+    timestamp_func: Callable[[], str],
 ) -> Tuple[str, List[int]]:
     number_of_cycles = 0
     step_increment = 1
@@ -66,23 +101,39 @@ def performance_action_handler(
         thread_name_prefix="performance_action",
     )
 
-    future_callables = list()
+    def task(cycle):
+        """
+        A task represents a single thread of execution/user journey and contains
+        performance related information.
+        """
+        timestamp = timestamp_func()
+        start_time = time.perf_counter_ns()
+        result = run_sequential_actions(actions_to_execute)
+        end_time = time.perf_counter_ns()
+        return (result, timestamp, end_time - start_time, cycle)
 
-    while time_to_run > 0:
-        # For every "tick", we spawn the specified number of callables.
-        for i in range(spawn_rate):
+
+    future_callables = list()
+    def tick_handler(cycle: int, launch_count: int):
+        for _ in range(launch_count):
             future_callables.append(
-                pool.submit(
-                    run_sequential_actions,
-                    data_set_list=actions_to_execute,
-                )
+                pool.submit(task, cycle=cycle),
             )
-        time.sleep(1)
-        time_to_run -= 1
+        # TODO: perhaps we need to wait for the current cycle to complete before
+        # starting the next cycle?
+
+
+    load_shape = CycleLoadShape(
+        callback=tick_handler,
+        number_of_cycles=number_of_cycles,
+        step_increment=step_increment,
+        ramp=ramp,
+    )
+
+    load_shape.run()
 
     results = []
     for f in futures.as_completed(future_callables):
-        results.append(f.result())
+        print(f.result())
 
-    print(results)
     return "passed", actions_to_execute

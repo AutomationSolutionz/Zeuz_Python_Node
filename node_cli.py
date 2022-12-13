@@ -6,11 +6,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 import platform
 
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
 
@@ -23,6 +18,11 @@ with open(version_path, "r"):
     print(version_path.read_text())
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
+
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
+
 
 import sys, time, os.path, base64, signal, argparse, requests, zipfile
 from getpass import getpass
