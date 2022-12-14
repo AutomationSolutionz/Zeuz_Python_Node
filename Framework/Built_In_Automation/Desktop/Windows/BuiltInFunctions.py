@@ -1178,6 +1178,114 @@ def image_search(step_data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def new_image_text(step_data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    import easyocr
+    import numpy as np
+    import cv2
+    from pytesseract import pytesseract
+    import matplotlib.pyplot as plt
+    from difflib import SequenceMatcher
+
+    pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
+
+
+    file_name = ""
+    resolution = ""
+    idx = 0
+    confidence = 0.85
+    parent_dataset = []
+    image_text = ""
+    left_width = ""
+    top_height = ""
+    colour_state = ""
+    method_image = ""
+    language = ""
+    image_conf = 0.9
+    text_screenshot = ''
+    easyocr_paragraph = ''
+
+
+
+    for left, mid, right in step_data_set:
+        left = left.strip().lower()
+        mid = mid.strip().lower()
+        if mid == "element parameter":
+            if "index" in left:
+                idx = int(right.strip())
+            elif "ntext" in left:
+                image_text = right
+            elif 'language' in left:
+                language = right
+            elif 'image_conf' in left:
+                image_conf = float(right)
+            elif 't_screenshot' in left:
+                text_screenshot = right
+            elif 'easyocr_paragraph' in left:
+                easyocr_paragraph = right
+
+    PIL.ImageGrab.grab().save("sample.png")
+    reader = easyocr.Reader([language])
+    if easyocr_paragraph == 'true':
+        output = reader.readtext("sample.png", paragraph=True)
+    else:
+        output = reader.readtext("sample.png", paragraph=False)
+
+    item = []
+    count = 0
+    crop_counter = 0
+    for text in output:
+        def seq(a, b):
+            c = SequenceMatcher(a=a, b=b).ratio()
+            print(c)
+            if c > 0.8:
+                return c
+
+            else:
+                return .00004
+
+        rslt = seq(image_text, text[1])
+        if rslt >= float(image_conf):
+            # if image_text in text[1]:
+            item.append([text])
+            print(text)
+            CommonUtil.ExecLog(sModuleInfo, "Found %s text. Returning element of index %s" % (image_text, count), 1)
+            count = count + 1
+        else:
+            print(text)
+            continue
+
+    if item == []:
+        CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+        return "zeuz_failed"
+    cord = np.array(item[idx][0])
+    cord1 = cord.tolist()
+    #
+    x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
+    x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
+
+    if text_screenshot != '':
+        img = cv2.imread("sample.png")
+        cropping = img[y_min:y_max, x_min:x_max]
+        cv2.imwrite('cropped_image.png', cropping)
+        from PIL import Image
+
+        image = Image.open('cropped_image.png')
+        gray_image = image.convert('L')
+        output_2 = pytesseract.image_to_string(gray_image)
+        print(output_2)
+
+        if output_2 in image_text or image_text in output_2:
+            element = x_min, y_min, x_max - x_min, y_max - y_min
+            crop_counter = 1
+            return _Element(element)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+            return "zeuz_failed"
+
+
 
 def _scale_image(file_name, size_w, size_h):
     """ This function calculates ratio and scales an image for comparison by _pyautogui() """
@@ -1246,6 +1354,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                     element_image.append((left, mid, right))
                 elif "imagetext" in left:
                     element_image.append((left, mid, right))
+                elif "ntext" in left:
+                    element_image.append((left, mid, right))
 
 
             elif mid == "parent parameter":
@@ -1301,6 +1411,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 language = 'en'
                 text_screenshot = ''
                 easyocr_paragraph = ''
+
                 for left, mid, right in data_set:
                     left = left.strip().lower()
                     mid = mid.strip().lower()
@@ -1325,6 +1436,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
 
 
 
+
                 _get_main_window(window_name)
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
                     if i[1]:
@@ -1344,9 +1456,12 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
 
 
-
-                result = image_search(element_image)
-                return result
+                if 'ntext' in element_image[0][0]:
+                    result = new_image_text(element_image)
+                    return result
+                else:
+                    result = image_search(element_image)
+                    return result
             if element_path:
                 all_elements = Element_path_search(window_name, element_path)
                 if all_elements == "zeuz_failed" and time.time() < s + wait_time:
@@ -2277,3 +2392,5 @@ def save_attribute_values_in_list(data_set):
             return Shared_Resources.Set_Shared_Variables(variable_name, [])
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
