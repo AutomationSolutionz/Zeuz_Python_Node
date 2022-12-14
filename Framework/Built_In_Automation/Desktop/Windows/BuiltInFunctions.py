@@ -1125,18 +1125,8 @@ def image_search(step_data_set):
                     else:
                         CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
                         return "zeuz_failed"
-
-
-
-
                 else:
                     pass
-                #
-                # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
-                # image1 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                #
-                # plt.imshow(image1)
-                # plt.show()
                 if crop_counter == 0:
                     element = x_min,y_min,x_max-x_min,y_max-y_min
                     return _Element(element)
@@ -1284,6 +1274,10 @@ def new_image_text(step_data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
             return "zeuz_failed"
+    else:
+        element = x_min, y_min, x_max - x_min, y_max - y_min
+        return _Element(element)
+
 
 
 
