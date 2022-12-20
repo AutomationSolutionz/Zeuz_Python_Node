@@ -853,6 +853,7 @@ def run_test_case(
 ):
     try:
         TestCaseStartTime = time.time()
+
         shared.Set_Shared_Variables("run_id", run_id)
         shared.Set_Shared_Variables("zeuz_runid_status", CommonUtil.run_cancel)
 
