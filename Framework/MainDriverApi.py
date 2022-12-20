@@ -854,6 +854,8 @@ def run_test_case(
     try:
         TestCaseStartTime = time.time()
         shared.Set_Shared_Variables("run_id", run_id)
+        shared.Set_Shared_Variables("zeuz_runid_status", CommonUtil.run_cancel)
+
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
@@ -1162,6 +1164,8 @@ def upload_csv_file_info(run_id, test_case):
 def check_run_cancel(run_id):
     while not CommonUtil.run_cancelled:
         CommonUtil.run_cancel = get_status_of_runid(run_id)
+        shared.Set_Shared_Variables("zeuz_runid_status", CommonUtil.run_cancel)
+
         time.sleep(3)
     # CommonUtil.run_cancelled = False
 
@@ -1534,7 +1538,6 @@ def main(device_dict, user_info_object):
             )
             debug_info = ""
             CommonUtil.clear_all_logs()
-
             CommonUtil.run_cancelled = False
             # FIXME: Remove the unnecessary threading. This won't be needed anymore.
             # thr = executor.submit(check_run_cancel, run_id)
