@@ -921,7 +921,7 @@ def image_search(step_data_set):
         colour_state = ""
         method_image = ""
         language = ""
-        image_conf = 0.9
+        t_conf = 0.9
         text_screenshot = ''
         easyocr_paragraph = ''
 
@@ -949,8 +949,8 @@ def image_search(step_data_set):
                     language = right
                 elif 'method_image' in left:
                     method_image = right
-                elif 'image_conf' in left:
-                    image_conf = float(right)
+                elif 't_conf' in left:
+                    t_conf = float(right)
                 elif 't_screenshot' in left:
                     text_screenshot = right
                 elif 'easyocr_paragraph' in left:
@@ -1088,7 +1088,7 @@ def image_search(step_data_set):
                             return .00004
 
                     rslt = seq(image_text, text[1])
-                    if rslt >= float(image_conf):
+                    if rslt >= float(t_conf):
                     # if image_text in text[1]:
                         item.append([text])
                         print(text)
@@ -1193,7 +1193,7 @@ def new_image_text(step_data_set):
     colour_state = ""
     method_image = ""
     language = ""
-    image_conf = 0.9
+    t_conf = 0.9
     text_screenshot = ''
     easyocr_paragraph = ''
 
@@ -1209,8 +1209,8 @@ def new_image_text(step_data_set):
                 image_text = right
             elif 'language' in left:
                 language = right
-            elif 'image_conf' in left:
-                image_conf = float(right)
+            elif 't_conf' in left:
+                t_conf = float(right)
             elif 't_screenshot' in left:
                 text_screenshot = right
             elif 'easyocr_paragraph' in left:
@@ -1237,7 +1237,7 @@ def new_image_text(step_data_set):
                 return .00004
 
         rslt = seq(image_text, text[1])
-        if rslt >= float(image_conf):
+        if rslt >= float(t_conf):
             # if image_text in text[1]:
             item.append([text])
             print(text)
@@ -1401,7 +1401,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 top_height = 1
                 colour_state = 'black_white'
                 method_image = 'method_1'
-                image_conf = 0.9
+                t_conf = 0.9
                 language = 'en'
                 text_screenshot = ''
                 easyocr_paragraph = ''
@@ -1420,8 +1420,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             language = right
                         elif 'method_image' in left:
                             method_image = right
-                        elif 'image_conf' in left:
-                            image_conf = right
+                        elif 't_conf' in left:
+                            t_conf = right
                         elif 't_screenshot' in left:
                             text_screenshot = right
                         elif 'easyocr_paragraph' in left:
@@ -1445,7 +1445,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("colour_state", "element parameter", str(colour_state)))
                 element_image.append(("language", "element parameter", str(language)))
                 element_image.append(("method_image", "element parameter", str(method_image)))
-                element_image.append(("image_conf", "element parameter", str(image_conf)))
+                element_image.append(("t_conf", "element parameter", str(t_conf)))
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
 
