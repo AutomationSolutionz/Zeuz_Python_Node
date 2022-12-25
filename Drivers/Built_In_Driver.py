@@ -10,25 +10,15 @@ from Framework.Built_In_Automation.Sequential_Actions import sequential_actions 
 
 
 def sequential_actions(
-    dependency,
-    run_time_params,
     step_data,
     test_action_info,
-    file_attachment,
     temp_q,
-    screen_capture,
-    device_info,
     debug_actions=None,
 ):
     try:
         sTestStepReturnStatus = sa.Sequential_Actions(
             step_data,
             test_action_info,
-            dependency,
-            run_time_params,
-            temp_q,
-            screen_capture,
-            device_info,
             debug_actions,
         )
         return CommonUtil.Result_Analyzer(sTestStepReturnStatus, temp_q)

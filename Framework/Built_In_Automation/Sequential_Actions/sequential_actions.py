@@ -67,13 +67,6 @@ temp_ini_file = os.path.join(
             ),
         )
     )
-# Recall dependency, if not already set
-dependency = None
-if sr.Test_Shared_Variables(
-    "dependency"
-):  # Check if driver is already set in shared variables
-    dependency = sr.Get_Shared_Variables("dependency")  # Retreive appium driver
-
 # Initialize bypass data set (need to be global, so separate test cases can access them)
 bypass_data_set = []
 bypass_row = []
@@ -176,70 +169,6 @@ def write_browser_logs():
         print("Browser Log Exception: {}".format(e))
         pass
 
-
-def Sequential_Actions(
-    step_data,
-    test_action_info,
-    _dependency=None,
-    _run_time_params=None,
-    _temp_q="",
-    screen_capture="Desktop",
-    _device_info=None,
-    debug_actions=None,
-):
-    """ Main Sequential Actions function - Performs logical decisions based on user input """
-
-    if _device_info is None:
-        _device_info = {}
-    if _run_time_params is None:
-        _run_time_params = {}
-    if _dependency is None:
-        _dependency = {}
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
-    # Initialize
-    try:
-        # Set dependency, file_attachemnt, run_time_parameters as global variables
-        global dependency, file_attachment, device_details, run_time_params
-        dependency, file_attachment, device_details, run_time_params = {}, {}, {}, {}
-        if _dependency != {}:
-            dependency = _dependency  # Save to global variable
-            sr.Set_Shared_Variables("dependency", _dependency, protected=True)  # Save in Shared Variables
-
-        if _run_time_params != {}:
-            run_time_params = _run_time_params  # Save to global variable
-            sr.Set_Shared_Variables("run_time_params", _run_time_params, protected=True)  # Save in Shared Variables
-            for run_time_params_name in run_time_params:  # Add each parameter as it's own Shared Variable, so the user can easily refer to it
-                sr.Set_Shared_Variables(run_time_params_name, run_time_params[run_time_params_name])
-
-        if _device_info != {}:  # If any devices and their details were sent by the server, save to shared variable
-            device_info = _device_info
-            sr.Set_Shared_Variables("device_info", device_info, protected=True)
-
-        # Prepare step data for processing
-        step_data = common.unmask_step_data(step_data)
-        # step_data = common.sanitize(step_data)  # Sanitize Sub-Field
-        step_data = common.adjust_element_parameters(step_data, supported_platforms)  # Parse any mobile platform related fields
-        if step_data in failed_tag_list:
-            return "zeuz_failed"
-        if common.verify_step_data(step_data) in failed_tag_list:
-            return "zeuz_failed"  # Verify step data is in correct format
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during Sequential Actions startup")
-
-    # Process step data
-    # save the full step data in share variables
-
-    sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
-    # sr.Set_Shared_Variables("test_action_info", test_action_info, protected=True, print_variable=False)
-    sr.test_action_info = test_action_info
-
-    result, skip_for_loop = Run_Sequential_Actions(
-        [], debug_actions
-    )  # empty list means run all, instead of step data we want to send the dataset no's of the step data to run
-    write_browser_logs()
-    return result
 
 deprecateLog = True
 def get_data_set_nums(action_value):
@@ -947,6 +876,31 @@ def While_Loop_Action(step_data, data_set_no):
         return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
+def Sequential_Actions(
+    step_data,
+    test_action_info,
+    debug_actions=None,
+):
+    try:
+        step_data = common.unmask_step_data(step_data)
+        step_data = common.adjust_element_parameters(step_data, supported_platforms)  # Parse any mobile platform related fields
+        if step_data in failed_tag_list:
+            return "zeuz_failed"
+        if common.verify_step_data(step_data) in failed_tag_list:
+            return "zeuz_failed"  # Verify step data is in correct format
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during Sequential Actions startup")
+
+    sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
+    # sr.Set_Shared_Variables("test_action_info", test_action_info, protected=True, print_variable=False)
+    sr.test_action_info = test_action_info
+
+    result, skip_for_loop = Run_Sequential_Actions([], debug_actions)
+    # empty list means run all, instead of step data we want to send the dataset no's of the step data to run
+    write_browser_logs()
+    return result
+
+
 def Run_Sequential_Actions(
     data_set_list=None, debug_actions=None
 ):  # data_set_no will used in recursive conditional action call
@@ -958,7 +912,7 @@ def Run_Sequential_Actions(
         skip = []  # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
         skip_for_loop = []
 
-        step_data = sr.Get_Shared_Variables("step_data")
+        step_data = sr.Get_Shared_Variables(CommonUtil.dont_prettify_on_server[0])
         # test_action_info = sr.Get_Shared_Variables("test_action_info")
         test_action_info = sr.test_action_info
         if step_data in failed_tag_list:

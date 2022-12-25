@@ -131,6 +131,10 @@ run_cancelled = False
 disabled_step = []
 max_char = 0
 
+# For step looping purpose
+all_step_dataset = []
+all_action_info = []
+
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
 

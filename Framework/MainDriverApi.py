@@ -303,10 +303,6 @@ def call_driver_function_of_test_step(
         try:
             current_driver = "Drivers." + current_driver
             # if CommonUtil.step_module_name is None:
-            #     module_name = importlib.import_module(current_driver)  # get module
-            #     CommonUtil.step_module_name = module_name
-            # else:
-            #     module_name = CommonUtil.step_module_name
             module_name = importlib.import_module(current_driver)  # get module
             print("STEP DATA and VARIABLES")
             # get step name
@@ -391,14 +387,9 @@ def call_driver_function_of_test_step(
                 else:
                     # run sequentially
                     sStepResult = functionTocall(
-                        final_dependency,
-                        final_run_params,
                         test_steps_data,
                         test_action_info,
-                        file_specific_steps,
                         simple_queue,
-                        screen_capture,     # No need of screen capture. Need to delete this
-                        device_info,
                         debug_actions,
                     )
             except:
@@ -596,6 +587,8 @@ def run_all_test_steps_in_a_test_case(
 
             test_steps_data = all_step_dataset[StepSeq-1]
             test_action_info = all_action_info[StepSeq-1]
+            CommonUtil.all_step_dataset = all_step_dataset
+            CommonUtil.all_action_info = all_action_info
 
             # FIXME: If either one of run on fail or step time throws an
             # exception, both values will be set to a default value. So it has
@@ -1078,6 +1071,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
     else:
         device_info = {}
 
+    shared.Set_Shared_Variables("device_info", device_info, protected=True)
+
 
 def get_performance_testing_data_for_test_case(run_id, TestCaseID):
     return RequestFormatter.Get(
@@ -1553,6 +1548,7 @@ def main(device_dict, user_info_object):
 
             device_order = run_id_info["device_info"]
             final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
             # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
 
@@ -1596,6 +1592,11 @@ def main(device_dict, user_info_object):
                 # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
                 # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
                 # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
+
+            if final_run_params != {}:
+                shared.Set_Shared_Variables("run_time_params", final_run_params, protected=True)
+                for run_time_params_name in final_run_params:
+                    shared.Set_Shared_Variables(run_time_params_name, final_run_params[run_time_params_name])
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
