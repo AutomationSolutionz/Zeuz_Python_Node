@@ -128,7 +128,7 @@ current_session_name = ""
 custom_step_duration = ""
 run_cancel = ""
 run_cancelled = False
-disabled_step = []
+disabled_step = []  # 1 based indexing
 max_char = 0
 
 # For step looping purpose

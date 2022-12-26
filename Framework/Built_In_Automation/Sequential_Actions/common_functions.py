@@ -5410,7 +5410,7 @@ def disable_step(data_set):
             CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
-            CommonUtil.disabled_step = steps
+            CommonUtil.disabled_step += steps
 
         return "passed"
     except:
