@@ -1722,7 +1722,7 @@ def main(device_dict, user_info_object):
             TestSetStartTime = time.time()
             i = 0
             while i < len(all_testcases_info):
-                if all_testcases_info[i]["automatability"] != "Automated":
+                if all_testcases_info[i]["automatability"] != "Automated" and all_testcases_info[i]["automatability"] != "Performance":
                     CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
                     # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
                     del all_testcases_info[i]
@@ -1765,82 +1765,106 @@ def main(device_dict, user_info_object):
 
                     if performance_test_case:
                         # get performance test info
-                        perf_data = testcase_info["performance data"]
-                        hatch_rate = perf_data["hatch_rate"]
-                        no_of_users = perf_data["no_of_users"]
-                        time_period = perf_data["time_period"]
-
-                        # write locust input file
-                        write_locust_input_file(
-                            time_period,
-                            perf_data,
-                            test_case_no,
-                            sModuleInfo,
-                            run_id,
-                            driver_list,
-                            final_dependency,
-                            final_run_params,
-                            temp_ini_file,
-                            # is_linked,
-                            send_log_file_only_for_fail=send_log_file_only_for_fail,
-                        )
-
-                        # check locust file name
-                        locustFile = "chromeLocustFile.py"
-                        if "Browser" in final_dependency:
-                            if final_dependency["Browser"].lower() == "chrome":
-                                locustFile = "chromeLocustFile.py"
-                            else:
-                                locustFile = "firefoxLocustFile.py"
-                        else:
-                            locustFile = "restLocustFile.py"
-
-                        # get locust file path
-                        locust_file_path = (
-                            os.getcwd()
-                            + os.sep
-                            + "Built_In_Automation"
-                            + os.sep
-                            + "Performance_Testing"
-                            + os.sep
-                            + locustFile
-                        )
-
-                        # make locust query
-                        locustQuery = (
-                                "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
-                                % (locust_file_path, no_of_users, hatch_rate)
-                        )
-
-                        # add log
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
-                            % (test_case_no, no_of_users, hatch_rate, time_period),
-                            1,
-                        )
                         try:
-                            def kill(process):
-                                return process.kill()  # kill process function
-                            process = subprocess.Popen(locustQuery, shell=True)  # locust query process
-                            my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                            perf_data = testcase_info["performance data"]
+                            hatch_rate = perf_data["hatch_rate"]
+                            no_of_users = perf_data["no_of_users"]
+                            time_period = perf_data["time_period"]
+
+                            # write locust input file
+                            write_locust_input_file(
+                                time_period,
+                                perf_data,
+                                test_case_no,
+                                sModuleInfo,
+                                run_id,
+                                driver_list,
+                                final_dependency,
+                                final_run_params,
+                                temp_ini_file,
+                                # is_linked,
+                                send_log_file_only_for_fail=send_log_file_only_for_fail,
+                            )
+
+                            # check locust file name
+                            locustFile = "chromeLocustFile.py"
+                            if "Browser" in final_dependency:
+                                if final_dependency["Browser"].lower() == "chrome":
+                                    locustFile = "chromeLocustFile.py"
+                                else:
+                                    locustFile = "firefoxLocustFile.py"
+                            else:
+                                locustFile = "restLocustFile.py"
+
+                            # get locust file path
+                            locust_file_path = (
+                                os.getcwd()
+                                + os.sep
+                                + "Built_In_Automation"
+                                + os.sep
+                                + "Performance_Testing"
+                                + os.sep
+                                + locustFile
+                            )
+
+                            # make locust query
+                            locustQuery = (
+                                    "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
+                                    % (locust_file_path, no_of_users, hatch_rate)
+                            )
+
+                            # add log
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
+                                % (test_case_no, no_of_users, hatch_rate, time_period),
+                                1,
+                            )
                             try:
-                                my_timer.start()  # start timer
-                                stdout, stderr = process.communicate()  # process communicate
-                            finally:
-                                my_timer.cancel()  # cancel timer
+                                def kill(process):
+                                    return process.kill()  # kill process function
+                                process = subprocess.Popen(locustQuery, shell=True)  # locust query process
+                                my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                                try:
+                                    my_timer.start()  # start timer
+                                    stdout, stderr = process.communicate()  # process communicate
+                                finally:
+                                    my_timer.cancel()  # cancel timer
+                            except Exception as e:
+                                print("exception")
+                                pass
+                            # add log
+                            CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
+                            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                                # upload info
+                                upload_csv_file_info(run_id, test_case_no)
+                            # add log
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Performance Test Results Uploaded Successfully", 1
+                            )
                         except Exception as e:
-                            print("exception")
-                            pass
-                        # add log
-                        CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
-                        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                            # upload info
-                            upload_csv_file_info(run_id, test_case_no)
-                        # add log
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Performance Test Results Uploaded Successfully", 1
-                        )
+                            print(e)
+                            run_test_case(
+                                test_case_no,
+                                sModuleInfo,
+                                run_id,
+                                final_dependency,
+                                final_run_params,
+                                temp_ini_file,
+                                testcase_info,
+                                debug_info,
+                                all_file_specific_steps,
+                                rerun_on_fail,
+                                server_version,
+                                send_log_file_only_for_fail,
+                            )
+                            CommonUtil.clear_all_logs()  # clear logs
+                            if CommonUtil.run_cancel == CANCELLED_TAG:
+                                break
+                            # print("Executed %s test cases" % cnt)
+                            cnt += 1
+
+
                     else:
                         run_test_case(
                             test_case_no,
