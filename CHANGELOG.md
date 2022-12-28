@@ -5,6 +5,7 @@
 
 ### [Current changes]
 - **[Add]** Immediate parent support in windows path
+- **[Add]** Fix browserstack issue from node and refactored for appium v2
 
 ### [16.1.0][Oct 25, 2022]
 - **[Add]** Continue to next iter feature is implemented in For Loop Action
