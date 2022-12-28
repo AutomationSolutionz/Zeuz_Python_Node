@@ -481,10 +481,11 @@ def for_loop_action(step_data, data_set_no):
     try:
         data_set = step_data[data_set_no]
         outer_skip, inner_skip = [], []
+        step_index = int(CommonUtil.current_step_no) - 1
         global step_exit_fail_called, step_exit_pass_called
         step_exit_fail_called = False
         step_exit_pass_called = False
-        cont_break = False
+        deprecation_log = True
         steps = CommonUtil.all_logs_json[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]["steps"]
         exit_loop_and_fail = {"pass": [[] for i in range(len(steps))], "fail": [[] for i in range(len(steps))], "cond": []}
         exit_loop_and_cont = {"pass": [[] for i in range(len(steps))], "fail": [[] for i in range(len(steps))], "cond": []}
@@ -500,13 +501,16 @@ def for_loop_action(step_data, data_set_no):
                 step_loop = "step" == row[2].strip().lower()
 
         for row in data_set:
+            if deprecation_log and row[1].strip().lower() == "for loop action":
+                CommonUtil.ExecLog(sModuleInfo, "This dataset of for loop action is deprecated. Download the latest dataset and use", 2)
+                deprecation_log = False
             if row[1].strip().lower() == "for loop action":
-                right = sr.get_previous_response_variables_in_strings(row[2].strip())
+                values = get_data_set_nums(sr.get_previous_response_variables_in_strings(row[2].strip()))
                 if step_loop:
-                    loop_steps = [list(range(len(s))) for s in CommonUtil.all_step_dataset]
-                    CommonUtil.disabled_step += loop_steps
+                    loop_steps = [list(range(len(CommonUtil.all_step_dataset[i]))) if i in values else [] for i in list(range(len(CommonUtil.all_step_dataset)))]
+                    CommonUtil.disabled_step += [i+1 for i in values]
                 else:
-                    loop_steps[CommonUtil.step_index] += get_data_set_nums(right)
+                    loop_steps[step_index] += values
                 # outer_skip += loop_this_data_sets
                 left = row[0].strip().lower()
                 if not left.strip().startswith("for ") or not left.strip()[4:].strip()[left[4:].strip().find(" ")+1:].strip().startswith("in "):
@@ -532,68 +536,68 @@ def for_loop_action(step_data, data_set_no):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
                     return "zeuz_failed", []
                 value = row[2].strip()
-                if (row[1].strip().lower() == "loop control" and "pass" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower())):
+                if (row[1].strip().lower() == "optional loop control" and "pass" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower())):
                     if step_loop:
-                        CommonUtil.ExecLog(sModuleInfo, "Action pass control is not implemented yet for step looping", 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Step pass control is not implemented yet for step looping", 2)
                     else:
                         if "any" in value.lower():
-                            exit_loop_and_fail["pass"][CommonUtil.step_index] += loop_steps[CommonUtil.step_index]
+                            exit_loop_and_fail["pass"][step_index] += loop_steps[step_index]
                         else:
-                            exit_loop_and_fail["pass"][CommonUtil.step_index] += get_data_set_nums(value)
-                elif (row[1].strip().lower() == "loop control" and "fail" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower())):
+                            exit_loop_and_fail["pass"][step_index] += get_data_set_nums(value)
+                elif (row[1].strip().lower() == "optional loop control" and "fail" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower())):
                     if step_loop:
                         if "any" in value.lower():
                             exit_loop_and_fail["fail"] = copy.deepcopy(loop_steps)
                         else:
-                            exit_loop_and_fail["fail"] = [s if s in get_data_set_nums(value) else [] for s in loop_steps]
+                            exit_loop_and_fail["fail"] = [loop_steps[i] if i in get_data_set_nums(value) else [] for i in list(range(len(loop_steps)))]
                     else:
-                        if "any" in value.lower(): exit_loop_and_fail["fail"][CommonUtil.step_index] += loop_steps[CommonUtil.step_index]
-                        else: exit_loop_and_fail["fail"][CommonUtil.step_index] += get_data_set_nums(value)
-                elif row[1].strip().lower() in ("loop condition", "optional loop settings"):
+                        if "any" in value.lower(): exit_loop_and_fail["fail"][step_index] += loop_steps[step_index]
+                        else: exit_loop_and_fail["fail"][step_index] += get_data_set_nums(value)
+                elif row[1].strip().lower() in ("optional loop condition", "optional loop settings"):
                     exit_loop_and_fail["cond"].append(row[2])
             elif row[0].strip().lower().startswith("exit loop"): # exit loop or exit loop and continue
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
                     return "zeuz_failed", []
                 value = row[2].strip()
-                if (row[1].strip().lower() == "loop control" and "pass" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower())):
+                if (row[1].strip().lower() == "optional loop control" and "pass" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower())):
                     if step_loop:
-                        CommonUtil.ExecLog(sModuleInfo, "Action pass control is not implemented yet for step looping", 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Step pass control is not implemented yet for step looping", 2)
                     else:
-                        if "any" in value.lower(): exit_loop_and_cont["pass"] += loop_steps[CommonUtil.step_index]
-                        else: exit_loop_and_cont["pass"][CommonUtil.step_index] += get_data_set_nums(value)
-                elif (row[1].strip().lower() == "loop control" and "fail" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower())):
+                        if "any" in value.lower(): exit_loop_and_cont["pass"] += loop_steps[step_index]
+                        else: exit_loop_and_cont["pass"][step_index] += get_data_set_nums(value)
+                elif (row[1].strip().lower() == "optional loop control" and "fail" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower())):
                     if step_loop:
                         if "any" in value.lower():
                             exit_loop_and_cont["fail"] = copy.deepcopy(loop_steps)
                         else:
-                            exit_loop_and_cont["fail"] = [s if s in get_data_set_nums(value) else [] for s in loop_steps]
+                            exit_loop_and_cont["fail"] = [loop_steps[i] if i in get_data_set_nums(value) else [] for i in list(range(len(loop_steps)))]
                     else:
-                        if "any" in value.lower(): exit_loop_and_cont["fail"] += loop_steps[CommonUtil.step_index]
-                        else: exit_loop_and_cont["fail"][CommonUtil.step_index] += get_data_set_nums(value)
-                elif row[1].strip().lower() in ("loop condition", "optional loop settings"):
+                        if "any" in value.lower(): exit_loop_and_cont["fail"] += loop_steps[step_index]
+                        else: exit_loop_and_cont["fail"][step_index] += get_data_set_nums(value)
+                elif row[1].strip().lower() in ("optional loop condition", "optional loop settings"):
                     exit_loop_and_cont["cond"].append(row[2])
             elif row[0].strip().lower().startswith("continue to next iter"):
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
                     return "zeuz_failed", []
                 value = row[2].strip()
-                if (row[1].strip().lower() == "loop control" and "pass" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower())):
+                if (row[1].strip().lower() == "optional loop control" and "pass" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+pass", value.lower())):
                     if step_loop:
-                        CommonUtil.ExecLog(sModuleInfo, "Action pass control is not implemented yet for step looping", 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Step pass control is not implemented yet for step looping", 2)
                     else:
-                        if "any" in value.lower(): continue_next_iter["pass"][CommonUtil.step_index] += loop_steps[CommonUtil.step_index]
-                        else: continue_next_iter["pass"][CommonUtil.step_index] += get_data_set_nums(value)
-                elif (row[1].strip().lower() == "loop control" and "fail" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower())):
+                        if "any" in value.lower(): continue_next_iter["pass"][step_index] += loop_steps[step_index]
+                        else: continue_next_iter["pass"][step_index] += get_data_set_nums(value)
+                elif (row[1].strip().lower() == "optional loop control" and "fail" in value.lower()) or (row[1].strip().lower() == "optional loop settings" and re.search("if\s+([0-9\-\,\s]+|any)\s+fail", value.lower())):
                     if step_loop:
                         if "any" in value.lower():
                             continue_next_iter["fail"] = copy.deepcopy(loop_steps)
                         else:
-                            continue_next_iter["fail"] = [s if s in get_data_set_nums(value) else [] for s in loop_steps]
+                            continue_next_iter["fail"] = [loop_steps[i] if i in get_data_set_nums(value) else [] for i in list(range(len(loop_steps)))]
                     else:
-                        if "any" in value.lower(): continue_next_iter["fail"][CommonUtil.step_index] += loop_steps[CommonUtil.step_index]
-                        else: continue_next_iter["fail"][CommonUtil.step_index] += get_data_set_nums(value)
-                elif row[1].strip().lower() in ("loop condition", "optional loop settings"):
+                        if "any" in value.lower(): continue_next_iter["fail"][step_index] += loop_steps[step_index]
+                        else: continue_next_iter["fail"][step_index] += get_data_set_nums(value)
+                elif row[1].strip().lower() in ("optional loop condition", "optional loop settings"):
                     continue_next_iter["cond"].append(row[2])
 
         if all([len(i) == 0 for i in loop_steps]):
@@ -602,6 +606,7 @@ def for_loop_action(step_data, data_set_no):
 
         for each_val in iterable:
             die = False
+            cont_break = False
             sr.Set_Shared_Variables(each_varname, each_val)
             for step_cnt, each_step in enumerate(loop_steps):
                 if len(each_step) == 0: continue
@@ -626,16 +631,16 @@ def for_loop_action(step_data, data_set_no):
                         while data_set_index in loop_this_data_sets: loop_this_data_sets.remove(data_set_index)
                         outer_skip = list(set(outer_skip + [data_set_index]))
                         continue
-                    elif data_set_index == data_set_no:
+                    elif (not loop_steps and data_set_index == data_set_no) and (loop_steps and step_cnt == step_index):
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "You are running a Loop action within the same Loop action. It will create infinite recursion",
                             3
                         )
-                        CommonUtil.current_step_no = str(CommonUtil.step_index + 1)
-                        step_data = CommonUtil.all_step_dataset[CommonUtil.step_index]
+                        CommonUtil.current_step_no = str(step_index + 1)
+                        step_data = CommonUtil.all_step_dataset[step_index]
                         sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
-                        sr.test_action_info = CommonUtil.all_action_info[CommonUtil.step_index]
+                        sr.test_action_info = CommonUtil.all_action_info[step_index]
                         return "zeuz_failed", outer_skip
                     result, skip = Run_Sequential_Actions([data_set_index])
                     inner_skip = list(set(inner_skip + skip))
@@ -714,10 +719,12 @@ def for_loop_action(step_data, data_set_no):
                 break
 
         CommonUtil.ExecLog(sModuleInfo, "Loop action handled successfully", 1)
-        CommonUtil.current_step_no = str(CommonUtil.step_index + 1)
-        step_data = CommonUtil.all_step_dataset[CommonUtil.step_index]
+        CommonUtil.current_step_no = str(step_index + 1)
+        step_data = CommonUtil.all_step_dataset[step_index]
+        step_data = common.unmask_step_data(step_data)
+        step_data = common.adjust_element_parameters(step_data, supported_platforms)
         sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
-        sr.test_action_info = CommonUtil.all_action_info[CommonUtil.step_index]
+        sr.test_action_info = CommonUtil.all_action_info[step_index]
         if step_exit_fail_called:
             return "zeuz_failed", outer_skip
         else:
