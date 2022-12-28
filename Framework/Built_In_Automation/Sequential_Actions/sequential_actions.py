@@ -476,12 +476,31 @@ def If_else_action(step_data, data_set_no):
         return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
+def sanitize_deprecated_dataset(value):
+    '''|==|", "==", "|!=|", "|<=|", "|>=|", "|>|", "|<|", "|in|'''
+    r = {
+        "%|": "",
+        "|%": "",
+        "|==|": "==",
+        "|!=|": "!=",
+        "|<=|": "<=",
+        "|>=|": ">=",
+        "|>|": ">",
+        "|<|": "<",
+        "|in|": "in",
+    }
+    for i in r:
+        value = value.replace(i,r[i])
+    return value
+
+
 def for_loop_action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
         outer_skip, inner_skip = [], []
         step_index = int(CommonUtil.current_step_no) - 1
+        # Step index while inside a loop and CommonUtil.step_index is the step_index where the step loop is initiated
         global step_exit_fail_called, step_exit_pass_called
         step_exit_fail_called = False
         step_exit_pass_called = False
@@ -501,7 +520,7 @@ def for_loop_action(step_data, data_set_no):
                 step_loop = "step" == row[2].strip().lower()
 
         for row in data_set:
-            if deprecation_log and row[1].strip().lower() == "for loop action":
+            if deprecation_log and "loop settings" in row[1].lower():
                 CommonUtil.ExecLog(sModuleInfo, "This dataset of for loop action is deprecated. Download the latest dataset and use", 2)
                 deprecation_log = False
             if row[1].strip().lower() == "for loop action":
@@ -553,8 +572,10 @@ def for_loop_action(step_data, data_set_no):
                     else:
                         if "any" in value.lower(): exit_loop_and_fail["fail"][step_index] += loop_steps[step_index]
                         else: exit_loop_and_fail["fail"][step_index] += get_data_set_nums(value)
-                elif row[1].strip().lower() in ("optional loop condition", "optional loop settings"):
+                elif row[1].strip().lower() == "optional loop condition":
                     exit_loop_and_fail["cond"].append(row[2])
+                elif row[1].strip().lower() == "optional loop settings":
+                    exit_loop_and_fail["cond"].append(sanitize_deprecated_dataset(row[2]))
             elif row[0].strip().lower().startswith("exit loop"): # exit loop or exit loop and continue
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
@@ -575,8 +596,10 @@ def for_loop_action(step_data, data_set_no):
                     else:
                         if "any" in value.lower(): exit_loop_and_cont["fail"] += loop_steps[step_index]
                         else: exit_loop_and_cont["fail"][step_index] += get_data_set_nums(value)
-                elif row[1].strip().lower() in ("optional loop condition", "optional loop settings"):
+                elif row[1].strip().lower() == "optional loop condition":
                     exit_loop_and_cont["cond"].append(row[2])
+                elif row[1].strip().lower() == "optional loop settings":
+                    exit_loop_and_cont["cond"].append(sanitize_deprecated_dataset(row[2]))
             elif row[0].strip().lower().startswith("continue to next iter"):
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
@@ -597,8 +620,10 @@ def for_loop_action(step_data, data_set_no):
                     else:
                         if "any" in value.lower(): continue_next_iter["fail"][step_index] += loop_steps[step_index]
                         else: continue_next_iter["fail"][step_index] += get_data_set_nums(value)
-                elif row[1].strip().lower() in ("optional loop condition", "optional loop settings"):
+                elif row[1].strip().lower() == "optional loop condition":
                     continue_next_iter["cond"].append(row[2])
+                elif row[1].strip().lower() == "optional loop settings":
+                    continue_next_iter["cond"].append(sanitize_deprecated_dataset(row[2]))
 
         if all([len(i) == 0 for i in loop_steps]):
             CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action doc for more info", 3)
@@ -619,6 +644,9 @@ def for_loop_action(step_data, data_set_no):
                 sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
                 sr.test_action_info = CommonUtil.all_action_info[step_cnt]
                 loop_this_data_sets = loop_steps[step_cnt]
+                if step_index == CommonUtil.step_index and step_loop:
+                    tmp_step_exit_fail_called = step_exit_fail_called
+                    tmp_step_exit_pass_called = step_exit_pass_called
                 for data_set_index in each_step:
                     if data_set_index in inner_skip:
                         continue
@@ -631,7 +659,7 @@ def for_loop_action(step_data, data_set_no):
                         while data_set_index in loop_this_data_sets: loop_this_data_sets.remove(data_set_index)
                         outer_skip = list(set(outer_skip + [data_set_index]))
                         continue
-                    elif (not loop_steps and data_set_index == data_set_no) and (loop_steps and step_cnt == step_index):
+                    elif (not step_loop and data_set_index == data_set_no) or (step_loop and step_cnt == step_index):
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "You are running a Loop action within the same Loop action. It will create infinite recursion",
@@ -713,6 +741,11 @@ def for_loop_action(step_data, data_set_no):
                     if step_exit_fail_called or step_exit_pass_called:
                         die = True
                         break
+
+                if step_index == CommonUtil.step_index and step_loop:
+                    # If this for loop is the one who initiated the step loop then recall its original step_exit values
+                    step_exit_fail_called = tmp_step_exit_fail_called
+                    step_exit_pass_called = tmp_step_exit_pass_called
                 if die or cont_break:
                     break
             if die:
@@ -1189,7 +1222,12 @@ def Run_Sequential_Actions(
                 elif "action" in action_name:  # Must be last, since it's a single word that also exists in other action types
                     result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
                     if row[0].lower().strip() == "step exit":
+                        global step_exit_fail_called, step_exit_pass_called
                         CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        if result == "zeuz_failed":
+                            step_exit_fail_called = True
+                        else:
+                            step_exit_pass_called = True
                         skip_all = [i for i in range(len(step_data))]
                         return result, skip_all
 
