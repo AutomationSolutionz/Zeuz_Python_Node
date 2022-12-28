@@ -4,6 +4,8 @@
 #        Modules        #
 #                       #
 #########################
+import pdb
+
 code_debug = False
 tabs = 0
 import sys, os, subprocess
@@ -136,7 +138,8 @@ def Click_Element(data_set):
         return "zeuz_failed"
 
     Element = Get_Element(data_set)
-    if Element == "zeuz_failed":
+    # if Element == "zeuz_failed":
+    if type(Element) == str and Element == "zeuz_failed":
         return "zeuz_failed"
 
     # If found Click element
@@ -261,18 +264,19 @@ def Check_uncheck(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = Get_Element(data_set)
-    if Element == "zeuz_failed":
+    # if Element == "zeuz_failed":
+    if type(Element) == str and Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
         return "zeuz_failed"
 
     pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
     if "Toggle" in pattern_list:
-        is_selected = Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState
+        is_selected = str(Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState)
     else:
         CommonUtil.ExecLog(sModuleInfo, "No Toggle pattern found for the Element", 3)
         return "zeuz_failed"
 
-    if command == "check" and is_selected:
+    if command == "check" and is_selected == "On":
         CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
         return "passed"
     elif command == "uncheck" and not is_selected:
@@ -299,7 +303,8 @@ def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         x, y = get_coords(Element)
@@ -385,15 +390,16 @@ def Element_only_search(
             return "zeuz_failed"
 
         all_elements = []
-        all_elements += _child_search(
+        tmp_elements, tmp_ancestor = _child_search(
             ParentElement,
             element_name,
             element_class,
             element_automation,
             element_control,
-            element_index
-        )
+            element_index,
 
+        )
+        all_elements += tmp_elements
         if all_elements:
             return all_elements
         else:
@@ -453,20 +459,13 @@ def _child_search(
     element_class,
     element_automation,
     element_control,
-    element_index
+    element_index,
 ):
     try:
-        """
-        global recur_count
-        recur_count = recur_count +1
-        print recur_count
-        
-        if recur_count is 100:
-            time.sleep(5)
-        """
+        tmp_ancestor = []
         # Name, Class, AutomationID, LocalizedControlType
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
-            return []
+            return [], []
         NameE = ParentElement.Current.Name
         ClassE = ParentElement.Current.ClassName
         AutomationE = ParentElement.Current.AutomationId
@@ -488,16 +487,16 @@ def _child_search(
             all_elements += [ParentElement]
             if len(all_elements) - 1 == element_index:
                 if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
-                return all_elements
+                return all_elements, []
         # if found: return [ParentElement]          # 2nd method
 
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
 
         if child_elements.Count == 0:
-            return all_elements
+            return all_elements, []
 
         for each_child in child_elements:
-            all_elements += _child_search(
+            tmp_elements, tmp_ancestor = _child_search(
                 each_child,
                 element_name,
                 element_class,
@@ -505,13 +504,14 @@ def _child_search(
                 element_control,
                 element_index
             )
+            all_elements += tmp_elements
             if 0 <= element_index == len(all_elements) - 1:
                 if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
-                return all_elements
+                return all_elements, [each_child] + tmp_ancestor
         if all_elements:
             if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
 
-        return all_elements
+        return all_elements, [ParentElement] + tmp_ancestor
 
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -698,7 +698,10 @@ def _element_path_parser(element_path: str):
     try:
         element_name, element_control, element_automation, element_class, element_index = None, None, None, None, 0
         element_path = element_path.strip()
-        if element_path.startswith(".."):
+        if element_path.lower().startswith("parent"):
+            element_path = element_path[element_path.find(">") + 1:].strip()
+            return element_path, "parent", None, None, None, None, 0
+        elif element_path.startswith("..."):
             exact = False
             element_path = element_path[element_path.find(">") + 1:].strip()
         else:
@@ -751,7 +754,8 @@ def Element_path_search(window_name, element_path):
             ParentElement,
             element_path,
             sModuleInfo,
-            True if window_name is None else False
+            [ParentElement],
+            True if window_name is None else False,
         )
         if temp == []: temp = "zeuz_failed"
         return temp
@@ -764,12 +768,22 @@ def _child_search_by_path(
     ParentElement,
     element_path,
     sModuleInfo,
-    switch_window=False
+    Ancestor,
+    switch_window=False,
 ):
     element_name, element_class, element_automation, element_control = None, None, None, None
     global tabs
     try:
         element_path, exact, element_name, element_control, element_automation, element_class, element_index = _element_path_parser(element_path)
+        if exact == "parent" and element_path:
+            return _child_search_by_path(
+                Ancestor[-2],
+                element_path,
+                sModuleInfo,
+                Ancestor[:-1]
+            )
+        elif exact == "parent" and not element_path:
+            return [Ancestor[-2]]
         if exact == "error":
             return []
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
@@ -812,19 +826,34 @@ def _child_search_by_path(
                 return _child_search_by_path(
                     all_elements[element_index],
                     element_path,
-                    sModuleInfo
+                    sModuleInfo,
+                    Ancestor + [all_elements[element_index]]
                 )
             else:
+                if code_debug:
+                    for elem in Ancestor:
+                        NameE = elem.Current.Name
+                        ClassE = elem.Current.ClassName
+                        AutomationE = elem.Current.AutomationId
+                        LocalizedControlTypeE = elem.Current.LocalizedControlType
+                        print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+                    elem =all_elements[element_index]
+                    NameE = elem.Current.Name
+                    ClassE = elem.Current.ClassName
+                    AutomationE = elem.Current.AutomationId
+                    LocalizedControlTypeE = elem.Current.LocalizedControlType
+                    print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+
                 return [all_elements[element_index]]
 
         else:
-            temp = _child_search(
+            temp, tmp_ancestor = _child_search(
                 ParentElement,
                 element_name,
                 element_class,
                 element_automation,
                 element_control,
-                element_index
+                element_index,
             )
             if temp == []:
                 CommonUtil.ExecLog(sModuleInfo, _not_found_log(element_name, element_class, element_automation, element_control), 3)
@@ -833,9 +862,23 @@ def _child_search_by_path(
                 return _child_search_by_path(
                     temp[element_index],
                     element_path,
-                    sModuleInfo
+                    sModuleInfo,
+                    Ancestor + tmp_ancestor
                 )
             else:
+                if code_debug:
+                    for elem in Ancestor:
+                        NameE = elem.Current.Name
+                        ClassE = elem.Current.ClassName
+                        AutomationE = elem.Current.AutomationId
+                        LocalizedControlTypeE = elem.Current.LocalizedControlType
+                        print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
+                    elem = temp[element_index]
+                    NameE = elem.Current.Name
+                    ClassE = elem.Current.ClassName
+                    AutomationE = elem.Current.AutomationId
+                    LocalizedControlTypeE = elem.Current.LocalizedControlType
+                    print(f"> Name='{NameE}', Control='{LocalizedControlTypeE}', Automationid='{AutomationE}', class='{ClassE}'")
                 return [temp[element_index]]
 
     except:
@@ -893,7 +936,7 @@ def image_search(step_data_set):
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
-            if parent == "zeuz_failed":
+            if type(parent) == str and parent == "zeuz_failed":
                 return parent
             left = parent.Current.BoundingRectangle.Left
             top = parent.Current.BoundingRectangle.Top
@@ -1230,12 +1273,12 @@ def Drag_and_Drop_Element(data_set):
                 destination.append((left.replace("dst", "").replace("destination", ""), mid, right))
 
         Element1 = Get_Element(source)
-        if Element1 == "zeuz_failed":
+        if type(Element1) == str and Element1 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find source element", 3)
             return "zeuz_failed"
 
         Element2 = Get_Element(destination)
-        if Element2 == "zeuz_failed":
+        if type(Element2) == str and Element2 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not destination element", 3)
             return "zeuz_failed"
 
@@ -1262,7 +1305,8 @@ def Double_Click_Element(data_set):
                 Gui = True
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         patter_list = Element.GetSupportedPatterns()
@@ -1295,7 +1339,8 @@ def Hover_Over_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
         x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
@@ -1317,7 +1362,8 @@ def Validate_Text(data_set):
                 expected_text = right
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip().lower()
@@ -1346,7 +1392,8 @@ def Save_Attribute(data_set):
                 variable_name = right.strip()
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
@@ -1362,12 +1409,13 @@ def Save_Attribute(data_set):
             if "Toggle" not in pattern_list:
                 CommonUtil.ExecLog(sModuleInfo, "Toggle pattern is not found for this Element", 3)
                 return "zeuz_failed"
-            actual_text = True if Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState else False
+
+            actual_text = True if str(Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState) == "On"  else False
         elif "select" in field and "pattern" in field:
             if not "SelectionItem" in pattern_list:
                 CommonUtil.ExecLog(sModuleInfo, "SelectionItemPattern is not found for this Element", 3)
                 return "zeuz_failed"
-            actual_text = Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected
+            actual_text = True if str(Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected) == "True" else False
         elif "name" in field:
             actual_text = str(Element.Current.Name).strip()
         elif "class" in field:
@@ -1441,7 +1489,8 @@ def Enter_Text_In_Text_Box(data_set):
                 keystroke = True
 
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
         if keystroke:
@@ -1479,7 +1528,8 @@ def Swipe(data_set):
         scroll_count = 1
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
         try:
             for left, mid, right in data_set:
@@ -1524,7 +1574,8 @@ def Scroll_to_element(dataset):
         desired_dataset = []
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(dataset)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
         try:
             for left, mid, right in dataset:
@@ -1552,8 +1603,9 @@ def Scroll_to_element(dataset):
         win32api.SetCursorPos((x, y))
 
         desired_Element = Get_Element(desired_dataset, 0)
-        if desired_Element != "zeuz_failed":
+        if not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
             CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
+            return "passed"
         else:
             count = 0
             while True:
@@ -1569,11 +1621,20 @@ def Scroll_to_element(dataset):
                     autoit.mouse_wheel(direction, scroll_count)
                 desired_Element = Get_Element(desired_dataset, 0)
                 count += 1
-                if count >= max_try or desired_Element != "zeuz_failed":
+                if count > max_try or not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
                     break
-            CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+
+            if count < max_try:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+                return "zeuz_failed"
         time.sleep(unnecessary_sleep)
-        return "passed"
+
+
+
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
 
@@ -1607,7 +1668,7 @@ def Run_Application(data_set):
             r = right.strip().lower()
             yes_cond = r in ("yes", "ok", "true", "enable")
             if mid.strip().lower() == "action":
-                Desktop_app = right.strip()
+                Desktop_app = CommonUtil.path_parser(right.strip())
             elif "uispy" in left and yes_cond:
                 _open_inspector("uispy", args)
             elif "inspectx64" in left and yes_cond:
@@ -1627,8 +1688,6 @@ def Run_Application(data_set):
             elif "wait" == left:
                 wait = float(r)
 
-        if "~" in Desktop_app and os.path.isfile(os.path.expanduser(Desktop_app)):
-            Desktop_app = os.path.expanduser(Desktop_app)
         if not launch_cond and len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1639,7 +1698,7 @@ def Run_Application(data_set):
             if launch_cond == "relaunch":
                 Close_Application([("close app", "action", Desktop_app)])
             if os.path.isfile(Desktop_app):
-                cmd = Desktop_app[:2] + " && cd " + os.path.dirname(Desktop_app) + " && start cmd.exe /K " + Desktop_app
+                cmd = f'''{Desktop_app[:2]} && cd "{os.path.dirname(Desktop_app)}" && start cmd.exe /K "{Desktop_app}\"'''
                 CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
                 subprocess.Popen(cmd, **args)
                 # Desktop_app = os.path.basename(Desktop_app)
@@ -1658,7 +1717,7 @@ def Run_Application(data_set):
             s = time.time()
             while time.time() - s < wait:
                 # if len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:     # This is case in-sensitive
-                if Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
+                if pygetwindow.getActiveWindow() is None or Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
                     break
                 time.sleep(0.5)
             else:
@@ -1852,10 +1911,10 @@ def wait_for_element(data_set):
         end_time = time.time() + timeout_duration
         while time.time() <= end_time:
             Element = Get_Element(data_set, 0)
-            if appear_condition and Element != "zeuz_failed":  # Element found
+            if appear_condition and not (type(Element) == str and Element == "zeuz_failed") :  # Element found
                 CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
                 return "passed"
-            elif not appear_condition and Element == "zeuz_failed":  # Element removed
+            elif not appear_condition and type(Element) == str and Element == "zeuz_failed":  # Element removed
                 CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
                 return "passed"
             time.sleep(1)
@@ -1872,7 +1931,8 @@ def save_attribute_values_in_list(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
+        # if Element == "zeuz_failed":
+        if type(Element) == str and Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the main Element. We are searching for targets through out the whole desktop", 2)
             Element = AutomationElement.RootElement
 

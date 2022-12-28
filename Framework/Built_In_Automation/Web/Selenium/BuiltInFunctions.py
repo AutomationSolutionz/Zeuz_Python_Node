@@ -952,7 +952,8 @@ def Go_To_Link(step_data, page_title=False):
                 return "zeuz_failed"
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
-            selenium_driver.execute_cdp_cmd("Performance.enable", {})
+            if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
+                selenium_driver.execute_cdp_cmd("Performance.enable", {})
 
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
@@ -1004,7 +1005,7 @@ def Go_To_Link(step_data, page_title=False):
 
     # Collect custom performance metrics
     try:
-        if current_driver_id not in CommonUtil.browser_perf:
+        if current_driver_id not in CommonUtil.browser_perf and selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
             metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
             metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
 
@@ -1480,10 +1481,13 @@ def Click_Element(data_set, retry=0):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         except StaleElementReferenceException:
             if retry == 5:
                 CommonUtil.ExecLog(sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3)
@@ -1493,10 +1497,13 @@ def Click_Element(data_set, retry=0):
             return Click_Element(data_set, retry + 1)
 
         except Exception:
-            element_attributes = Element.get_attribute("outerHTML")
-            CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
-            errMsg = "Could not select/click your element."
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+            try:
+                element_attributes = Element.get_attribute("outerHTML")
+                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                errMsg = "Could not click and hold your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
 
     # Click using location
     else:
@@ -1559,7 +1566,8 @@ def Click_and_Download(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     try:
-        Click_Element(click_dataset)
+        if Click_Element(click_dataset) == "zeuz_failed":
+            return "zeuz_failed"
         if selenium_driver.capabilities["browserName"].strip().lower() == "firefox" and automate_firefox:
             if platform.system() == "Windows":
                 try:
@@ -1764,12 +1772,13 @@ def Click_and_Hold_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not click and hold your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1797,12 +1806,13 @@ def Context_Click_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not right click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1830,12 +1840,13 @@ def Double_Click_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not double click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1862,12 +1873,13 @@ def Move_To_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not move to your element your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1895,12 +1907,13 @@ def Hover_Over_Element(step_data):
                 )
                 return "passed"
             except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not select/hover over your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                try:
+                    element_attributes = Element.get_attribute("outerHTML")
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    errMsg = "Could not select/hover your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1966,18 +1979,25 @@ def Save_Attribute(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
+        variable_name = None
         for each_step_data_item in step_data:
             if "parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
                 attribute_name = each_step_data_item[0].strip().lower()
 
-        if attribute_name == "text":
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(step_data, selenium_driver)
+        if Element == "zeuz_failed":
+            # attribute_value = input(f"Could not find the value for '{variable_name}'. Enter manually:")
+            # if attribute_value == "zeuz_failed":
+            #     CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            #     return "zeuz_failed"
+            return "zeuz_failed"
+
+        elif attribute_name == "text":
             attribute_value = Element.text
         elif attribute_name == "tag":
             attribute_value = Element.tag_name
@@ -2646,7 +2666,7 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    selenium_driver.switch_to_default_content()
+    selenium_driver.switch_to.default_content()
     try:
         scroll_inside_element = False
         scroll_window_name = "window"
@@ -3431,11 +3451,12 @@ def Tear_Down_Selenium(step_data=[]):
                 try:
                     perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
                     perf_file = Path(perf_folder)/("matrices_"+driver+".json")
-                    metrics = selenium_details[driver]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-                    perf_json_data = {data["name"]:data["value"] for data in metrics["metrics"]}
-                    with open(perf_file, "w", encoding="utf-8") as f:
-                        json.dump(perf_json_data, f, indent=2)
-                    selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                    # metrics = selenium_details[driver]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+                    # perf_json_data = {data["name"]:data["value"] for data in metrics["metrics"]}
+                    # with open(perf_file, "w", encoding="utf-8") as f:
+                    #     json.dump(perf_json_data, f, indent=2)
+                    if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
+                        selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
                 except:
                     errMsg = "Unable to extract performance metrics of driver_id='%s'" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
@@ -3459,11 +3480,12 @@ def Tear_Down_Selenium(step_data=[]):
             try:
                 perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
                 perf_file = Path(perf_folder) / ("matrices_" + driver_id + ".json")
-                metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-                perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
-                with open(perf_file, "w", encoding="utf-8") as f:
-                    json.dump(perf_json_data, f, indent=2)
-                selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
+                # metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
+                # perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
+                # with open(perf_file, "w", encoding="utf-8") as f:
+                #     json.dump(perf_json_data, f, indent=2)
+                if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
+                    selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
                 selenium_details[driver_id]["driver"].quit()
                 CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
             except:

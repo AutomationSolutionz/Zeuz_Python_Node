@@ -4,6 +4,15 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Immediate parent support in windows path
+
+### [16.1.0][Oct 25, 2022]
+- **[Add]** Continue to next iter feature is implemented in For Loop Action
+- **[Fix]** datatype fix and checkbox/toggle item fix for windows
+- **[Fix]** browser performance matrices is confined to chrome and edge browsers only
+- **[Add]** Largest Contentful Paint is added in browser performance matrices
+- **[Improve]** Stale element error is handled in click and check action
+- **[Add]** `zeuz_prettify_limit` variable can limit prettify characters
 - **[Add]** Added secondary random mailbox
 - **[Add]** Added Browser Performance metrics, Step metrics, Action metrics
 - **[Add]** Import files in Execute Python Code action
@@ -40,7 +49,7 @@
   Certificates are best used by pairing with the `session` optional parameter.
 
 - **[Fix]** Fixed return for common screenshot action
-
+### [16.0.0]
 - **[Change]** Change the deploy system. This change replaces the old deploy
   system code with a new one that is compatible with the v3 engine on the server
   side.  This works by connecting with a persistent websocket connection that is
@@ -60,6 +69,7 @@
   Previously error was showing when user didn't input SID and service name for 
   other database(for example MySQL etc.). Now this has been fixed.
 
+# Version 15
 ### [15.2.0][Jun 07, 2022]
 - **[Add]** Add profile functionality for Chrome
 - **[Add]** Add extension functionality for Chrome

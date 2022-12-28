@@ -559,7 +559,7 @@ def _switch(step_data_set):
                 if isinstance(each_frame, str) and each_frame.strip().lower() == "default content":
                     continue
                 else:
-                    generic_driver.switch_to_frame(each_frame)
+                    generic_driver.switch_to.frame(each_frame)
 
             return True
             """

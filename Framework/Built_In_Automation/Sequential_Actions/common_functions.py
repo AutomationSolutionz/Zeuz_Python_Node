@@ -1215,11 +1215,12 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
             return found_list
 
     elif not match_by_index:
-        if nested and len(list1) != len(list2):
-            if len(list2) > len(list1):
-                return "2nd list larger"
-            elif len(list1) > len(list2):
-                return "1st list larger"
+        '''Matching list length causes many edge case failure. So removing it'''
+        # if nested and len(list1) != len(list2):
+        #     if len(list2) > len(list1):
+        #         return "2nd list larger"
+        #     elif len(list1) > len(list2):
+        #         return "1st list larger"
         for each1 in list1:
             if isinstance(each1, list) or isinstance(each1, tuple):
                 nested = True
@@ -1230,10 +1231,10 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "all found":
                         # return "all found"
                         break
-                    if found_status == "2nd list larger":
-                        return "2nd list larger"
-                    if found_status == "1st list larger":
-                        return "1st list larger"
+                    # if found_status == "2nd list larger":
+                    #     return "2nd list larger"
+                    # if found_status == "1st list larger":
+                    #     return "1st list larger"
                 else:
                     return "not found"
             elif nested and str(each1).strip().lower() not in [str(i).strip().lower() for i in list2]:
@@ -1254,10 +1255,10 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                     if found_status == "all found":
                         # return "all found"
                         break
-                    if found_status == "2nd list larger":
-                        return "2nd list larger"
-                    if found_status == "1st list larger":
-                        return "1st list larger"
+                    # if found_status == "2nd list larger":
+                    #     return "2nd list larger"
+                    # if found_status == "1st list larger":
+                    #     return "1st list larger"
                 else:
                     return "not found"
             elif nested and str(each2).strip().lower() not in [str(i).strip().lower() for i in list1]:
@@ -3859,20 +3860,30 @@ def modify_datetime(data_set):
 
             return t
 
+        for left,mid,right in data_set:
+            if "format" in left:
+                date_format = right
+                
+        if date_format:
+            if os.name == "nt":
+                date_format = date_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+        
         for left, mid, right in data_set:
             left = left.strip().lower()
-
             if "data" in left:
                 if right.strip().lower() == "today":
                     data = datetime.today()
-                else:
+                elif right.strip().lower() in ("monday","tuesday","wednesday","thursday","friday","saturday","sunday"):
                     data = parser.parse(right.strip())
+                else:
+                    if date_format:
+                        _date_format = date_format.replace("%-","%").replace("%#","%")
+                        data = datetime.strptime(right.strip(),_date_format)
+                    else:
+                        data = parser.parse(right.strip())
                 continue
             if "action" in mid:
                 var_name = right.strip()
-                continue
-            if "format" in left:
-                date_format = right
                 continue
 
             right = right.strip()
@@ -5547,7 +5558,7 @@ def data_store_read(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.lower().replace('and', ',').replace('or', ',').split(',')
+                temp = q.replace('and', ',').replace('or', ',').split(',')
 
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = t[1].strip()
@@ -5563,7 +5574,8 @@ def data_store_read(data_set):
                         params['or_'+t[0].strip()] = t[1].strip()
 
                         i += 1
-
+            if mid.strip() == "action":
+                var_name = right.strip()
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
@@ -5576,9 +5588,13 @@ def data_store_read(data_set):
         #
 
         # print(res.text)
-        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
+        if res.status_code==200:
+            # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
 
-        return sr.Set_Shared_Variables(var_name, json.loads(res.text))
+            return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "No data found , please check your dataset", 1)
+        return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -5613,7 +5629,7 @@ def data_store_write(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.lower().replace('and', ',').replace('or', ',').split(',')
+                temp = q.replace('and', ',').replace('or', ',').split(',')
 
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = t[1].strip()
@@ -5630,10 +5646,17 @@ def data_store_write(data_set):
 
                         i += 1
             if left.strip() == 'data':
-                temp = right.strip().split(',')
+                temp = [right.strip()]
+                print(temp)
                 for t in temp:
                     tt=t.split('=')
+                    print(tt)
                     data[tt[0].strip()]=tt[1].strip()
+                    print(data[tt[0].strip()])
+            if mid.strip() == "action":
+                var_name = right.strip()
+
+
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
@@ -5647,9 +5670,70 @@ def data_store_write(data_set):
         #
 
         # print(res.text)
-        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
+        if res.status_code==200:
+            # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
 
-        return sr.Set_Shared_Variables(var_name, json.loads(res.text))
+            return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "No data found to update , please check your dataset", 1)
+        return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+def data_store_insert(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                data             | element parameter  | list
+                data store: insert| common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `list of datastore` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = ""
+        params = {}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'data':
+                l = CommonUtil.parse_value_into_object(right.strip())
+            if mid.strip() == "action":
+                var_name = right.strip()
+        data={
+            'table_name':table_name,
+            'data_list':l
+        }
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+
+        res = requests.post(
+            RequestFormatter.form_uri('data_store/data_store/data_store_list/'),
+            data=json.dumps(data),
+            verify=False,
+            **headers
+        )
+        if res.status_code==201:
+            CommonUtil.ExecLog(sModuleInfo, "data inserted successfully", 1)
+            return "passed"
+            # return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Cant insert , please check your dataset", 1)
+            return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
