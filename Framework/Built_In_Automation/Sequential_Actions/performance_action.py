@@ -90,8 +90,16 @@ def performance_action_handler(
                 # deadlock
                 max_workers = 2
         elif "performance action" in left:
-            l, r = map(int, right.split("-"))
-            actions_to_execute = [i-1 for i in range(l, r+1)]
+            action_ranges=right.split(',') # 5-7,8,9-14 to [5-7,8,9-14]
+            actions_to_execute=[]
+            for action_range in action_ranges:
+                action_range=action_range.split('-') #[5-7] to [5,7], [5] to [5] if no '-' present
+                if len(action_range)==1:
+                    actions_to_execute.append(int(action_range[0].strip())-1)
+                else:
+                    l,r=action_range #[9,14] to l=9 and r=14
+                    for i in range(l,r+1):
+                        actions_to_execute.append(i-1) #[9,10,11,12,13,14]
 
     # result, executed_actions = Run_Sequential_Actions(data_set_list=actions_to_execute)
     # print(result, executed_actions)
