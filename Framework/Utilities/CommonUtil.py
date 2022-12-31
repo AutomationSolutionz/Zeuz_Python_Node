@@ -101,6 +101,7 @@ to_dlt_from_fail_reason = " : Test Step Failed"
 
 load_testing = False
 performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": float("inf")}, "status_counts": {}}
+performance_testing = False
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
@@ -220,6 +221,8 @@ dont_prettify_on_server = ["step_data"]
 
 def prettify(key, val):
     """Tries to pretty print the given value."""
+    if performance_testing:
+        return
     color = Fore.MAGENTA
     try:
         if prettify_limit is None:
@@ -281,6 +284,8 @@ def Add_File_To_Current_Test_Case_Log(src):
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
         # console.print_exception(show_locals=True, max_frames=1)
+        if performance_testing:
+            return
         sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         exc_type, exc_obj, exc_tb = exec_info
         Error_Type = (
@@ -334,7 +339,8 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
 
 def Result_Analyzer(sTestStepReturnStatus, temp_q):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    if performance_testing:
+        return
     try:
         if sTestStepReturnStatus in passed_tag_list:
             temp_q.put("passed")
@@ -382,6 +388,8 @@ report_json_time = 0.0
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
     try:
+        if performance_testing:
+            return
         if debug_status:
             return
         elif upload_on_fail and rerun_on_fail and not rerunning_on_fail and logs:
@@ -469,6 +477,8 @@ def ExecLog(
     sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None, print_Execlog=True
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
+    if performance_testing:
+        return
     if load_testing and not force_write:
         return
 
@@ -708,7 +718,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-    if not ws_ss_log: return
+    if not ws_ss_log or performance_testing: return
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
@@ -771,6 +781,7 @@ def pil_image_to_bytearray(img):
 
 def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
+    if performance_testing: return
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     chars_to_remove = [
         r"?",
@@ -1074,6 +1085,7 @@ class MachineInfo:
 
 
 def debug_code_error(exc_info):
+    if performance_testing : return
     exc_type, exc_obj, exc_tb = exc_info
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     Error_Detail = (

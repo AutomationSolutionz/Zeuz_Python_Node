@@ -1016,7 +1016,7 @@ def Run_Sequential_Actions(
                 continue
             elif dataset_cnt in skip:
                 continue  # If this data set is in the skip list, do not process it
-            else:
+            elif not CommonUtil.performance_testing:
                 _color = "cyan"
                 title = ":notebook: Starting %s, STEP-%s, ACTION-%d%s :notebook:" % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name)
                 table = Table(border_style=_color, title=title, box=SQUARE, min_width=len(title)-10, width=70)

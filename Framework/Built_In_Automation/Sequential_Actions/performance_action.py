@@ -2,6 +2,8 @@ import time
 from concurrent import futures
 from typing import Callable, List, Tuple, Literal, Union, Any
 
+from Framework.Utilities import CommonUtil
+
 
 class LoadShape:
     def run(self):
@@ -58,9 +60,11 @@ class CycleLoadShape(LoadShape):
             self.tick(cycle, launch_count)
 
             cycle += 1
-
+            # print("*** Starting Cycle %d ***",cycle)
 
     def tick(self, cycle: int, launch_count: int):
+        print(f"*** Starting Journey ** {launch_count} ** , at Cycle #{cycle+1} ***")
+
         self.callback(cycle, launch_count)
 
 
@@ -73,6 +77,7 @@ def performance_action_handler(
     step_increment = 1
     ramp = None
     max_workers = None
+    CommonUtil.performance_testing = True
     actions_to_execute: List[int] = []
 
     for left, _, right in data_set:
