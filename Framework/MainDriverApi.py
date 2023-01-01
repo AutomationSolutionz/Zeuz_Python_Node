@@ -1584,6 +1584,9 @@ def main(device_dict, user_info_object):
                     shared.Clean_Up_Shared_Variables()
             driver_list = ["Not needed currently"]
 
+            final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
+
             final_run_params = {}
             for param in final_run_params_from_server:
                 # TODO: This needs to be changed to use the new key/value format
