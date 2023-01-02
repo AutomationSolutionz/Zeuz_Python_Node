@@ -339,8 +339,8 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
 
 def Result_Analyzer(sTestStepReturnStatus, temp_q):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    if performance_testing:
-        return
+    # if performance_testing:
+    #     return
     try:
         if sTestStepReturnStatus in passed_tag_list:
             temp_q.put("passed")
@@ -388,8 +388,8 @@ report_json_time = 0.0
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
     try:
-        if performance_testing:
-            return
+        # if performance_testing:
+        #     return
         if debug_status:
             return
         elif upload_on_fail and rerun_on_fail and not rerunning_on_fail and logs:
