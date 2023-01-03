@@ -874,6 +874,7 @@ def start_appium_driver(
                 desired_caps["wdaLocalPort"] = wdaLocalPort
                 desired_caps["udid"] = appium_details[device_id]["serial"]
                 desired_caps["newCommandTimeout"] = 6000
+                desired_caps["usePrebuiltWDA"] = True
                 if no_reset:
                     desired_caps["noReset"] = "true"  # Do not clear application cache when complete
             else:  # for real ios device, not developed yet
