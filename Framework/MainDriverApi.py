@@ -1525,6 +1525,8 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
+            shared.Set_Shared_Variables("run_id", run_id)
+
             server_version = run_id_info["server_version"]
             CommonUtil.ExecLog(
                 "",
@@ -1640,6 +1642,7 @@ def main(device_dict, user_info_object):
                 all_testcases_info = each_session["test_cases"]
                 # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
                 for testcase_info in all_testcases_info:
+                    shared.Set_Shared_Variables("runid_status", get_status_of_runid(run_id))
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
                         performance_test_case = True
@@ -1748,6 +1751,7 @@ def main(device_dict, user_info_object):
                         if CommonUtil.run_cancel == CANCELLED_TAG:
                             break
                         # print("Executed %s test cases" % cnt)
+
                         cnt += 1
                     CommonUtil.tc_index += 1
 
