@@ -486,23 +486,41 @@ def launch_application(data_set):
             ios = ""
             no_reset = False
             work_profile = False
+            re_install = True
 
             for left, mid, right in data_set:
                 left = left.strip().lower()
                 mid = mid.strip().lower()
-                if left in ("android package", "package") and mid == "element parameter":
-                    package_name = right
-                elif left in ("app activity", "activity", "android activity") and mid == "element parameter":
-                    activity_name = right
-                elif left in ("ios", "ios simulator") and mid == "element parameter":
-                    ios = right
+                if mid == "element parameter":
+                    # do all that is defined in element parameter
+                    if left in ("android package", "package"):
+                        package_name = right
+                    elif left in ("app activity", "activity", "android activity"):
+                        activity_name = right
+                    elif left in ("ios", "ios simulator"):
+                        ios = right
+                    elif left in ("no reset", "no_reset", "noreset"):
+                        if right.strip().lower() in ("yes", "true", "ok", "enable"):
+                            no_reset = True
+                        else:
+                            no_reset = False
+                    elif left in ("reinstall", "re install", "re_install"):
+                        if right.strip().lower() in ("no", "false", "na"):
+                            re_install = False
+                            no_reset = True
+                # if left in ("android package", "package") and mid == "element parameter":
+                #     package_name = right
+                # elif left in ("app activity", "activity", "android activity") and mid == "element parameter":
+                #     activity_name = right
+                # elif left in ("ios", "ios simulator") and mid == "element parameter":
+                #     ios = right
                 elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
-                elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
-                    if right.strip().lower() in ("yes", "true", "ok", "enable"):
-                        no_reset = True
-                    else:
-                        no_reset = False
+                # elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
+                #     if right.strip().lower() in ("yes", "true", "ok", "enable"):
+                #         no_reset = True
+                #     else:
+                #         no_reset = False
                 elif mid == "action":
                     serial = right.lower().strip()
 
@@ -583,6 +601,7 @@ def launch_application(data_set):
                 no_reset=no_reset,
                 work_profile=work_profile,
                 desiredcaps=desiredcaps,
+                re_install=re_install
             )
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -752,6 +771,7 @@ def start_appium_driver(
     desiredcaps=None,
     browserstack_run=False,
     aws_run=False,
+    **kwargs
 ):
     """ Creates appium instance using discovered and provided capabilities """
     # Does not execute application
@@ -855,6 +875,7 @@ def start_appium_driver(
                         # saving simulator path for future use
                         Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
+                    # Todo: if re_install then use `bundle_id` instead of `app` => simulator
                     app = os.path.join(app, ios)
                     encoding = "utf-8"
                     bundle_id = str(
@@ -864,8 +885,11 @@ def start_appium_driver(
                         encoding=encoding,
                     ).strip()
 
-                    desired_caps["app"] = app  # Use set_value() for writing to element
-                    desired_caps["bundleId"] = bundle_id.replace("\\n", "")
+                    if kwargs["re_install"]:
+                        desired_caps["bundleId"] = bundle_id.replace("\\n", "")
+                    elif not kwargs["re_install"]:
+                        desired_caps["app"] = app  # Use set_value() for writing to element
+                        desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
                 desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
                 desired_caps["platformVersion"] = platform_version
