@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.append("..")
 from selenium import webdriver
+from xvfbwrapper import Xvfb
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import IEDriverManager
@@ -81,6 +82,7 @@ current_driver_id = None
 selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
+vdisplay = None
 
 # JavaScript for collecting First Contentful Paint value.
 JS_FCP = '''
@@ -418,6 +420,29 @@ def get_performance_metrics(dataset):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def use_xvfb_or_headless(callback):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    if platform.system() == "Linux":
+        try:
+            global vdisplay
+            vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+            vdisplay.start()
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Failed to initialize xvfb. "
+                "Perhaps xvfb is not installed?\n"
+                "For apt-get: `sudo apt-get install xvfb`\n"
+                "For yum: `sudo yum install xvfb`.\n"
+                "Falling back to headless mode.",
+                2,
+            )
+            callback()
+    else:
+        callback()
+
+
 initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None):
@@ -536,10 +561,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
+
             if "chromeheadless" in browser:
-                options.add_argument(
-                    "--headless"
-                )  # Enable headless operation if dependency set
+                def chromeheadless():
+                    options.add_argument(
+                        "--headless"
+                    )
+                use_xvfb_or_headless(chromeheadless)
+
             global initial_download_folder
             initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             prefs = {
@@ -590,7 +619,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.set_capability("browserVersion",remote_browser_version)
 
             if "headless" in browser:
-                options.headless = True
+                def firefoxheadless():
+                    options.headless = True
+                use_xvfb_or_headless(firefoxheadless)
+
             if _platform == "win32":
                 try:
                     import winreg
@@ -667,7 +699,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             capabilities = webdriver.EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
-            options.headless = "headless" in browser
+
+            if "headless" in browser:
+                def edgeheadless():
+                    options.headless = True
+                use_xvfb_or_headless(edgeheadless)
+
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
             if(remote_host):
@@ -3502,6 +3539,11 @@ def Tear_Down_Selenium(step_data=[]):
                 Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
                 selenium_driver = None
                 current_driver_id = driver_id
+
+            global vdisplay
+            if vdisplay:
+                 vdisplay.stop()
+                 vdisplay = None
 
         return "passed"
     except Exception:
