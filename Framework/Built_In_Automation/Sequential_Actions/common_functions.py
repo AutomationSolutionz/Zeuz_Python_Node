@@ -5561,17 +5561,21 @@ def data_store_read(data_set):
                 temp = q.replace('and', ',').replace('or', ',').split(',')
 
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = t[1].strip()
+                params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
                 for s in q.split():
                     if s.lower() == 'and':
                         t = temp[i].split('=')
-                        params['and_' + t[0].strip()] = t[1].strip()
+                        if 'and_' + t[0].strip() not in params:
+                            params['and_' + t[0].strip()] = [t[1].strip()]
+                        else:params['and_' + t[0].strip()].append(t[1].strip())
                         i+=1
 
                     if s.lower() == 'or':
                         t = temp[i].split('=')
-                        params['or_'+t[0].strip()] = t[1].strip()
+                        if 'or_' + t[0].strip() not in params:
+                            params['or_' + t[0].strip()] = [t[1].strip()]
+                        else:params['or_' + t[0].strip()].append(t[1].strip())
 
                         i += 1
             if mid.strip() == "action":
@@ -5632,17 +5636,21 @@ def data_store_write(data_set):
                 temp = q.replace('and', ',').replace('or', ',').split(',')
 
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = t[1].strip()
+                params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
                 for s in q.split():
                     if s.lower() == 'and':
                         t = temp[i].split('=')
-                        params['and_' + t[0].strip()] = t[1].strip()
+                        if 'and_' + t[0].strip() not in params:
+                            params['and_' + t[0].strip()] = [t[1].strip()]
+                        else:params['and_' + t[0].strip()].append(t[1].strip())
                         i+=1
 
                     if s.lower() == 'or':
                         t = temp[i].split('=')
-                        params['or_'+t[0].strip()] = t[1].strip()
+                        if 'or_' + t[0].strip() not in params:
+                            params['or_' + t[0].strip()] = [t[1].strip()]
+                        else:params['or_' + t[0].strip()].append(t[1].strip())
 
                         i += 1
             if left.strip() == 'data':
