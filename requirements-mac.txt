@@ -51,4 +51,3 @@ html-diff
 protobuf
 pytz
 rauth
-xvfbwrapper

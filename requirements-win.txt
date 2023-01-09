@@ -60,4 +60,3 @@ protobuf
 pdf2image
 pytz
 rauth
-xvfbwrapper
