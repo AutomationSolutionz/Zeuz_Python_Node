@@ -5558,7 +5558,9 @@ def data_store_read(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.replace('and', ',').replace('or', ',').split(',')
+                q = re.sub(r"\band\b",",",q)
+                q = re.sub(r"\bor\b",",",q)
+                temp= q.split(',')
 
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = [t[1].strip()]
@@ -5633,7 +5635,9 @@ def data_store_write(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.replace('and', ',').replace('or', ',').split(',')
+                q = re.sub(r"\band\b",",",q)
+                q = re.sub(r"\bor\b",",",q)
+                temp= q.split(',')
 
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = [t[1].strip()]
