@@ -39,7 +39,7 @@ import concurrent.futures
 from datetime import datetime
 import pytz
 
-from . import common_functions as common  # Functions that are common to all modules
+from . import common_functions as common, performance_action  # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
@@ -2255,7 +2255,10 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             "runtime": action_duration,
             "page_reload": CommonUtil.action_perf[-1]["runtime"] if len(CommonUtil.action_perf) > 0 and action_name == "get performance metrics" else None,    # only valid for get_performance_metrics
             "time_stamp": CommonUtil.get_timestamp(),
+
         })
+        if performance_action.zeuz_cycle != -1:
+            CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
         CommonUtil.TakeScreenShot(function)
         CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:

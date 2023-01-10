@@ -4,7 +4,7 @@ from typing import Callable, List, Tuple, Literal, Union, Any
 
 from Framework.Utilities import CommonUtil
 
-
+zeuz_cycle = -1
 class LoadShape:
     def run(self):
         raise Exception("this method needs to be called from one of its sub-classes")
@@ -44,22 +44,23 @@ class CycleLoadShape(LoadShape):
 
     def run(self):
         # current cycle count
-        cycle = 0
+        global zeuz_cycle
+        zeuz_cycle = 0
         # number of threads to launch per cycle
         launch_count = 0
 
         # loop until the target number of cycles are executed
-        while cycle < self.number_of_cycles:
-            launch_count = launch_count + (self.step_increment * self._cycle_ramp(cycle))
+        while zeuz_cycle < self.number_of_cycles:
+            launch_count = launch_count + (self.step_increment * self._cycle_ramp(zeuz_cycle))
             # never let the launch count fall below zero
             if launch_count <= 0:
                 launch_count = self.step_increment
 
             # this is going to block the loop and let the tick handler decide
             # when to move on to the next iteration
-            self.tick(cycle, launch_count)
+            self.tick(zeuz_cycle, launch_count)
 
-            cycle += 1
+            zeuz_cycle += 1
             # print("*** Starting Cycle %d ***",cycle)
 
     def tick(self, cycle: int, launch_count: int):
