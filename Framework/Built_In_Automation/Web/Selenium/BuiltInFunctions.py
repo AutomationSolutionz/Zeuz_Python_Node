@@ -868,6 +868,16 @@ def Open_Browser_Wrapper(step_data):
 
 @logger
 def Open_Empty_Browser(step_data):
+        """Open Empty Browser.
+
+        Args:
+            data_set:
+              open browser       | selenium action    | open
+
+        Returns:
+            "passed" if browser open is successful.
+            "zeuz_failed" otherwise.
+        """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
 
