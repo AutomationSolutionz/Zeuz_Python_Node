@@ -507,7 +507,7 @@ def launch_application(data_set):
                     elif left in ("reinstall", "re install", "re_install"):
                         if right.strip().lower() in ("no", "false", "na"):
                             re_install = False
-                            no_reset = True
+                            # no_reset = True
                 # if left in ("android package", "package") and mid == "element parameter":
                 #     package_name = right
                 # elif left in ("app activity", "activity", "android activity") and mid == "element parameter":
