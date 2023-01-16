@@ -904,6 +904,41 @@ def Open_Browser_Wrapper(step_data):
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+@logger
+def Open_Empty_Browser(step_data):
+    """Open Empty Browser.
+
+       Args:
+       data_set:
+       open browser       | selenium action    | open
+
+       Returns:
+       "passed" if browser open is successful.
+       "zeuz_failed" otherwise.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    browser_options = []
+    # default capabilities
+    capabilities = {"unhandledPromptBehavior": "ignore"}
+    # Open browser and create driver if user has not already done so
+    global dependency
+    global selenium_driver
+    global selenium_details
+    global current_driver_id
+
+    try:
+        if Shared_Resources.Test_Shared_Variables("dependency"):
+            dependency = Shared_Resources.Get_Shared_Variables("dependency")
+        else:
+            raise ValueError("No dependency set - Cannot run")
+        result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options)
+        if result == "zeuz_failed":
+            return "zeuz_failed"
+        return "passed"
+    except Exception:
+        ErrorMessage = "failed to open browser"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 @logger
 def Go_To_Link(step_data, page_title=False):
