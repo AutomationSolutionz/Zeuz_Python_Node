@@ -904,6 +904,79 @@ def Open_Browser_Wrapper(step_data):
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+@logger
+def Open_Empty_Browser(step_data):
+    """Open Empty Browser.
+
+       Args:
+       data_set:
+       open browser       | selenium action    | open
+
+       Returns:
+       "passed" if browser open is successful.
+       "zeuz_failed" otherwise.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    window_size_X = ConfigModule.get_config_value("", "window_size_x")
+    window_size_Y = ConfigModule.get_config_value("", "window_size_y")
+    # Open browser and create driver if user has not already done so
+    global dependency
+    global selenium_driver
+    global selenium_details
+    global current_driver_id
+
+    if Shared_Resources.Test_Shared_Variables("dependency"):
+        dependency = Shared_Resources.Get_Shared_Variables("dependency")
+    else:
+        raise ValueError("No dependency set - Cannot run")
+
+    try:
+        driver_id = ""
+        for left, mid, right in step_data:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            if left == "driverid":
+                driver_id = right.strip()
+
+        if not driver_id:
+            driver_id = "default"
+
+        browser_map = {
+            "Microsoft Edge Chromium": 'msedge',
+            "Chrome": "chrome",
+            "FireFox": "firefox",
+            "Opera": "opera",
+            "ChromeHeadless": "chrome",
+            "FirefoxHeadless": "firefox",
+            "EdgeChromiumHeadless": "msedge",
+        }
+
+        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+            if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+                Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
+            CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
+            if window_size_X == "None" and window_size_Y == "None":
+                result = Open_Browser(dependency)
+            elif window_size_X == "None":
+                result = Open_Browser(dependency, window_size_Y)
+            elif window_size_Y == "None":
+                result = Open_Browser(dependency, window_size_X)
+            else:
+                result = Open_Browser(dependency, window_size_X, window_size_Y)
+
+            if result == "zeuz_failed":
+                return "zeuz_failed"
+
+            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
+
+        else:
+            selenium_driver = selenium_details[driver_id]["driver"]
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+
+        return "passed"
+    except Exception:
+        ErrorMessage = "failed to open browser"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 @logger
 def Go_To_Link(step_data, page_title=False):
