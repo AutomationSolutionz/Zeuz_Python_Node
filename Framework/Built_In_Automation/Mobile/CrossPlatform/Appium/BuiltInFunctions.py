@@ -487,6 +487,7 @@ def launch_application(data_set):
             no_reset = False
             work_profile = False
             re_install = True
+            ios_bundle_id = ""
 
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -499,6 +500,8 @@ def launch_application(data_set):
                         activity_name = right
                     elif left in ("ios", "ios simulator"):
                         ios = right
+                    elif left in ("bundle id", "bundle_id", "bundleid", "bundle"):
+                        ios_bundle_id = right
                     elif left in ("no reset", "no_reset", "noreset"):
                         if right.strip().lower() in ("yes", "true", "ok", "enable"):
                             no_reset = True
@@ -601,7 +604,8 @@ def launch_application(data_set):
                 no_reset=no_reset,
                 work_profile=work_profile,
                 desiredcaps=desiredcaps,
-                re_install=re_install
+                re_install=re_install,
+                bundle_id = ios_bundle_id
             )
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -914,14 +918,20 @@ def start_appium_driver(
 
                 app = os.path.join(app, ios)
                 encoding = "utf-8"
-                bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
+                # Todo: use bundle id for native app on the real iOS device
+                if bundle_id:
+                    desired_caps["bundleId"] = bundle_id
+                
+                elif not bundle_id:
+                    bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
+                    desired_caps["bundleId"] = bundle_id
 
                 desired_caps["platformName"] = "iOS"
                 desired_caps["automationName"] = "XCUITest"
                 desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
                 desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
                 desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
-                desired_caps["bundleId"] = ios
+                # desired_caps["bundleId"] = ios
                 desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
         else:
             CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
