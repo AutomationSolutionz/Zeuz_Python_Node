@@ -146,6 +146,16 @@ test_case_perf = []
 perf_test_perf = []
 
 
+def clear_performance_metrics():
+    """reset everything to initial value"""
+    global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf
+    browser_perf = {}
+    action_perf = []
+    step_perf = []
+    test_case_perf = []
+    perf_test_perf = []
+
+
 def GetExecutor():
     return executor
 

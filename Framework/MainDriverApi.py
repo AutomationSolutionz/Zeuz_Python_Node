@@ -1079,6 +1079,7 @@ def run_test_case(
 
         if not CommonUtil.debug_status:
             send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+        CommonUtil.clear_performance_metrics()
 
         if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
