@@ -919,10 +919,10 @@ def start_appium_driver(
                 app = os.path.join(app, ios)
                 encoding = "utf-8"
                 # Todo: use bundle id for native app on the real iOS device
-                if bundle_id:
-                    desired_caps["bundleId"] = bundle_id
-                
-                elif not bundle_id:
+                if kwargs["bundle_id"]:
+                    desired_caps["bundleId"] = kwargs["bundle_id"]
+
+                elif not kwargs["bundle_id"]:
                     bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
                     desired_caps["bundleId"] = bundle_id
 
