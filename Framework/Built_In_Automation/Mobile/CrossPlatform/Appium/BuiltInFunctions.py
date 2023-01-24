@@ -605,7 +605,7 @@ def launch_application(data_set):
                 work_profile=work_profile,
                 desiredcaps=desiredcaps,
                 re_install=re_install,
-                bundle_id = ios_bundle_id
+                bundle_id=ios_bundle_id
             )
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -696,6 +696,12 @@ def start_appium_server():
                     % (appium_binary, str(appium_port)),
                     shell=True,
                 )
+                # Todo: start appium server for version 2.x
+                # appium_server = subprocess.Popen(
+                #     "%s --base-path=/wd/hub --allow-insecure chromedriver_autodownload -p %s"
+                #     % (appium_binary, str(appium_port)),
+                #     shell=True,
+                # )
             elif sys.platform == "linux" or sys.platform == "linux2":
                 appium_server = subprocess.Popen(
                     "%s --allow-insecure chromedriver_autodownload -p %s"
@@ -906,7 +912,7 @@ def start_appium_driver(
                 if no_reset:
                     desired_caps["noReset"] = "true"  # Do not clear application cache when complete
             else:  # for real ios device, not developed yet
-                # We're trying to launch an application using .app file
+                # Trying to launch an application using .app file
                 if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
                     app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
                     app = os.path.normpath(app)
@@ -919,6 +925,7 @@ def start_appium_driver(
                 app = os.path.join(app, ios)
                 encoding = "utf-8"
                 # Todo: use bundle id for native app on the real iOS device
+                # Trying to launch the application using the app's bundle id
                 if kwargs["bundle_id"]:
                     desired_caps["bundleId"] = kwargs["bundle_id"]
 
@@ -926,13 +933,18 @@ def start_appium_driver(
                     bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
                     desired_caps["bundleId"] = bundle_id
 
+                if no_reset:
+                    desired_caps["noReset"] = "true"
+
+                # Default capabilities
                 desired_caps["platformName"] = "iOS"
                 desired_caps["automationName"] = "XCUITest"
-                desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
-                desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
-                desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
+                desired_caps["sendKeyStrategy"] = "setValue"                # Use set_value() for writing to element
+                desired_caps["platformVersion"] = "13.5"                    # Read version #!!! Temporarily hard coded
+                desired_caps["deviceName"] = "iPhone"                       # Read model (only needs to be unique if using more than one)
                 # desired_caps["bundleId"] = ios
                 desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
+                desired_caps["usePrebuiltWDA"] = True                       # use prebuilt WDA
         else:
             CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
             return "zeuz_failed", launch_app
