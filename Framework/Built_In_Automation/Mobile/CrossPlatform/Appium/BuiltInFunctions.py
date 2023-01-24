@@ -691,17 +691,17 @@ def start_appium_server():
                 )  # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell=True)  # Needs to run in a shell due to the execution command
             elif sys.platform == "darwin":
-                appium_server = subprocess.Popen(
-                    "%s --allow-insecure chromedriver_autodownload -p %s"
-                    % (appium_binary, str(appium_port)),
-                    shell=True,
-                )
-                # Todo: start appium server for version 2.x
                 # appium_server = subprocess.Popen(
-                #     "%s --base-path=/wd/hub --allow-insecure chromedriver_autodownload -p %s"
+                #     "%s --allow-insecure chromedriver_autodownload -p %s"
                 #     % (appium_binary, str(appium_port)),
                 #     shell=True,
                 # )
+                # Todo: start appium server for version 2.x
+                appium_server = subprocess.Popen(
+                    "%s --base-path=/wd/hub --allow-insecure chromedriver_autodownload -p %s"
+                    % (appium_binary, str(appium_port)),
+                    shell=True,
+                )
             elif sys.platform == "linux" or sys.platform == "linux2":
                 appium_server = subprocess.Popen(
                     "%s --allow-insecure chromedriver_autodownload -p %s"
