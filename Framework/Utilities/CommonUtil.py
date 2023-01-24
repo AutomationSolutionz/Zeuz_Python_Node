@@ -101,6 +101,7 @@ to_dlt_from_fail_reason = " : Test Step Failed"
 
 load_testing = False
 performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": float("inf")}, "status_counts": {}}
+performance_testing = False
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
@@ -121,8 +122,11 @@ tc_index = 0
 step_index = 0
 current_action_no = ""
 current_action_name = ""
+previous_action_name = ""   # It requires for labelling get_performance_metrics. because performance_metrics is called on next action
 current_step_no = ""
 current_step_name = ""
+current_step_id = None
+current_step_sequence = None
 current_tc_no = ""
 current_session_name = ""
 custom_step_duration = ""
@@ -138,6 +142,18 @@ all_threads = {}
 browser_perf = {}
 action_perf = []
 step_perf = []
+test_case_perf = []
+perf_test_perf = []
+
+
+def clear_performance_metrics():
+    """reset everything to initial value"""
+    global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf
+    browser_perf = {}
+    action_perf = []
+    step_perf = []
+    test_case_perf = []
+    perf_test_perf = []
 
 
 def GetExecutor():
@@ -215,6 +231,8 @@ dont_prettify_on_server = ["step_data"]
 
 def prettify(key, val):
     """Tries to pretty print the given value."""
+    if performance_testing:
+        return
     color = Fore.MAGENTA
     try:
         if prettify_limit is None:
@@ -276,6 +294,8 @@ def Add_File_To_Current_Test_Case_Log(src):
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
         # console.print_exception(show_locals=True, max_frames=1)
+        if performance_testing:
+            return
         sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         exc_type, exc_obj, exc_tb = exec_info
         Error_Type = (
@@ -329,7 +349,8 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
 
 def Result_Analyzer(sTestStepReturnStatus, temp_q):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    # if performance_testing:
+    #     return
     try:
         if sTestStepReturnStatus in passed_tag_list:
             temp_q.put("passed")
@@ -377,6 +398,8 @@ report_json_time = 0.0
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
     try:
+        # if performance_testing:
+        #     return
         if debug_status:
             return
         elif upload_on_fail and rerun_on_fail and not rerunning_on_fail and logs:
@@ -464,6 +487,8 @@ def ExecLog(
     sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None, print_Execlog=True
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
+    if performance_testing:
+        return
     if load_testing and not force_write:
         return
 
@@ -703,7 +728,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-    if not ws_ss_log: return
+    if not ws_ss_log or performance_testing: return
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
@@ -766,6 +791,7 @@ def pil_image_to_bytearray(img):
 
 def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
+    if performance_testing: return
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     chars_to_remove = [
         r"?",
@@ -851,6 +877,17 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
             "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
             4,
         )
+
+d_day = 0
+d_hours = 0
+d_minutes = 0
+d_seconds = 0
+
+def get_timestamp() -> datetime:
+    """Get UTC-0 times tamps for metrics and other purposes."""
+    d = datetime.datetime.utcnow()
+    d += datetime.timedelta(days=d_day, hours=d_hours, minutes=d_minutes, seconds=d_seconds)
+    return d.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 def TimeStamp(format):
@@ -1058,6 +1095,7 @@ class MachineInfo:
 
 
 def debug_code_error(exc_info):
+    if performance_testing : return
     exc_type, exc_obj, exc_tb = exc_info
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     Error_Detail = (

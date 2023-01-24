@@ -19,6 +19,11 @@ with open(version_path, "r"):
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
 
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
+
+
 import sys, time, os.path, base64, signal, argparse, requests, zipfile
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning

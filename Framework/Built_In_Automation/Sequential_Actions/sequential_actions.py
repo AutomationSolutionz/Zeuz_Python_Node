@@ -35,10 +35,11 @@ import time
 import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 from datetime import datetime
 import pytz
 
-from . import common_functions as common  # Functions that are common to all modules
+from . import common_functions as common, performance_action  # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
@@ -47,6 +48,7 @@ from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
+from .performance_action import performance_action_handler
 
 from rich.style import Style
 from rich.table import Table
@@ -956,6 +958,13 @@ def While_Loop_Action(step_data, data_set_no):
         return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
+def ticker_linear_shape(seconds, callable, *args, **kwargs):
+    while seconds > 0:
+        callable(*args, **kwargs)
+        time.sleep(1)
+        seconds -= 1
+
+
 def Run_Sequential_Actions(
     data_set_list=None, debug_actions=None
 ):  # data_set_no will used in recursive conditional action call
@@ -1007,7 +1016,7 @@ def Run_Sequential_Actions(
                 continue
             elif dataset_cnt in skip:
                 continue  # If this data set is in the skip list, do not process it
-            else:
+            elif not CommonUtil.performance_testing:
                 _color = "cyan"
                 title = ":notebook: Starting %s, STEP-%s, ACTION-%d%s :notebook:" % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name)
                 table = Table(border_style=_color, title=title, box=SQUARE, min_width=len(title)-10, width=70)
@@ -1033,6 +1042,14 @@ def Run_Sequential_Actions(
                 # Don't process these suport items right now, but also don't fail
                 if action_name.lower().strip() in action_support and "custom" not in action_name:
                     continue
+
+                elif "performance action" in action_name:
+                    result, skip, perf_result = performance_action_handler(
+                        data_set,
+                        Run_Sequential_Actions,
+                        CommonUtil.get_timestamp,
+                    )
+                    CommonUtil.perf_test_perf = perf_result
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:
@@ -2229,8 +2246,21 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         start_time = time.perf_counter()
         result = run_function(data_set)  # Execute function, providing all rows in the data set
         action_duration = round(time.perf_counter() - start_time, 5)
-        CommonUtil.action_perf.append({"module": action_subfield.split(" ")[0], "name": action_name, "runtime": action_duration})
+        CommonUtil.action_perf.append({
+            "step_sequence": CommonUtil.current_step_sequence,
+            "step_id": CommonUtil.current_step_id ,
+            "label": CommonUtil.current_action_name,
+            "module": action_subfield.split(" ")[0],
+            "name": action_name,
+            "runtime": action_duration,
+            "page_reload": CommonUtil.action_perf[-1]["runtime"] if len(CommonUtil.action_perf) > 0 and action_name == "get performance metrics" else None,    # only valid for get_performance_metrics
+            "time_stamp": CommonUtil.get_timestamp(),
+
+        })
+        if performance_action.zeuz_cycle != -1:
+            CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
         CommonUtil.TakeScreenShot(function)
+        CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False
             bypass_bug(action_name, action_subfield)

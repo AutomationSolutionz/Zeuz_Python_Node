@@ -42,4 +42,7 @@ pdf2image
 protobuf
 pytz
 rauth
+python-dotenv
+google-cloud-bigquery
+google-cloud-bigquery-storage
 xvfbwrapper
