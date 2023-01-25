@@ -11,6 +11,8 @@
 #        Modules        #
 #                       #
 #########################
+from Framework.Built_In_Automation.Database.BuiltInFunctions import sr
+
 try:
     import pyautogui as gui
 except:
@@ -641,10 +643,13 @@ def check_for_element(data_set):
 
     # Parse data set
     try:
+        variable_name = None
         file_name = ""
         for row in data_set:
             if row[1] == "element parameter":
                 file_name = row[2]
+            elif "action" in row[1]:
+                variable_name = row[2].strip()
 
         if file_name == "":
             CommonUtil.ExecLog(
@@ -671,9 +676,13 @@ def check_for_element(data_set):
 
         if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+            x = 'False'
+            sr.Set_Shared_Variables(variable_name, x)
             return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+            x = 'True'
+            sr.Set_Shared_Variables(variable_name, x)
             return "passed"
 
     except Exception:
