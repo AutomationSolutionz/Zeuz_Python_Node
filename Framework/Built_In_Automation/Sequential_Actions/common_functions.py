@@ -3483,8 +3483,7 @@ def execute_python_code(data_set):
         sr.shared_variables["print"] = _print
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
