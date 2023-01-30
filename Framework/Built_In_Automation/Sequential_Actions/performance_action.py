@@ -2,7 +2,7 @@ import time
 import threading
 import inspect
 from concurrent import futures
-from typing import Callable, List, Tuple, Literal, Union, Any
+from typing import Callable, List, Tuple, Union, Any
 
 from Framework.Utilities import CommonUtil
 
@@ -36,7 +36,7 @@ class CycleLoadShape(LoadShape):
         self.ramp_list = sorted(list(set([0.0, *self.ramp_list, 1.0])))
 
 
-    def _cycle_ramp(self, cycle: int) -> Literal[-1, 1]:
+    def _cycle_ramp(self, cycle: int):
         percentage = cycle / self.number_of_cycles
         for i in range(0, len(self.ramp_list)-1):
             rp_i = self.ramp_list[i]
