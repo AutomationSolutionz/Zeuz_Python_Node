@@ -944,7 +944,7 @@ def handle_rest_call(
                 CommonUtil.performance_report["status_counts"][str(status_code)] = 1
 
             # We return immediately as soon as we get a response back.
-            return
+            return "passed"
 
         if wait_for_response_code != 0 and status_code != wait_for_response_code:
             CommonUtil.ExecLog(
