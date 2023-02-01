@@ -16,7 +16,7 @@ with open(version_path, "r"):
     if os.name == "nt":
         os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
     print(version_path.read_text())
-from Framework.module_installer import install_missing_modules
+from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
 
 from dotenv import load_dotenv
@@ -969,6 +969,11 @@ def command_line_args() -> Path:
     parser_object.add_argument(
         "-gh", "--gh_token", action="store", help="Enter GitHub personal access token (https://github.com/settings/tokens)", metavar=""
     )
+
+    parser_object.add_argument(
+        "-sap", "--stop_pip_auto_update", action="store_true", help="Auto python modules from auto updating"
+    )
+
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -980,7 +985,7 @@ def command_line_args() -> Path:
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
     gh_token = all_arguments.gh_token
-    
+    stop_pip_auto_update = all_arguments.stop_pip_auto_update
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1005,6 +1010,9 @@ def command_line_args() -> Path:
 
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
+
+    if not stop_pip_auto_update:
+        update_outdated_modules()
 
     if server and server[-1] == "/":
         server = server[:-1]
