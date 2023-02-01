@@ -971,7 +971,7 @@ def command_line_args() -> Path:
     )
 
     parser_object.add_argument(
-        "-sap", "--stop_pip_auto_update", action="store_true", help="Auto python modules from auto updating"
+        "-spu", "--stop_pip_auto_update", action="store_true", help="Auto python modules from auto updating"
     )
 
     all_arguments = parser_object.parse_args()
