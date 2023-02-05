@@ -34,6 +34,8 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from settings import PROJECT_ROOT
 from reporting import junit_report
 
+from google.cloud import bigquery
+
 from rich.style import Style
 from rich.table import Table
 from rich.console import Console
@@ -304,10 +306,6 @@ def call_driver_function_of_test_step(
         try:
             current_driver = "Drivers." + current_driver
             # if CommonUtil.step_module_name is None:
-            #     module_name = importlib.import_module(current_driver)  # get module
-            #     CommonUtil.step_module_name = module_name
-            # else:
-            #     module_name = CommonUtil.step_module_name
             module_name = importlib.import_module(current_driver)  # get module
             print("STEP DATA and VARIABLES")
             # get step name
@@ -392,14 +390,9 @@ def call_driver_function_of_test_step(
                 else:
                     # run sequentially
                     sStepResult = functionTocall(
-                        final_dependency,
-                        final_run_params,
                         test_steps_data,
                         test_action_info,
-                        file_specific_steps,
                         simple_queue,
-                        screen_capture,     # No need of screen capture. Need to delete this
-                        device_info,
                         debug_actions,
                     )
             except:
@@ -487,10 +480,10 @@ def run_all_test_steps_in_a_test_case(
             for action_info in all_Action_info:
                 action_dataset = action_info["step_actions"]
                 all_action_data_set.append(action_dataset)
-                dict = {}
-                dict["Action disabled"] = action_info["action_disabled"]
-                dict["Action name"] = action_info["action_name"]
-                all_action_Info.append(dict)
+                Dict = {}
+                Dict["Action disabled"] = action_info["action_disabled"]
+                Dict["Action name"] = action_info["action_name"]
+                all_action_Info.append(Dict)
             all_step_dataset.append(all_action_data_set)
             all_action_info.append(all_action_Info)
         # loop through the steps
@@ -536,8 +529,9 @@ def run_all_test_steps_in_a_test_case(
 
             # get step info
             current_step_name = all_step_info[StepSeq - 1]["step_name"]
-            current_step_id = all_step_info[StepSeq - 1]["step_id"]
-            current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+            CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
+            CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
             step_attachments = all_step_info[StepSeq - 1]['attachments']
@@ -597,6 +591,8 @@ def run_all_test_steps_in_a_test_case(
 
             test_steps_data = all_step_dataset[StepSeq-1]
             test_action_info = all_action_info[StepSeq-1]
+            CommonUtil.all_step_dataset = all_step_dataset
+            CommonUtil.all_action_info = all_action_info
 
             # FIXME: If either one of run on fail or step time throws an
             # exception, both values will be set to a default value. So it has
@@ -643,6 +639,8 @@ def run_all_test_steps_in_a_test_case(
                 "name": current_step_name,
                 "sequence": current_step_sequence,
                 "runtime": round(TestStepEndTime - TestStepStartTime, 5),
+                "time_stamp": CommonUtil.get_timestamp(),
+                "status": sStepResult,
             })
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
@@ -836,6 +834,87 @@ def set_important_variables():
         raise Exception
 
 
+def send_to_bigquery(execution_log, metrics):
+    # Skip sending to gcp if credentials not available in environment.
+    if "GCP_BIGQUERY_ACTIONS_TABLE_ID" not in os.environ:
+        return
+
+    client = bigquery.Client()
+
+    # Table identifiers - these should be coming from zeuz server.
+    actions_table_id = os.environ["GCP_BIGQUERY_ACTIONS_TABLE_ID"]
+    steps_table_id = os.environ["GCP_BIGQUERY_STEPS_TABLE_ID"]
+    browser_perf_table_id = os.environ["GCP_BIGQUERY_BROWSER_PERF_TABLE_ID"]
+    test_cases_table_id = os.environ["GCP_BIGQUERY_TEST_CASES_TABLE_ID"]
+
+    run_id = execution_log["run_id"]
+    tc_id = execution_log["test_cases"][0]["testcase_no"]
+
+    steps = metrics["node"]["steps"]
+    actions = metrics["node"]["actions"]
+    test_cases = metrics["node"]["test_cases"]
+    try:
+        browser_perf = metrics["browser_performance"]["default"]
+    except:
+        browser_perf = list()
+
+    # A dict of step id to step name
+    step_names = {}
+    for step in steps:
+        step_names[step["id"]] = step["name"]
+
+
+    def send(table, rows, msg):
+        errors = client.insert_rows_json(table, rows)
+        if len(errors) == 0:
+            print(f"Sent {msg} metrics report to BigQuery")
+        else:
+            print(f"Encountered errors while inserting rows for {msg}: {errors}")
+
+
+    def send_actions_metrics():
+        for action in actions:
+            action["run_id"] = run_id
+            action["tc_id"] = tc_id
+            action["step_name"] = step_names[action["step_id"]]
+
+        send(actions_table_id, actions, "actions")
+
+
+    def send_steps_metrics():
+        for step in steps:
+            step["run_id"] = run_id
+            step["tc_id"] = tc_id
+            step["step_id"] = step["id"]
+            del step["id"]
+            step["step_name"] = step["name"]
+            del step["name"]
+            step["step_sequence"] = step["sequence"]
+            del step["sequence"]
+
+        send(steps_table_id, steps, "step")
+
+
+    def send_test_case_metrics():
+        send(test_cases_table_id, test_cases, "test case")
+
+
+    def send_browser_perf_metrics():
+        if len(browser_perf) == 0:
+            return
+
+        for entry in browser_perf:
+            entry["run_id"] = run_id
+
+        send(browser_perf_table_id, browser_perf, "browser perf")
+
+
+    send_actions_metrics()
+    send_steps_metrics()
+    send_test_case_metrics()
+    send_browser_perf_metrics()
+
+
 def run_test_case(
     TestCaseID,
     sModuleInfo,
@@ -861,6 +940,12 @@ def run_test_case(
         CommonUtil.browser_perf = {}
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
+        # FIXME: Remove these lines
+        # import random
+        # CommonUtil.d_day = random.randint(1, 4)
+        # CommonUtil.d_hours = random.randint(1, 11)
+        # CommonUtil.d_minutes = random.randint(0, 39)
+        # CommonUtil.d_seconds = random.randint(0, 50)
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
@@ -908,6 +993,8 @@ def run_test_case(
             performance
         )
 
+        # TODO: Test case run is completed here somewhere.
+
         ConfigModule.add_config_value(
             "sectionOne",
             "sTestStepExecLogId",
@@ -948,6 +1035,14 @@ def run_test_case(
             "status": sTestCaseStatus,
             "failreason": ""
         }
+        CommonUtil.test_case_perf.append({
+            "run_id": run_id,
+            "tc_id": TestCaseID,
+            "status": sTestCaseStatus,
+            "runtime": float(TimeDiff),
+            "errors": None,
+            "time_stamp": CommonUtil.get_timestamp(),
+        })
         if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
             TCLogFile = (
                 os.sep
@@ -959,15 +1054,26 @@ def run_test_case(
                 + ".zip"
             )
             after_execution_dict["logid"] = TCLogFile
-        after_execution_dict["metrics"] = {
+
+        metrics = {
+            "run_id": run_id,
+            "tc_id": TestCaseID,
             "browser_performance": CommonUtil.browser_perf,
-            "Node": {
+            "node": {
                 "actions": CommonUtil.action_perf,
-                "step": CommonUtil.step_perf
+                "steps": CommonUtil.step_perf,
+                "test_cases": CommonUtil.test_case_perf,
+                "performance_test": CommonUtil.perf_test_perf,
             }
         }
+
+        after_execution_dict["metrics"] = metrics
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
+
+        if not CommonUtil.debug_status:
+            send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+        CommonUtil.clear_performance_metrics()
 
         if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
@@ -1120,6 +1226,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             ]
     else:
         device_info = {}
+
+    shared.Set_Shared_Variables("device_info", device_info, protected=True)
 
 
 def get_performance_testing_data_for_test_case(run_id, TestCaseID):
@@ -1626,6 +1734,7 @@ def main(device_dict, user_info_object):
                     device_order = formated_device_order
 
             final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
             # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
 
@@ -1661,6 +1770,9 @@ def main(device_dict, user_info_object):
                     shared.Clean_Up_Shared_Variables()
             driver_list = ["Not needed currently"]
 
+            final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
+
             final_run_params = {}
             for param in final_run_params_from_server:
                 # TODO: This needs to be changed to use the new key/value format
@@ -1669,6 +1781,11 @@ def main(device_dict, user_info_object):
                 # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
                 # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
                 # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
+
+            if final_run_params != {}:
+                shared.Set_Shared_Variables("run_time_params", final_run_params, protected=True)
+                for run_time_params_name in final_run_params:
+                    shared.Set_Shared_Variables(run_time_params_name, final_run_params[run_time_params_name])
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
@@ -1683,7 +1800,7 @@ def main(device_dict, user_info_object):
             TestSetStartTime = time.time()
             i = 0
             while i < len(all_testcases_info):
-                if all_testcases_info[i]["automatability"] != "Automated":
+                if all_testcases_info[i]["automatability"] != "Automated" and all_testcases_info[i]["automatability"] != "Performance":
                     CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
                     # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
                     del all_testcases_info[i]
@@ -1726,82 +1843,106 @@ def main(device_dict, user_info_object):
 
                     if performance_test_case:
                         # get performance test info
-                        perf_data = testcase_info["performance data"]
-                        hatch_rate = perf_data["hatch_rate"]
-                        no_of_users = perf_data["no_of_users"]
-                        time_period = perf_data["time_period"]
-
-                        # write locust input file
-                        write_locust_input_file(
-                            time_period,
-                            perf_data,
-                            test_case_no,
-                            sModuleInfo,
-                            run_id,
-                            driver_list,
-                            final_dependency,
-                            final_run_params,
-                            temp_ini_file,
-                            # is_linked,
-                            send_log_file_only_for_fail=send_log_file_only_for_fail,
-                        )
-
-                        # check locust file name
-                        locustFile = "chromeLocustFile.py"
-                        if "Browser" in final_dependency:
-                            if final_dependency["Browser"].lower() == "chrome":
-                                locustFile = "chromeLocustFile.py"
-                            else:
-                                locustFile = "firefoxLocustFile.py"
-                        else:
-                            locustFile = "restLocustFile.py"
-
-                        # get locust file path
-                        locust_file_path = (
-                            os.getcwd()
-                            + os.sep
-                            + "Built_In_Automation"
-                            + os.sep
-                            + "Performance_Testing"
-                            + os.sep
-                            + locustFile
-                        )
-
-                        # make locust query
-                        locustQuery = (
-                                "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
-                                % (locust_file_path, no_of_users, hatch_rate)
-                        )
-
-                        # add log
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
-                            % (test_case_no, no_of_users, hatch_rate, time_period),
-                            1,
-                        )
                         try:
-                            def kill(process):
-                                return process.kill()  # kill process function
-                            process = subprocess.Popen(locustQuery, shell=True)  # locust query process
-                            my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                            perf_data = testcase_info["performance data"]
+                            hatch_rate = perf_data["hatch_rate"]
+                            no_of_users = perf_data["no_of_users"]
+                            time_period = perf_data["time_period"]
+
+                            # write locust input file
+                            write_locust_input_file(
+                                time_period,
+                                perf_data,
+                                test_case_no,
+                                sModuleInfo,
+                                run_id,
+                                driver_list,
+                                final_dependency,
+                                final_run_params,
+                                temp_ini_file,
+                                # is_linked,
+                                send_log_file_only_for_fail=send_log_file_only_for_fail,
+                            )
+
+                            # check locust file name
+                            locustFile = "chromeLocustFile.py"
+                            if "Browser" in final_dependency:
+                                if final_dependency["Browser"].lower() == "chrome":
+                                    locustFile = "chromeLocustFile.py"
+                                else:
+                                    locustFile = "firefoxLocustFile.py"
+                            else:
+                                locustFile = "restLocustFile.py"
+
+                            # get locust file path
+                            locust_file_path = (
+                                os.getcwd()
+                                + os.sep
+                                + "Built_In_Automation"
+                                + os.sep
+                                + "Performance_Testing"
+                                + os.sep
+                                + locustFile
+                            )
+
+                            # make locust query
+                            locustQuery = (
+                                    "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
+                                    % (locust_file_path, no_of_users, hatch_rate)
+                            )
+
+                            # add log
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
+                                % (test_case_no, no_of_users, hatch_rate, time_period),
+                                1,
+                            )
                             try:
-                                my_timer.start()  # start timer
-                                stdout, stderr = process.communicate()  # process communicate
-                            finally:
-                                my_timer.cancel()  # cancel timer
+                                def kill(process):
+                                    return process.kill()  # kill process function
+                                process = subprocess.Popen(locustQuery, shell=True)  # locust query process
+                                my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                                try:
+                                    my_timer.start()  # start timer
+                                    stdout, stderr = process.communicate()  # process communicate
+                                finally:
+                                    my_timer.cancel()  # cancel timer
+                            except Exception as e:
+                                print("exception")
+                                pass
+                            # add log
+                            CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
+                            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                                # upload info
+                                upload_csv_file_info(run_id, test_case_no)
+                            # add log
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Performance Test Results Uploaded Successfully", 1
+                            )
                         except Exception as e:
-                            print("exception")
-                            pass
-                        # add log
-                        CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
-                        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                            # upload info
-                            upload_csv_file_info(run_id, test_case_no)
-                        # add log
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Performance Test Results Uploaded Successfully", 1
-                        )
+                            print(e)
+                            run_test_case(
+                                test_case_no,
+                                sModuleInfo,
+                                run_id,
+                                final_dependency,
+                                final_run_params,
+                                temp_ini_file,
+                                testcase_info,
+                                debug_info,
+                                all_file_specific_steps,
+                                rerun_on_fail,
+                                server_version,
+                                send_log_file_only_for_fail,
+                            )
+                            CommonUtil.clear_all_logs()  # clear logs
+                            if CommonUtil.run_cancel == CANCELLED_TAG:
+                                break
+                            # print("Executed %s test cases" % cnt)
+                            cnt += 1
+
+
                     else:
                         run_test_case(
                             test_case_no,

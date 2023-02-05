@@ -3446,6 +3446,14 @@ def validate_list_order(data_set):
         return "zeuz_failed"
 
 
+def _print(text, dont_send=False):
+    text = str(text)
+    if dont_send: return print(text)
+    sModuleInfo = "execute_python_code" + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, text, 1, print_Execlog=False)
+    print(text)
+
+
 @logger
 def execute_python_code(data_set):
     try:
@@ -3468,34 +3476,14 @@ def execute_python_code(data_set):
                     if Path(path).is_file():
                         if Path(path).parent.__str__() not in sys.path:
                             sys.path.append(Path(path).parent.__str__())
-                        # import importlib
-                        # module = Path(path).name.split(".")[0]
-                        # sr.Set_Shared_Variables(module, importlib.import_module(module))
-            elif left == "input data":
-                inp = right
-            elif left == "output variable":
-                out_var = right.strip()
-            elif left == "main function":
-                main_function = right.strip().split("(")[0]
             elif left == "execute python code":
                 Code = right
 
         Code = filepath_code if filepath_code else Code
+        sr.shared_variables["print"] = _print
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
-
-        if main_function:
-            CommonUtil.ExecLog(sModuleInfo, "This method is deprecated. You can now save any output directly by assigning a variable inside Code", 2)
-            # Todo: deprecated on 15 August, 2022. Remove 4 months later
-            # code = main_function + "(" + inp + ")"
-            # try: out_val = eval(code)
-            # except: return CommonUtil.Exception_Handler(sys.exc_info())
-            # if out_var:
-            #     CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
-            #     return sr.Set_Shared_Variables(out_var, out_val)
-            # CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -5410,7 +5398,7 @@ def disable_step(data_set):
             CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
-            CommonUtil.disabled_step = steps
+            CommonUtil.disabled_step += steps
 
         return "passed"
     except:
@@ -5558,22 +5546,38 @@ def data_store_read(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.replace('and', ',').replace('or', ',').split(',')
-
+                # q = re.sub(r"\band\b",",",q)
+                # q = re.sub(r"\bor\b",",",q)
+                logic=[]
+                for s in q.split(" "):
+                    if s=='and':
+                        logic.append('and')
+                    elif s=='or':
+                        logic.append('or')
+                q = right.strip()
+                q = re.sub(r"\band\b",",",q)
+                q = re.sub(r"\bor\b",",",q)
+                temp= q.split(',')
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = t[1].strip()
+                params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
-                for s in q.split():
-                    if s.lower() == 'and':
+                j=0
+                for s in temp[1:]:
+                    if logic[j] == 'and':
                         t = temp[i].split('=')
-                        params['and_' + t[0].strip()] = t[1].strip()
+                        if 'and_' + t[0].strip() not in params:
+                            params['and_' + t[0].strip()] = [t[1].strip()]
+                        else:params['and_' + t[0].strip()].append(t[1].strip())
                         i+=1
-
-                    if s.lower() == 'or':
+                        j+=1
+                    elif logic[j] == 'or':
                         t = temp[i].split('=')
-                        params['or_'+t[0].strip()] = t[1].strip()
+                        if 'or_' + t[0].strip() not in params:
+                            params['or_' + t[0].strip()] = [t[1].strip()]
+                        else:params['or_' + t[0].strip()].append(t[1].strip())
 
                         i += 1
+                        j+=1
             if mid.strip() == "action":
                 var_name = right.strip()
         headers = RequestFormatter.add_api_key_to_headers({})
@@ -5629,22 +5633,38 @@ def data_store_write(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.replace('and', ',').replace('or', ',').split(',')
-
+                # q = re.sub(r"\band\b",",",q)
+                # q = re.sub(r"\bor\b",",",q)
+                logic=[]
+                for s in q.split(" "):
+                    if s=='and':
+                        logic.append('and')
+                    elif s=='or':
+                        logic.append('or')
+                q = right.strip()
+                q = re.sub(r"\band\b",",",q)
+                q = re.sub(r"\bor\b",",",q)
+                temp= q.split(',')
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = t[1].strip()
+                params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
-                for s in q.split():
-                    if s.lower() == 'and':
+                j=0
+                for s in temp[1:]:
+                    if logic[j] == 'and':
                         t = temp[i].split('=')
-                        params['and_' + t[0].strip()] = t[1].strip()
+                        if 'and_' + t[0].strip() not in params:
+                            params['and_' + t[0].strip()] = [t[1].strip()]
+                        else:params['and_' + t[0].strip()].append(t[1].strip())
                         i+=1
-
-                    if s.lower() == 'or':
+                        j+=1
+                    elif logic[j] == 'or':
                         t = temp[i].split('=')
-                        params['or_'+t[0].strip()] = t[1].strip()
+                        if 'or_' + t[0].strip() not in params:
+                            params['or_' + t[0].strip()] = [t[1].strip()]
+                        else:params['or_' + t[0].strip()].append(t[1].strip())
 
                         i += 1
+                        j+=1
             if left.strip() == 'data':
                 temp = [right.strip()]
                 print(temp)
@@ -5709,7 +5729,8 @@ def data_store_insert(data_set):
                 table_name = right.strip()
                 params['table_name'] = table_name
             if left.strip() == 'data':
-                l = CommonUtil.parse_value_into_object(right.strip())
+                l = ast.literal_eval(right.strip())
+                print(l)
             if mid.strip() == "action":
                 var_name = right.strip()
         data={
