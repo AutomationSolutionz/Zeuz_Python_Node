@@ -123,7 +123,7 @@ step_index = 0
 current_action_no = ""
 current_action_name = ""
 previous_action_name = ""   # It requires for labelling get_performance_metrics. because performance_metrics is called on next action
-current_step_no = ""
+current_step_no = ""    # 1 based index... Caution: this variable is dynamically changed in step loop action
 current_step_name = ""
 current_step_id = None
 current_step_sequence = None
@@ -132,8 +132,12 @@ current_session_name = ""
 custom_step_duration = ""
 run_cancel = ""
 run_cancelled = False
-disabled_step = []
+disabled_step = []  # 1 based indexing
 max_char = 0
+
+# For step looping purpose
+all_step_dataset = []
+all_action_info = []
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
@@ -1095,7 +1099,6 @@ class MachineInfo:
 
 
 def debug_code_error(exc_info):
-    if performance_testing : return
     exc_type, exc_obj, exc_tb = exc_info
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     Error_Detail = (

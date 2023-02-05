@@ -3445,6 +3445,7 @@ def validate_list_order(data_set):
         )
         return "zeuz_failed"
 
+
 def _print(text, dont_send=False):
     text = str(text)
     if dont_send: return print(text)
@@ -3480,12 +3481,8 @@ def execute_python_code(data_set):
 
         Code = filepath_code if filepath_code else Code
         sr.shared_variables["print"] = _print
-        try:
-            exec(Code, sr.shared_variables)
-        except:
-            # traceback.print_exc()
-            return CommonUtil.Exception_Handler(sys.exc_info())
-
+        try: exec(Code, sr.shared_variables)
+        except: return CommonUtil.Exception_Handler(sys.exc_info())
         CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
         return "passed"
     except:
@@ -5401,7 +5398,7 @@ def disable_step(data_set):
             CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
-            CommonUtil.disabled_step = steps
+            CommonUtil.disabled_step += steps
 
         return "passed"
     except:
@@ -5549,22 +5546,38 @@ def data_store_read(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.replace('and', ',').replace('or', ',').split(',')
-
+                # q = re.sub(r"\band\b",",",q)
+                # q = re.sub(r"\bor\b",",",q)
+                logic=[]
+                for s in q.split(" "):
+                    if s=='and':
+                        logic.append('and')
+                    elif s=='or':
+                        logic.append('or')
+                q = right.strip()
+                q = re.sub(r"\band\b",",",q)
+                q = re.sub(r"\bor\b",",",q)
+                temp= q.split(',')
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = t[1].strip()
+                params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
-                for s in q.split():
-                    if s.lower() == 'and':
+                j=0
+                for s in temp[1:]:
+                    if logic[j] == 'and':
                         t = temp[i].split('=')
-                        params['and_' + t[0].strip()] = t[1].strip()
+                        if 'and_' + t[0].strip() not in params:
+                            params['and_' + t[0].strip()] = [t[1].strip()]
+                        else:params['and_' + t[0].strip()].append(t[1].strip())
                         i+=1
-
-                    if s.lower() == 'or':
+                        j+=1
+                    elif logic[j] == 'or':
                         t = temp[i].split('=')
-                        params['or_'+t[0].strip()] = t[1].strip()
+                        if 'or_' + t[0].strip() not in params:
+                            params['or_' + t[0].strip()] = [t[1].strip()]
+                        else:params['or_' + t[0].strip()].append(t[1].strip())
 
                         i += 1
+                        j+=1
             if mid.strip() == "action":
                 var_name = right.strip()
         headers = RequestFormatter.add_api_key_to_headers({})
@@ -5620,22 +5633,38 @@ def data_store_write(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'where':
                 q = right.strip()
-                temp = q.replace('and', ',').replace('or', ',').split(',')
-
+                # q = re.sub(r"\band\b",",",q)
+                # q = re.sub(r"\bor\b",",",q)
+                logic=[]
+                for s in q.split(" "):
+                    if s=='and':
+                        logic.append('and')
+                    elif s=='or':
+                        logic.append('or')
+                q = right.strip()
+                q = re.sub(r"\band\b",",",q)
+                q = re.sub(r"\bor\b",",",q)
+                temp= q.split(',')
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = t[1].strip()
+                params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
-                for s in q.split():
-                    if s.lower() == 'and':
+                j=0
+                for s in temp[1:]:
+                    if logic[j] == 'and':
                         t = temp[i].split('=')
-                        params['and_' + t[0].strip()] = t[1].strip()
+                        if 'and_' + t[0].strip() not in params:
+                            params['and_' + t[0].strip()] = [t[1].strip()]
+                        else:params['and_' + t[0].strip()].append(t[1].strip())
                         i+=1
-
-                    if s.lower() == 'or':
+                        j+=1
+                    elif logic[j] == 'or':
                         t = temp[i].split('=')
-                        params['or_'+t[0].strip()] = t[1].strip()
+                        if 'or_' + t[0].strip() not in params:
+                            params['or_' + t[0].strip()] = [t[1].strip()]
+                        else:params['or_' + t[0].strip()].append(t[1].strip())
 
                         i += 1
+                        j+=1
             if left.strip() == 'data':
                 temp = [right.strip()]
                 print(temp)
@@ -5700,7 +5729,8 @@ def data_store_insert(data_set):
                 table_name = right.strip()
                 params['table_name'] = table_name
             if left.strip() == 'data':
-                l = CommonUtil.parse_value_into_object(right.strip())
+                l = ast.literal_eval(right.strip())
+                print(l)
             if mid.strip() == "action":
                 var_name = right.strip()
         data={
