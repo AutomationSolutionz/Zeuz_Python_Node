@@ -1,0 +1,32 @@
+[
+    {
+        "name": "run_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "tc_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "status",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "runtime",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "errors",
+        "type": "JSON",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "time_stamp",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    }
+]
