@@ -19,9 +19,12 @@ import socket
 import requests
 import psutil
 from pathlib import Path
+from datetime import datetime
 
 sys.path.append("..")
 from selenium import webdriver
+if "linux" in platform.system().lower():
+    from xvfbwrapper import Xvfb
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import IEDriverManager
@@ -81,6 +84,7 @@ current_driver_id = None
 selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
+vdisplay = None
 
 # JavaScript for collecting First Contentful Paint value.
 JS_FCP = '''
@@ -395,27 +399,50 @@ def Open_Electron_App(data_set):
 @logger
 def get_performance_metrics(dataset):
     try:
-        driver_id = ""
+        label = driver_id = ""
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "driverid":
                 driver_id = right.strip()
             elif left == "getperformancemetrics":
                 var_name = right.strip()
+            elif left == "label":
+                label = right.strip()
 
         if not driver_id:
             driver_id = current_driver_id
 
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
-
-        metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-        perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
-        Shared_Resources.Set_Shared_Variables(var_name,perf_json_data)
-        CommonUtil.browser_perf[current_driver_id].append(perf_json_data)
+        # time.sleep(5)
+        perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
+        Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def use_xvfb_or_headless(callback):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    if platform.system() == "Linux":
+        try:
+            global vdisplay
+            vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+            vdisplay.start()
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Failed to initialize xvfb. "
+                "Perhaps xvfb is not installed?\n"
+                "For apt-get: `sudo apt-get install xvfb`\n"
+                "For yum: `sudo yum install xvfb`.\n"
+                "Falling back to headless mode.",
+                2,
+            )
+            callback()
+    else:
+        callback()
 
 
 initial_download_folder = None
@@ -536,10 +563,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
+
             if "chromeheadless" in browser:
-                options.add_argument(
-                    "--headless"
-                )  # Enable headless operation if dependency set
+                def chromeheadless():
+                    options.add_argument(
+                        "--headless"
+                    )
+                use_xvfb_or_headless(chromeheadless)
+
             global initial_download_folder
             initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             prefs = {
@@ -590,7 +621,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.set_capability("browserVersion",remote_browser_version)
 
             if "headless" in browser:
-                options.headless = True
+                def firefoxheadless():
+                    options.headless = True
+                use_xvfb_or_headless(firefoxheadless)
+
             if _platform == "win32":
                 try:
                     import winreg
@@ -667,7 +701,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             capabilities = webdriver.EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
-            options.headless = "headless" in browser
+
+            if "headless" in browser:
+                def edgeheadless():
+                    options.headless = True
+                use_xvfb_or_headless(edgeheadless)
+
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
             if(remote_host):
@@ -866,6 +905,79 @@ def Open_Browser_Wrapper(step_data):
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+@logger
+def Open_Empty_Browser(step_data):
+    """Open Empty Browser.
+
+       Args:
+       data_set:
+       open browser       | selenium action    | open
+
+       Returns:
+       "passed" if browser open is successful.
+       "zeuz_failed" otherwise.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    window_size_X = ConfigModule.get_config_value("", "window_size_x")
+    window_size_Y = ConfigModule.get_config_value("", "window_size_y")
+    # Open browser and create driver if user has not already done so
+    global dependency
+    global selenium_driver
+    global selenium_details
+    global current_driver_id
+
+    if Shared_Resources.Test_Shared_Variables("dependency"):
+        dependency = Shared_Resources.Get_Shared_Variables("dependency")
+    else:
+        raise ValueError("No dependency set - Cannot run")
+
+    try:
+        driver_id = ""
+        for left, mid, right in step_data:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            if left == "driverid":
+                driver_id = right.strip()
+
+        if not driver_id:
+            driver_id = "default"
+
+        browser_map = {
+            "Microsoft Edge Chromium": 'msedge',
+            "Chrome": "chrome",
+            "FireFox": "firefox",
+            "Opera": "opera",
+            "ChromeHeadless": "chrome",
+            "FirefoxHeadless": "firefox",
+            "EdgeChromiumHeadless": "msedge",
+        }
+
+        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+            if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+                Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
+            CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
+            if window_size_X == "None" and window_size_Y == "None":
+                result = Open_Browser(dependency)
+            elif window_size_X == "None":
+                result = Open_Browser(dependency, window_size_Y)
+            elif window_size_Y == "None":
+                result = Open_Browser(dependency, window_size_X)
+            else:
+                result = Open_Browser(dependency, window_size_X, window_size_Y)
+
+            if result == "zeuz_failed":
+                return "zeuz_failed"
+
+            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
+
+        else:
+            selenium_driver = selenium_details[driver_id]["driver"]
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+
+        return "passed"
+    except Exception:
+        ErrorMessage = "failed to open browser"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 @logger
 def Go_To_Link(step_data, page_title=False):
@@ -1003,28 +1115,41 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+    # collect_browser_metrics(current_driver_id, CommonUtil.current_action_name)
+    return "passed"
+
+
+def collect_browser_metrics(driver_id, label):
     # Collect custom performance metrics
     try:
-        if current_driver_id not in CommonUtil.browser_perf and selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-            metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-            metrics_dict = {data["name"]: data["value"] for data in metrics["metrics"]}
+        if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge"):
+            return {}
 
-            # FCP - First Contentful Paint
-            try:
-                metrics_dict["first-contentful-paint"] = selenium_driver.execute_script(JS_FCP)
-            except:
-                metrics_dict["first-contentful-paint"] = 0
+        metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
+        metrics_dict = {}
+        # FCP - First Contentful Paint
+        try: metrics_dict["first_contentful_paint"] = selenium_driver.execute_script(JS_FCP)
+        except: metrics_dict["first_contentful_paint"] = 0
+        # LCP - Largest Contenful Paint
+        try: metrics_dict["largest_contentful_paint"] = selenium_driver.execute_async_script(JS_LCP)
+        except: metrics_dict["largest_contentful_paint"] = 0
+        metrics_dict.update({data["name"]: data["value"] for data in metrics["metrics"]})
 
-            # LCP - Largest Contenful Paint
-            try:
-                metrics_dict["largest-contentful-paint"] = selenium_driver.execute_async_script(JS_LCP)
-            except:
-                metrics_dict["largest-contentful-paint"] = 0
+        # Collect identifying information
+        metrics_dict["label"] = label
+        metrics_dict["tc_id"] = CommonUtil.current_tc_no
+        metrics_dict["step_name"] = CommonUtil.current_step_name
+        metrics_dict["step_sequence"] = CommonUtil.current_step_sequence
+        metrics_dict["step_id"] = CommonUtil.current_step_id
+        metrics_dict["time_stamp"] = CommonUtil.get_timestamp()
 
-            CommonUtil.browser_perf[current_driver_id] = [metrics_dict]
+        if driver_id not in CommonUtil.browser_perf:
+            CommonUtil.browser_perf[driver_id] = [metrics_dict]
+        else:
+            CommonUtil.browser_perf[driver_id].append(metrics_dict)
 
             # CommonUtil.prettify(key="metrics", val=metrics_dict)
-        return "passed"
+        return metrics_dict
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -3502,6 +3627,11 @@ def Tear_Down_Selenium(step_data=[]):
                 Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
                 selenium_driver = None
                 current_driver_id = driver_id
+
+            global vdisplay
+            if vdisplay:
+                 vdisplay.stop()
+                 vdisplay = None
 
         return "passed"
     except Exception:

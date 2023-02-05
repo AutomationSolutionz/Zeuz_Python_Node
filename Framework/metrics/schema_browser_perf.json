@@ -1,0 +1,222 @@
+[
+    {
+        "name": "run_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "tc_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "label",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_sequence",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_id",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "time_stamp",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "AdSubframes",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "ArrayBufferContents",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "AudioHandlers",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "ContextLifecycleStateObservers",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "DetachedScriptStates",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "DevToolsCommandDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "Documents",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "DomContentLoaded",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "FirstMeaningfulPaint",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "Frames",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "JSEventListeners",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "JSHeapTotalSize",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "JSHeapUsedSize",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "LayoutCount",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "LayoutDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "LayoutObjects",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "MediaKeySessions",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "MediaKeys",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "NavigationStart",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "Nodes",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "ProcessTime",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "RTCPeerConnections",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "RecalcStyleCount",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "RecalcStyleDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "ResourceFetchers",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "Resources",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "ScriptDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "TaskDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "TaskOtherDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "ThreadTime",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "Timestamp",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "UACSSResources",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "V8CompileDuration",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "V8PerContextDatas",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "WorkerGlobalScopes",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "first_contentful_paint",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "largest_contentful_paint",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    }
+]
