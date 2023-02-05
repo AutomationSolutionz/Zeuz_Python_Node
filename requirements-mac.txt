@@ -1,5 +1,5 @@
 pip
-psutil
+psutil==5.9.0
 pillow
 pyserial
 colorama
