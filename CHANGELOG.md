@@ -8,6 +8,7 @@
 - **[Add]** Immediate parent support in windows path
 - **[Add]** Add Open Empty Browser Action
 - **[Add]** Fix browserstack issue from node and refactored for appium v2
+- **[Fix]** Fix shell FillNotFoundError on mac real device
 
 ### [16.1.0][Oct 25, 2022]
 - **[Add]** Continue to next iter feature is implemented in For Loop Action
