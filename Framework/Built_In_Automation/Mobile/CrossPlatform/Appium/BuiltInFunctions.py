@@ -3292,7 +3292,7 @@ def get_program_names(search_name):
         # Get activity name
         cmd = "adb %s shell pm dump %s" % (serial, package_name)
         from subprocess import Popen, PIPE, STDOUT
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, encoding="utf-8")
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, encoding="utf-8", shell=True)
         res = ""
         for line in p.stdout:
             res += line.replace("\\r", "").replace("\r", "").replace("\\n", "\n")
