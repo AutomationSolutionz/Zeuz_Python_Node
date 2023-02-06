@@ -3018,13 +3018,13 @@ def Read_text_file(data_set):
 
         if text_file_path.endswith("pdf"):
             pdfFileObj = open(text_file_path, "rb")
-            pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
-            no_of_page = pdfReader.numPages
+            pdfReader = PyPDF2.PdfReader(pdfFileObj)
+            no_of_page = len(pdfReader.pages)
 
             i = 0
             while i < no_of_page:
-                pageObj = pdfReader.getPage(i)
-                var_value += pageObj.extractText()
+                pageObj = pdfReader.pages[i]
+                var_value += pageObj.extract_text()
                 i += 1
         else:
             with open(text_file_path, "r") as file:
