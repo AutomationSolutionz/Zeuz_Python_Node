@@ -84,7 +84,10 @@ def Set_Shared_Variables(
 
             # Good to proceed
             shared_variables[key] = value
-
+        ignore_print_variables = shared_variables.get('disable_value_print')
+        if ignore_print_variables:
+            if key in ignore_print_variables:
+                print_variable = False
         if print_variable:
             if print_raw:
                 try:
