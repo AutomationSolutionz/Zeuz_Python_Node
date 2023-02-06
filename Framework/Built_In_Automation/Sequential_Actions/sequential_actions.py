@@ -1058,7 +1058,7 @@ def Run_Sequential_Actions(
                 except:
                     disable_variable_print = []
                 
-                action_type = [d[-1] for d in data_set if 'action'  in d[1] and d[0] != 'disable showing value']
+                action_type = [d[-1] for d in data_set if 'action' in d[1]]
                 if action_type:
                     if action_type[0] in disable_variable_print:
                         data_set = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in data_set]
