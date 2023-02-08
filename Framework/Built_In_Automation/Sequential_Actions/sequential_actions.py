@@ -1021,12 +1021,6 @@ def Run_Sequential_Actions(
 
         for dataset_cnt in data_set_list:  # For each data set within step data
             data_set = step_data[dataset_cnt]  # Save data set to variable
-
-            if sr.Test_Shared_Variables('disable_value_print'):
-                disable_value_print = sr.Get_Shared_Variables('disable_value_print')
-            else:
-                disable_value_print = []
-
             if test_action_info:
                 Action_name = ": '" + test_action_info[dataset_cnt]["Action name"] + "'"
                 Action_disabled = test_action_info[dataset_cnt]["Action disabled"]
