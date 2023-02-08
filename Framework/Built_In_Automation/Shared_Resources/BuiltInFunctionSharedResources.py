@@ -85,11 +85,18 @@ def Set_Shared_Variables(
             # Good to proceed
             shared_variables[key] = value
 
+        ignore_print_variables = shared_variables.get('disable_value_print')
+        val_to_print = copy.copy(value)
+        if ignore_print_variables:
+            if key in ignore_print_variables:
+                val_to_print = "*****"
+                val_to_print_json = {"*****":"*****"}
+                
         if print_variable:
             if print_raw:
                 try:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Raw variable data: %s" % value, 4,
+                        sModuleInfo, "Raw variable data: %s" % val_to_print, 4,
                     )
                 except:
                     pass
@@ -101,13 +108,13 @@ def Set_Shared_Variables(
                 sModuleInfo, "Saved variable: %s" % key, 1,
                 variable={
                     "key": key,
-                    "val": val
+                    "val": val_to_print
                 }
             )
 
             if pretty:
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, value)
+                CommonUtil.prettify(key, val_to_print_json)
 
         return "passed"
     except:
