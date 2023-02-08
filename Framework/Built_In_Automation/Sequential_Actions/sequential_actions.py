@@ -1059,7 +1059,7 @@ def Run_Sequential_Actions(
                 table.add_column("Sub-field", justify="left", max_width=15)
                 table.add_column("Value", justify="left", max_width=35)
 
-                data_set_to_print = copy.copy(data_set)
+                data_set_to_print = copy.deepcopy(data_set)
                 action_type = [d[-1] for d in data_set_to_print if 'action' in d[1]]
                 if action_type:
                     if action_type[0] in disable_value_print:

@@ -86,7 +86,7 @@ def Set_Shared_Variables(
             shared_variables[key] = value
 
         ignore_print_variables = shared_variables.get('disable_value_print')
-        val_to_print = copy.copy(value)
+        val_to_print = copy.deepcopy(value)
         if ignore_print_variables:
             if key in ignore_print_variables:
                 val_to_print = "*****"
@@ -114,7 +114,7 @@ def Set_Shared_Variables(
 
             if pretty:
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, val_to_print_json)
+                CommonUtil.prettify(key, val_to_print)
 
         return "passed"
     except:
@@ -612,9 +612,16 @@ def parse_variable(name):
             return result
         else:
             val = eval(name, shared_variables)
+            val_to_print = copy.deepcopy(val)
+
+            ignore_printing_vars =shared_variables.get('disable_value_print')
+            if ignore_printing_vars:
+                if name in ignore_printing_vars:
+                    val_to_print = '*****'
+
             # Print to console.
             if not "os.environ" in name:
-                CommonUtil.prettify(copy_of_name, val)
+                CommonUtil.prettify(copy_of_name, val_to_print)
             return generate_zeuz_code_if_not_json_obj(val)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
