@@ -1361,7 +1361,7 @@ def Enter_Text_In_Text_Box(step_data):
             except:  # sometimes text field can be unclickable after entering text
                 pass
         
-        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % Shared_Resources.Hide_Secretive_Text(text_value), 1)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % Shared_Resources.Hide_Secretive_Text(text_value=text_value,text_type='text'), 1)
         return "passed"
     except Exception:
         errMsg = "Could not select/click your element."

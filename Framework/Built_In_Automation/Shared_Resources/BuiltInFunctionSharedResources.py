@@ -90,7 +90,6 @@ def Set_Shared_Variables(
         if ignore_print_variables:
             if key in ignore_print_variables:
                 val_to_print = "*****"
-                val_to_print_json = {"*****":"*****"}
                 
         if print_variable:
             if print_raw:
@@ -1459,11 +1458,21 @@ def generate_datetime_format(string):
         )
         return "%Y-%m-%d"
 
-def Hide_Secretive_Text(text_value):
+def Hide_Secretive_Text(text_value,text_type):
+
+    # Hide from value
     ignore_print_variables = shared_variables.get('disable_value_print')
-    for ignore_print_variable in ignore_print_variables:
-        ignore_print_value = shared_variables.get(ignore_print_variable)
-        if ignore_print_value:
-            if text_value in ignore_print_value:
-                text_value = '*****'
+    if ignore_print_variables:
+        if text_type=='text':
+            for ignore_print_variable in ignore_print_variables:
+                ignore_print_value = shared_variables.get(ignore_print_variable)
+                if ignore_print_value:
+                    if text_value in ignore_print_value:
+                        text_value = '*****'
+        if text_type=='dataset':
+            action_type = [d[-1] for d in text_value if 'action' in d[1]]
+            if action_type:
+                if action_type[0] in ignore_print_variables:
+                    text_value = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in text_value]
+    
     return text_value
