@@ -86,7 +86,7 @@ def Set_Shared_Variables(
             shared_variables[key] = value
 
         ignore_print_variables = shared_variables.get('disable_value_print')
-        val_to_print = copy.deepcopy(value)
+        val_to_print = copy.copy(value)
         if ignore_print_variables:
             if key in ignore_print_variables:
                 val_to_print = "*****"
@@ -1458,3 +1458,12 @@ def generate_datetime_format(string):
             2,
         )
         return "%Y-%m-%d"
+
+def Hide_Secretive_Text(text_value):
+    ignore_print_variables = shared_variables.get('disable_value_print')
+    for ignore_print_variable in ignore_print_variables:
+        ignore_print_value = shared_variables.get(ignore_print_variable)
+        if ignore_print_value:
+            if text_value in ignore_print_value:
+                text_value = '*****'
+    return text_value
