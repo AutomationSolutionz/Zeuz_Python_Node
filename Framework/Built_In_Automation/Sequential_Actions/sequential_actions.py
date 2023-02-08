@@ -1021,6 +1021,12 @@ def Run_Sequential_Actions(
 
         for dataset_cnt in data_set_list:  # For each data set within step data
             data_set = step_data[dataset_cnt]  # Save data set to variable
+
+            if sr.Test_Shared_Variables('disable_value_print'):
+                disable_value_print = sr.Get_Shared_Variables('disable_value_print')
+            else:
+                disable_value_print = []
+
             if test_action_info:
                 Action_name = ": '" + test_action_info[dataset_cnt]["Action name"] + "'"
                 Action_disabled = test_action_info[dataset_cnt]["Action disabled"]
@@ -1052,7 +1058,14 @@ def Run_Sequential_Actions(
                 table.add_column("Field", justify="left", max_width=20)
                 table.add_column("Sub-field", justify="left", max_width=15)
                 table.add_column("Value", justify="left", max_width=35)
-                for row in data_set:
+
+                data_set_to_print = copy.copy(data_set)
+                action_type = [d[-1] for d in data_set_to_print if 'action' in d[1]]
+                if action_type:
+                    if action_type[0] in disable_value_print:
+                        data_set_to_print = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in data_set_to_print] # Replace secret variables with *
+                
+                for row in data_set_to_print:
                     table.add_row(*row, style=_color)
                 print()
                 rich_print(table)
