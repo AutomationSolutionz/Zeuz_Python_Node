@@ -1258,7 +1258,7 @@ def save_screenshot(driver, path):
     driver.set_window_size(required_width, required_height)
     time.sleep(2)
     # driver.save_screenshot(path)  # has scrollbar
-    driver.find_element_by_tag_name("body").screenshot(path)  # avoids scrollbar
+    driver.find_element("xpath","//body").screenshot(path)  # avoids scrollbar
     time.sleep(2)
     driver.set_window_size(original_size["width"], original_size["height"])
 
