@@ -504,6 +504,8 @@ def generate_zeuz_code_if_not_json_obj(val):
         CommonUtil.ZeuZ_map_code[code] = val
         return code
 
+def Extract_Variable_Name(text):
+    return text.split('%|')[-1].split('|%')[0].split('.')[0].split(')')[0].split('(')[-1]
 
 def parse_variable(name):
     """Parses a given variable and returns its value.
@@ -615,7 +617,7 @@ def parse_variable(name):
 
             ignore_printing_vars =shared_variables.get('disable_value_print')
             if ignore_printing_vars:
-                if name in ignore_printing_vars:
+                if Extract_Variable_Name(name) in ignore_printing_vars:
                     val_to_print = '*****'
 
             # Print to console.
@@ -1479,7 +1481,7 @@ def Hide_Secretive_Text(text_value,text_type):
                 for row in text_value:
                     for cell in row:
                         if '%|' in cell and '|%' in cell:
-                            variable_name = cell.split('%|')[-1].split('|%')[0].split('.')[0].split(')')[0].split('(')[-1]
+                            variable_name = Extract_Variable_Name(cell)
                             if variable_name in ignore_print_variables:
                                 text_value = [('*****','dataset is hidden','*****')] 
                                 break
