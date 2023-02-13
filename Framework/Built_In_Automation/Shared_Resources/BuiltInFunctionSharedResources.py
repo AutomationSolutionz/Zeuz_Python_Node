@@ -1470,9 +1470,18 @@ def Hide_Secretive_Text(text_value,text_type):
                     if text_value in ignore_print_value:
                         text_value = '*****'
         if text_type=='dataset':
-            action_type = [d[-1] for d in text_value if 'action' in d[1]]
-            if action_type:
-                if action_type[0] in ignore_print_variables:
+            if 'save into variable' in [v[0] for v in text_value]: # Save into variable action
+                variable_name = [v[-1] for v in text_value if v[0] == 'save into variable'][0]
+                if variable_name in ignore_print_variables:
                     text_value = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in text_value]
-    
+            else: # All other actions
+                all_cells =[]
+                for row in text_value:
+                    for cell in row:
+                        if '%|' in cell and '|%' in cell:
+                            variable_name = cell.split('%|')[-1].split('|%')[0].split('.')[0].split(')')[0].split('(')[-1]
+                            if variable_name in ignore_print_variables:
+                                text_value = [('*****','dataset is hidden','*****')] 
+                                break
+          
     return text_value
