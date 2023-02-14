@@ -84,18 +84,12 @@ def Set_Shared_Variables(
 
             # Good to proceed
             shared_variables[key] = value
-
-        ignore_print_variables = shared_variables.get('disable_value_print')
-        val_to_print = copy.copy(value)
-        if ignore_print_variables:
-            if key in ignore_print_variables:
-                val_to_print = "*****"
-                
+           
         if print_variable:
             if print_raw:
                 try:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Raw variable data: %s" % val_to_print, 4,
+                        sModuleInfo, "Raw variable data: %s" % value, 4,
                     )
                 except:
                     pass
@@ -107,13 +101,13 @@ def Set_Shared_Variables(
                 sModuleInfo, "Saved variable: %s" % key, 1,
                 variable={
                     "key": key,
-                    "val": val_to_print
+                    "val": val
                 }
             )
 
             if pretty:
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, val_to_print)
+                CommonUtil.prettify(key, value)
 
         return "passed"
     except:
@@ -503,9 +497,7 @@ def generate_zeuz_code_if_not_json_obj(val):
                 break
         CommonUtil.ZeuZ_map_code[code] = val
         return code
-
-def Extract_Variable_Name(text):
-    return text.split('%|')[-1].split('|%')[0].split('.')[0].split(')')[0].split('(')[-1]
+        
 
 def parse_variable(name):
     """Parses a given variable and returns its value.
@@ -615,9 +607,8 @@ def parse_variable(name):
             val = eval(name, shared_variables)
             val_to_print = copy.deepcopy(val)
 
-            ignore_printing_vars =shared_variables.get('disable_value_print')
-            if ignore_printing_vars:
-                if Extract_Variable_Name(name) in ignore_printing_vars:
+            for each_var in CommonUtil.zeuz_disable_var_print:
+                if each_var in name:
                     val_to_print = '*****'
 
             # Print to console.
@@ -1463,10 +1454,10 @@ def generate_datetime_format(string):
 def Hide_Secretive_Text(text_value,text_type):
 
     # Hide from value
-    ignore_print_variables = shared_variables.get('disable_value_print')
-    if ignore_print_variables:
+    zeuz_disable_var_print = CommonUtil.zeuz_disable_var_print
+    if zeuz_disable_var_print:
         if text_type=='text':
-            for ignore_print_variable in ignore_print_variables:
+            for ignore_print_variable in zeuz_disable_var_print:
                 ignore_print_value = shared_variables.get(ignore_print_variable)
                 if ignore_print_value:
                     if text_value in ignore_print_value:
@@ -1474,13 +1465,13 @@ def Hide_Secretive_Text(text_value,text_type):
         if text_type=='dataset':
             if 'save into variable' in [v[0] for v in text_value]: # Save into variable action
                 variable_name = [v[-1] for v in text_value if v[0] == 'save into variable'][0]
-                if variable_name in ignore_print_variables:
+                if variable_name in zeuz_disable_var_print:
                     text_value = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in text_value]
             else: # All other actions
                 all_cells =[]
                 for row in text_value:
                     for cell in row:
-                        for each_var in ignore_print_variables:
+                        for each_var in zeuz_disable_var_print:
                             if each_var in cell:
                                 text_value = [('*****','dataset is hidden','*****')] 
                                 break

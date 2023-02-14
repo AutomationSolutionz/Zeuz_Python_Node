@@ -149,6 +149,7 @@ step_perf = []
 test_case_perf = []
 perf_test_perf = []
 
+zeuz_disable_var_print = []
 
 def clear_performance_metrics():
     """reset everything to initial value"""

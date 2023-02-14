@@ -5374,13 +5374,13 @@ def disable_showing_value(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        disable_print_variables = []
+        zeuz_disable_var_print = []
         for left, middle, right in data_set:
             left = left.lower().strip()
             if left == "disable showing value":
-                disable_print_variables = right.split(",")
-                disable_print_variables = [v.strip() for v in disable_print_variables]
-            return sr.Set_Shared_Variables("disable_value_print", disable_print_variables)
+                zeuz_disable_var_print = right.split(",")
+                zeuz_disable_var_print = [v.strip() for v in zeuz_disable_var_print]
+                CommonUtil.zeuz_disable_var_print = zeuz_disable_var_print
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
