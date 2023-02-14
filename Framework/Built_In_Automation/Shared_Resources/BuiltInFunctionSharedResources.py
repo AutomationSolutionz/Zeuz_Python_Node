@@ -1480,9 +1480,8 @@ def Hide_Secretive_Text(text_value,text_type):
                 all_cells =[]
                 for row in text_value:
                     for cell in row:
-                        if '%|' in cell and '|%' in cell:
-                            variable_name = Extract_Variable_Name(cell)
-                            if variable_name in ignore_print_variables:
+                        for each_var in ignore_print_variables:
+                            if each_var in cell:
                                 text_value = [('*****','dataset is hidden','*****')] 
                                 break
           
