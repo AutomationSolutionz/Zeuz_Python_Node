@@ -893,6 +893,21 @@ def Compare_Lists_or_Dicts(data_set):
     return sr.Compare_Lists_or_Dicts([data_set])
 
 
+def sanitize_json_dataset(data, ignore_keys, map_keys):
+    if type(data) in (list, tuple):
+        for d in data:
+            sanitize_json_dataset(d, ignore_keys, map_keys)
+    elif type(data) == dict:
+        for key in list(data.keys()):
+            if key in ignore_keys: del data[key]
+            elif key in map_keys:
+                data[map_keys[key]] = data[key]
+                sanitize_json_dataset(data[key], ignore_keys, map_keys)
+            else:
+                sanitize_json_dataset(data[key], ignore_keys, map_keys)
+    return data
+
+
 nested, datatype1, datatype2 = False, "", ""
 
 
@@ -915,6 +930,8 @@ def New_Compare_Variables(step_data):
         match_by_index = False
         check_exclusion = False
         check_subset = False
+        compare_json = False; ignore_keys = []; map_keys = {}
+        ignore_string_case = False; ignore_numeric_type_changes = False
         global nested, datatype1, datatype2
         nested, datatype1, datatype2 = False, "", ""
 
@@ -924,15 +941,25 @@ def New_Compare_Variables(step_data):
                 list1_name = left
                 list2_name = right
             elif "action" in mid:
-                action_type = right.strip().lower()
-                if action_type == "exact match":
+                action_type = right.replace(" ", "").replace("_", "").lower()
+                if action_type == "exactmatch":
                     match_by_index = True
-                if action_type == "ignore list order":
+                if "ignorelistorder" in action_type:
                     match_by_index = False
                 # if action_type.startswith("ignore extra items"):  # Check exclusion is turned off. will turn on in future if needed
                 #     check_exclusion = True
                 if action_type == "subset":
                     check_subset = True
+                if "json" in action_type:
+                    compare_json = True
+                if "ignorenumerictypechanges" in action_type:
+                    ignore_numeric_type_changes = True
+                if "ignorestringcase" in action_type:
+                    ignore_string_case = True
+            elif left.replace(" ", "").replace("_", "").lower() == "ignorekeys":
+                ignore_keys = CommonUtil.parse_value_into_object(right.strip())
+            elif left.replace(" ", "").replace("_", "").lower() == "mapkeys":
+                map_keys = CommonUtil.parse_value_into_object(right.strip())
 
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
@@ -944,6 +971,37 @@ def New_Compare_Variables(step_data):
 
         datatype1 = get_datatype(list1)
         datatype2 = get_datatype(list2)
+
+        if compare_json:
+            from deepdiff import DeepDiff
+            # https://github.com/seperman/deepdiff
+            # https://zepworks.com/deepdiff/6.2.3/diff.html
+            temp_d = dict()
+            for key in map_keys:
+                temp_d[key] = map_keys[key]
+                temp_d[map_keys[key]] = key
+            map_keys = temp_d
+            slist1 = sanitize_json_dataset(list1, ignore_keys, map_keys)
+            slist2 = sanitize_json_dataset(list2, ignore_keys, map_keys)
+
+            diff12 = DeepDiff(
+                slist1,
+                slist2,
+                ignore_order=not match_by_index,
+                ignore_string_case=ignore_string_case,
+                ignore_numeric_type_changes=ignore_numeric_type_changes,
+            )
+            CommonUtil.ExecLog(sModuleInfo, str(diff12), 1)
+
+            diff21 = DeepDiff(
+                slist2,
+                slist1,
+                ignore_order=not match_by_index,
+                ignore_string_case=ignore_string_case,
+                ignore_numeric_type_changes=ignore_numeric_type_changes,
+            )
+            CommonUtil.ExecLog(sModuleInfo, str(diff21), 1)
+            return "passed"
 
         if check_subset:
             list1 = CommonUtil.parse_value_into_object(list1_name)
