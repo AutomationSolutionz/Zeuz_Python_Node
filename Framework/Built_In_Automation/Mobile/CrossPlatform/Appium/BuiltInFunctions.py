@@ -2539,7 +2539,7 @@ def Enter_Text_Appium(data_set):
             )  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Successfully set the value of to text",
+                "Successfully set the value of to text to: %s" % text_value,
                 1,
             )
             if context_switched == True:
