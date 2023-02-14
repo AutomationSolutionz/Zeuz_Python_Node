@@ -607,9 +607,10 @@ def parse_variable(name):
             val = eval(name, shared_variables)
             val_to_print = copy.deepcopy(val)
 
-            for each_var in CommonUtil.zeuz_disable_var_print:
+            for each_var in CommonUtil.zeuz_disable_var_print.keys():
                 if each_var in name:
                     val_to_print = '*****'
+                    break
 
             # Print to console.
             if not "os.environ" in name:
@@ -1451,29 +1452,19 @@ def generate_datetime_format(string):
         )
         return "%Y-%m-%d"
 
-def Hide_Secretive_Text(text_value,text_type):
-
-    # Hide from value
+def Hide_Secretive_Text(text_value):
     zeuz_disable_var_print = CommonUtil.zeuz_disable_var_print
-    if zeuz_disable_var_print:
-        if text_type=='text':
-            for ignore_print_variable in zeuz_disable_var_print:
-                ignore_print_value = shared_variables.get(ignore_print_variable)
-                if ignore_print_value:
-                    if text_value in ignore_print_value:
-                        text_value = '*****'
-        if text_type=='dataset':
-            if 'save into variable' in [v[0] for v in text_value]: # Save into variable action
-                variable_name = [v[-1] for v in text_value if v[0] == 'save into variable'][0]
-                if variable_name in zeuz_disable_var_print:
-                    text_value = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in text_value]
-            else: # All other actions
-                all_cells =[]
-                for row in text_value:
-                    for cell in row:
-                        for each_var in zeuz_disable_var_print:
-                            if each_var in cell:
-                                text_value = [('*****','dataset is hidden','*****')] 
-                                break
+    if 'save into variable' in [v[0] for v in text_value]: # Save into variable action
+        variable_name = [v[-1] for v in text_value if v[0] == 'save into variable'][0]
+        if variable_name in zeuz_disable_var_print.keys():
+            text_value = [(d[0],d[1],d[2]) if d[0] != 'data' else (d[0],d[1],"*****")for d in text_value]
+    else: # All other actions
+        all_cells =[]
+        for row in text_value:
+            for cell in row:
+                for each_var in zeuz_disable_var_print:
+                    if each_var in cell:
+                        text_value = [('*****','dataset is hidden','*****')] 
+                        break
           
     return text_value

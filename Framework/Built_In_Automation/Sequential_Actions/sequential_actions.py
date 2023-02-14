@@ -1053,7 +1053,7 @@ def Run_Sequential_Actions(
                 table.add_column("Sub-field", justify="left", max_width=15)
                 table.add_column("Value", justify="left", max_width=35)
 
-                data_set_to_print = sr.Hide_Secretive_Text(text_value=data_set,text_type='dataset')
+                data_set_to_print = sr.Hide_Secretive_Text(text_value=data_set)
                 for row in data_set_to_print:
                     table.add_row(*row, style=_color)
                 print()

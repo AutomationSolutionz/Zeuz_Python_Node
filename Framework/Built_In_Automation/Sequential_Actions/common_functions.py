@@ -815,6 +815,9 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         sr.Set_Shared_Variables(variable_name, variable_value)
+        if variable_name in CommonUtil.zeuz_disable_var_print.keys():
+            CommonUtil.zeuz_disable_var_print[variable_name] = variable_value
+
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -5380,7 +5383,13 @@ def disable_showing_value(data_set):
             if left == "disable showing value":
                 zeuz_disable_var_print = right.split(",")
                 zeuz_disable_var_print = [v.strip() for v in zeuz_disable_var_print]
-                CommonUtil.zeuz_disable_var_print = zeuz_disable_var_print
+                hidden_var = dict()
+                for each_var in zeuz_disable_var_print:
+                    if sr.Test_Shared_Variables(each_var):
+                        hidden_var[each_var] = sr.Get_Shared_Variables(each_var)
+                    else:
+                        hidden_var[each_var] = None
+                CommonUtil.zeuz_disable_var_print = hidden_var
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
