@@ -205,7 +205,7 @@ def Enter_Text(data_set):
 
         # Enter text
         gui.typewrite(text_value)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
         return "passed"
 
     except Exception:

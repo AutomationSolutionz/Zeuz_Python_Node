@@ -2565,7 +2565,7 @@ def Enter_Text_Appium(data_set):
             Element.set_value(text_value)  # Enter the user specified text
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Successfully set the value of to text"
+                "Successfully set the value of to text to: %s" % text_value,
                 1,
             )
             if context_switched == True:
@@ -2647,7 +2647,7 @@ def Pickerwheel_Appium(data_set):
                 # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Successfully set the value of to text",
+                    "Successfully set the value of to text to: %s" % text_value,
                     1,
                 )
                 return "passed"
@@ -2801,7 +2801,7 @@ def Clear_And_Enter_Text_Appium(data_set):
             try:
                 # appium_driver.hide_keyboard() # Remove keyboard
                 # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text", 1)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
                 return "passed"
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
