@@ -5374,14 +5374,12 @@ def disable_showing_value(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        disable_print = False
         disable_print_variables = []
         for left, middle, right in data_set:
-            disable_print_variables = right.split(",")
-            disable_print_variables = [v.strip() for v in disable_print_variables]
             left = left.lower().strip()
             if left == "disable showing value":
-                disable_print = True
+                disable_print_variables = right.split(",")
+                disable_print_variables = [v.strip() for v in disable_print_variables]
             return sr.Set_Shared_Variables("disable_value_print", disable_print_variables)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
