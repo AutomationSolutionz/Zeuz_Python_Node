@@ -815,9 +815,6 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         sr.Set_Shared_Variables(variable_name, variable_value)
-        if variable_name in CommonUtil.zeuz_disable_var_print.keys():
-            CommonUtil.zeuz_disable_var_print[variable_name] = variable_value
-
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -5369,11 +5366,10 @@ def search_text_and_font(data_set):
 @logger
 def disable_showing_value(data_set):
     """
-    This action will disable some steps
+    This action will prevent to show log of declared variables
     Example 1:
     Field                        Sub Field              Value
-    steps                        input parameter        1,2,3-6
-    disable step                 common action          disable step
+    disable showing value step   common action          ['variables_to_hide1','variables_to_hide2]
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:

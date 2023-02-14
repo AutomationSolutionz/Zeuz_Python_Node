@@ -84,7 +84,8 @@ def Set_Shared_Variables(
 
             # Good to proceed
             shared_variables[key] = value
-           
+            if key in CommonUtil.zeuz_disable_var_print.keys():
+                CommonUtil.zeuz_disable_var_print[key] = value
         if print_variable:
             if print_raw:
                 try:
@@ -496,8 +497,7 @@ def generate_zeuz_code_if_not_json_obj(val):
             if code not in CommonUtil.ZeuZ_map_code:
                 break
         CommonUtil.ZeuZ_map_code[code] = val
-        return code
-        
+        return code 
 
 def parse_variable(name):
     """Parses a given variable and returns its value.
