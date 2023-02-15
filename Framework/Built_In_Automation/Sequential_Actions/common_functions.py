@@ -925,7 +925,7 @@ def New_Compare_Variables(step_data):
         taken = []
         list1_name = ""
         list2_name = ""
-        Left = "Left"; Right = "Right"
+        Left = CommonUtil.compare_action_varnames["left"]; Right = CommonUtil.compare_action_varnames["right"]
         ignore_extra = True
         both_list = False
         match_by_index = False
@@ -1009,8 +1009,8 @@ def New_Compare_Variables(step_data):
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, f"{Left} ({datatype1}):\n{list1_str}\n\n{Right} ({datatype2}):\n{list2_str}", 3)
-                if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{json.dumps(diff12, indent=2)}", 3)
                 if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left }:\n{json.dumps(diff21, indent=2)}", 3)
+                if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{json.dumps(diff12, indent=2)}", 3)
                 return "zeuz_failed"
 
         if check_subset:

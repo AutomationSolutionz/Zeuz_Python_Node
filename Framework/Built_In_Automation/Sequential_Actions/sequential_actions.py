@@ -2174,6 +2174,22 @@ def bypass_bug(*args,):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Bypass action failed, however continuing")
 
 
+def compare_variable_names(set, dataset):
+    if set:
+        for left, mid, right in dataset:
+            m = mid.strip().lower()
+            if m in ("compare", "element parameter"):
+                l = left.strip()
+                r = right.strip()
+                if l.startswith("%|") and l.endswith("|%"):
+                    CommonUtil.compare_action_varnames["left"] = l[2:-2]
+                if r.startswith("%|") and r.endswith("|%"):
+                    CommonUtil.compare_action_varnames["right"] = r[2:-2]
+                return
+    else:
+        CommonUtil.compare_action_varnames = {"left": "Left", "right": "Right"}
+
+
 def Action_Handler(_data_set, action_row, _bypass_bug=True):
     """ Finds the appropriate function for the requested action in the step data and executes it """
 
@@ -2265,6 +2281,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
 
     # Convert shared variables to their string equivalent
     # if action_name not in skip_conversion_of_shared_variable_for_actions:
+    compare_variable_names(True, data_set)
     data_set = common.shared_variable_to_value(data_set)
     if data_set in failed_tag_list:
         return "zeuz_failed"
@@ -2291,6 +2308,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             "time_stamp": CommonUtil.get_timestamp(),
 
         })
+        compare_variable_names(False, [])
         if performance_action.zeuz_cycle != -1:
             CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
         CommonUtil.TakeScreenShot(function)
