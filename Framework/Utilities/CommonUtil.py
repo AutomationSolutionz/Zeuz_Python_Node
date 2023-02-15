@@ -238,7 +238,7 @@ def prettify(key, val):
     """Tries to pretty print the given value."""
     for each_var in zeuz_disable_var_print.keys():
         if each_var != None:
-            if key in each_var:
+            if each_var in key:
                 return
     if performance_testing:
         return
