@@ -53,6 +53,7 @@ action_support = (
     "dst element parameter", "dst parent parameter", "dst sibling parameter", "dst child parameter",
     "destination element parameter", "destination parent parameter", "destination sibling parameter", "destination child parameter",
     "optional parameter",
+    "optional label",
     "iframe parameter",
     "frame parameter",
     "method",
