@@ -3513,12 +3513,13 @@ def validate_list_order(data_set):
         return "zeuz_failed"
 
 
-def _print(text, dont_send=False):
-    text = str(text)
-    if dont_send: return print(text)
+def _print(*args, sep=' ', end='\n', file=None, dont_send=False):
+    if dont_send:
+        return print(*args, sep=sep, end=end, file=file)
+
     sModuleInfo = "execute_python_code" + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, text, 1, print_Execlog=False)
-    print(text)
+    CommonUtil.ExecLog(sModuleInfo, sep.join([str(i) for i in args])+end, 1, print_Execlog=False)
+    print(*args, sep=sep, end=end, file=file)
 
 
 @logger
