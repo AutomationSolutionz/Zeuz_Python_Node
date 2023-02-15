@@ -1074,7 +1074,22 @@ def New_Compare_Variables(step_data):
                     print("invalid from check exclusion")
             elif not match_by_index:
                 if nested and results == "not found":
+                    from deepdiff import DeepDiff
                     CommonUtil.ExecLog(sModuleInfo, f"{Left} ({datatype1}):\n{list1_str}\n\n{Right} ({datatype2}):\n{list2_str}", 3)
+                    diff12 = DeepDiff(
+                        list1,
+                        list2,
+                        ignore_order=not match_by_index,
+                        ignore_string_case=not match_by_index,
+                    )
+                    diff21 = DeepDiff(
+                        list2,
+                        list1,
+                        ignore_order=not match_by_index,
+                        ignore_string_case=not match_by_index,
+                    )
+                    if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{json.dumps(diff21, indent=2)}", 3)
+                    if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{json.dumps(diff12, indent=2)}", 3)
                     CommonUtil.ExecLog(sModuleInfo, f"All items of {Left} list and {Right} list did not match", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
