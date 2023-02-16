@@ -4776,6 +4776,12 @@ def multiple_check_uncheck(data_set):
 
 @logger
 def resize_window(step_data):
+    """Action to resize window size"""
+    """
+    width          element parameter   50%
+    height         element parameter   70%
+    resize window  selenium action     resize window
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
