@@ -4790,10 +4790,10 @@ def resize_window(step_data):
                         right = right.replace('%','').strip()
                         try:
                             right = float(right)
+                            window_size[dim] = window_size[dim] * right/100
                         except:
                             CommonUtil.ExecLog(sModuleInfo, f"Enter valid size for {dim}", 3)
                             return CommonUtil.Exception_Handler(sys.exc_info())
-                    window_size[dim] = window_size[dim] * right/100
         selenium_driver.set_window_size(window_size['width'],window_size['height'])
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error resizing window")
