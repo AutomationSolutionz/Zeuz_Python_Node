@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Resize selenium window action
 - **[Add]** Prevent printing specified variables
 - **[Add]** Added -spu or --stop_pip_auto_update to disable auto python module update
 - **[Add]** Immediate parent support in windows path
