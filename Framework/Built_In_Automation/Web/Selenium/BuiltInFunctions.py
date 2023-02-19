@@ -1534,18 +1534,22 @@ def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.web
     # else:
     log_flag = True
     log_flag2 = True
+    first = True
     start = time.perf_counter()
     stale_i = 0
     while True:
         try:
             Element.click()
-            CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
+            if not first:
+                CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
             return Element
         except ElementClickInterceptedException:
+            first = False
             if log_flag:
                 CommonUtil.ExecLog(sModuleInfo, "Click is Intercepted. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
                 log_flag = False
         except StaleElementReferenceException:
+            first = False
             if log_flag2:
                 CommonUtil.ExecLog(sModuleInfo, "Element is stale. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
                 log_flag2 = False

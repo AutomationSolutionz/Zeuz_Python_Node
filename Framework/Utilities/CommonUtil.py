@@ -134,6 +134,7 @@ run_cancel = ""
 run_cancelled = False
 disabled_step = []  # 1 based indexing
 max_char = 0
+compare_action_varnames = {"left":"Left", "right":"Right"}    # for labelling left and right variable names of compare action
 
 # For step looping purpose
 all_step_dataset = []

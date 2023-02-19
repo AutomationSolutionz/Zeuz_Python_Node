@@ -5,6 +5,7 @@
 
 ### [Current changes]
 - **[Add]** Prevent printing specified variables
+- **[Add]** Rest response comparison feature added into compare data action
 - **[Add]** Added -spu or --stop_pip_auto_update to disable auto python module update
 - **[Add]** Immediate parent support in windows path
 - **[Add]** Add Open Empty Browser Action

@@ -341,14 +341,16 @@ def create_path(index_trace: dict, element, window_cond=False):
             s_name = 'name="%s"' % NameE
     else:
         s_name = 'name="%s"' % NameE
+
+    s = 'automationid="%s"' % AutomationE
+    if AutomationE and s not in index_trace:
+        return s + ">" + "\n" if new_line else ""
+
     if NameE and s_name not in index_trace:
         return s_name + ">" + "\n" if new_line else ""
     s_name_control = 'name="%s",control="%s"' % (NameE, LocalizedControlTypeE)
     if NameE and LocalizedControlTypeE and s_name_control not in index_trace:
         return s_name_control + ">" + "\n" if new_line else ""
-    s = 'automationid="%s"' % AutomationE
-    if AutomationE and s not in index_trace:
-        return s + ">" + "\n" if new_line else ""
     s_class = 'class="%s"' % ClassE
     if ClassE and s_class not in index_trace:
         return s_class + ">" + "\n" if new_line else ""
