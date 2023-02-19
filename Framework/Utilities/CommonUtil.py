@@ -150,6 +150,7 @@ step_perf = []
 test_case_perf = []
 perf_test_perf = []
 
+zeuz_disable_var_print = {}
 
 def clear_performance_metrics():
     """reset everything to initial value"""
@@ -236,6 +237,10 @@ dont_prettify_on_server = ["step_data"]
 
 def prettify(key, val):
     """Tries to pretty print the given value."""
+    for each_var in zeuz_disable_var_print.keys():
+        if each_var != None:
+            if each_var in key:
+                return
     if performance_testing:
         return
     color = Fore.MAGENTA
@@ -496,6 +501,11 @@ def ExecLog(
         return
     if load_testing and not force_write:
         return
+
+    for val in zeuz_disable_var_print.values():
+        if val != None:
+            if str(val).lower() in sDetails.lower():
+                return
 
     if not print_execlog: return    # For bypass_bug() function dont print logs
 

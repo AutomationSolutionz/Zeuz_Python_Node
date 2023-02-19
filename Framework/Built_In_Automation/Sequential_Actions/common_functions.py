@@ -5471,6 +5471,31 @@ def search_text_and_font(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def disable_showing_value(data_set):
+    """
+    This action will prevent to show log of declared variables
+    Example 1:
+    Field                        Sub Field              Value
+    disable showing value step   common action          ['variables_to_hide1','variables_to_hide2]
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        zeuz_disable_var_print = []
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            if left == "disable showing value":
+                zeuz_disable_var_print = right.split(",")
+                zeuz_disable_var_print = [v.strip() for v in zeuz_disable_var_print]
+                hidden_var = dict()
+                for each_var in zeuz_disable_var_print:
+                    if sr.Test_Shared_Variables(each_var):
+                        hidden_var[each_var] = sr.Get_Shared_Variables(each_var)
+                    else:
+                        hidden_var[each_var] = None
+                CommonUtil.zeuz_disable_var_print = hidden_var
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
 def disable_step(data_set):
