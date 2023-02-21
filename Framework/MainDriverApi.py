@@ -952,7 +952,6 @@ def run_test_case(
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
-        shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
         if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
             shared.Set_Shared_Variables("zeuz_prettify_limit", None)
             CommonUtil.prettify_limit = None
@@ -1773,6 +1772,9 @@ def main(device_dict, user_info_object):
             final_dependency = run_id_info["dependency_list"]
             shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
 
+            if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
+                shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+
             final_run_params = {}
             for param in final_run_params_from_server:
                 # TODO: This needs to be changed to use the new key/value format
@@ -1792,7 +1794,6 @@ def main(device_dict, user_info_object):
             rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
             rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
-            shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
             global_attachment = GlobalAttachment()
             shared.Set_Shared_Variables("global_attachments", global_attachment)
 
