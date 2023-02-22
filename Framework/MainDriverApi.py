@@ -1559,6 +1559,7 @@ def main(device_dict, user_info_object):
                 cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)
+
             device_order = run_id_info["device_info"]
             final_dependency = run_id_info["dependency_list"]
             # is_linked = run_id_info["is_linked"]
