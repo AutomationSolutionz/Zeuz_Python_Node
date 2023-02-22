@@ -977,6 +977,7 @@ def run_test_case(
             runid_status = runid_status if runid_status != "zeuz_failed" else "In-Progress"
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             shared.Set_Shared_Variables('runid_status',runid_status)
+            shared.Set_Shared_Variables('run_id', run_id)
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1529,6 +1530,9 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
+            shared.Set_Shared_Variables("runid_status",
+                                        "In-Progress" if run_id != shared.Get_Shared_Variables('run_id') else shared.Get_Shared_Variables("runid_status"))
+
             shared.Set_Shared_Variables("run_id", run_id)
             server_version = run_id_info["server_version"]
 
@@ -1843,6 +1847,7 @@ def main(device_dict, user_info_object):
     except:
         CommonUtil.debug_code_error(sys.exc_info())
         return None
+
 
 
 
