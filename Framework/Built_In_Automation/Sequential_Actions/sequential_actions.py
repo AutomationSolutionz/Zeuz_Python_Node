@@ -631,6 +631,7 @@ def for_loop_action(step_data, data_set_no):
             CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action doc for more info", 3)
             return "zeuz_failed", []
 
+        outer_skip = loop_steps[CommonUtil.current_step_sequence - 1]  # Set outer_skip when iterable = []
         for each_val in iterable:
             die = False
             cont_break = False
