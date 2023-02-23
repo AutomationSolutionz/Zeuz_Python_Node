@@ -10,7 +10,12 @@ import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subpro
 import itertools
 import platform
 from pathlib import Path
-from deepdiff import DeepDiff
+try:
+    from deepdiff import DeepDiff
+    _deep = True
+except:
+    _deep = False
+    print("DeepDiff could not be imported")
 from pprint import pformat
 
 from bs4 import BeautifulSoup
@@ -1076,20 +1081,21 @@ def New_Compare_Variables(step_data):
             elif not match_by_index:
                 if nested and results == "not found":
                     CommonUtil.ExecLog(sModuleInfo, f"{Left} ({datatype1}):\n{list1_str}\n\n{Right} ({datatype2}):\n{list2_str}", 3)
-                    diff12 = DeepDiff(
-                        list1,
-                        list2,
-                        ignore_order=not match_by_index,
-                        ignore_string_case=not match_by_index,
-                    )
-                    diff21 = DeepDiff(
-                        list2,
-                        list1,
-                        ignore_order=not match_by_index,
-                        ignore_string_case=not match_by_index,
-                    )
-                    if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{pformat(diff21, indent=2)}", 3)
-                    if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{pformat(diff12, indent=2)}", 3)
+                    if _deep:
+                        diff12 = DeepDiff(
+                            list1,
+                            list2,
+                            ignore_order=not match_by_index,
+                            ignore_string_case=not match_by_index,
+                        )
+                        diff21 = DeepDiff(
+                            list2,
+                            list1,
+                            ignore_order=not match_by_index,
+                            ignore_string_case=not match_by_index,
+                        )
+                        if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{pformat(diff21, indent=2)}", 3)
+                        if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{pformat(diff12, indent=2)}", 3)
                     CommonUtil.ExecLog(sModuleInfo, f"All items of {Left} list and {Right} list did not match", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
@@ -1111,21 +1117,22 @@ def New_Compare_Variables(step_data):
             else:
                 if results == "not matched":
                     CommonUtil.ExecLog(sModuleInfo, f"{Left} ({datatype1}):\n{list1_str}\n\n{Right} ({datatype2}):\n{list2_str}", 3)
-                    diff12 = DeepDiff(
-                        list1,
-                        list2,
-                        ignore_order=not match_by_index,
-                        ignore_string_case=not match_by_index,
-                    )
-                    diff21 = DeepDiff(
-                        list2,
-                        list1,
-                        ignore_order=not match_by_index,
-                        ignore_string_case=not match_by_index,
-                    )
-                    from pprint import pprint
-                    if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{pformat(diff21, indent=2)}", 3)
-                    if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{pformat(diff12, indent=2)}", 3)
+                    if _deep:
+                        diff12 = DeepDiff(
+                            list1,
+                            list2,
+                            ignore_order=not match_by_index,
+                            ignore_string_case=not match_by_index,
+                        )
+                        diff21 = DeepDiff(
+                            list2,
+                            list1,
+                            ignore_order=not match_by_index,
+                            ignore_string_case=not match_by_index,
+                        )
+                        from pprint import pprint
+                        if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{pformat(diff21, indent=2)}", 3)
+                        if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{pformat(diff12, indent=2)}", 3)
                     CommonUtil.ExecLog(sModuleInfo, f"{Left} list and {Right} list did not match", 3)
                     return "zeuz_failed"
                 elif results == "all matched":
@@ -1274,20 +1281,21 @@ def New_Compare_Variables(step_data):
             else:
                 if len(not_found_list1) > 0 or len(not_found_list2) > 0:
                     CommonUtil.ExecLog(sModuleInfo, f"{Left} (Simple list):\n{list1_str}\n\n{Right} (Simple list):\n{list2_str}", 3)
-                    diff12 = DeepDiff(
-                        list1,
-                        list2,
-                        ignore_order=not match_by_index,
-                        ignore_string_case=not match_by_index,
-                    )
-                    diff21 = DeepDiff(
-                        list2,
-                        list1,
-                        ignore_order=not match_by_index,
-                        ignore_string_case=not match_by_index,
-                    )
-                    if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{pformat(diff21, indent=2)}", 3)
-                    if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{pformat(diff12, indent=2)}", 3)
+                    if _deep:
+                        diff12 = DeepDiff(
+                            list1,
+                            list2,
+                            ignore_order=not match_by_index,
+                            ignore_string_case=not match_by_index,
+                        )
+                        diff21 = DeepDiff(
+                            list2,
+                            list1,
+                            ignore_order=not match_by_index,
+                            ignore_string_case=not match_by_index,
+                        )
+                        if diff21: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Left}:\n{pformat(diff21, indent=2)}", 3)
+                        if diff12: CommonUtil.ExecLog(sModuleInfo, f"Difference found in {Right}:\n{pformat(diff12, indent=2)}", 3)
                     return "zeuz_failed"
                 else:
                     CommonUtil.ExecLog(sModuleInfo, f"{Left} (Simple list):\n{list1_str}\n\n{Right} (Simple list):\n{list2_str}", 1)
