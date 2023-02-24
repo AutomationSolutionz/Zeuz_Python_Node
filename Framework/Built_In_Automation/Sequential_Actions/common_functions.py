@@ -4233,6 +4233,10 @@ def search_and_save_text(data_set):
 
 @logger
 def skip_testcases(data_set):
+    """
+    usage: this action will skip all test cases in a same run id
+    data set: skip testcases | common action | all
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
