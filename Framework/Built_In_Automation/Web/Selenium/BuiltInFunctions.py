@@ -547,13 +547,16 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             # Todo: profile, add_argument => open_browser
             if browser_options:
+                options.add_argument('--zeuz_pid_finder')
                 for left, right in browser_options:
                     if left in ("addargument", "addarguments"):
                         options.add_argument(right.strip())
                         print(left, right)
-
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
+                    else:
+                        exec(f"options.{left.strip()} = {right.strip()}")
+
 
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
@@ -1006,6 +1009,7 @@ def Go_To_Link(step_data, page_title=False):
     try:
         driver_id = ""
         for left, mid, right in step_data:
+            l = left.replace(" ", "")
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "gotolink":
                 web_link = right.strip()
@@ -1029,7 +1033,7 @@ def Go_To_Link(step_data, page_title=False):
 
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
-                browser_options.append([left, right.strip()])
+                browser_options.append([l, right.strip()])
 
         if browser_options:
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
