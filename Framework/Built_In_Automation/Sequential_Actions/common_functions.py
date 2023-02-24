@@ -4244,8 +4244,8 @@ def skip_testcases(data_set):
                 test_cases = right.strip()
 
         run_id = sr.Get_Shared_Variables("run_id")
-
         CommonUtil.skip_testcases[run_id] = True
+        CommonUtil.ExecLog(sModuleInfo, "Skipping All Test Case Run")
         return "passed"
 
     except:

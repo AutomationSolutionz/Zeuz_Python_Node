@@ -946,10 +946,6 @@ def run_test_case(
         # CommonUtil.d_hours = random.randint(1, 11)
         # CommonUtil.d_minutes = random.randint(0, 39)
         # CommonUtil.d_seconds = random.randint(0, 50)
-        if bool(CommonUtil.skip_testcases):
-            pass
-        else:
-            CommonUtil.skip_testcases[run_id] = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
@@ -982,8 +978,7 @@ def run_test_case(
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
-        # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
-        if CommonUtil.skip_testcases[run_id]:
+        if run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id]:
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
