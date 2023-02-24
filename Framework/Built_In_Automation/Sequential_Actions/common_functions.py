@@ -4231,6 +4231,29 @@ def search_and_save_text(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def skip_testcases(data_set):
+    """
+    usage: this action will skip all test cases in a same run id
+    data set: skip testcases | common action | all
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        test_cases = None
+
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "skip testcases" in left:
+                test_cases = right.strip()
+
+        run_id = sr.Get_Shared_Variables("run_id")
+        CommonUtil.skip_testcases[run_id] = True
+        CommonUtil.ExecLog(sModuleInfo, "Skipping All Test Case Run")
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
 def custom_step_duration(data_set):

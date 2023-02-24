@@ -149,7 +149,7 @@ action_perf = []
 step_perf = []
 test_case_perf = []
 perf_test_perf = []
-
+skip_testcases = {}
 zeuz_disable_var_print = {}
 
 def clear_performance_metrics():

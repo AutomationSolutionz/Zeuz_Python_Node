@@ -49,7 +49,8 @@ declarations = (
     { "name": "search text",                                 "function": "search_and_save_text",                  "screenshot": "none" },
     { "name": "custom step duration",                        "function": "custom_step_duration",                  "screenshot": "none" },
     { "name": "disable step",                                "function": "disable_step",                          "screenshot": "none" },
-    { "name": "disable showing value",                       "function": "disable_showing_value",                 "screenshot": "none" },          
+    { "name": "disable showing value",                       "function": "disable_showing_value",                 "screenshot": "none" },
+    { "name": "skip testcases",                              "function": "skip_testcases",                        "screenshot": "none" },
 
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
