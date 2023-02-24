@@ -554,6 +554,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         print(left, right)
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
+                    elif left in ("binary_location", "binarylocation"):
+                        options.binary_location = right.strip()
                     else:
                         exec(f"options.{left.strip()} = {right.strip()}")
 
