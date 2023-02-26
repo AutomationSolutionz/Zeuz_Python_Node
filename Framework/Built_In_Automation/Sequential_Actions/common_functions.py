@@ -767,7 +767,7 @@ def save_into_variable(data_set):
                 elif "action" in mid:
                     variable_name = right.strip()
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
             return "zeuz_failed"
 
@@ -822,6 +822,58 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         sr.Set_Shared_Variables(variable_name, variable_value)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def global_sleep(data_set):
+    """Sets pre-sleep or post-sleep of an action. Node will sleep mentioned time before and after running the action
+    Args:
+        data_set:
+          web              | pre sleep      | 0.5
+          mobile           | post sleep     | 1.2
+          web(click, text) | pre post sleep | 1
+          global sleep     | common action  | global sleep
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        operation = "save"
+        for left, mid, right in data_set:
+            left = left.replace(" ","").lower()
+            mid = mid.replace(" ","").lower()
+            if any([i in left for i in ["web", "selenium"]]):
+                if "_all_" not in CommonUtil.global_sleep["selenium"]:
+                    CommonUtil.global_sleep["selenium"] = {"_all_":{}}
+                if "pre" in mid:
+                    CommonUtil.global_sleep["selenium"]["_all_"]["pre"] = float(right.strip())
+                if "post" in mid:
+                    CommonUtil.global_sleep["selenium"]["_all_"]["post"] = float(right.strip())
+            if any([i in left for i in ["mobile", "appium"]]):
+                if "_all_" not in CommonUtil.global_sleep["appium"]:
+                    CommonUtil.global_sleep["appium"] = {"_all_":{}}
+                if "pre" in mid:
+                    CommonUtil.global_sleep["appium"]["_all_"]["pre"] = float(right.strip())
+                if "post" in mid:
+                    CommonUtil.global_sleep["appium"]["_all_"]["post"] = float(right.strip())
+            if any([i in left for i in ["desktop"]]):
+                if "_all_" not in CommonUtil.global_sleep["desktop"]:
+                    CommonUtil.global_sleep["desktop"] = {"_all_":{}}
+                if "pre" in mid:
+                    CommonUtil.global_sleep["desktop"]["_all_"]["pre"] = float(right.strip())
+                if "post" in mid:
+                    CommonUtil.global_sleep["desktop"]["_all_"]["post"] = float(right.strip())
+            if any([i in left for i in ["windows"]]):
+                if "_all_" not in CommonUtil.global_sleep["windows"]:
+                    CommonUtil.global_sleep["windows"] = {"_all_":{}}
+                if "pre" in mid:
+                    CommonUtil.global_sleep["windows"]["_all_"]["pre"] = float(right.strip())
+                if "post" in mid:
+                    CommonUtil.global_sleep["windows"]["_all_"]["post"] = float(right.strip())
+
+        CommonUtil.ExecLog(sModuleInfo, f"Global sleeps are set as below:{CommonUtil.parse_value_into_object(CommonUtil.global_sleep)}", 1)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

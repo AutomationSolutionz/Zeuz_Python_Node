@@ -940,6 +940,7 @@ def run_test_case(
         CommonUtil.browser_perf = {}
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
+        CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
         # FIXME: Remove these lines
         # import random
         # CommonUtil.d_day = random.randint(1, 4)
