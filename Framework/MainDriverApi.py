@@ -978,7 +978,9 @@ def run_test_case(
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
-        if run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id]:
+        if run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'all' in CommonUtil.skip_testcases_list:
+            sTestStepResultList = ['SKIPPED']
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and test_case in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
