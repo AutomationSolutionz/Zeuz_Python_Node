@@ -1522,7 +1522,7 @@ def delete_all_shared_variables(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        return sr.Clean_Up_Shared_Variables()
+        return sr.Clean_Up_Shared_Variables(sr.Get_Shared_Variables("run_id"))
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -3599,6 +3599,9 @@ def execute_python_code(data_set):
         sr.shared_variables["print"] = _print
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
+        for var in sr.shared_variables:
+            if var.startswith("zeuz_session_") and var not in CommonUtil.global_var:
+                CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
         CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
         return "passed"
     except:

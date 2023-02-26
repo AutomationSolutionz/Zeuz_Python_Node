@@ -1082,7 +1082,7 @@ def run_test_case(
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
-            shared.Clean_Up_Shared_Variables()  # clean up shared variables
+            shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1703,7 +1703,7 @@ def main(device_dict, user_info_object):
             else:
                 CommonUtil.debug_status = False
                 cleanup_driver_instances()  # clean up drivers
-                shared.Clean_Up_Shared_Variables()  # clean up shared variables
+                shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
@@ -1770,7 +1770,7 @@ def main(device_dict, user_info_object):
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
                 if run_id_info["debug_clean"] == "YES":
                     cleanup_driver_instances()
-                    shared.Clean_Up_Shared_Variables()
+                    shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
 
             final_dependency = run_id_info["dependency_list"]

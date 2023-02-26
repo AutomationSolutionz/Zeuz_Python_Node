@@ -151,6 +151,7 @@ test_case_perf = []
 perf_test_perf = []
 skip_testcases = {}
 skip_testcases_list = []
+global_var = {}
 zeuz_disable_var_print = {}
 
 def clear_performance_metrics():
