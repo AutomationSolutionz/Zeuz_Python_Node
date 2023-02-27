@@ -83,7 +83,8 @@ action_support = (
     "graphql",
     "shared capability",
     "chrome option",
-    "chrome options"
+    "chrome options",
+    "pre sleep", "post sleep", "pre post sleep", "post pre sleep"
 )
 
 # List of supported mobile platforms - must be lower case

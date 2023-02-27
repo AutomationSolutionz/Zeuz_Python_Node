@@ -2251,6 +2251,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             pass  # Not all modules have get_driver, so don't worry if this crashes
 
     # Strip the "optional" keyword, and module, so functions work properly (result of optional action is handled by sequential_actions)
+    pre_sleep, post_sleep = 0,0
     data_set = []
     for row in _data_set:
         new_row = list(row)
@@ -2259,10 +2260,15 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 screenshot = row[2].strip().lower()
                 if screenshot in ("false", "no", "none", "disable"):
                     screenshot = "none"
-                continue
-            if row[0].replace(" ", "").lower() in ("prettifylimit"):
+            elif row[0].replace(" ", "").lower() in ("prettifylimit"):
                 CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
-                continue
+            elif row[0].replace(" ", "").lower() in ("prettifylimit"):
+                CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
+            elif row[0].replace(" ", "").lower() in ("presleep"):
+                pre_sleep = float(row[2].strip())
+            elif row[0].replace(" ", "").lower() in ("postsleep"):
+                post_sleep = float(row[2].strip())
+            continue
 
         if "optional" in row[1]:
             new_row[1] = new_row[1].replace("optional", "").strip()
@@ -2295,10 +2301,17 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "zeuz_failed"
-
         run_function = getattr(eval(module), function)  # create a reference to the function
         start_time = time.perf_counter()
+        if pre_sleep:
+            time.sleep(pre_sleep)
+        elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
+            time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
         result = run_function(data_set)  # Execute function, providing all rows in the data set
+        if post_sleep:
+            time.sleep(post_sleep)
+        elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
+            time.sleep(CommonUtil.global_sleep[module]["_all_"]["post"])
         action_duration = round(time.perf_counter() - start_time, 5)
         CommonUtil.action_perf.append({
             "step_sequence": CommonUtil.current_step_sequence,

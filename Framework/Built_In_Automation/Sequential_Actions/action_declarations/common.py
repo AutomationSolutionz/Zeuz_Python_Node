@@ -51,6 +51,7 @@ declarations = (
     { "name": "disable step",                                "function": "disable_step",                          "screenshot": "none" },
     { "name": "disable showing value",                       "function": "disable_showing_value",                 "screenshot": "none" },
     { "name": "skip testcases",                              "function": "skip_testcases",                        "screenshot": "none" },
+    { "name": "global sleep",                                "function": "global_sleep",                          "screenshot": "none" },
 
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },

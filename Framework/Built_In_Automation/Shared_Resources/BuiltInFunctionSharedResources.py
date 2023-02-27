@@ -84,6 +84,8 @@ def Set_Shared_Variables(
 
             # Good to proceed
             shared_variables[key] = value
+            if key.startswith("zeuz_session_"):
+                CommonUtil.global_var[key] = shared_variables["run_id"]
             if key in CommonUtil.zeuz_disable_var_print.keys():
                 CommonUtil.zeuz_disable_var_print[key] = value
         if print_variable:
@@ -1339,12 +1341,16 @@ def Initialize_Dict(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def Clean_Up_Shared_Variables():
+def Clean_Up_Shared_Variables(run_id):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: clean up shared variables", 0)
     try:
         global shared_variables
-        shared_variables = {}
+        temp = {}
+        for var in shared_variables:
+            if var in CommonUtil.global_var and CommonUtil.global_var[var] == run_id:
+                temp[var] = shared_variables[var]
+        shared_variables = temp
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
