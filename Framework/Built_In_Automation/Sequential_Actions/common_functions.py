@@ -3652,7 +3652,7 @@ def execute_python_code(data_set):
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
         for var in sr.shared_variables:
-            if var.startswith("zeuz_session_") and var not in CommonUtil.global_var:
+            if var.startswith("zeuz_session_"):
                 CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
         CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
         return "passed"
