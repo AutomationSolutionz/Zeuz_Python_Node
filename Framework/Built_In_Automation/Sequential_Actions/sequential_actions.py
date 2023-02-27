@@ -2260,15 +2260,19 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 screenshot = row[2].strip().lower()
                 if screenshot in ("false", "no", "none", "disable"):
                     screenshot = "none"
+                continue
             elif row[0].replace(" ", "").lower() in ("prettifylimit"):
                 CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
+                continue
             elif row[0].replace(" ", "").lower() in ("prettifylimit"):
                 CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
+                continue
             elif row[0].replace(" ", "").lower() in ("presleep"):
                 pre_sleep = float(row[2].strip())
+                continue
             elif row[0].replace(" ", "").lower() in ("postsleep"):
                 post_sleep = float(row[2].strip())
-            continue
+                continue
 
         if "optional" in row[1]:
             new_row[1] = new_row[1].replace("optional", "").strip()
