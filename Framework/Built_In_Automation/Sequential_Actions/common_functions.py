@@ -771,8 +771,7 @@ def save_into_variable(data_set):
             traceback.print_exc()
             return "zeuz_failed"
 
-        if operation == "save":
-            # Noop.
+        if operation == "save" or operation.replace(" ", "").replace("_", "") == "saveifnotdefined":
             pass
         elif operation == "append":
             var = sr.Get_Shared_Variables(variable_name)
@@ -821,7 +820,8 @@ def save_into_variable(data_set):
         except:
             return CommonUtil.Exception_Handler(sys.exc_info())
 
-        sr.Set_Shared_Variables(variable_name, variable_value)
+        if not (operation.replace(" ", "").replace("_", "") == "saveifnotdefined" and sr.Test_Shared_Variables(variable_name)):
+            sr.Set_Shared_Variables(variable_name, variable_value)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
