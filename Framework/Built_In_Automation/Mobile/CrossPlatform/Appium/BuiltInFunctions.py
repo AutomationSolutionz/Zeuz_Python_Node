@@ -459,6 +459,8 @@ def launch_application(data_set):
     # Parse data set
     try:
         desiredcaps = {}
+        desiredcaps['unicodeKeyboard'] = False
+        desiredcaps['resetKeyboard'] = False
 
         browserstack_run = False
         aws_run = False
@@ -514,6 +516,8 @@ def launch_application(data_set):
 
             # desired capabilities for specific platforms
             desiredcaps = dict()
+            desiredcaps['unicodeKeyboard'] = False
+            desiredcaps['resetKeyboard'] = False
             # Set the global variable for the preferred connected device
             if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
                 return "zeuz_failed"
@@ -2590,6 +2594,12 @@ def Enter_Text_Appium(data_set):
                     1,
                 )
                 context_result = auto_switch_context_and_try("native")
+        try:
+            from selenium.webdriver.common.action_chains import ActionChains
+            actions = ActionChains(appium_driver)
+            actions.send_keys(text_value)
+            actions.perform()
+        except Exception:
             errMsg = "Failed to enter text"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
