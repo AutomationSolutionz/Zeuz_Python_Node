@@ -2599,6 +2599,11 @@ def Enter_Text_Appium(data_set):
             actions = ActionChains(appium_driver)
             actions.send_keys(text_value)
             actions.perform()
+            CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Entered the text using action chains",
+                    1,
+                )
         except Exception:
             errMsg = "Failed to enter text"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
