@@ -4801,11 +4801,12 @@ def resize_window(step_data):
                             CommonUtil.ExecLog(sModuleInfo, f"Enter valid size for {dim}", 3)
                             return CommonUtil.Exception_Handler(sys.exc_info())
         selenium_driver.set_window_size(window_size['width'],window_size['height'])
+        CommonUtil.ExecLog(sModuleInfo, f"Successfully set the new window size to {window_size}", 1)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error resizing window")
 
-    CommonUtil.ExecLog(sModuleInfo, f"Successfully set the new window size to {window_size}", 1)
-    return "passed"
+    
         
 
 
