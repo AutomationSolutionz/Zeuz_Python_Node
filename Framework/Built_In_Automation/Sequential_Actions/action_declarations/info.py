@@ -68,7 +68,7 @@ action_support = (
     "scroll parameter",
     "table parameter",
     "source parameter",
-    "input parameter",
+    "input parameter", "parameter",
     "output parameter",
     "custom action",
     "unique parameter",

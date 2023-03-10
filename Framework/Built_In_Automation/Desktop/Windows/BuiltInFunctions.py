@@ -29,6 +29,7 @@ from _elementtree import Element
 
 import win32api
 import win32con
+import psutil
 
 import PIL
 from PIL import Image, ImageGrab
@@ -2094,4 +2095,116 @@ def save_attribute_values_in_list(data_set):
             CommonUtil.Exception_Handler(sys.exc_info())
             return Shared_Resources.Set_Shared_Variables(variable_name, [])
     except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def ListServices():
+    import win32con
+    import win32service
+    import pywin32_system32, pywin32_testutil, pywin32_bootstrap
+    import win32serviceutil
+    resume = 0
+    accessSCM = win32con.GENERIC_READ
+    accessSrv = win32service.SC_MANAGER_ALL_ACCESS
+    #Open Service Control Manager
+    hscm = win32service.OpenSCManager(None, None, accessSCM)
+    #Enumerate Service Control Manager DB
+    typeFilter = win32service.SERVICE_WIN32
+    stateFilter = win32service.SERVICE_STATE_ALL
+    statuses = win32service.EnumServicesStatus(hscm, typeFilter, stateFilter)
+    x = []
+    for (short_name, desc, status) in statuses:
+        x.append([short_name, desc, status])
+    return x
+# x=ListServices()
+
+@logger
+def List_services(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        variable_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "get all services":
+                variable_name = right
+
+        import win32con
+        import win32service
+        accessSCM = win32con.GENERIC_READ
+        # Open Service Control Manager
+        hscm = win32service.OpenSCManager(None, None, accessSCM)
+        # Enumerate Service Control Manager DB
+        typeFilter = win32service.SERVICE_WIN32
+        stateFilter = win32service.SERVICE_STATE_ALL
+        statuses = win32service.EnumServicesStatus(hscm, typeFilter, stateFilter)
+        service_list = [st[0] for st in statuses]
+        return Shared_Resources.Set_Shared_Variables(variable_name, service_list)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def Start_service(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        service_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "start service":
+                service_name = right
+        import win32serviceutil
+        import pywintypes
+        win32serviceutil.StartService('CST License Manager')
+        CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service started", 1)
+        return "passed"
+    except pywintypes.error as e:
+        if "An instance of the service is already running" in str(sys.exc_info()[1]):
+            CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service Already started", 2)
+            return "passed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def Stop_service(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        service_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "stop service":
+                service_name = right
+        import win32serviceutil
+        import pywintypes
+        win32serviceutil.StopService('CST License Manager')
+        CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service stopped", 1)
+        return "passed"
+    except pywintypes.error as e:
+        if "The service has not been started" in str(sys.exc_info()[1]):
+            CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service has not been started", 2)
+            return "passed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def Service_status(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        service_name = ""
+        var_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "get service status":
+                service_name = right
+            elif left == "variable name":
+                var_name = right
+        if not var_name:
+            CommonUtil.ExecLog(sModuleInfo, f"Variable name should be declared", 3)
+            return "zeuz_failed"
+        return Shared_Resources.Set_Shared_Variables(var_name, psutil.win_service_get(service_name).as_dict())
+    except:
         return CommonUtil.Exception_Handler(sys.exc_info())
