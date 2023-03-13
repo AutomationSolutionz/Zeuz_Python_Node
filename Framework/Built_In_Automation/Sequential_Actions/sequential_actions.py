@@ -631,6 +631,7 @@ def for_loop_action(step_data, data_set_no):
             CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action doc for more info", 3)
             return "zeuz_failed", []
 
+        outer_skip = loop_steps[CommonUtil.current_step_sequence - 1]  # Set outer_skip when iterable = []
         for each_val in iterable:
             die = False
             cont_break = False
@@ -2176,6 +2177,22 @@ def bypass_bug(*args,):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Bypass action failed, however continuing")
 
 
+def compare_variable_names(set, dataset):
+    if set:
+        for left, mid, right in dataset:
+            m = mid.strip().lower()
+            if m in ("compare", "element parameter"):
+                l = left.strip()
+                r = right.strip()
+                if l.startswith("%|") and l.endswith("|%"):
+                    CommonUtil.compare_action_varnames["left"] = l[2:-2]
+                if r.startswith("%|") and r.endswith("|%"):
+                    CommonUtil.compare_action_varnames["right"] = r[2:-2]
+                return
+    else:
+        CommonUtil.compare_action_varnames = {"left": "Left", "right": "Right"}
+
+
 def Action_Handler(_data_set, action_row, _bypass_bug=True):
     """ Finds the appropriate function for the requested action in the step data and executes it """
 
@@ -2234,6 +2251,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             pass  # Not all modules have get_driver, so don't worry if this crashes
 
     # Strip the "optional" keyword, and module, so functions work properly (result of optional action is handled by sequential_actions)
+    pre_sleep, post_sleep = 0,0
     data_set = []
     for row in _data_set:
         new_row = list(row)
@@ -2243,8 +2261,17 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 if screenshot in ("false", "no", "none", "disable"):
                     screenshot = "none"
                 continue
-            if row[0].replace(" ", "").lower() in ("prettifylimit"):
+            elif row[0].replace(" ", "").lower() in ("prettifylimit"):
                 CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
+                continue
+            elif row[0].replace(" ", "").lower() in ("prettifylimit"):
+                CommonUtil.prettify_limit = CommonUtil.parse_value_into_object(row[2].split(" ")[-1])
+                continue
+            elif row[0].replace(" ", "").lower() in ("presleep"):
+                pre_sleep = float(row[2].strip())
+                continue
+            elif row[0].replace(" ", "").lower() in ("postsleep"):
+                post_sleep = float(row[2].strip())
                 continue
 
         if "optional" in row[1]:
@@ -2267,6 +2294,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
 
     # Convert shared variables to their string equivalent
     # if action_name not in skip_conversion_of_shared_variable_for_actions:
+    compare_variable_names(True, data_set)
     data_set = common.shared_variable_to_value(data_set)
     if data_set in failed_tag_list:
         return "zeuz_failed"
@@ -2277,10 +2305,17 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "zeuz_failed"
-
         run_function = getattr(eval(module), function)  # create a reference to the function
         start_time = time.perf_counter()
+        if pre_sleep:
+            time.sleep(pre_sleep)
+        elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
+            time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
         result = run_function(data_set)  # Execute function, providing all rows in the data set
+        if post_sleep:
+            time.sleep(post_sleep)
+        elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
+            time.sleep(CommonUtil.global_sleep[module]["_all_"]["post"])
         action_duration = round(time.perf_counter() - start_time, 5)
         CommonUtil.action_perf.append({
             "step_sequence": CommonUtil.current_step_sequence,
@@ -2293,6 +2328,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             "time_stamp": CommonUtil.get_timestamp(),
 
         })
+        compare_variable_names(False, [])
         if performance_action.zeuz_cycle != -1:
             CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
         CommonUtil.TakeScreenShot(function)

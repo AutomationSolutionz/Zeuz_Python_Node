@@ -940,6 +940,7 @@ def run_test_case(
         CommonUtil.browser_perf = {}
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
+        CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
         # FIXME: Remove these lines
         # import random
         # CommonUtil.d_day = random.randint(1, 4)
@@ -952,7 +953,6 @@ def run_test_case(
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
-        shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
         if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
             shared.Set_Shared_Variables("zeuz_prettify_limit", None)
             CommonUtil.prettify_limit = None
@@ -979,19 +979,23 @@ def run_test_case(
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
-        # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
-        sTestStepResultList = run_all_test_steps_in_a_test_case(
-            testcase_info,
-            test_case,
-            sModuleInfo,
-            run_id,
-            file_specific_steps,
-            final_dependency,
-            final_run_params,
-            temp_ini_file,
-            debug_info,
-            performance
-        )
+        if run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'all' in CommonUtil.skip_testcases_list:
+            sTestStepResultList = ['SKIPPED']
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and test_case in CommonUtil.skip_testcases_list:
+            sTestStepResultList = ['SKIPPED']
+        else:
+            sTestStepResultList = run_all_test_steps_in_a_test_case(
+                testcase_info,
+                test_case,
+                sModuleInfo,
+                run_id,
+                file_specific_steps,
+                final_dependency,
+                final_run_params,
+                temp_ini_file,
+                debug_info,
+                performance
+            )
 
         # TODO: Test case run is completed here somewhere.
 
@@ -1079,7 +1083,7 @@ def run_test_case(
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
-            shared.Clean_Up_Shared_Variables()  # clean up shared variables
+            shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1700,7 +1704,7 @@ def main(device_dict, user_info_object):
             else:
                 CommonUtil.debug_status = False
                 cleanup_driver_instances()  # clean up drivers
-                shared.Clean_Up_Shared_Variables()  # clean up shared variables
+                shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
@@ -1767,11 +1771,14 @@ def main(device_dict, user_info_object):
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
                 if run_id_info["debug_clean"] == "YES":
                     cleanup_driver_instances()
-                    shared.Clean_Up_Shared_Variables()
+                    shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
 
             final_dependency = run_id_info["dependency_list"]
             shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
+
+            if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
+                shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
 
             final_run_params = {}
             for param in final_run_params_from_server:
@@ -1792,7 +1799,6 @@ def main(device_dict, user_info_object):
             rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
             rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
-            shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
             global_attachment = GlobalAttachment()
             shared.Set_Shared_Variables("global_attachments", global_attachment)
 

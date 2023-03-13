@@ -4,7 +4,7 @@ declarations = (
     { "name": "tap",                      "function": "Tap_Appium",                  "screenshot": "mobile" },
     { "name": "validate full text",       "function": "Validate_Text_Appium",        "screenshot": "mobile" },
     { "name": "validate partial text",    "function": "Validate_Text_Appium",        "screenshot": "mobile" },
-    { "name": "install",                  "function": "install_application",         "screenshot": "mobile" },
+    { "name": "install android apk",      "function": "install_application",         "screenshot": "mobile" },
     { "name": "launch",                   "function": "launch_application",          "screenshot": "mobile" },
     { "name": "get location",             "function": "get_element_location_by_id",  "screenshot": "mobile" },
     { "name": "swipe",                    "function": "swipe_appium",                "screenshot": "mobile" },

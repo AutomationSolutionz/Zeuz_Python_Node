@@ -53,6 +53,7 @@ action_support = (
     "dst element parameter", "dst parent parameter", "dst sibling parameter", "dst child parameter",
     "destination element parameter", "destination parent parameter", "destination sibling parameter", "destination child parameter",
     "optional parameter",
+    "optional label",
     "iframe parameter",
     "frame parameter",
     "method",
@@ -82,7 +83,8 @@ action_support = (
     "graphql",
     "shared capability",
     "chrome option",
-    "chrome options"
+    "chrome options",
+    "pre sleep", "post sleep", "pre post sleep", "post pre sleep"
 )
 
 # List of supported mobile platforms - must be lower case

@@ -134,6 +134,7 @@ run_cancel = ""
 run_cancelled = False
 disabled_step = []  # 1 based indexing
 max_char = 0
+compare_action_varnames = {"left":"Left", "right":"Right"}    # for labelling left and right variable names of compare action
 
 # For step looping purpose
 all_step_dataset = []
@@ -148,7 +149,10 @@ action_perf = []
 step_perf = []
 test_case_perf = []
 perf_test_perf = []
-
+skip_testcases = {}
+skip_testcases_list = []
+global_var = {}
+global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
 zeuz_disable_var_print = {}
 
 def clear_performance_metrics():

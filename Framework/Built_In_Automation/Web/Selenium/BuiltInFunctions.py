@@ -1258,7 +1258,7 @@ def save_screenshot(driver, path):
     driver.set_window_size(required_width, required_height)
     time.sleep(2)
     # driver.save_screenshot(path)  # has scrollbar
-    driver.find_element_by_tag_name("body").screenshot(path)  # avoids scrollbar
+    driver.find_element("xpath","//body").screenshot(path)  # avoids scrollbar
     time.sleep(2)
     driver.set_window_size(original_size["width"], original_size["height"])
 
@@ -1534,18 +1534,22 @@ def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.web
     # else:
     log_flag = True
     log_flag2 = True
+    first = True
     start = time.perf_counter()
     stale_i = 0
     while True:
         try:
             Element.click()
-            CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
+            if not first:
+                CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
             return Element
         except ElementClickInterceptedException:
+            first = False
             if log_flag:
                 CommonUtil.ExecLog(sModuleInfo, "Click is Intercepted. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
                 log_flag = False
         except StaleElementReferenceException:
+            first = False
             if log_flag2:
                 CommonUtil.ExecLog(sModuleInfo, "Element is stale. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
                 log_flag2 = False
@@ -1759,14 +1763,21 @@ def Click_and_Download(data_set):
                 ext = ".opera"
             else:
                 ext = ".crdownload"
+            e = 0
             while True:
-                ld = os.listdir(initial_download_folder)
-                if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
-                    CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
-                    break
-                if s + wait_download < time.perf_counter():
-                    CommonUtil.ExecLog(sModuleInfo, "Could not finish download within %s seconds. You can increase the amount of seconds with (wait for download, optional parameter, 60)" % wait_download, 2)
-                    break
+                try:
+                    ld = os.listdir(initial_download_folder)
+                    if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
+                        CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
+                        break
+                    if s + wait_download < time.perf_counter():
+                        CommonUtil.ExecLog(sModuleInfo, "Could not finish download within %s seconds. You can increase the amount of seconds with (wait for download, optional parameter, 60)" % wait_download, 2)
+                        break
+                except:
+                    CommonUtil.Exception_Handler(sys.exc_info())
+                    time.sleep(2)
+                    e += 1
+                    if e == 3: break
         else:
             time.sleep(2)
         time.sleep(3)
@@ -1804,7 +1815,7 @@ def Click_and_Download(data_set):
                         return "zeuz_failed"
         return "passed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file \nfrom %s\nto %s" % (file_to_be_moved, filepath))
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -2398,9 +2409,11 @@ def save_attribute_values_in_list(step_data):
                         elif Left == "return_contains":
                             target[target_index][2].append(Right)
                         elif Left == "return_does_not_contain":
-                            target[target_index][3].append(Right)
+                            target[target_index][3].append(Right)   
+                        elif Left == "allow hidden":
+                            target[target_index][0].append(("allow hidden", "optional option", "yes"))
                         else:
-                            target[target_index][0].append((Left, 'element parameter', Right))
+                            target[target_index][0].append((Left, "element parameter", Right))
 
                     target_index = target_index + 1
                 elif left == "save attribute values in list":
