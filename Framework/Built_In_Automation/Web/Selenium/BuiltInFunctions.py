@@ -4786,3 +4786,43 @@ def multiple_check_uncheck(data_set):
                 CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
 
     return "passed"
+
+@logger
+def resize_window(step_data):
+    """Action to resize window size"""
+    """
+    width          element parameter   50%
+    height         element parameter   70%
+    resize window  selenium action     resize window
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        window_size = selenium_driver.get_window_size()
+        CommonUtil.ExecLog(sModuleInfo, f"Current window size is {window_size}", 1)
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            right = right.lower().strip()
+            if 'element parameter' in mid.lower():
+                for dim in ['width','height']:
+                    if left.lower().strip() == dim:
+                        right = right.replace('%','').strip()
+                        try:
+                            right = float(right)
+                            window_size[dim] = window_size[dim] * right/100
+                        except:
+                            CommonUtil.ExecLog(sModuleInfo, f"Enter valid size for {dim}", 3)
+                            return CommonUtil.Exception_Handler(sys.exc_info())
+        selenium_driver.set_window_size(window_size['width'],window_size['height'])
+        CommonUtil.ExecLog(sModuleInfo, f"Successfully set the new window size to {window_size}", 1)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error resizing window")
+
+    
+        
+
+
+
+
+                

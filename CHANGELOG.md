@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Resize selenium window action
 - **[Add]** `Save if not defined` in save into variable
 - **[Add]** Prevent printing specified variables
 - **[Add]** Rest response comparison feature added into compare data action

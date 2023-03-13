@@ -59,7 +59,8 @@ declarations = (
     { "name": "check uncheck",                 "function": "check_uncheck",                 "screenshot": "web" },
     { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",        "screenshot": "web" },
     { "name": "slider bar",                    "function": "slider_bar",                    "screenshot": "web" },
-    { "name": "get performance metrics",       "function": "get_performance_metrics",                    "screenshot": "web" },
+    { "name": "get performance metrics",       "function": "get_performance_metrics",       "screenshot": "web" },
+    { "name": "resize window",                 "function": "resize_window",                 "screenshot": "web" },
 ) # yapf: disable
 
 module_name = "selenium"
