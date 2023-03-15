@@ -3008,12 +3008,21 @@ def Keystroke_Appium(data_set):
 
     try:
         # Execute the correct key stroke handler for the dependency
-        if appium_details[device_id]["type"] == "android":
-            result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
-        elif appium_details[device_id]["type"] == "ios":
-            result = iOS_Keystroke_Key_Mapping(keystroke_value)
+        if 'browserstack device' not in device_id:
+            if appium_details[device_id]["type"] == "android":
+                result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
+            elif appium_details[device_id]["type"] == "ios":
+                result = iOS_Keystroke_Key_Mapping(keystroke_value)
+            else:
+                result = "zeuz_failed"
         else:
-            result = "zeuz_failed"
+            platforms = [Android_Keystroke_Key_Mapping,iOS_Keystroke_Key_Mapping]
+            for mapping_func in platforms:
+                try:
+                    result = mapping_func(keystroke_value, hold_key)
+                    break
+                except:
+                    result = "zeuz_failed"
 
         if result in passed_tag_list:
             # CommonUtil.TakeScreenShot(sModuleInfo)
