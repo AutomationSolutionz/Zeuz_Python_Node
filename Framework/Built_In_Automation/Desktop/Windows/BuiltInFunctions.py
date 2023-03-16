@@ -1699,7 +1699,12 @@ def Run_Application(data_set):
             if launch_cond == "relaunch":
                 Close_Application([("close app", "action", Desktop_app)])
             if os.path.isfile(Desktop_app):
-                cmd = f'''{Desktop_app[:2]} && cd "{os.path.dirname(Desktop_app)}" && start cmd.exe /K "{Desktop_app}\"'''
+                if Desktop_app.startswith('"') : Desktop_app = Desktop_app[1:]
+                if Desktop_app.endswith('"') : Desktop_app = Desktop_app[:-1]
+                if Desktop_app.startswith("\\\\"):  # Windows Network Shared drives starts with \\
+                    cmd = f'start cmd.exe /K "{Desktop_app}"'
+                else:
+                    cmd = f'''{Desktop_app[:2]} && cd "{os.path.dirname(Desktop_app)}" && start cmd.exe /K "{Desktop_app}\"'''
                 CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
                 subprocess.Popen(cmd, **args)
                 # Desktop_app = os.path.basename(Desktop_app)
