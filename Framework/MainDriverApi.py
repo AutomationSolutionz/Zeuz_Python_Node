@@ -978,10 +978,25 @@ def run_test_case(
         # get test case start time
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
-
-        if run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'all' in CommonUtil.skip_testcases_list:
+        if run_id not in CommonUtil.skip_testcases:
+            CommonUtil.skip_testcases_list = []
+            sTestStepResultList = run_all_test_steps_in_a_test_case(
+                testcase_info,
+                test_case,
+                sModuleInfo,
+                run_id,
+                file_specific_steps,
+                final_dependency,
+                final_run_params,
+                temp_ini_file,
+                debug_info,
+                performance
+            )
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
+            run_id] and 'all' in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and test_case in CommonUtil.skip_testcases_list:
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
+            run_id] and test_case in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
