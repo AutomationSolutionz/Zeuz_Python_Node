@@ -18,6 +18,13 @@ declarations = (
     { "name": "scroll to element","function": "Scroll_to_element",     "screenshot": "desktop" },
     { "name": "swipe",            "function": "Swipe",                 "screenshot": "desktop" },
     { "name": "save attribute values in list","function": "save_attribute_values_in_list","screenshot": "desktop" },
+
+    # Windows services
+    {"name": "get all services",  "function": "List_services",   "screenshot": "desktop"},
+    {"name": "start service",     "function": "Start_service",           "screenshot": "desktop"},
+    {"name": "stop service",      "function": "Stop_service",            "screenshot": "desktop"},
+    {"name": "get service status","function": "Service_status",          "screenshot": "desktop"},
+
 ) # yapf: disable
 
 module_name = "windows"
