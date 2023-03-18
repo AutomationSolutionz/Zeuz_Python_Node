@@ -22,6 +22,7 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def form_uri(resource_path):
     web_server_address = ConfigModule.get_config_value(AUTHENTICATION_CATEGORY, SERVER_ADDRESS_TAG)
+    web_server_address = web_server_address[:-1] if web_server_address.endswith("/") else web_server_address
     base_server_address = web_server_address
     if len(resource_path) > 0:
         if resource_path[0] == "/":

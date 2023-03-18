@@ -243,6 +243,7 @@ def Login(cli=False, run_once=False, log_dir=None):
     username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+    server_name = server_name[:-1] if server_name.endswith("/") else server_name
     api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
     api_flag = True
     if not api or not server_name:
