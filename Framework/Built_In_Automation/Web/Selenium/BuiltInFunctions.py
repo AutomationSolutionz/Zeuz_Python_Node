@@ -567,7 +567,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             if "chromeheadless" in browser:
                 def chromeheadless():
                     options.add_argument(
-                        "--headless"
+                        "--headless=new"
                     )
                 use_xvfb_or_headless(chromeheadless)
 
