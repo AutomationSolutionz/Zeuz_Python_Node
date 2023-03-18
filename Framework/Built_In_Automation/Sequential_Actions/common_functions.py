@@ -766,6 +766,7 @@ def save_into_variable(data_set):
                     variable_value = CommonUtil.parse_value_into_object(right)
                 elif "action" in mid:
                     variable_name = right.strip()
+                    action = left.replace(" ", "")
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
@@ -821,7 +822,7 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         if not (operation.replace(" ", "").replace("_", "") == "saveifnotdefined" and sr.Test_Shared_Variables(variable_name)):
-            sr.Set_Shared_Variables(variable_name, variable_value)
+            sr.Set_Shared_Variables(variable_name, variable_value, session_var=action == "savesessionvariable")
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

@@ -35,6 +35,7 @@ def Set_Shared_Variables(
     print_variable=True,
     pretty=True,
     print_raw=False,
+    session_var=False
 ):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
