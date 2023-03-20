@@ -2407,8 +2407,8 @@ def save_attribute_values_in_list(step_data):
                             target[target_index][2].append(Right)
                         elif Left == "return_does_not_contain":
                             target[target_index][3].append(Right)   
-                        elif Left == "allow hidden":
-                            target[target_index][0].append(("allow hidden", "optional option", "yes"))
+                        elif Left.replace(" ", "").replace("_", "") in ("allowhidden", "allowdisable"):
+                            target[target_index][0].append(("allow hidden", "optional option", Right))
                         else:
                             target[target_index][0].append((Left, "element parameter", Right))
 
