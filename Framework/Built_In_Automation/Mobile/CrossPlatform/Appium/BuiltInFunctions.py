@@ -453,8 +453,11 @@ def launch_application(data_set):
 
     global device_serial, appium_details, appium_driver, device_id, device_info
     # Recall appium details
-    if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
-        device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retrieve device_info
+    if Shared_Resources.Test_Shared_Variables("zeuz_session_hardcoded_device_info"):
+        device_info = Shared_Resources.Get_Shared_Variables("zeuz_session_hardcoded_device_info")
+    elif Shared_Resources.Test_Shared_Variables("device_info"):
+        device_info = Shared_Resources.Get_Shared_Variables("device_info")
+
     if Shared_Resources.Test_Shared_Variables("device_order"):
         device_order = Shared_Resources.Get_Shared_Variables("device_order")
 
