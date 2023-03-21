@@ -621,9 +621,16 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.set_capability("browserVersion",remote_browser_version)
 
             if "headless" in browser:
+                #firefox headless mode needs add_argument
+                options.add_argument("-headless")
+                
+                '''
+                # commenting out as this is not working.  Make sure 
+                # whoever implemented this it is tested with latest firefox version
                 def firefoxheadless():
                     options.headless = True
                 use_xvfb_or_headless(firefoxheadless)
+                '''
 
             if _platform == "win32":
                 try:
