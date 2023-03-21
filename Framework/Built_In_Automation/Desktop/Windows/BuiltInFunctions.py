@@ -2160,7 +2160,7 @@ def Start_service(data_set):
                 service_name = right
         import win32serviceutil
         import pywintypes
-        win32serviceutil.StartService('CST License Manager')
+        win32serviceutil.StartService(service_name)
         CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service started", 1)
         return "passed"
     except pywintypes.error as e:
@@ -2183,7 +2183,7 @@ def Stop_service(data_set):
                 service_name = right
         import win32serviceutil
         import pywintypes
-        win32serviceutil.StopService('CST License Manager')
+        win32serviceutil.StopService(service_name)
         CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service stopped", 1)
         return "passed"
     except pywintypes.error as e:
