@@ -1115,10 +1115,10 @@ def run_test_case(
                 runid_status = "In-Progress"
             else:
                 runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-            shared.Clean_Up_Shared_Variables()  # clean up shared variables
-            shared.Set_Shared_Variables('runid_status',runid_status)
+            # shared.Clean_Up_Shared_Variables()  # clean up shared variables
+            # shared.Set_Shared_Variables('runid_status',runid_status)
             shared.Set_Shared_Variables('run_id', run_id)
-            shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
+            # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1747,9 +1747,9 @@ def main(device_dict, user_info_object):
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
                 cleanup_driver_instances()  # clean up drivers
 
-                shared.Clean_Up_Shared_Variables()  # clean up shared variables
+                # shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)
-                shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
+                # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
