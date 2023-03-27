@@ -986,6 +986,8 @@ def run_test_case(
                 cleanup_driver_instances()  # clean up drivers
             if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                 runid_status = "In-Progress"
+            else:
+                runid_status = shared.Get_Shared_Variables("runid_status", log=False)
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             shared.Set_Shared_Variables('runid_status',runid_status)
             shared.Set_Shared_Variables('run_id', run_id)
@@ -1569,6 +1571,8 @@ def main(device_dict, user_info_object):
                 CommonUtil.debug_status = False
                 if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                     runid_status = "In-Progress"
+                else:
+                    runid_status = shared.Get_Shared_Variables("runid_status", log=False)
                 cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)
