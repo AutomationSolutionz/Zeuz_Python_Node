@@ -4,7 +4,16 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Resize selenium window action
+- **[Add]** `Save if not defined` in save into variable
+- **[Add]** Prevent printing specified variables
+- **[Add]** Rest response comparison feature added into compare data action
+- **[Add]** Added -spu or --stop_pip_auto_update to disable auto python module update
 - **[Add]** Immediate parent support in windows path
+- **[Add]** Add Open Empty Browser Action
+- **[Add]** Add Skip TestCases Action
+- **[Add]** Fix browserstack issue from node and refactored for appium v2
+- **[Fix]** Fix shell FillNotFoundError on mac real device
 
 ### [16.1.0][Oct 25, 2022]
 - **[Add]** Continue to next iter feature is implemented in For Loop Action

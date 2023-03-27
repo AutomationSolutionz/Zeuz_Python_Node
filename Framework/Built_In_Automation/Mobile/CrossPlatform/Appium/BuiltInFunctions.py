@@ -12,6 +12,8 @@
 #########################
 
 from appium import webdriver
+from appium.options.android import UiAutomator2Options
+from appium.options.ios import XCUITestOptions
 import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
@@ -451,31 +453,37 @@ def launch_application(data_set):
     # Recall appium details
     if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
         device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retrieve device_info
+    if Shared_Resources.Test_Shared_Variables("device_order"):
+        device_order = Shared_Resources.Get_Shared_Variables("device_order")
 
     # Parse data set
     try:
         desiredcaps = {}
+        desiredcaps['unicodeKeyboard'] = False
+        desiredcaps['resetKeyboard'] = False
 
         browserstack_run = False
         aws_run = False
 
-        for did in device_info:
-            if "browserstack" in did:
+        if isinstance(device_order, dict):
+            # Todo: set browser_stack desired_capabilities
+            if "browser_stack" in device_order["mobile"]:
                 browserstack_run = True
-                break
-            elif "aws" in did:
+                if device_order["mobile"]["browser_stack"]["platformName"] == "android":
+                    desiredcaps = UiAutomator2Options().load_capabilities(device_info)
+
+                elif device_order["mobile"]["browser_stack"]["platformName"] == "ios":
+                    desiredcaps = XCUITestOptions().load_capabilities(device_info)
+
+            elif "aws" in device_order["mobile"]:
                 aws_run = True
-                break
-        if browserstack_run:
-            desiredcaps = device_info["browserstack device 1"]["basic"]
-        elif aws_run:
-            desiredcaps = {
-                # New iOS devices may have a '-' (hyphen) in their UDID
-                # which do not work with carthage (the tool that appium
-                # uses to build packages).
-                # TODO: Fix for Android here later on.
-                "appium:udid": os.environ["DEVICEFARM_DEVICE_UDID"].replace("-", "")
-            }
+                desiredcaps = {
+                    # New iOS devices may have a '-' (hyphen) in their UDID
+                    # which do not work with carthage (the tool that appium
+                    # uses to build packages).
+                    # TODO: Fix for Android here later on.
+                    "appium:udid": os.environ["DEVICEFARM_DEVICE_UDID"].replace("-", "")
+                }
 
         else:
             package_name = ""  # Name of application package
@@ -508,6 +516,8 @@ def launch_application(data_set):
 
             # desired capabilities for specific platforms
             desiredcaps = dict()
+            desiredcaps['unicodeKeyboard'] = False
+            desiredcaps['resetKeyboard'] = False
             # Set the global variable for the preferred connected device
             if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
                 return "zeuz_failed"
@@ -558,8 +568,9 @@ def launch_application(data_set):
                 desiredcaps=desiredcaps,
                 browserstack_run=browserstack_run,
             )
-            app_name = device_info["browserstack device 1"]["other"]["app_name"]
-            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+            # app_name = device_order["mobile"]["browser_stack"]["appName"]
+            # CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Launched successfully in Browserstack.", 1)
         elif aws_run:
             result, launch_app = start_appium_driver(
                 desiredcaps=desiredcaps,
@@ -764,7 +775,7 @@ def start_appium_driver(
         if browserstack_run:
             appium_driver = webdriver.Remote(
                 command_executor="http://hub-cloud.browserstack.com/wd/hub",
-                desired_capabilities=desiredcaps
+                options=desiredcaps
             )
             appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
             Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
@@ -2583,6 +2594,17 @@ def Enter_Text_Appium(data_set):
                     1,
                 )
                 context_result = auto_switch_context_and_try("native")
+        try:
+            from selenium.webdriver.common.action_chains import ActionChains
+            actions = ActionChains(appium_driver)
+            actions.send_keys(text_value)
+            actions.perform()
+            CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Entered the text using action chains",
+                    1,
+                )
+        except Exception:
             errMsg = "Failed to enter text"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
@@ -2986,12 +3008,21 @@ def Keystroke_Appium(data_set):
 
     try:
         # Execute the correct key stroke handler for the dependency
-        if appium_details[device_id]["type"] == "android":
-            result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
-        elif appium_details[device_id]["type"] == "ios":
-            result = iOS_Keystroke_Key_Mapping(keystroke_value)
+        if 'browserstack device' not in device_id:
+            if appium_details[device_id]["type"] == "android":
+                result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
+            elif appium_details[device_id]["type"] == "ios":
+                result = iOS_Keystroke_Key_Mapping(keystroke_value)
+            else:
+                result = "zeuz_failed"
         else:
-            result = "zeuz_failed"
+            platforms = [Android_Keystroke_Key_Mapping,iOS_Keystroke_Key_Mapping]
+            for mapping_func in platforms:
+                try:
+                    result = mapping_func(keystroke_value, hold_key)
+                    break
+                except:
+                    result = "zeuz_failed"
 
         if result in passed_tag_list:
             # CommonUtil.TakeScreenShot(sModuleInfo)
@@ -3285,7 +3316,7 @@ def get_program_names(search_name):
         # Get activity name
         cmd = "adb %s shell pm dump %s" % (serial, package_name)
         from subprocess import Popen, PIPE, STDOUT
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, encoding="utf-8")
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT, encoding="utf-8", shell=True)
         res = ""
         for line in p.stdout:
             res += line.replace("\\r", "").replace("\r", "").replace("\\n", "\n")

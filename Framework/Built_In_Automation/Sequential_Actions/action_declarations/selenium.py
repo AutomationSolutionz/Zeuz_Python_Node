@@ -20,7 +20,7 @@ declarations = (
     { "name": "deselect by value",             "function": "Select_Deselect",               "screenshot": "web" },
     { "name": "select by index",               "function": "Select_Deselect",               "screenshot": "web" },
     { "name": "deselect by index",             "function": "Select_Deselect",               "screenshot": "web" },
-    { "name": "open browser",                  "function": "Open_Browser_Wrapper",          "screenshot": "web" },
+    { "name": "open browser",                  "function": "Open_Empty_Browser",            "screenshot": "web" },
     { "name": "open electron app",             "function": "Open_Electron_App",             "screenshot": "web" },
     { "name": "go to link",                    "function": "Go_To_Link",                    "screenshot": "web" },
     { "name": "tear down browser",             "function": "Tear_Down_Selenium",            "screenshot": "none"},
@@ -59,7 +59,8 @@ declarations = (
     { "name": "check uncheck",                 "function": "check_uncheck",                 "screenshot": "web" },
     { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",        "screenshot": "web" },
     { "name": "slider bar",                    "function": "slider_bar",                    "screenshot": "web" },
-    { "name": "get performance metrics",       "function": "get_performance_metrics",                    "screenshot": "web" },
+    { "name": "get performance metrics",       "function": "get_performance_metrics",       "screenshot": "web" },
+    { "name": "resize window",                 "function": "resize_window",                 "screenshot": "web" },
 ) # yapf: disable
 
 module_name = "selenium"

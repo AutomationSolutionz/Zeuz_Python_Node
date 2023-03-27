@@ -1,0 +1,57 @@
+[
+    {
+        "name": "run_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "tc_id",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "label",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "module",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "name",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "page_reload",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "runtime",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "step_id",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "step_sequence",
+        "type": "INTEGER",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "step_name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "time_stamp",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    }
+]

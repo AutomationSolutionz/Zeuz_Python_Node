@@ -53,6 +53,7 @@ action_support = (
     "dst element parameter", "dst parent parameter", "dst sibling parameter", "dst child parameter",
     "destination element parameter", "destination parent parameter", "destination sibling parameter", "destination child parameter",
     "optional parameter",
+    "optional label",
     "iframe parameter",
     "frame parameter",
     "method",
@@ -67,7 +68,7 @@ action_support = (
     "scroll parameter",
     "table parameter",
     "source parameter",
-    "input parameter",
+    "input parameter", "parameter",
     "output parameter",
     "custom action",
     "unique parameter",
@@ -75,12 +76,15 @@ action_support = (
     "get parameter",
     "loop settings",
     "optional loop settings",
+    "optional loop condition",
+    "optional loop control",
     "attribute constrain",
     "optional option",
     "graphql",
     "shared capability",
     "chrome option",
-    "chrome options"
+    "chrome options",
+    "pre sleep", "post sleep", "pre post sleep", "post pre sleep"
 )
 
 # List of supported mobile platforms - must be lower case

@@ -118,9 +118,7 @@ def adapt(message: str, node_id: str) -> List[Dict]:
             "Mobile": r.deploy_info.dependency.mobile,
         },
 
-        "device_info": {
-            "browser_stack": {},
-        },
+        "device_info": None,
 
         "run_time": {},
         "file_name": f"{node_id}_1",
@@ -143,15 +141,17 @@ def adapt(message: str, node_id: str) -> List[Dict]:
         "debug_steps": [],
     }
 
-    if r.deploy_info.device_info:
-        if r.deploy_info.device_info == "local_device":
-            r.deploy_info.device_info = "[[1, 1]]"
-    else:
-        r.deploy_info.device_info = "[[1, 1]]"
-    try:
-        result["device_info"] = json.loads(r.deploy_info.device_info)
-    except:
-        result["device_info"] = str(r.deploy_info.device_info)
+    # if r.deploy_info.device_info:
+    #     if r.deploy_info.device_info == "local_device":
+    #         r.deploy_info.device_info = "[[1, 1]]"
+    # else:
+    #     r.deploy_info.device_info = "[[1, 1]]"
+    if r.deploy_info.device_info.strip() == "" \
+            or r.deploy_info.device_info.strip() == "local_device":
+        # r.deploy_info.device_info = json.dumps([])
+        r.deploy_info.device_info = json.dumps([[1, 1]])
+
+    result["device_info"] = json.loads(r.deploy_info.device_info)
 
 
     # Add debug information

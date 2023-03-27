@@ -1,5 +1,5 @@
 pip
-psutil
+psutil==5.9.0
 pillow
 pyserial
 colorama
@@ -51,3 +51,7 @@ html-diff
 protobuf
 pytz
 rauth
+python-dotenv
+google-cloud-bigquery
+google-cloud-bigquery-storage
+deepdiff

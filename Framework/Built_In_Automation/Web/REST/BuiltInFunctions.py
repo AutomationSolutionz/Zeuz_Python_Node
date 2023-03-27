@@ -913,17 +913,27 @@ def handle_rest_call(
                     )
                     break
             count += 1
+
         if CommonUtil.load_testing:
             end_counter = time.perf_counter()
             runtime = round(end_counter-start_counter, 6)
-            CommonUtil.performance_report["endpoint"] = result.url
-            CommonUtil.performance_report["data"].append(
-                {
-                    "status": status_code,
-                    "message": result.text,
-                    "runtime": runtime
-                }
-            )
+
+            try:
+                CommonUtil.performance_report["endpoint"] = result.url
+                CommonUtil.performance_report["data"].append(
+                    {
+                        "status": status_code,
+                        "message": result.text,
+                        "runtime": runtime
+                    }
+                )
+            except:
+                print(
+                    "failed to get http response as text output, "\
+                    "note that the result may have been in binary "\
+                    "format and hence this may not be an actual error"
+                )
+                return "zeuz_failed"
             CommonUtil.performance_report["individual_stats"] = {
                 "slowest": max(runtime, CommonUtil.performance_report["individual_stats"]["slowest"]),
                 "fastest": min(runtime, CommonUtil.performance_report["individual_stats"]["fastest"]),
@@ -932,6 +942,9 @@ def handle_rest_call(
                 CommonUtil.performance_report["status_counts"][str(status_code)] += 1
             else:
                 CommonUtil.performance_report["status_counts"][str(status_code)] = 1
+
+            # We return immediately as soon as we get a response back.
+            return "passed"
 
         if wait_for_response_code != 0 and status_code != wait_for_response_code:
             CommonUtil.ExecLog(

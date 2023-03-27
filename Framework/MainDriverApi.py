@@ -31,7 +31,10 @@ from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFor
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
+from settings import PROJECT_ROOT
 from reporting import junit_report
+
+from google.cloud import bigquery
 
 from rich.style import Style
 from rich.table import Table
@@ -303,10 +306,6 @@ def call_driver_function_of_test_step(
         try:
             current_driver = "Drivers." + current_driver
             # if CommonUtil.step_module_name is None:
-            #     module_name = importlib.import_module(current_driver)  # get module
-            #     CommonUtil.step_module_name = module_name
-            # else:
-            #     module_name = CommonUtil.step_module_name
             module_name = importlib.import_module(current_driver)  # get module
             print("STEP DATA and VARIABLES")
             # get step name
@@ -391,14 +390,9 @@ def call_driver_function_of_test_step(
                 else:
                     # run sequentially
                     sStepResult = functionTocall(
-                        final_dependency,
-                        final_run_params,
                         test_steps_data,
                         test_action_info,
-                        file_specific_steps,
                         simple_queue,
-                        screen_capture,     # No need of screen capture. Need to delete this
-                        device_info,
                         debug_actions,
                     )
             except:
@@ -486,10 +480,10 @@ def run_all_test_steps_in_a_test_case(
             for action_info in all_Action_info:
                 action_dataset = action_info["step_actions"]
                 all_action_data_set.append(action_dataset)
-                dict = {}
-                dict["Action disabled"] = action_info["action_disabled"]
-                dict["Action name"] = action_info["action_name"]
-                all_action_Info.append(dict)
+                Dict = {}
+                Dict["Action disabled"] = action_info["action_disabled"]
+                Dict["Action name"] = action_info["action_name"]
+                all_action_Info.append(Dict)
             all_step_dataset.append(all_action_data_set)
             all_action_info.append(all_action_Info)
         # loop through the steps
@@ -535,8 +529,9 @@ def run_all_test_steps_in_a_test_case(
 
             # get step info
             current_step_name = all_step_info[StepSeq - 1]["step_name"]
-            current_step_id = all_step_info[StepSeq - 1]["step_id"]
-            current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+            CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
+            CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
             step_attachments = all_step_info[StepSeq - 1]['attachments']
@@ -596,6 +591,8 @@ def run_all_test_steps_in_a_test_case(
 
             test_steps_data = all_step_dataset[StepSeq-1]
             test_action_info = all_action_info[StepSeq-1]
+            CommonUtil.all_step_dataset = all_step_dataset
+            CommonUtil.all_action_info = all_action_info
 
             # FIXME: If either one of run on fail or step time throws an
             # exception, both values will be set to a default value. So it has
@@ -642,6 +639,8 @@ def run_all_test_steps_in_a_test_case(
                 "name": current_step_name,
                 "sequence": current_step_sequence,
                 "runtime": round(TestStepEndTime - TestStepStartTime, 5),
+                "time_stamp": CommonUtil.get_timestamp(),
+                "status": sStepResult,
             })
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
@@ -846,6 +845,87 @@ def set_runid_status(item,tc=False):
         shared.Set_Shared_Variables("run_id", item)
 
 
+def send_to_bigquery(execution_log, metrics):
+    # Skip sending to gcp if credentials not available in environment.
+    if "GCP_BIGQUERY_ACTIONS_TABLE_ID" not in os.environ:
+        return
+
+    client = bigquery.Client()
+
+    # Table identifiers - these should be coming from zeuz server.
+    actions_table_id = os.environ["GCP_BIGQUERY_ACTIONS_TABLE_ID"]
+    steps_table_id = os.environ["GCP_BIGQUERY_STEPS_TABLE_ID"]
+    browser_perf_table_id = os.environ["GCP_BIGQUERY_BROWSER_PERF_TABLE_ID"]
+    test_cases_table_id = os.environ["GCP_BIGQUERY_TEST_CASES_TABLE_ID"]
+
+    run_id = execution_log["run_id"]
+    tc_id = execution_log["test_cases"][0]["testcase_no"]
+
+    steps = metrics["node"]["steps"]
+    actions = metrics["node"]["actions"]
+    test_cases = metrics["node"]["test_cases"]
+    try:
+        browser_perf = metrics["browser_performance"]["default"]
+    except:
+        browser_perf = list()
+
+    # A dict of step id to step name
+    step_names = {}
+    for step in steps:
+        step_names[step["id"]] = step["name"]
+
+
+    def send(table, rows, msg):
+        errors = client.insert_rows_json(table, rows)
+        if len(errors) == 0:
+            print(f"Sent {msg} metrics report to BigQuery")
+        else:
+            print(f"Encountered errors while inserting rows for {msg}: {errors}")
+
+
+    def send_actions_metrics():
+        for action in actions:
+            action["run_id"] = run_id
+            action["tc_id"] = tc_id
+            action["step_name"] = step_names[action["step_id"]]
+
+        send(actions_table_id, actions, "actions")
+
+
+    def send_steps_metrics():
+        for step in steps:
+            step["run_id"] = run_id
+            step["tc_id"] = tc_id
+            step["step_id"] = step["id"]
+            del step["id"]
+            step["step_name"] = step["name"]
+            del step["name"]
+            step["step_sequence"] = step["sequence"]
+            del step["sequence"]
+
+        send(steps_table_id, steps, "step")
+
+
+    def send_test_case_metrics():
+        send(test_cases_table_id, test_cases, "test case")
+
+
+    def send_browser_perf_metrics():
+        if len(browser_perf) == 0:
+            return
+
+        for entry in browser_perf:
+            entry["run_id"] = run_id
+
+        send(browser_perf_table_id, browser_perf, "browser perf")
+
+
+    send_actions_metrics()
+    send_steps_metrics()
+    send_test_case_metrics()
+    send_browser_perf_metrics()
+
+
 def run_test_case(
     TestCaseID,
     sModuleInfo,
@@ -871,13 +951,19 @@ def run_test_case(
         CommonUtil.browser_perf = {}
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
+        CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
+        # FIXME: Remove these lines
+        # import random
+        # CommonUtil.d_day = random.randint(1, 4)
+        # CommonUtil.d_hours = random.randint(1, 11)
+        # CommonUtil.d_minutes = random.randint(0, 39)
+        # CommonUtil.d_seconds = random.randint(0, 50)
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
-        shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
         if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
             shared.Set_Shared_Variables("zeuz_prettify_limit", None)
             CommonUtil.prettify_limit = None
@@ -903,20 +989,41 @@ def run_test_case(
         # get test case start time
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
+        if run_id not in CommonUtil.skip_testcases:
+            CommonUtil.skip_testcases_list = []
+            sTestStepResultList = run_all_test_steps_in_a_test_case(
+                testcase_info,
+                test_case,
+                sModuleInfo,
+                run_id,
+                file_specific_steps,
+                final_dependency,
+                final_run_params,
+                temp_ini_file,
+                debug_info,
+                performance
+            )
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
+            run_id] and 'all' in CommonUtil.skip_testcases_list:
+            sTestStepResultList = ['SKIPPED']
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
+            run_id] and test_case in CommonUtil.skip_testcases_list:
+            sTestStepResultList = ['SKIPPED']
+        else:
+            sTestStepResultList = run_all_test_steps_in_a_test_case(
+                testcase_info,
+                test_case,
+                sModuleInfo,
+                run_id,
+                file_specific_steps,
+                final_dependency,
+                final_run_params,
+                temp_ini_file,
+                debug_info,
+                performance
+            )
 
-        # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
-        sTestStepResultList = run_all_test_steps_in_a_test_case(
-            testcase_info,
-            test_case,
-            sModuleInfo,
-            run_id,
-            file_specific_steps,
-            final_dependency,
-            final_run_params,
-            temp_ini_file,
-            debug_info,
-            performance
-        )
+        # TODO: Test case run is completed here somewhere.
 
         ConfigModule.add_config_value(
             "sectionOne",
@@ -959,6 +1066,14 @@ def run_test_case(
             "failreason": ""
         }
         set_runid_status(sTestCaseStatus,tc=True)
+        CommonUtil.test_case_perf.append({
+            "run_id": run_id,
+            "tc_id": TestCaseID,
+            "status": sTestCaseStatus,
+            "runtime": float(TimeDiff),
+            "errors": None,
+            "time_stamp": CommonUtil.get_timestamp(),
+        })
         if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
             TCLogFile = (
                 os.sep
@@ -970,20 +1085,32 @@ def run_test_case(
                 + ".zip"
             )
             after_execution_dict["logid"] = TCLogFile
-        after_execution_dict["metrics"] = {
+
+        metrics = {
+            "run_id": run_id,
+            "tc_id": TestCaseID,
             "browser_performance": CommonUtil.browser_perf,
-            "Node": {
+            "node": {
                 "actions": CommonUtil.action_perf,
-                "step": CommonUtil.step_perf
+                "steps": CommonUtil.step_perf,
+                "test_cases": CommonUtil.test_case_perf,
+                "performance_test": CommonUtil.perf_test_perf,
             }
         }
+
+        after_execution_dict["metrics"] = metrics
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
+
+        if not CommonUtil.debug_status:
+            send_to_bigquery(CommonUtil.all_logs_json[0], metrics)
+        CommonUtil.clear_performance_metrics()
 
         if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
+
             if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                 runid_status = "In-Progress"
             else:
@@ -991,6 +1118,7 @@ def run_test_case(
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             shared.Set_Shared_Variables('runid_status',runid_status)
             shared.Set_Shared_Variables('run_id', run_id)
+            shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1037,9 +1165,10 @@ def run_test_case(
         return "passed"
 
 
-def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid):
+def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
     # Need to set device_info for browserstack here
     global device_info
+    shared.Set_Shared_Variables("device_order", device_order)
     if isinstance(device_order, list):
         try:
             # FIXME: The device info needs to be fixed for deploy v3
@@ -1052,38 +1181,79 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
                 ]
         except:
             pass
-    elif "browser_stack" in device_order and device_order["browser_stack"]:
-        project = user_info_object["project"]
-        team = user_info_object["team"]
 
-        project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
-        build = test_case_no + " :: " + test_case_name
-        name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
-        device_info = {
-            "browserstack device 1": {
-                "basic": {
-                    "browserstack.user": device_order["browser_stack"]["1"]["username"],
-                    "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
-                    # "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
-                    "app": device_order["browser_stack"]["1"]["app_url"],
+    # Todo: check the device_order if it is mobile or web (reimagine after deploy v3)
+    elif "web" in device_order:
+        print("found web from new device_info")
+    elif "mobile" in device_order:
+        if "local" in device_order["mobile"]:
+            pass
+        elif "browser_stack" in device_order["mobile"]:
+            project = f"PROJECT: {user_info_object['project']} & TEAM: {user_info_object['team']}"
+            # build = f"{test_case_no} : {test_case_name}"
+            build = kwargs['run_id']
+            # Todo: session_name will be the run_id of the test case. So, we can reference with our zeuz better
+            # session_name = kwargs['run_id']
+            session_name = f"{test_case_no} : {test_case_name}"
+            # Fixme: Currently only one device will run. Need to optimize for parallel test on multiple device.
+            device_info = {
+                # set URL of the application under test. URL should be unique for each test case
+                "app": device_order["mobile"]["browser_stack"]["app"],
 
-                    "device": device_order["browser_stack"]["1"]["device"],
-                    "os_version": device_order["browser_stack"]["1"]["os_version"],
+                # specify device and os for testing
+                "deviceName": device_order["mobile"]["browser_stack"]["environments"][0]["deviceName"],
+                "platformVersion": device_order["mobile"]["browser_stack"]["environments"][0]["platformVersion"],
 
-                    "project": project,  # zeuz project + team name
-                    "build": build,  # test case no + test case name
-                    "name": name  # Userid + datetime
-                },
-                "other": {
-                    "app_name": device_order["browser_stack"]["1"]["app_name"],
-                },
-
+                # set other browserstack capabilities updated in appium v2
+                "bstack:options": {
+                    # "userName": os.environ.get("browser_stack_user"),
+                    "userName": device_order["mobile"]["browser_stack"]["username"],
+                    # "accessKey": os.environ.get("browser_stack_key"),
+                    "accessKey": device_order["mobile"]["browser_stack"]["access_key"],
+                    "projectName": project,
+                    "buildName": build,
+                    "sessionName": session_name
+                }
             }
-        }
-    elif "aws" in device_order:
-        device_info = {
-            "aws device 1": {}
-        }
+
+        elif "aws" in device_order["mobile"]:
+            device_info = {
+                "aws device 1": {}
+            }
+    # Todo: remove this section. Changing this for new device_info.
+    # elif "browser_stack" in device_order and device_order["browser_stack"]:
+    #     project = user_info_object["project"]
+    #     team = user_info_object["team"]
+    #
+    #     project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
+    #     build = test_case_no + " :: " + test_case_name
+    #     name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
+    #     device_info = {
+    #         "browserstack device 1": {
+    #             "basic": {
+    #                 "browserstack.user": device_order["browser_stack"]["1"]["username"],
+    #                 "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
+    #                 # "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
+    #                 "app": device_order["browser_stack"]["1"]["app_url"],
+    #
+    #                 "device": device_order["browser_stack"]["1"]["device"],
+    #                 "os_version": device_order["browser_stack"]["1"]["os_version"],
+    #
+    #                 "project": project,  # zeuz project + team name
+    #                 "build": build,  # test case no + test case name
+    #                 "name": name  # Userid + datetime
+    #             },
+    #             "other": {
+    #                 "app_name": device_order["browser_stack"]["1"]["app_name"],
+    #             },
+    #
+    #         }
+    #     }
+    # Todo: remove this section. Changing this for new device_info.
+    # elif "aws" in device_order:
+    #     device_info = {
+    #         "aws device 1": {}
+    #     }
     elif "local" in device_order:
         device_order = device_order["local"]
         for each in device_order:
@@ -1095,6 +1265,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             ]
     else:
         device_info = {}
+
+    shared.Set_Shared_Variables("device_info", device_info, protected=True)
 
 
 def get_performance_testing_data_for_test_case(run_id, TestCaseID):
@@ -1574,11 +1746,44 @@ def main(device_dict, user_info_object):
                 else:
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
                 cleanup_driver_instances()  # clean up drivers
+
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)
+                shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
+            # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
+            # string_device_order = run_id_info["device_info"]
             device_order = run_id_info["device_info"]
+            # or
+            # with open(PROJECT_ROOT / "temp/device_info_in_node_v2.json", "r") as device_info_file:
+            #     device_order = json.load(device_info_file)
+
+            if isinstance(device_order, dict):
+                if device_order["deploy_target"] == "browser_stack":
+                    platform_name, platform_version, device_name, device_type = device_order["values"].split(':')
+                    app_name, app_url = device_order["app_info"].split('+')
+                    formated_device_order = {
+                        "mobile": {
+                            "browser_stack": {
+                                "username": device_order['username'],
+                                "access_key": device_order['access_key'],
+                                "platformName": platform_name,
+                                "appName": app_name,
+                                "app": app_url,
+                                "environments": [
+                                    {
+                                        "platformVersion": platform_version,
+                                        "deviceName": device_name,
+                                        "deviceType": device_type
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    device_order = formated_device_order
+
             final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
             # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
 
@@ -1611,8 +1816,14 @@ def main(device_dict, user_info_object):
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
                 if run_id_info["debug_clean"] == "YES":
                     cleanup_driver_instances()
-                    shared.Clean_Up_Shared_Variables()
+                    shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
+
+            final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
+
+            if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
+                shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
 
             final_run_params = {}
             for param in final_run_params_from_server:
@@ -1623,12 +1834,16 @@ def main(device_dict, user_info_object):
                 # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
                 # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
 
+            if final_run_params != {}:
+                shared.Set_Shared_Variables("run_time_params", final_run_params, protected=True)
+                for run_time_params_name in final_run_params:
+                    shared.Set_Shared_Variables(run_time_params_name, final_run_params[run_time_params_name])
+
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
             rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
             rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
-            shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
             global_attachment = GlobalAttachment()
             shared.Set_Shared_Variables("global_attachments", global_attachment)
 
@@ -1636,7 +1851,7 @@ def main(device_dict, user_info_object):
             TestSetStartTime = time.time()
             i = 0
             while i < len(all_testcases_info):
-                if all_testcases_info[i]["automatability"] != "Automated":
+                if all_testcases_info[i]["automatability"] != "Automated" and all_testcases_info[i]["automatability"] != "Performance":
                     CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
                     # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
                     del all_testcases_info[i]
@@ -1674,7 +1889,7 @@ def main(device_dict, user_info_object):
                         performance_test_case = True
                     test_case_no = testcase_info["testcase_no"]
                     test_case_name = testcase_info["title"]
-                    set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
+                    set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid, run_id=run_id)
                     CommonUtil.disabled_step = []
 
                     # Download test case and step attachments
@@ -1682,82 +1897,106 @@ def main(device_dict, user_info_object):
 
                     if performance_test_case:
                         # get performance test info
-                        perf_data = testcase_info["performance data"]
-                        hatch_rate = perf_data["hatch_rate"]
-                        no_of_users = perf_data["no_of_users"]
-                        time_period = perf_data["time_period"]
-
-                        # write locust input file
-                        write_locust_input_file(
-                            time_period,
-                            perf_data,
-                            test_case_no,
-                            sModuleInfo,
-                            run_id,
-                            driver_list,
-                            final_dependency,
-                            final_run_params,
-                            temp_ini_file,
-                            # is_linked,
-                            send_log_file_only_for_fail=send_log_file_only_for_fail,
-                        )
-
-                        # check locust file name
-                        locustFile = "chromeLocustFile.py"
-                        if "Browser" in final_dependency:
-                            if final_dependency["Browser"].lower() == "chrome":
-                                locustFile = "chromeLocustFile.py"
-                            else:
-                                locustFile = "firefoxLocustFile.py"
-                        else:
-                            locustFile = "restLocustFile.py"
-
-                        # get locust file path
-                        locust_file_path = (
-                            os.getcwd()
-                            + os.sep
-                            + "Built_In_Automation"
-                            + os.sep
-                            + "Performance_Testing"
-                            + os.sep
-                            + locustFile
-                        )
-
-                        # make locust query
-                        locustQuery = (
-                                "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
-                                % (locust_file_path, no_of_users, hatch_rate)
-                        )
-
-                        # add log
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
-                            % (test_case_no, no_of_users, hatch_rate, time_period),
-                            1,
-                        )
                         try:
-                            def kill(process):
-                                return process.kill()  # kill process function
-                            process = subprocess.Popen(locustQuery, shell=True)  # locust query process
-                            my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                            perf_data = testcase_info["performance data"]
+                            hatch_rate = perf_data["hatch_rate"]
+                            no_of_users = perf_data["no_of_users"]
+                            time_period = perf_data["time_period"]
+
+                            # write locust input file
+                            write_locust_input_file(
+                                time_period,
+                                perf_data,
+                                test_case_no,
+                                sModuleInfo,
+                                run_id,
+                                driver_list,
+                                final_dependency,
+                                final_run_params,
+                                temp_ini_file,
+                                # is_linked,
+                                send_log_file_only_for_fail=send_log_file_only_for_fail,
+                            )
+
+                            # check locust file name
+                            locustFile = "chromeLocustFile.py"
+                            if "Browser" in final_dependency:
+                                if final_dependency["Browser"].lower() == "chrome":
+                                    locustFile = "chromeLocustFile.py"
+                                else:
+                                    locustFile = "firefoxLocustFile.py"
+                            else:
+                                locustFile = "restLocustFile.py"
+
+                            # get locust file path
+                            locust_file_path = (
+                                os.getcwd()
+                                + os.sep
+                                + "Built_In_Automation"
+                                + os.sep
+                                + "Performance_Testing"
+                                + os.sep
+                                + locustFile
+                            )
+
+                            # make locust query
+                            locustQuery = (
+                                    "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
+                                    % (locust_file_path, no_of_users, hatch_rate)
+                            )
+
+                            # add log
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
+                                % (test_case_no, no_of_users, hatch_rate, time_period),
+                                1,
+                            )
                             try:
-                                my_timer.start()  # start timer
-                                stdout, stderr = process.communicate()  # process communicate
-                            finally:
-                                my_timer.cancel()  # cancel timer
+                                def kill(process):
+                                    return process.kill()  # kill process function
+                                process = subprocess.Popen(locustQuery, shell=True)  # locust query process
+                                my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                                try:
+                                    my_timer.start()  # start timer
+                                    stdout, stderr = process.communicate()  # process communicate
+                                finally:
+                                    my_timer.cancel()  # cancel timer
+                            except Exception as e:
+                                print("exception")
+                                pass
+                            # add log
+                            CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
+                            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                                # upload info
+                                upload_csv_file_info(run_id, test_case_no)
+                            # add log
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Performance Test Results Uploaded Successfully", 1
+                            )
                         except Exception as e:
-                            print("exception")
-                            pass
-                        # add log
-                        CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
-                        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                            # upload info
-                            upload_csv_file_info(run_id, test_case_no)
-                        # add log
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Performance Test Results Uploaded Successfully", 1
-                        )
+                            print(e)
+                            run_test_case(
+                                test_case_no,
+                                sModuleInfo,
+                                run_id,
+                                final_dependency,
+                                final_run_params,
+                                temp_ini_file,
+                                testcase_info,
+                                debug_info,
+                                all_file_specific_steps,
+                                rerun_on_fail,
+                                server_version,
+                                send_log_file_only_for_fail,
+                            )
+                            CommonUtil.clear_all_logs()  # clear logs
+                            if CommonUtil.run_cancel == CANCELLED_TAG:
+                                break
+                            # print("Executed %s test cases" % cnt)
+                            cnt += 1
+
+
                     else:
                         run_test_case(
                             test_case_no,
