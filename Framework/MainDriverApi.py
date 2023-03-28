@@ -829,9 +829,20 @@ def set_important_variables():
                 continue
         if "sr" not in shared.shared_variables:
             shared.shared_variables.update({"sr": shared})
+        
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         raise Exception
+    
+
+def set_runid_status(item,tc=False):
+    if tc:
+        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status")=="In-Progress" else "Blocked")
+    else:
+        shared.Set_Shared_Variables("runid_status",
+                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id') else shared.Get_Shared_Variables("runid_status"))
+
+        shared.Set_Shared_Variables("run_id", item)
 
 
 def send_to_bigquery(execution_log, metrics):
@@ -1054,6 +1065,7 @@ def run_test_case(
             "status": sTestCaseStatus,
             "failreason": ""
         }
+        set_runid_status(sTestCaseStatus,tc=True)
         CommonUtil.test_case_perf.append({
             "run_id": run_id,
             "tc_id": TestCaseID,
@@ -1098,7 +1110,15 @@ def run_test_case(
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
-            shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
+
+            if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
+                runid_status = "In-Progress"
+            else:
+                runid_status = shared.Get_Shared_Variables("runid_status", log=False)
+            # shared.Clean_Up_Shared_Variables()  # clean up shared variables
+            # shared.Set_Shared_Variables('runid_status',runid_status)
+            shared.Set_Shared_Variables('run_id', run_id)
+            # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1695,7 +1715,10 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
+            set_runid_status(run_id)
+
             server_version = run_id_info["server_version"]
+
             CommonUtil.ExecLog(
                 "",
                 f"Server version = {server_version}",
@@ -1718,8 +1741,15 @@ def main(device_dict, user_info_object):
                 CommonUtil.debug_status = True
             else:
                 CommonUtil.debug_status = False
+                if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
+                    runid_status = "In-Progress"
+                else:
+                    runid_status = shared.Get_Shared_Variables("runid_status", log=False)
                 cleanup_driver_instances()  # clean up drivers
-                shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
+
+                # shared.Clean_Up_Shared_Variables()  # clean up shared variables
+                shared.Set_Shared_Variables("runid_status", runid_status)
+                # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
@@ -1844,13 +1874,16 @@ def main(device_dict, user_info_object):
             max_tc_in_single_session = 50    # Todo: make it 25
             all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
+
             for each_session in all_sessions:
                 CommonUtil.current_session_name = "session_" + str(session_cnt)
                 CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
                 all_testcases_info = each_session["test_cases"]
                 # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
+
                 for testcase_info in all_testcases_info:
+                    # shared.Set_Shared_Variables("runid_status", get_status_of_runid(run_id))
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
                         performance_test_case = True
@@ -1983,6 +2016,7 @@ def main(device_dict, user_info_object):
                         if CommonUtil.run_cancel == CANCELLED_TAG:
                             break
                         # print("Executed %s test cases" % cnt)
+
                         cnt += 1
                     CommonUtil.tc_index += 1
 
@@ -2065,6 +2099,7 @@ def main(device_dict, user_info_object):
     except:
         CommonUtil.debug_code_error(sys.exc_info())
         return None
+
 
 
 
