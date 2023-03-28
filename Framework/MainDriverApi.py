@@ -473,7 +473,7 @@ def run_all_test_steps_in_a_test_case(
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
         all_step_info = testcase_info["steps"]
-        all_step_dataset, all_action_info = [], []
+        all_step_dataset, all_action_info, step_attachment_list = [], [], []
         for step_info in all_step_info:
             all_Action_info = step_info["actions"]
             all_action_data_set, all_action_Info = [], []
@@ -486,6 +486,15 @@ def run_all_test_steps_in_a_test_case(
                 all_action_Info.append(Dict)
             all_step_dataset.append(all_action_data_set)
             all_action_info.append(all_action_Info)
+
+            step_attachments = step_info['attachments']
+            step_attachment_list = []
+            for attachment in step_attachments:
+                attachment_name = PurePosixPath(attachment["path"]).name
+                path = str(attachment_path / f"STEP-{attachment['id']}" / attachment_name)
+                step_attachment_list.append(attachment_name)
+                shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
+
         # loop through the steps
         while StepSeq <= Stepscount:
 
@@ -533,14 +542,6 @@ def run_all_test_steps_in_a_test_case(
             CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
 
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
-
-            step_attachments = all_step_info[StepSeq - 1]['attachments']
-            step_attachment_list = []
-            for attachment in step_attachments:
-                attachment_name = PurePosixPath(attachment["path"]).name
-                path = str(attachment_path / f"STEP-{attachment['id']}" / attachment_name)
-                step_attachment_list.append(attachment_name)
-                shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
             # add config value
             ConfigModule.add_config_value(
@@ -651,7 +652,7 @@ def run_all_test_steps_in_a_test_case(
                 minutes, seconds = remainder // 60, remainder % 60
                 TestStepDuration = "%02d:%02d:%s" % (hours, minutes, round(seconds, 3))
             TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
-            for i in step_attachment_list: shared.Remove_From_Shared_Variables(i, attachment_var=True)  # Cleanup step_attachment variables
+            # for i in step_attachment_list: shared.Remove_From_Shared_Variables(i, attachment_var=True)  # Cleanup step_attachment variables
 
             if sStepResult:
                 sTestStepResultList.append(sStepResult.upper())
