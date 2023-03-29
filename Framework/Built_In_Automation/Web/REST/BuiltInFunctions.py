@@ -750,6 +750,7 @@ def handle_rest_call(
     session_name=None,
     allow_redirects=True,
     cert=None,
+    print_output=True,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -966,7 +967,7 @@ def handle_rest_call(
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_raw=True),
+                Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_variable=print_output, print_raw=print_output),
                 CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
@@ -1103,7 +1104,7 @@ def handle_rest_call(
                 )
                 json_of_response = ast.literal_eval(response_text)
                 Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_raw=True)
+                Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_variable=print_output, print_raw=print_output)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text converted to json and saved in 'http_response' shared variable",
@@ -1117,7 +1118,7 @@ def handle_rest_call(
                     2,
                 )
                 Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", response_text, print_raw=True)
+                Shared_Resources.Set_Shared_Variables("http_response", response_text, print_variable=print_output, print_raw=print_output)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text saved in 'http_response' shared variable",
@@ -1160,6 +1161,7 @@ def Get_Response(step_data, save_cookie=False):
         session_name = None
         allow_redirects = True
         cert = None
+        print_output = True
 
         for left, mid, right in step_data:
             left = left.lower()
@@ -1186,6 +1188,8 @@ def Get_Response(step_data, save_cookie=False):
                 cert = right.strip()
             elif "allow redirect" in left:
                 allow_redirects = True if "true" in right.lower() else False
+            elif "print output" in left:
+                print_output = True if "true" in right.lower() else False
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -1205,6 +1209,7 @@ def Get_Response(step_data, save_cookie=False):
                     session_name=session_name,
                     allow_redirects=allow_redirects,
                     cert=cert,
+                    print_output=print_output,
                 )
                 return return_result
             except Exception:
