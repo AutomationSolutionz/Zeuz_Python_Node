@@ -1669,7 +1669,17 @@ def Click_Element(data_set, retry=0):
 
 @logger
 def Click_and_Download(data_set):
-    """ Click and download attachments from web and save it to specific destinations"""
+    """ Click and download attachments from web and save it to specific destinations
+    Support:
+    if need to handle Save window supports Windows only, Chrome only
+    Otherwise supports any system
+    Dataset:
+    wait for download       optional parameter      20
+    automate save window    optional parameter      chrome,edge,firefox,none
+    filepath                optional parameter      filename.extension
+    id                      element parameter       download_button_id
+    click and download      selenium action         click and download
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
@@ -1682,6 +1692,7 @@ def Click_and_Download(data_set):
     wait_download = 20
     filepath = ""
     automate_firefox = False
+    automate_chrome = False
     try:
         click_dataset = []
         for left, mid, right in data_set:
@@ -1691,8 +1702,9 @@ def Click_and_Download(data_set):
             elif l in ("folderpath", "directory", "filepath", "file", "folder") and mid.strip().lower() in ("parameter", "option"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
-            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in ("parameter", "option"):
-                automate_firefox = right.strip().lower() in ("accept", "yes", "ok", "true")
+            elif l == "automatesavewindow" and mid.strip().lower() in ("parameter", "option"):
+                automate_firefox = "firefox" in right.replace(" ", "").lower()
+                automate_chrome = "chrome" in right.replace(" ", "").lower() or "edge" in right.replace(" ", "").lower()
             else:
                 click_dataset.append((left, mid, right))
 
@@ -1760,6 +1772,77 @@ def Click_and_Download(data_set):
                 import pyautogui
                 pyautogui.hotkey("down")
                 pyautogui.hotkey("enter")
+
+        if selenium_driver.capabilities["browserName"].strip().lower() == "chrome" and automate_chrome:
+            if platform.system() == "Windows":
+                try:
+                    from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element as win_Click_Element, wait_for_element, Enter_Text_In_Text_Box as win_enter_text
+                    for process in psutil.process_iter():
+                        if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                            pid = str(process.pid)
+                    window_ds = ("window pid", "element parameter", pid)
+                    wait_ds = [
+                        window_ds,
+                        ("Name", "element parameter", "Save"),
+                        ("LocalizedControlType", "element parameter", "button"),
+                        ("Class", "element parameter", "Button"),
+                        ("AutomationId", "element parameter", "1"),
+                        ("wait to appear", "windows action", "7"),
+                    ]
+                    CommonUtil.ExecLog(sModuleInfo, "Checking if any Save window is opened", 1)
+                    if wait_for_element(wait_ds) == "zeuz_failed":
+                        CommonUtil.ExecLog(sModuleInfo, "No Save window is found. Continuing...", 1)
+                    else:
+                        enter_text_ds = [
+                            window_ds,
+                            ("wait", "optional parameter", "5"),
+                            ("LocalizedControlType", "element parameter", "edit"),
+                            ("AutomationId", "element parameter", "1001"),
+                            ("Class", "element parameter", "Edit"),
+                            ("text", "windows action", f'"{filepath}"'),
+                        ]
+                        CommonUtil.ExecLog(sModuleInfo, f'Entering the following filepath:\n"{filepath}"', 1)
+                        if win_enter_text(enter_text_ds) == "zeuz_failed":
+                            CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method", 2)
+                            _gui_upload(f'"{filepath}"')
+                            CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % filepath, 1)
+                            return "passed"
+
+                        save_click_ds = [
+                            window_ds,
+                            ("Name", "element parameter", "Save"),
+                            ("LocalizedControlType", "element parameter", "button"),
+                            ("Class", "element parameter", "Button"),
+                            ("AutomationId", "element parameter", "1"),
+                            ("wait to appear", "windows action", "5"),
+                        ]
+                        if win_Click_Element(save_click_ds) == "zeuz_failed":
+                            CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
+                            import pyautogui
+                            pyautogui.hotkey("down")
+                            pyautogui.hotkey("enter")
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "Clicked on Save button", 1)
+                        replace_click_ds = [
+                            window_ds,
+                            ("Name", "element parameter", "Yes"),
+                            ("LocalizedControlType", "element parameter", "button"),
+                            ("Class", "element parameter", "CCPushButton"),
+                            ("AutomationId", "element parameter", "CommandButton_6"),
+                            ("wait to appear", "windows action", "2.5"),
+                        ]
+                        CommonUtil.ExecLog(sModuleInfo, "Checking if any Replace button appeared", 1)
+                        win_Click_Element(replace_click_ds)
+                        return "passed"
+                        # Returning passed cause moving file wont be needed anymore
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
+
+            else:
+                # Todo: Test this on Mac and Linux
+                # import pyautogui
+                # _gui_upload(f'"{filepath}"')
+                pass    # cant do GUI cause need to identify that there are save window
 
         if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge", "firefox"):
             CommonUtil.ExecLog(sModuleInfo, "Download started. Will wait max %s seconds..." % wait_download, 1)
