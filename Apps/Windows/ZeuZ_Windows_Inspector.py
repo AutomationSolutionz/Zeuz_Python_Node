@@ -418,6 +418,13 @@ def _child_search(ParentElement, level, parenthesis=1):
                 path += create_path(index_trace, each_child)
                 found = True
                 if not element_plugin:
+                    try: value = str(each_child.GetCurrentPattern(ValuePattern.Pattern).Current.Value)
+                    except: value = ""
+                    pattern_list = []
+                    for each in each_child.GetSupportedPatterns():
+                        pattern_list.append(Automation.PatternName(each))
+                    other_info["patterns"] = pattern_list
+                    if value: other_info["Value"] = f'"{value}"'
                     xml_len = len(xml_str)
             if not temp and found:
                 temp = _child_search(each_child, level+1, parenthesis+1)
@@ -430,13 +437,6 @@ def _child_search(ParentElement, level, parenthesis=1):
 
         if found and not element_plugin:
             xml_str = xml_str[:xml_len-1] + ' zeuz="aiplugin"' + xml_str[xml_len-1:]
-            try: value = str(each_child.GetCurrentPattern(ValuePattern.Pattern).Current.Value)
-            except: value = ""
-            pattern_list = []
-            for each in each_child.GetSupportedPatterns():
-                pattern_list.append(Automation.PatternName(each))
-            other_info["patterns"] = pattern_list
-            if value: other_info["value"] = value
             element_plugin = True
         return path + temp
 
@@ -549,8 +549,9 @@ def create_tag(elem, end_elem=False):
     s = "<"
     for i in elem.attrib:
         s = s + i + '="' + elem.attrib[i] + '" '
-    for i in other_info:
-        s = f"{s}{i}={other_info[i]} "
+    if end_elem:
+        for i in other_info:
+            s = f"{s}{i}={other_info[i]} "
     s = s[:-1] + ">"
     return s
 
