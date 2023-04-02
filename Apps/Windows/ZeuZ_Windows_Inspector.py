@@ -38,6 +38,7 @@ clr.AddReference(dll_path + "UIAutomationProvider")
 clr.AddReference( "System.Windows.Forms")
 x, y = -1, -1
 path_priority = 0
+other_info = {}
 xml_str = ""
 path = ""
 from System.Windows.Automation import *
@@ -429,6 +430,13 @@ def _child_search(ParentElement, level, parenthesis=1):
 
         if found and not element_plugin:
             xml_str = xml_str[:xml_len-1] + ' zeuz="aiplugin"' + xml_str[xml_len-1:]
+            try: value = str(each_child.GetCurrentPattern(ValuePattern.Pattern).Current.Value)
+            except: value = ""
+            pattern_list = []
+            for each in each_child.GetSupportedPatterns():
+                pattern_list.append(Automation.PatternName(each))
+            other_info["patterns"] = pattern_list
+            if value: other_info["value"] = value
             element_plugin = True
         return path + temp
 
@@ -537,10 +545,12 @@ try:
 except:
     No_of_level_to_skip = 0
 
-def create_tag(elem):
+def create_tag(elem, end_elem=False):
     s = "<"
     for i in elem.attrib:
         s = s + i + '="' + elem.attrib[i] + '" '
+    for i in other_info:
+        s = f"{s}{i}={other_info[i]} "
     s = s[:-1] + ">"
     return s
 
@@ -548,7 +558,7 @@ def create_tag(elem):
 def printTree(root,tree):
     for child in root:
         if child.get('zeuz') == "aiplugin":
-            tree.add(f"[bold green]{create_tag(child)}", guide_style="red")
+            tree.add(f"[bold green]{create_tag(child, end_elem=True)}", guide_style="red")
             return
         elif child.findall(".//*[@zeuz='aiplugin']"):
             temp = tree.add(f"[yellow]{create_tag(child)}", guide_style="red")
@@ -559,7 +569,7 @@ def printTree(root,tree):
 
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count, list_path
+        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count, list_path, other_info
         auth_thread = Authenticate()
         while True:
             if debugger_is_active():
@@ -568,6 +578,7 @@ def main():
                 os.system('pause')
             print("Hover over the Element and press control")
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
+            other_info = {}
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
 
