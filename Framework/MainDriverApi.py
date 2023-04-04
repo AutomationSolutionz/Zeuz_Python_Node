@@ -1746,7 +1746,9 @@ def main(device_dict, user_info_object):
                     runid_status = "In-Progress"
                 else:
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-                cleanup_driver_instances()  # clean up drivers
+                if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in (
+                "on", "yes", "true", "ok", "enable"):
+                    cleanup_driver_instances()  # clean up drivers
 
                 # shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)
