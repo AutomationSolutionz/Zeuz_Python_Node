@@ -201,16 +201,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-    # TODO: use pathlib
-    test_case_folder = (
-        log_file_path +
-        os.sep +
-        run_id.replace(":", "-") +
-        os.sep +
-        CommonUtil.current_session_name +
-        os.sep +
-        test_case.replace(":", "-")
-    )
+    run_id_folder = str(Path(log_file_path)/run_id.replace(":", "-"))
+    test_case_folder = str(Path(run_id_folder)/CommonUtil.current_session_name/test_case.replace(":", "-"))
 
     # TODO: Use pathlib for following items
     # create test_case_folder
@@ -246,7 +238,7 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     # ? Why are we keeping two separate download folders?
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
     FL.CreateFolder(zeuz_download_folder)
-    initial_download_folder = zeuz_download_folder + os.sep + "initial_download_folder"
+    initial_download_folder = run_id_folder + os.sep + "initial_download_folder"
     FL.CreateFolder(initial_download_folder)
     ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
     shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
