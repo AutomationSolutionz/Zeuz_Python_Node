@@ -838,10 +838,10 @@ def set_important_variables():
 
 def set_runid_status(item,tc=False):
     if tc:
-        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status")=="In-Progress" else "Blocked")
+        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status",log=False)=="In-Progress" else "Blocked")
     else:
         shared.Set_Shared_Variables("runid_status",
-                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id') else shared.Get_Shared_Variables("runid_status"))
+                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id',log=False) else shared.Get_Shared_Variables("runid_status",log=False))
 
         shared.Set_Shared_Variables("run_id", item)
 
