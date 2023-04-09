@@ -338,12 +338,10 @@ def db_select(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
-        variable_name = None
         query = None
         session_name = 'default'
-
+        variable_name = None
         for left, mid, right in data_set:
             if left == "query":
                 # Get the and query, and remove any whitespaces
@@ -371,6 +369,7 @@ def db_select(data_set):
 
                 # Fetch all rows and convert into list
                 db_rows = []
+
                 while True:
                     db_row = db_cursor.fetchone()
                     if not db_row:
@@ -389,7 +388,9 @@ def db_select(data_set):
         )
         return "passed"
     except Exception as e:
+        sr.Set_Shared_Variables(variable_name, e)
         return handle_db_exception(sModuleInfo, e)
+    #change
 
 
 @logger
