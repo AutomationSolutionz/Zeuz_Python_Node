@@ -491,7 +491,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
 def clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus):
     global all_logs_json
     for step in all_logs_json[runid_index]["test_cases"][tc_index]["steps"]:
-        del step["actions"]
+        # del step["actions"]
         if send_log_file_only_for_fail and not rerun_on_fail and sTestCaseStatus == "Passed" and "log" in step:
             del step["log"]
 
