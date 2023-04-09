@@ -19,10 +19,10 @@ def binary_classification(message:str, labels: list, confidence:float=0.6, hypot
     prediction = classifier(message, labels, hypothesis_template=hypothesis_template, multi_label=True)
     score = prediction["scores"][0]
     if score >= confidence:
-        CommonUtil.ExecLog("[Facebook-Bart]", f'"{message}" got {round(score,4)} score on "{labels[0]}" category"', 1)
+        CommonUtil.ExecLog("[Facebook-Bart]", f'"{message}" got {round(score,4)} score on "{labels[0]}" category', 1)
         return {"status": "passed"}
     else:
-        CommonUtil.ExecLog("[Facebook-Bart]", f'"{message}" got {round(score,4)} score on "{labels[0]}" category"', 3)
+        CommonUtil.ExecLog("[Facebook-Bart]", f'"{message}" got {round(score,4)} score on "{labels[0]}" category', 3)
         return {"status": "zeuz_failed"}
 
 
