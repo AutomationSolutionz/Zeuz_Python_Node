@@ -3,6 +3,7 @@ import threading
 import inspect
 from concurrent import futures
 from typing import Callable, List, Tuple, Union, Any
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 from Framework.Utilities import CommonUtil
 
@@ -93,15 +94,27 @@ def performance_action_handler(
         for left, _, right in data_set:
             left, right = left.strip(), right.strip()
             if "number of cycles" in left:
-                number_of_cycles = int(right)
+                if right.strip().startswith("%|"):
+                    number_of_cycles = int(sr.get_previous_response_variables_in_strings(right.strip()))
+                else:
+                    number_of_cycles = int(right)
             elif "step increment" in left:
-                step_increment = int(right)
+                if right.strip().startswith("%|"):
+                    step_increment = int(sr.get_previous_response_variables_in_strings(right.strip()))
+                else:
+                    step_increment = int(right)
             elif "ramp" in left:
-                ramp = right.strip()
+                if right.strip().startswith("%|"):
+                    ramp = int(sr.get_previous_response_variables_in_strings(right.strip()))
+                else:
+                    ramp = int(right)
             elif "debug print" in left:
                 CommonUtil.performance_testing = not CommonUtil.parse_value_into_object(right.strip())
             elif "max workers" in left:
-                max_workers = int(right)
+                if right.strip().startswith("%|"):
+                    max_workers = int(sr.get_previous_response_variables_in_strings(right.strip()))
+                else:
+                    max_workers = int(right)
                 if max_workers <= 1:
                     # max workers cannot be less than 2 otherwise we'll have a
                     # deadlock
