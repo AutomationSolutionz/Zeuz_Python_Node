@@ -120,7 +120,13 @@ def performance_action_handler(
                     # deadlock
                     max_workers = 2
             elif "performance action" in left:
-                action_ranges=right.split(',') # 5-7,8,9-14 to [5-7,8,9-14]
+                # 5-7,8,9-14 to [5-7,8,9-14]
+                
+                if right.strip().startswith("%|"):
+                    right = sr.get_previous_response_variables_in_strings(right.strip())
+                
+                action_ranges = right.split(',')
+                
                 actions_to_execute=[]
                 for action_range in action_ranges:
                     action_range=action_range.split('-') #[5-7] to [5,7], [5] to [5] if no '-' present
