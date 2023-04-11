@@ -415,8 +415,9 @@ def get_performance_metrics(dataset):
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
         # time.sleep(5)
-        perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
-        Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
+        if not remote_host:
+            perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
+            Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -483,6 +484,44 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
     #     selenium_driver.close()
     # except:
     #     pass
+
+    try:
+        browerstack_config = json.loads(browser)
+    except ValueError as e:
+        browerstack_config = False
+
+    if browerstack_config:
+        if 'remote_host' in browerstack_config.keys():
+            browser = 'browserstack'
+            remote_host = browerstack_config['remote_host']
+            desired_cap = browerstack_config['desired_cap']
+            remote_desired_cap = {
+                'bstack:options' : {
+                    "platformName" : desired_cap["os"],
+                    "osVersion" : desired_cap['os_version'],
+                },
+                "browserName" : desired_cap['browser'],
+                "browserVersion" : desired_cap['browser_version'],
+            }
+
+
+            # selenium_driver = webdriver.Remote(
+            #     command_executor= remote_host + '/wd/hub',
+            #     desired_capabilities=desired_cap)
+            # selenium_driver.implicitly_wait(WebDriver_Wait)
+            # if not window_size_X and not window_size_Y:
+            #     selenium_driver.set_window_size(default_x, default_y)
+            #     selenium_driver.maximize_window()
+            # else:
+            #     if not window_size_X:
+            #         window_size_X = 1000
+            #     if not window_size_Y:
+            #         window_size_Y = 1000
+            #     selenium_driver.set_window_size(window_size_X, window_size_Y)
+            # CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
+            # Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            # CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            # return "passed"
 
     try:
         CommonUtil.teardown = True
@@ -831,6 +870,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
+        elif 'browserstack' in browser:
+            selenium_driver = webdriver.Remote(
+                command_executor= remote_host + '/wd/hub',
+                desired_capabilities=remote_desired_cap)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            if not window_size_X and not window_size_Y:
+                selenium_driver.set_window_size(default_x, default_y)
+                selenium_driver.maximize_window()
+            else:
+                if not window_size_X:
+                    window_size_X = 1000
+                if not window_size_Y:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
+            CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            return "passed"
 
         else:
             CommonUtil.ExecLog(
@@ -1072,7 +1129,12 @@ def Go_To_Link(step_data, page_title=False):
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
             if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                selenium_driver.execute_cdp_cmd("Performance.enable", {})
+                try:
+                    selenium_driver.execute_cdp_cmd("Performance.enable", {})
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
+                    )
 
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
@@ -3598,7 +3660,12 @@ def Tear_Down_Selenium(step_data=[]):
                     # with open(perf_file, "w", encoding="utf-8") as f:
                     #     json.dump(perf_json_data, f, indent=2)
                     if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                        selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                        try:
+                            selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                        except:
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
+                            )    
                 except:
                     errMsg = "Unable to extract performance metrics of driver_id='%s'" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
@@ -3627,7 +3694,12 @@ def Tear_Down_Selenium(step_data=[]):
                 # with open(perf_file, "w", encoding="utf-8") as f:
                 #     json.dump(perf_json_data, f, indent=2)
                 if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                    selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
+                    try:
+                        selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
+                    except:
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
+                        )
                 selenium_details[driver_id]["driver"].quit()
                 CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
             except:
