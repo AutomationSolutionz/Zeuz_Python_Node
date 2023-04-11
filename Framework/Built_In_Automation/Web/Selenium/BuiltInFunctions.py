@@ -3645,10 +3645,10 @@ def Tear_Down_Selenium(step_data=[]):
                 selenium_driver = None
                 current_driver_id = driver_id
 
-            global vdisplay
-            if vdisplay:
-                 vdisplay.stop()
-                 vdisplay = None
+        global vdisplay
+        if vdisplay:
+            vdisplay.stop()
+            vdisplay = None
 
         return "passed"
     except Exception:
