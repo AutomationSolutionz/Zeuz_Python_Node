@@ -495,14 +495,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             browser = 'browserstack'
             remote_host = browerstack_config['remote_host']
             desired_cap = browerstack_config['desired_cap']
-            # remote_desired_cap = {
-            #     'bstack:options' : {
-            #         "platformName" : desired_cap["os"],
-            #         "osVersion" : desired_cap['os_version'],
-            #     },
-            #     "browserName" : desired_cap['browser'],
-            #     "browserVersion" : desired_cap['browser_version'],
-            # }
             remote_desired_cap = {
                 'bstack:options' : {
                 "os" : desired_cap["os"],
