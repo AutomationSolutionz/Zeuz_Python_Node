@@ -495,14 +495,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             browser = 'browserstack'
             remote_host = browerstack_config['remote_host']
             desired_cap = browerstack_config['desired_cap']
+            # remote_desired_cap = {
+            #     'bstack:options' : {
+            #         "platformName" : desired_cap["os"],
+            #         "osVersion" : desired_cap['os_version'],
+            #     },
+            #     "browserName" : desired_cap['browser'],
+            #     "browserVersion" : desired_cap['browser_version'],
+            # }
             remote_desired_cap = {
                 'bstack:options' : {
-                    "platformName" : desired_cap["os"],
-                    "osVersion" : desired_cap['os_version'],
+                "os" : desired_cap["os"],
+                "osVersion" : desired_cap['os_version'],
+                "browserVersion" : desired_cap['browser_version'],
+                "local" : "false",
+                "seleniumVersion" : "4.8.0",
                 },
                 "browserName" : desired_cap['browser'],
-                "browserVersion" : desired_cap['browser_version'],
-            }
+                }
 
 
             # selenium_driver = webdriver.Remote(
@@ -1111,7 +1121,13 @@ def Go_To_Link(step_data, page_title=False):
             "EdgeChromiumHeadless": "msedge",
         }
 
-        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+        
+        is_browserstack = 'browserstack' in dependency["Browser"]
+        if is_browserstack and driver_id in selenium_details:
+            selenium_driver = selenium_details[driver_id]["driver"]
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+
+        elif driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
             if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
                 Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
