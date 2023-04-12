@@ -1435,8 +1435,8 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
 
             for testcase in tc_report[CommonUtil.runid_index]["test_cases"]:
                 for step in testcase["steps"]:
-                    if "actions" in step:
-                        del step["actions"]
+                    # if "actions" in step:
+                    #     del step["actions"]
                     if "log" in step:
                         del step["log"]
 
