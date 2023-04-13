@@ -415,9 +415,9 @@ def get_performance_metrics(dataset):
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
         # time.sleep(5)
-        if not remote_host:
-            perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
-            Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
+
+        perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
+        Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -480,18 +480,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     CommonUtil.ExecLog(
                     sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
                 )
-    # try:
-    #     selenium_driver.close()
-    # except:
-    #     pass
-
-    try:
-        browerstack_config = json.loads(browser)
-    except ValueError as e:
-        browerstack_config = False
-
-    if browerstack_config:
-        if 'remote_host' in browerstack_config.keys():
+    
+    is_browserstack = 'browserstack' in browser
+    if is_browserstack:
+        try:
+            browerstack_config = json.loads(browser)
             browser = 'browserstack'
             remote_host = browerstack_config['remote_host']
             desired_cap = browerstack_config['desired_cap']
@@ -505,25 +498,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 },
                 "browserName" : desired_cap['browser'],
                 }
-
-
-            # selenium_driver = webdriver.Remote(
-            #     command_executor= remote_host + '/wd/hub',
-            #     desired_capabilities=desired_cap)
-            # selenium_driver.implicitly_wait(WebDriver_Wait)
-            # if not window_size_X and not window_size_Y:
-            #     selenium_driver.set_window_size(default_x, default_y)
-            #     selenium_driver.maximize_window()
-            # else:
-            #     if not window_size_X:
-            #         window_size_X = 1000
-            #     if not window_size_Y:
-            #         window_size_Y = 1000
-            #     selenium_driver.set_window_size(window_size_X, window_size_Y)
-            # CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
-            # Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            # CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            # return "passed"
+        except ValueError as e:
+            is_browserstack = False
+            CommonUtil.ExecLog(
+                    sModuleInfo, "Unable to parse browserstack config. Running the browser locally", 3
+                )
 
     try:
         CommonUtil.teardown = True
@@ -886,7 +865,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 if not window_size_Y:
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Started {remote_desired_cap['browserName']} on Browserstack", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
