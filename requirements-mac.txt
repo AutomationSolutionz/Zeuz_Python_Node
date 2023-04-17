@@ -55,3 +55,6 @@ python-dotenv
 google-cloud-bigquery
 google-cloud-bigquery-storage
 deepdiff
+torch
+torchvision
+transformers

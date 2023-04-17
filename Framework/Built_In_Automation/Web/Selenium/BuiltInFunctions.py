@@ -55,6 +55,7 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
     skipped_tag_list,
 )
+from Framework.AI.NLP import binary_classification
 from settings import temp_ini_file
 
 #########################
@@ -2678,6 +2679,7 @@ def Validate_Text(step_data):
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         ignore_case = False
+        zeuz_ai = None
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -2687,8 +2689,10 @@ def Validate_Text(step_data):
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
-            elif each_step_data_item[1] == "parameter" and each_step_data_item[0] == "ignore case":
+            elif each_step_data_item[1].strip().lower() in ("parameter", "option") and each_step_data_item[0] == "ignore case":
                 ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
+            elif each_step_data_item[1].strip().lower() in ("parameter", "option") and each_step_data_item[0].replace(" ", "").replace("_", "") == "zeuzai":
+                zeuz_ai = CommonUtil.parse_value_into_object(each_step_data_item[2])
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
         if ignore_case:
             expected_text_data = expected_text_data.lower()
@@ -2701,7 +2705,20 @@ def Validate_Text(step_data):
                 visible_list_of_element_text.append(each_text_item)
 
         # if step_data[0][len(step_data[0])-1][0] == "validate partial text":
-        if validation_type == "validate partial text":
+        if zeuz_ai is not None:
+            """{
+                "binary_classification":{
+                    "expected_category":"success",
+                    "confidence": 0.7
+                }
+             }
+             """
+            message = " ".join(visible_list_of_element_text)
+            labels = [zeuz_ai["binary_classification"]["expected_category"]]
+            confidence = zeuz_ai["binary_classification"]["confidence"]
+            return binary_classification(message, labels, confidence)["status"]
+
+        elif validation_type == "validate partial text":
             actual_text_data = visible_list_of_element_text
             CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
             CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
@@ -2718,7 +2735,7 @@ def Validate_Text(step_data):
             )
             return "zeuz_failed"
         # if step_data[0][len(step_data[0])-1][0] == "validate full text":
-        if validation_type == "validate full text":
+        elif validation_type == "validate full text":
             actual_text_data = visible_list_of_element_text
             CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
             CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
@@ -2736,9 +2753,7 @@ def Validate_Text(step_data):
                 return "zeuz_failed"
 
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Incorrect validation type. Please check step data", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
             return "zeuz_failed"
 
     except Exception:
