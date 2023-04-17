@@ -973,6 +973,9 @@ def command_line_args() -> Path:
     parser_object.add_argument(
         "-spu", "--stop_pip_auto_update", action="store_true", help="Auto python modules from auto updating"
     )
+    parser_object.add_argument(
+        "-sbl", "--show_browser_log", action="store_true", help="Show browserlog in the console"
+    )
 
     all_arguments = parser_object.parse_args()
 
@@ -986,6 +989,7 @@ def command_line_args() -> Path:
     auto_update = all_arguments.auto_update
     gh_token = all_arguments.gh_token
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
+    show_browser_log = all_arguments.show_browser_log
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1013,6 +1017,9 @@ def command_line_args() -> Path:
 
     if not stop_pip_auto_update:
         update_outdated_modules()
+
+    if show_browser_log:
+        CommonUtil.show_browser_log = True
 
     if server and server[-1] == "/":
         server = server[:-1]

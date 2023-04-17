@@ -167,7 +167,7 @@ def write_browser_logs():
         if sr.Test_Shared_Variables("selenium_driver"):
             driver = sr.Get_Shared_Variables("selenium_driver")
             for browser_log in driver.get_log("browser"):
-                CommonUtil.ExecLog(sModuleInfo, browser_log["message"], 6,print_Execlog=False)
+                CommonUtil.ExecLog(sModuleInfo, browser_log["message"], 6,print_Execlog=CommonUtil.show_browser_log)
     except Exception as e:
         print("Browser Log Exception: {}".format(e))
         pass
