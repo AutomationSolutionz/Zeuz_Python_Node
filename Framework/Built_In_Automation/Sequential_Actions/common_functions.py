@@ -5785,22 +5785,22 @@ def data_store_read(data_set):
                 q = re.sub(r"\bor\b",",",q)
                 temp= q.split(',')
                 t = temp[0].split('=')
-                params['and_' + t[0].strip()] = [t[1].strip()]
+                params['and_' + t[0].strip()] = [t[1]]
                 i = 1
                 j=0
                 for s in temp[1:]:
                     if logic[j] == 'and':
                         t = temp[i].split('=')
                         if 'and_' + t[0].strip() not in params:
-                            params['and_' + t[0].strip()] = [t[1].strip()]
-                        else:params['and_' + t[0].strip()].append(t[1].strip())
+                            params['and_' + t[0].strip()] = [t[1]]
+                        else:params['and_' + t[0].strip()].append(t[1])
                         i+=1
                         j+=1
                     elif logic[j] == 'or':
                         t = temp[i].split('=')
                         if 'or_' + t[0].strip() not in params:
-                            params['or_' + t[0].strip()] = [t[1].strip()]
-                        else:params['or_' + t[0].strip()].append(t[1].strip())
+                            params['or_' + t[0].strip()] = [t[1]]
+                        else:params['or_' + t[0].strip()].append(t[1])
 
                         i += 1
                         j+=1
