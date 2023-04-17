@@ -108,7 +108,7 @@ previous_log_line = None
 teardown = True
 print_execlog = True
 prettify_limit = None
-
+show_browser_log = False
 step_module_name = None
 
 debug_status = False
