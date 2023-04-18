@@ -107,6 +107,9 @@ declarations = (
     # Authenticator code generator action
     {"name": "authenticator code generator",                 "function": "authenticator_code_generator",          "screenshot": "none" },
 
+    # AI actions
+    {"name": "classifier ai",                                "function": "classifier_AI",                          "screenshot": "none" },
+
 ) # yapf: disable
 
 module_name = "common"

@@ -5984,3 +5984,51 @@ def data_store_insert(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def classifier_AI(data_set):
+    """Classifier AI. Current model: Facebook-Bart. Tells us what percentage a test falls into a certain category
+    Args:
+        data_set:
+          category      | input parameter   | success/failure
+          text          | input parameter   | Username and password matched
+          classifier ai | common action     | variable_name
+
+    Returns:
+        variable_name = {
+            "confidence": 0.9794
+        }
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    from Framework.AI.NLP import category_score
+
+    try:
+
+        message = ""
+        category = ""
+        variable_name = ""
+
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if "category" in left:
+                    category = right.strip().lower()
+                elif "message" in left:
+                    message = right.strip().lower()
+                elif "action" in mid:
+                    variable_name = right.strip()
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
+            return "zeuz_failed"
+
+        if not (category and message and variable_name):
+            CommonUtil.ExecLog(sModuleInfo, "Category, text and variable name should be provided", 3)
+            return "zeuz_failed"
+
+        model_output = category_score(message, category)
+        variable_value = {"confidence": model_output["score"]}
+        return sr.Set_Shared_Variables(variable_name, variable_value)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
