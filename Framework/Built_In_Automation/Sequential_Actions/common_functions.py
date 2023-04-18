@@ -5984,3 +5984,45 @@ def data_store_insert(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def xml_to_json(data_set):
+    """
+    """
+    import xmltodict
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        filepath = None
+        json_var_name = None
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            if "file path" in left:
+                filepath = right.strip()
+                filepath = Path(CommonUtil.path_parser(filepath))
+            if "xml to json" in left:
+                json_var_name = right.strip()
+        
+        if None in (filepath,json_var_name):
+            CommonUtil.ExecLog(sModuleInfo, "Please specify both filename and json variable name", 3)
+
+        if filepath != None and filepath.is_file():
+            try:
+                with open(filepath) as xml_file:
+                    data_dict = xmltodict.parse(xml_file.read())
+                result = sr.Set_Shared_Variables(json_var_name, data_dict)  
+                return result
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
+                return "zeuz_failed"
+                
+
+            
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Specified file couldn't be found or downloaded from attachment", 3)
+            return "zeuz_failed" 
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())

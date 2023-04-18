@@ -107,6 +107,8 @@ declarations = (
     # Authenticator code generator action
     {"name": "authenticator code generator",                 "function": "authenticator_code_generator",          "screenshot": "none" },
 
+    {"name": "xml to json",                                  "function": "xml_to_json",                           "screenshot": "none" },
+
 ) # yapf: disable
 
 module_name = "common"
