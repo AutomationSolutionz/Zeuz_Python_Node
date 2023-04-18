@@ -68,3 +68,4 @@ pywin32
 torch
 torchvision
 transformers
+xmltodict

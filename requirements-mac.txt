@@ -58,3 +58,4 @@ deepdiff
 torch
 torchvision
 transformers
+xmltodict
