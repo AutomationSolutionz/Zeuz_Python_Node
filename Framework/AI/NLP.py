@@ -26,5 +26,14 @@ def binary_classification(message:str, labels: list, confidence:float=0.6, hypot
         return {"status": "zeuz_failed"}
 
 
+def category_score(message:str, label: str, hypothesis_template:str="The sentiment of this review is {}."):
+    from transformers import pipeline
+    classifier = pipeline('zero-shot-classification', model='facebook/bart-large-mnli')
+    prediction = classifier(message, [label], hypothesis_template=hypothesis_template, multi_label=True)
+    score = prediction["scores"][0]
+    CommonUtil.ExecLog("[Facebook-Bart]", f'"{message}" got {round(score,4)} score on "{label}" category', 1)
+    return {"score": score}
+
+
 if __name__ == "__main___":
     pass
