@@ -1064,7 +1064,7 @@ def run_test_case(
             "tc_id": TestCaseID,
             "status": sTestCaseStatus,
             "runtime": float(TimeDiff),
-            "errors": CommonUtil.tc_error_logs,
+            "errors": json.dumps(CommonUtil.tc_error_logs),
             "time_stamp": CommonUtil.get_timestamp(),
         })
         if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
