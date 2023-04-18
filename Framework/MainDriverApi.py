@@ -945,6 +945,9 @@ def run_test_case(
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
+
+        # Added this two global variable in CommonUtil to save log information and save filepath of test case report
+        CommonUtil.error_log_info = ""
         # FIXME: Remove these lines
         # import random
         # CommonUtil.d_day = random.randint(1, 4)
@@ -1031,6 +1034,17 @@ def run_test_case(
 
         # Decide if Test Case Pass/Failed
         sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+
+        #Writing error information in a text file
+        if sTestCaseStatus == "Failed" or sTestCaseStatus == "Blocked":
+            log_file_path2 = ConfigModule.get_config_value(
+                "sectionOne", "temp_run_file_path", temp_ini_file
+            )
+            run_id_folder2 = str(Path(log_file_path2) / run_id.replace(":", "-"))
+            test_case_folder2 = str(Path(run_id_folder2) / CommonUtil.current_session_name / test_case.replace(":", "-"))
+            with open(test_case_folder2 + '/logerror.txt', 'w') as f:
+                f.write(CommonUtil.error_log_info)
+
 
         # write locust file for performance testing
         if performance:

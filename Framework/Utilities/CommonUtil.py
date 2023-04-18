@@ -99,6 +99,8 @@ all_logs_list = []
 skip_list = ["step_data"]
 to_dlt_from_fail_reason = " : Test Step Failed"
 
+error_log_info = ""
+
 load_testing = False
 performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": float("inf")}, "status_counts": {}}
 performance_testing = False
@@ -645,6 +647,8 @@ def ExecLog(
                 "details": sDetails,
                 "status": status,
                 "loglevel": iLogLevel,
+                "currentaction": current_action_no ,
+                "currentstep": current_step_no,
                 "tstamp": str(now),
             }
             if len(all_logs_list) >= 1:
@@ -672,6 +676,16 @@ def ExecLog(
                     all_logs_list.append(all_logs)
                     all_logs_count = 0
                     all_logs = {}
+
+            #saving error information of a log in a global string variable
+            if iLogLevel == 3:
+                global error_log_info
+                for zinc in list(all_logs.values()):
+                    if zinc['loglevel'] == 3:
+                        error_log_info += "[STEP-" + str(zinc['currentstep']) + ",ACTION-" + str(zinc['currentaction'])+ \
+                                           "]" + "[" + str(zinc['modulename']) + "] " + str(zinc['details']) + "\n"
+
+
 
 
 def FormatSeconds(sec):
