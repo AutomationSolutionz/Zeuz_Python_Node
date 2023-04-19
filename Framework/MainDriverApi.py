@@ -1037,11 +1037,7 @@ def run_test_case(
 
         #Writing error information in a text file
         if sTestCaseStatus == "Failed" or sTestCaseStatus == "Blocked":
-            log_file_path2 = ConfigModule.get_config_value(
-                "sectionOne", "temp_run_file_path", temp_ini_file
-            )
-            run_id_folder2 = str(Path(log_file_path2) / run_id.replace(":", "-"))
-            test_case_folder2 = str(Path(run_id_folder2) / CommonUtil.current_session_name / test_case.replace(":", "-"))
+            test_case_folder2 = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
             with open(test_case_folder2 + '/logerror.txt', 'w') as f:
                 f.write(CommonUtil.error_log_info)
 

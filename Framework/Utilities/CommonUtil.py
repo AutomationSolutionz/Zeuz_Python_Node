@@ -514,7 +514,7 @@ def ExecLog(
 
     if not print_execlog: return    # For bypass_bug() function dont print logs
 
-    global max_char
+    global max_char, error_log_info
     # Read from settings file
     debug_mode = ConfigModule.get_config_value("RunDefinition", "debug_mode")
 
@@ -647,8 +647,6 @@ def ExecLog(
                 "details": sDetails,
                 "status": status,
                 "loglevel": iLogLevel,
-                "currentaction": current_action_no ,
-                "currentstep": current_step_no,
                 "tstamp": str(now),
             }
             if len(all_logs_list) >= 1:
@@ -679,11 +677,7 @@ def ExecLog(
 
             #saving error information of a log in a global string variable
             if iLogLevel == 3:
-                global error_log_info
-                for zinc in list(all_logs.values()):
-                    if zinc['loglevel'] == 3:
-                        error_log_info += "[STEP-" + str(zinc['currentstep']) + ",ACTION-" + str(zinc['currentaction'])+ \
-                                           "]" + "[" + str(zinc['modulename']) + "] " + str(zinc['details']) + "\n"
+                error_log_info += f"[STEP-{str(current_step_no)} ACTION-{str(current_action_no)}][{sModuleInfo}] {sDetails}\n"
 
 
 
