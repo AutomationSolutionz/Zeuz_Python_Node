@@ -233,6 +233,32 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def Append(object, value, mid):
+    try:
+        idx = max(int(mid)-1, 0)
+    except:
+        idx = 0
+    for i in range(len(object), idx + 1):
+        object.append([])
+    object[idx].append(value)
+    return object
+
+
+def Index(elem_list:list)->str:
+    for left, mid, right in elem_list:
+        if left.strip().lower() == "index":
+            try:
+                num = int(right.strip())
+                if num >= 0:
+                    return str(num+1)   # Converting 0 based idx to 1 based idx
+                else:
+                    if num == -1: return "last()"       # -1 to last()
+                    else: return f"last(){str(num+1)}"  # -2 to last()-1
+            except: return right.strip()    # returning the string as is. such as 'last()'
+
+    return "last()"     # default is last()
+
+
 
 def _construct_query(step_data_set, web_element_object=False):
     """
@@ -244,22 +270,43 @@ def _construct_query(step_data_set, web_element_object=False):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         collect_all_attribute = [x[0] for x in step_data_set]
-        # find out if ref exists.  If it exists, it will set the value to True else False
-        child_ref_exits = any("child parameter" in s for s in step_data_set)
-        parent_ref_exits = any("parent parameter" in s for s in step_data_set)
-        sibling_ref_exits = any("sibling parameter" in s for s in step_data_set)
-        unique_ref_exists = any("unique parameter" in s for s in step_data_set)
-        # get all child, element, and parent only
-        child_parameter_list = [x for x in step_data_set if "child parameter" in x[1]]
-        element_parameter_list = [x for x in step_data_set if "element parameter" in x[1]]
-        parent_parameter_list = [x for x in step_data_set if "parent parameter" in x[1]]
-        sibling_parameter_list = [x for x in step_data_set if "sibling parameter" in x[1]]
-        unique_parameter_list = [x for x in step_data_set if "unique parameter" in x[1]]
+
+        child_parameter_list = []
+        element_parameter_list = []
+        parent_parameter_list = []
+        unique_parameter_list = []
+        sibling_parameter_list = []
+        following_parameter_list = []
+        preceding_parameter_list = []
+
+        for left, mid, right in step_data_set:
+            mid_ = mid.replace(" ", "").lower()
+            if "elementparameter" == mid_: element_parameter_list.append((left, mid, right))
+            elif "uniqueparameter" == mid_: unique_parameter_list.append((left, mid, right))
+            elif "parent" in mid_ and "parameter" in mid_:
+                mid_ = mid_.replace("parent", "").replace("parameter", "")
+                parent_parameter_list = Append(parent_parameter_list, (left, mid, right), mid_)
+            elif "sibling" in mid_ and "parameter" in mid_:
+                mid_ = mid_.replace("sibling", "").replace("parameter", "")
+                sibling_parameter_list = Append(sibling_parameter_list, (left, mid, right), mid_)
+            elif "child" in mid_ and "parameter" in mid_:
+                mid_ = mid_.replace("child", "").replace("parameter", "")
+                child_parameter_list = Append(child_parameter_list, (left, mid, right), mid_)
+            elif "preceding" in mid_ and "parameter" in mid_:
+                mid_ = mid_.replace("preceding", "").replace("parameter", "")
+                preceding_parameter_list = Append(preceding_parameter_list, (left, mid, right), mid_)
+            elif "following" in mid_ and "parameter" in mid_:
+                mid_ = mid_.replace("following", "").replace("parameter", "")
+                following_parameter_list = Append(following_parameter_list, (left, mid, right), mid_)
+
+        child_ref_exits = len(child_parameter_list) > 0
+        parent_ref_exits = len(parent_parameter_list) > 0
+        sibling_ref_exits = len(sibling_parameter_list) > 0
+        unique_ref_exists = len(unique_parameter_list) > 0
 
         if (
             unique_ref_exists
             and driver_type in ("appium", "selenium")
-            and len(unique_parameter_list) > 0
         ):  # for unique identifier
             return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
         elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
@@ -270,94 +317,6 @@ def _construct_query(step_data_set, web_element_object=False):
             # return the raw xpath command with xpath as type. We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw xpath query
             return ([x for x in step_data_set if "xpath" in x[0]][0][2]), "xpath"
-        elif (
-            not child_ref_exits
-            and not parent_ref_exits
-            and not sibling_ref_exits
-            and not web_element_object
-        ):
-            """  If  there are no child or parent as reference, then we construct the xpath differently"""
-            # first we collect all rows with element parameter only
-            xpath_element_list = _construct_xpath_list(element_parameter_list)
-            return _construct_xpath_string_from_list(xpath_element_list), "xpath"
-
-        elif (
-            child_ref_exits
-            and not parent_ref_exits
-            and not sibling_ref_exits
-        ):
-            """  If  There is child but making sure no parent or sibling
-            //<child_tag>[child_parameter]/ancestor::<element_tag>[element_parameter]
-            """
-            xpath_child_list = _construct_xpath_list(child_parameter_list)
-            child_xpath_string = _construct_xpath_string_from_list(xpath_child_list) + "/ancestor::"
-
-            xpath_element_list = _construct_xpath_list(element_parameter_list)
-            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
-            element_xpath_string = element_xpath_string.replace("//", "")
-
-            full_query = child_xpath_string + element_xpath_string
-            return full_query, "xpath"
-
-        elif (
-            not child_ref_exits
-            and parent_ref_exits
-            and not sibling_ref_exits
-            and driver_type in ("appium", "selenium")
-        ):
-            """  
-            parent as a reference
-            '//<parent tag>[<parent attributes>]/descendant::<target element tag>[<target element attribute>]'
-            """
-            xpath_parent_list = _construct_xpath_list(parent_parameter_list)
-            parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) + "/descendant::"
-
-            xpath_element_list = _construct_xpath_list(element_parameter_list)
-            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
-            element_xpath_string = element_xpath_string.replace("//", "")
-
-            full_query = parent_xpath_string + element_xpath_string
-            return full_query, "xpath"
-
-        elif (
-            not child_ref_exits
-            and web_element_object
-            and not sibling_ref_exits
-            and driver_type in ("appium", "selenium")
-            and not parent_ref_exits
-        ):
-            """
-            'descendant::<target element tag>[<target element attribute>]'
-            """
-            xpath_element_list = _construct_xpath_list(element_parameter_list)
-            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
-            element_xpath_string = element_xpath_string.replace("//", "")
-
-            full_query = "descendant::" + element_xpath_string
-            return full_query, "xpath"
-
-        elif (
-            not child_ref_exits
-            and parent_ref_exits
-            and sibling_ref_exits
-            and driver_type in ("appium", "selenium")
-        ):
-            """  for siblings, we need parent, siblings and element.  Siblings cannot be used with just element
-            xpath_format = '//<sibling_tag>[<sibling_element>]/ancestor::<immediate_parent_tag>[<immediate_parent_element>]//<target_tag>[<target_element>]'
-            """
-            xpath_sibling_list = _construct_xpath_list(sibling_parameter_list)
-            sibling_xpath_string = _construct_xpath_string_from_list(xpath_sibling_list) + "/ancestor::"
-
-            xpath_parent_list = _construct_xpath_list(parent_parameter_list)
-            parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list)
-            parent_xpath_string = parent_xpath_string.replace("//", "")
-
-            xpath_element_list = _construct_xpath_list(element_parameter_list)
-            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
-
-            full_query = sibling_xpath_string + parent_xpath_string + element_xpath_string
-            return full_query, "xpath"
-
         elif (
             not child_ref_exits
             and parent_ref_exits
@@ -373,7 +332,7 @@ def _construct_query(step_data_set, web_element_object=False):
             xpath_element_list_combined = parent_xpath_string + element_xpath_string
             return _construct_xpath_string_from_list(xpath_element_list_combined), "xpath"
 
-        elif child_ref_exits == True and (driver_type == "xml"):
+        elif child_ref_exits and driver_type == "xml":
             """Currently we do not support child as reference for xml"""
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -381,14 +340,91 @@ def _construct_query(step_data_set, web_element_object=False):
                 3,
             )
             return False, False
+        elif (
+            not child_ref_exits
+            and not parent_ref_exits
+            and not sibling_ref_exits
+            and not web_element_object
+        ):
+            """  If  there are no child or parent as reference, then we construct the xpath differently"""
+            # first we collect all rows with element parameter only
+            xpath_element_list = _construct_xpath_list(element_parameter_list)
+            return _construct_xpath_string_from_list(xpath_element_list), "xpath"
+        elif web_element_object and driver_type in ("appium", "selenium"):
+            """
+            'descendant::<target element tag>[<target element attribute>]'
+            """
+            xpath_element_list = _construct_xpath_list(element_parameter_list)
+            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
+            element_xpath_string = element_xpath_string.replace("//", "")
 
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "You have entered an unsupported data set.  Please contact info@automationsolutionz.com for help",
-                3,
-            )
+            full_query = "descendant::" + element_xpath_string
+            return full_query, "xpath"
+
+
+        '''^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'''
+        '''^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'''
+
+        """ //Pre_Element//following::Element[descendant::Child_1][descendant::Child_2][following::Following_Element] """
+
+        Precedings = ""
+        for preciding_param in reversed(preceding_parameter_list):
+            Precedings += f"{_construct_xpath_string_from_list(_construct_xpath_list(preciding_param))[2:]}//following::"
+
+        Element = _construct_xpath_string_from_list(_construct_xpath_list(element_parameter_list))[2:]
+
+        Child = ""
+        for child_param in child_parameter_list:
+            Child += f"[descendant::{_construct_xpath_string_from_list(_construct_xpath_list(child_param))[2:]}]"
+
+        Followings = ""
+        for following_param in reversed(following_parameter_list):
+            Followings = f"[following::{_construct_xpath_string_from_list(_construct_xpath_list(following_param))[2:]}{Followings}]"
+
+        Element = f"{Element}{Child}{Followings}"
+
+        if sibling_ref_exits and not parent_ref_exits:
+            CommonUtil.ExecLog(sModuleInfo, "In order to use sibling reference you need to provide a common parent that contains both Element and Sibling", 3)
             return False, False
+        if sibling_ref_exits:
+            """
+            (//Sibling_1/ancestor::Parent [ (ancestor::GrandParent_1)[last()] ][ (ancestor::GrandParent_2)[last()] ][ (descendant::Sibling_2 )[last()]][ (descendant::Sibling_3)[last()] ])[last()]//Element[descendant::Child_1][descendant::Child_2]
+            """
+            Sibling = _construct_xpath_string_from_list(_construct_xpath_list(sibling_parameter_list[0]))[2:]
+            Other_Siblings = ""
+            for sibling_param in sibling_parameter_list[1:]:
+                Other_Sibling = _construct_xpath_string_from_list(_construct_xpath_list(sibling_param))[2:]
+                Other_Siblings += f"[descendant::{Other_Sibling}]"
+
+            Parent = _construct_xpath_string_from_list(_construct_xpath_list(parent_parameter_list[0]))[2:]
+            GrandParents = ""
+            for parent_param in reversed(parent_parameter_list[1:]):
+                GrandParent = _construct_xpath_string_from_list(_construct_xpath_list(parent_param))[2:]
+                idx = Index(parent_param)
+                GrandParents = f"[(ancestor::{GrandParent}{GrandParents})[{idx}]]"
+
+            idx = Index(parent_parameter_list[0])
+            full_query = f"(//{Precedings}{Sibling}/ancestor::{Parent}{GrandParents}{Other_Siblings})[{idx}]//{Element}"
+            return full_query, "xpath"
+
+        elif not sibling_ref_exits:
+            """
+            (//Sibling_1/ancestor::Parent [ (ancestor::GrandParent_1 [(ancestor::GrandParent_2)[last()]] )[last()] ][ (descendant::Sibling_2 )[last()]][ (descendant::Sibling_3)[last()] ])[last()]//Element[descendant::Child_1][descendant::Child_2]            
+            """
+            Parents = ""
+            for parent_param in reversed(parent_parameter_list):
+                Parent = _construct_xpath_string_from_list(_construct_xpath_list(parent_param))[2:]
+                idx = Index(parent_param)
+                Parents += f"[(ancestor::{Parent}{Parents})[{idx}]]"
+            full_query = f"//{Precedings}{Element}{Parents}"
+            return full_query, "xpath"
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "You have entered an unsupported data set.  Please contact info@automationsolutionz.com for help",
+            3,
+        )
+        return False, False
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

@@ -25,7 +25,7 @@
 # "common" function, and another module with the same name created
 # here, there may be a conflict, and the wrong function may execute
 
-from .action_declarations.info import actions, action_support, supported_platforms
+from .action_declarations.info import actions, sub_field_match, supported_platforms
 
 # Import modules
 import inspect
@@ -1072,7 +1072,7 @@ def Run_Sequential_Actions(
                 action_name = row[1]  # Get Sub-Field
 
                 # Don't process these suport items right now, but also don't fail
-                if action_name.lower().strip() in action_support and "custom" not in action_name:
+                if sub_field_match(action_name.lower().strip()) and "custom" not in action_name:
                     continue
 
                 elif "performance action" in action_name:
