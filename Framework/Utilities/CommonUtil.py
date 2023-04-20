@@ -99,6 +99,8 @@ all_logs_list = []
 skip_list = ["step_data"]
 to_dlt_from_fail_reason = " : Test Step Failed"
 
+error_log_info = ""
+
 load_testing = False
 performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": float("inf")}, "status_counts": {}}
 performance_testing = False
@@ -512,7 +514,7 @@ def ExecLog(
 
     if not print_execlog: return    # For bypass_bug() function dont print logs
 
-    global max_char
+    global max_char, error_log_info
     # Read from settings file
     debug_mode = ConfigModule.get_config_value("RunDefinition", "debug_mode")
 
@@ -672,6 +674,12 @@ def ExecLog(
                     all_logs_list.append(all_logs)
                     all_logs_count = 0
                     all_logs = {}
+
+            #saving error information of a log in a global string variable
+            if iLogLevel == 3:
+                error_log_info += f"[STEP-{str(current_step_no)} ACTION-{str(current_action_no)}][{sModuleInfo}] {sDetails}\n"
+
+
 
 
 def FormatSeconds(sec):
