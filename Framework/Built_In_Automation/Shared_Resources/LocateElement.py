@@ -251,91 +251,80 @@ def _construct_query(step_data_set, web_element_object=False):
         unique_ref_exists = any("unique parameter" in s for s in step_data_set)
         # get all child, element, and parent only
         child_parameter_list = [x for x in step_data_set if "child parameter" in x[1]]
-        element_parameter_list = [
-            x for x in step_data_set if "element parameter" in x[1]
-        ]
+        element_parameter_list = [x for x in step_data_set if "element parameter" in x[1]]
         parent_parameter_list = [x for x in step_data_set if "parent parameter" in x[1]]
-        sibling_parameter_list = [
-            x for x in step_data_set if "sibling parameter" in x[1]
-        ]
+        sibling_parameter_list = [x for x in step_data_set if "sibling parameter" in x[1]]
         unique_parameter_list = [x for x in step_data_set if "unique parameter" in x[1]]
 
         if (
             unique_ref_exists
-            and (driver_type == "appium" or driver_type == "selenium")
+            and driver_type in ("appium", "selenium")
             and len(unique_parameter_list) > 0
         ):  # for unique identifier
-            return (
-                [unique_parameter_list[0][0], unique_parameter_list[0][2]],
-                "unique",
-            )
+            return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
         elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw css query
-            return (([x for x in step_data_set if "css" in x[0]][0][2]), "css")
+            return ([x for x in step_data_set if "css" in x[0]][0][2]), "css"
         elif "xpath" in collect_all_attribute and "css" not in collect_all_attribute:
             # return the raw xpath command with xpath as type. We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw xpath query
-            return (([x for x in step_data_set if "xpath" in x[0]][0][2]), "xpath")
+            return ([x for x in step_data_set if "xpath" in x[0]][0][2]), "xpath"
         elif (
-            child_ref_exits == False
-            and parent_ref_exits == False
-            and sibling_ref_exits == False
-            and web_element_object == False
+            not child_ref_exits
+            and not parent_ref_exits
+            and not sibling_ref_exits
+            and not web_element_object
         ):
             """  If  there are no child or parent as reference, then we construct the xpath differently"""
             # first we collect all rows with element parameter only
             xpath_element_list = _construct_xpath_list(element_parameter_list)
-            return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
+            return _construct_xpath_string_from_list(xpath_element_list), "xpath"
 
         elif (
-            child_ref_exits == True
-            and parent_ref_exits == False
-            and sibling_ref_exits == False
+            child_ref_exits
+            and not parent_ref_exits
+            and not sibling_ref_exits
         ):
             """  If  There is child but making sure no parent or sibling
             //<child_tag>[child_parameter]/ancestor::<element_tag>[element_parameter]
             """
             xpath_child_list = _construct_xpath_list(child_parameter_list)
-            child_xpath_string = (
-                _construct_xpath_string_from_list(xpath_child_list) + "/ancestor::"
-            )
+            child_xpath_string = _construct_xpath_string_from_list(xpath_child_list) + "/ancestor::"
 
             xpath_element_list = _construct_xpath_list(element_parameter_list)
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
             element_xpath_string = element_xpath_string.replace("//", "")
 
             full_query = child_xpath_string + element_xpath_string
-            return (full_query, "xpath")
+            return full_query, "xpath"
 
         elif (
-            child_ref_exits == False
-            and parent_ref_exits == True
-            and sibling_ref_exits == False
-            and (driver_type == "appium" or driver_type == "selenium")
+            not child_ref_exits
+            and parent_ref_exits
+            and not sibling_ref_exits
+            and driver_type in ("appium", "selenium")
         ):
             """  
             parent as a reference
             '//<parent tag>[<parent attributes>]/descendant::<target element tag>[<target element attribute>]'
             """
             xpath_parent_list = _construct_xpath_list(parent_parameter_list)
-            parent_xpath_string = (
-                _construct_xpath_string_from_list(xpath_parent_list) + "/descendant::"
-            )
+            parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) + "/descendant::"
 
             xpath_element_list = _construct_xpath_list(element_parameter_list)
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
             element_xpath_string = element_xpath_string.replace("//", "")
 
             full_query = parent_xpath_string + element_xpath_string
-            return (full_query, "xpath")
+            return full_query, "xpath"
 
         elif (
-            child_ref_exits == False
-            and web_element_object == True
-            and sibling_ref_exits == False
-            and (driver_type == "appium" or driver_type == "selenium")
-            and parent_ref_exits == False
+            not child_ref_exits
+            and web_element_object
+            and not sibling_ref_exits
+            and driver_type in ("appium", "selenium")
+            and not parent_ref_exits
         ):
             """
             'descendant::<target element tag>[<target element attribute>]'
@@ -345,21 +334,19 @@ def _construct_query(step_data_set, web_element_object=False):
             element_xpath_string = element_xpath_string.replace("//", "")
 
             full_query = "descendant::" + element_xpath_string
-            return (full_query, "xpath")
+            return full_query, "xpath"
 
         elif (
-            child_ref_exits == False
-            and parent_ref_exits == True
-            and sibling_ref_exits == True
-            and (driver_type == "appium" or driver_type == "selenium")
+            not child_ref_exits
+            and parent_ref_exits
+            and sibling_ref_exits
+            and driver_type in ("appium", "selenium")
         ):
             """  for siblings, we need parent, siblings and element.  Siblings cannot be used with just element
             xpath_format = '//<sibling_tag>[<sibling_element>]/ancestor::<immediate_parent_tag>[<immediate_parent_element>]//<target_tag>[<target_element>]'
             """
             xpath_sibling_list = _construct_xpath_list(sibling_parameter_list)
-            sibling_xpath_string = (
-                _construct_xpath_string_from_list(xpath_sibling_list) + "/ancestor::"
-            )
+            sibling_xpath_string = _construct_xpath_string_from_list(xpath_sibling_list) + "/ancestor::"
 
             xpath_parent_list = _construct_xpath_list(parent_parameter_list)
             parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list)
@@ -368,16 +355,14 @@ def _construct_query(step_data_set, web_element_object=False):
             xpath_element_list = _construct_xpath_list(element_parameter_list)
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
 
-            full_query = (
-                sibling_xpath_string + parent_xpath_string + element_xpath_string
-            )
-            return (full_query, "xpath")
+            full_query = sibling_xpath_string + parent_xpath_string + element_xpath_string
+            return full_query, "xpath"
 
         elif (
-            child_ref_exits == False
-            and parent_ref_exits == True
-            and sibling_ref_exits == False
-            and (driver_type == "xml")
+            not child_ref_exits
+            and parent_ref_exits
+            and not sibling_ref_exits
+            and driver_type == "xml"
         ):
             """  If  There is parent but making sure no child"""
             xpath_parent_list = _construct_xpath_list(parent_parameter_list)
@@ -386,10 +371,7 @@ def _construct_query(step_data_set, web_element_object=False):
             xpath_element_list = _construct_xpath_list(element_parameter_list, True)
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
             xpath_element_list_combined = parent_xpath_string + element_xpath_string
-            return (
-                _construct_xpath_string_from_list(xpath_element_list_combined),
-                "xpath",
-            )
+            return _construct_xpath_string_from_list(xpath_element_list_combined), "xpath"
 
         elif child_ref_exits == True and (driver_type == "xml"):
             """Currently we do not support child as reference for xml"""
