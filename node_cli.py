@@ -1015,7 +1015,7 @@ def command_line_args() -> Path:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    if not stop_pip_auto_update:
+    if not stop_pip_auto_update and CommonUtil.ws_ss_log:
         update_outdated_modules()
 
     if show_browser_log:
