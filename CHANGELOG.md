@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Browserstack - WEB support
 - **[Add]** Resize selenium window action
 - **[Add]** `Save if not defined` in save into variable
 - **[Add]** Prevent printing specified variables
