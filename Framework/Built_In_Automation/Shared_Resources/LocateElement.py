@@ -383,9 +383,9 @@ def _construct_query(step_data_set, web_element_object=False):
 
         Element = f"{Element}{Child}{Followings}"
 
-        if sibling_ref_exits and not parent_ref_exits:
-            CommonUtil.ExecLog(sModuleInfo, "In order to use sibling reference you need to provide a common parent that contains both Element and Sibling", 3)
-            return False, False
+        # if sibling_ref_exits and not parent_ref_exits:
+        #     CommonUtil.ExecLog(sModuleInfo, "In order to use sibling reference you need to provide a common parent that contains both Element and Sibling", 3)
+        #     return False, False
         if sibling_ref_exits:
             """
             (//Sibling_1/ancestor::Parent [ (ancestor::GrandParent_1)[last()] ][ (ancestor::GrandParent_2)[last()] ][ (descendant::Sibling_2 )[last()]][ (descendant::Sibling_3)[last()] ])[last()]//Element[descendant::Child_1][descendant::Child_2]
@@ -396,15 +396,18 @@ def _construct_query(step_data_set, web_element_object=False):
                 Other_Sibling = _construct_xpath_string_from_list(_construct_xpath_list(sibling_param))[2:]
                 Other_Siblings += f"[descendant::{Other_Sibling}]"
 
-            Parent = _construct_xpath_string_from_list(_construct_xpath_list(parent_parameter_list[0]))[2:]
+            if parent_ref_exits:
+                Parent = _construct_xpath_string_from_list(_construct_xpath_list(parent_parameter_list[0]))[2:]
+            else:
+                Parent = "*"
             GrandParents = ""
             for parent_param in reversed(parent_parameter_list[1:]):
                 GrandParent = _construct_xpath_string_from_list(_construct_xpath_list(parent_param))[2:]
                 idx = Index(parent_param)
                 GrandParents = f"[(ancestor::{GrandParent}{GrandParents})[{idx}]]"
 
-            idx = Index(parent_parameter_list[0])
-            full_query = f"(//{Precedings}{Sibling}/ancestor::{Parent}{GrandParents}{Other_Siblings})[{idx}]//{Element}"
+            idx = Index(parent_parameter_list[0]) if parent_ref_exits else "last()"
+            full_query = f"(//{Precedings}{Sibling}/ancestor::{Parent}[descendant::{Element}]{GrandParents}{Other_Siblings})[{idx}]//{Element}"
             return full_query, "xpath"
 
         elif not sibling_ref_exits:
