@@ -1119,6 +1119,7 @@ def run_test_case(
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
+                shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
             if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                 runid_status = "In-Progress"
@@ -1757,6 +1758,7 @@ def main(device_dict, user_info_object):
                 if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in (
                 "on", "yes", "true", "ok", "enable"):
                     cleanup_driver_instances()  # clean up drivers
+                    shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
                 # shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)
