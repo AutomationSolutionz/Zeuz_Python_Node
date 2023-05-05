@@ -1,3 +1,4 @@
+import regex as re
 from . import (
     appium,
     common,
@@ -42,12 +43,11 @@ action_support = (
     "child parameter",
     "sibling parameter",
     "parent parameter",
+    "following parameter",
+    "preceding parameter",
     "search element parameter",
     "target parameter",
-    "desired element parameter",
-    "desired parent parameter",
-    "desired sibling parameter",
-    "desired child parameter",
+    "desired element parameter", "desired parent parameter", "desired sibling parameter", "desired child parameter",
     "src element parameter", "src parent parameter", "src sibling parameter", "src child parameter",
     "source element parameter", "source parent parameter", "source sibling parameter", "source child parameter",
     "dst element parameter", "dst parent parameter", "dst sibling parameter", "dst child parameter",
@@ -86,6 +86,30 @@ action_support = (
     "chrome options",
     "pre sleep", "post sleep", "pre post sleep", "post pre sleep"
 )
+patterns = [
+    "^parent \d parameter$",
+    "^sibling \d parameter$",
+    "^child \d parameter$",
+    "^following \d parameter$",
+    "^preceding \d parameter$",
 
+    "^src parent \d parameter$", "^src sibling \d parameter$", "^src child \d parameter$", "^src following \d parameter$", "^src preceding \d parameter$",
+    "^dst parent \d parameter$", "^dst sibling \d parameter$", "^dst child \d parameter$", "^dst following \d parameter$", "^dst preceding \d parameter$",
+    "^source parent \d parameter$", "^source sibling \d parameter$", "^source child \d parameter$", "^source following \d parameter$", "^source preceding \d parameter$",
+    "^destination parent \d parameter$", "^destination sibling \d parameter$", "^destination child \d parameter$", "^destination following \d parameter$", "^destination preceding \d parameter$",
+    "^desired parent \d parameter$", "^desired sibling \d parameter$", "^desired child \d parameter$", "^desired following \d parameter$", "^desired preceding \d parameter$",
+
+]
 # List of supported mobile platforms - must be lower case
 supported_platforms = ("android", "ios")
+
+def sub_field_match(text:str)->bool:
+    if text in action_support:
+        return True
+    for pattern in patterns:
+        if re.search(pattern, text):
+            return True
+    return False
+'''
+parent 1 parameter
+'''

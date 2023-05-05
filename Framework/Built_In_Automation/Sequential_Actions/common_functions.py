@@ -36,7 +36,7 @@ global sr
 from Framework.Utilities import CommonUtil, ConfigModule, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
-from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
+from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, sub_field_match
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
@@ -203,7 +203,7 @@ def verify_step_data(step_data):
                     )
                     return "zeuz_failed"
                 elif (
-                    str(row[1]).lower().strip() not in action_support
+                    not sub_field_match(str(row[1]).lower().strip())
                 ):  # Check against list of allowed Sub-Fields
                     if (
                         "action" not in row[1]
