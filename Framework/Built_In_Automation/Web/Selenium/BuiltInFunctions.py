@@ -555,6 +555,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
+                    elif left in ("addexperimentaloption"):
+                        options.add_experimental_option(left, CommonUtil.parse_value_into_object(right.strip()))
+
 
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
