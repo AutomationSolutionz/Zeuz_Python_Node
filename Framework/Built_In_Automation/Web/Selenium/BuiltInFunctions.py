@@ -547,7 +547,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument('--zeuz_pid_finder')
 
             # Todo: profile, add_argument => open_browser
-            _prefs = []
+            _prefs = {}
             if browser_options:
                 for left, right in browser_options:
                     if left in ("addargument", "addarguments"):
@@ -557,10 +557,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
                     elif left in ("addexperimentaloption"):
-                        if right[0] == "prefs":
-                            _prefs.append(right[1])
+                        if "prefs" in right:
+                            _prefs = right["prefs"]
                         else:
-                            options.add_experimental_option(right[0], right[1])
+                            options.add_experimental_option(list(right.items())[0][0], list(right.items())[0][1])
 
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
@@ -587,7 +587,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "download.directory_upgrade": True,
                 'safebrowsing.enabled': 'false'
             }
-            for key in _prefs: prefs[key] = _prefs[key]
+            for key in _prefs:
+                prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
             if remote_host:
                 selenium_driver = webdriver.Remote(
