@@ -82,8 +82,7 @@ action_support = (
     "optional option",
     "graphql",
     "shared capability",
-    "chrome option",
-    "chrome options",
+    "chrome option", "chrome options", "chrome experimental option", "chrome experimental options",
     "pre sleep", "post sleep", "pre post sleep", "post pre sleep"
 )
 patterns = [
