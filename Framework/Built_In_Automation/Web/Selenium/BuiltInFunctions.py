@@ -547,6 +547,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument('--zeuz_pid_finder')
 
             # Todo: profile, add_argument => open_browser
+            _prefs = {}
             if browser_options:
                 for left, right in browser_options:
                     if left in ("addargument", "addarguments"):
@@ -555,6 +556,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
+                    elif left in ("addexperimentaloption"):
+                        if "prefs" in right:
+                            _prefs = right["prefs"]
+                        else:
+                            options.add_experimental_option(list(right.items())[0][0], list(right.items())[0][1])
 
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
@@ -581,6 +587,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "download.directory_upgrade": True,
                 'safebrowsing.enabled': 'false'
             }
+            for key in _prefs:
+                prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
             if remote_host:
                 selenium_driver = webdriver.Remote(
@@ -1038,6 +1046,8 @@ def Go_To_Link(step_data, page_title=False):
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
+            elif mid.strip().lower() in ("chrome experimental option", "chrome experimental options") and dependency["Browser"].lower() == "chrome":
+                browser_options.append(["addexperimentaloption", {left.strip():CommonUtil.parse_value_into_object(right.strip())}])
 
         if browser_options:
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
