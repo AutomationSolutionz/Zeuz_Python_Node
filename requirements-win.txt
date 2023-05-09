@@ -4,7 +4,7 @@ pillow
 setuptools
 pyserial
 simplejson
-urllib3
+urllib3==1.26.15
 selenium
 uiautomator
 requests
