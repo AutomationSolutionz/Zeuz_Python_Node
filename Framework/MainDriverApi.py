@@ -34,8 +34,6 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from settings import PROJECT_ROOT
 from reporting import junit_report
 
-from google.cloud import bigquery
-
 from rich.style import Style
 from rich.table import Table
 from rich.console import Console
@@ -842,6 +840,7 @@ def send_to_bigquery(execution_log, metrics):
     # Skip sending to gcp if credentials not available in environment.
     if "GCP_BIGQUERY_ACTIONS_TABLE_ID" not in os.environ:
         return
+    from google.cloud import bigquery
 
     client = bigquery.Client()
 
