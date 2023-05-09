@@ -4,7 +4,7 @@ pillow
 pyserial
 colorama
 simplejson
-urllib3
+urllib3==1.26.15
 selenium
 python-dateutil
 requests
