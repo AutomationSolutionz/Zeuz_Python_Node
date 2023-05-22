@@ -74,6 +74,8 @@ temp_config = os.path.join(
         ),
     )
 )
+temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
+aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"aiplugin")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -541,7 +543,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             # argument
             if not browser_options:
                 options.add_argument("--no-sandbox")
-                options.add_argument("--disable-extensions")
+                # options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
                 options.add_argument('--ignore-ssl-errors')
                 options.add_argument('--zeuz_pid_finder')
@@ -567,6 +569,25 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_experimental_option("mobileEmulation", mobile_emulation)
             else:
                 options.add_experimental_option("useAutomationExtension", False)
+
+                # On Debug run open inspector with credentials
+                if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
+                    with open(Path(aiplugin_path)/"background.js") as file:
+                        text = file.read()
+                    if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
+                        with open(Path(aiplugin_path)/"background.js", "w") as file:
+                            aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
+                            aiplugin_key = ConfigModule.get_config_value("Authentication", "api-key").strip()
+                            file.write(text.replace("__ZeuZ__UrL_maPP", aiplugin_url, 1).replace("__ZeuZ__KeY_maPP", aiplugin_key, 1))
+                    ask_for_sibling = ConfigModule.get_config_value("Inspector", "sibling").strip().lower() not in ("false", "off", "disabled", "no")
+                    if ask_for_sibling:
+                        with open(Path(aiplugin_path) / "inspect.js") as file:
+                            text = file.read()
+                        if "__ZeuZ__SibLing_maPP" in text:
+                            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
+                                file.write(text.replace("__ZeuZ__SibLing_maPP", "true", 1))
+                    options.add_argument(f"load-extension={aiplugin_path}")
+
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
