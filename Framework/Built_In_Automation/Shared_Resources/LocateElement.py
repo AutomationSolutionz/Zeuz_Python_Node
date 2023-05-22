@@ -1337,3 +1337,18 @@ driver_type = "selenium"
 global debug 
 debug = True
 print _construct_query (step_data_set)"""
+
+driver_type = 'selenium'
+
+if __name__ == "__main__":
+    x,y=_construct_query([
+        ['tag','parent parameter','hello//'],
+        ["arial-label", 'element parameter', 'https://asdasd']
+    ])
+    print(x)
+    CommonUtil.ExecLog(
+        'sModuleInfo',
+        "To locate the Element we used %s:\n%s"
+        % (y, x),
+        5,
+    )
