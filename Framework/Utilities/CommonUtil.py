@@ -519,7 +519,7 @@ def ExecLog(
     debug_mode = ConfigModule.get_config_value("RunDefinition", "debug_mode")
 
     # ";" is not supported for logging.  So replacing them
-    sDetails = sDetails.replace(";", ":").replace("%22", "'")
+    # sDetails = sDetails.replace(";", ":").replace("%22", "'")
 
     # Terminal output color
     line_color = ""
