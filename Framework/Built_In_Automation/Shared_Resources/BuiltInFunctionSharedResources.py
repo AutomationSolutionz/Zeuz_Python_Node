@@ -690,31 +690,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                 print(replaced)
                 generated_value = replaced
 
-            elif var_name.startswith("random_number_in_range"):    # Todo: Remove this variable 3 months later from 18 January, 2022
-                CommonUtil.ExecLog(
-                    "",
-                    '%|random_number_in_range()|% is deprecated. Use %|random_data()|% to get updated features. Example:\n' +
-                    "%|random_data(100-200)|%\n%|random_data([1,2,3,'hello',True])|%",
-                    3
-                )
-                return "zeuz_failed"
-
-            elif var_name.startswith("pick_random_element"):    # Todo: Remove this variable 3 months later from 18 January, 2022
-                CommonUtil.ExecLog(
-                    "",
-                    '%|pick_random_element()|% is deprecated. Use %|random_data()|% to get updated features. Example:\n' +
-                    "%|random_data(100-200)|%\n%|random_data([1,2,3,'hello',True])|%",
-                    3
-                )
-                return "zeuz_failed"
             else:
-                if var_name.startswith("rest_response"):        # Todo: Remove this variable from Rest files 3 months later from 18 January, 2022
-                    CommonUtil.ExecLog(
-                        "",
-                        '%|rest_response|% is deprecated. Use %|http_response|% to get updated features. Example:\n' +
-                        "%|http_response[\"data\"][1][\"default\"]|%",
-                        3
-                    )
                 var_value = str(parse_variable(var_name))
                 if var_value == "zeuz_failed":
                     # CommonUtil.ExecLog(sModuleInfo, "No such variable named '%s' in shared variables list" % var_name, 3)
