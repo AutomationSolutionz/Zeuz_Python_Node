@@ -1000,7 +1000,7 @@ def run_test_case(
             )
         elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'remaining all' in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and test_case in CommonUtil.skip_testcases_list:
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and tc_num in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(

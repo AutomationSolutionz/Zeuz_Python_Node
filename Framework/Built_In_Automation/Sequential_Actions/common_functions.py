@@ -4289,9 +4289,10 @@ def search_and_save_text(data_set):
 @logger
 def skip_testcases(data_set):
     """
-    usage: this action will skip all/selected test cases in a same run id
+    usage: this action will skip all/selected/with in range test cases in a same run id
     data set: skip testcases | common action | remaining all
-              skip testcases | common action | TEST-6716, TEST-6714
+              skip testcases | common action | 6716, 6714
+              skip testcases | common action | 6716-6720
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -4310,7 +4311,12 @@ def skip_testcases(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
-                CommonUtil.skip_testcases_list.append(test_case.strip())
+                if '-' in test_case:
+                    range_start, range_end = map(int, test_case.split('-'))
+                    CommonUtil.skip_testcases_list.extend(list(range(range_start, range_end + 1)))
+                else:
+                    tc_num = int(test_case.split('-')[0])
+                    CommonUtil.skip_testcases_list.append(tc_num)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Selected Test Case")
         return "passed"
 
