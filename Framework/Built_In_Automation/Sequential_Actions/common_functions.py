@@ -4290,7 +4290,7 @@ def search_and_save_text(data_set):
 def skip_testcases(data_set):
     """
     usage: this action will skip all/selected test cases in a same run id
-    data set: skip testcases | common action | all
+    data set: skip testcases | common action | remaining all
               skip testcases | common action | TEST-6716, TEST-6714
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4305,9 +4305,9 @@ def skip_testcases(data_set):
 
         run_id = sr.Get_Shared_Variables("run_id")
         CommonUtil.skip_testcases[run_id] = True
-        if test_cases == 'all':
+        if test_cases == 'remaining all':
             CommonUtil.skip_testcases_list.append(test_cases)
-            CommonUtil.ExecLog(sModuleInfo, "Skipped Running All Test Cases")
+            CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
                 CommonUtil.skip_testcases_list.append(test_case.strip())
