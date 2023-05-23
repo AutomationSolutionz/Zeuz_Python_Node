@@ -4,7 +4,7 @@
 Created on Jun 21, 2017
 @author: Built_In_Automation Solutionz Inc.
 """
-import sys, time
+import sys, time, re
 import inspect
 import traceback
 from pathlib import Path
@@ -175,22 +175,12 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         _switch(step_data_set)
         index_number = _locate_index_number(step_data_set)
         element_query, query_type = _construct_query(step_data_set, web_element_object)
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "To locate the Element we used %s:\n%s"
-            % (query_type, element_query),
-            5,
-        )
+        CommonUtil.ExecLog(sModuleInfo, f"To locate the Element we used {query_type}:\n{element_query}", 5)
 
-        if query_debug == True:
-            print("This query will not be run as query_debug is enabled.  It will only print out in console")
-            print("Your query from the step data provided is:  %s" % element_query)
-            print("Your query type is: %s" % query_type)
-            result = "passed"
-        if element_query == False:
-            result = "zeuz_failed"
-        elif query_type in ("xpath", "css", "unique"):
-            result = _get_xpath_or_css_element(element_query, query_type,step_data_set, index_number, Filter, return_all_elements, element_wait)
+        if query_type in ("xpath", "css", "unique"):
+            result = _get_xpath_or_css_element(element_query, query_type, step_data_set, index_number, Filter, return_all_elements, element_wait)
+            # if result == "zeuz_failed":
+            #     result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
         else:
             result = "zeuz_failed"
 
@@ -232,6 +222,82 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def text_filter(step_data_set, Filter, element_wait, return_all_elements):
+    """
+    suppose dom has <div>Hello &nbsp;World</div>
+    the text will be converted to "<something unknown>Hello  world<something unknown>"
+    Thats why (text, element parameter, Hello  world) does not work
+    But (*text, element parameter, Hello  world) works!
+    So for now we don't need this python script for now as we have an existing solution
+    """
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        mid_vals = [
+            "sibling parameter",
+        ]
+        patterns = [
+            "^sibling \d parameter$",
+        ]
+        temp_dataset = []
+        filters = []
+        for left, mid, right in step_data_set:
+            l = left.strip().lower().replace("*", "")
+            m = mid.strip().lower()
+            if m in mid_vals:
+                return "zeuz_failed"
+            for pattern in patterns:
+                if re.search(pattern, m):
+                    return "zeuz_failed"
+            if l == "text" and m == "element parameter":
+                filters.append((left, mid, right))
+            else:
+                temp_dataset.append((left, mid, right))
+
+        if not filters:
+            return "zeuz_failed"
+
+        index_number = _locate_index_number(temp_dataset)
+        index_number = index_number if index_number is not None else 0
+        element_query, query_type = _construct_query(temp_dataset)
+        CommonUtil.ExecLog(sModuleInfo, f"No Element found. Now we are trying to handle &nbsp; and <space>", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"To locate the Element we used {query_type}:\n{element_query}", 5)
+
+        if query_type in ("xpath", "css", "unique"):
+            result = _get_xpath_or_css_element(element_query, query_type, temp_dataset, None, Filter, True, element_wait)
+        else:
+            return "zeuz_failed"
+
+        tmp_results = []
+        for element in result:
+            for f in filters:
+                if f[0].startswith("**") and f[2].lower().replace("&nbsp;", " ") in element.text.lower().replace("&nbsp;", " "):
+                    break
+                elif f[0].startswith("*") and f[2].replace("&nbsp;", " ") in element.text.replace("&nbsp;", " "):
+                    break
+                elif f[2].replace("&nbsp;", " ") == element.text.replace("&nbsp;", " "):
+                    break
+            else:
+                continue
+            tmp_results.append(element)
+
+        if return_all_elements:
+            CommonUtil.ExecLog(sModuleInfo, f"Returning {len(tmp_results)} elements after applying Text Filter", 1)
+            return result
+        if len(tmp_results) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Found no element after applying Text Filter", 3)
+            return "zeuz_failed"
+        CommonUtil.ExecLog(sModuleInfo, f"Original text of the element is '{tmp_results[index_number].text}'", 1)
+        if len(tmp_results) == index_number + 1 == 1:
+            return tmp_results[index_number]
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Found {len(tmp_results)} elements after applying Text Filter. Returning the element of index {index_number}", 1)
+            return tmp_results[index_number]
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 def Append(object, value, mid):
     try:
@@ -1013,17 +1079,15 @@ def _locate_index_number(step_data_set):
     if we cannot convert index to integer, set it to None
     """
     try:
-        if "index" in [x[0] for x in step_data_set]:
-            index_number = [x for x in step_data_set if "index" in x[0]][0][2]
-            try:
-                index_number = int(index_number)
-            except:
-                index_number = None
-        else:
-            index_number = None
-        return index_number
+        for left, mid, right in step_data_set:
+            l = left.strip().lower()
+            m = mid.strip().lower()
+            if l == "index" and m == "element parameter":
+                return int(right.strip())
+        return None
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Index = 0 is set")
+        return None
 
 
 def _pyautogui(step_data_set):
