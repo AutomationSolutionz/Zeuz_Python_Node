@@ -42,6 +42,7 @@ declarations = (
     { "name": "split string",                                "function": "split_string",                          "screenshot": "none" },
     { "name": "create/append to list or dictionary",         "function": "save_into_variable",                    "screenshot": "none" },
     { "name": "save into variable",                          "function": "save_into_variable",                    "screenshot": "none" },
+    { "name": "save session variable",                        "function": "save_into_variable",                    "screenshot": "none" },
     { "name": "save length",                                 "function": "save_length",                           "screenshot": "none" },
     { "name": "validate schema",                             "function": "validate_schema",                       "screenshot": "none" },
     { "name": "execute python code",                         "function": "execute_python_code",                   "screenshot": "none" },
