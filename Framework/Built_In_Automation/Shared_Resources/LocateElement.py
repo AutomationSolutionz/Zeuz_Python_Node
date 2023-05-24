@@ -459,7 +459,7 @@ def _construct_query(step_data_set, web_element_object=False):
         #     return False, False
         if sibling_ref_exits:
             """
-            (//Sibling_1/ancestor::Parent [ (ancestor::GrandParent_1)[last()] ][ (ancestor::GrandParent_2)[last()] ][ (descendant::Sibling_2 )[last()]][ (descendant::Sibling_3)[last()] ])[last()]//Element[descendant::Child_1][descendant::Child_2]
+            (//Sibling_1/ancestor::Parent [descendant::Element] [ (ancestor::GrandParent_1)[last()] ][ (ancestor::GrandParent_2)[last()] ][ (descendant::Sibling_2 )[last()]][ (descendant::Sibling_3)[last()] ])[last()]//Element[descendant::Child_1][descendant::Child_2]
             """
             Sibling = _construct_xpath_string_from_list(_construct_xpath_list(sibling_parameter_list[0]))[2:]
             Other_Siblings = ""
