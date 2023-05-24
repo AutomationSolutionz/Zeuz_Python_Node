@@ -4,13 +4,13 @@ pillow
 pyserial
 colorama
 simplejson
-urllib3==1.26.15
+urllib3
 selenium
 python-dateutil
 requests
 wheel
 pyautogui
-Appium-Python-Client==2.5.0
+Appium-Python-Client
 uiautomator
 lxml
 tzlocal
