@@ -3,13 +3,13 @@ psutil
 pillow
 pyserial
 python-dateutil
-urllib3==1.26.15
+urllib3
 selenium
 uiautomator
 requests
 wheel
 colorama
-Appium-Python-Client==2.5.0
+Appium-Python-Client
 lxml
 pyscreenshot
 image

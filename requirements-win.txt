@@ -4,7 +4,7 @@ pillow
 setuptools
 pyserial
 simplejson
-urllib3==1.26.15
+urllib3
 selenium
 uiautomator
 requests
@@ -16,7 +16,7 @@ SpeechRecognition
 colorama
 pyodbc
 python-dateutil
-Appium-Python-Client==2.5.0
+Appium-Python-Client
 xlwings
 image
 tzlocal
