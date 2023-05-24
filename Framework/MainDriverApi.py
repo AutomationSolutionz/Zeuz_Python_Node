@@ -980,7 +980,7 @@ def run_test_case(
         # width_pad = CommonUtil.max_char//2 - (max(len(TestCaseName), len(test_case)) + 4)//2
         # table = Padding(table, (0, width_pad))
         rich_print(table)
-
+        tc_num = int(TestCaseID.split('-')[1])
         # get test case start time
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
@@ -998,11 +998,9 @@ def run_test_case(
                 debug_info,
                 performance
             )
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
-            run_id] and 'all' in CommonUtil.skip_testcases_list:
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'skip remaining' in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
-            run_id] and test_case in CommonUtil.skip_testcases_list:
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and tc_num in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
