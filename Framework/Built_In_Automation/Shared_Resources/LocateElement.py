@@ -179,8 +179,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
 
         if query_type in ("xpath", "css", "unique"):
             result = _get_xpath_or_css_element(element_query, query_type, step_data_set, index_number, Filter, return_all_elements, element_wait)
-            # if result == "zeuz_failed":
-            #     result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
+            if result == "zeuz_failed":
+                result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
         else:
             result = "zeuz_failed"
 
@@ -270,13 +270,16 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
             return "zeuz_failed"
 
         tmp_results = []
+        similar_texts = []
         for element in result:
             for f in filters:
-                if f[0].startswith("**") and f[2].lower().replace("&nbsp;", " ") in element.text.lower().replace("&nbsp;", " "):
+                if element.text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub('\s+', '', element.text.lower().replace("\xa0", "")):
+                    similar_texts.append(element.text)
+                if f[0].startswith("**") and f[2].lower().replace("\xa0", " ") in element.text.lower().replace("\xa0", " "):
                     break
-                elif f[0].startswith("*") and f[2].replace("&nbsp;", " ") in element.text.replace("&nbsp;", " "):
+                elif f[0].startswith("*") and f[2].replace("\xa0", " ") in element.text.replace("\xa0", " "):
                     break
-                elif f[2].replace("&nbsp;", " ") == element.text.replace("&nbsp;", " "):
+                elif f[2].replace("\xa0", " ") == element.text.replace("\xa0", " "):
                     break
             else:
                 continue
@@ -287,6 +290,8 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
             return result
         if len(tmp_results) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Found no element after applying Text Filter", 3)
+            if len(similar_texts) > 0:
+                CommonUtil.ExecLog(sModuleInfo, f"These are the similar texts found in the HTML: {str(similar_texts)[1:-1]}", 3)
             return "zeuz_failed"
         CommonUtil.ExecLog(sModuleInfo, f"Original text of the element is '{tmp_results[index_number].text}'", 1)
         if len(tmp_results) == index_number + 1 == 1:
