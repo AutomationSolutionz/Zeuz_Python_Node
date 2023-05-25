@@ -966,7 +966,7 @@ def command_line_args() -> Path:
     parser_object.add_argument(
         "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs.", metavar=""
     )
-    
+
     parser_object.add_argument(
         "-gh", "--gh_token", action="store", help="Enter GitHub personal access token (https://github.com/settings/tokens)", metavar=""
     )
@@ -1016,13 +1016,13 @@ def command_line_args() -> Path:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    last_module_modules_date_filepath = os.path.dirname(os.path.abspath(__file__)) + os.sep + 'AutomationLog' + os.sep + 'last_modules_update_date.txt'
+    last_module_modules_date_filepath = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog' + os.sep + 'last_modules_update_date.txt'
     if os.path.exists(last_module_modules_date_filepath):
         with open(last_module_modules_date_filepath, "r") as file:
             date = file.read()
 
         date_from_file = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-        current_date = datetime.date(2023, 6, 25)
+        current_date = datetime.date.today()
         time_difference = (current_date - date_from_file).days
 
         # Check if the time difference is greater than one month
@@ -1032,6 +1032,7 @@ def command_line_args() -> Path:
             with open(last_module_modules_date_filepath, "w") as file:
                 # Write the current date as content
                 file.write(str(current_date))
+            print("Module Updated..")
         else:
             print("Skipping Module Update")
     else:
