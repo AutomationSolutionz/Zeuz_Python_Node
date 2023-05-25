@@ -1032,9 +1032,9 @@ def command_line_args() -> Path:
             with open(last_module_modules_date_filepath, "w") as file:
                 # Write the current date as content
                 file.write(str(current_date))
-            print("Module Updated..")
+            print("module_updater: Module Updated..")
         else:
-            print("Skipping Module Update")
+            print("module_updater: All modules are already up to date.")
     else:
         # Create the text file
         with open(last_module_modules_date_filepath, "w") as file:
@@ -1042,6 +1042,7 @@ def command_line_args() -> Path:
             file.write(str(current_date))
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
+        print("module_updater: Module Updated..")
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
