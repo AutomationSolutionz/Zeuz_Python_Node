@@ -51,6 +51,7 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
 from .performance_action import performance_action_handler
+from .time_base_performance_action import time_base_performance_action_handler
 
 from rich.style import Style
 from rich.table import Table
@@ -1074,6 +1075,14 @@ def Run_Sequential_Actions(
                 # Don't process these suport items right now, but also don't fail
                 if sub_field_match(action_name.lower().strip()) and "custom" not in action_name:
                     continue
+
+                elif "time base performance action" in action_name:
+                    result, skip, perf_result = time_base_performance_action_handler(
+                        data_set,
+                        Run_Sequential_Actions,
+                        CommonUtil.get_timestamp,
+                    )
+                    CommonUtil.perf_test_perf = perf_result
 
                 elif "performance action" in action_name:
                     result, skip, perf_result = performance_action_handler(
