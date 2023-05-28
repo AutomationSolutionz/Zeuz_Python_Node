@@ -918,6 +918,14 @@ def handle_rest_call(
         if CommonUtil.load_testing:
             elapsed_time = result.elapsed.microseconds / 1e6
 
+            response_body = ""
+            # Add response body if there's any kind of failure
+            if not (status_code >= 200 and status_code <= 399):
+                try:
+                    response_body = result.text
+                except:
+                    pass
+
             performance_status = CommonUtil.PerformanceDataPoint(
                 url=url,
                 http_verb=method,
@@ -925,6 +933,7 @@ def handle_rest_call(
                 elapsed_time=elapsed_time,
                 response_body_size=len(result.content),
                 time_stamp=time_stamp,
+                response_body=response_body,
             )
             CommonUtil.api_performance_data.append(performance_status)
 
