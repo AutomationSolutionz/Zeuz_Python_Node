@@ -791,8 +791,6 @@ def handle_rest_call(
 
         result = None
         status_code = 1  # dummy value
-        if CommonUtil.load_testing:
-            start_counter = time.perf_counter()
         while count < request_count:
             method = method.lower().strip()
             if method in ("post", "put"):
@@ -916,8 +914,7 @@ def handle_rest_call(
             count += 1
 
         if CommonUtil.load_testing:
-            end_counter = time.perf_counter()
-            runtime = round(end_counter-start_counter, 6)
+            runtime = round(result.elapsed.microseconds / 1e6, 6)
 
             try:
                 CommonUtil.performance_report["endpoint"] = result.url
