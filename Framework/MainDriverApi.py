@@ -940,9 +940,7 @@ def run_test_case(
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
-        CommonUtil.browser_perf = {}
-        CommonUtil.action_perf = []
-        CommonUtil.step_perf = []
+        CommonUtil.clear_performance_metrics()
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
 
         # Added this two global variable in CommonUtil to save log information and save filepath of test case report
@@ -1095,6 +1093,7 @@ def run_test_case(
                 "steps": CommonUtil.step_perf,
                 "test_cases": CommonUtil.test_case_perf,
                 "performance_test": CommonUtil.perf_test_perf,
+                "api_performance_data": CommonUtil.api_performance_data,
             }
         }
 
