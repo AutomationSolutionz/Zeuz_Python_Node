@@ -916,7 +916,7 @@ def handle_rest_call(
             count += 1
 
         if CommonUtil.load_testing:
-            runtime = round(result.elapsed.microseconds / 1e6, 6)
+            runtime = result.elapsed.microseconds / 1e6
 
             performance_status = CommonUtil.PerformanceDataPoint(
                 url=url,
