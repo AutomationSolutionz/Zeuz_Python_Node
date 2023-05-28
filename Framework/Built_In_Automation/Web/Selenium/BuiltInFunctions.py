@@ -454,11 +454,15 @@ def use_xvfb_or_headless(callback):
 def set_extension_variables():
     with open(Path(aiplugin_path) / "background.js") as file:
         text = file.read()
-    if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
-        with open(Path(aiplugin_path) / "background.js", "w") as file:
-            aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
-            aiplugin_key = ConfigModule.get_config_value("Authentication", "api-key").strip()
-            file.write(text.replace("__ZeuZ__UrL_maPP", aiplugin_url, 1).replace("__ZeuZ__KeY_maPP", aiplugin_key, 1))
+    # if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
+    with open(Path(aiplugin_path) / "background.js", "w") as file:
+        aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
+        aiplugin_key = ConfigModule.get_config_value("Authentication", "api-key").strip()
+        zeuz_url_var_idx = text.find("let zeuz_url = ")
+        zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
+        zeuz_key_var_idx = text.find("let zeuz_key = ")
+        zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
+        file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{aiplugin_url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{aiplugin_key}';", 1))
     ask_for_sibling = ConfigModule.get_config_value("Inspector", "sibling").strip().lower() not in ("false", "off", "disabled", "no")
     if ask_for_sibling:
         with open(Path(aiplugin_path) / "inspect.js") as file:
