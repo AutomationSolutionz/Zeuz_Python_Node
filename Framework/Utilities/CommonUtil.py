@@ -17,6 +17,7 @@ import io
 from rich.console import Console
 # from rich import print
 from rich import print_json
+from collections import namedtuple
 
 ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import live_log_service
@@ -151,6 +152,16 @@ action_perf = []
 step_perf = []
 test_case_perf = []
 perf_test_perf = []
+
+PerformanceDataPoint = namedtuple("PerformanceDataPoint", [
+    "url",
+    "http_verb",
+    "status_code",
+    "elapsed_time",
+    "response_body_size",
+])
+api_performance_data: list[PerformanceDataPoint] = []
+
 skip_testcases = {}
 skip_testcases_list = []
 global_var = {}
@@ -159,12 +170,13 @@ zeuz_disable_var_print = {}
 
 def clear_performance_metrics():
     """reset everything to initial value"""
-    global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf
+    global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf, api_performance_data
     browser_perf = {}
     action_perf = []
     step_perf = []
     test_case_perf = []
     perf_test_perf = []
+    api_performance_data = []
 
 
 def GetExecutor():

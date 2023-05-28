@@ -916,6 +916,15 @@ def handle_rest_call(
         if CommonUtil.load_testing:
             runtime = round(result.elapsed.microseconds / 1e6, 6)
 
+            performance_status = CommonUtil.PerformanceDataPoint(
+                url=url,
+                http_verb=method,
+                status_code=status_code,
+                elapsed_time=runtime,
+                response_body_size=len(result.content),
+            )
+            CommonUtil.api_performance_data.append(performance_status)
+
             try:
                 CommonUtil.performance_report["endpoint"] = result.url
                 CommonUtil.performance_report["data"].append(
