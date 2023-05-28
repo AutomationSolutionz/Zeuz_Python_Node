@@ -782,6 +782,8 @@ def handle_rest_call(
 
         count = 0
 
+        time_stamp = CommonUtil.get_timestamp()
+
         # Decide whether we should use a Session object or a one-off request.
         session = get_session(session_name, cert)
 
@@ -922,6 +924,7 @@ def handle_rest_call(
                 status_code=status_code,
                 elapsed_time=runtime,
                 response_body_size=len(result.content),
+                time_stamp=time_stamp,
             )
             CommonUtil.api_performance_data.append(performance_status)
 

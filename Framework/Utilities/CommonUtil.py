@@ -159,6 +159,7 @@ PerformanceDataPoint = namedtuple("PerformanceDataPoint", [
     "status_code",
     "elapsed_time",
     "response_body_size",
+    "time_stamp",
 ])
 api_performance_data: list[PerformanceDataPoint] = []
 
