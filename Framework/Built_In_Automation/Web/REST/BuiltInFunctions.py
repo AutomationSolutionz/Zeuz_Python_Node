@@ -916,13 +916,13 @@ def handle_rest_call(
             count += 1
 
         if CommonUtil.load_testing:
-            runtime = result.elapsed.microseconds / 1e6
+            elapsed_time = result.elapsed.microseconds / 1e6
 
             performance_status = CommonUtil.PerformanceDataPoint(
                 url=url,
                 http_verb=method,
                 status_code=status_code,
-                elapsed_time=runtime,
+                elapsed_time=elapsed_time,
                 response_body_size=len(result.content),
                 time_stamp=time_stamp,
             )
@@ -934,7 +934,7 @@ def handle_rest_call(
                     {
                         "status": status_code,
                         "message": result.text,
-                        "runtime": runtime
+                        "runtime": elapsed_time
                     }
                 )
             except:
@@ -945,8 +945,8 @@ def handle_rest_call(
                 )
                 return "zeuz_failed"
             CommonUtil.performance_report["individual_stats"] = {
-                "slowest": max(runtime, CommonUtil.performance_report["individual_stats"]["slowest"]),
-                "fastest": min(runtime, CommonUtil.performance_report["individual_stats"]["fastest"]),
+                "slowest": max(elapsed_time, CommonUtil.performance_report["individual_stats"]["slowest"]),
+                "fastest": min(elapsed_time, CommonUtil.performance_report["individual_stats"]["fastest"]),
             }
             if str(status_code) in CommonUtil.performance_report["status_counts"]:
                 CommonUtil.performance_report["status_counts"][str(status_code)] += 1
