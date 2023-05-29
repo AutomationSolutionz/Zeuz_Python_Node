@@ -129,10 +129,6 @@ def time_base_performance_action_handler(
         result = run_sequential_actions(actions_to_execute)
         end_time = time.perf_counter_ns()
         alive_task_count -= 1
-        print('-----------------------------------')
-        print(result)
-        print('-----------------------------------')
-        
 
         max_parallel_thread_count = max(max_parallel_thread_count, threading.active_count())
 

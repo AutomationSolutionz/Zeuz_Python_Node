@@ -172,13 +172,13 @@ zeuz_disable_var_print = {}
 
 def clear_performance_metrics():
     """reset everything to initial value"""
-    global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf, api_performance_data
-    browser_perf = {}
+    global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf, api_performance_data, load_testing
     action_perf = []
     step_perf = []
     test_case_perf = []
     perf_test_perf = []
     api_performance_data = []
+    load_testing = False
 
 
 def GetExecutor():

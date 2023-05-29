@@ -1077,12 +1077,14 @@ def Run_Sequential_Actions(
                     continue
 
                 elif "time base performance action" in action_name:
+                    CommonUtil.load_testing = True
                     result, skip, perf_result = time_base_performance_action_handler(
                         data_set,
                         Run_Sequential_Actions,
                         CommonUtil.get_timestamp,
                     )
                     CommonUtil.perf_test_perf = perf_result
+                    CommonUtil.load_testing = False
 
                 elif "performance action" in action_name:
                     CommonUtil.load_testing = True
