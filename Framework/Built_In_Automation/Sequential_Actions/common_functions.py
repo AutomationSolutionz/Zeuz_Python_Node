@@ -6111,6 +6111,6 @@ def text_to_speech(data_set):
         full_filepath = Path(sr.Get_Shared_Variables("zeuz_download_folder"),output_filename)
         CommonUtil.ExecLog(sModuleInfo, f"Speech file saved to - {full_filepath}", 1)
         tts.save(full_filepath)
-        return "zeuz_passed"
+        return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
