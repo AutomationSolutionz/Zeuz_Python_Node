@@ -782,14 +782,14 @@ def handle_rest_call(
 
         count = 0
 
-        time_stamp = CommonUtil.get_timestamp()
-
         # Decide whether we should use a Session object or a one-off request.
         session = get_session(session_name, cert)
 
         # Get client-side certificates if it exists in the
         # `ZEUZ_NODE_CLIENT_CERT` or `PYTHON PATH`.
         # cert = get_client_certificates()
+
+        time_stamp = CommonUtil.get_timestamp()
 
         result = None
         status_code = 1  # dummy value
