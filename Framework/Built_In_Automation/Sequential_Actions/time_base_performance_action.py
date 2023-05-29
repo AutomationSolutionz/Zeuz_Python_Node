@@ -98,9 +98,9 @@ def time_base_performance_action_handler(
         elif "time base performance action" in left:
             if right.strip().startswith("%|"):
                 right = sr.get_previous_response_variables_in_strings(right.strip())
-                
+
             action_ranges = right.split(',')
-            
+
             actions_to_execute=[]
             for action_range in action_ranges:
                 action_range=action_range.split('-') #[5-7] to [5,7], [5] to [5] if no '-' present
@@ -113,8 +113,8 @@ def time_base_performance_action_handler(
 
     # result, executed_actions = Run_Sequential_Actions(data_set_list=actions_to_execute)
     # print(result, executed_actions)
-    
-    
+
+
     def task():
         """
         A task represents a single thread of execution/user journey and contains
@@ -133,7 +133,7 @@ def time_base_performance_action_handler(
         max_parallel_thread_count = max(max_parallel_thread_count, threading.active_count())
 
         return (result[0] == "passed", timestamp, end_time - start_time)
-    
+
 
     pool = futures.ThreadPoolExecutor(
         max_workers=max_workers,
@@ -145,7 +145,9 @@ def time_base_performance_action_handler(
     while time_to_run > time.time():
         # For every "tick", we spawn the specified number of callables.
         if max_user > alive_task_count:
-            for i in range(min(max_user-alive_task_count, spawn_rate)):
+            spawn_count = min(max_user-alive_task_count, spawn_rate)
+
+            for i in range(spawn_count):
                 future_callables.append(
                     pool.submit(
                         task
