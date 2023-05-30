@@ -39,6 +39,7 @@ from rich.table import Table
 from rich.console import Console
 from rich.box import ASCII_DOUBLE_HEAD, DOUBLE
 from rich.padding import Padding
+from jinja2 import Environment, FileSystemLoader
 
 rich_print = Console().print
 
@@ -1515,6 +1516,17 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
+        
+        if CommonUtil.processed_performance_data:    
+            env = Environment(loader=FileSystemLoader('../reporting/html_templates'))
+            template = env.get_template('pref_report.html')
+            html = template.render(CommonUtil.processed_performance_data)
+            # Save the rendered HTML to a file
+            file_name = CommonUtil.processed_performance_data["tc_id"].replace(":", "-") + ".html"
+            with open(zip_dir / file_name, "w", encoding="utf-8") as file:
+                file.write(html)
+                print("Preformance report template generated successfully!")
+            CommonUtil.processed_performance_data.clear()
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.

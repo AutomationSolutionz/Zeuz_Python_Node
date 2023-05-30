@@ -153,7 +153,7 @@ def time_base_performance_action_handler(
                         task
                     )
                 )
-            time.sleep(1)
+        time.sleep(1)
 
     results = []
     for f in futures.as_completed(future_callables, timeout=timeout):
