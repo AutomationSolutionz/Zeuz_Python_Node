@@ -22,6 +22,7 @@ from collections import namedtuple
 ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import live_log_service
 import concurrent.futures
+from typing import Dict
 
 
 # For TakeScreenShot()
@@ -1216,6 +1217,99 @@ def path_parser(path: str) -> str:
         Exception_Handler(sys.exc_info())
         raise Exception
 
+
+def calculated_percentile(elapsed_times: Dict[int, int], total_requests: int, percent: float) -> int:
+    """
+    Calculate the percentile of the given data
+    :param elapsed_times:
+    :param total_requests:
+    :param percent:
+    :return:
+    """
+    if percent == 0:
+        return 0
+    elif percent == 100:
+        return max(elapsed_times.keys())
+    else:
+        rank = int(total_requests * percent / 100)
+        count = 0
+        for key in sorted(elapsed_times.keys()):
+            count += elapsed_times[key]
+            if count >= rank:
+                return key
+
+
+def generate_time_based_performance_report(session):
+    """
+    Generate the time based performance report
+    :param session:
+    """
+    session = {'server_version': '8.0.0', 'run_id': 'Mon-May-29-07:24:02-2023', 'objective': 'Practice', 'project_id': 'PROJ-17', 'team_id': 2, 'test_cases': [{'testcase_no': 'TEST-5640', 'title': 'time base pref', 'automatability': 'Automated', 'debug_steps': [], 'attachments': [], 'steps': [{'step_id': 5574, 'step_name': 'pref', 'step_sequence': 1, 'step_driver_type': 'Built_In_Driver', 'automatablity': 'automated', 'always_run': False, 'run_on_fail': False, 'step_function': 'Sequential Actions', 'step_driver': 'Built_In_Driver', 'type': 'normal', 'attachments': [], 'verify_point': False, 'continue_on_fail': False, 'step_time': 59, 'actions': [{'action_name': 'None', 'action_disabled': False, 'step_actions': [['max user', 'element parameter', '10'], ['swpan rate', 'element parameter', '5'], ['time to run', 'element parameter', '10'], ['time base performance action', 'time base performance action', '2-3']]}, {'action_name': 'None', 'action_disabled': False, 'step_actions': [['method', 'element parameter', 'get'], ['url', 'element parameter', 'https://google.com/'], ['save response', 'rest action', 'none']]}, {'action_name': 'None', 'action_disabled': False, 'step_actions': [['method', 'element parameter', 'get'], ['url', 'element parameter', 'http://example.com/'], ['save response', 'rest action', 'none']]}], 'execution_detail': {'stepstarttime': '1970-01-01 01:05:56.548205', 'stependtime': '1970-01-01 01:06:07.766136', 'end_memory': 3404.16796875, 'duration': '00:00:11.218', 'memory_consumed': -24.33984375, 'logid': 'Mon-May-29-07:24:02-2023|TEST-5640|5574|1', 'status': 'Passed'}}], 'execution_detail': {'teststarttime': '2023-05-29 07:24:03', 'testendtime': '2023-05-29 07:24:14', 'duration': '0:00:11', 'status': 'Passed', 'failreason': '', 'metrics': {'run_id': 'Mon-May-29-07:24:02-2023', 'tc_id': 'TEST-5640', 'browser_performance': {}, 'node': {'actions': [{'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.86542, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:04.652111'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.5578, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:05.216582'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.88859, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:05.672896'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.51375, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:06.192607'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.70324, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:06.495116'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.54276, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:07.050357'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.93642, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:07.726749'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.50837, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:08.243993'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.9474, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:08.745867'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.51028, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:09.262337'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.97672, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:09.768752'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.50957, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:10.289153'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.818, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:10.610888'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.51002, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:11.132831'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.71536, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:11.510209'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.54349, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:12.059692'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.84683, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:12.642190'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.60303, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:13.254750'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.9675, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:13.763793'}, {'step_sequence': 1, 'step_id': 5574, 'label': 'None', 'module': 'rest', 'name': 'save response', 'runtime': 0.60447, 'page_reload': None, 'time_stamp': '2023-05-29 07:24:14.377498'}], 'steps': [{'id': 5574, 'name': 'pref', 'sequence': 1, 'runtime': 11.21793, 'time_stamp': '2023-05-29 07:24:14.379805', 'status': 'PASSED'}], 'test_cases': [{'run_id': 'Mon-May-29-07:24:02-2023', 'tc_id': 'TEST-5640', 'status': 'Passed', 'runtime': 11.266535520553589, 'errors': '[]', 'time_stamp': '2023-05-29 07:24:14.386650'}], 'performance_test': [[True, '2023-05-29 07:24:10.788433', 1271777460], [True, '2023-05-29 07:24:11.789511', 1465737264], [True, '2023-05-29 07:24:07.785196', 1477414902], [True, '2023-05-29 07:24:06.784227', 1460066978], [True, '2023-05-29 07:24:03.774413', 1442491292], [True, '2023-05-29 07:24:08.786253', 1503196859], [True, '2023-05-29 07:24:05.783143', 1267499732], [True, '2023-05-29 07:24:04.776095', 1416818463], [True, '2023-05-29 07:24:09.787305', 1346070296], [True, '2023-05-29 07:24:12.790623', 1587395876]], 'api_performance_data': [['https://google.com/', 'get', 200, 501, 19376, '2023-05-29 07:24:03.786825', ''], ['http://example.com/', 'get', 200, 552, 1256, '2023-05-29 07:24:04.658864', ''], ['https://google.com/', 'get', 200, 455, 19406, '2023-05-29 07:24:04.784364', ''], ['http://example.com/', 'get', 200, 511, 1256, '2023-05-29 07:24:05.678911', ''], ['https://google.com/', 'get', 200, 501, 19400, '2023-05-29 07:24:05.791953', ''], ['http://example.com/', 'get', 200, 538, 1256, '2023-05-29 07:24:06.507721', ''], ['https://google.com/', 'get', 200, 580, 19336, '2023-05-29 07:24:06.790425', ''], ['http://example.com/', 'get', 200, 505, 1256, '2023-05-29 07:24:07.735716', ''], ['https://google.com/', 'get', 200, 510, 19347, '2023-05-29 07:24:07.798643', ''], ['http://example.com/', 'get', 200, 508, 1256, '2023-05-29 07:24:08.752118', ''], ['https://google.com/', 'get', 200, 509, 19278, '2023-05-29 07:24:08.792095', ''], ['http://example.com/', 'get', 200, 505, 1256, '2023-05-29 07:24:09.779726', ''], ['https://google.com/', 'get', 200, 418, 19430, '2023-05-29 07:24:09.792955', ''], ['http://example.com/', 'get', 200, 506, 1256, '2023-05-29 07:24:10.622929', ''], ['https://google.com/', 'get', 200, 503, 19428, '2023-05-29 07:24:10.794958', ''], ['http://example.com/', 'get', 200, 541, 1256, '2023-05-29 07:24:11.516261', ''], ['https://google.com/', 'get', 200, 486, 19313, '2023-05-29 07:24:11.795414', ''], ['http://example.com/', 'get', 200, 594, 1256, '2023-05-29 07:24:12.651846', ''], ['https://google.com/', 'get', 200, 507, 19336, '2023-05-29 07:24:12.796351', ''], ['http://example.com/', 'get', 200, 601, 1256, '2023-05-29 07:24:13.773149', '']]}}}}], 'dependency_list': {'Browser': 'Chrome', 'Mobile': 'Android'}, 'device_info': [[1, 1]], 'run_time': {}, 'file_name': 'nasim_rtassadfdgdg_1', 'runtime_settings': {'debug_mode': False, 'is_linked': False, 'local_run': False, 'rerun_on_fail': True, 'take_screenshot': True, 'threading': False, 'upload_log_file_only_for_fail': True, 'window_size_x': 0, 'window_size_y': 0}, 'debug': 'no', 'debug_clean': 'NO', 'debug_step_actions': [], 'debug_steps': [], 'base_path': 'TestExecutionLog', 'execution_detail': {'status': 'Complete', 'teststarttime': '2023-05-29 07:24:03', 'testendtime': '2023-05-29 07:24:14', 'duration': '0:00:11'}}
+
+
+    print("Generating Performance Report")
+
+    perf_data = session['test_cases'][0]['execution_detail']['metrics']['node']['api_performance_data']
+    run_id = session['run_id']
+    teststarttime = session['test_cases'][0]['execution_detail']['teststarttime']
+    testendtime = session['test_cases'][0]['execution_detail']['testendtime']
+    duration = session['test_cases'][0]['execution_detail']['duration']
+    tc_id = session['test_cases'][0]['testcase_no']
+
+    elapse_time_array = []
+    total_request = len(perf_data)
+    failed_request = 0
+
+    endpoint_wise = {}
+
+    for data in perf_data:
+        key = data[0] + '|' + data[1]
+
+        if endpoint_wise.get(key) is None:
+            endpoint_wise[key] = {
+                'endpoint': data[0],
+                'method': data[1],
+                'total_request': 1,
+                'total_failed_request': 0 if data[-1] == '' else 1,
+                'total_elapsed_time': data[3],
+                'elapsed_time_dict': {data[3]: 1},
+                'total_content_length': data[4],
+                'error': {} if data[-1] == '' else {data[-1]: 1}
+            }
+        else:
+            endpoint_wise[key]['total_request'] += 1
+            endpoint_wise[key]['total_failed_request'] += 0 if data[-1] == '' else 1
+            endpoint_wise[key]['total_elapsed_time'] += data[3]
+            endpoint_wise[key]['elapsed_time_dict'][data[3]] = endpoint_wise[key]['elapsed_time_dict'].get(
+                data[3], 0) + 1
+            endpoint_wise[key]['total_content_length'] += data[4]
+            if data[-1] != '':
+                endpoint_wise[key]['error'][data[-1]] = endpoint_wise[key]['error'].get(data[-1], 0) + 1
+
+    for endpoint in endpoint_wise:
+        endpoint_wise[endpoint]['avg_elapsed_time'] = int(
+            endpoint_wise[endpoint]['total_elapsed_time'] / endpoint_wise[endpoint]['total_request'])
+        endpoint_wise[endpoint]['avg_content_length'] = int(
+            endpoint_wise[endpoint]['total_content_length'] / endpoint_wise[endpoint]['total_request'])
+        endpoint_wise[endpoint]['min_time'] = min(endpoint_wise[endpoint]['elapsed_time_dict'].keys())
+        endpoint_wise[endpoint]['max_time'] = max(endpoint_wise[endpoint]['elapsed_time_dict'].keys())
+
+        endpoint_wise[endpoint]['50percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 50)
+        endpoint_wise[endpoint]['60percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 60)
+        endpoint_wise[endpoint]['70percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 70)
+        endpoint_wise[endpoint]['80percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 80)
+        endpoint_wise[endpoint]['90percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 90)
+        endpoint_wise[endpoint]['99percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 99)
+        endpoint_wise[endpoint]['100percent'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
+                                                                     endpoint_wise[endpoint]['total_request'], 100)
+
+        print(endpoint_wise)
 
 if __name__ == "__main__":
     pass

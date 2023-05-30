@@ -916,7 +916,7 @@ def handle_rest_call(
             count += 1
 
         if CommonUtil.load_testing:
-            elapsed_time = result.elapsed.microseconds / 1e6
+            elapsed_time = int(result.elapsed.microseconds // 1000)
 
             response_body = ""
             # Add response body if there's any kind of failure

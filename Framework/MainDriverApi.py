@@ -1512,7 +1512,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 time.sleep(4)
             else:
                 print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
-
+                        
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
 
@@ -2043,6 +2043,8 @@ def main(device_dict, user_info_object):
                     "duration": TestSetDuration
                 }
                 CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
+                
+                CommonUtil.generate_time_based_performance_report(each_session)
 
                 if float(server_version.split(".")[0]) < 7:
                     upload_json_report_old(Userid, temp_ini_file, run_id)
