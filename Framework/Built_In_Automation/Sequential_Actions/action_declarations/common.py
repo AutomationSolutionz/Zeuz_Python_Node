@@ -111,7 +111,11 @@ declarations = (
     {"name": "xml to json",                                  "function": "xml_to_json",                           "screenshot": "none" },
 
     # AI actions
-    {"name": "classifier ai",                                "function": "classifier_AI",                          "screenshot": "none" },
+    {"name": "classifier ai",                                "function": "classifier_AI",                         "screenshot": "none" },
+
+    {"name": "connect to S3",                                "function": "connect_to_S3",                         "screenshot": "none" },
+    {"name": "upload to S3",                                 "function": "upload_to_S3",                          "screenshot": "none" },
+    
 
 ) # yapf: disable
 
