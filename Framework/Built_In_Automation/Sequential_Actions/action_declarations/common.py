@@ -116,7 +116,7 @@ declarations = (
     {"name": "connect to S3",                                "function": "connect_to_S3",                         "screenshot": "none" },
     {"name": "upload to S3",                                 "function": "upload_to_S3",                          "screenshot": "none" },
     
-
+    {"name": "text to speech",                               "function": "text_to_speech",                        "screenshot": "none" },
 ) # yapf: disable
 
 module_name = "common"

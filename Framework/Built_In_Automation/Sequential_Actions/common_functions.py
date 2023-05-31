@@ -6167,3 +6167,45 @@ def upload_to_S3(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def text_to_speech(data_set):
+    """
+        Convert text to speech using google gTTS library
+    """
+    from gtts import gTTS
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        dialogue_data = speaker = output_filename = None
+        language = 'en'
+        top_level_domain = 'us'
+
+        for left, mid, right in data_set:
+            if "dialogue" in left:
+                dialogue_data = eval(right.strip())
+            if "speaker" in left:
+                try:
+                    speaker = right.strip()
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to parse dialogue json", 3)
+                    return "zeuz_failed"
+            if "text to speech" in left:
+                output_filename = right.strip()
+            if "language" in left:
+                language = right.strip()
+            if "accent" in left:
+                top_level_domain = right.strip()
+                
+        if None in (dialogue_data, speaker, output_filename):
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
+            return "zeuz_failed"
+
+        full_speech = ".".join([s['speech'] for s in dialogue_data if s['speaker'] == speaker ])
+        tts = gTTS(text=full_speech, lang=language, tld=top_level_domain)
+        full_filepath = Path(sr.Get_Shared_Variables("zeuz_download_folder"),output_filename)
+        CommonUtil.ExecLog(sModuleInfo, f"Speech file saved to - {full_filepath}", 1)
+        tts.save(full_filepath)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
