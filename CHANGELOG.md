@@ -4,6 +4,8 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Added - Text to Speech action
+- **[Add]** Added - S3 Actions
 - **[Add]** Added - Convert XML to JSON format
 - **[Add]** Added - sbl flag to enable showing browser log in console. Default: False
 - **[Add]** Resize selenium window action
