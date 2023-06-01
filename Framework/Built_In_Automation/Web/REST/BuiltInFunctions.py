@@ -890,6 +890,8 @@ def handle_rest_call(
                 return "zeuz_failed"
             status_code = int(result.status_code)
 
+            if CommonUtil.load_testing:
+                break
             if request_count > 1:
                 if status_code != wait_for_response_code:
                     CommonUtil.ExecLog(
