@@ -1542,6 +1542,14 @@ def generate_time_based_performance_report(session) -> None:
         endpoint_wise[endpoint]['percentile_vs_time'] = []
         endpoint_wise[endpoint]['fiftypercentile_per_second'] = []
         endpoint_wise[endpoint]['ninetypercentile_per_second'] = []
+        
+        endpoint_wise[endpoint]['dict_response_time_per_time'] = dict(
+            sorted(endpoint_wise[endpoint]['dict_response_time_per_time'].items(),
+                   key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
+        endpoint_wise[endpoint]['dict_byte_throughput_per_time'] = dict(
+            sorted(endpoint_wise[endpoint]['dict_byte_throughput_per_time'].items(),
+                   key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
+        
         for key, value_list in endpoint_wise[endpoint]['dict_response_time_per_time'].items():
             endpoint_wise[endpoint]['response_time_vs_time'].append([key, int(sum(value_list) / len(value_list))])
             endpoint_wise[endpoint]['user_count_per_second'].append([key, len(value_list) + endpoint_wise[endpoint]['user_count_per_second'][-1][1] if len(endpoint_wise[endpoint]['user_count_per_second']) > 0 else 0])
