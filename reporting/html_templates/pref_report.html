@@ -108,6 +108,11 @@ table.stats tr.total {
 table.stats tr.total td {
   font-weight: bold;
 }
+.center {
+  margin: auto;
+  width: 50%;
+  padding: 10px;
+}
 
 /*# sourceMappingURL=tables.css.map */
 
@@ -198,29 +203,29 @@ table.stats tr.total td {
         </div>
 
 
-            <!-- <div class="failures">
-                <h2>Failures Statistics</h2>
-                <table class="stats">
-                    <thead>
-                        <tr>
-                            <th class="sortable">Method</th>
-                            <th class="sortable">Name</th>
-                            <th class="sortable">Error</th>
-                            <th class="sortable">Occurrences</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+<!--            <div class="failures">-->
+<!--                <h2>Failures Statistics</h2>-->
+<!--                <table class="stats">-->
+<!--                    <thead>-->
+<!--                        <tr>-->
+<!--                            <th class="sortable">Method</th>-->
+<!--                            <th class="sortable">Name</th>-->
+<!--                            <th class="sortable">Error</th>-->
+<!--                            <th class="sortable">Occurrences</th>-->
+<!--                        </tr>-->
+<!--                    </thead>-->
+<!--                    <tbody>-->
 
-                            <tr>
-                                <td>GET</td>
-                                <td>/Home/Login/</td>
-                                <td>502 Server Error: Bad Gateway for url: /Home/Login/</td>
-                                <td>4182</td>
-                            </tr>
+<!--                            <tr>-->
+<!--                                <td>GET</td>-->
+<!--                                <td>/Home/Login/</td>-->
+<!--                                <td>502 Server Error: Bad Gateway for url: /Home/Login/</td>-->
+<!--                                <td>4182</td>-->
+<!--                            </tr>-->
 
-                    </tbody>
-                </table>
-            </div> -->
+<!--                    </tbody>-->
+<!--                </table>-->
+<!--            </div>-->
 
 
 
@@ -231,6 +236,211 @@ table.stats tr.total td {
     </div>
 
 
+    <div id="chartContainer" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="percentile_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="byte_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="user_count" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.1/dist/echarts.min.js"></script>
+    <script>
+        var chart = echarts.init(document.getElementById('chartContainer'), 'dark');
+
+        var options = {
+            title: {
+                text: 'Response time vs Time',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data:
+                        {{ item.response_time_vs_time }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('byte_per_second'), 'dark');
+
+        var options = {
+            title: {
+                text: 'Byte Throughput vs Time',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data:
+                        {{ item.byte_throughput_vs_time }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('user_count'), 'dark');
+
+        var options = {
+            title: {
+                text: 'User vs Time',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data:
+                        {{ item.user_count_per_second }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('percentile_per_second'), 'dark');
+
+        var options = {
+            title: {
+                text: 'Percentile per Second',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}} 50%ile', '{{item.endpoint}} 90%ile', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}} 50%ile',
+                        type: 'line',
+                        data:
+                        {{ item.fiftypercentile_per_second }}
+
+                    },
+                    {
+                        name: '{{item.endpoint}} 90%ile',
+                        type: 'line',
+                        data:
+                        {{ item.ninetypercentile_per_second }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
 
 
 

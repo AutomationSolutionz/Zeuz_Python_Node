@@ -17,7 +17,7 @@ import io
 from rich.console import Console
 # from rich import print
 from rich import print_json
-from collections import namedtuple
+from collections import namedtuple, Counter
 
 ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import live_log_service
@@ -1477,6 +1477,9 @@ def generate_time_based_performance_report(session) -> None:
     for data in perf_data:
         key = data[0] + '|' + data[1]
 
+        input_datetime = datetime.datetime.strptime(data[5], "%Y-%m-%d %H:%M:%S.%f")
+        formatted_datetime_str = input_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
+
         if endpoint_wise.get(key) is None:
             endpoint_wise[key] = {
                 'endpoint': data[0],
@@ -1486,7 +1489,9 @@ def generate_time_based_performance_report(session) -> None:
                 'total_elapsed_time': data[3],
                 'elapsed_time_dict': {data[3]: 1},
                 'total_content_length': data[4],
-                'error': {} if data[-1] == '' else {data[-1]: 1}
+                'error': {} if data[-1] == '' else {data[-1]: 1},
+                'dict_response_time_per_time': {formatted_datetime_str: [data[3]]},
+                'dict_byte_throughput_per_time': {formatted_datetime_str: [data[4]]}
             }
         else:
             endpoint_wise[key]['total_request'] += 1
@@ -1497,6 +1502,16 @@ def generate_time_based_performance_report(session) -> None:
             endpoint_wise[key]['total_content_length'] += data[4]
             if data[-1] != '':
                 endpoint_wise[key]['error'][data[-1]] = endpoint_wise[key]['error'].get(data[-1], 0) + 1
+
+            if endpoint_wise[key]['dict_response_time_per_time'].get(formatted_datetime_str) is None:
+                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str] = [data[3]]
+            else:
+                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str].append(data[3])
+
+            if endpoint_wise[key]['dict_byte_throughput_per_time'].get(formatted_datetime_str) is None:
+                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str] = [data[4]]
+            else:
+                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str].append(data[4])
 
     for endpoint in endpoint_wise:
         endpoint_wise[endpoint]['avg_elapsed_time'] = int(
@@ -1522,6 +1537,25 @@ def generate_time_based_performance_report(session) -> None:
                                                                        endpoint_wise[endpoint]['total_request'], 95)
         endpoint_wise[endpoint]['hundred'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
                                                                    endpoint_wise[endpoint]['total_request'], 100)
+        endpoint_wise[endpoint]['response_time_vs_time'] = []
+        endpoint_wise[endpoint]['user_count_per_second'] = []
+        endpoint_wise[endpoint]['percentile_vs_time'] = []
+        endpoint_wise[endpoint]['fiftypercentile_per_second'] = []
+        endpoint_wise[endpoint]['ninetypercentile_per_second'] = []
+        for key, value_list in endpoint_wise[endpoint]['dict_response_time_per_time'].items():
+            endpoint_wise[endpoint]['response_time_vs_time'].append([key, int(sum(value_list) / len(value_list))])
+            endpoint_wise[endpoint]['user_count_per_second'].append([key, len(value_list) + endpoint_wise[endpoint]['user_count_per_second'][-1][1] if len(endpoint_wise[endpoint]['user_count_per_second']) > 0 else 0])
+
+            items_count = dict(Counter(value_list))
+            endpoint_wise[endpoint]['fiftypercentile_per_second'].append(
+                [key, calculated_percentile(items_count, len(value_list), 50)])
+            endpoint_wise[endpoint]['ninetypercentile_per_second'].append(
+                [key, calculated_percentile(items_count, len(value_list), 90)])
+
+        endpoint_wise[endpoint]['byte_throughput_vs_time'] = []
+        for key, value_list in endpoint_wise[endpoint]['dict_byte_throughput_per_time'].items():
+            endpoint_wise[endpoint]['byte_throughput_vs_time'].append([key, int(sum(value_list) / len(value_list))])
+
 
     data = {
         'run_id': run_id,
@@ -1531,6 +1565,7 @@ def generate_time_based_performance_report(session) -> None:
         'tc_id': tc_id,
         'endpoint_wise': endpoint_wise
     }
+
     global processed_performance_data
     processed_performance_data = data
     return
