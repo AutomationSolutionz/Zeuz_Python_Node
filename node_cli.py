@@ -6,6 +6,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 import platform
 import datetime
+from configobj import ConfigObj
+from datetime import date
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -1016,30 +1018,30 @@ def command_line_args() -> Path:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    last_module_modules_date_filepath = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog' + os.sep + 'last_modules_update_date.txt'
-    if os.path.exists(last_module_modules_date_filepath):
-        with open(last_module_modules_date_filepath, "r") as file:
-            date = file.read()
-
-        date_from_file = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    settings_conf_path = os.path.dirname(os.path.abspath(__file__)) + os.sep + 'Framework' + os.sep + 'settings.conf'
+    config = ConfigObj(settings_conf_path)
+    date_str = config.get('Advanced Options', {}).get('last_module_update_date', '')
+    if date_str:
+        # Parse the date from the configuration file
+        config_date = date.fromisoformat(date_str)
         current_date = datetime.date.today()
-        time_difference = (current_date - date_from_file).days
-
+        time_difference = (current_date - config_date).days
         # Check if the time difference is greater than one month
         if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > 30:
             update_outdated_modules()
-            # Update the date in the file
-            with open(last_module_modules_date_filepath, "w") as file:
-                # Write the current date as content
-                file.write(str(current_date))
+            config_date = date.today()
+            config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
+            config.write()
             print("module_updater: Module Updated..")
         else:
             print("module_updater: All modules are already up to date.")
     else:
-        # Create the text file
-        with open(last_module_modules_date_filepath, "w") as file:
-            current_date = datetime.date.today()
-            file.write(str(current_date))
+        # Assign the current date
+        config_date = date.today()
+        config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
+
+        # Save the updated configuration file
+        config.write()
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
         print("module_updater: Module Updated..")
