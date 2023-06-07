@@ -1079,12 +1079,13 @@ def command_line_args() -> Path:
             config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
             config.write()
         else:
-            remaining_time = 7 - time_difference
-            print(f"AutomationLog Folder will be deleted after {remaining_time+1} Days")
+            pass
+            # remaining_time = 7 - time_difference
+            # print(f"AutomationLog Folder will be deleted after {remaining_time+1} Days")
     else:
         config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
         config.write()
-        print("AutomationLog Folder Not Found")
+        # print("AutomationLog Folder Not Found")
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
