@@ -69,3 +69,4 @@ torch
 torchvision
 transformers
 xmltodict
+configobj

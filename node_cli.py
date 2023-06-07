@@ -6,7 +6,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 import platform
 import datetime
-from configobj import ConfigObj
 from datetime import date
 
 # Disable WebdriverManager SSL verification.
@@ -21,7 +20,7 @@ with open(version_path, "r"):
     print(version_path.read_text())
 from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
-
+from configobj import ConfigObj
 from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
