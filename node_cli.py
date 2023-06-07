@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 import os
+import shutil
 from pathlib import Path
 from urllib.parse import urlparse
 import platform
 import datetime
 from datetime import date
+from datetime import datetime as dt
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -888,6 +890,22 @@ def Local_run(log_dir=None):
         )
         CommonUtil.ExecLog("", Error_Detail, 4, False)
 
+
+def get_folder_creation_time(folder_path):
+    if platform.system() == 'Windows':
+        creation_time = os.path.getctime(folder_path)
+    else:
+        stat = os.stat(folder_path)
+        if hasattr(stat, 'st_birthtime'):
+            # Use st_birthtime if available (Mac)
+            creation_time = stat.st_birthtime
+        else:
+            # Use st_mtime (last modification time) as an alternative
+            creation_time = stat.st_mtime
+
+    return dt.fromtimestamp(creation_time).date()
+
+
 def command_line_args() -> Path:
     """
     This function handles command line scripts with given arguments.
@@ -1044,6 +1062,25 @@ def command_line_args() -> Path:
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
         print("module_updater: Module Updated..")
+
+    folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework",
+                                                                     os.sep + '') + os.sep + 'AutomationLog'
+    if os.path.exists(folder_path):
+        creation_time = get_folder_creation_time(folder_path)
+        current_date = datetime.date.today()
+        time_difference = (current_date - creation_time).days
+        if time_difference > 7:
+            print("Cleaning Up AutomationLog Folder...")
+            for root, dirs, files in os.walk(folder_path, topdown=False):
+                for dir_name in dirs:
+                    folder = os.path.join(root, dir_name)
+                    shutil.rmtree(folder)
+
+        else:
+            remaining_time = 7 - time_difference
+            print(f"AutomationLog Folder will be deleted after {remaining_time+1} Days")
+    else:
+        print("AutomationLog Folder Not Found")
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
