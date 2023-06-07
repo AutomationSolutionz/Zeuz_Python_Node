@@ -1035,7 +1035,7 @@ def command_line_args() -> Path:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    settings_conf_path = os.path.dirname(os.path.abspath(__file__)) + os.sep + 'Framework' + os.sep + 'settings.conf'
+    settings_conf_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'Framework' + os.sep + 'settings.conf'
     config = ConfigObj(settings_conf_path)
     date_str = config.get('Advanced Options', {}).get('last_module_update_date', '')
     if date_str:
