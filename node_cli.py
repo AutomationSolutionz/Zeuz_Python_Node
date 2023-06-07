@@ -1065,21 +1065,25 @@ def command_line_args() -> Path:
 
     folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework",
                                                                      os.sep + '') + os.sep + 'AutomationLog'
-    if os.path.exists(folder_path):
-        creation_time = get_folder_creation_time(folder_path)
+    log_date_str = config.get('Advanced Options', {}).get('last_log_delete_date', '')
+    if log_date_str:
+        log_config_date = date.fromisoformat(log_date_str)
         current_date = datetime.date.today()
-        time_difference = (current_date - creation_time).days
+        time_difference = (current_date - log_config_date).days
         if time_difference > 7:
             print("Cleaning Up AutomationLog Folder...")
             for root, dirs, files in os.walk(folder_path, topdown=False):
                 for dir_name in dirs:
                     folder = os.path.join(root, dir_name)
                     shutil.rmtree(folder)
-
+            config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
+            config.write()
         else:
             remaining_time = 7 - time_difference
             print(f"AutomationLog Folder will be deleted after {remaining_time+1} Days")
     else:
+        config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
+        config.write()
         print("AutomationLog Folder Not Found")
 
     if show_browser_log:
