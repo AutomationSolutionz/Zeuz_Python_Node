@@ -21,6 +21,8 @@ import psutil
 from pathlib import Path
 from datetime import datetime
 
+from selenium.webdriver.chrome.service import Service
+
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -621,6 +623,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             for key in _prefs:
                 prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
+            selenium_version = selenium.__version__
             if remote_host:
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
@@ -628,11 +631,19 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     desired_capabilities=d
                 )
             else:
-                selenium_driver = webdriver.Chrome(
-                    executable_path=chrome_path,
-                    chrome_options=options,
-                    desired_capabilities=d
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(chrome_path)
+                    selenium_driver = webdriver.Chrome(
+                        service=service,
+                        chrome_options=options,
+                        desired_capabilities=d
+                    )
+                else:
+                    selenium_driver = webdriver.Chrome(
+                        executable_path=chrome_path,
+                        chrome_options=options,
+                        desired_capabilities=d
+                    )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)

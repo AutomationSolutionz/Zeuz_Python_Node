@@ -4,7 +4,7 @@ pillow
 pyserial
 python-dateutil
 urllib3
-selenium
+selenium==4.9.1
 uiautomator
 requests
 wheel
