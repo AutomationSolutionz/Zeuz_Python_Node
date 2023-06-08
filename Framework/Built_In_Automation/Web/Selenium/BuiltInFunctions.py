@@ -600,10 +600,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     set_extension_variables()
                     options.add_argument(f"load-extension={aiplugin_path}")
 
-            d = DesiredCapabilities.CHROME
-            d["loggingPrefs"] = {"browser": "ALL"}
-            d['goog:loggingPrefs'] = {'performance': 'ALL'}
-
             if "chromeheadless" in browser:
                 def chromeheadless():
                     options.add_argument(
