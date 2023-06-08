@@ -1038,13 +1038,14 @@ def command_line_args() -> Path:
     settings_conf_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'Framework' + os.sep + 'settings.conf'
     config = ConfigObj(settings_conf_path)
     date_str = config.get('Advanced Options', {}).get('last_module_update_date', '')
+    module_update_interval = config.get('Advanced Options', {}).get('module_update_interval', '')
     if date_str:
         # Parse the date from the configuration file
         config_date = date.fromisoformat(date_str)
         current_date = datetime.date.today()
         time_difference = (current_date - config_date).days
         # Check if the time difference is greater than one month
-        if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > 30:
+        if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > int(module_update_interval):
             update_outdated_modules()
             config_date = date.today()
             config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
@@ -1056,7 +1057,6 @@ def command_line_args() -> Path:
         # Assign the current date
         config_date = date.today()
         config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
-
         # Save the updated configuration file
         config.write()
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
@@ -1066,11 +1066,12 @@ def command_line_args() -> Path:
     folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework",
                                                                      os.sep + '') + os.sep + 'AutomationLog'
     log_date_str = config.get('Advanced Options', {}).get('last_log_delete_date', '')
+    log_delete_interval = config.get('Advanced Options', {}).get('log_delete_interval', '')
     if log_date_str:
         log_config_date = date.fromisoformat(log_date_str)
         current_date = datetime.date.today()
         time_difference = (current_date - log_config_date).days
-        if time_difference > 7:
+        if time_difference > int(log_delete_interval):
             print("Cleaning Up AutomationLog Folder...")
             for root, dirs, files in os.walk(folder_path, topdown=False):
                 for dir_name in dirs:
