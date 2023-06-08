@@ -5,7 +5,7 @@ pyserial
 colorama
 simplejson
 urllib3
-selenium==4.9.1
+selenium
 python-dateutil
 requests
 wheel

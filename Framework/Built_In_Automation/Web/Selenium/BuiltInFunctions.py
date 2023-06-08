@@ -628,17 +628,18 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
-                    desired_capabilities=d
                 )
             else:
                 if selenium_version.startswith('4.'):
                     service = Service(chrome_path)
                     selenium_driver = webdriver.Chrome(
                         service=service,
-                        chrome_options=options,
-                        desired_capabilities=d
+                        options=options,
                     )
                 else:
+                    d = DesiredCapabilities.CHROME
+                    d["loggingPrefs"] = {"browser": "ALL"}
+                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
                     selenium_driver = webdriver.Chrome(
                         executable_path=chrome_path,
                         chrome_options=options,
