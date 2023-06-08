@@ -21,6 +21,8 @@ import psutil
 from pathlib import Path
 from datetime import datetime
 
+from selenium.webdriver.chrome.service import Service
+
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -598,10 +600,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     set_extension_variables()
                     options.add_argument(f"load-extension={aiplugin_path}")
 
-            d = DesiredCapabilities.CHROME
-            d["loggingPrefs"] = {"browser": "ALL"}
-            d['goog:loggingPrefs'] = {'performance': 'ALL'}
-
             if "chromeheadless" in browser:
                 def chromeheadless():
                     options.add_argument(
@@ -621,18 +619,28 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             for key in _prefs:
                 prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
+            selenium_version = selenium.__version__
             if remote_host:
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
-                    desired_capabilities=d
                 )
             else:
-                selenium_driver = webdriver.Chrome(
-                    executable_path=chrome_path,
-                    chrome_options=options,
-                    desired_capabilities=d
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(chrome_path)
+                    selenium_driver = webdriver.Chrome(
+                        service=service,
+                        options=options,
+                    )
+                else:
+                    d = DesiredCapabilities.CHROME
+                    d["loggingPrefs"] = {"browser": "ALL"}
+                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
+                    selenium_driver = webdriver.Chrome(
+                        executable_path=chrome_path,
+                        chrome_options=options,
+                        desired_capabilities=d
+                    )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
