@@ -6,6 +6,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 import platform
 import datetime
+import shutil
+import time
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -1043,6 +1045,32 @@ def command_line_args() -> Path:
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
         print("module_updater: Module Updated..")
+    
+    # Delete Old Subfolders in Automationlog folder.
+
+    def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
+        subfolder_paths = []
+        current_time = time.time()
+        interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
+
+        for dir_name in os.listdir(folder_path):
+            dir_path = os.path.join(folder_path, dir_name)
+            if os.path.isdir(dir_path):
+                created_time = os.path.getctime(dir_path)
+
+                if current_time - created_time > interval_days_in_sec:
+                    subfolder_paths.append(dir_path)
+
+        return subfolder_paths
+
+    folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog'
+    log_delete_interval = ConfigModule.get_config_value("Advanced Options", "log_delete_interval")
+    if log_delete_interval not in (None,0):
+        auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
+        auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini']]
+
+        for subfolder in auto_log_subfolders:
+            shutil.rmtree(subfolder)
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
