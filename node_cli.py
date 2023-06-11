@@ -1065,12 +1065,14 @@ def command_line_args() -> Path:
 
     folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog'
     log_delete_interval = ConfigModule.get_config_value("Advanced Options", "log_delete_interval")
-    if log_delete_interval not in (None,0):
+    if log_delete_interval:
         auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
         auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini']]
-
-        for subfolder in auto_log_subfolders:
-            shutil.rmtree(subfolder)
+        
+        if auto_log_subfolders:
+            for subfolder in auto_log_subfolders:
+                shutil.rmtree(subfolder)
+            print(f'automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days')
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
