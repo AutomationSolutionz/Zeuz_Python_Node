@@ -1404,6 +1404,29 @@ def take_screenshot_selenium(data_set):
         errMsg = "Failed to take screenshot"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+def Change_Attribute_Value(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        change_value = ""
+        attribute_name = ""
+        global selenium_driver
+        Element = LocateElement.Get_Element(step_data, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        for left, mid, right in step_data:
+            mid = mid.strip().lower()
+            left = left.strip().lower()
+            if "input parameter" in mid:
+                attribute_name = left
+                change_value = right
+
+        selenium_driver.execute_script(f"arguments[0].{attribute_name} = `{change_value}`;", Element)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % change_value, 1)
+        return "passed"
+    except Exception:
+        errMsg = "Could not select/click your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 # Method to enter texts in a text box; step data passed on by the user
 @logger
