@@ -928,6 +928,7 @@ def start_appium_driver(
                 except:
                     count += 1
                     time.sleep(10)
+                    CommonUtil.Exception_Handler(sys.exc_info())
                     CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
 
             if appium_driver:  # Make sure we get the instance

@@ -42,6 +42,7 @@ declarations = (
     { "name": "split string",                                "function": "split_string",                          "screenshot": "none" },
     { "name": "create/append to list or dictionary",         "function": "save_into_variable",                    "screenshot": "none" },
     { "name": "save into variable",                          "function": "save_into_variable",                    "screenshot": "none" },
+    { "name": "save session variable",                        "function": "save_into_variable",                    "screenshot": "none" },
     { "name": "save length",                                 "function": "save_length",                           "screenshot": "none" },
     { "name": "validate schema",                             "function": "validate_schema",                       "screenshot": "none" },
     { "name": "execute python code",                         "function": "execute_python_code",                   "screenshot": "none" },
@@ -106,6 +107,11 @@ declarations = (
 
     # Authenticator code generator action
     {"name": "authenticator code generator",                 "function": "authenticator_code_generator",          "screenshot": "none" },
+
+    {"name": "xml to json",                                  "function": "xml_to_json",                           "screenshot": "none" },
+
+    # AI actions
+    {"name": "classifier ai",                                "function": "classifier_AI",                          "screenshot": "none" },
 
 ) # yapf: disable
 

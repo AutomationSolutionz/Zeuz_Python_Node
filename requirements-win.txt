@@ -16,7 +16,7 @@ SpeechRecognition
 colorama
 pyodbc
 python-dateutil
-Appium-Python-Client==2.5.0
+Appium-Python-Client
 xlwings
 image
 tzlocal
@@ -65,3 +65,7 @@ google-cloud-bigquery
 google-cloud-bigquery-storage
 deepdiff
 pywin32
+torch
+torchvision
+transformers
+xmltodict

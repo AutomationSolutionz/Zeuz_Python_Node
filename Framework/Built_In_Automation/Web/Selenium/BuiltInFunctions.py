@@ -21,6 +21,8 @@ import psutil
 from pathlib import Path
 from datetime import datetime
 
+from selenium.webdriver.chrome.service import Service
+
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -55,6 +57,7 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
     skipped_tag_list,
 )
+from Framework.AI.NLP import binary_classification
 from settings import temp_ini_file
 
 #########################
@@ -73,6 +76,8 @@ temp_config = os.path.join(
         ),
     )
 )
+temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
+aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"aiplugin")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -446,6 +451,29 @@ def use_xvfb_or_headless(callback):
         callback()
 
 
+def set_extension_variables():
+    with open(Path(aiplugin_path) / "background.js") as file:
+        text = file.read()
+    if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
+        with open(Path(aiplugin_path) / "background.js", "w") as file:
+            aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
+            aiplugin_key = ConfigModule.get_config_value("Authentication", "api-key").strip()
+            file.write(text.replace("__ZeuZ__UrL_maPP", aiplugin_url, 1).replace("__ZeuZ__KeY_maPP", aiplugin_key, 1))
+    ask_for_sibling = ConfigModule.get_config_value("Inspector", "sibling").strip().lower() not in ("false", "off", "disabled", "no")
+    if ask_for_sibling:
+        with open(Path(aiplugin_path) / "inspect.js") as file:
+            text = file.read()
+        if "__ZeuZ__SibLing_maPP" in text:
+            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
+                file.write(text.replace("__ZeuZ__SibLing_maPP", "__ZeuZ__SibLing_maPP_true", 1))
+    else:
+        with open(Path(aiplugin_path) / "inspect.js") as file:
+            text = file.read()
+        if "__ZeuZ__SibLing_maPP_true" in text:
+            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
+                file.write(text.replace("__ZeuZ__SibLing_maPP_true", "__ZeuZ__SibLing_maPP", 1))
+
+
 initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None):
@@ -560,12 +588,13 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             # argument
             if not browser_options:
                 options.add_argument("--no-sandbox")
-                options.add_argument("--disable-extensions")
+                # options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
                 options.add_argument('--ignore-ssl-errors')
                 options.add_argument('--zeuz_pid_finder')
 
             # Todo: profile, add_argument => open_browser
+            _prefs = {}
             if browser_options:
                 for left, right in browser_options:
                     if left in ("addargument", "addarguments"):
@@ -574,15 +603,22 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
+                    elif left in ("addexperimentaloption"):
+                        if "prefs" in right:
+                            _prefs = right["prefs"]
+                        else:
+                            options.add_experimental_option(list(right.items())[0][0], list(right.items())[0][1])
 
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
                 options.add_experimental_option("mobileEmulation", mobile_emulation)
             else:
                 options.add_experimental_option("useAutomationExtension", False)
-            d = DesiredCapabilities.CHROME
-            d["loggingPrefs"] = {"browser": "ALL"}
-            d['goog:loggingPrefs'] = {'performance': 'ALL'}
+
+                # On Debug run open inspector with credentials
+                if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
+                    set_extension_variables()
+                    options.add_argument(f"load-extension={aiplugin_path}")
 
             if "chromeheadless" in browser:
                 def chromeheadless():
@@ -600,19 +636,31 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 "download.directory_upgrade": True,
                 'safebrowsing.enabled': 'false'
             }
+            for key in _prefs:
+                prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
+            selenium_version = selenium.__version__
             if remote_host:
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
-                    desired_capabilities=d
                 )
             else:
-                selenium_driver = webdriver.Chrome(
-                    executable_path=chrome_path,
-                    chrome_options=options,
-                    desired_capabilities=d
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(chrome_path)
+                    selenium_driver = webdriver.Chrome(
+                        service=service,
+                        options=options,
+                    )
+                else:
+                    d = DesiredCapabilities.CHROME
+                    d["loggingPrefs"] = {"browser": "ALL"}
+                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
+                    selenium_driver = webdriver.Chrome(
+                        executable_path=chrome_path,
+                        chrome_options=options,
+                        desired_capabilities=d
+                    )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -736,6 +784,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
+            if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
+                set_extension_variables()
+                options.add_argument(f"load-extension={aiplugin_path}")
             if(remote_host):
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
@@ -1075,6 +1126,8 @@ def Go_To_Link(step_data, page_title=False):
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append([left, right.strip()])
+            elif mid.strip().lower() in ("chrome experimental option", "chrome experimental options") and dependency["Browser"].lower() == "chrome":
+                browser_options.append(["addexperimentaloption", {left.strip():CommonUtil.parse_value_into_object(right.strip())}])
 
         if browser_options:
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
@@ -2727,6 +2780,7 @@ def Validate_Text(step_data):
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         ignore_case = False
+        zeuz_ai = None
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -2736,8 +2790,10 @@ def Validate_Text(step_data):
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
-            elif each_step_data_item[1] == "parameter" and each_step_data_item[0] == "ignore case":
+            elif each_step_data_item[1].strip().lower() in ("parameter", "option") and each_step_data_item[0] == "ignore case":
                 ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
+            elif each_step_data_item[1].strip().lower() in ("parameter", "option") and each_step_data_item[0].replace(" ", "").replace("_", "") == "zeuzai":
+                zeuz_ai = CommonUtil.parse_value_into_object(each_step_data_item[2])
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
         if ignore_case:
             expected_text_data = expected_text_data.lower()
@@ -2750,7 +2806,20 @@ def Validate_Text(step_data):
                 visible_list_of_element_text.append(each_text_item)
 
         # if step_data[0][len(step_data[0])-1][0] == "validate partial text":
-        if validation_type == "validate partial text":
+        if zeuz_ai is not None:
+            """{
+                "binary_classification":{
+                    "expected_category":"success",
+                    "confidence": 0.7
+                }
+             }
+             """
+            message = " ".join(visible_list_of_element_text)
+            labels = [zeuz_ai["binary_classification"]["expected_category"]]
+            confidence = zeuz_ai["binary_classification"]["confidence"]
+            return binary_classification(message, labels, confidence)["status"]
+
+        elif validation_type == "validate partial text":
             actual_text_data = visible_list_of_element_text
             CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
             CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
@@ -2767,7 +2836,7 @@ def Validate_Text(step_data):
             )
             return "zeuz_failed"
         # if step_data[0][len(step_data[0])-1][0] == "validate full text":
-        if validation_type == "validate full text":
+        elif validation_type == "validate full text":
             actual_text_data = visible_list_of_element_text
             CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
             CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
@@ -2785,9 +2854,7 @@ def Validate_Text(step_data):
                 return "zeuz_failed"
 
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Incorrect validation type. Please check step data", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
             return "zeuz_failed"
 
     except Exception:
@@ -3704,10 +3771,10 @@ def Tear_Down_Selenium(step_data=[]):
                 selenium_driver = None
                 current_driver_id = driver_id
 
-            global vdisplay
-            if vdisplay:
-                 vdisplay.stop()
-                 vdisplay = None
+        global vdisplay
+        if vdisplay:
+            vdisplay.stop()
+            vdisplay = None
 
         return "passed"
     except Exception:

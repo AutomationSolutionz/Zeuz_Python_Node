@@ -561,6 +561,7 @@ def main():
     try:
         global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count, list_path
         auth_thread = Authenticate()
+
         while True:
             if debugger_is_active():
                 input("Press Enter to Continue")
@@ -607,10 +608,16 @@ def main():
             sibling_time = 0
             try: autoit.win_activate(screen_title)
             except: pass
-            sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
             tree = Tree(f"[cyan]{create_tag(root)}", guide_style="red")  # root of rich tree python
-            if sibling.strip().lower() == "ok":
+
+            config = configparser.ConfigParser()
+            config.read("..\..\Framework\settings.conf")
+            try:
+                sibling = config.get("Inspector", "sibling")
+            except:
+                sibling = ""
+            if sibling.strip().lower() not in ("false", "off", "disabled", "no") and pyautogui.confirm('Do you want SIBLING?').strip().lower() == "ok":
                 print("Hover over the SIBLING and press control")
                 keyboard.wait("ctrl")
                 x, y = pyautogui.position()

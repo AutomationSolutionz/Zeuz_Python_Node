@@ -36,7 +36,7 @@ global sr
 from Framework.Utilities import CommonUtil, ConfigModule, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
-from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
+from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, sub_field_match
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
@@ -203,7 +203,7 @@ def verify_step_data(step_data):
                     )
                     return "zeuz_failed"
                 elif (
-                    str(row[1]).lower().strip() not in action_support
+                    not sub_field_match(str(row[1]).lower().strip())
                 ):  # Check against list of allowed Sub-Fields
                     if (
                         "action" not in row[1]
@@ -4289,9 +4289,10 @@ def search_and_save_text(data_set):
 @logger
 def skip_testcases(data_set):
     """
-    usage: this action will skip all/selected test cases in a same run id
-    data set: skip testcases | common action | all
-              skip testcases | common action | TEST-6716, TEST-6714
+    usage: this action will skip all/selected/with in range test cases in a same run id
+    data set: skip testcases | common action | skip remaining
+              skip testcases | common action | 6716, 6714
+              skip testcases | common action | 6716-6720
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -4305,12 +4306,17 @@ def skip_testcases(data_set):
 
         run_id = sr.Get_Shared_Variables("run_id")
         CommonUtil.skip_testcases[run_id] = True
-        if test_cases == 'all':
+        if test_cases == 'skip remaining':
             CommonUtil.skip_testcases_list.append(test_cases)
-            CommonUtil.ExecLog(sModuleInfo, "Skipped Running All Test Cases")
+            CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
-                CommonUtil.skip_testcases_list.append(test_case.strip())
+                if '-' in test_case:
+                    range_start, range_end = map(int, test_case.split('-'))
+                    CommonUtil.skip_testcases_list.extend(list(range(range_start, range_end + 1)))
+                else:
+                    tc_num = int(test_case.split('-')[0])
+                    CommonUtil.skip_testcases_list.append(tc_num)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Selected Test Case")
         return "passed"
 
@@ -5982,5 +5988,96 @@ def data_store_insert(data_set):
             return "zeuz_failed"
 
     except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def xml_to_json(data_set):
+    """
+    """
+    import xmltodict
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        filepath = None
+        json_var_name = None
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            if "file path" in left:
+                filepath = right.strip()
+                filepath = Path(CommonUtil.path_parser(filepath))
+            if "xml to json" in left:
+                json_var_name = right.strip()
+        
+        if None in (filepath,json_var_name):
+            CommonUtil.ExecLog(sModuleInfo, "Please specify both filename and json variable name", 3)
+
+        if filepath != None and filepath.is_file():
+            try:
+                with open(filepath) as xml_file:
+                    data_dict = xmltodict.parse(xml_file.read())
+                result = sr.Set_Shared_Variables(json_var_name, data_dict)  
+                return result
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
+                return "zeuz_failed"
+                
+
+            
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Specified file couldn't be found or downloaded from attachment", 3)
+            return "zeuz_failed" 
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def classifier_AI(data_set):
+    """Classifier AI. Current model: Facebook-Bart. Tells us what percentage a test falls into a certain category
+    Args:
+        data_set:
+          category      | input parameter   | success/failure
+          text          | input parameter   | Username and password matched
+          classifier ai | common action     | variable_name
+
+    Returns:
+        variable_name = {
+            "confidence": 0.9794
+        }
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    from Framework.AI.NLP import category_score
+
+    try:
+
+        message = ""
+        category = ""
+        variable_name = ""
+
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if "category" in left:
+                    category = right.strip().lower()
+                elif "message" in left:
+                    message = right.strip().lower()
+                elif "action" in mid:
+                    variable_name = right.strip()
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
+            return "zeuz_failed"
+
+        if not (category and message and variable_name):
+            CommonUtil.ExecLog(sModuleInfo, "Category, text and variable name should be provided", 3)
+            return "zeuz_failed"
+
+        model_output = category_score(message, category)
+        variable_value = {"confidence": model_output["score"]}
+        return sr.Set_Shared_Variables(variable_name, variable_value)
+    except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

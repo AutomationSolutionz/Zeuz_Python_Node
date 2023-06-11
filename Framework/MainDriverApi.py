@@ -34,8 +34,6 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from settings import PROJECT_ROOT
 from reporting import junit_report
 
-from google.cloud import bigquery
-
 from rich.style import Style
 from rich.table import Table
 from rich.console import Console
@@ -201,16 +199,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-    # TODO: use pathlib
-    test_case_folder = (
-        log_file_path +
-        os.sep +
-        run_id.replace(":", "-") +
-        os.sep +
-        CommonUtil.current_session_name +
-        os.sep +
-        test_case.replace(":", "-")
-    )
+    run_id_folder = str(Path(log_file_path)/run_id.replace(":", "-"))
+    test_case_folder = str(Path(run_id_folder)/CommonUtil.current_session_name/test_case.replace(":", "-"))
 
     # TODO: Use pathlib for following items
     # create test_case_folder
@@ -246,7 +236,7 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     # ? Why are we keeping two separate download folders?
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
     FL.CreateFolder(zeuz_download_folder)
-    initial_download_folder = zeuz_download_folder + os.sep + "initial_download_folder"
+    initial_download_folder = run_id_folder + os.sep + "initial_download_folder"
     FL.CreateFolder(initial_download_folder)
     ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
     shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
@@ -850,6 +840,7 @@ def send_to_bigquery(execution_log, metrics):
     # Skip sending to gcp if credentials not available in environment.
     if "GCP_BIGQUERY_ACTIONS_TABLE_ID" not in os.environ:
         return
+    from google.cloud import bigquery
 
     client = bigquery.Client()
 
@@ -865,6 +856,8 @@ def send_to_bigquery(execution_log, metrics):
     steps = metrics["node"]["steps"]
     actions = metrics["node"]["actions"]
     test_cases = metrics["node"]["test_cases"]
+    for i in range(len(test_cases)):
+        test_cases[i]['tc_title'] = execution_log["test_cases"][i]["title"]
     try:
         browser_perf = metrics["browser_performance"]["default"]
     except:
@@ -885,12 +878,13 @@ def send_to_bigquery(execution_log, metrics):
 
 
     def send_actions_metrics():
-        for action in actions:
-            action["run_id"] = run_id
-            action["tc_id"] = tc_id
-            action["step_name"] = step_names[action["step_id"]]
-
-        send(actions_table_id, actions, "actions")
+        if actions:
+            for action in actions:
+                action["run_id"] = run_id
+                action["tc_id"] = tc_id
+                action["step_name"] = step_names[action["step_id"]]
+        
+            send(actions_table_id, actions, "actions")
 
 
     def send_steps_metrics():
@@ -953,6 +947,9 @@ def run_test_case(
         CommonUtil.action_perf = []
         CommonUtil.step_perf = []
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
+
+        # Added this two global variable in CommonUtil to save log information and save filepath of test case report
+        CommonUtil.error_log_info = ""
         # FIXME: Remove these lines
         # import random
         # CommonUtil.d_day = random.randint(1, 4)
@@ -986,7 +983,7 @@ def run_test_case(
         # width_pad = CommonUtil.max_char//2 - (max(len(TestCaseName), len(test_case)) + 4)//2
         # table = Padding(table, (0, width_pad))
         rich_print(table)
-
+        tc_num = int(TestCaseID.split('-')[1])
         # get test case start time
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
@@ -1004,11 +1001,9 @@ def run_test_case(
                 debug_info,
                 performance
             )
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
-            run_id] and 'all' in CommonUtil.skip_testcases_list:
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'skip remaining' in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[
-            run_id] and test_case in CommonUtil.skip_testcases_list:
+        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and tc_num in CommonUtil.skip_testcases_list:
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
@@ -1039,6 +1034,13 @@ def run_test_case(
 
         # Decide if Test Case Pass/Failed
         sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+
+        #Writing error information in a text file
+        if sTestCaseStatus == "Failed" or sTestCaseStatus == "Blocked":
+            test_case_folder2 = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
+            with open(test_case_folder2 + '/logerror.txt', 'w') as f:
+                f.write(CommonUtil.error_log_info)
+
 
         # write locust file for performance testing
         if performance:
@@ -1072,7 +1074,7 @@ def run_test_case(
             "tc_id": TestCaseID,
             "status": sTestCaseStatus,
             "runtime": float(TimeDiff),
-            "errors": None,
+            "errors": json.dumps(CommonUtil.tc_error_logs),
             "time_stamp": CommonUtil.get_timestamp(),
         })
         if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
@@ -1117,7 +1119,8 @@ def run_test_case(
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
-
+            shared.Clean_Up_Shared_Variables(run_id)
+            
             if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                 runid_status = "In-Progress"
             else:
@@ -1443,8 +1446,8 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
 
             for testcase in tc_report[CommonUtil.runid_index]["test_cases"]:
                 for step in testcase["steps"]:
-                    if "actions" in step:
-                        del step["actions"]
+                    # if "actions" in step:
+                    #     del step["actions"]
                     if "log" in step:
                         del step["log"]
 
@@ -1755,6 +1758,7 @@ def main(device_dict, user_info_object):
                 if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in (
                 "on", "yes", "true", "ok", "enable"):
                     cleanup_driver_instances()  # clean up drivers
+                    shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
                 # shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status)

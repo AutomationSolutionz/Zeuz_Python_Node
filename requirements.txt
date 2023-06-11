@@ -9,7 +9,7 @@ uiautomator
 requests
 wheel
 colorama
-Appium-Python-Client==2.5.0
+Appium-Python-Client
 lxml
 pyscreenshot
 image
@@ -47,3 +47,4 @@ google-cloud-bigquery
 google-cloud-bigquery-storage
 xvfbwrapper
 deepdiff
+xmltodict

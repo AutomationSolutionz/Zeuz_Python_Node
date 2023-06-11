@@ -10,7 +10,7 @@ python-dateutil
 requests
 wheel
 pyautogui
-Appium-Python-Client==2.5.0
+Appium-Python-Client
 uiautomator
 lxml
 tzlocal
@@ -55,3 +55,7 @@ python-dotenv
 google-cloud-bigquery
 google-cloud-bigquery-storage
 deepdiff
+torch
+torchvision
+transformers
+xmltodict
