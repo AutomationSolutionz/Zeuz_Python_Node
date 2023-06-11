@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Browserstack - WEB support
 - **[Add]** Added - Convert XML to JSON format
 - **[Add]** Added - sbl flag to enable showing browser log in console. Default: False
 - **[Add]** Resize selenium window action
