@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Fix]** Fix chrome launch issues (executable_path error).
 - **[Add]** Added - Convert XML to JSON format
 - **[Add]** Added - sbl flag to enable showing browser log in console. Default: False
 - **[Add]** Resize selenium window action
