@@ -2274,8 +2274,6 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 post_sleep = float(row[2].strip())
                 continue
 
-        if "optional" in row[1]:
-            new_row[1] = new_row[1].replace("optional", "").strip()
         if "bypass" in row[1]:
             new_row[1] = new_row[1].replace("bypass", "").strip()
         if module in row[1]:
