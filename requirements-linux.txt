@@ -51,7 +51,4 @@ google-cloud-bigquery-storage
 python-dotenv
 xvfbwrapper
 deepdiff
-torch
-torchvision
-transformers
 xmltodict
