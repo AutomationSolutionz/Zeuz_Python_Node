@@ -535,7 +535,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
     try:
         CommonUtil.teardown = True
         browser = browser.lower().strip()
-
+        selenium_version = selenium.__version__
         if browser in ("ios",):
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
@@ -639,7 +639,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             for key in _prefs:
                 prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
-            selenium_version = selenium.__version__
+
             if remote_host:
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
@@ -652,7 +652,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         service=service,
                         options=options,
                     )
-                else:
+                elif selenium_version.startswith('3.'):
                     d = DesiredCapabilities.CHROME
                     d["loggingPrefs"] = {"browser": "ALL"}
                     d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -661,6 +661,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         chrome_options=options,
                         desired_capabilities=d
                     )
+                else:
+                    print("Please update selenium & rerun node_cli file again.")
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -717,8 +719,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         Firefox_path = path[1]
                         binary = FirefoxBinary(Firefox_path)
                         break
-            capabilities = webdriver.DesiredCapabilities().FIREFOX
-            capabilities['acceptSslCerts'] = True
+
             profile = webdriver.FirefoxProfile()
             initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             profile.set_preference("browser.download.folderList", 2)
@@ -730,6 +731,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
             if(remote_host):
+                capabilities = webdriver.DesiredCapabilities().FIREFOX
+                capabilities['acceptSslCerts'] = True
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
@@ -737,12 +740,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     browser_profile=profile
                 )
             else:
-                selenium_driver = webdriver.Firefox(
-                    executable_path=firefox_path,
-                    capabilities=capabilities,
-                    options=options,
-                    firefox_profile=profile
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(firefox_path)
+                    selenium_driver = webdriver.Firefox(
+                        service=service,
+                        options=options,
+                    )
+                elif selenium_version.startswith('3.'):
+                    capabilities = webdriver.DesiredCapabilities().FIREFOX
+                    capabilities['acceptSslCerts'] = True
+                    selenium_driver = webdriver.Firefox(
+                        executable_path=firefox_path,
+                        capabilities=capabilities,
+                        options=options,
+                        firefox_profile=profile
+                    )
+                else:
+                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -773,8 +788,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
-            capabilities = webdriver.EdgeOptions().capabilities
-            capabilities['acceptSslCerts'] = True
+
             options.use_chromium = True
 
             if "headless" in browser:
@@ -788,17 +802,31 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 set_extension_variables()
                 options.add_argument(f"load-extension={aiplugin_path}")
             if(remote_host):
+                capabilities = webdriver.EdgeOptions().capabilities
+                capabilities['acceptSslCerts'] = True
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
                     desired_capabilities=capabilities
                 )
             else:
-                selenium_driver = Edge(
-                    executable_path=edge_path,
-                    options=options,
-                    capabilities=capabilities
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(edge_path)
+                    selenium_driver = webdriver.Edge(
+                        service=service,
+                        options=options,
+                    )
+                elif selenium_version.startswith('3.'):
+                    capabilities = webdriver.EdgeOptions().capabilities
+                    capabilities['acceptSslCerts'] = True
+                    selenium_driver = Edge(
+                        executable_path=edge_path,
+                        options=options,
+                        capabilities=capabilities
+                    )
+                else:
+                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
