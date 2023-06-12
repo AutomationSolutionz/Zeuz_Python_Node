@@ -526,7 +526,7 @@ def launch_application(data_set):
 
             for left, mid, right in data_set:
                 left, mid = left.strip().lower(), mid.strip().lower()
-                if "parameter" in mid and "=" in right:
+                if "optional parameter" in mid and "=" in right:
                     # key, value
                     k, v = map(lambda x: x.strip(), right.split("="))
                     if left in (device_type, "multi"):
@@ -2025,7 +2025,7 @@ def Click_Element_Appium(data_set):
         for left, mid, right in data_set:
             left = left.lower().strip()
             mid = mid.lower().strip()
-            if mid in ("option", "parameter") and "x_offset:y_offset" in left:
+            if mid in ("option", "optional parameter") and "x_offset:y_offset" in left:
                 offset = True
                 x_offset, y_offset = [i.strip() for i in (right.strip()).split(":")]
 
@@ -3067,14 +3067,14 @@ def Validate_Text_Appium(data_set):
     try:
         for each_step_data_item in data_set[0]:
             if (
-                "parameter" in each_step_data_item[1]
+                "optional parameter" in each_step_data_item[1]
                 or each_step_data_item[1] == "element parameter"
             ) and each_step_data_item[2] == "":
                 Element = appium_driver.find_elements_by_xpath(
                     "//*[@%s]" % each_step_data_item[0]
                 )
             if (
-                "parameter" in each_step_data_item[1]
+                "optional parameter" in each_step_data_item[1]
                 or each_step_data_item[1] == "element parameter"
             ) and each_step_data_item[2] != "":
                 Element = LocateElement.Get_Element(data_set[0], appium_driver)
