@@ -29,10 +29,10 @@ from _elementtree import Element
 
 import win32api
 import win32con
-import psutil
 
 import PIL
 from PIL import Image, ImageGrab
+
 
 
 python_folder = []
@@ -916,6 +916,17 @@ def image_search(step_data_set):
         confidence = 0.85
         parent_dataset = []
         image_text = ""
+        left_width = ""
+        top_height = ""
+        colour_state = ""
+        method_image = ""
+        language = ""
+        t_conf = 0.9
+        text_screenshot = ''
+        easyocr_paragraph = ''
+
+
+
         for left, mid, right in step_data_set:
             left = left.strip().lower()
             mid = mid.strip().lower()
@@ -928,12 +939,44 @@ def image_search(step_data_set):
                     confidence = float(right.replace("%", "").replace(" ", "").lower()) / 100
                 elif "text" in left:
                     image_text = right
+                elif "left_width" in left:
+                    left_width = float(right)
+                elif "top_height" in left:
+                    top_height = float(right)
+                elif "colour" in left:
+                    colour_state = right
+                elif 'language' in left:
+                    language = right
+                elif 'method_image' in left:
+                    method_image = right
+                elif 't_conf' in left:
+                    t_conf = float(right)
+                elif 't_screenshot' in left:
+                    text_screenshot = right
+                elif 'easyocr_paragraph' in left:
+                    easyocr_paragraph = right
+
                 else:
-                    file_name = right.strip()
-                    if "~" in file_name:
-                        file_name = str(Path(os.path.expanduser(file_name)))
+                    if not image_text:
+                        pass
+                    else:
+                        file_name = right.strip()
+                        if "~" in file_name:
+                            file_name = str(Path(os.path.expanduser(file_name)))
             if mid == "parent parameter":
                 parent_dataset.append((left, "element parameter", right))
+        if left_width == '':
+            left_width = 1
+        if top_height == '':
+            top_height = 1
+        if colour_state == '':
+            colour_state = 'black_white'
+        if method_image == '':
+            method = 'method_1'
+        if language == '':
+            language = 'en'
+
+
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
@@ -964,50 +1007,132 @@ def image_search(step_data_set):
     # Find element information
     try:
         if image_text:
-            import cv2
-            from pytesseract import pytesseract
-            pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-            image_text = image_text.replace(" ", "").lower()
-            PIL.ImageGrab.grab().crop((left, top, left + width, top + height)).save("sample.jpg")
-            imge = cv2.imread("sample.jpg")
-            gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
+            if method_image == 'method_1':
+                import cv2
+                from pytesseract import pytesseract
+                pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-            data = pytesseract.image_to_boxes(gray)
-            all_letters = data.split("\n")
-            print(all_letters)
-            full_string = ""
-            for i in all_letters:
-                full_string += i[0] if len(i) > 0 else "~"
-            full_string = full_string.lower()
+                image_text = image_text.replace(" ", "").lower()
+                PIL.ImageGrab.grab().crop((left, top, left + width * left_width, top + height * top_height)).save("sample.jpg")
+                imge = cv2.imread("sample.jpg")
+                gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
 
-            all_pos = [m.start() for m in re.finditer(image_text, full_string)]
+                if colour_state == "black_white":
+                    data = pytesseract.image_to_boxes(gray)
+                else:
+                    data = pytesseract.image_to_boxes(imge)
+                all_letters = data.split("\n")
+                print(all_letters)
+                full_string = ""
+                for i in all_letters:
+                    full_string += i[0] if len(i) > 0 else "~"
+                full_string = full_string.lower()
 
-            if -len(all_pos) <= idx < len(all_pos):
-                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
-                i = all_pos[idx]
-            elif len(all_pos) != 0:
-                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
-                return "zeuz_failed"
+                all_pos = [m.start() for m in re.finditer(image_text, full_string)]
+
+                if -len(all_pos) <= idx < len(all_pos):
+                    CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
+                    i = all_pos[idx]
+                elif len(all_pos) != 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
+                    return "zeuz_failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                    return "zeuz_failed"
+
+                msg = ""
+                a = all_letters[i:i + len(image_text)]
+                for i in a:
+                    msg += i + "\n"
+                left_top = list(map(int, a[0].split(" ")[1:3]))
+                right_bottom = list(map(int, a[-1].split(" ")[3:5]))
+                center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
+                msg += "Center = " + str(center) + "\n"
+                # pyautogui.moveTo(center)
+
+                element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
+                msg += "Coordinates = " + str(element) + "\n"
+                CommonUtil.ExecLog(sModuleInfo, msg, 5)
+
+                return _Element(element)
+
             else:
-                CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
-                return "zeuz_failed"
+                import easyocr
+                import numpy as np
+                import cv2
+                from pytesseract import pytesseract
+                import matplotlib.pyplot as plt
+                from difflib import SequenceMatcher
 
-            msg = ""
-            a = all_letters[i:i + len(image_text)]
-            for i in a:
-                msg += i + "\n"
-            left_top = list(map(int, a[0].split(" ")[1:3]))
-            right_bottom = list(map(int, a[-1].split(" ")[3:5]))
-            center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
-            msg += "Center = " + str(center) + "\n"
-            # pyautogui.moveTo(center)
+                pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-            element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
-            msg += "Coordinates = " + str(element) + "\n"
-            CommonUtil.ExecLog(sModuleInfo, msg, 5)
+                PIL.ImageGrab.grab().save("sample.png")
+                reader = easyocr.Reader([language])
+                if easyocr_paragraph == 'true':
+                    output = reader.readtext("sample.png",paragraph=True)
+                else:
+                    output = reader.readtext("sample.png", paragraph=False)
 
-            return _Element(element)
+                item = []
+                count = 0
+                crop_counter = 0
+                for text in output:
+                    def seq(a, b):
+                        c = SequenceMatcher(a=a, b=b).ratio()
+                        print(c)
+                        if c > 0.8:
+                            return c
+
+                        else:
+                            return .00004
+
+                    rslt = seq(image_text, text[1])
+                    if rslt >= float(t_conf):
+                    # if image_text in text[1]:
+                        item.append([text])
+                        print(text)
+                        CommonUtil.ExecLog(sModuleInfo, "Found %s text. Returning element of index %s" % (image_text, count), 1)
+                        count = count + 1
+                    else:
+                        print(text)
+                        continue
+
+                if item == []:
+                    CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                    return "zeuz_failed"
+                cord = np.array(item[idx][0])
+                cord1 = cord.tolist()
+                #
+                x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
+                x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
+
+                if text_screenshot !='':
+                    img = cv2.imread("sample.png")
+                    cropping = img[y_min:y_max , x_min:x_max]
+                    cv2.imwrite('cropped_image.png', cropping)
+                    from PIL import Image
+
+                    image = Image.open('cropped_image.png')
+                    gray_image = image.convert('L')
+                    output_2 = pytesseract.image_to_string(gray_image)
+                    print(output_2)
+
+                    if output_2 in image_text or image_text in output_2:
+                        element = x_min, y_min, x_max - x_min, y_max - y_min
+                        crop_counter = 1
+                        return _Element(element)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                        return "zeuz_failed"
+                else:
+                    pass
+                if crop_counter == 0:
+                    element = x_min,y_min,x_max-x_min,y_max-y_min
+                    return _Element(element)
+                else:
+                    pass
+
         else:
             # Scale image if required
             regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
@@ -1042,6 +1167,118 @@ def image_search(step_data_set):
             return _Element(element)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def new_image_text(step_data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    import easyocr
+    import numpy as np
+    import cv2
+    from pytesseract import pytesseract
+    import matplotlib.pyplot as plt
+    from difflib import SequenceMatcher
+
+    pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
+
+
+    file_name = ""
+    resolution = ""
+    idx = 0
+    confidence = 0.85
+    parent_dataset = []
+    image_text = ""
+    left_width = ""
+    top_height = ""
+    colour_state = ""
+    method_image = ""
+    language = ""
+    t_conf = 0.9
+    text_screenshot = ''
+    easyocr_paragraph = ''
+
+
+
+    for left, mid, right in step_data_set:
+        left = left.strip().lower()
+        mid = mid.strip().lower()
+        if mid == "element parameter":
+            if "index" in left:
+                idx = int(right.strip())
+            elif "ntext" in left:
+                image_text = right
+            elif 'language' in left:
+                language = right
+            elif 't_conf' in left:
+                t_conf = float(right)
+            elif 't_screenshot' in left:
+                text_screenshot = right
+            elif 'easyocr_paragraph' in left:
+                easyocr_paragraph = right
+
+    PIL.ImageGrab.grab().save("sample.png")
+    reader = easyocr.Reader([language])
+    if easyocr_paragraph == 'true':
+        output = reader.readtext("sample.png", paragraph=True)
+    else:
+        output = reader.readtext("sample.png", paragraph=False)
+
+    item = []
+    count = 0
+    crop_counter = 0
+    for text in output:
+        def seq(a, b):
+            c = SequenceMatcher(a=a, b=b).ratio()
+            print(c)
+            if c > 0.8:
+                return c
+
+            else:
+                return .00004
+
+        rslt = seq(image_text, text[1])
+        if rslt >= float(t_conf):
+            # if image_text in text[1]:
+            item.append([text])
+            print(text)
+            CommonUtil.ExecLog(sModuleInfo, "Found %s text. Returning element of index %s" % (image_text, count), 1)
+            count = count + 1
+        else:
+            print(text)
+            continue
+
+    if item == []:
+        CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+        return "zeuz_failed"
+    cord = np.array(item[idx][0])
+    cord1 = cord.tolist()
+    #
+    x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
+    x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
+
+    if text_screenshot != '':
+        img = cv2.imread("sample.png")
+        cropping = img[y_min:y_max, x_min:x_max]
+        cv2.imwrite('cropped_image.png', cropping)
+        from PIL import Image
+
+        image = Image.open('cropped_image.png')
+        gray_image = image.convert('L')
+        output_2 = pytesseract.image_to_string(gray_image)
+        print(output_2)
+
+        if output_2 in image_text or image_text in output_2:
+            element = x_min, y_min, x_max - x_min, y_max - y_min
+            crop_counter = 1
+            return _Element(element)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+            return "zeuz_failed"
+    else:
+        element = x_min, y_min, x_max - x_min, y_max - y_min
+        return _Element(element)
+
+
 
 
 def _scale_image(file_name, size_w, size_h):
@@ -1109,6 +1346,11 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "path" in left: element_path = right.strip()
                 elif "image" in left:
                     element_image.append((left, mid, right))
+                elif "imagetext" in left:
+                    element_image.append((left, mid, right))
+                elif "ntext" in left:
+                    element_image.append((left, mid, right))
+
 
             elif mid == "parent parameter":
                 parent = True
@@ -1155,6 +1397,40 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
         s = time.time()
         while True:
             if element_image:
+                left_width = 1
+                top_height = 1
+                colour_state = 'black_white'
+                method_image = 'method_1'
+                t_conf = 0.9
+                language = 'en'
+                text_screenshot = ''
+                easyocr_paragraph = ''
+
+                for left, mid, right in data_set:
+                    left = left.strip().lower()
+                    mid = mid.strip().lower()
+                    if mid == "element parameter":
+                        if "left_width" in left:
+                            left_width = right
+                        elif "top_height" in left:
+                            top_height = right
+                        elif "colour" in left:
+                            colour_state = right
+                        elif 'language' in left:
+                            language = right
+                        elif 'method_image' in left:
+                            method_image = right
+                        elif 't_conf' in left:
+                            t_conf = right
+                        elif 't_screenshot' in left:
+                            text_screenshot = right
+                        elif 'easyocr_paragraph' in left:
+                            easyocr_paragraph = right
+
+
+
+
+
                 _get_main_window(window_name)
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
                     if i[1]:
@@ -1164,8 +1440,22 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             data = (i[0], "parent parameter", i[1])
                         element_image.append(data)
                 element_image.append(("index", "element parameter", str(element_index)))
-                result = image_search(element_image)
-                return result
+                element_image.append(("left_width", "element parameter", str(left_width)))
+                element_image.append(("top_height", "element parameter", str(top_height)))
+                element_image.append(("colour_state", "element parameter", str(colour_state)))
+                element_image.append(("language", "element parameter", str(language)))
+                element_image.append(("method_image", "element parameter", str(method_image)))
+                element_image.append(("t_conf", "element parameter", str(t_conf)))
+                element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
+                element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
+
+
+                if 'ntext' in element_image[0][0]:
+                    result = new_image_text(element_image)
+                    return result
+                else:
+                    result = image_search(element_image)
+                    return result
             if element_path:
                 all_elements = Element_path_search(window_name, element_path)
                 if all_elements == "zeuz_failed" and time.time() < s + wait_time:
@@ -1699,12 +1989,7 @@ def Run_Application(data_set):
             if launch_cond == "relaunch":
                 Close_Application([("close app", "action", Desktop_app)])
             if os.path.isfile(Desktop_app):
-                if Desktop_app.startswith('"') : Desktop_app = Desktop_app[1:]
-                if Desktop_app.endswith('"') : Desktop_app = Desktop_app[:-1]
-                if Desktop_app.startswith("\\\\"):  # Windows Network Shared drives starts with \\
-                    cmd = f'start cmd.exe /K "{Desktop_app}"'
-                else:
-                    cmd = f'''{Desktop_app[:2]} && cd "{os.path.dirname(Desktop_app)}" && start cmd.exe /K "{Desktop_app}\"'''
+                cmd = f'''{Desktop_app[:2]} && cd "{os.path.dirname(Desktop_app)}" && start cmd.exe /K "{Desktop_app}\"'''
                 CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
                 subprocess.Popen(cmd, **args)
                 # Desktop_app = os.path.basename(Desktop_app)
@@ -2103,113 +2388,3 @@ def save_attribute_values_in_list(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def ListServices():
-    import win32con
-    import win32service
-    import pywin32_system32, pywin32_testutil, pywin32_bootstrap
-    import win32serviceutil
-    resume = 0
-    accessSCM = win32con.GENERIC_READ
-    accessSrv = win32service.SC_MANAGER_ALL_ACCESS
-    #Open Service Control Manager
-    hscm = win32service.OpenSCManager(None, None, accessSCM)
-    #Enumerate Service Control Manager DB
-    typeFilter = win32service.SERVICE_WIN32
-    stateFilter = win32service.SERVICE_STATE_ALL
-    statuses = win32service.EnumServicesStatus(hscm, typeFilter, stateFilter)
-    x = []
-    for (short_name, desc, status) in statuses:
-        x.append([short_name, desc, status])
-    return x
-# x=ListServices()
-
-@logger
-def List_services(data_set):
-    try:
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        variable_name = ""
-        for left, mid, right in data_set:
-            left = left.strip().lower()
-            right = right.strip()
-            if left == "get all services":
-                variable_name = right
-
-        import win32con
-        import win32service
-        accessSCM = win32con.GENERIC_READ
-        # Open Service Control Manager
-        hscm = win32service.OpenSCManager(None, None, accessSCM)
-        # Enumerate Service Control Manager DB
-        typeFilter = win32service.SERVICE_WIN32
-        stateFilter = win32service.SERVICE_STATE_ALL
-        statuses = win32service.EnumServicesStatus(hscm, typeFilter, stateFilter)
-        service_list = [st[0] for st in statuses]
-        return Shared_Resources.Set_Shared_Variables(variable_name, service_list)
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-@logger
-def Start_service(data_set):
-    try:
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        service_name = ""
-        for left, mid, right in data_set:
-            left = left.strip().lower()
-            right = right.strip()
-            if left == "start service":
-                service_name = right
-        import win32serviceutil
-        import pywintypes
-        win32serviceutil.StartService(service_name)
-        CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service started", 1)
-        return "passed"
-    except pywintypes.error as e:
-        if "An instance of the service is already running" in str(sys.exc_info()[1]):
-            CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service Already started", 2)
-            return "passed"
-        return CommonUtil.Exception_Handler(sys.exc_info())
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-@logger
-def Stop_service(data_set):
-    try:
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        service_name = ""
-        for left, mid, right in data_set:
-            left = left.strip().lower()
-            right = right.strip()
-            if left == "stop service":
-                service_name = right
-        import win32serviceutil
-        import pywintypes
-        win32serviceutil.StopService(service_name)
-        CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service stopped", 1)
-        return "passed"
-    except pywintypes.error as e:
-        if "The service has not been started" in str(sys.exc_info()[1]):
-            CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service has not been started", 2)
-            return "passed"
-        return CommonUtil.Exception_Handler(sys.exc_info())
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-@logger
-def Service_status(data_set):
-    try:
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        service_name = ""
-        var_name = ""
-        for left, mid, right in data_set:
-            left = left.strip().lower()
-            right = right.strip()
-            if left == "get service status":
-                service_name = right
-            elif left == "variable name":
-                var_name = right
-        if not var_name:
-            CommonUtil.ExecLog(sModuleInfo, f"Variable name should be declared", 3)
-            return "zeuz_failed"
-        return Shared_Resources.Set_Shared_Variables(var_name, psutil.win_service_get(service_name).as_dict())
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
