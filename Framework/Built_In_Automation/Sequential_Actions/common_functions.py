@@ -1002,7 +1002,7 @@ def New_Compare_Variables(step_data):
                 list2_name = right
             elif "action" in mid:
                 action_type = right.replace(" ", "").replace("_", "").lower()
-                if action_type == "exactmatch":
+                if "exactmatch" in action_type:
                     match_by_index = True
                 if "ignorelistorder" in action_type:
                     match_by_index = False
