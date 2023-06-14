@@ -6048,8 +6048,9 @@ def classifier_AI(data_set):
             "confidence": 0.9794
         }
     """
-    from Framework.module_installer import install_missing_modules
+    from Framework.module_installer import install_missing_modules,update_outdated_modules
     install_missing_modules(['torch', 'torchvision', 'transformers'])
+    update_outdated_modules(['torch', 'torchvision', 'transformers'])
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     from Framework.AI.NLP import category_score
 
