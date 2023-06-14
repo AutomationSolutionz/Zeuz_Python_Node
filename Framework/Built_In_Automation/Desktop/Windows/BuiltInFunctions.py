@@ -36,6 +36,7 @@ from PIL import Image, ImageGrab
 
 
 python_folder = []
+current_pid_list = []
 for location in subprocess.getoutput("where python").split("\n"):
     if "Microsoft" not in location:
         python_folder.append(location)
@@ -1658,6 +1659,8 @@ def _open_inspector(inspector, args):
 @logger
 def Run_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global current_pid_list
+    current_pid_list = []
     try:
         args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
         launch_cond = ""
@@ -1721,6 +1724,10 @@ def Run_Application(data_set):
             #     Desktop_app += ".exe"
             CommonUtil.ExecLog(sModuleInfo, "Waiting for the app to launch for maximum %s seconds" % wait, 1)
             s = time.time()
+            for process in psutil.process_iter(['pid', 'name']):
+                if Desktop_app.lower() in process.info['name'].lower():
+                    current_pid_list.append(process.info['pid'])
+
             while time.time() - s < wait:
                 # if len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:     # This is case in-sensitive
                 if pygetwindow.getActiveWindow() is None or Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
@@ -1732,7 +1739,6 @@ def Run_Application(data_set):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing" % Desktop_app, 2)
                 return "passed"
-
         if maximize:
             win = pygetwindow.getWindowsWithTitle(Desktop_app)[0]
             win.maximize()
