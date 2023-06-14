@@ -1422,10 +1422,10 @@ def Change_Attribute_Value(step_data):
                 change_value = right
 
         selenium_driver.execute_script(f"arguments[0].{attribute_name} = `{change_value}`;", Element)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % change_value, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of the attribute to: %s" % change_value, 1)
         return "passed"
     except Exception:
-        errMsg = "Could not select/click your element."
+        errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 # Method to enter texts in a text box; step data passed on by the user
