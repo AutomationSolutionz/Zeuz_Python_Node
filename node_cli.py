@@ -1024,7 +1024,8 @@ def command_line_args() -> Path:
         date_from_file = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         current_date = datetime.date.today()
         time_difference = (current_date - date_from_file).days
-
+        CommonUtil.ai_module_update_flag = stop_pip_auto_update
+        CommonUtil.ai_module_update_time_difference = time_difference
         # Check if the time difference is greater than one month
         if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > 30:
             update_outdated_modules()

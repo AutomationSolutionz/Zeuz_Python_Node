@@ -18,6 +18,9 @@ from rich.console import Console
 # from rich import print
 from rich import print_json
 
+ai_module_update_flag = None
+ai_module_update_time_difference = None
+
 ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import live_log_service
 import concurrent.futures
