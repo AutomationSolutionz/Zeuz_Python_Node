@@ -6,6 +6,8 @@
 ### [Current changes]
 - **[Add]** Added - Text to Speech action
 - **[Add]** Added - S3 Actions
+- **[Fix]** Fix chrome. firefox & edge driver issues on selenium 4.10 (executable_path error).
+- **[Add]** Browserstack - WEB support
 - **[Add]** Added - Convert XML to JSON format
 - **[Add]** Added - sbl flag to enable showing browser log in console. Default: False
 - **[Add]** Resize selenium window action

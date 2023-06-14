@@ -44,13 +44,14 @@ def get_req_list():
                 req_list.append(i.strip())
     return req_list
 
-def install_missing_modules():
+def install_missing_modules(req_list=None):
     """
     Purpose: This function will check all the installed modules, compare with what is in requirements-win.txt file
     If anything is missing from requirements-win.txt file, it will install them only
     """
     try:
-        req_list = get_req_list()
+        if req_list is None:
+            req_list = get_req_list()
         # print("\nmodule_installer: Checking for missing modules...")
 
     
@@ -71,7 +72,6 @@ def install_missing_modules():
                 # '@' symbol appears in some python modules in Windows
                 alredy_installed_list_version.append(str(p).lower())
                 alredy_installed_list_no_version.append(str(name).lower())
-
         # installing any missing modules
         installed = False
         for module_name in req_list:
