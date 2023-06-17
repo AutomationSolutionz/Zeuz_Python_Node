@@ -1078,7 +1078,7 @@ def Run_Sequential_Actions(
                     continue
 
                 elif "lorust performance action" in action_name:
-                    CommonUtil.load_testing = True
+                    # CommonUtil.load_testing = True
                     result, skip, perf_result = lorust_performance_action_handler(
                         data_set,
                         Run_Sequential_Actions,
@@ -1086,7 +1086,7 @@ def Run_Sequential_Actions(
                         step_data,
                     )
                     CommonUtil.perf_test_perf = perf_result
-                    CommonUtil.load_testing = False
+                    # CommonUtil.load_testing = False
 
                 elif "time base performance action" in action_name:
                     CommonUtil.load_testing = True
