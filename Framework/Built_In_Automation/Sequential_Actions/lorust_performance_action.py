@@ -1,5 +1,6 @@
 import inspect
 import json
+import subprocess
 from pathlib import Path
 from typing import Callable, List, Tuple, Any
 
@@ -105,7 +106,7 @@ def lorust_performance_action_handler(
                 except: method = "GET"
 
                 try: body = find_row_by(action, "body")[0][2]
-                except: body = None
+                except: body = "Empty"
 
                 try: redirect_limit = int(find_row_by(action, "redirect_limit")[0][2])
                 except: redirect_limit = None
@@ -157,18 +158,38 @@ def lorust_performance_action_handler(
                 temp_ini_file,
             )) / run_id.replace(":", "-") / CommonUtil.current_session_name
 
+        metrics_output_path = save_path / "metrics"
+        metrics_output_path.mkdir(parents=True)
+
+        flow_save_path = metrics_output_path / "flow.json"
+        metrics_output_json_path = metrics_output_path / "http.json"
+
         # Save the flow configuration
-        with open(save_path / "flow.json", "w") as f:
+        with open(flow_save_path, "w") as f:
             f.write(json.dumps(flow))
 
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "LAUNCHING 'lorust'...",
+            1,
+        )
+
+        # TODO: Select the path based on os and arch since there
+        # will be separate executables for each os. We may also
+        # download on demand.
+        lorust_path = PROJECT_ROOT / "Apps" / "lorust" / "lorust_mac_arm64"
+        subprocess.run(' '.join([
+            str(lorust_path),
+            f"--output-path {metrics_output_path}",
+            f"--flow-path {flow_save_path}",
+        ]), shell=True)
+
         CommonUtil.performance_testing = False
-        # CommonUtil.ExecLog(
-        #     sModuleInfo,
-        #     "STATS:\n" \
-        #     f"Journey count: {task_count}\n" \
-        #     f"Max parallel thread count: {max_parallel_thread_count}\n",
-        #     1,
-        # )
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "DONE 'lorust'",
+            1,
+        )
     except:
         import traceback
         traceback.print_exc()
