@@ -1079,13 +1079,11 @@ def Run_Sequential_Actions(
 
                 elif "lorust performance action" in action_name:
                     # CommonUtil.load_testing = True
-                    result, skip, perf_result = lorust_performance_action_handler(
-                        data_set,
-                        Run_Sequential_Actions,
-                        CommonUtil.get_timestamp,
-                        step_data,
+                    result, skip = lorust_performance_action_handler(
+                        data_set, # type: ignore
+                        step_data, # type: ignore
                     )
-                    CommonUtil.perf_test_perf = perf_result
+                    # CommonUtil.perf_test_perf = perf_result
                     # CommonUtil.load_testing = False
 
                 elif "time base performance action" in action_name:
