@@ -2255,7 +2255,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
-        if row[1].strip().lower() in ("optional parameter", "optional option"):
+        if row[1].strip().lower() in ("optional parameter"):
             if row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
                 screenshot = row[2].strip().lower()
                 if screenshot in ("false", "no", "none", "disable"):
@@ -2274,8 +2274,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 post_sleep = float(row[2].strip())
                 continue
 
-        if "bypass" in row[1]:
-            new_row[1] = new_row[1].replace("bypass", "").strip()
+        new_row[1] = new_row[1].replace("optional action", "action").replace("bypass","").replace("optional option","optional parameter").strip()
         if module in row[1]:
             new_row[1] = new_row[1].replace(module, "").strip()
         if original_module != "" and original_module in row[1]:
