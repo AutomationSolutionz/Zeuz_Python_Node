@@ -1,6 +1,7 @@
 import inspect
 import json
 import subprocess
+import platform
 from pathlib import Path
 from typing import Callable, List, Tuple, Any
 
@@ -105,16 +106,16 @@ def lorust_performance_action_handler(
                 try: method = find_row_by(action, left="method")[0][2]
                 except: method = "GET"
 
-                try: body = find_row_by(action, "body")[0][2]
+                try: body = find_row_by(action, mid="body")[0][2]
                 except: body = "Empty"
 
-                try: redirect_limit = int(find_row_by(action, "redirect_limit")[0][2])
+                try: redirect_limit = int(find_row_by(action, left="redirect_limit")[0][2])
                 except: redirect_limit = None
 
-                try: timeout = int(find_row_by(action, "timeout")[0][2])
+                try: timeout = int(find_row_by(action, left="timeout")[0][2])
                 except: timeout = None
 
-                header_rows = find_row_by(action, "headers")
+                header_rows = find_row_by(action, mid="headers")
                 headers: List[List[str]] = []
                 for row in header_rows:
                     headers.append([row[0], row[2]])
@@ -177,7 +178,12 @@ def lorust_performance_action_handler(
         # TODO: Select the path based on os and arch since there
         # will be separate executables for each os. We may also
         # download on demand.
-        lorust_path = PROJECT_ROOT / "Apps" / "lorust" / "lorust_mac_arm64"
+        uname = platform.uname()
+
+        # Example: lorust_Linux_x86_64, lorust_Darwin_arm64
+        binary_name = f"lorust_{uname.system}_{uname.machine}"
+        lorust_path = PROJECT_ROOT / "Apps" / "lorust" / binary_name
+
         subprocess.run(' '.join([
             str(lorust_path),
             f"--output-path {metrics_output_path}",
