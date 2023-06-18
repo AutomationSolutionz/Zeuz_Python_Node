@@ -16,10 +16,8 @@ MODULE_NAME = "lorust_performance_action"
 
 def lorust_performance_action_handler(
     data_set: List[List[str]],
-    run_sequential_actions: Callable[[List[int]], Tuple[str, List[int]]],
-    timestamp_func: Callable[[], str],
     step_data: List[List[List[str]]],
-) -> Tuple[str, List[int], List[Any]]:
+) -> Tuple[str, List[int]]:
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     actions_to_execute: List[int] = []
@@ -132,7 +130,7 @@ def lorust_performance_action_handler(
                 }
 
             elif action_name == "lorust::Sleep":
-                duration = int(find_row_by(action, left="duration")[0][2])
+                duration = find_row_by(action, left="duration")[0][2]
 
                 function = {
                     "Sleep": {
@@ -175,14 +173,16 @@ def lorust_performance_action_handler(
             1,
         )
 
-        # TODO: Select the path based on os and arch since there
-        # will be separate executables for each os. We may also
-        # download on demand.
+        lorust_path = PROJECT_ROOT / "Apps" / "lorust"
+        lorust_path.mkdir(parents=True, exist_ok=True)
+
+        # Select the path based on os and arch since there will be separate
+        # executables for each os. We may also download on demand.
         uname = platform.uname()
 
         # Example: lorust_Linux_x86_64, lorust_Darwin_arm64
         binary_name = f"lorust_{uname.system}_{uname.machine}"
-        lorust_path = PROJECT_ROOT / "Apps" / "lorust" / binary_name
+        lorust_path = lorust_path / binary_name
 
         subprocess.run(' '.join([
             str(lorust_path),
@@ -196,9 +196,37 @@ def lorust_performance_action_handler(
             "DONE 'lorust'",
             1,
         )
+
+        process_lorust_metrics(metrics_output_json_path)
     except:
         import traceback
         traceback.print_exc()
 
     # TODO: Return the performance data
-    return "passed", actions_to_execute, []
+    return "passed", actions_to_execute
+
+
+def process_lorust_metrics(metrics_path):
+    with open(metrics_path, "r") as f:
+        data = json.loads(f.read())
+
+        for point in data:
+            performance_status = CommonUtil.PerformanceDataPoint(
+                url= point["url"],
+                http_verb= point["http_verb"],
+                status_code= point["status_code"],
+                response_body_size= point["response_body_size"],
+                time_stamp= point["time_stamp"],
+                response_body= point["response_body"],
+                upload_total= point["upload_total"],
+                download_total= point["download_total"],
+                upload_speed= point["upload_speed"],
+                download_speed= point["download_speed"],
+                namelookup_time= point["namelookup_time"],
+                connect_time= point["connect_time"],
+                tls_handshake_time= point["tls_handshake_time"],
+                starttransfer_time= point["starttransfer_time"],
+                elapsed_time= point["elapsed_time"],
+                redirect_time= point["redirect_time"],
+            )
+            CommonUtil.api_performance_data.append(performance_status)

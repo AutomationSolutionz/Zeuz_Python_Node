@@ -161,6 +161,15 @@ PerformanceDataPoint = namedtuple("PerformanceDataPoint", [
     "response_body_size",
     "time_stamp",
     "response_body",
+    "upload_total",
+    "download_total",
+    "upload_speed",
+    "download_speed",
+    "namelookup_time",
+    "connect_time",
+    "tls_handshake_time",
+    "starttransfer_time",
+    "redirect_time",
 ])
 api_performance_data: list[PerformanceDataPoint] = []
 
@@ -1258,43 +1267,44 @@ def generate_time_based_performance_report(session) -> None:
     endpoint_wise = {}
 
     for data in perf_data:
-        key = data[0] + '|' + data[1]
+        data: PerformanceDataPoint = data
+        key = data.url + '|' + data.http_verb
 
-        input_datetime = datetime.datetime.strptime(data[5], "%Y-%m-%d %H:%M:%S.%f")
+        input_datetime = datetime.datetime.strptime(data.time_stamp[:-3], "%Y-%m-%d %H:%M:%S.%f")
         formatted_datetime_str = input_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         if endpoint_wise.get(key) is None:
             endpoint_wise[key] = {
-                'endpoint': data[0],
-                'method': data[1],
+                'endpoint': data.url,
+                'method': data.http_verb,
                 'total_request': 1,
-                'total_failed_request': 0 if data[-1] == '' else 1,
-                'total_elapsed_time': data[3],
-                'elapsed_time_dict': {data[3]: 1},
-                'total_content_length': data[4],
-                'error': {} if data[-1] == '' else {data[-1]: 1},
-                'dict_response_time_per_time': {formatted_datetime_str: [data[3]]},
-                'dict_byte_throughput_per_time': {formatted_datetime_str: [data[4]]}
+                'total_failed_request': 0 if data.response_body == "" else 1,
+                'total_elapsed_time': data.elapsed_time,
+                'elapsed_time_dict': {data.elapsed_time: 1},
+                'total_content_length': data.response_body_size,
+                'error': {} if data.response_body == "" else {data.response_body: 1},
+                'dict_response_time_per_time': {formatted_datetime_str: [data.elapsed_time]},
+                'dict_byte_throughput_per_time': {formatted_datetime_str: [data.response_body_size]}
             }
         else:
             endpoint_wise[key]['total_request'] += 1
-            endpoint_wise[key]['total_failed_request'] += 0 if data[-1] == '' else 1
-            endpoint_wise[key]['total_elapsed_time'] += data[3]
-            endpoint_wise[key]['elapsed_time_dict'][data[3]] = endpoint_wise[key]['elapsed_time_dict'].get(
-                data[3], 0) + 1
-            endpoint_wise[key]['total_content_length'] += data[4]
-            if data[-1] != '':
-                endpoint_wise[key]['error'][data[-1]] = endpoint_wise[key]['error'].get(data[-1], 0) + 1
+            endpoint_wise[key]['total_failed_request'] += 0 if data.response_body == "" else 1
+            endpoint_wise[key]['total_elapsed_time'] += data.elapsed_time
+            endpoint_wise[key]['elapsed_time_dict'][data.elapsed_time] = endpoint_wise[key]['elapsed_time_dict'].get(
+                data.elapsed_time, 0) + 1
+            endpoint_wise[key]['total_content_length'] += data.response_body_size
+            if data.response_body != "":
+                endpoint_wise[key]['error'][data.response_body] = endpoint_wise[key]['error'].get(data.response_body, 0) + 1
 
             if endpoint_wise[key]['dict_response_time_per_time'].get(formatted_datetime_str) is None:
-                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str] = [data[3]]
+                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str] = [data.elapsed_time]
             else:
-                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str].append(data[3])
+                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str].append(data.elapsed_time)
 
             if endpoint_wise[key]['dict_byte_throughput_per_time'].get(formatted_datetime_str) is None:
-                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str] = [data[4]]
+                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str] = [data.response_body_size]
             else:
-                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str].append(data[4])
+                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str].append(data.response_body_size)
 
     for endpoint in endpoint_wise:
         endpoint_wise[endpoint]['avg_elapsed_time'] = int(
