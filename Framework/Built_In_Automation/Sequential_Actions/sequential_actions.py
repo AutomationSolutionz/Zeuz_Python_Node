@@ -2218,7 +2218,8 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
         except:
             python_location = ""
-        if 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.12:
+        py_var = str(float(sys.version.split(" ")[0]))
+        if py_var.startswith("3.5") or py_var.startswith("3.6") or py_var.startswith("3.7") or py_var.startswith("3.8") or py_var.startswith("3.11"):
             error_msg = "You have the wrong Python version or bit"\
                 +"\nFollow this procedure"\
                 +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
