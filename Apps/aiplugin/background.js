@@ -3,8 +3,8 @@ const tabs = {};
 const inspectFile = 'inspect.js';
 const activeIcon = 'active-64.png';
 const defaultIcon = 'default-64.png';
-let zeuz_url = '__ZeuZ__UrL_maPP'
-let zeuz_key = '__ZeuZ__KeY_maPP'
+let zeuz_url = 'https://apollo.zeuz.ai'
+let zeuz_key = 'a6fafbd1-b15f-4ece-a13f-3c3ddfd4265f'
 
 function logout(info) {
   chrome.storage.local.remove(['key'], function () {
