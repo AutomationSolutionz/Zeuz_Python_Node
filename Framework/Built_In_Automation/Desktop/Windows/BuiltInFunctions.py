@@ -43,17 +43,23 @@ try:
     python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
 except:
     python_location = ""
-    py_var = str(float(sys.version.split(" ")[0]))
+    val_app = sys.version.split(" ")[0]
+    digits = val_app.split(".")[0:2]  # Split the version string by dots and get the first two elements
+    result = ".".join(digits)
+
+    py_var = str(result)
     if py_var.startswith("3.5") or py_var.startswith("3.6") or py_var.startswith("3.7") or py_var.startswith("3.8") or py_var.startswith("3.11"):
+        print('Pass')
+    else:
         error_msg = "You have the wrong Python version or bit" \
-                + "\nFollow this procedure" \
-                + "\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things" \
-                + "\n2.Delete your Python folder" \
-                + python_location \
-                + "\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe" \
-                + "\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important." \
-                + "\n5.Relaunch zeuz node_cli.py."
-    CommonUtil.ExecLog("", error_msg, 3)
+                    + "\nFollow this procedure" \
+                    + "\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things" \
+                    + "\n2.Delete your Python folder" \
+                    + "python_location" \
+                    + "\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe" \
+                    + "\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important." \
+                    + "\n5.Relaunch zeuz node_cli.py."
+        CommonUtil.ExecLog("", error_msg, 3)
 
 # this needs to be here on top, otherwise will return error
 import clr, System
