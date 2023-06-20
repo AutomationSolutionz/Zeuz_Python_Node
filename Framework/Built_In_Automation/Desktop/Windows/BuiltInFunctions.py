@@ -58,7 +58,7 @@ except:
                     + "python_location" \
                     + "\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe" \
                     + "\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important." \
-                    + "\n5.Relaunch zeuz node_cli.py."
+                    + "\n5.Relaunch zeuz node_cli.py.."
         CommonUtil.ExecLog("", error_msg, 3)
 
 # this needs to be here on top, otherwise will return error

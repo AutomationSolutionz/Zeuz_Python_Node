@@ -2222,7 +2222,6 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         val_app = sys.version.split(" ")[0]
         digits = val_app.split(".")[0:2]  # Split the version string by dots and get the first two elements
         result = ".".join(digits)
-
         py_var = str(result)
         if py_var.startswith("3.5") or py_var.startswith("3.6") or py_var.startswith("3.7") or py_var.startswith("3.8") or py_var.startswith("3.11"):
             print("pass")
