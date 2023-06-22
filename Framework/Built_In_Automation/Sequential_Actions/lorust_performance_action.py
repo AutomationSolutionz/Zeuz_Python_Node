@@ -158,7 +158,7 @@ def lorust_performance_action_handler(
             )) / run_id.replace(":", "-") / CommonUtil.current_session_name
 
         metrics_output_path = save_path / "metrics"
-        metrics_output_path.mkdir(parents=True)
+        metrics_output_path.mkdir(parents=True, exist_ok=True)
 
         flow_save_path = metrics_output_path / "flow.json"
         metrics_output_json_path = metrics_output_path / "http.json"
