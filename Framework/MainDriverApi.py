@@ -39,6 +39,7 @@ from rich.table import Table
 from rich.console import Console
 from rich.box import ASCII_DOUBLE_HEAD, DOUBLE
 from rich.padding import Padding
+from jinja2 import Environment, FileSystemLoader
 
 rich_print = Console().print
 
@@ -943,9 +944,7 @@ def run_test_case(
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
-        CommonUtil.browser_perf = {}
-        CommonUtil.action_perf = []
-        CommonUtil.step_perf = []
+        CommonUtil.clear_performance_metrics()
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
 
         # Added this two global variable in CommonUtil to save log information and save filepath of test case report
@@ -1098,6 +1097,7 @@ def run_test_case(
                 "steps": CommonUtil.step_perf,
                 "test_cases": CommonUtil.test_case_perf,
                 "performance_test": CommonUtil.perf_test_perf,
+                "api_performance_data": CommonUtil.api_performance_data,
             }
         }
 
@@ -1450,14 +1450,42 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     #     del step["actions"]
                     if "log" in step:
                         del step["log"]
+            perf_report_html = None
+            processed_tc_id = None
+            if CommonUtil.processed_performance_data:    
+                env = Environment(loader=FileSystemLoader('../reporting/html_templates'))
+                template = env.get_template('pref_report.html')
+                html = template.render(CommonUtil.processed_performance_data)
+                # Save the rendered HTML to a file
+                processed_tc_id = CommonUtil.processed_performance_data["tc_id"].replace(":", "-")
+                file_name = CommonUtil.processed_performance_data["tc_id"].replace(":", "-") + ".html"
+                with open(zip_dir / file_name, "w", encoding="utf-8") as file:
+                    file.write(html)
+                    print("Preformance report template generated successfully!")
+                CommonUtil.processed_performance_data.clear()
+                perf_report_html = open(zip_dir / file_name, 'rb')
+
 
             for _ in range(5):
                 try:
-                    res = requests.post(
-                        RequestFormatter.form_uri("create_report_log_api/"),
-                        data={"execution_report": json.dumps(tc_report)},
-                        verify=False,
-                        **RequestFormatter.add_api_key_to_headers({}))
+                    if perf_report_html is None:
+                        res = requests.post(
+                            RequestFormatter.form_uri("create_report_log_api/"),
+                            data={"execution_report": json.dumps(tc_report)},
+                            verify=False,
+                            **RequestFormatter.add_api_key_to_headers({}))
+                    else:
+                            res = requests.post(
+                            RequestFormatter.form_uri("create_report_log_api/"),
+                            data={"execution_report": json.dumps(tc_report),
+                                  "processed_tc_id":processed_tc_id
+                                  
+                                  },
+                            files=[("file",perf_report_html)],
+                            verify=False,
+                            **RequestFormatter.add_api_key_to_headers({}))
+
+
                     if res.status_code == 200:
                         print(f"Successfully uploaded the execution report of run_id {run_id}")
                         break
@@ -1475,6 +1503,11 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
             opened_zips = []
             size = 0
+                # opened_zips.append(open(str(zip_dir / file_name), "rb"))
+                # size += round(os.stat(str(zip_dir / file_name)).st_size / 1024, 2)
+
+
+
             for zip_file in zip_files:
                 opened_zips.append(open(str(zip_file), "rb"))
                 size += round(os.stat(str(zip_file)).st_size / 1024, 2)
@@ -1516,9 +1549,10 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 time.sleep(4)
             else:
                 print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
-
+                        
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
+        
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
@@ -2047,6 +2081,8 @@ def main(device_dict, user_info_object):
                     "duration": TestSetDuration
                 }
                 CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
+                
+                CommonUtil.generate_time_based_performance_report(each_session)
 
                 if float(server_version.split(".")[0]) < 7:
                     upload_json_report_old(Userid, temp_ini_file, run_id)

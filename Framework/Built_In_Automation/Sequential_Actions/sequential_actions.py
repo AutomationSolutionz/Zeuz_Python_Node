@@ -51,6 +51,8 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
 from .performance_action import performance_action_handler
+from .time_base_performance_action import time_base_performance_action_handler
+from .lorust_performance_action import lorust_performance_action_handler
 
 from rich.style import Style
 from rich.table import Table
@@ -1075,13 +1077,34 @@ def Run_Sequential_Actions(
                 if sub_field_match(action_name.lower().strip()) and "custom" not in action_name:
                     continue
 
+                elif "lorust performance action" in action_name:
+                    # CommonUtil.load_testing = True
+                    result, skip = lorust_performance_action_handler(
+                        data_set, # type: ignore
+                        step_data, # type: ignore
+                    )
+                    # CommonUtil.perf_test_perf = perf_result
+                    # CommonUtil.load_testing = False
+
+                elif "time base performance action" in action_name:
+                    CommonUtil.load_testing = True
+                    result, skip, perf_result = time_base_performance_action_handler(
+                        data_set,
+                        Run_Sequential_Actions,
+                        CommonUtil.get_timestamp,
+                    )
+                    CommonUtil.perf_test_perf = perf_result
+                    CommonUtil.load_testing = False
+
                 elif "performance action" in action_name:
+                    CommonUtil.load_testing = True
                     result, skip, perf_result = performance_action_handler(
                         data_set,
                         Run_Sequential_Actions,
                         CommonUtil.get_timestamp,
                     )
                     CommonUtil.perf_test_perf = perf_result
+                    CommonUtil.load_testing = False
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:
