@@ -383,6 +383,7 @@ def Element_only_search(
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
     try:
+
         if Parent_Element is not None:
             ParentElement = Parent_Element
             element_index = -1
@@ -402,8 +403,13 @@ def Element_only_search(
 
         )
         all_elements += tmp_elements
-        if all_elements:
-            return all_elements
+        new_all_elements = []
+        for i in all_elements:
+            if i.Current.ProcessId in current_pid_list:
+                new_all_elements.append(i)
+
+        if new_all_elements:
+            return new_all_elements
         else:
             return "zeuz_failed"
 
@@ -1712,6 +1718,7 @@ def Run_Application(data_set):
                 subprocess.Popen(cmd, **args)
                 # Desktop_app = os.path.basename(Desktop_app)
             else:
+                #last_start_time = time.time()
                 autoit.send("^{ESC}")
                 time.sleep(0.5)
                 autoit.send(Desktop_app)
