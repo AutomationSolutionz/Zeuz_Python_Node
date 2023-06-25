@@ -4,8 +4,9 @@
 # Version 16
 
 ### [Current changes]
-- **[Add]** Added - Convert XML to JSON format
-- **[Add]** Added - sbl flag to enable showing browser log in console. Default: False
+- **[Add]** New "Rust" based performance action.
+- **[Add]** Convert XML to JSON format
+- **[Add]** sbl flag to enable showing browser log in console. Default: False
 - **[Add]** Resize selenium window action
 - **[Add]** `Save if not defined` in save into variable
 - **[Add]** Prevent printing specified variables
