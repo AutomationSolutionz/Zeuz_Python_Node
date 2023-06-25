@@ -5,8 +5,12 @@
 
 ### [Current changes]
 - **[Add]** New "Rust" based performance action.
-- **[Add]** Convert XML to JSON format
-- **[Add]** sbl flag to enable showing browser log in console. Default: False
+- **[Add]** Added - Text to Speech action
+- **[Add]** Added - S3 Actions
+- **[Fix]** Fix chrome. firefox & edge driver issues on selenium 4.10 (executable_path error).
+- **[Add]** Browserstack - WEB support
+- **[Add]** Added - Convert XML to JSON format
+- **[Add]** Added - sbl flag to enable showing browser log in console. Default: False
 - **[Add]** Resize selenium window action
 - **[Add]** `Save if not defined` in save into variable
 - **[Add]** Prevent printing specified variables

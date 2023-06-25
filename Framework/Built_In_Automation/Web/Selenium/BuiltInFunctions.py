@@ -21,6 +21,8 @@ import psutil
 from pathlib import Path
 from datetime import datetime
 
+from selenium.webdriver.chrome.service import Service
+
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -418,6 +420,7 @@ def get_performance_metrics(dataset):
         # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
         # from selenium.webdriver.chrome.webdriver import ChromiumDriver
         # time.sleep(5)
+
         perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
         Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
@@ -505,15 +508,34 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     CommonUtil.ExecLog(
                     sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
                 )
-    # try:
-    #     selenium_driver.close()
-    # except:
-    #     pass
+    
+    is_browserstack = 'browserstack' in browser
+    if is_browserstack:
+        try:
+            browerstack_config = json.loads(browser)
+            browser = 'browserstack'
+            remote_host = browerstack_config['remote_host']
+            desired_cap = browerstack_config['desired_cap']
+            remote_desired_cap = {
+                'bstack:options' : {
+                "os" : desired_cap["os"],
+                "osVersion" : desired_cap['os_version'],
+                "browserVersion" : desired_cap['browser_version'],
+                "local" : "false",
+                "seleniumVersion" : "4.8.0",
+                },
+                "browserName" : desired_cap['browser'],
+                }
+        except ValueError as e:
+            is_browserstack = False
+            CommonUtil.ExecLog(
+                    sModuleInfo, "Unable to parse browserstack config. Running the browser locally", 3
+                )
 
     try:
         CommonUtil.teardown = True
         browser = browser.lower().strip()
-
+        selenium_version = selenium.__version__
         if browser in ("ios",):
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
@@ -598,10 +620,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     set_extension_variables()
                     options.add_argument(f"load-extension={aiplugin_path}")
 
-            d = DesiredCapabilities.CHROME
-            d["loggingPrefs"] = {"browser": "ALL"}
-            d['goog:loggingPrefs'] = {'performance': 'ALL'}
-
             if "chromeheadless" in browser:
                 def chromeheadless():
                     options.add_argument(
@@ -621,18 +639,30 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             for key in _prefs:
                 prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
+
             if remote_host:
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
-                    desired_capabilities=d
                 )
             else:
-                selenium_driver = webdriver.Chrome(
-                    executable_path=chrome_path,
-                    chrome_options=options,
-                    desired_capabilities=d
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(chrome_path)
+                    selenium_driver = webdriver.Chrome(
+                        service=service,
+                        options=options,
+                    )
+                elif selenium_version.startswith('3.'):
+                    d = DesiredCapabilities.CHROME
+                    d["loggingPrefs"] = {"browser": "ALL"}
+                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
+                    selenium_driver = webdriver.Chrome(
+                        executable_path=chrome_path,
+                        chrome_options=options,
+                        desired_capabilities=d
+                    )
+                else:
+                    print("Please update selenium & rerun node_cli file again.")
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -689,8 +719,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         Firefox_path = path[1]
                         binary = FirefoxBinary(Firefox_path)
                         break
-            capabilities = webdriver.DesiredCapabilities().FIREFOX
-            capabilities['acceptSslCerts'] = True
+
             profile = webdriver.FirefoxProfile()
             initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             profile.set_preference("browser.download.folderList", 2)
@@ -702,6 +731,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
             if(remote_host):
+                capabilities = webdriver.DesiredCapabilities().FIREFOX
+                capabilities['acceptSslCerts'] = True
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
@@ -709,12 +740,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     browser_profile=profile
                 )
             else:
-                selenium_driver = webdriver.Firefox(
-                    executable_path=firefox_path,
-                    capabilities=capabilities,
-                    options=options,
-                    firefox_profile=profile
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(firefox_path)
+                    selenium_driver = webdriver.Firefox(
+                        service=service,
+                        options=options,
+                    )
+                elif selenium_version.startswith('3.'):
+                    capabilities = webdriver.DesiredCapabilities().FIREFOX
+                    capabilities['acceptSslCerts'] = True
+                    selenium_driver = webdriver.Firefox(
+                        executable_path=firefox_path,
+                        capabilities=capabilities,
+                        options=options,
+                        firefox_profile=profile
+                    )
+                else:
+                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -745,8 +788,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
-            capabilities = webdriver.EdgeOptions().capabilities
-            capabilities['acceptSslCerts'] = True
+
             options.use_chromium = True
 
             if "headless" in browser:
@@ -760,17 +802,31 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 set_extension_variables()
                 options.add_argument(f"load-extension={aiplugin_path}")
             if(remote_host):
+                capabilities = webdriver.EdgeOptions().capabilities
+                capabilities['acceptSslCerts'] = True
                 selenium_driver = webdriver.Remote(
                     command_executor= remote_host + "wd/hub",
                     options=options,
                     desired_capabilities=capabilities
                 )
             else:
-                selenium_driver = Edge(
-                    executable_path=edge_path,
-                    options=options,
-                    capabilities=capabilities
-                )
+                if selenium_version.startswith('4.'):
+                    service = Service(edge_path)
+                    selenium_driver = webdriver.Edge(
+                        service=service,
+                        options=options,
+                    )
+                elif selenium_version.startswith('3.'):
+                    capabilities = webdriver.EdgeOptions().capabilities
+                    capabilities['acceptSslCerts'] = True
+                    selenium_driver = Edge(
+                        executable_path=edge_path,
+                        options=options,
+                        capabilities=capabilities
+                    )
+                else:
+                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -871,6 +927,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            return "passed"
+        elif 'browserstack' in browser:
+            selenium_driver = webdriver.Remote(
+                command_executor= remote_host + '/wd/hub',
+                desired_capabilities=remote_desired_cap)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            if not window_size_X and not window_size_Y:
+                selenium_driver.set_window_size(default_x, default_y)
+                selenium_driver.maximize_window()
+            else:
+                if not window_size_X:
+                    window_size_X = 1000
+                if not window_size_Y:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
+            CommonUtil.ExecLog(sModuleInfo, f"Started {remote_desired_cap['browserName']} on Browserstack", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
@@ -1099,7 +1173,13 @@ def Go_To_Link(step_data, page_title=False):
             "EdgeChromiumHeadless": "msedge",
         }
 
-        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+        
+        is_browserstack = 'browserstack' in dependency["Browser"]
+        if is_browserstack and driver_id in selenium_details:
+            selenium_driver = selenium_details[driver_id]["driver"]
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+
+        elif driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
             if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
                 Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
@@ -1117,7 +1197,12 @@ def Go_To_Link(step_data, page_title=False):
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
             if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                selenium_driver.execute_cdp_cmd("Performance.enable", {})
+                try:
+                    selenium_driver.execute_cdp_cmd("Performance.enable", {})
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
+                    )
 
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
@@ -3657,7 +3742,12 @@ def Tear_Down_Selenium(step_data=[]):
                     # with open(perf_file, "w", encoding="utf-8") as f:
                     #     json.dump(perf_json_data, f, indent=2)
                     if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                        selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                        try:
+                            selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
+                        except:
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
+                            )    
                 except:
                     errMsg = "Unable to extract performance metrics of driver_id='%s'" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
@@ -3686,7 +3776,12 @@ def Tear_Down_Selenium(step_data=[]):
                 # with open(perf_file, "w", encoding="utf-8") as f:
                 #     json.dump(perf_json_data, f, indent=2)
                 if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                    selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
+                    try:
+                        selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
+                    except:
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
+                        )
                 selenium_details[driver_id]["driver"].quit()
                 CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
             except:

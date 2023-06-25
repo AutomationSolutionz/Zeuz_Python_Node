@@ -1002,7 +1002,7 @@ def New_Compare_Variables(step_data):
                 list2_name = right
             elif "action" in mid:
                 action_type = right.replace(" ", "").replace("_", "").lower()
-                if action_type == "exactmatch":
+                if "exactmatch" in action_type:
                     match_by_index = True
                 if "ignorelistorder" in action_type:
                     match_by_index = False
@@ -6048,7 +6048,8 @@ def classifier_AI(data_set):
             "confidence": 0.9794
         }
     """
-
+    from Framework.module_installer import install_missing_modules
+    install_missing_modules(['torch', 'torchvision', 'transformers'])
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     from Framework.AI.NLP import category_score
 
@@ -6081,3 +6082,131 @@ def classifier_AI(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def connect_to_S3(data_set):
+    """
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    import boto3
+
+    s3_client_var = None
+    credentials_source = "default"
+    cred_file_path = None
+    s3_client = None
+    try:
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "connect to s3" in left:
+                s3_client_var = right.strip()
+            if "credentials source" in left:
+                credentials_source = right.strip()
+            if "file path" in left:
+                cred_file_path = right.strip()
+        
+        if credentials_source == "default":
+            try:
+                s3_client = boto3.client('s3')
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if credentials_source == "environmental variable":
+            import os
+            from dotenv import load_dotenv
+
+            load_dotenv()
+
+            try:
+                s3_client = boto3.client('s3',aws_access_key_id=os.environ.get('aws_access_key_id'),aws_secret_access_key=os.environ.get('aws_secret_access_key'),region_name=os.environ.get('aws_region_name'))
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if credentials_source == "json file":
+            cred_json_obj = json.load(open(cred_file_path))
+            try:
+                s3_client = boto3.client('s3',aws_access_key_id=cred_json_obj.get('aws_access_key_id'),aws_secret_access_key=cred_json_obj.get('aws_secret_access_key'),region_name=cred_json_obj.get('aws_region_name'))
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if s3_client:
+            response = s3_client.list_buckets()
+            s3_resource = boto3.resource('s3')
+            CommonUtil.ExecLog(sModuleInfo, "Successfully connected to S3 client", 1)
+            return sr.Set_Shared_Variables(s3_client_var, s3_resource)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def upload_to_S3(data_set):
+    """
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    import boto3
+
+    try:
+        bucket_name = file_name = key_name = s3_resource_var = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "file to upload" in left:
+                file_name = right.strip()
+            if "upload to s3" in left.lower():
+                key_name = right.strip()
+            if "s3 bucket name" in left.lower():
+                bucket_name = right.strip()
+            if "s3 resource variable":
+                s3_resource_var = right.strip()
+
+        
+        if None in (bucket_name, file_name):
+            CommonUtil.ExecLog(sModuleInfo, "Bucket, file and key names should be provided", 3)
+
+        s3_resource = sr.Get_Shared_Variables(s3_resource_var)
+        s3_bucket = s3_resource.Bucket(name=bucket_name)
+        s3_object = s3_resource.Object(bucket_name=bucket_name, key=key_name)
+        s3_object.upload_file(file_name)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def text_to_speech(data_set):
+    """
+        Convert text to speech using google gTTS library
+    """
+    from gtts import gTTS
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        dialogue_data = speaker = output_filename = None
+        language = 'en'
+        top_level_domain = 'us'
+
+        for left, mid, right in data_set:
+            if "dialogue" in left:
+                dialogue_data = eval(right.strip())
+            if "speaker" in left:
+                try:
+                    speaker = right.strip()
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to parse dialogue json", 3)
+                    return "zeuz_failed"
+            if "text to speech" in left:
+                output_filename = right.strip()
+            if "language" in left:
+                language = right.strip()
+            if "accent" in left:
+                top_level_domain = right.strip()
+                
+        if None in (dialogue_data, speaker, output_filename):
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
+            return "zeuz_failed"
+
+        full_speech = ".".join([s['speech'] for s in dialogue_data if s['speaker'] == speaker ])
+        tts = gTTS(text=full_speech, lang=language, tld=top_level_domain)
+        full_filepath = Path(sr.Get_Shared_Variables("zeuz_download_folder"),output_filename)
+        CommonUtil.ExecLog(sModuleInfo, f"Speech file saved to - {full_filepath}", 1)
+        tts.save(full_filepath)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())

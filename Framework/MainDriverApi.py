@@ -857,6 +857,8 @@ def send_to_bigquery(execution_log, metrics):
     steps = metrics["node"]["steps"]
     actions = metrics["node"]["actions"]
     test_cases = metrics["node"]["test_cases"]
+    for i in range(len(test_cases)):
+        test_cases[i]['tc_title'] = execution_log["test_cases"][i]["title"]
     try:
         browser_perf = metrics["browser_performance"]["default"]
     except:
@@ -877,12 +879,13 @@ def send_to_bigquery(execution_log, metrics):
 
 
     def send_actions_metrics():
-        for action in actions:
-            action["run_id"] = run_id
-            action["tc_id"] = tc_id
-            action["step_name"] = step_names[action["step_id"]]
-
-        send(actions_table_id, actions, "actions")
+        if actions:
+            for action in actions:
+                action["run_id"] = run_id
+                action["tc_id"] = tc_id
+                action["step_name"] = step_names[action["step_id"]]
+        
+            send(actions_table_id, actions, "actions")
 
 
     def send_steps_metrics():
