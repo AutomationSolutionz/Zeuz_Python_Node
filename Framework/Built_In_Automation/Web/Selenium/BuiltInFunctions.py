@@ -1703,7 +1703,8 @@ def Click_Element(data_set, retry=0):
     """ Click using element or location """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-
+    print(data_set)
+    print("yessssssssss")
     use_js = False  # Use js to click on element?
     try:
         bodyElement = ""
@@ -1818,10 +1819,10 @@ def Click_and_Download(data_set):
             l = left.replace(" ", "").replace("_", "").lower()
             if l == "waitfordownload":
                 wait_download = float(right.strip())
-            elif l in ("folderpath", "directory", "filepath", "file", "folder") and mid.strip().lower() in ("parameter", "option"):
+            elif l in ("folderpath", "directory", "filepath", "file", "folder") and mid.strip().lower() in ("optional parameter"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
-            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in ("parameter", "option"):
+            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in ("optional parameter"):
                 automate_firefox = right.strip().lower() in ("accept", "yes", "ok", "true")
             else:
                 click_dataset.append((left, mid, right))
@@ -2254,7 +2255,7 @@ def Save_Attribute(step_data):
     try:
         variable_name = None
         for each_step_data_item in step_data:
-            if "parameter" in each_step_data_item[1]:
+            if "optional parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
                 attribute_name = each_step_data_item[0].strip().lower()
 
@@ -2545,7 +2546,7 @@ def save_attribute_values_in_list(step_data):
                         elif Left == "return_does_not_contain":
                             target[target_index][3].append(Right)   
                         elif Left.replace(" ", "").replace("_", "") in ("allowhidden", "allowdisable"):
-                            target[target_index][0].append(("allow hidden", "optional option", Right))
+                            target[target_index][0].append(("allow hidden", "optional parameter", Right))
                         else:
                             target[target_index][0].append((Left, "element parameter", Right))
 
@@ -2634,9 +2635,9 @@ def Extract_Table_Data(step_data):
                 mid = mid.strip().lower()
                 if left == "extract table data":
                     variable_name = right
-                elif "row" in left and mid == "parameter":
+                elif "row" in left and mid == "optional parameter":
                     _row = right.replace(" ", "")
-                elif "column" in left and mid == "parameter":
+                elif "column" in left and mid == "optional parameter":
                     _column = right.replace(" ", "")
 
 
@@ -2818,9 +2819,9 @@ def Validate_Text(step_data):
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
-            elif each_step_data_item[1].strip().lower() in ("parameter", "option") and each_step_data_item[0] == "ignore case":
+            elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0] == "ignore case":
                 ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
-            elif each_step_data_item[1].strip().lower() in ("parameter", "option") and each_step_data_item[0].replace(" ", "").replace("_", "") == "zeuzai":
+            elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0].replace(" ", "").replace("_", "") == "zeuzai":
                 zeuz_ai = CommonUtil.parse_value_into_object(each_step_data_item[2])
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
         if ignore_case:

@@ -1494,7 +1494,7 @@ def Save_Variable(data_set):
     variable_name = ""
     variable_value = ""
     for each in data_set:
-        if each[1] == "element parameter" or "parameter" in each[1]:
+        if each[1] == "element parameter" or "optional parameter" in each[1]:
             variable_name = each[0]
             variable_value = each[2]
     if variable_name != "" and variable_value != "":
@@ -1510,7 +1510,7 @@ def save_length(data_set):
     variable_name = ""
     value = ""
     for each in data_set:
-        if "parameter" in each[1]:
+        if "optional parameter" in each[1]:
             variable_name = each[0]
             value = each[2]
 
@@ -1762,7 +1762,7 @@ def extract_date(data_set):
 
                 # Extract the date and convert it into datetime object
                 extracted_date = datefinder.find_dates(str_containing_date).__next__()
-            elif "parameter" in row[1]:
+            elif "optional parameter" in row[1]:
                 date_format = row[2]
 
         if not date_format:
@@ -1936,7 +1936,7 @@ def set_server_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -1958,7 +1958,7 @@ def get_server_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
 
@@ -1986,7 +1986,7 @@ def get_server_variable_and_wait(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
             if str(row[1]).strip().lower() == "action":
@@ -3359,7 +3359,7 @@ def get_global_list_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
 
@@ -3387,7 +3387,7 @@ def append_to_global_list_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -3414,7 +3414,7 @@ def remove_item_from_global_list_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()

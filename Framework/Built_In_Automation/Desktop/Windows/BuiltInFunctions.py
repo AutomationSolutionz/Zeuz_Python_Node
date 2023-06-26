@@ -1811,7 +1811,7 @@ def Keystroke_For_Element(data_set):
                     keystroke_value = right.strip().lower()  # Store keystroke
                 elif left == "keystroke chars":
                     keystroke_char = right
-            if "parameter"in mid.lower():
+            if "optional parameter"in mid.lower():
                 if left == "method":
                     method_name= right.lower()
 
