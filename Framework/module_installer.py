@@ -101,8 +101,9 @@ def install_missing_modules(req_list=None):
         print("Failed to install missing modules...")
         traceback.print_exc()
 
-def update_outdated_modules():
-    req_list = get_req_list()
+def update_outdated_modules(req_list = None):
+    if req_list is None:
+        req_list = get_req_list()
     # Upgrading outdated modules found in last run
     outdated_modules_filepath = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + 'AutomationLog') + os.sep + 'outdated_modules.json'
     needs_to_be_updated = None
