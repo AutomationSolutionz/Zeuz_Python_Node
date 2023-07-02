@@ -586,7 +586,7 @@ def ExecLog(
 
     stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
 
-    if debug_status and ws_ss_log and stop_live_log == 'False':
+    if debug_status and ws_ss_log and stop_live_log.strip().lower() in ('false', 'no', 'disable'):
         live_log_service.log(sModuleInfo, iLogLevel, sDetails)
 
     if iLogLevel > 0:
