@@ -921,9 +921,17 @@ def image_search(step_data_set):
         is_pytesseract,_ = search_process.communicate()
 
         if is_pytesseract:
-            print('Pytesseractt is already installed')
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pytesseractt is already installed",
+                5,
+            )
         else:
-            print('Installing Pytesseract')
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Pytesseract",
+                5,
+            )
             os.system('echo y | pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytesseract')
     except:
         CommonUtil.ExecLog(
@@ -945,19 +953,39 @@ def image_search(step_data_set):
         is_pytesseract_exe, _ = tesseract_process.communicate()
 
         if is_pytesseract_exe:
-            print('Pytesseract executable file is alreday installed')
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pytesseract executable file is alreday installed",
+                5,
+            )
         else:
-            print('Starting installation of Pytesseract executable file')
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Starting installation of Pytesseract executable file",
+                5,
+            )
             install_process = subprocess.Popen(['winget', 'install', 'Tesseract-OCR - open source OCR engine'], text=True)
             stdout, stderr = install_process.communicate()
             if stdout is not None:
-                print('The standard output for winget install Tesseract-OCR', stdout)
+                CommonUtil.ExecLog(
+                sModuleInfo,
+                f"The standard output for winget install Tesseract-OCR {stdout}",
+                5,
+                )
             if stderr is not None:
-                print('The standard error for winget install Tesseract-OCR', stderr)
+                CommonUtil.ExecLog(
+                sModuleInfo,
+                f"The standard error for winget install Tesseract-OCR {stderr}",
+                5,
+                )
             else:
                 print('Tesseract installation is complete!')
 
-        print('Setting up the invironmet variable for Tesseract OCR')
+        CommonUtil.ExecLog(
+                sModuleInfo,
+                "Setting up the invironmet variable for Tesseract OCR",
+                5,
+            )
 
         ocr_path = r"C:\Program Files\Tesseract-OCR"
         os.environ['PATH'] += ';' + ocr_path

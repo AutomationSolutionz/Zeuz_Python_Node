@@ -52,3 +52,4 @@ python-dotenv
 xvfbwrapper
 deepdiff
 xmltodict
+Jinja2
