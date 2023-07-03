@@ -403,13 +403,9 @@ def Element_only_search(
 
         )
         all_elements += tmp_elements
-        new_all_elements = []
-        for i in all_elements:
-            if i.Current.ProcessId in current_pid_list:
-                new_all_elements.append(i)
 
-        if new_all_elements:
-            return new_all_elements
+        if all_elements:
+            return all_elements
         else:
             return "zeuz_failed"
 
@@ -1244,7 +1240,13 @@ def _get_main_window(WindowName):
         MainWindowsList = AutomationElement.RootElement.FindAll(
             TreeScope.Children, Condition.TrueCondition
         )
-        for MainWindowElement in MainWindowsList:
+
+        NewMainWindowsList = []
+        for i in MainWindowsList:
+            if i.Current.ProcessId in current_pid_list:
+                NewMainWindowsList.append(i)
+                
+        for MainWindowElement in NewMainWindowsList:
             try:
                 if WindowName[2] == "pid":
                     try:
