@@ -590,6 +590,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument("--no-sandbox")
                 # options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
+                # options.add_argument('--allow-running-insecure-content')  # This is for running extension on a http server to call a https request
                 options.add_argument('--ignore-ssl-errors')
                 options.add_argument('--zeuz_pid_finder')
 
@@ -1726,8 +1727,6 @@ def Click_Element(data_set, retry=0):
     """ Click using element or location """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    print(data_set)
-    print("yessssssssss")
     use_js = False  # Use js to click on element?
     try:
         bodyElement = ""
@@ -2278,8 +2277,8 @@ def Save_Attribute(step_data):
     try:
         variable_name = None
         for each_step_data_item in step_data:
-            if "optional parameter" in each_step_data_item[1]:
-                variable_name = each_step_data_item[2]
+            if "save parameter" in each_step_data_item[1]:
+                variable_name = each_step_data_item[2].strip()
                 attribute_name = each_step_data_item[0].strip().lower()
 
         if variable_name is None:
