@@ -25,7 +25,7 @@ ai_module_update_time_difference = None
 ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import live_log_service
 import concurrent.futures
-from typing import Dict
+from typing import Dict, List
 
 # For TakeScreenShot()
 from concurrent.futures import ThreadPoolExecutor
@@ -174,7 +174,7 @@ PerformanceDataPoint = namedtuple("PerformanceDataPoint", [
     "starttransfer_time",
     "redirect_time",
 ])
-api_performance_data: list[PerformanceDataPoint] = []
+api_performance_data: List[PerformanceDataPoint] = []
 
 processed_performance_data = {}
 
