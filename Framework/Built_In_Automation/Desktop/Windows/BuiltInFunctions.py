@@ -967,34 +967,31 @@ def image_search(step_data_set):
             install_process = subprocess.Popen(['winget', 'install', 'Tesseract-OCR - open source OCR engine'], text=True)
             stdout, stderr = install_process.communicate()
             if stdout is not None:
-                CommonUtil.ExecLog(
-                sModuleInfo,
-                f"The standard output for winget install Tesseract-OCR {stdout}",
-                5,
-                )
+                CommonUtil.ExecLog(sModuleInfo, f"The standard output for winget install Tesseract-OCR {stdout}", 5)
             if stderr is not None:
                 CommonUtil.ExecLog(
-                sModuleInfo,
-                f"The standard error for winget install Tesseract-OCR {stderr}",
-                5,
+                    sModuleInfo,
+                    f"The standard error for winget install Tesseract-OCR {stderr}",
+                    5,
                 )
             else:
-                print('Tesseract installation is complete!')
+                CommonUtil.ExecLog(sModuleInfo, f"Tesseract installation is complete!", 5)
 
         CommonUtil.ExecLog(
-                sModuleInfo,
-                "Setting up the invironmet variable for Tesseract OCR",
-                5,
-            )
+            sModuleInfo,
+            "Setting up the environment variable for Tesseract OCR",
+            5,
+        )
 
+        # Todo: No need to add this in PATH
         ocr_path = r"C:\Program Files\Tesseract-OCR"
         os.environ['PATH'] += ';' + ocr_path
     except:
         CommonUtil.ExecLog(
-                sModuleInfo,
-                "Could not install the Pytesseract executable file",
-                3,
-            )
+            sModuleInfo,
+            "Could not install the Pytesseract executable file",
+            3,
+        )
         
     try:
         file_name = ""
