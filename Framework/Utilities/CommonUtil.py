@@ -289,7 +289,9 @@ def prettify(key, val):
             print(json.dumps(val,indent=2)[:prettify_limit])
 
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
-        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
+        stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
+
+        if debug_status and key not in dont_prettify_on_server and ws_ss_log and stop_live_log == 'False':
             live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
     except:
@@ -611,7 +613,9 @@ def ExecLog(
     # Set current log as the next previous log
     previous_log_line = current_log_line
 
-    if debug_status and ws_ss_log:
+    stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
+
+    if debug_status and ws_ss_log and stop_live_log.strip().lower() in ('false', 'no', 'disable'):
         live_log_service.log(sModuleInfo, iLogLevel, sDetails)
 
     if iLogLevel > 0:

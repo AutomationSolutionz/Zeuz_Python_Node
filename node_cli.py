@@ -980,6 +980,10 @@ def command_line_args() -> Path:
         "-sbl", "--show_browser_log", action="store_true", help="Show browserlog in the console"
     )
 
+    parser_object.add_argument(
+        "-slg", "--stop_live_log", action="store_true", help="Disables log in live server"
+    )
+
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -993,6 +997,7 @@ def command_line_args() -> Path:
     gh_token = all_arguments.gh_token
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
     show_browser_log = all_arguments.show_browser_log
+    stop_live_log = all_arguments.stop_live_log
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1112,6 +1117,8 @@ def command_line_args() -> Path:
         pass
     if gh_token:
         os.environ["GH_TOKEN"] = gh_token
+
+    ConfigModule.add_config_value("Advanced Options", "stop_live_log", str(stop_live_log))
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""
