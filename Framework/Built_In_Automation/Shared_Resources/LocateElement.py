@@ -127,6 +127,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         save_parameter = ""
         get_parameter = ""
         Filter = ""
+        text_filter_cond = False
         for row in step_data_set:
             if row[1] == "save parameter":
                 if row[2] != "ignore":
@@ -137,13 +138,16 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign to get variable value", 3)
                     return "zeuz_failed"
-            elif row[1].strip().lower() in ("optional parameter"):
+            elif row[1].strip().lower() == "optional parameter":
                 left = row[0].strip().lower()
                 right = row[2].strip().lower()
                 if left in ("allow hidden", "allow disable"):
                     Filter = left if right in ("yes", "true", "ok") else Filter
                 elif left == "wait":
                     element_wait = float(right)
+                elif left == "text filter":
+                    text_filter_cond = right in ("yes", "true", "ok", "enable")
+
 
         if get_parameter != "":
 
@@ -179,7 +183,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
 
         if query_type in ("xpath", "css", "unique"):
             result = _get_xpath_or_css_element(element_query, query_type, step_data_set, index_number, Filter, return_all_elements, element_wait)
-            if result == "zeuz_failed":
+            if result == "zeuz_failed" and text_filter_cond:
                 result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
         else:
             result = "zeuz_failed"

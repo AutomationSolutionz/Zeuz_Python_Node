@@ -56,7 +56,7 @@ def Set_Shared_Variables(
             if not re.search("^[a-zA-Z_][a-zA-Z_0-9]*$", key):
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Please provide a valid variable name. valid variable name rules-\n" +
+                    f"'{key}' is not a valid variable name. valid variable name rules-\n" +
                     "1. A variable name can only contain Letters a-z, underscore _ and Digits 0-9\n" +
                     "2. A variable name Cannot Start with Digits 0-9",
                     3,

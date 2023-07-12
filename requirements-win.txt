@@ -66,3 +66,4 @@ google-cloud-bigquery-storage
 deepdiff
 pywin32
 xmltodict
+jinja2
