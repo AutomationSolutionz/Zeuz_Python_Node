@@ -2252,7 +2252,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
                 +"\n2.Delete your Python folder"\
                 + python_location \
-                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
+                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"\
                 +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
                 +"\n5.Relaunch zeuz node_cli.py" 
             CommonUtil.ExecLog(sModuleInfo, error_msg, 3)
