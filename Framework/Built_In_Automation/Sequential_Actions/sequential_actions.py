@@ -2245,8 +2245,9 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         full_python_version = sys.version.split(" ")[0]
         python_sub_version = re.search(r'\b\d+\.(\d+)\.\d+\b', full_python_version)
 
-        if not 5 <= int(python_sub_version.group(1)) <= 11:
+        if not 7 <= int(python_sub_version.group(1)) <= 11:
             error_msg = "You have the wrong Python version or bit"\
+                +"\nThe Python version should be 3.7 <= x <= 3.11"\
                 +"\nFollow this procedure"\
                 +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
                 +"\n2.Delete your Python folder"\
