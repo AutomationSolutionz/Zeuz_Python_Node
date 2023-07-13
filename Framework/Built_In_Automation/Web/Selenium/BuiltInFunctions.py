@@ -4570,7 +4570,18 @@ def upload_file_through_window(step_data):
         # elif platform.system() == "Linux":
         #     _gui_upload(path_name)
         else:
-            _gui_upload(path_name[0:-1])
+            #_gui_upload(path_name[0:-1])
+            file_input = driver.find_element_by_xpath("//input[@type='file']")
+
+            # Set the file path to upload
+            file_path = path_name[0:-1]
+
+            # Send the file path to the file input element
+            file_input.send_keys(file_path)
+
+            # Submit the form (if needed)
+            submit_button = driver.find_element_by_xpath("//input[@type='submit']")
+            submit_button.click()
 
         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
         return "passed"
