@@ -1264,6 +1264,11 @@ def generate_time_based_performance_report(session) -> None:
     """
     print("Generating Performance Report")
 
+    if "execution_detail" not in session["test_cases"][0]:
+        return
+    elif "metrics" not in session['test_cases'][0]['execution_detail']:
+        return
+
     perf_data = session['test_cases'][0]['execution_detail']['metrics']['node']['api_performance_data']
     run_id = session['run_id']
     teststarttime = session['test_cases'][0]['execution_detail']['teststarttime']
