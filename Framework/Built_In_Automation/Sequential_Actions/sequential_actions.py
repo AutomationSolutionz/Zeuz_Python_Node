@@ -2241,15 +2241,20 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
         except:
             python_location = ""
-        if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
+
+        full_python_version = sys.version.split(" ")[0]
+        python_sub_version = re.search(r'\b\d+\.(\d+)\.\d+\b', full_python_version)
+
+        if not 7 <= int(python_sub_version.group(1)) <= 11:
             error_msg = "You have the wrong Python version or bit"\
+                +"\nThe Python version should be 3.7 <= x <= 3.11"\
                 +"\nFollow this procedure"\
                 +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
                 +"\n2.Delete your Python folder"\
                 + python_location \
-                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
+                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"\
                 +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
-                +"\n5.Relaunch zeuz node_cli.py"
+                +"\n5.Relaunch zeuz node_cli.py" 
             CommonUtil.ExecLog(sModuleInfo, error_msg, 3)
             return "zeuz_failed" 
 
