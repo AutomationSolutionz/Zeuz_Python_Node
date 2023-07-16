@@ -4406,6 +4406,7 @@ def upload_file_through_window(step_data):
     global selenium_driver
     all_file_path = []
     pid = ""
+    send_keys_flag = False
     import pyautogui
     if "headless" in dependency:
         CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
@@ -4420,6 +4421,9 @@ def upload_file_through_window(step_data):
                     all_file_path.append(path)
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+            if "keys" in l:
+                send_keys_flag = True
+
         if len(all_file_path) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Could not find any valid filepath or directory", 3)
             return "zeuz_failed"
@@ -4429,6 +4433,8 @@ def upload_file_through_window(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
 
     try:
+
+
         if platform.system() == "Darwin":
             # Will require pid when we will atomate with atomacos module. Fetching PID is only tested on Chrome for now
             if selenium_driver.capabilities["browserName"].lower() == "chrome":
@@ -4454,6 +4460,14 @@ def upload_file_through_window(step_data):
             pyautogui.hotkey("enter")
             time.sleep(2)
             pyautogui.hotkey("enter")
+
+        elif send_keys_flag is True:
+
+            file_input = selenium_driver.find_element(By.XPATH, "//input[@type='file']")
+
+            file_path = path_name[1:-1]
+            file_input.send_keys(file_path)
+
 
         # window_ds = ("*window", "element parameter", selenium_driver.title)
         elif platform.system() == "Windows":
