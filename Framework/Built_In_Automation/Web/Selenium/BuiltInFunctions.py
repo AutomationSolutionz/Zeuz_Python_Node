@@ -39,7 +39,7 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import ElementClickInterceptedException, WebDriverException,\
-    SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException
+    SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.alert import Alert
@@ -1132,6 +1132,8 @@ def Go_To_Link(step_data, page_title=False):
     else:
         raise ValueError("No dependency set - Cannot run")
 
+    page_load_timeout_sec = None
+
     try:
         driver_id = ""
         for left, mid, right in step_data:
@@ -1142,7 +1144,8 @@ def Go_To_Link(step_data, page_title=False):
                 driver_id = right.strip()
             elif left == "waittimetoappearelement":
                 Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
-
+            elif left == "waittimetopageload":
+                page_load_timeout_sec = int(right.strip())
             # checks for capabilities and modifies them by the given step_data
             elif mid.strip().lower() == "shared capability":
                 if left.strip().lower() in ("promptbehavior", "alertbehavior"):
@@ -1217,9 +1220,17 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
+    # Set timeout 
+    if page_load_timeout_sec:
+        selenium_driver.set_page_load_timeout(page_load_timeout_sec)
+
     # Open URL in browser
     try:
-        selenium_driver.get(web_link)
+        try:
+            selenium_driver.get(web_link)
+        except TimeoutException as e:
+            CommonUtil.ExecLog(sModuleInfo, "Maximum page load time reached. Loading and proceeding", 2)
+
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
     except WebDriverException as e:
