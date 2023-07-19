@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Page load timeout
 - **[Add]** New "Rust" based performance action.
 - **[Add]** Added - Text to Speech action
 - **[Add]** Added - S3 Actions

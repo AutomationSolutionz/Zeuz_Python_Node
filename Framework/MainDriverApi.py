@@ -328,16 +328,13 @@ def call_driver_function_of_test_step(
                     stepThread = threading.Thread(
                         target=functionTocall,
                         args=(
-                            final_dependency,
-                            final_run_params,
                             test_steps_data,
                             test_action_info,
-                            file_specific_steps,
                             simple_queue,
-                            screen_capture,     # No need of screen capture. Need to delete this
-                            device_info,
+                            debug_actions,
                         ),
                     )  # start step thread
+
 
                     CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)  # add log
 
