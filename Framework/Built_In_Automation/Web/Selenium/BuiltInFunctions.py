@@ -1132,7 +1132,7 @@ def Go_To_Link(step_data, page_title=False):
     else:
         raise ValueError("No dependency set - Cannot run")
 
-    page_load_timeout_sec = None
+    page_load_timeout_sec = 120
 
     try:
         driver_id = ""
@@ -1221,8 +1221,7 @@ def Go_To_Link(step_data, page_title=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
     # Set timeout 
-    if page_load_timeout_sec:
-        selenium_driver.set_page_load_timeout(page_load_timeout_sec)
+    selenium_driver.set_page_load_timeout(page_load_timeout_sec)
 
     # Open URL in browser
     try:
