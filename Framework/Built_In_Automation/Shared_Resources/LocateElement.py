@@ -555,50 +555,51 @@ def _construct_xpath_list(parameter_list, add_dot=False):
         for each_data_row in parameter_list:
             attribute = each_data_row[0].strip()
             attribute_value = each_data_row[2]
+            quote = "'" if '"' in attribute_value else '"'
 
             if attribute == "text" and driver_type in ("selenium", "xml"):  # exact search
-                text_value = '[text()="%s"]' % attribute_value
+                text_value = f'[text()={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and driver_type in ("selenium", "xml"):  # partial search
-                text_value = '[contains(text(),"%s")]' % (str(attribute_value))
+                text_value = f'[contains(text(),{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(text_value)
             elif attribute == "**text" and driver_type in ("selenium", "xml"):  # partial search + ignore case
-                text_value = '[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"%s")]' % str(attribute_value).lower()
+                text_value = f'[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),{quote}{attribute_value.lower()}{quote})]'
                 element_main_body_list.append(text_value)
 
             elif attribute == "text" and driver_type == "appium":  # exact search
                 current_context = generic_driver.context
                 if "WEB" in current_context:
-                    text_value = '[text()="%s"]' % attribute_value
+                    text_value = f'[text()={quote}{attribute_value}{quote}]'
                 else:
-                    text_value = '[@text="%s"]' % attribute_value
+                    text_value = f'[@text={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(text_value)
             elif attribute == "**text" and driver_type == "appium":  # partial search + ignore case
-                text_value = "[contains(translate(@text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]"%str(attribute_value).lower()
+                text_value = f"[contains(translate(@text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),{quote}{attribute_value.lower()}{quote})]"
                 current_context = generic_driver.context
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and driver_type == "appium":  # partial search
                 current_context = generic_driver.context
                 if "WEB" in current_context:
-                    text_value = '[contains(%s(),"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    text_value = f'[contains({attribute.split("*")[1]}(),{quote}{attribute_value}{quote})]'
                 else:
-                    text_value = '[contains(@%s,"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    text_value = f'[contains(@{attribute.split("*")[1]},{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(text_value)
 
             elif attribute not in excluded_attribute and "*" not in attribute:  # exact search
-                other_value = '[@%s="%s"]' % (attribute, attribute_value)
+                other_value = f'[@{attribute}={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and "**" in attribute:  # partial search + ignore case
                 if driver_type == "appium":
-                    other_value = "[contains(translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]" % (attribute.split('**')[1], str(attribute_value.lower()))
+                    other_value = f"[contains(translate(@{attribute.split('**')[1]},'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),{quote}{attribute_value.lower()}{quote})]"
                 else:
-                    other_value = "[contains(translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]" % (attribute.split('**')[1], str(attribute_value).lower())
+                    other_value = f"[contains(translate(@{attribute.split('**')[1]},'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),{quote}{attribute_value.lower()}{quote})]"
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and "*" in attribute:  # partial search
                 if driver_type == "appium":
-                    other_value = '[contains(@%s,"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    other_value = f'[contains(@{attribute.split("*")[1]},{quote}{attribute_value}{quote})]'
                 else:
-                    other_value = '[contains(@%s,"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    other_value = f'[contains(@{attribute.split("*")[1]},{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(other_value)
 
         # we do the tag on its own
