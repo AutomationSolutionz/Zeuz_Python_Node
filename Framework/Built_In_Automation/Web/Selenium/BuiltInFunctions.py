@@ -4449,8 +4449,15 @@ def upload_file_through_window(step_data):
 
     try:
 
+        if send_keys_flag is True:
 
-        if platform.system() == "Darwin":
+            file_input = selenium_driver.find_element(By.XPATH, "//input[@type='file']")
+
+            file_path = path_name[1:-1]
+            file_input.send_keys(file_path)
+
+
+        elif platform.system() == "Darwin":
             # Will require pid when we will atomate with atomacos module. Fetching PID is only tested on Chrome for now
             if selenium_driver.capabilities["browserName"].lower() == "chrome":
                 for process in psutil.process_iter():
@@ -4475,13 +4482,6 @@ def upload_file_through_window(step_data):
             pyautogui.hotkey("enter")
             time.sleep(2)
             pyautogui.hotkey("enter")
-
-        elif send_keys_flag is True:
-
-            file_input = selenium_driver.find_element(By.XPATH, "//input[@type='file']")
-
-            file_path = path_name[1:-1]
-            file_input.send_keys(file_path)
 
 
         # window_ds = ("*window", "element parameter", selenium_driver.title)
