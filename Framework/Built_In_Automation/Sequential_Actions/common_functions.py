@@ -1037,7 +1037,7 @@ def New_Compare_Variables(step_data):
             elif "diff: significant digits" in left:
                 significant_digits = int(CommonUtil.parse_value_into_object(right))
             elif "diff: math epsilon" in left:
-                math_epsilon = int(CommonUtil.parse_value_into_object(right))
+                math_epsilon = float(CommonUtil.parse_value_into_object(right))
 
             elif "action" in mid:
                 action_type = right.replace(" ", "").replace("_", "").lower()
