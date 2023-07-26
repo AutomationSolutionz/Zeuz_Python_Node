@@ -117,6 +117,10 @@ declarations = (
     {"name": "upload to S3",                                 "function": "upload_to_S3",                          "screenshot": "none" },
     
     {"name": "text to speech",                               "function": "text_to_speech",                        "screenshot": "none" },
+
+    {"name": "connect to bigquery client",                   "function": "connect_to_bigquery_client",            "screenshot": "none" },
+    {"name": "execute bigquery query",                       "function": "execute_bigquery_query",                "screenshot": "none" },
+    
 ) # yapf: disable
 
 module_name = "common"
