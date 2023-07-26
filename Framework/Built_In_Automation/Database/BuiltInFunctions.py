@@ -249,7 +249,7 @@ def db_get_connection(session_name):
             # Connect to db
             db_con = pyodbc.connect(connection_str)
 
-            db_enable_odbc_utf8 = db_params.get(DB_SERVICE_NAME)
+            db_enable_odbc_utf8 = db_params.get(DB_ODBC_UTF8)
 
             if db_enable_odbc_utf8:
                 CommonUtil.ExecLog(sModuleInfo, "Enabling UTF-8 encoding support for odbc driver.", 5)
