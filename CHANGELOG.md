@@ -4,6 +4,7 @@
 # Version 16
 
 ### [Current changes]
+- **[Add]** Connect and Run Query on BigQuery 
 - **[Add]** Page load timeout
 - **[Add]** New "Rust" based performance action.
 - **[Add]** Added - Text to Speech action
