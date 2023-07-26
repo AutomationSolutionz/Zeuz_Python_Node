@@ -32,6 +32,8 @@ DB_PORT = "db_port"
 DB_SID = "db_sid"
 DB_SERVICE_NAME = "db_service_name"
 DB_ODBC_DRIVER = "odbc_driver"
+DB_SESSION = "session"
+DB_ODBC_UTF8 = "odbc: enable utf-8 encoding"
 
 
 # [NON ACTION]
@@ -155,10 +157,9 @@ def db_get_connection(session_name):
     if session_name in db_sessions.keys():
         db_params = db_sessions[session_name]
     else:
-        CommonUtil.ExecLog(sModuleInfo,f"Invalid session name provided - {session_name}",3)
+        CommonUtil.ExecLog(sModuleInfo,f"Invalid session name provided - {session_name}", 3)
         return "zeuz_failed"
     try:
-        import pyodbc
         db_con = None
 
         # Get the values
@@ -237,6 +238,8 @@ def db_get_connection(session_name):
                 dsn=dsn,
             )
         else:
+            import pyodbc
+
             # Get the driver for the ODBC connection
             odbc_driver = find_odbc_driver(db_type)
 
@@ -246,9 +249,13 @@ def db_get_connection(session_name):
             # Connect to db
             db_con = pyodbc.connect(connection_str)
 
-            db_con.setdecoding(pyodbc.SQL_CHAR, encoding="utf-8")
-            db_con.setdecoding(pyodbc.SQL_WCHAR, encoding="utf-8")
-            db_con.setencoding(encoding="utf-8")
+            db_enable_odbc_utf8 = db_params.get(DB_SERVICE_NAME)
+
+            if db_enable_odbc_utf8:
+                CommonUtil.ExecLog(sModuleInfo, "Enabling UTF-8 encoding support for odbc driver.", 5)
+                db_con.setdecoding(pyodbc.SQL_CHAR, encoding="utf-8")
+                db_con.setdecoding(pyodbc.SQL_WCHAR, encoding="utf-8")
+                db_con.setencoding(encoding="utf-8")
 
         # Get db_cursor
         return db_con
@@ -263,16 +270,17 @@ def connect_to_db(data_set):
     This action just stores the different database specific configs into shared variables for use by other actions.
     NOTE: The actual db connection does not happen here, connection to db is made inside the actions which require it.
 
-    db_type         input parameter         <type of db, ex: postgres, mysql>
-    db_name         input parameter         <name of db, ex: zeuz_db>
-    db_user_id      input parameter         <user id of the os who have access to the db, ex: postgres>
-    db_password     input parameter         <password of db, ex: mydbpass-mY1-t23z>
-    db_host         input parameter         <host of db, ex: localhost, 127.0.0.1>
-    db_port         input parameter         <port of db, ex: 5432 for postgres by default>
-    sid         optional parameter         <sid of db, ex: 15321 for oracle by default>
-    service_name         optional parameter         <service_name of db, ex: 'somename' for oracle by default>
-    odbc_driver     optional parameter      <specify the odbc driver, optional, can be found from pyodbc.drivers()>
-    connect to db   database action         Connect to a database
+    db_type                         input parameter         <type of db, ex: postgres, mysql>
+    db_name                         input parameter         <name of db, ex: zeuz_db>
+    db_user_id                      input parameter         <user id of the os who have access to the db, ex: postgres>
+    db_password                     input parameter         <password of db, ex: mydbpass-mY1-t23z>
+    db_host                         input parameter         <host of db, ex: localhost, 127.0.0.1>
+    db_port                         input parameter         <port of db, ex: 5432 for postgres by default>
+    sid                             optional parameter      <sid of db, ex: 15321 for oracle by default>
+    service_name                    optional parameter      <service_name of db, ex: 'somename' for oracle by default>
+    odbc_driver                     optional parameter      <specify the odbc driver, optional, can be found from pyodbc.drivers()>
+    odbc: enable utf-8 encoding     optional parameter      true/false - optionally enable utf-8 encoding
+    connect to db                   database action         Connect to a database
 
     :param data_set: Action data set
     :return: string: "passed" or "zeuz_failed" depending on the outcome
@@ -281,8 +289,11 @@ def connect_to_db(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        # Default values
         db_type = db_name = db_user_id = db_password = db_host = db_port = db_sid = db_service_name = db_odbc_driver = db_params = None
+        db_enable_odbc_utf8 = True
         session_name = "default"
+
         for left, _, right in data_set:
             if left == DB_TYPE:
                 db_type = right.strip()
@@ -303,10 +314,24 @@ def connect_to_db(data_set):
             if left == DB_ODBC_DRIVER:
                 db_odbc_driver = right.strip()
                 sr.Set_Shared_Variables(DB_ODBC_DRIVER,right.strip())
-            if "session" in left:
+            if left == DB_ODBC_UTF8:
+                db_enable_odbc_utf8 = CommonUtil.parse_value_into_object(right.strip()) == True
+            if DB_SESSION in left:
                 session_name = right.strip()
-        db_params = {DB_TYPE:db_type,DB_NAME:db_name,DB_USER_ID:db_user_id,DB_PASSWORD:db_password,
-                    DB_HOST:db_host,DB_PORT:db_port,DB_SID:db_sid,DB_SERVICE_NAME:db_service_name,DB_ODBC_DRIVER:db_odbc_driver}
+
+        db_params = {
+            DB_TYPE: db_type,
+            DB_NAME: db_name,
+            DB_USER_ID: db_user_id,
+            DB_PASSWORD: db_password,
+            DB_HOST: db_host,
+            DB_PORT: db_port,
+            DB_SID: db_sid,
+            DB_SERVICE_NAME: db_service_name,
+            DB_ODBC_DRIVER: db_odbc_driver,
+            DB_ODBC_UTF8: db_enable_odbc_utf8,
+        }
+
         if sr.Test_Shared_Variables('db_sessions'):
             sessions = sr.Get_Shared_Variables('db_sessions')
             sessions[session_name] = db_params
@@ -314,8 +339,9 @@ def connect_to_db(data_set):
         else:
             sr.Set_Shared_Variables('db_sessions',{session_name:db_params})
 
-        CommonUtil.ExecLog(sModuleInfo, "Trying to establish connection to the database.", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Trying to establish connection to the database.", 5)
         db_get_connection(session_name)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully established database connection.", 1)
 
         return "passed"
     except Exception:
@@ -437,7 +463,7 @@ def select_from_db(data_set):
                 if right=="" or right=="*":
                     columns=["*"]
                 columns=right.split(',')
-            if "session" in left.lower():
+            if DB_SESSION in left.lower():
                 session_name = right.strip()
 
         if variable_name is None:
@@ -538,7 +564,7 @@ def insert_into_db(data_set):
                 variable_name = right.strip()
             if "columns" in left.lower():
                 columns=right.split(',')
-            if "session" in left.lower():
+            if DB_SESSION in left.lower():
                 session_name = right.strip()
 
         if variable_name is None:
@@ -617,7 +643,7 @@ def delete_from_db(data_set):
                 where = right.strip()
             if "action" in mid:
                 variable_name = right.strip()
-            if "session" in left.lower():
+            if DB_SESSION in left.lower():
                 session_name = right.strip()
 
         if variable_name is None:
@@ -697,7 +723,7 @@ def update_into_db(data_set):
                 columns=right.split(',')
             if "values" in left.lower():
                 values=right.split(',')
-            if "session" in left.lower():
+            if DB_SESSION in left.lower():
                 session_name = right.strip()
 
         if variable_name is None:
@@ -767,7 +793,7 @@ def db_non_query(data_set):
                 query = right.strip()
             if "action" in mid:
                 variable_name = right.strip()
-            if "session" in left.lower():
+            if DB_SESSION in left.lower():
                 session_name = right.strip()
         
         if variable_name is None:
