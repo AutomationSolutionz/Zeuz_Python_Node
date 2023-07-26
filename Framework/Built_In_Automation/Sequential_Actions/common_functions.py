@@ -1064,6 +1064,10 @@ def New_Compare_Variables(step_data):
                 Left = left.strip()
                 Right = right.strip()
 
+        if math_epsilon:
+            match_by_index = False
+            CommonUtil.ExecLog(sModuleInfo, f"Match By Index is set to False as Math Epsilon is being used", 2)
+
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
 
