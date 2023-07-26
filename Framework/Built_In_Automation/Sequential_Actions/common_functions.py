@@ -6173,6 +6173,11 @@ def upload_to_S3(data_set):
 
 @logger
 def connect_to_bigquery_client(data_set):
+    """
+    data_set:
+          credentials path           | input parameter   | path to credentails json file
+          connect to bigquery client | common action     | client variable name
+    """
     from google.cloud import bigquery
     import os
 
@@ -6199,6 +6204,13 @@ def connect_to_bigquery_client(data_set):
 
 @logger
 def execute_bigquery_query(data_set):
+    """
+    data_set:
+        query                   | input parameter   | query to run
+        output variable         | input parameter   | output variable name
+        execute bigquery query  | common action     | client variable name
+    """
+        
     from google.cloud import bigquery
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
