@@ -730,7 +730,7 @@ def start_appium_server():
                 break  # Give up if max time was hit
             try:  # If this works, then stop waiting for appium
                 r = requests.get(
-                    "http://localhost:%d/wd/hub/sessions" % appium_port
+                    "http://localhost:%d/sessions" % appium_port
                 )  # Poll appium server
                 if r.status_code:
                     break
@@ -774,7 +774,7 @@ def start_appium_driver(
         launch_app = True
         if browserstack_run:
             appium_driver = webdriver.Remote(
-                command_executor="http://hub-cloud.browserstack.com/wd/hub",
+                command_executor="http://hub-cloud.browserstack.com",
                 options=desiredcaps
             )
             appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
@@ -789,7 +789,7 @@ def start_appium_driver(
 
         if aws_run:
             appium_driver = webdriver.Remote(
-                command_executor="http://127.0.0.1:4723/wd/hub",
+                command_executor="http://127.0.0.1:4723",
                 desired_capabilities = desiredcaps
             )
             appium_details["aws device 1"] = {"driver": appium_driver, "serial": "0"}
@@ -919,7 +919,7 @@ def start_appium_driver(
             count = 1
             while count <= 5:
                 try:
-                    appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
+                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, desired_caps)  # Create instance
                     if appium_driver:
                         break
                     count += 1

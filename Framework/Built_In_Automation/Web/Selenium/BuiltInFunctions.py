@@ -307,7 +307,7 @@ def start_appium_server():
                 break  # Give up if max time was hit
             try:  # If this works, then stop waiting for appium
                 r = requests.get(
-                    "http://localhost:%d/wd/hub/sessions" % appium_port
+                    "http://localhost:%d/sessions" % appium_port
                 )  # Poll appium server
                 if r.status_code:
                     break
@@ -570,7 +570,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             from appium import webdriver as appiumdriver
 
-            selenium_driver = appiumdriver.Remote("http://localhost:%d/wd/hub" % appium_port, capabilities)
+            selenium_driver = appiumdriver.Remote("http://localhost:%d" % appium_port, capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
 
         elif browser in ("android", "chrome", "chromeheadless"):
@@ -942,7 +942,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             return "passed"
         elif 'browserstack' in browser:
             selenium_driver = webdriver.Remote(
-                command_executor= remote_host + '/wd/hub',
+                command_executor= remote_host,
                 desired_capabilities=remote_desired_cap)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
