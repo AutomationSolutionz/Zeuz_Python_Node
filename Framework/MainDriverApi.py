@@ -2098,7 +2098,7 @@ def main(device_dict, user_info_object):
                 print("Test Set Cancelled by the User")
             elif not CommonUtil.debug_status:
 
-                from distutils.dir_util import copy_tree
+                from shutil import copytree
 
                 # If node is running in device farm, copy the logs and reports to the expected directory.
                 if "DEVICEFARM_LOG_DIR" in os.environ:
@@ -2107,7 +2107,7 @@ def main(device_dict, user_info_object):
                         "sectionOne", "test_case_folder", temp_ini_file
                     )).parent
 
-                    copy_tree(str(zeuz_log_dir), str(log_dir))
+                    copytree(str(zeuz_log_dir), str(log_dir))
 
                 # Telling the node_manager that a run_id is finished
                 CommonUtil.node_manager_json(
