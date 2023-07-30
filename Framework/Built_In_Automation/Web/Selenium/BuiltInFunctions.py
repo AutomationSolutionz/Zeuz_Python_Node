@@ -560,15 +560,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         browser_map = {
             "microsoft edge chromium": 'msedge',
             "chrome": "chrome",
-            "fireFox": "firefox",
             "firefox": "firefox",
-            "chromeHeadless": "chrome",
-            "firefoxHeadless": "firefox",
-            "edgeChromiumHeadless": "msedge",
+            "chromeheadless": "chrome",
+            "firefoxheadless": "firefox",
+            "edgechromiumheadless": "msedge",
         }
 
         if profile_options:
-            if browser in browser_map.keys():
+            if browser.strip().lower() in browser_map.keys():
                 browser_short_form = browser_map[browser] 
                 process_status = browser_process_status(browser_short_form)
                 for options in profile_options:
@@ -593,6 +592,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     if kill_output_status == "SUCCESS:":
                         CommonUtil.ExecLog(
                             sModuleInfo, f"Successfully terminated all the {browser_short_form}.exe processes", 1
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo, f"Could not terminate the {browser_short_form}.exe processes", 3
                         )
             else:
                 CommonUtil.ExecLog(
