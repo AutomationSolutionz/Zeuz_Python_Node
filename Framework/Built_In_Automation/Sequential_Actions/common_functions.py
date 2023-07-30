@@ -6171,6 +6171,75 @@ def upload_to_S3(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def connect_to_bigquery_client(data_set):
+    """
+    data_set:
+          credentials path           | input parameter   | path to credentails json file
+          connect to bigquery client | common action     | client variable name
+    """
+    from google.cloud import bigquery
+    import os
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    cred_path = None
+    client_var_name = None
+    for left, mid, right in data_set:
+        if left.strip().lower() == 'credentials path':
+            cred_path = right.strip()
+        if left.strip().lower() == 'connect to bigquery client':
+            client_var_name = right.strip()
+
+    
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
+
+    try:
+        client = bigquery.Client()
+        sr.Set_Shared_Variables(client_var_name, client)
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect Credentails", 3)
+        return "zeuz_failed"
+
+@logger
+def execute_bigquery_query(data_set):
+    """
+    data_set:
+        query                   | input parameter   | query to run
+        output variable         | input parameter   | output variable name
+        execute bigquery query  | common action     | client variable name
+    """
+        
+    from google.cloud import bigquery
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    query = None
+    client_var_name = None
+    output_var_name = None
+
+    for left, mid, right in data_set:
+        if left.strip().lower() == 'query':
+            query = right.strip()
+        if left.strip().lower() == 'execute bigquery query':
+            client_var_name = right.strip()
+        if left.strip().lower() == 'output variable':
+            output_var_name = right.strip()
+    
+    if None in (query,client_var_name,output_var_name):
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect Dataset", 3)
+        return "zeuz_failed"
+
+    try:
+        client = sr.Get_Shared_Variables(client_var_name)
+        query_job = client.query(query)
+        result = query_job.result()
+        data = [dict(d.items()) for d in result]
+        sr.Set_Shared_Variables(output_var_name, data)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
 def text_to_speech(data_set):
