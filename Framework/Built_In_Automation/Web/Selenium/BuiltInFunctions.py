@@ -651,8 +651,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     options=options,
                 )
             else:
-                if selenium_version.startswith('4.'):
-                    service = Service(chrome_path)
+                if selenium_version.startswith('4'):
+                    service = Service()
                     selenium_driver = webdriver.Chrome(
                         service=service,
                         options=options,
