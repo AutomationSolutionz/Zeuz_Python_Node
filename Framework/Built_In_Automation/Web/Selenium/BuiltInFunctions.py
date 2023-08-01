@@ -576,9 +576,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
-            if not chrome_path:
-                chrome_path = ChromeDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
+            # if not chrome_path:
+            #     chrome_path = ChromeDriverManager().install()
+            #     ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
 
             if remote_browser_version:
