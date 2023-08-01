@@ -112,6 +112,12 @@ def lorust_performance_action_handler(
                         #
                         # "Empty"
                         body = "Empty"
+                    elif body[0].strip() == "Raw: json":
+                        # This is a convenience (special) case for #2 mentioned below,
+                        # for passing json data.
+                        body = {
+                            "Raw": json.dumps(CommonUtil.parse_value_into_object(body[2])),
+                        }
                     else:
                         # 2. Raw string - mostly used with the "Content-Type" header having the values:
                         #       application/json
