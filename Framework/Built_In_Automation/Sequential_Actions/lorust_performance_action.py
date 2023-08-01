@@ -3,7 +3,7 @@ import json
 import subprocess
 import platform
 from pathlib import Path
-from typing import Callable, List, Tuple, Any
+from typing import List, Tuple
 
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities import CommonUtil, ConfigModule
@@ -104,8 +104,53 @@ def lorust_performance_action_handler(
                 try: method = find_row_by(action, left="method")[0][2]
                 except: method = "GET"
 
-                try: body = find_row_by(action, mid="body")[0][2]
-                except: body = "Empty"
+                try:
+                    body = find_row_by(action, mid="body")[0]
+                    body_type = body[0].strip()
+                    if body_type == "Empty":
+                        # 1. No body
+                        #
+                        # "Empty"
+                        body = "Empty"
+                    else:
+                        # 2. Raw string - mostly used with the "Content-Type" header having the values:
+                        #       application/json
+                        #       text/plain
+                        # {
+                        #     "Raw": "some raw string"
+                        # }
+                        #
+                        # 3. Form data - both strings and files are supported, used with "Content-Type":
+                        #       multipart/form-data
+                        # {
+                        #     "FormData": [
+                        #         ["first_name", { "Str": "Mini" }],
+                        #         ["last_name", { "Str": "Tiny" }],
+                        #         ["age", { "Str": "10" }],
+                        #         ["profile_picture_file", { "FilePath": "/path/to/profile/picture" }]
+                        #     ]
+                        # }
+                        #
+                        # 4. Form URL Encoded data, used with "Content-Type":
+                        #       application/x-www-form-urlencoded
+                        # {
+                        #     "FormUrlEncoded": [
+                        #         ["first_name", "Mini"],
+                        #         ["last_name", "Tiny"],
+                        #         ["age", 10]
+                        #     ]
+                        # }
+                        #
+                        # 5. Binary file upload, used with "Content-Type":
+                        #       application/octet-stream
+                        # {
+                        #     "BinaryOctetFilePath": "/path/to/file"
+                        # }
+                        body = {
+                            body[0]: body[2],
+                        }
+                except:
+                    body = "Empty"
 
                 try: redirect_limit = int(find_row_by(action, left="redirect_limit")[0][2])
                 except: redirect_limit = None
