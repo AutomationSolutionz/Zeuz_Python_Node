@@ -651,13 +651,19 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     options=options,
                 )
             else:
-                if selenium_version.startswith('4'):
+                import selenium
+                from distutils.version import StrictVersion
+
+                required_version = StrictVersion('4.10.0')
+                installed_version = StrictVersion(selenium.__version__)
+
+                if installed_version >= required_version:
                     service = Service()
                     selenium_driver = webdriver.Chrome(
                         service=service,
                         options=options,
                     )
-                elif selenium_version.startswith('3.'):
+                else:
                     d = DesiredCapabilities.CHROME
                     d["loggingPrefs"] = {"browser": "ALL"}
                     d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -666,8 +672,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         chrome_options=options,
                         desired_capabilities=d
                     )
-                else:
-                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
