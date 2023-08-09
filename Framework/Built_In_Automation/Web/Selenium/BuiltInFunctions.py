@@ -538,7 +538,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     try:
         CommonUtil.teardown = True
-        browser = browser.lower().strip()
+        browser = browser.lower().strip() 
+        import selenium
         selenium_version = selenium.__version__
         if browser in ("ios",):
             # Finds the appium binary and starts the server.
