@@ -58,7 +58,8 @@ def read_steps(steps_pb) -> List[Dict]:
                 "step_driver": step.step_info.driver,
                 "type": step.type,
                 "attachments": attachments,
-                "verify_point": step.step_info.verify_point,
+                # "verify_point": step.step_info.verify_point, //global verify_point ,step.verify_point // local verify point 
+                "verify_point": step.verify_point, 
                 "continue_on_fail": step.continue_point,
                 "step_time": step.time,
                 "actions": read_actions(step.actions),
