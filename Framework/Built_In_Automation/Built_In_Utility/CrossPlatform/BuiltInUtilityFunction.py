@@ -2314,8 +2314,16 @@ def compare_images(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function: compare images", 0)
 
     try:
-        import skimage, cv2, imutils
-        from skimage.metrics import structural_similarity as ssim
+        try:
+            import skimage, cv2, imutils
+            from skimage.metrics import structural_similarity as ssim
+        except:
+            from Framework.module_installer import install_missing_modules
+            install_missing_modules(['scikit-image'])
+            import skimage, cv2, imutils
+            from skimage.metrics import structural_similarity as ssim
+
+        score = 'score'
 
         default_ssim = float(1)
 
@@ -2334,6 +2342,8 @@ def compare_images(data_set):
                     user_ssim = float(
                         eachrow[2]
                     )  # User defined minimum match score (i.e. SSIM)
+            elif 'action' in eachrow[1]:
+                score = eachrow[2].strip()
 
         imageA = cv2.imread(imageA_path)  # Read first image
         imageB = cv2.imread(imageB_path)  # Read second image
@@ -2404,6 +2414,8 @@ def compare_images(data_set):
             req_ssim = default_ssim
 
         # Perform the image comparison based on the structural similarity index
+
+        Shared_Resources.Set_Shared_Variables(score, ssim_match)
         if ssim_match >= req_ssim:
             CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
             return "passed"

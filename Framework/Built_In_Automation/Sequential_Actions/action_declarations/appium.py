@@ -50,6 +50,8 @@ declarations = (
     { "name": "go to webpage",            "function": "go_to_webpage",               "screenshot": "mobile" },
     { "name": "save attribute values in list", "function": "save_attribute_values_appium", "screenshot": "mobile"},
     { "name": "seek progress bar",        "function": "Seek_Progress_Bar",           "screenshot": "mobile"},
+    { "name": "zoom",                     "function": "zoom_action",                 "screenshot": "mobile"},
+    { "name": "pan",                      "function": "pan_action",                  "screenshot": "mobile"},
 ) # yapf: disable
 
 module_name = "appium"
