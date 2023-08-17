@@ -995,6 +995,92 @@ def image_search(step_data_set):
     install_ocr()
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
+        # steps to install the pytesseract module
+        pip_command = ['pip', 'list']
+        pytesseract_search_command = ['findstr', 'pytesseract']
+
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process = subprocess.Popen(pytesseract_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE,
+                                          text=True)
+
+        is_pytesseract, _ = search_process.communicate()
+
+        if is_pytesseract:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pytesseractt is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Pytesseract",
+                5,
+            )
+            os.system('echo y | pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytesseract')
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Could not install the Pytesseract module",
+            3,
+        )
+
+    try:
+        # steps to install pytesseract executable file
+        reg_query_cmd = ['reg', 'query', r'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', '/s']
+        findstr_cmd = ['findstr', '/B', '.*DisplayName']
+        tesseract_cmd = ['findstr', 'Tesseract-OCR']
+
+        reg_query_process = subprocess.Popen(reg_query_cmd, stdout=subprocess.PIPE)
+        findstr_process = subprocess.Popen(findstr_cmd, stdin=reg_query_process.stdout, stdout=subprocess.PIPE)
+        tesseract_process = subprocess.Popen(tesseract_cmd, stdin=findstr_process.stdout, stdout=subprocess.PIPE,
+                                             text=True)
+
+        is_pytesseract_exe, _ = tesseract_process.communicate()
+
+        if is_pytesseract_exe:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pytesseract executable file is alreday installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Starting installation of Pytesseract executable file",
+                5,
+            )
+            install_process = subprocess.Popen(['winget', 'install', 'Tesseract-OCR - open source OCR engine'],
+                                               text=True)
+            stdout, stderr = install_process.communicate()
+            if stdout is not None:
+                CommonUtil.ExecLog(sModuleInfo, f"The standard output for winget install Tesseract-OCR {stdout}", 5)
+            if stderr is not None:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"The standard error for winget install Tesseract-OCR {stderr}",
+                    5,
+                )
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Tesseract installation is complete!", 5)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Setting up the environment variable for Tesseract OCR",
+            5,
+        )
+
+        # Todo: No need to add this in PATH
+        ocr_path = r"C:\Program Files\Tesseract-OCR"
+        os.environ['PATH'] += ';' + ocr_path
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Could not install the Pytesseract executable file",
+            3,
+        )
+
+    try:
         file_name = ""
         resolution = ""
         idx = 0
