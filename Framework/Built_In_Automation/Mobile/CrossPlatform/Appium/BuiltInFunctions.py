@@ -1840,7 +1840,8 @@ def add_media_ios(data_set):
 def take_screenshot_appium(data_set):
     """
     Data set:
-    take screenshot     appium action           filename_format
+    'filename'            'optional option'         'image1.jpg'
+    'take screenshot'     'appium action'           'screenshot_folder'
 
     The filename of the saved screenshot will be stored in the "zeuz_screenshot"
     """
@@ -4620,7 +4621,12 @@ def scroll_to_element(data_set):
 
 def zoom_action(data_set):
     """
-    This function is used for zoom in or zoom out
+    This function is used for zoom in or zoom out. The scale and count parameters controls the amount of zoom.
+    :param data_set:
+        [['Action',         'zoom parameter',       'zoom in'/'zoom out'],
+        ['Scale',           'zoom parameter',        3],
+        ['Count',           'zoom parameter',        5],
+        ['zoom',            'appium action',        'Zoom in or out']]
     """        
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -4705,7 +4711,12 @@ def zoom_action(data_set):
 
 def pan_action(data_set):
     """
-    This function is used for pan
+    This function is used for pan. The scale and count parameters controls the amount of pan.
+    :param data_set:
+        [['direction',      'pan parameter',       'right'/'left'/'up'/'down'],
+        ['Scale',           'pan parameter',        3],
+        ['Count',           'pan parameter',        5],
+        ['pan',             'appium action',       'Pan in a direction']]
     """        
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 

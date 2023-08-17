@@ -2314,6 +2314,7 @@ def compare_images(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function: compare images", 0)
 
     try:
+        # try to import the 'skimage' library. If 'skimage' library is not installed then install_missing_modules will install it
         try:
             import skimage, cv2, imutils
             from skimage.metrics import structural_similarity as ssim
