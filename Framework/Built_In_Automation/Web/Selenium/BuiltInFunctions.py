@@ -538,7 +538,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     try:
         CommonUtil.teardown = True
-        browser = browser.lower().strip()
+        browser = browser.lower().strip() 
+        import selenium
         selenium_version = selenium.__version__
         if browser in ("ios",):
             # Finds the appium binary and starts the server.
@@ -576,9 +577,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
-            if not chrome_path:
-                chrome_path = ChromeDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
+            try:
+                if not chrome_path:
+                    chrome_path = ChromeDriverManager().install()
+                    ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to download chromedriver using ChromedriverManager", 2)
             options = Options()
 
             if remote_browser_version:
@@ -651,13 +655,19 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     options=options,
                 )
             else:
-                if selenium_version.startswith('4.'):
-                    service = Service(chrome_path)
+                import selenium
+                from distutils.version import StrictVersion
+
+                required_version = StrictVersion('4.10.0')
+                installed_version = StrictVersion(selenium.__version__)
+
+                if installed_version >= required_version:
+                    service = Service()
                     selenium_driver = webdriver.Chrome(
                         service=service,
                         options=options,
                     )
-                elif selenium_version.startswith('3.'):
+                else:
                     d = DesiredCapabilities.CHROME
                     d["loggingPrefs"] = {"browser": "ALL"}
                     d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -666,8 +676,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         chrome_options=options,
                         desired_capabilities=d
                     )
-                else:
-                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
