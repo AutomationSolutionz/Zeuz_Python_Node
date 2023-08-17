@@ -33,6 +33,7 @@ import win32con
 import PIL
 from PIL import Image, ImageGrab
 
+import psutil
 
 
 python_folder = []
@@ -1010,8 +1011,6 @@ def image_search(step_data_set):
         text_screenshot = ''
         easyocr_paragraph = ''
 
-
-
         for left, mid, right in step_data_set:
             left = left.strip().lower()
             mid = mid.strip().lower()
@@ -1060,8 +1059,6 @@ def image_search(step_data_set):
             method = 'method_1'
         if language == '':
             language = 'en'
-
-
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
@@ -1267,7 +1264,6 @@ def new_image_text(step_data_set):
 
     pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-
     file_name = ""
     resolution = ""
     idx = 0
@@ -1282,8 +1278,6 @@ def new_image_text(step_data_set):
     t_conf = 0.9
     text_screenshot = ''
     easyocr_paragraph = ''
-
-
 
     for left, mid, right in step_data_set:
         left = left.strip().lower()
@@ -1318,7 +1312,6 @@ def new_image_text(step_data_set):
             print(c)
             if c > 0.8:
                 return c
-
             else:
                 return .00004
 
@@ -1363,8 +1356,6 @@ def new_image_text(step_data_set):
     else:
         element = x_min, y_min, x_max - x_min, y_max - y_min
         return _Element(element)
-
-
 
 
 def _scale_image(file_name, size_w, size_h):
@@ -1513,10 +1504,6 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                         elif 'easyocr_paragraph' in left:
                             easyocr_paragraph = right
 
-
-
-
-
                 _get_main_window(window_name)
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
                     if i[1]:
@@ -1534,7 +1521,6 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("t_conf", "element parameter", str(t_conf)))
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
-
 
                 if 'ntext' in element_image[0][0]:
                     result = new_image_text(element_image)
@@ -2473,4 +2459,115 @@ def save_attribute_values_in_list(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+def ListServices():
+    import win32con
+    import win32service
+    import pywin32_system32, pywin32_testutil, pywin32_bootstrap
+    import win32serviceutil
+    resume = 0
+    accessSCM = win32con.GENERIC_READ
+    accessSrv = win32service.SC_MANAGER_ALL_ACCESS
+    #Open Service Control Manager
+    hscm = win32service.OpenSCManager(None, None, accessSCM)
+    #Enumerate Service Control Manager DB
+    typeFilter = win32service.SERVICE_WIN32
+    stateFilter = win32service.SERVICE_STATE_ALL
+    statuses = win32service.EnumServicesStatus(hscm, typeFilter, stateFilter)
+    x = []
+    for (short_name, desc, status) in statuses:
+        x.append([short_name, desc, status])
+    return x
+# x=ListServices()
+
+@logger
+def List_services(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        variable_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "get all services":
+                variable_name = right
+
+        import win32con
+        import win32service
+        accessSCM = win32con.GENERIC_READ
+        # Open Service Control Manager
+        hscm = win32service.OpenSCManager(None, None, accessSCM)
+        # Enumerate Service Control Manager DB
+        typeFilter = win32service.SERVICE_WIN32
+        stateFilter = win32service.SERVICE_STATE_ALL
+        statuses = win32service.EnumServicesStatus(hscm, typeFilter, stateFilter)
+        service_list = [st[0] for st in statuses]
+        return Shared_Resources.Set_Shared_Variables(variable_name, service_list)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def Start_service(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        service_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "start service":
+                service_name = right
+        import win32serviceutil
+        import pywintypes
+        win32serviceutil.StartService(service_name)
+        CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service started", 1)
+        return "passed"
+    except pywintypes.error as e:
+        if "An instance of the service is already running" in str(sys.exc_info()[1]):
+            CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service Already started", 2)
+            return "passed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def Stop_service(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        service_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "stop service":
+                service_name = right
+        import win32serviceutil
+        import pywintypes
+        win32serviceutil.StopService(service_name)
+        CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service stopped", 1)
+        return "passed"
+    except pywintypes.error as e:
+        if "The service has not been started" in str(sys.exc_info()[1]):
+            CommonUtil.ExecLog(sModuleInfo, f"{service_name} - service has not been started", 2)
+            return "passed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def Service_status(data_set):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        service_name = ""
+        var_name = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if left == "get service status":
+                service_name = right
+            elif left == "variable name":
+                var_name = right
+        if not var_name:
+            CommonUtil.ExecLog(sModuleInfo, f"Variable name should be declared", 3)
+            return "zeuz_failed"
+        return Shared_Resources.Set_Shared_Variables(var_name, psutil.win_service_get(service_name).as_dict())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
