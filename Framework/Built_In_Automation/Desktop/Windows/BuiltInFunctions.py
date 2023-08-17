@@ -1343,7 +1343,6 @@ def new_image_text(step_data_set):
 
     try:
         from Framework import easyocr
-        import numpy as np
         import cv2
         from pytesseract import pytesseract
         from difflib import SequenceMatcher
@@ -1363,7 +1362,7 @@ def new_image_text(step_data_set):
             if mid == "element parameter":
                 if "index" in left:
                     idx = int(right.strip())
-                elif "ntext" in left:
+                elif "new_image_text" in left:
                     image_text = right
                 elif 'language' in left:
                     language = right
@@ -1406,11 +1405,10 @@ def new_image_text(step_data_set):
         if item == []:
             CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
             return "zeuz_failed"
-        cord = np.array(item[idx][0])
-        cord1 = cord.tolist()
-        #
-        x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
-        x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
+
+        cords = item[idx][0][0]
+        x_min, y_min = cords[0][0], cords[0][1]
+        x_max, y_max = cords[2][0], cords[2][1]
 
         if text_screenshot != '':
             img = cv2.imread("sample.png")
@@ -1463,7 +1461,7 @@ def _scale_image(file_name, size_w, size_h):
         size = (int(image_w * ratio), int(image_h * ratio))  # Calculate new resolution of image element
 
         # Scale image
-        # file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
+        # file_name.thumbnail(size, Image.LANCZOS)  # Resize image per calculation above
 
         return file_name.resize(size)  # Return the scaled image object
     except:
@@ -1499,11 +1497,11 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: element_path = right.strip()
+                elif "new_image_text" in left:
+                    element_image.append((left, mid, right))
                 elif "image" in left:
                     element_image.append((left, mid, right))
                 elif "imagetext" in left:
-                    element_image.append((left, mid, right))
-                elif "ntext" in left:
                     element_image.append((left, mid, right))
 
 
@@ -1600,7 +1598,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
 
-                if 'ntext' in element_image[0][0]:
+                if 'new_image_text' in element_image[0][0]:
                     result = new_image_text(element_image)
                     return result
                 else:

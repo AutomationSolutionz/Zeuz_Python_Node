@@ -236,7 +236,7 @@ def showPIL(pilImage):
         ratio = min(w/imgWidth, h/imgHeight)
         imgWidth = int(imgWidth*ratio)
         imgHeight = int(imgHeight*ratio)
-        pilImage = pilImage.resize((imgWidth,imgHeight), Image.ANTIALIAS)
+        pilImage = pilImage.resize((imgWidth,imgHeight), Image.LANCZOS)
     image = ImageTk.PhotoImage(pilImage)
     imagesprite = canvas.create_image(w/2,h/2,image=image)
     root.mainloop()
