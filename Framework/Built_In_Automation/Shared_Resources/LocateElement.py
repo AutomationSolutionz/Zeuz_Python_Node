@@ -1378,7 +1378,7 @@ def _scale_image(file_name, size_w, size_h):
         size = (int(image_w * ratio), int(image_h * ratio))  # Calculate new resolution of image element
 
         # Scale image
-        # file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
+        # file_name.thumbnail(size, Image.LANCZOS)  # Resize image per calculation above
 
         return file_name.resize(size)  # Return the scaled image object
     except:
