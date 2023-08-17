@@ -2302,11 +2302,13 @@ def compare_images(data_set):
     This action compares two given images. At first, both the images are resized into same width
     and height (min width and height from either image) and then both of them are converted into
     grayscale images. Next, structural similarity is computed and compared with the given score.
+    The similarity score can be accessed via the 'score' variable. You can also provide the
+    variable name as desire e.g 'score1'/'final_score' etc
 
     :param data_set:
-        [['/path/to/a.png',  'compare',              '/path/to/b.png'],
-        ['min match score', 'element parameter',    '0.75'],
-        ['compare images',  'utility action',       'none']]
+        [['/path/to/a.png',     'compare',              '/path/to/b.png'],
+        ['min match score',     'element parameter',    '0.75'],
+        ['compare images',      'utility action',       'score']]
     :return: "passed" if both images match within the given matching score percentage
     """
 
