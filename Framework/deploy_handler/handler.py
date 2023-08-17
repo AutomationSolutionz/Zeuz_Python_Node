@@ -32,6 +32,7 @@ class DeployHandler:
     COMMAND_NEXT = "NEXT"
     COMMAND_RECONNECT = "RECONNECT"
     COMMAND_TC_ACKNOWLEDGED = "TC_ACK"
+    ERROR_PREFIX = b"error"
 
 
     def __init__(
@@ -69,6 +70,11 @@ class DeployHandler:
         elif message == self.COMMAND_CANCEL:
             # Run cancelled by the user/service.
             self.cancel_callback()
+            return
+
+        elif message.startswith(self.ERROR_PREFIX):
+            print("[deploy] Error receiving message")
+            print(message)
             return
 
         ws.send(self.COMMAND_TC_ACKNOWLEDGED)

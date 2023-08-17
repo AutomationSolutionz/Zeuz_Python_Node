@@ -65,7 +65,5 @@ google-cloud-bigquery
 google-cloud-bigquery-storage
 deepdiff
 pywin32
-torch
-torchvision
-transformers
 xmltodict
+jinja2

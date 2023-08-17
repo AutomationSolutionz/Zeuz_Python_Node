@@ -56,7 +56,7 @@ def Set_Shared_Variables(
             if not re.search("^[a-zA-Z_][a-zA-Z_0-9]*$", key):
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Please provide a valid variable name. valid variable name rules-\n" +
+                    f"'{key}' is not a valid variable name. valid variable name rules-\n" +
                     "1. A variable name can only contain Letters a-z, underscore _ and Digits 0-9\n" +
                     "2. A variable name Cannot Start with Digits 0-9",
                     3,
@@ -747,7 +747,7 @@ def Compare_Variables(step_data):
             if (
                 each_step_data_item[1] == "compare"
                 or each_step_data_item[1] == "element parameter"
-                or "parameter" in each_step_data_item[1]
+                or "optional parameter" in each_step_data_item[1]
             ):
                 if "%|" in each_step_data_item[0].strip():
                     previous_name = each_step_data_item[0].strip()
@@ -860,7 +860,7 @@ def Compare_Partial_Variables(step_data):
             if (
                 each_step_data_item[1] == "compare"
                 or each_step_data_item[1] == "element parameter"
-                or "parameter" in each_step_data_item[1]
+                or "optional parameter" in each_step_data_item[1]
             ):
                 if "%|" in each_step_data_item[0].strip():
                     previous_name = each_step_data_item[0].strip()
@@ -968,7 +968,7 @@ def Compare_Lists_or_Dicts(step_data):
             if (
                 each_step_data_item[1] == "compare"
                 or each_step_data_item[1] == "element parameter"
-                or "parameter" in each_step_data_item[1]
+                or "optional parameter" in each_step_data_item[1]
             ):
                 list1_name = each_step_data_item[0]
                 list2_name = each_step_data_item[2]

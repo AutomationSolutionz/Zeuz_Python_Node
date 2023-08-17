@@ -991,18 +991,57 @@ def New_Compare_Variables(step_data):
         check_exclusion = False
         check_subset = False
         compare_json = False; ignore_keys = []; map_keys = {}
-        ignore_string_case = False; ignore_numeric_type_changes = False
+        # Whether to be case-sensitive or not when comparing strings. By setting
+        # ignore_string_case=False, strings will be compared case-insensitively.
+        ignore_string_case = False
+        ignore_numeric_type_changes = False
         global nested, datatype1, datatype2
         nested, datatype1, datatype2 = False, "", ""
+
+        # --- Deep-diff specific features, these default values are taken from the
+        # deep diff docs.
+
+        # truncate_datetime can take value one of ‘second’, ‘minute’, ‘hour’,
+        # ‘day’ and truncate with this value datetime objects before hashing it
+        truncate_datetime = None
+
+        # Whether to be case-sensitive or not when comparing strings. By setting
+        # ignore_string_case=False, strings will be compared case-insensitively.
+        ignore_string_case = False
+
+        # Whether to ignore float(‘nan’) inequality in Python.
+        ignore_nan_inequality = False
+
+        # significant_digits defines the number of digits AFTER the decimal point
+        # to be used in the comparison.
+        significant_digits = None
+
+        # math_epsilon uses Python’s built in Math.isclose. It defines a tolerance
+        # value which is passed to math.isclose(). Any numbers that are within the
+        # tolerance will not report as being different. Any numbers outside of
+        # that tolerance will show up as different.
+        math_epsilon = None
+        # --- Deep-diff end
 
         for left, mid, right in step_data:
             mid = mid.strip().lower()
             if mid in ("compare", "element parameter"):
                 list1_name = left
                 list2_name = right
+
+            # Deep-diff specific features
+            elif "diff: truncate datetime" in left:
+                truncate_datetime = right.strip()
+            elif "diff: ignore nan inequality" in left:
+                ignore_nan_inequality = CommonUtil.parse_value_into_object(right) == True
+            elif "diff: significant digits" in left:
+                significant_digits = int(CommonUtil.parse_value_into_object(right))
+            elif "diff: math epsilon" in left:
+                math_epsilon = float(CommonUtil.parse_value_into_object(right))
+
             elif "action" in mid:
                 action_type = right.replace(" ", "").replace("_", "").lower()
-                if action_type == "exactmatch":
+                if "exactmatch" in action_type:
                     match_by_index = True
                 if "ignorelistorder" in action_type:
                     match_by_index = False
@@ -1016,6 +1055,7 @@ def New_Compare_Variables(step_data):
                     ignore_numeric_type_changes = True
                 if "ignorestringcase" in action_type:
                     ignore_string_case = True
+
             elif left.replace(" ", "").replace("_", "").lower() == "ignorekeys":
                 ignore_keys = CommonUtil.parse_value_into_object(right.strip())
             elif left.replace(" ", "").replace("_", "").lower() == "mapkeys":
@@ -1023,6 +1063,10 @@ def New_Compare_Variables(step_data):
             elif mid.replace(" ", "").lower() == "label":
                 Left = left.strip()
                 Right = right.strip()
+
+        if math_epsilon:
+            match_by_index = False
+            CommonUtil.ExecLog(sModuleInfo, f"Match By Index is set to False as Math Epsilon is being used", 2)
 
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
@@ -1052,6 +1096,11 @@ def New_Compare_Variables(step_data):
                 ignore_order=not match_by_index,
                 ignore_string_case=ignore_string_case,
                 ignore_numeric_type_changes=ignore_numeric_type_changes,
+
+                truncate_datetime=truncate_datetime,
+                ignore_nan_inequality=ignore_nan_inequality,
+                significant_digits=significant_digits,
+                math_epsilon=math_epsilon,
             )
 
             diff21 = DeepDiff(
@@ -1060,6 +1109,11 @@ def New_Compare_Variables(step_data):
                 ignore_order=not match_by_index,
                 ignore_string_case=ignore_string_case,
                 ignore_numeric_type_changes=ignore_numeric_type_changes,
+
+                truncate_datetime=truncate_datetime,
+                ignore_nan_inequality=ignore_nan_inequality,
+                significant_digits=significant_digits,
+                math_epsilon=math_epsilon,
             )
             if not diff21 and not diff12:
                 CommonUtil.ExecLog(sModuleInfo, f"{Left} ({datatype1}):\n{list1_str}\n\n{Right} ({datatype2}):\n{list2_str}", 1)
@@ -1494,7 +1548,7 @@ def Save_Variable(data_set):
     variable_name = ""
     variable_value = ""
     for each in data_set:
-        if each[1] == "element parameter" or "parameter" in each[1]:
+        if each[1] == "element parameter" or "optional parameter" in each[1]:
             variable_name = each[0]
             variable_value = each[2]
     if variable_name != "" and variable_value != "":
@@ -1510,7 +1564,7 @@ def save_length(data_set):
     variable_name = ""
     value = ""
     for each in data_set:
-        if "parameter" in each[1]:
+        if "optional parameter" in each[1]:
             variable_name = each[0]
             value = each[2]
 
@@ -1762,7 +1816,7 @@ def extract_date(data_set):
 
                 # Extract the date and convert it into datetime object
                 extracted_date = datefinder.find_dates(str_containing_date).__next__()
-            elif "parameter" in row[1]:
+            elif "optional parameter" in row[1]:
                 date_format = row[2]
 
         if not date_format:
@@ -1936,7 +1990,7 @@ def set_server_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -1958,7 +2012,7 @@ def get_server_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
 
@@ -1986,7 +2040,7 @@ def get_server_variable_and_wait(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
             if str(row[1]).strip().lower() == "action":
@@ -3359,7 +3413,7 @@ def get_global_list_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
 
@@ -3387,7 +3441,7 @@ def append_to_global_list_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -3414,7 +3468,7 @@ def remove_item_from_global_list_variable(data_set):
         for row in data_set:
             if (
                 str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                or "optional parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -6048,7 +6102,10 @@ def classifier_AI(data_set):
             "confidence": 0.9794
         }
     """
-
+    from Framework.module_installer import install_missing_modules,update_outdated_modules
+    install_missing_modules(['torch', 'torchvision', 'transformers'])
+    if not CommonUtil.ai_module_update_flag and CommonUtil.ws_ss_log and CommonUtil.ai_module_update_time_difference > 30:
+        update_outdated_modules(['torch', 'torchvision', 'transformers'])
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     from Framework.AI.NLP import category_score
 
@@ -6081,3 +6138,200 @@ def classifier_AI(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def connect_to_S3(data_set):
+    """
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    import boto3
+
+    s3_client_var = None
+    credentials_source = "default"
+    cred_file_path = None
+    s3_client = None
+    try:
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "connect to s3" in left:
+                s3_client_var = right.strip()
+            if "credentials source" in left:
+                credentials_source = right.strip()
+            if "file path" in left:
+                cred_file_path = right.strip()
+        
+        if credentials_source == "default":
+            try:
+                s3_client = boto3.client('s3')
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if credentials_source == "environmental variable":
+            import os
+            from dotenv import load_dotenv
+
+            load_dotenv()
+
+            try:
+                s3_client = boto3.client('s3',aws_access_key_id=os.environ.get('aws_access_key_id'),aws_secret_access_key=os.environ.get('aws_secret_access_key'),region_name=os.environ.get('aws_region_name'))
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if credentials_source == "json file":
+            cred_json_obj = json.load(open(cred_file_path))
+            try:
+                s3_client = boto3.client('s3',aws_access_key_id=cred_json_obj.get('aws_access_key_id'),aws_secret_access_key=cred_json_obj.get('aws_secret_access_key'),region_name=cred_json_obj.get('aws_region_name'))
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if s3_client:
+            response = s3_client.list_buckets()
+            s3_resource = boto3.resource('s3')
+            CommonUtil.ExecLog(sModuleInfo, "Successfully connected to S3 client", 1)
+            return sr.Set_Shared_Variables(s3_client_var, s3_resource)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def upload_to_S3(data_set):
+    """
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    import boto3
+
+    try:
+        bucket_name = file_name = key_name = s3_resource_var = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "file to upload" in left:
+                file_name = right.strip()
+            if "upload to s3" in left.lower():
+                key_name = right.strip()
+            if "s3 bucket name" in left.lower():
+                bucket_name = right.strip()
+            if "s3 resource variable":
+                s3_resource_var = right.strip()
+
+        
+        if None in (bucket_name, file_name):
+            CommonUtil.ExecLog(sModuleInfo, "Bucket, file and key names should be provided", 3)
+
+        s3_resource = sr.Get_Shared_Variables(s3_resource_var)
+        s3_bucket = s3_resource.Bucket(name=bucket_name)
+        s3_object = s3_resource.Object(bucket_name=bucket_name, key=key_name)
+        s3_object.upload_file(file_name)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def connect_to_bigquery_client(data_set):
+    """
+    data_set:
+          credentials path           | input parameter   | path to credentails json file
+          connect to bigquery client | common action     | client variable name
+    """
+    from google.cloud import bigquery
+    import os
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    cred_path = None
+    client_var_name = None
+    for left, mid, right in data_set:
+        if left.strip().lower() == 'credentials path':
+            cred_path = right.strip()
+        if left.strip().lower() == 'connect to bigquery client':
+            client_var_name = right.strip()
+
+    
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
+
+    try:
+        client = bigquery.Client()
+        sr.Set_Shared_Variables(client_var_name, client)
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect Credentails", 3)
+        return "zeuz_failed"
+
+@logger
+def execute_bigquery_query(data_set):
+    """
+    data_set:
+        query                   | input parameter   | query to run
+        output variable         | input parameter   | output variable name
+        execute bigquery query  | common action     | client variable name
+    """
+        
+    from google.cloud import bigquery
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    query = None
+    client_var_name = None
+    output_var_name = None
+
+    for left, mid, right in data_set:
+        if left.strip().lower() == 'query':
+            query = right.strip()
+        if left.strip().lower() == 'execute bigquery query':
+            client_var_name = right.strip()
+        if left.strip().lower() == 'output variable':
+            output_var_name = right.strip()
+    
+    if None in (query,client_var_name,output_var_name):
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect Dataset", 3)
+        return "zeuz_failed"
+
+    try:
+        client = sr.Get_Shared_Variables(client_var_name)
+        query_job = client.query(query)
+        result = query_job.result()
+        data = [dict(d.items()) for d in result]
+        sr.Set_Shared_Variables(output_var_name, data)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def text_to_speech(data_set):
+    """
+        Convert text to speech using google gTTS library
+    """
+    from gtts import gTTS
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        dialogue_data = speaker = output_filename = None
+        language = 'en'
+        top_level_domain = 'us'
+
+        for left, mid, right in data_set:
+            if "dialogue" in left:
+                dialogue_data = eval(right.strip())
+            if "speaker" in left:
+                try:
+                    speaker = right.strip()
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to parse dialogue json", 3)
+                    return "zeuz_failed"
+            if "text to speech" in left:
+                output_filename = right.strip()
+            if "language" in left:
+                language = right.strip()
+            if "accent" in left:
+                top_level_domain = right.strip()
+                
+        if None in (dialogue_data, speaker, output_filename):
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
+            return "zeuz_failed"
+
+        full_speech = ".".join([s['speech'] for s in dialogue_data if s['speaker'] == speaker ])
+        tts = gTTS(text=full_speech, lang=language, tld=top_level_domain)
+        full_filepath = Path(sr.Get_Shared_Variables("zeuz_download_folder"),output_filename)
+        CommonUtil.ExecLog(sModuleInfo, f"Speech file saved to - {full_filepath}", 1)
+        tts.save(full_filepath)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())

@@ -6,6 +6,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 import platform
 import datetime
+import shutil
+import time
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -978,6 +980,10 @@ def command_line_args() -> Path:
         "-sbl", "--show_browser_log", action="store_true", help="Show browserlog in the console"
     )
 
+    parser_object.add_argument(
+        "-slg", "--stop_live_log", action="store_true", help="Disables log in live server"
+    )
+
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -991,6 +997,7 @@ def command_line_args() -> Path:
     gh_token = all_arguments.gh_token
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
     show_browser_log = all_arguments.show_browser_log
+    stop_live_log = all_arguments.stop_live_log
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1024,7 +1031,8 @@ def command_line_args() -> Path:
         date_from_file = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         current_date = datetime.date.today()
         time_difference = (current_date - date_from_file).days
-
+        CommonUtil.ai_module_update_flag = stop_pip_auto_update
+        CommonUtil.ai_module_update_time_difference = time_difference
         # Check if the time difference is greater than one month
         if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > 30:
             update_outdated_modules()
@@ -1043,6 +1051,34 @@ def command_line_args() -> Path:
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
         print("module_updater: Module Updated..")
+    
+    # Delete Old Subfolders in Automationlog folder.
+
+    def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
+        subfolder_paths = []
+        current_time = time.time()
+        interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
+
+        for dir_name in os.listdir(folder_path):
+            dir_path = os.path.join(folder_path, dir_name)
+            if os.path.isdir(dir_path):
+                created_time = os.path.getctime(dir_path)
+
+                if current_time - created_time > interval_days_in_sec:
+                    subfolder_paths.append(dir_path)
+
+        return subfolder_paths
+
+    folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog'
+    log_delete_interval = ConfigModule.get_config_value("Advanced Options", "log_delete_interval")
+    if log_delete_interval:
+        auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
+        auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini']]
+        
+        if auto_log_subfolders:
+            for subfolder in auto_log_subfolders:
+                shutil.rmtree(subfolder)
+            print(f'automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days')
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
@@ -1081,6 +1117,8 @@ def command_line_args() -> Path:
         pass
     if gh_token:
         os.environ["GH_TOKEN"] = gh_token
+
+    ConfigModule.add_config_value("Advanced Options", "stop_live_log", str(stop_live_log))
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""

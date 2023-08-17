@@ -33,8 +33,6 @@ import win32con
 import PIL
 from PIL import Image, ImageGrab
 
-import psutil
-
 
 python_folder = []
 for location in subprocess.getoutput("where python").split("\n"):
@@ -44,13 +42,18 @@ try:
     python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
 except:
     python_location = ""
-if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
+
+full_python_version = sys.version.split(" ")[0]
+python_sub_version = re.search(r'\b\d+\.(\d+)\.\d+\b', full_python_version)
+
+if not 7 <= int(python_sub_version.group(1)) <= 11:
     error_msg = "You have the wrong Python version or bit" \
+                +"\nThe Python version should be 3.7 <= x <= 3.11"\
                 + "\nFollow this procedure" \
                 + "\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things" \
                 + "\n2.Delete your Python folder" \
                 + python_location \
-                + "\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe" \
+                + "\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe" \
                 + "\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important." \
                 + "\n5.Relaunch zeuz node_cli.py"
     CommonUtil.ExecLog("", error_msg, 3)
@@ -995,6 +998,90 @@ def install_ocr():
 def image_search(step_data_set):
     install_ocr()
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        # steps to install the pytesseract module
+        pip_command = ['pip', 'list']
+        pytesseract_search_command = ['findstr', 'pytesseract']
+
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process  = subprocess.Popen(pytesseract_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE, text=True)
+
+        is_pytesseract,_ = search_process.communicate()
+
+        if is_pytesseract:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pytesseractt is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Pytesseract",
+                5,
+            )
+            os.system('echo y | pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytesseract')
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo,
+                "Could not install the Pytesseract module",
+                3,
+            )
+
+    try:
+        # steps to install pytesseract executable file
+        reg_query_cmd = ['reg', 'query', r'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', '/s']
+        findstr_cmd = ['findstr', '/B', '.*DisplayName']
+        tesseract_cmd = ['findstr', 'Tesseract-OCR']
+
+        reg_query_process = subprocess.Popen(reg_query_cmd, stdout=subprocess.PIPE)
+        findstr_process = subprocess.Popen(findstr_cmd, stdin=reg_query_process.stdout, stdout=subprocess.PIPE)
+        tesseract_process = subprocess.Popen(tesseract_cmd, stdin=findstr_process.stdout, stdout=subprocess.PIPE, text=True)
+
+        is_pytesseract_exe, _ = tesseract_process.communicate()
+
+        if is_pytesseract_exe:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pytesseract executable file is alreday installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Starting installation of Pytesseract executable file",
+                5,
+            )
+            install_process = subprocess.Popen(['winget', 'install', 'Tesseract-OCR - open source OCR engine'], text=True)
+            stdout, stderr = install_process.communicate()
+            if stdout is not None:
+                CommonUtil.ExecLog(sModuleInfo, f"The standard output for winget install Tesseract-OCR {stdout}", 5)
+            if stderr is not None:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"The standard error for winget install Tesseract-OCR {stderr}",
+                    5,
+                )
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Tesseract installation is complete!", 5)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Setting up the environment variable for Tesseract OCR",
+            5,
+        )
+
+        # Todo: No need to add this in PATH
+        ocr_path = r"C:\Program Files\Tesseract-OCR"
+        os.environ['PATH'] += ';' + ocr_path
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Could not install the Pytesseract executable file",
+            3,
+        )
+
     try:
         file_name = ""
         resolution = ""
@@ -2159,7 +2246,7 @@ def Keystroke_For_Element(data_set):
                     keystroke_value = right.strip().lower()  # Store keystroke
                 elif left == "keystroke chars":
                     keystroke_char = right
-            if "parameter"in mid.lower():
+            if "optional parameter"in mid.lower():
                 if left == "method":
                     method_name= right.lower()
 
