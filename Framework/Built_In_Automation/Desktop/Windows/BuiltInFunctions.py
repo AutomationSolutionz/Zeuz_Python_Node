@@ -1241,11 +1241,6 @@ def _get_main_window(WindowName):
             TreeScope.Children, Condition.TrueCondition
         )
 
-        NewMainWindowsList = []
-        for i in MainWindowsList:
-            if i.Current.ProcessId in current_pid_list:
-                NewMainWindowsList.append(i)
-
         found_windows = []
         for MainWindowElement in MainWindowsList:
             try:
