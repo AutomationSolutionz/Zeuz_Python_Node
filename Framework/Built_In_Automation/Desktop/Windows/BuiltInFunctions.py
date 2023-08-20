@@ -1245,8 +1245,9 @@ def _get_main_window(WindowName):
         for i in MainWindowsList:
             if i.Current.ProcessId in current_pid_list:
                 NewMainWindowsList.append(i)
-                
-        for MainWindowElement in NewMainWindowsList:
+
+        found_windows = []
+        for MainWindowElement in MainWindowsList:
             try:
                 if WindowName[2] == "pid":
                     try:
@@ -1257,12 +1258,19 @@ def _get_main_window(WindowName):
                 else:
                     NameS = MainWindowElement.Current.Name
                     if _found(WindowName, NameS):
-                        CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
-                        autoit.win_activate(NameS)
-                        return MainWindowElement
+                        if MainWindowElement.Current.ProcessId in current_pid_list:
+                            CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
+                            CommonUtil.ExecLog(sModuleInfo, f"pid matched: {MainWindowElement.Current.ProcessId}", 5)
+                            autoit.win_activate(NameS)
+                            return MainWindowElement
+                        else:
+                            found_windows.append(MainWindowElement)
             except:
                 pass
-
+        if len(found_windows) > 0:
+            CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % found_windows[0].Current.Name, 1)
+            autoit.win_activate(found_windows[0].Current.Name)
+            return found_windows[0]
         return None
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
