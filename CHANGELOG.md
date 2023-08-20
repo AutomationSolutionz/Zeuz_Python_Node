@@ -4,6 +4,11 @@
 # Version 16
 
 ### [Current changes]
+-
+### [16.5.0][Aug 20, 2023]
+- **[Add]** profile add for browsers
+- **[Add]** easyocr implement for desktop
+- **[Add]** AI web extension integrated with automation browser
 - **[Add]** Connect and Run Query on BigQuery 
 - **[Add]** Page load timeout
 - **[Add]** New "Rust" based performance action.
