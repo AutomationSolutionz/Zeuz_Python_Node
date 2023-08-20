@@ -21,6 +21,7 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 import inspect, time
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
+import psutil
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
