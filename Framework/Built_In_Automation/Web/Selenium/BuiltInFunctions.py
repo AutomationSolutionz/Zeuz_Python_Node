@@ -4749,8 +4749,8 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
-        # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+        ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
 
         return "passed"
