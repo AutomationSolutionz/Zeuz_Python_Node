@@ -1362,7 +1362,7 @@ def new_image_text(step_data_set):
             if mid == "element parameter":
                 if "index" in left:
                     idx = int(right.strip())
-                elif "new_image_text" in left:
+                elif "easytxt" in left:
                     image_text = right
                 elif 'language' in left:
                     language = right
@@ -1497,7 +1497,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: element_path = right.strip()
-                elif "new_image_text" in left:
+                elif "easytxt" in left:
                     element_image.append((left, mid, right))
                 elif "image" in left:
                     element_image.append((left, mid, right))
@@ -1598,7 +1598,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
 
-                if 'new_image_text' in element_image[0][0]:
+                if 'easytxt' in element_image[0][0]:
                     result = new_image_text(element_image)
                     return result
                 else:
