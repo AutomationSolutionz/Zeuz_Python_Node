@@ -6,6 +6,8 @@
 #########################
 import pdb
 
+global Shared_Resources
+
 code_debug = False
 tabs = 0
 import sys, os, subprocess
@@ -32,6 +34,7 @@ import win32con
 
 import PIL
 from PIL import Image, ImageGrab
+
 
 
 python_folder = []
@@ -1355,6 +1358,8 @@ def new_image_text(step_data_set):
         t_conf = 0.9
         text_screenshot = ''
         easyocr_paragraph = ''
+        previous_stored_data = ''
+        store_data = ''
 
         for left, mid, right in step_data_set:
             left = left.strip().lower()
@@ -1372,13 +1377,23 @@ def new_image_text(step_data_set):
                     text_screenshot = right
                 elif 'easyocr_paragraph' in left:
                     easyocr_paragraph = right
+                elif "store_data" in left:
+                    store_data = right.strip()
+                elif 'previous_value' in left:
+                    previous_stored_data = CommonUtil.parse_value_into_object(right.strip())
+
 
         PIL.ImageGrab.grab().save("sample.png")
         reader = easyocr.Reader([language])
-        if easyocr_paragraph == 'true':
-            output = reader.readtext("sample.png", paragraph=True)
+        if previous_stored_data != '':
+            output = previous_stored_data
         else:
-            output = reader.readtext("sample.png", paragraph=False)
+            if easyocr_paragraph == 'true':
+                output = reader.readtext("sample.png", paragraph=True)
+                Shared_Resources.Set_Shared_Variables(store_data, output)
+            else:
+                output = reader.readtext("sample.png", paragraph=False)
+                Shared_Resources.Set_Shared_Variables(store_data, output)
 
         item = []
         count = 0
@@ -1558,6 +1573,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 language = 'en'
                 text_screenshot = ''
                 easyocr_paragraph = ''
+                previous_stored_data = ''
+                store_data = ''
 
                 for left, mid, right in data_set:
                     left = left.strip().lower()
@@ -1579,6 +1596,10 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             text_screenshot = right
                         elif 'easyocr_paragraph' in left:
                             easyocr_paragraph = right
+                        elif 'previous_value' in left:
+                            previous_stored_data = CommonUtil.parse_value_into_object(right.strip())
+                        elif 'store_data' in left:
+                            store_data = right.strip()
 
                 _get_main_window(window_name)
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
@@ -1597,6 +1618,10 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("t_conf", "element parameter", str(t_conf)))
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
+                element_image.append(("previous_value", "element parameter", str(previous_stored_data)))
+                element_image.append(("store_data", "element parameter", str(store_data)))
+
+
 
                 if 'easytxt' in element_image[0][0]:
                     result = new_image_text(element_image)
