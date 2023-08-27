@@ -393,7 +393,7 @@ def _child_search(ParentElement, level, parenthesis=1):
         temp = ""
         found = False
         for each_child in child_elements:
-            elem_name = each_child.Current.Name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;").replace(r"\Automation_Solutionz\Zeuz_Node\Public_Node\Zeuz_Python_Node\Apps\W", "xyz")
+            elem_name = each_child.Current.Name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
             elem_automationid = each_child.Current.AutomationId.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
             elem_class = each_child.Current.ClassName.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
             elem_control = each_child.Current.LocalizedControlType.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
@@ -581,12 +581,15 @@ def main():
             for window in windows:
                 if window.Current.Name.strip() in ("Annotation - Zoom"): continue
                 if _found(window):
-                    window_name = window.Current.Name
+                    window_name = window.Current.Name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
+                    window_automationid = window.Current.AutomationId.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
+                    window_class = window.Current.ClassName.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
+                    window_control = window.Current.LocalizedControlType.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
                     try:
                         pid = window.Current.ProcessId
                     except:
                         pid = ""
-                    xml_str += '<body Window="%s" pid="%s">' % (window_name, pid)
+                    xml_str += f'<body Name="{window_name}" AutomationId="{window_automationid}" LocalizedControlType="{window_class}" ClassName="{window_control}" pid="{pid}">'
                     path = create_path({}, window, True)
                     break
             else:
