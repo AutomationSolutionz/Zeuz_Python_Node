@@ -49,3 +49,4 @@ xvfbwrapper
 deepdiff
 xmltodict
 configobj
+boto3

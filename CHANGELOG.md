@@ -4,6 +4,16 @@
 # Version 16
 
 ### [Current changes]
+-
+### [16.5.0][Aug 20, 2023]
+- **[Add]** profile add for browsers
+- **[Add]** easyocr implement for desktop
+- **[Add]** AI web extension integrated with automation browser
+- **[Add]** Connect and Run Query on BigQuery 
+- **[Add]** Page load timeout
+- **[Add]** New "Rust" based performance action.
+- **[Add]** Added - Text to Speech action
+- **[Add]** Added - S3 Actions
 - **[Fix]** Fix chrome. firefox & edge driver issues on selenium 4.10 (executable_path error).
 - **[Add]** Browserstack - WEB support
 - **[Add]** Added - Convert XML to JSON format

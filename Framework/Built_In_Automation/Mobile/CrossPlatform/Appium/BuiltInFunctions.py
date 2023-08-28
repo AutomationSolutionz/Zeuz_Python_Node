@@ -526,7 +526,7 @@ def launch_application(data_set):
 
             for left, mid, right in data_set:
                 left, mid = left.strip().lower(), mid.strip().lower()
-                if "parameter" in mid and "=" in right:
+                if "optional parameter" in mid and "=" in right:
                     # key, value
                     k, v = map(lambda x: x.strip(), right.split("="))
                     if left in (device_type, "multi"):
@@ -730,7 +730,7 @@ def start_appium_server():
                 break  # Give up if max time was hit
             try:  # If this works, then stop waiting for appium
                 r = requests.get(
-                    "http://localhost:%d/wd/hub/sessions" % appium_port
+                    "http://localhost:%d/sessions" % appium_port
                 )  # Poll appium server
                 if r.status_code:
                     break
@@ -774,7 +774,7 @@ def start_appium_driver(
         launch_app = True
         if browserstack_run:
             appium_driver = webdriver.Remote(
-                command_executor="http://hub-cloud.browserstack.com/wd/hub",
+                command_executor="http://hub-cloud.browserstack.com",
                 options=desiredcaps
             )
             appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
@@ -789,7 +789,7 @@ def start_appium_driver(
 
         if aws_run:
             appium_driver = webdriver.Remote(
-                command_executor="http://127.0.0.1:4723/wd/hub",
+                command_executor="http://127.0.0.1:4723",
                 desired_capabilities = desiredcaps
             )
             appium_details["aws device 1"] = {"driver": appium_driver, "serial": "0"}
@@ -919,7 +919,7 @@ def start_appium_driver(
             count = 1
             while count <= 5:
                 try:
-                    appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
+                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, desired_caps)  # Create instance
                     if appium_driver:
                         break
                     count += 1
@@ -2025,7 +2025,7 @@ def Click_Element_Appium(data_set):
         for left, mid, right in data_set:
             left = left.lower().strip()
             mid = mid.lower().strip()
-            if mid in ("option", "parameter") and "x_offset:y_offset" in left:
+            if mid in ("option", "optional parameter") and "x_offset:y_offset" in left:
                 offset = True
                 x_offset, y_offset = [i.strip() for i in (right.strip()).split(":")]
 
@@ -3067,14 +3067,14 @@ def Validate_Text_Appium(data_set):
     try:
         for each_step_data_item in data_set[0]:
             if (
-                "parameter" in each_step_data_item[1]
+                "optional parameter" in each_step_data_item[1]
                 or each_step_data_item[1] == "element parameter"
             ) and each_step_data_item[2] == "":
                 Element = appium_driver.find_elements_by_xpath(
                     "//*[@%s]" % each_step_data_item[0]
                 )
             if (
-                "parameter" in each_step_data_item[1]
+                "optional parameter" in each_step_data_item[1]
                 or each_step_data_item[1] == "element parameter"
             ) and each_step_data_item[2] != "":
                 Element = LocateElement.Get_Element(data_set[0], appium_driver)

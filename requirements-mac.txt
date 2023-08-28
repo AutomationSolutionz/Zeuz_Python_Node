@@ -57,3 +57,4 @@ google-cloud-bigquery-storage
 deepdiff
 xmltodict
 configobj
+jinja2

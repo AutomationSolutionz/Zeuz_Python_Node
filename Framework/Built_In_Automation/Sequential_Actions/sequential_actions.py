@@ -51,6 +51,8 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
 from .performance_action import performance_action_handler
+from .time_base_performance_action import time_base_performance_action_handler
+from .lorust_performance_action import lorust_performance_action_handler
 
 from rich.style import Style
 from rich.table import Table
@@ -1075,13 +1077,34 @@ def Run_Sequential_Actions(
                 if sub_field_match(action_name.lower().strip()) and "custom" not in action_name:
                     continue
 
+                elif "lorust performance action" in action_name:
+                    # CommonUtil.load_testing = True
+                    result, skip = lorust_performance_action_handler(
+                        data_set, # type: ignore
+                        step_data, # type: ignore
+                    )
+                    # CommonUtil.perf_test_perf = perf_result
+                    # CommonUtil.load_testing = False
+
+                elif "time base performance action" in action_name:
+                    CommonUtil.load_testing = True
+                    result, skip, perf_result = time_base_performance_action_handler(
+                        data_set,
+                        Run_Sequential_Actions,
+                        CommonUtil.get_timestamp,
+                    )
+                    CommonUtil.perf_test_perf = perf_result
+                    CommonUtil.load_testing = False
+
                 elif "performance action" in action_name:
+                    CommonUtil.load_testing = True
                     result, skip, perf_result = performance_action_handler(
                         data_set,
                         Run_Sequential_Actions,
                         CommonUtil.get_timestamp,
                     )
                     CommonUtil.perf_test_perf = perf_result
+                    CommonUtil.load_testing = False
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:
@@ -2218,15 +2241,20 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
         except:
             python_location = ""
-        if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
+
+        full_python_version = sys.version.split(" ")[0]
+        python_sub_version = re.search(r'\b\d+\.(\d+)\.\d+\b', full_python_version)
+
+        if not 7 <= int(python_sub_version.group(1)) <= 11:
             error_msg = "You have the wrong Python version or bit"\
+                +"\nThe Python version should be 3.7 <= x <= 3.11"\
                 +"\nFollow this procedure"\
                 +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
                 +"\n2.Delete your Python folder"\
                 + python_location \
-                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
+                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"\
                 +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
-                +"\n5.Relaunch zeuz node_cli.py"
+                +"\n5.Relaunch zeuz node_cli.py" 
             CommonUtil.ExecLog(sModuleInfo, error_msg, 3)
             return "zeuz_failed" 
 
@@ -2255,7 +2283,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
-        if row[1].strip().lower() in ("optional parameter", "optional option"):
+        if row[1].strip().lower() in ("optional parameter"):
             if row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
                 screenshot = row[2].strip().lower()
                 if screenshot in ("false", "no", "none", "disable"):
@@ -2274,10 +2302,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 post_sleep = float(row[2].strip())
                 continue
 
-        if "optional" in row[1]:
-            new_row[1] = new_row[1].replace("optional", "").strip()
-        if "bypass" in row[1]:
-            new_row[1] = new_row[1].replace("bypass", "").strip()
+        new_row[1] = new_row[1].replace("optional action", "action").replace("bypass","").replace("optional option","optional parameter").strip()
         if module in row[1]:
             new_row[1] = new_row[1].replace(module, "").strip()
         if original_module != "" and original_module in row[1]:

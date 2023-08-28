@@ -53,3 +53,4 @@ xvfbwrapper
 deepdiff
 xmltodict
 configobj
+jinja2

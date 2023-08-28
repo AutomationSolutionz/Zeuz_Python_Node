@@ -238,7 +238,7 @@ def assign_locust_task(data_set):
                         taskset_name = right.strip()
                     elif "task name" == left:
                         task_name = right.strip().lower()
-                if mid.strip().lower() == "parameter":
+                if mid.strip().lower() == "optional parameter":
                     if "weight" == left.strip():
                         weight = right.strip().lower()
                 elif mid.strip().lower() == "action":

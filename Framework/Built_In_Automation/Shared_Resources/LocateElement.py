@@ -127,6 +127,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         save_parameter = ""
         get_parameter = ""
         Filter = ""
+        text_filter_cond = False
         for row in step_data_set:
             if row[1] == "save parameter":
                 if row[2] != "ignore":
@@ -137,13 +138,16 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign to get variable value", 3)
                     return "zeuz_failed"
-            elif row[1].strip().lower() in ("option", "parameter", "optional option", "optional parameter"):
+            elif row[1].strip().lower() == "optional parameter":
                 left = row[0].strip().lower()
                 right = row[2].strip().lower()
                 if left in ("allow hidden", "allow disable"):
                     Filter = left if right in ("yes", "true", "ok") else Filter
                 elif left == "wait":
                     element_wait = float(right)
+                elif left == "text filter":
+                    text_filter_cond = right in ("yes", "true", "ok", "enable")
+
 
         if get_parameter != "":
 
@@ -179,7 +183,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
 
         if query_type in ("xpath", "css", "unique"):
             result = _get_xpath_or_css_element(element_query, query_type, step_data_set, index_number, Filter, return_all_elements, element_wait)
-            if result == "zeuz_failed":
+            if result == "zeuz_failed" and text_filter_cond:
                 result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
         else:
             result = "zeuz_failed"
@@ -551,50 +555,51 @@ def _construct_xpath_list(parameter_list, add_dot=False):
         for each_data_row in parameter_list:
             attribute = each_data_row[0].strip()
             attribute_value = each_data_row[2]
+            quote = "'" if '"' in attribute_value else '"'
 
             if attribute == "text" and driver_type in ("selenium", "xml"):  # exact search
-                text_value = '[text()="%s"]' % attribute_value
+                text_value = f'[text()={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and driver_type in ("selenium", "xml"):  # partial search
-                text_value = '[contains(text(),"%s")]' % (str(attribute_value))
+                text_value = f'[contains(text(),{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(text_value)
             elif attribute == "**text" and driver_type in ("selenium", "xml"):  # partial search + ignore case
-                text_value = '[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"%s")]' % str(attribute_value).lower()
+                text_value = f'[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),{quote}{attribute_value.lower()}{quote})]'
                 element_main_body_list.append(text_value)
 
             elif attribute == "text" and driver_type == "appium":  # exact search
                 current_context = generic_driver.context
                 if "WEB" in current_context:
-                    text_value = '[text()="%s"]' % attribute_value
+                    text_value = f'[text()={quote}{attribute_value}{quote}]'
                 else:
-                    text_value = '[@text="%s"]' % attribute_value
+                    text_value = f'[@text={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(text_value)
             elif attribute == "**text" and driver_type == "appium":  # partial search + ignore case
-                text_value = "[contains(translate(@text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]"%str(attribute_value).lower()
+                text_value = f"[contains(translate(@text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),{quote}{attribute_value.lower()}{quote})]"
                 current_context = generic_driver.context
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and driver_type == "appium":  # partial search
                 current_context = generic_driver.context
                 if "WEB" in current_context:
-                    text_value = '[contains(%s(),"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    text_value = f'[contains({attribute.split("*")[1]}(),{quote}{attribute_value}{quote})]'
                 else:
-                    text_value = '[contains(@%s,"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    text_value = f'[contains(@{attribute.split("*")[1]},{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(text_value)
 
             elif attribute not in excluded_attribute and "*" not in attribute:  # exact search
-                other_value = '[@%s="%s"]' % (attribute, attribute_value)
+                other_value = f'[@{attribute}={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and "**" in attribute:  # partial search + ignore case
                 if driver_type == "appium":
-                    other_value = "[contains(translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]" % (attribute.split('**')[1], str(attribute_value.lower()))
+                    other_value = f"[contains(translate(@{attribute.split('**')[1]},'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),{quote}{attribute_value.lower()}{quote})]"
                 else:
-                    other_value = "[contains(translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]" % (attribute.split('**')[1], str(attribute_value).lower())
+                    other_value = f"[contains(translate(@{attribute.split('**')[1]},'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),{quote}{attribute_value.lower()}{quote})]"
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and "*" in attribute:  # partial search
                 if driver_type == "appium":
-                    other_value = '[contains(@%s,"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    other_value = f'[contains(@{attribute.split("*")[1]},{quote}{attribute_value}{quote})]'
                 else:
-                    other_value = '[contains(@%s,"%s")]' % (attribute.split("*")[1], str(attribute_value))
+                    other_value = f'[contains(@{attribute.split("*")[1]},{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(other_value)
 
         # we do the tag on its own
@@ -1373,7 +1378,7 @@ def _scale_image(file_name, size_w, size_h):
         size = (int(image_w * ratio), int(image_h * ratio))  # Calculate new resolution of image element
 
         # Scale image
-        # file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
+        # file_name.thumbnail(size, Image.LANCZOS)  # Resize image per calculation above
 
         return file_name.resize(size)  # Return the scaled image object
     except:

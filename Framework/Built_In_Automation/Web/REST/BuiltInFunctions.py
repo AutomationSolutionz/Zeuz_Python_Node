@@ -789,10 +789,10 @@ def handle_rest_call(
         # `ZEUZ_NODE_CLIENT_CERT` or `PYTHON PATH`.
         # cert = get_client_certificates()
 
+        time_stamp = CommonUtil.get_timestamp()
+
         result = None
         status_code = 1  # dummy value
-        if CommonUtil.load_testing:
-            start_counter = time.perf_counter()
         while count < request_count:
             method = method.lower().strip()
             if method in ("post", "put"):
@@ -890,6 +890,8 @@ def handle_rest_call(
                 return "zeuz_failed"
             status_code = int(result.status_code)
 
+            if CommonUtil.load_testing:
+                break
             if request_count > 1:
                 if status_code != wait_for_response_code:
                     CommonUtil.ExecLog(
@@ -916,8 +918,26 @@ def handle_rest_call(
             count += 1
 
         if CommonUtil.load_testing:
-            end_counter = time.perf_counter()
-            runtime = round(end_counter-start_counter, 6)
+            elapsed_time = int(result.elapsed.microseconds // 1000)
+
+            response_body = ""
+            # Add response body if there's any kind of failure
+            if not (status_code >= 200 and status_code <= 399):
+                try:
+                    response_body = result.text
+                except:
+                    pass
+
+            performance_status = CommonUtil.PerformanceDataPoint(
+                url=url,
+                http_verb=method,
+                status_code=status_code,
+                elapsed_time=elapsed_time,
+                response_body_size=len(result.content),
+                time_stamp=time_stamp,
+                response_body=response_body,
+            )
+            CommonUtil.api_performance_data.append(performance_status)
 
             try:
                 CommonUtil.performance_report["endpoint"] = result.url
@@ -925,7 +945,7 @@ def handle_rest_call(
                     {
                         "status": status_code,
                         "message": result.text,
-                        "runtime": runtime
+                        "runtime": elapsed_time
                     }
                 )
             except:
@@ -936,8 +956,8 @@ def handle_rest_call(
                 )
                 return "zeuz_failed"
             CommonUtil.performance_report["individual_stats"] = {
-                "slowest": max(runtime, CommonUtil.performance_report["individual_stats"]["slowest"]),
-                "fastest": min(runtime, CommonUtil.performance_report["individual_stats"]["fastest"]),
+                "slowest": max(elapsed_time, CommonUtil.performance_report["individual_stats"]["slowest"]),
+                "fastest": min(elapsed_time, CommonUtil.performance_report["individual_stats"]["fastest"]),
             }
             if str(status_code) in CommonUtil.performance_report["status_counts"]:
                 CommonUtil.performance_report["status_counts"][str(status_code)] += 1
