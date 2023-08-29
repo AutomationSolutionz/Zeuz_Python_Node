@@ -1358,7 +1358,7 @@ def new_image_text(step_data_set):
         t_conf = 0.9
         text_screenshot = ''
         easyocr_paragraph = ''
-        previous_stored_data = ''
+        previous_stored_data = None
         store_data = ''
 
         for left, mid, right in step_data_set:
@@ -1384,16 +1384,18 @@ def new_image_text(step_data_set):
 
 
         PIL.ImageGrab.grab().save("sample.png")
-        reader = easyocr.Reader([language])
-        if previous_stored_data != '':
-            output = previous_stored_data
-        else:
+        if previous_stored_data == None:
             if easyocr_paragraph == 'true':
+                reader = easyocr.Reader([language])
                 output = reader.readtext("sample.png", paragraph=True)
                 Shared_Resources.Set_Shared_Variables(store_data, output)
             else:
+                reader = easyocr.Reader([language])
                 output = reader.readtext("sample.png", paragraph=False)
                 Shared_Resources.Set_Shared_Variables(store_data, output)
+        else:
+            output = previous_stored_data
+
 
         item = []
         count = 0
@@ -1573,7 +1575,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 language = 'en'
                 text_screenshot = ''
                 easyocr_paragraph = ''
-                previous_stored_data = ''
+                previous_stored_data = None
                 store_data = ''
 
                 for left, mid, right in data_set:
