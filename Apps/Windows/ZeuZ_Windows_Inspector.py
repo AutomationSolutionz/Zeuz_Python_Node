@@ -177,7 +177,7 @@ def Remove_coordinate(root):
     for each in root:
         att = each.attrib
         del att["Left"]; del att["Right"]; del att["Top"]; del att["Bottom"];
-        if "found" in att: del att["found"]
+        # if "found" in att: del att["found"]
         Remove_coordinate(each)
 
 
@@ -216,11 +216,11 @@ def printTree(root,tree):
             tree.add(f"[white]{create_tag(child)}", guide_style="red")
 
 
-def create_index(index_trace: dict, element):
-    NameE = element.Current.Name
-    ClassE = element.Current.ClassName
-    AutomationE = element.Current.AutomationId
-    LocalizedControlTypeE = element.Current.LocalizedControlType
+def create_index(index_trace: dict, xmlElem):
+    NameE = xmlElem.attrib["Name"]
+    ClassE = xmlElem.attrib["ClassName"]
+    AutomationE = xmlElem.attrib["AutomationId"]
+    LocalizedControlTypeE = xmlElem.attrib["LocalizedControlType"]
 
     s = 'automationid="%s"' % AutomationE
     if s in index_trace: index_trace[s] += 1
@@ -242,76 +242,23 @@ def create_index(index_trace: dict, element):
     if s in index_trace: index_trace[s] += 1
     else: index_trace[s] = 0
 
-def create_path(index_trace: dict, element, window_cond=False):
-    NameE = element.Current.Name
-    ClassE = element.Current.ClassName
-    AutomationE = element.Current.AutomationId
-    LocalizedControlTypeE = element.Current.LocalizedControlType
 
-    if window_cond:
-        config = configparser.ConfigParser()
-        config.read("..\..\Framework\settings.conf")
-        try: window_name = config.get("Inspector", "Window")
-        except: window_name = ""
-        if window_name:
-            s_name = '**name="%s"' % window_name
-        else:
-            s_name = 'name="%s"' % NameE
-    else:
-        s_name = 'name="%s"' % NameE
-
-    s = 'automationid="%s"' % AutomationE
-    if AutomationE and s not in index_trace:
-        return s + ">" + "\n" if new_line else ""
-
-    if NameE and s_name not in index_trace:
-        return s_name + ">" + "\n" if new_line else ""
-    s_name_control = 'name="%s",control="%s"' % (NameE, LocalizedControlTypeE)
-    if NameE and LocalizedControlTypeE and s_name_control not in index_trace:
-        return s_name_control + ">" + "\n" if new_line else ""
-    s_class = 'class="%s"' % ClassE
-    if ClassE and s_class not in index_trace:
-        return s_class + ">" + "\n" if new_line else ""
-    s = 'name="%s",class="%s"' % (NameE, ClassE)
-    if NameE and ClassE and s not in index_trace:
-        return s + ">" + "\n" if new_line else ""
-
-    global path_priority
-    path_priority = 2
-    if NameE and s in index_trace:
-        return s_name + ',index="%s">' % (index_trace[s_name] + 1) + "\n" if new_line else ""
-    if ClassE and s in index_trace:
-        return s_class + ',index="%s">' % (index_trace[s_class] + 1) + "\n" if new_line else ""
-
-    # if s_name not in index_trace:
-    #     return s_name + ">" + "\n" if new_line else ""
-    if s_name_control not in index_trace:
-        return s_name_control + ">" + "\n" if new_line else ""
-    return s_name_control + ',index="%s">' % (index_trace[s_name_control] + 1) + "\n" if new_line else ""
-
-
-element_plugin = False
-findall_time = 0; findall_count = 0; each_findall_time = []
-
-
-def exact_path_maker(xmlElem, pathList:list, window_cond=False):
+def create_path(index_trace: dict, xmlElem, window_cond=False):
     NameE = xmlElem.attrib["Name"]
     ClassE = xmlElem.attrib["ClassName"]
     AutomationE = xmlElem.attrib["AutomationId"]
     LocalizedControlTypeE = xmlElem.attrib["LocalizedControlType"]
 
-    index_trace = {}
-
     if window_cond:
         config = configparser.ConfigParser()
         config.read("..\..\Framework\settings.conf")
         try: window_name = config.get("Inspector", "Window")
         except: window_name = ""
-        if window_name:
+        if window_name and window_name.lower() in NameE.lower():
             s_name = '**name="%s"' % window_name
+            return s_name + ">" + "\n" if new_line else ""
         else:
             s_name = 'name="%s"' % NameE
-        window_cond = False
     else:
         s_name = 'name="%s"' % NameE
 
@@ -345,14 +292,39 @@ def exact_path_maker(xmlElem, pathList:list, window_cond=False):
     return s_name_control + ',index="%s">' % (index_trace[s_name_control] + 1) + "\n" if new_line else ""
 
 
-element_plugin = False
 findall_time = 0; findall_count = 0; each_findall_time = []
 
 
+def exact_path_maker(xmlElem, pathList:list, window_cond=False):
+    global path
+    index_trace = {}
+
+    if window_cond:
+        pathList = [create_path(index_trace, xmlElem, window_cond)]
+
+    branch_count = -1
+    for each_child in xmlElem:
+        if "found" in each_child.attrib:
+            path_ = create_path(index_trace, xmlElem, window_cond)
+            if len(pathList) + branch_count >= len(pathList):
+                pathList[len(pathList) + branch_count] = path_
+            else:
+                pathList[len(pathList) + branch_count] += path_
+            exact_path_maker(each_child, pathList)
+        create_index(index_trace, each_child)
+
+    if window_cond:
+        for path_ in pathList:
+            print("\n======== COPY Exact Path ========")
+            print(path_)
+            path = path_    # Todo
+
+
+findall_time = 0; findall_count = 0; each_findall_time = []
 def create_tree(xmlELem, ParentElement, level):
     try:
         path = ""
-        global xml_str, element_plugin, findall_time, findall_count
+        global xml_str, findall_time, findall_count
         start = time.perf_counter()
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
         temp_findall_time = time.perf_counter()-start
@@ -391,7 +363,7 @@ def create_tree(xmlELem, ParentElement, level):
             if _found(each_child):
                 attribs["found"] = "True"
                 xmlChildElem = ET.SubElement(xmlELem, 'div', **attribs)
-                ret = create_tree(xmlChildElem, each_child, level + 1)
+                create_tree(xmlChildElem, each_child, level + 1)
                 if not xmlChildElem.findall(".//*[@zeuz='aiplugin']"):
                     xmlChildElem.set("zeuz", "aiplugin")
             elif level >= No_of_level_to_skip:
@@ -405,20 +377,20 @@ def create_tree(xmlELem, ParentElement, level):
 
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth, path, findall_time, findall_count, list_path
+        global x, y, path_priority, auth, xml_str, path, findall_time, findall_count
         auth_thread = Authenticate()
 
         while True:
             if debugger_is_active():
                 pass
-                # input("Press Enter to Continue")
+                input("Press Enter to Continue")
             else:
                 os.system('pause')
             print("Hover over the Element and press control")
-            path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
-            # keyboard.wait("ctrl")
+            path = ""; xml_str = ""; findall_time = 0; findall_count = 0
+            keyboard.wait("ctrl")
             x, y = pyautogui.position()
-            x = 988; y = 1052
+            # x = 988; y = 1052
             print(f"x = {x}, y = {y}")  # Todo: change it
 
             print("Searching for the Element identifier")
@@ -441,40 +413,32 @@ def main():
                     attribs = {
                         "Name": window_name,
                         "AutomationId": window_automationid,
-                        "LocalizedControlType": window_class,
-                        "ClassName": window_control,
+                        "LocalizedControlType": window_control,
+                        "ClassName": window_class,
                         "pid": str(pid),
                     }
                     root = ET.Element("body", **attribs)
-                    create_path({}, window, True)
                     break
             else:
                 print("No window found in that coordinate")
                 return
 
             create_tree(root, window, 0)
-
+            # root = ET.
+            xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
+            with open("Element.xml", "w") as f:
+                f.write(xml_str)
             Remove_coordinate(root)
             tree = Tree(f"[cyan]{create_tag(root)}", guide_style="red")  # root of rich tree python
             printTree(root, tree)
             print(tree)
 
-            path = exact_path_maker(root, [], True)
+            exact_path_maker(root, [], True)
 
-            xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
-
-            print("======== COPY Exact Path ========")
-            print(path)
-            print("============= COPY ==============")
-            # print("************* path_priority *************")
-            # print("Path priority =", path_priority, "\n\n")
-            with open("Element.xml", "w") as f:
-                f.write(xml_str)
-            element_time = round(time.perf_counter()-start, 3)
-            sibling_time = 0
+            # element_time = round(time.perf_counter()-start, 3)
+            # sibling_time = 0
             try: autoit.win_activate(screen_title)
             except: pass
-            root = ET.fromstring(xml_str)
 
             config = configparser.ConfigParser()
             config.read("..\..\Framework\settings.conf")
@@ -491,10 +455,6 @@ def main():
                 sibling_time = round(time.perf_counter() - start, 3)
             start = time.perf_counter()
             Remove_coordinate_time = round(time.perf_counter() - start, 3)
-            xml_str = ET.tostring(root).decode()
-            tree = Tree(f"[cyan]{create_tag(root)}", guide_style="red")  # root of rich tree python
-            printTree(root, tree)
-            print(tree)
             with open("Sibling.xml", "w") as f:
                 f.write(xml_str)
 
@@ -517,10 +477,6 @@ def main():
 
     except:
         Exception_Handler(sys.exc_info())
-        xml_str = ""
-        path_priority = 0
-        element_plugin = False
-
 
 if __name__ == "__main__":
     main()
