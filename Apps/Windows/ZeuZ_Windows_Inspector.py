@@ -303,14 +303,16 @@ def exact_path_maker(xmlElem, pathList:list, window_cond=False):
         pathList = [create_path(index_trace, xmlElem, window_cond)]
 
     branch_count = -1
+    path_till_now = pathList[-1]
     for each_child in xmlElem:
         if "found" in each_child.attrib:
-            path_ = create_path(index_trace, xmlElem, window_cond)
+            path_ = create_path(index_trace, each_child, window_cond)
             if len(pathList) + branch_count >= len(pathList):
-                pathList[len(pathList) + branch_count] = path_
+                pathList += [path_till_now + path_]
             else:
                 pathList[len(pathList) + branch_count] += path_
             exact_path_maker(each_child, pathList)
+            branch_count += 1
         create_index(index_trace, each_child)
 
     if window_cond:
