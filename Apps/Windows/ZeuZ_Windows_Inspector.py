@@ -1,3 +1,4 @@
+import pathlib
 import time
 import keyboard
 import autoit
@@ -208,7 +209,6 @@ def printTree(root,tree):
     for child in root:
         if child.get('zeuz') == "aiplugin":
             tree.add(f"[bold green]{create_tag(child)}", guide_style="red")
-            return
         elif child.findall(".//*[@zeuz='aiplugin']"):
             temp = tree.add(f"[yellow]{create_tag(child)}", guide_style="red")
             printTree(child, temp)
@@ -295,7 +295,7 @@ def create_path(index_trace: dict, xmlElem, window_cond=False):
 findall_time = 0; findall_count = 0; each_findall_time = []
 
 
-def exact_path_maker(xmlElem, pathList:list, window_cond=False):
+def exact_path_maker(xmlElem, pathList:list, areaList=None, window_cond=False):
     global path
     index_trace = {}
 
@@ -311,13 +311,15 @@ def exact_path_maker(xmlElem, pathList:list, window_cond=False):
                 pathList += [path_till_now + path_]
             else:
                 pathList[len(pathList) + branch_count] += path_
-            exact_path_maker(each_child, pathList)
+            if "area" in each_child.attrib:
+                areaList.append(each_child.attrib["area"])
+            exact_path_maker(each_child, pathList, areaList)
             branch_count += 1
         create_index(index_trace, each_child)
 
     if window_cond:
-        for path_ in pathList:
-            print("\n======== COPY Exact Path ========")
+        for i, path_ in enumerate(pathList):
+            print(f"\n======== COPY Exact Path. Element Area = {areaList[i]} ========")
             print(path_)
             path = path_    # Todo
 
@@ -368,6 +370,9 @@ def create_tree(xmlELem, ParentElement, level):
                 create_tree(xmlChildElem, each_child, level + 1)
                 if not xmlChildElem.findall(".//*[@zeuz='aiplugin']"):
                     xmlChildElem.set("zeuz", "aiplugin")
+                    area = (float(right) - float(left)) * (float(bottom) - float(top))
+                    xmlChildElem.set("area", f"{area}")
+
             elif level >= No_of_level_to_skip:
                 xmlChildElem = ET.SubElement(xmlELem, 'div', **attribs)
                 create_tree(xmlChildElem, each_child, level + 1)
@@ -424,9 +429,10 @@ def main():
             else:
                 print("No window found in that coordinate")
                 return
-
+            # with open(pathlib.Path("C:/Users/munta/Downloads/Element_.xml")) as f:
+            #     root = ET.fromstring(f.read())
             create_tree(root, window, 0)
-            # root = ET.
+            ET.indent(root)
             xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
             with open("Element.xml", "w") as f:
                 f.write(xml_str)
@@ -435,7 +441,7 @@ def main():
             printTree(root, tree)
             print(tree)
 
-            exact_path_maker(root, [], True)
+            exact_path_maker(root, [], [], True)
 
             # element_time = round(time.perf_counter()-start, 3)
             # sibling_time = 0
