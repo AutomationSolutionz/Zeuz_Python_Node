@@ -182,6 +182,16 @@ def Remove_coordinate(root):
         Remove_coordinate(each)
 
 
+def Remove_attribs(root):
+    for each in root:
+        att = each.attrib
+        if "found" in att: del att["found"]
+        if "area" in att: del att["area"]
+        if "pattern_list" in att: del att["pattern_list"]
+        if "Value" in att: del att["Value"]
+        Remove_attribs(each)
+
+
 def debugger_is_active() -> bool:
     """Return if the debugger is currently active"""
     gettrace = getattr(sys, 'gettrace', lambda : None)
@@ -312,16 +322,17 @@ def exact_path_maker(xmlElem, pathList:list, areaList=None, window_cond=False):
             else:
                 pathList[len(pathList) + branch_count] += path_
             if "area" in each_child.attrib:
-                areaList.append(each_child.attrib["area"])
+                areaList.append(float(each_child.attrib["area"]))
             exact_path_maker(each_child, pathList, areaList)
             branch_count += 1
         create_index(index_trace, each_child)
 
     if window_cond:
-        for i, path_ in enumerate(pathList):
+        sortIndex = [i[0] for i in sorted(enumerate(areaList), key=lambda x: x[1])]
+        for i in sortIndex:
             print(f"\n======== COPY Exact Path. Element Area = {areaList[i]} ========")
-            print(path_)
-            path = path_    # Todo
+            print(pathList[i])
+            path = pathList[sortIndex[0]]
 
 
 findall_time = 0; findall_count = 0; each_findall_time = []
@@ -368,10 +379,21 @@ def create_tree(xmlELem, ParentElement, level):
                 attribs["found"] = "True"
                 xmlChildElem = ET.SubElement(xmlELem, 'div', **attribs)
                 create_tree(xmlChildElem, each_child, level + 1)
+
                 if not xmlChildElem.findall(".//*[@zeuz='aiplugin']"):
                     xmlChildElem.set("zeuz", "aiplugin")
+
                     area = (float(right) - float(left)) * (float(bottom) - float(top))
                     xmlChildElem.set("area", f"{area}")
+
+                    pattern_list = [Automation.PatternName(i) for i in each_child.GetSupportedPatterns()]
+                    xmlChildElem.set("pattern_list", f"{pattern_list}")
+
+                    if "Value" in pattern_list:
+                        try: Value = str(each_child.GetCurrentPattern(ValuePattern.Pattern).Current.Value)
+                        except: Value = ""
+                        xmlChildElem.set("Value", Value)
+
 
             elif level >= No_of_level_to_skip:
                 xmlChildElem = ET.SubElement(xmlELem, 'div', **attribs)
@@ -389,7 +411,6 @@ def main():
 
         while True:
             if debugger_is_active():
-                pass
                 input("Press Enter to Continue")
             else:
                 os.system('pause')
@@ -398,7 +419,7 @@ def main():
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
             # x = 988; y = 1052
-            print(f"x = {x}, y = {y}")  # Todo: change it
+            print(f"x = {x}, y = {y}")
 
             print("Searching for the Element identifier")
 
@@ -432,16 +453,23 @@ def main():
             # with open(pathlib.Path("C:/Users/munta/Downloads/Element_.xml")) as f:
             #     root = ET.fromstring(f.read())
             create_tree(root, window, 0)
+
             ET.indent(root)
             xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
             with open("Element.xml", "w") as f:
                 f.write(xml_str)
+
             Remove_coordinate(root)
+
             tree = Tree(f"[cyan]{create_tag(root)}", guide_style="red")  # root of rich tree python
             printTree(root, tree)
             print(tree)
 
             exact_path_maker(root, [], [], True)
+
+            Remove_attribs(root)
+            ET.indent(root, "")
+            xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()
 
             # element_time = round(time.perf_counter()-start, 3)
             # sibling_time = 0
