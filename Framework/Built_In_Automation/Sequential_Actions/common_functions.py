@@ -558,13 +558,13 @@ def step_exit(data_set):
         action_value in failed_tag_list
     ):  # Convert user specified pass/fail into standard result
         if msg:
-            CommonUtil.ExecLog(sModuleInfo, f'<<<<< {msg} >>>>>', 3)
+            CommonUtil.ExecLog(sModuleInfo, f'{msg}', 3)
         return "zeuz_failed"
     elif action_value in skipped_tag_list:
         return "skipped"
     elif action_value in passed_tag_list:
         if msg:
-            CommonUtil.ExecLog(sModuleInfo, f'<<<<< {msg} >>>>>', 1)
+            CommonUtil.ExecLog(sModuleInfo, f'{msg}', 1)
         return "passed"
     else:
         CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
