@@ -1318,7 +1318,7 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    # Set timeout 
+    # Set timeout
     selenium_driver.set_page_load_timeout(page_load_timeout_sec)
 
     # Open URL in browser
@@ -1841,27 +1841,20 @@ def Click_Element(data_set, retry=0):
     global selenium_driver
     use_js = False  # Use js to click on element?
     try:
-        bodyElement = ""
+        location = ""
         for row in data_set:
-            if row[0] == "location" and row[1] == "element parameter":
-                bodyElement = LocateElement.Get_Element(
-                    [("tag", "element parameter", "body")], selenium_driver
-                )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
-                shared_var = row[2]  # Save shared variable name, or coordinates if entered directory in step data
+            if row[0] == "offset" and row[1] == "optional parameter":
+                location = row[2]  # Save shared variable name, or coordinates if entered directory in step data
             if "use js" in row[0].lower():
                 use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-    # Click using element
-    if bodyElement == "":
-        # Get element object
-        Element = LocateElement.Get_Element(data_set, selenium_driver)
-        if Element in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "zeuz_failed"
-
-        # Click element
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        return "zeuz_failed"
+    if location == "":
         try:
             if use_js:
                 # Click on element.
@@ -1908,21 +1901,23 @@ def Click_Element(data_set, retry=0):
 
     # Click using location
     else:
-        CommonUtil.ExecLog(sModuleInfo, "Using provided location", 0)
         try:
-            # Get coordinates
-            if "," in shared_var:  # These are coordinates, use directly
-                location = shared_var
-            else:  # Shared variable name was provided
-                location = Shared_Resources.Get_List_from_Shared_Variables(shared_var)
             location = location.replace(" ", "")
             location = location.split(",")
             x = float(location[0])
             y = float(location[1])
 
+            height_width = Element.size
+
+            ele_width = int((height_width)["width"])
+            ele_height = int((height_width)["height"])
+
+            total_x_offset = int((ele_width // 2) * (x / 100))
+            total_y_offset = int((ele_height // 2) * (y / 100))
+
             # Click coordinates
             actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(bodyElement, x, y)  # Move to coordinates (referrenced by body at 0,0)
+            actions.move_to_element_with_offset(Element, total_x_offset, total_y_offset)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
 
@@ -4754,8 +4749,8 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
-        # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+        ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
 
         return "passed"

@@ -133,10 +133,10 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 if row[2] != "ignore":
                     save_parameter = row[0]
             elif row[1].strip().lower() == "get parameter":
-                if row[0].strip().startswith("%|") and row[0].strip().endswith("|%"):
-                    get_parameter = row[0].strip().strip("%").strip("|")
+                if row[2].strip().startswith("%|") and row[2].strip().endswith("|%"):
+                    get_parameter = row[2].strip().strip("%").strip("|")
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign to get variable value", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign at right column to get variable value", 3)
                     return "zeuz_failed"
             elif row[1].strip().lower() == "optional parameter":
                 left = row[0].strip().lower()
