@@ -182,6 +182,14 @@ def Remove_coordinate(root):
         Remove_coordinate(each)
 
 
+def Remove_zeuz_aiplugin(root):
+    zeuz_aiplugins = root.findall(".//*[@zeuz='aiplugin']")
+    min_ = min([float(i.attrib["area"]) for i in zeuz_aiplugins])
+    for i in zeuz_aiplugins:
+        if min_ != float(i.attrib["area"]) : del i.attrib["zeuz"]
+
+
+
 def Remove_attribs(root):
     for each in root:
         att = each.attrib
@@ -467,6 +475,7 @@ def main():
 
             exact_path_maker(root, [], [], True)
 
+            Remove_zeuz_aiplugin(root)
             Remove_attribs(root)
             ET.indent(root, "")
             xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()
