@@ -67,9 +67,6 @@ class DeployHandler:
             time.sleep(random.randint(1, 3))
             self.on_connect_callback(reconnect)
             try:
-                if reconnect:
-                    print("[deploy] reconnecting")
-
                 reconnect = True
                 resp = requests.get(host)
 
@@ -81,7 +78,7 @@ class DeployHandler:
                     continue
 
                 if resp.status_code != requests.codes['ok']:
-                    print("[deploy] error communicating with the deploy service, status code:", resp.status_code)
+                    print("[deploy] error communicating with the deploy service, status code:", resp.status_code, " | reconnecting")
                     continue
 
                 self.on_message(resp.content)
