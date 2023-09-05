@@ -48,4 +48,5 @@ google-cloud-bigquery-storage
 xvfbwrapper
 deepdiff
 xmltodict
+configobj
 boto3

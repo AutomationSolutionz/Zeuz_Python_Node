@@ -307,7 +307,7 @@ def start_appium_server():
                 break  # Give up if max time was hit
             try:  # If this works, then stop waiting for appium
                 r = requests.get(
-                    "http://localhost:%d/wd/hub/sessions" % appium_port
+                    "http://localhost:%d/sessions" % appium_port
                 )  # Poll appium server
                 if r.status_code:
                     break
@@ -478,9 +478,23 @@ def set_extension_variables():
                 file.write(text.replace("__ZeuZ__SibLing_maPP_true", "__ZeuZ__SibLing_maPP", 1))
 
 
+def browser_process_status(browser:str):
+    list_process_command = ['tasklist']
+    seacrh_command = ['findstr', f'{browser}.exe']
+
+    list_process = subprocess.Popen(list_process_command, stdout=subprocess.PIPE)
+    search_process = subprocess.Popen(seacrh_command, stdin=list_process.stdout, stdout=subprocess.PIPE, text=True)
+
+    output,_ = search_process.communicate()
+
+    if output:
+        return True
+    else:
+        return False
+
 initial_download_folder = None
 @logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None, profile_options=None):
     """ Launch browser and create instance """
 
     global selenium_driver
@@ -538,8 +552,58 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     try:
         CommonUtil.teardown = True
-        browser = browser.lower().strip()
+        browser = browser.lower().strip() 
+        import selenium
         selenium_version = selenium.__version__
+
+        kill_process = False
+
+        browser_map = {
+            "microsoft edge chromium": 'msedge',
+            "chrome": "chrome",
+            "firefox": "firefox",
+            "chromeheadless": "chrome",
+            "firefoxheadless": "firefox",
+            "edgechromiumheadless": "msedge",
+        }
+
+        if profile_options:
+            if browser.strip().lower() in browser_map.keys():
+                browser_short_form = browser_map[browser] 
+                process_status = browser_process_status(browser_short_form)
+                for options in profile_options:
+                    if options[0] == "autokillforprofile" and options[1] == "True":
+                        kill_process = True
+
+                if process_status == True and kill_process == False:
+                    err_msg = f'''
+                    Please close all the {browser} browser instance.
+                    Or, use the following optional parameter to do it automatically:
+                    ( auto kill for profile | browser option | True )
+                    '''
+                    CommonUtil.ExecLog(
+                        sModuleInfo, err_msg, 3
+                    )
+                    raise Exception
+                elif process_status == True and kill_process == True:
+                    task_kill_command = ['taskkill', '/IM', f'{browser_short_form}.exe', '/F']
+                    task_kill_process = subprocess.Popen(task_kill_command, stdout=subprocess.PIPE, text=True)
+                    kill_output,err = task_kill_process.communicate()
+                    kill_output_status = kill_output.split()[0]
+                    if kill_output_status == "SUCCESS:":
+                        CommonUtil.ExecLog(
+                            sModuleInfo, f"Successfully terminated all the {browser_short_form}.exe processes", 1
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo, f"Could not terminate the {browser_short_form}.exe processes", 3
+                        )
+            else:
+                CommonUtil.ExecLog(
+                        sModuleInfo, f"ZeuZ does not support browser profile for {browser} browser", 3
+                    )
+                raise Exception
+                
         if browser in ("ios",):
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
@@ -570,15 +634,18 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             from appium import webdriver as appiumdriver
 
-            selenium_driver = appiumdriver.Remote("http://localhost:%d/wd/hub" % appium_port, capabilities)
+            selenium_driver = appiumdriver.Remote("http://localhost:%d" % appium_port, capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
 
         elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
-            if not chrome_path:
-                chrome_path = ChromeDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
+            try:
+                if not chrome_path:
+                    chrome_path = ChromeDriverManager().install()
+                    ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to download chromedriver using ChromedriverManager", 2)
             options = Options()
 
             if remote_browser_version:
@@ -613,6 +680,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                             _prefs = right["prefs"]
                         else:
                             options.add_experimental_option(list(right.items())[0][0], list(right.items())[0][1])
+
+            if profile_options:
+                for left, right in profile_options:
+                    if left in ("addargument", "addarguments"):
+                        options.add_argument(right.strip())
+                        print(left, right)
 
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
@@ -651,13 +724,19 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     options=options,
                 )
             else:
-                if selenium_version.startswith('4.'):
-                    service = Service(chrome_path)
+                import selenium
+                from distutils.version import StrictVersion
+
+                required_version = StrictVersion('4.10.0')
+                installed_version = StrictVersion(selenium.__version__)
+
+                if installed_version >= required_version:
+                    service = Service()
                     selenium_driver = webdriver.Chrome(
                         service=service,
                         options=options,
                     )
-                elif selenium_version.startswith('3.'):
+                else:
                     d = DesiredCapabilities.CHROME
                     d["loggingPrefs"] = {"browser": "ALL"}
                     d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -666,8 +745,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         chrome_options=options,
                         desired_capabilities=d
                     )
-                else:
-                    print("Please update selenium & rerun node_cli file again.")
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -691,6 +769,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
+
+            if profile_options:
+                for left, right in profile_options:
+                    if left in ("addargument", "addarguments"):
+                        options.add_argument(right.strip())
+                        print(left, right)
 
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
@@ -795,6 +879,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.set_capability("browserVersion",remote_browser_version)
 
             options.use_chromium = True
+
+            if profile_options:
+                for left, right in profile_options:
+                    if left in ("addargument", "addarguments"):
+                        options.add_argument(right.strip())
+                        print(left, right)
 
             if "headless" in browser:
                 def edgeheadless():
@@ -942,7 +1032,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             return "passed"
         elif 'browserstack' in browser:
             selenium_driver = webdriver.Remote(
-                command_executor= remote_host + '/wd/hub',
+                command_executor= remote_host,
                 desired_capabilities=remote_desired_cap)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
@@ -1126,6 +1216,7 @@ def Go_To_Link(step_data, page_title=False):
 
     # options for add_argument or add_extension etc
     browser_options = []
+    profile_options = []
 
     # Open browser and create driver if user has not already done so
     global dependency
@@ -1169,6 +1260,8 @@ def Go_To_Link(step_data, page_title=False):
                 browser_options.append([left, right.strip()])
             elif mid.strip().lower() in ("chrome experimental option", "chrome experimental options") and dependency["Browser"].lower() == "chrome":
                 browser_options.append(["addexperimentaloption", {left.strip():CommonUtil.parse_value_into_object(right.strip())}])
+            elif mid.strip().lower() in ("profile option", "profile options"):
+                profile_options.append([left, right.strip()])
 
         if browser_options:
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
@@ -1197,13 +1290,13 @@ def Go_To_Link(step_data, page_title=False):
                 Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
 
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -1225,7 +1318,7 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    # Set timeout 
+    # Set timeout
     selenium_driver.set_page_load_timeout(page_load_timeout_sec)
 
     # Open URL in browser
@@ -1247,13 +1340,13 @@ def Go_To_Link(step_data, page_title=False):
             else:
                 return CommonUtil.Exception_Handler(sys.exc_info())
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
         else:
             result = "zeuz_failed"
 
@@ -1748,27 +1841,20 @@ def Click_Element(data_set, retry=0):
     global selenium_driver
     use_js = False  # Use js to click on element?
     try:
-        bodyElement = ""
+        location = ""
         for row in data_set:
-            if row[0] == "location" and row[1] == "element parameter":
-                bodyElement = LocateElement.Get_Element(
-                    [("tag", "element parameter", "body")], selenium_driver
-                )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
-                shared_var = row[2]  # Save shared variable name, or coordinates if entered directory in step data
+            if row[0] == "offset" and row[1] == "optional parameter":
+                location = row[2]  # Save shared variable name, or coordinates if entered directory in step data
             if "use js" in row[0].lower():
                 use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-    # Click using element
-    if bodyElement == "":
-        # Get element object
-        Element = LocateElement.Get_Element(data_set, selenium_driver)
-        if Element in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "zeuz_failed"
-
-        # Click element
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        return "zeuz_failed"
+    if location == "":
         try:
             if use_js:
                 # Click on element.
@@ -1815,21 +1901,23 @@ def Click_Element(data_set, retry=0):
 
     # Click using location
     else:
-        CommonUtil.ExecLog(sModuleInfo, "Using provided location", 0)
         try:
-            # Get coordinates
-            if "," in shared_var:  # These are coordinates, use directly
-                location = shared_var
-            else:  # Shared variable name was provided
-                location = Shared_Resources.Get_List_from_Shared_Variables(shared_var)
             location = location.replace(" ", "")
             location = location.split(",")
             x = float(location[0])
             y = float(location[1])
 
+            height_width = Element.size
+
+            ele_width = int((height_width)["width"])
+            ele_height = int((height_width)["height"])
+
+            total_x_offset = int((ele_width // 2) * (x / 100))
+            total_y_offset = int((ele_height // 2) * (y / 100))
+
             # Click coordinates
             actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(bodyElement, x, y)  # Move to coordinates (referrenced by body at 0,0)
+            actions.move_to_element_with_offset(Element, total_x_offset, total_y_offset)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
 
@@ -4661,8 +4749,8 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
-        # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+        ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
 
         return "passed"

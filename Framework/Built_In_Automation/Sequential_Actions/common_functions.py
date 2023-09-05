@@ -991,15 +991,54 @@ def New_Compare_Variables(step_data):
         check_exclusion = False
         check_subset = False
         compare_json = False; ignore_keys = []; map_keys = {}
-        ignore_string_case = False; ignore_numeric_type_changes = False
+        # Whether to be case-sensitive or not when comparing strings. By setting
+        # ignore_string_case=False, strings will be compared case-insensitively.
+        ignore_string_case = False
+        ignore_numeric_type_changes = False
         global nested, datatype1, datatype2
         nested, datatype1, datatype2 = False, "", ""
+
+        # --- Deep-diff specific features, these default values are taken from the
+        # deep diff docs.
+
+        # truncate_datetime can take value one of ‘second’, ‘minute’, ‘hour’,
+        # ‘day’ and truncate with this value datetime objects before hashing it
+        truncate_datetime = None
+
+        # Whether to be case-sensitive or not when comparing strings. By setting
+        # ignore_string_case=False, strings will be compared case-insensitively.
+        ignore_string_case = False
+
+        # Whether to ignore float(‘nan’) inequality in Python.
+        ignore_nan_inequality = False
+
+        # significant_digits defines the number of digits AFTER the decimal point
+        # to be used in the comparison.
+        significant_digits = None
+
+        # math_epsilon uses Python’s built in Math.isclose. It defines a tolerance
+        # value which is passed to math.isclose(). Any numbers that are within the
+        # tolerance will not report as being different. Any numbers outside of
+        # that tolerance will show up as different.
+        math_epsilon = None
+        # --- Deep-diff end
 
         for left, mid, right in step_data:
             mid = mid.strip().lower()
             if mid in ("compare", "element parameter"):
                 list1_name = left
                 list2_name = right
+
+            # Deep-diff specific features
+            elif "diff: truncate datetime" in left:
+                truncate_datetime = right.strip()
+            elif "diff: ignore nan inequality" in left:
+                ignore_nan_inequality = CommonUtil.parse_value_into_object(right) == True
+            elif "diff: significant digits" in left:
+                significant_digits = int(CommonUtil.parse_value_into_object(right))
+            elif "diff: math epsilon" in left:
+                math_epsilon = float(CommonUtil.parse_value_into_object(right))
+
             elif "action" in mid:
                 action_type = right.replace(" ", "").replace("_", "").lower()
                 if "exactmatch" in action_type:
@@ -1016,6 +1055,7 @@ def New_Compare_Variables(step_data):
                     ignore_numeric_type_changes = True
                 if "ignorestringcase" in action_type:
                     ignore_string_case = True
+
             elif left.replace(" ", "").replace("_", "").lower() == "ignorekeys":
                 ignore_keys = CommonUtil.parse_value_into_object(right.strip())
             elif left.replace(" ", "").replace("_", "").lower() == "mapkeys":
@@ -1023,6 +1063,10 @@ def New_Compare_Variables(step_data):
             elif mid.replace(" ", "").lower() == "label":
                 Left = left.strip()
                 Right = right.strip()
+
+        if math_epsilon:
+            match_by_index = False
+            CommonUtil.ExecLog(sModuleInfo, f"Match By Index is set to False as Math Epsilon is being used", 2)
 
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
@@ -1052,6 +1096,11 @@ def New_Compare_Variables(step_data):
                 ignore_order=not match_by_index,
                 ignore_string_case=ignore_string_case,
                 ignore_numeric_type_changes=ignore_numeric_type_changes,
+
+                truncate_datetime=truncate_datetime,
+                ignore_nan_inequality=ignore_nan_inequality,
+                significant_digits=significant_digits,
+                math_epsilon=math_epsilon,
             )
 
             diff21 = DeepDiff(
@@ -1060,6 +1109,11 @@ def New_Compare_Variables(step_data):
                 ignore_order=not match_by_index,
                 ignore_string_case=ignore_string_case,
                 ignore_numeric_type_changes=ignore_numeric_type_changes,
+
+                truncate_datetime=truncate_datetime,
+                ignore_nan_inequality=ignore_nan_inequality,
+                significant_digits=significant_digits,
+                math_epsilon=math_epsilon,
             )
             if not diff21 and not diff12:
                 CommonUtil.ExecLog(sModuleInfo, f"{Left} ({datatype1}):\n{list1_str}\n\n{Right} ({datatype2}):\n{list2_str}", 1)
