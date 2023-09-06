@@ -732,6 +732,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
                 if installed_version >= required_version:
                     service = Service()
+                    if installed_version == required_version:
+                        service.path = chrome_path
                     selenium_driver = webdriver.Chrome(
                         service=service,
                         options=options,
@@ -1057,7 +1059,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         # time.sleep(3)
 
     except SessionNotCreatedException as exc:
-        if "This version" in exc.msg and "only supports" in exc.msg:
+        if "This version" in exc.msg and "only supports" in exc.msg and not installed_version >= required_version:
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
@@ -1078,7 +1080,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             return CommonUtil.Exception_Handler(sys.exc_info())
 
     except WebDriverException as exc:
-        if "needs to be in PATH" in exc.msg:
+        if "needs to be in PATH" in exc.msg and not installed_version >= required_version:
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdriver",
