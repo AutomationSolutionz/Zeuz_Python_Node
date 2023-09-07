@@ -1,7 +1,6 @@
 # Auhtor: sazid
 
 import json
-from pathlib import Path
 from typing import Dict, List
 
 # Uncomment the following lines for single-file debug
@@ -18,16 +17,16 @@ def read_actions(actions_pb) -> List[Dict]:
     for action in actions_pb:
         rows = []
         actions.append({
-            "action_name": action.name,
-            "action_disabled": not action.enabled,
+            "action_name": action["name"],
+            "action_disabled": not action["enabled"],
             "step_actions": rows,
         })
 
         for row in action.rows:
             rows.append([
-                row.data[0],
-                row.data[1],
-                row.data[2],
+                row["data"][0],
+                row["data"][1],
+                row["data"][2],
             ])
     return actions
 
@@ -36,33 +35,33 @@ def read_steps(steps_pb) -> List[Dict]:
     steps = []
     for step in steps_pb:
         attachments = []
-        for attachment in step.step_info.attachments:
+        for attachment in step["stepInfo"]["attachments"]:
             attachments.append({
-                "id": attachment.id,
-                "path": attachment.path,
-                "uploaded_by": attachment.uploaded_by,
-                "uploaded_at": attachment.uploaded_at,
-                "hash": attachment.hash,
+                "id": attachment["id"],
+                "path": attachment["path"],
+                "uploaded_by": attachment["uploadedBy"],
+                "uploaded_at": attachment["uploadedAt"],
+                "hash": attachment["hash"],
             })
 
         steps.append(
             {
-                "step_id": step.step_id, # TODO: verify if it should be step.id or step.step_id
-                "step_name": step.name,
-                "step_sequence": step.sequence,
-                "step_driver_type": step.step_info.driver,
-                "automatablity": step.step_info.step_type,
-                "always_run": step.step_info.always_run,
-                "run_on_fail": step.step_info.run_on_fail,
+                "step_id": step["stepId"], # TODO: verify if it should be step["id"] or step["stepId"]
+                "step_name": step["name"],
+                "step_sequence": step["sequence"],
+                "step_driver_type": step["stepInfo"]["driver"],
+                "automatablity": step["stepInfo"]["stepType"],
+                "always_run": step["stepInfo"]["alwaysRun"],
+                "run_on_fail": step["stepInfo"]["runOnFail"],
                 "step_function": "Sequential Actions",
-                "step_driver": step.step_info.driver,
-                "type": step.type,
+                "step_driver": step["stepInfo"]["driver"],
+                "type": step["type"],
                 "attachments": attachments,
-                # "verify_point": step.step_info.verify_point, //global verify_point ,step.verify_point // local verify point 
-                "verify_point": step.verify_point, 
-                "continue_on_fail": step.continue_point,
-                "step_time": step.time,
-                "actions": read_actions(step.actions),
+                # "verify_point": step["stepInfo"]["verifyPoint"], //global verify_point ,step["verifyPoint"] // local verify point 
+                "verify_point": step["verifyPoint"], 
+                "continue_on_fail": step["continuePoint"],
+                "step_time": step["time"],
+                "actions": read_actions(step["actions"]),
             }
         )
     return steps
@@ -72,22 +71,22 @@ def read_test_cases(test_cases_pb) -> List[Dict]:
     test_cases = []
     for tc in test_cases_pb:
         attachments = []
-        for attachment in tc.attachments:
+        for attachment in tc["attachments"]:
             attachments.append({
-                "id": attachment.id,
-                "path": attachment.path,
-                "uploaded_by": attachment.uploaded_by,
-                "uploaded_at": attachment.uploaded_at,
-                "hash": attachment.hash,
+                "id": attachment["id"],
+                "path": attachment["path"],
+                "uploaded_by": attachment["uploadedBy"],
+                "uploaded_at": attachment["uploadedAt"],
+                "hash": attachment["hash"],
             })
 
         test_cases.append({
-            "testcase_no": tc.test_case_detail.id,
-            "title": tc.test_case_detail.name,
-            "automatability": tc.test_case_detail.automatability,
+            "testcase_no": tc["testCaseDetail"]["id"],
+            "title": tc["testCaseDetail"]["name"],
+            "automatability": tc["testCaseDetail"]["automatability"],
             "debug_steps": [],
             "attachments": attachments,
-            "steps": read_steps(tc.steps),
+            "steps": read_steps(tc["steps"]),
         })
     return test_cases
 
@@ -98,25 +97,24 @@ def adapt(message: str, node_id: str) -> List[Dict]:
     suitable for consumption by MainDriver.
     """
 
-    r = DeployResponse()
-    r.ParseFromString(message)
+    r = json.loads(message)
 
     # TODO: Check r.server_version and create different adapeter classes for new
     # schemaa changes.
 
     result = {
-        "server_version": r.server_version,
+        "server_version": r["serverVersion"],
 
-        "run_id": r.run_id,
-        "objective": r.deploy_info.objective,
-        "project_id": r.deploy_info.project_id,
-        "team_id": r.deploy_info.team_id,
+        "run_id": r["runId"],
+        "objective": r["deployInfo"]["objective"],
+        "project_id": r["deployInfo"]["projectId"],
+        "team_id": r["deployInfo"]["teamId"],
 
-        "test_cases": read_test_cases(r.test_cases),
+        "test_cases": read_test_cases(r["testCases"]),
 
         "dependency_list": {
-            "Browser": r.deploy_info.dependency.browser,
-            "Mobile": r.deploy_info.dependency.mobile,
+            "Browser": r["deployInfo"]["dependency"]["browser"],
+            "Mobile": r["deployInfo"]["dependency"]["mobile"],
         },
 
         "device_info": None,
@@ -125,38 +123,38 @@ def adapt(message: str, node_id: str) -> List[Dict]:
         "file_name": f"{node_id}_1",
 
         "runtime_settings": {
-            "debug_mode": r.deploy_info.debug.debug_mode,
-            "is_linked": r.deploy_info.runtime_settings.is_linked,
-            "local_run": r.deploy_info.runtime_settings.local_run,
-            "rerun_on_fail": r.deploy_info.runtime_settings.rerun_on_fail,
-            "take_screenshot": r.deploy_info.runtime_settings.take_screenshot,
-            "threading": r.deploy_info.runtime_settings.threading,
-            "upload_log_file_only_for_fail": r.deploy_info.runtime_settings.upload_log_file_only_for_fail,
-            "window_size_x": r.deploy_info.runtime_settings.window_size_x,
-            "window_size_y": r.deploy_info.runtime_settings.window_size_y,
+            "debug_mode": r["deployInfo"]["debug"]["debugMode"],
+            "is_linked": r["deployInfo"]["runtimeSettings"]["isLinked"],
+            "local_run": r["deployInfo"]["runtimeSettings"]["localRun"],
+            "rerun_on_fail": r["deployInfo"]["runtimeSettings"]["rerunOnFail"],
+            "take_screenshot": r["deployInfo"]["runtimeSettings"]["takeScreenshot"],
+            "threading": r["deployInfo"]["runtimeSettings"]["threading"],
+            "upload_log_file_only_for_fail": r["deployInfo"]["runtimeSettings"]["uploadLogFileOnlyForFail"],
+            "window_size_x": r["deployInfo"]["runtimeSettings"]["windowSizeX"],
+            "window_size_y": r["deployInfo"]["runtimeSettings"]["windowSizeY"],
         },
 
-        "debug": "yes" if r.deploy_info.debug.debug_mode else "no",
-        "debug_clean": "YES" if r.deploy_info.debug.cleanup else "NO",
+        "debug": "yes" if r["deployInfo"]["debug"]["debugMode"] else "no",
+        "debug_clean": "YES" if r["deployInfo"]["debug"]["cleanup"] else "NO",
         "debug_step_actions": [],
         "debug_steps": [],
     }
 
-    # if r.deploy_info.device_info:
-    #     if r.deploy_info.device_info == "local_device":
-    #         r.deploy_info.device_info = "[[1, 1]]"
+    # if r["deployInfo"].device_info:
+    #     if r["deployInfo"].device_info == "local_device":
+    #         r["deployInfo"].device_info = "[[1, 1]]"
     # else:
-    #     r.deploy_info.device_info = "[[1, 1]]"
-    if r.deploy_info.device_info.strip() == "" \
-            or r.deploy_info.device_info.strip() == "local_device":
-        # r.deploy_info.device_info = json.dumps([])
-        r.deploy_info.device_info = json.dumps([[1, 1]])
+    #     r["deployInfo"].device_info = "[[1, 1]]"
+    if r["deployInfo"]["deviceInfo"].strip() == "" \
+            or r["deployInfo"]["deviceInfo"].strip() == "local_device":
+        # r["deployInfo"]["deviceInfo"] = json.dumps([])
+        r["deployInfo"]["deviceInfo"] = json.dumps([[1, 1]])
 
-    result["device_info"] = json.loads(r.deploy_info.device_info)
+    result["device_info"] = json.loads(r["deployInfo"]["deviceInfo"])
 
 
     # Add debug information
-    for tc in r.deploy_info.debug.test_cases:
+    for tc in r["deployInfo"].debug.test_cases:
         actions = []
         for step in tc.steps:
             result["debug_steps"].append(step.sequence)
@@ -170,10 +168,10 @@ def adapt(message: str, node_id: str) -> List[Dict]:
 
 
     # Read runtime parameters
-    for rp in r.deploy_info.runtime_parameters:
+    for rp in r["deployInfo"]["runtimeParameters"]:
         result["run_time"][rp.key] = {
-            "field": rp.key,
-            "subfield": rp.value,
+            "field": rp["key"],
+            "subfield": rp["value"],
         }
 
     return [result,]
