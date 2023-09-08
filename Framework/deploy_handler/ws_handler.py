@@ -165,7 +165,7 @@ class DeployHandler:
 
 
 if __name__ == "__main__":
-    from Framework.deploy_handler import proto_adapter
+    from Framework.deploy_handler import adapter
 
     node_id = "admin_node1"
     host = f"ws://localhost:8300/zsvc/deploy/connect/{node_id}"
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     # TODO: Save the response with an *adapter* to the appropriate location.
     # TODO: Call MainDriver with the given callback.
     def response_callback(response: str):
-        node_json = proto_adapter.adapt(response, node_id)
+        node_json = adapter.adapt(response, node_id)
         print(node_json[0]["run_id"])
 
     def done_callback():

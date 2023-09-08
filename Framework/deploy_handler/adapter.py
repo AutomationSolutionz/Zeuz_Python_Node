@@ -22,7 +22,7 @@ def read_actions(actions_pb) -> List[Dict]:
             "step_actions": rows,
         })
 
-        for row in action.rows:
+        for row in action["rows"]:
             rows.append([
                 row["data"][0],
                 row["data"][1],
@@ -154,11 +154,11 @@ def adapt(message: str, node_id: str) -> List[Dict]:
 
 
     # Add debug information
-    for tc in r["deployInfo"].debug.test_cases:
+    for tc in r["deployInfo"]["debug"]["testCases"]:
         actions = []
-        for step in tc.steps:
-            result["debug_steps"].append(step.sequence)
-            actions += list(step.actions)
+        for step in tc["steps"]:
+            result["debug_steps"].append(step["sequence"])
+            actions += list(step["actions"])
 
         result["debug_step_actions"] = actions
         # For now, node supports debugging only a single test case, which is why
@@ -169,7 +169,7 @@ def adapt(message: str, node_id: str) -> List[Dict]:
 
     # Read runtime parameters
     for rp in r["deployInfo"]["runtimeParameters"]:
-        result["run_time"][rp.key] = {
+        result["run_time"][rp["key"]] = {
             "field": rp["key"],
             "subfield": rp["value"],
         }
