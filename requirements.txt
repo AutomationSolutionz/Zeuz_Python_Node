@@ -39,7 +39,6 @@ beautifulsoup4
 premailer
 html-diff
 pdf2image
-protobuf
 pytz
 rauth
 python-dotenv

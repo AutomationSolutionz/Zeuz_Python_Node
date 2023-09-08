@@ -1,13 +1,10 @@
 # Author: sazid
 
-from typing import Callable
+from typing import Any, Callable
 import traceback
 import time
 import random
 import requests
-
-# Comment the following line for single-file debug
-from Framework.pb.v1.deploy_response_message_pb2 import DeployResponse
 
 
 class DeployHandler:
@@ -24,7 +21,7 @@ class DeployHandler:
     def __init__(
         self,
         on_connect_callback: Callable[[bool], None],
-        response_callback: Callable[[DeployResponse], None],
+        response_callback: Callable[[Any], None],
         cancel_callback: Callable[[None], None],
         done_callback: Callable[[None], bool],
     ) -> None:

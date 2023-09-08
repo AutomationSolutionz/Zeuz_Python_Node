@@ -1,15 +1,12 @@
 # Auhtor: sazid
 
 import json
-from typing import Dict, List
+from typing import Any, Dict, List
 
 # Uncomment the following lines for single-file debug
 # import sys
 # sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 # from pb.v1.deploy_response_message_pb2 import DeployResponse
-
-# Comment the following line for single-file debug
-from Framework.pb.v1.deploy_response_message_pb2 import DeployResponse
 
 
 def read_actions(actions_pb) -> List[Dict]:
