@@ -6,6 +6,7 @@
 *.ini
 *.log
 *.bak
+*.zvt
 
 .idea/
 .venv/
