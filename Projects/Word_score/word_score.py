@@ -163,6 +163,7 @@ def partial_text_finder4(text):
     ww = list(ww)
     return ww
 def __split_words(raw_att_text):
+    """ Splits a string with Camel case and non-alphabet characters """
     word_list = []
     # split by upper case words
     word_list_1 = __split_on_uppercase(raw_att_text, keep_contiguous=True)
@@ -191,13 +192,13 @@ def __split_on_uppercase(s, keep_contiguous=True):
             start = i
     parts.append(s[start:])
     return parts
-if __name__ == "__main__":
-    # dataset = prepare_dataset()
-    dataset = get_dataset()
 
-    text = "helloa_dsvNoisdh-voi hsd1soidn!v  "
-    text = "usernametxtdevhtmlcssztadqa"
-    text_ls = text.lower().strip()
+def partial_words(text):
+    text_l = text.lower()
+    text_ls = text_l.strip()
+    # If blank text then return text with score 0
+    if text_ls == "":
+        return [("", text, 0)]
     texts = __split_words(text)
     ninja_texts = []
     for t in texts:
@@ -211,7 +212,7 @@ if __name__ == "__main__":
         if i in "_- ":
             partial_word += i
             c += 1
-        elif i.isalpha() and j < len(ninja_texts) and ninja_texts[j] == text_ls[c:c+len(ninja_texts[j])]:
+        elif i.isalpha() and j < len(ninja_texts) and ninja_texts[j] == text_ls[c:c + len(ninja_texts[j])]:
             partial_word += ninja_texts[j]
             c += len(ninja_texts[j])
             j += 1
@@ -227,10 +228,52 @@ if __name__ == "__main__":
                 partial_words.append(partial_word_strip)
             break
 
-    # for i, partial_word in enumerate(partial_words):
-    #     pass
+    # print(f"partial_words = {partial_words}")
 
+    # If no meaningful word found return full text with score 0
+    if len(partial_words) == 0:
+        return tuple(("", text, 0))
 
+    """For now taking 3 longest meaningful portion from a string.
+    "Username  txtdevhtmlqqcssztadqa  " splits into ['username  txtdevhtml', 'cssztadqa']
+    return 
+        (*attr = 'username  txtdevhtml')
+        (*attr = 'cssztadqa')
+    """
+    if partial_words[0] == text:
+        return [("", partial_words[0], 100)]
+
+    ret = []
+    partial_words.sort(key=lambda x:len(x), reverse=True)
+    for partial_word in partial_words:
+        if len(partial_word) < 4 and len(text) > 6:     # won't take 2 or 3 letter words
+            continue
+        score = round(100 - 30 * (1 - len(partial_word)/len(text)))
+        i = text_l.find(partial_word)
+        temp_text = text[i:i+len(partial_word)]
+        ret.append(("*", temp_text, score))
+        if len(ret) == 3:
+            break
+
+    return ret
+
+if __name__ == "__main__":
+    # dataset = prepare_dataset()
+    dataset = get_dataset()
+
+    for text in [
+        "Username  txtdevhtmlqqcssztadqa  ",
+        "helloa_dsvNoisdh-voi hsd1soidn!v  ",
+        "",
+        "  ",
+        "h27&G87G5f7Creditvisionscore!h78g5238",
+        "h27&G87G5f7Creditvisionscore!h78g5hello MyNameis__Html238",
+        "h27&G87G5f7CreditvisionscORe!h78g5hello MyNameis__Html238",
+        "usernametxt",
+    ]:
+        ret = partial_words(text)
+        print(ret,end="\n\n")
+    print()
 
 
     score = __word_score(["usernametext"])
@@ -240,6 +283,15 @@ if __name__ == "__main__":
     print(word_list)
 
     """ Bench Marking """
+    s = time.perf_counter()
+    for data in dataset:
+        # print(data)
+        word_list = partial_words(data)
+        # print(len(word_list), word_list)
+    duration = time.perf_counter() - s
+    print("\n\n------------ Finished --------------")
+    print(duration, "sec\n\n")
+
     s = time.perf_counter()
     for data in dataset:
         # print(data)
