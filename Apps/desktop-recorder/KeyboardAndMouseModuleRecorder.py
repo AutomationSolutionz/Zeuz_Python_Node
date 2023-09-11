@@ -15,6 +15,7 @@ class EventType(Enum):
     MouseDown = auto()
     MouseWheel = auto()
     KeyDown = auto()
+    KeyUp = auto()
 
 
 class EventData:
@@ -81,7 +82,11 @@ class KeyboardAndMouseModuleRecorder:
 
     def capture_keyboard(self, event):
         timestamp = time.strftime("%H:%M:%S", time.localtime())
-        if event.event_type == keyboard.KEY_DOWN:
+        if event.event_type == keyboard.KEY_UP:
+            data = EventData(EventType.KeyUp, timestamp, event)
+            self.recording_data["events"].append(data)
+            # print(data)
+        elif event.event_type == keyboard.KEY_DOWN:
             data = EventData(EventType.KeyDown, timestamp, event)
             self.recording_data["events"].append(data)
             # print(data)
@@ -100,45 +105,47 @@ class KeyboardAndMouseModuleRecorder:
         with open(name, "wb") as f:
             pickle.dump(self.recording_data, f)
 
-    # def replay(self,
-    #            filename: str,
-    #            type_delay: int = 0.05,
-    #            mouse_click_delay: int = 0.03,
-    #            mouse_move_delay: int = 0.003,
-    #            mouse_scroll_delay: int = 0.01
-    #            ) -> None:
-    #     """
-    #     filename: str, recorded file to load and replay
-    #     type_delay: int, delay between each key press (speed of typing)
-    #     mouse_click_delay: int, delay between each mouse click
-    #     mouse_move_delay: int, control how slow the mouse moves
-    #     mouse_scroll_delay: int, control how slow mouse scrolls
-    #     """
-    #     with open(filename, "rb") as f:
-    #         self.recording_data = pickle.load(f)
-    #
-    #     events = self.recording_data["events"]
-    #
-    #     for event in events:
-    #         if event.event_type == EventType.KeyDown:
-    #             if event.data.event_type == keyboard.KEY_DOWN:
-    #                 keyboard.press(event.data.name)
-    #                 keyboard.release(event.data.name)
-    #             time.sleep(type_delay)
-    #         else:
-    #             data = event.data
-    #             if isinstance(data, mouse.MoveEvent):
-    #                 mouse.move(data.x, event.data.y)
-    #                 time.sleep(mouse_move_delay)
-    #             elif isinstance(data, mouse.ButtonEvent):
-    #                 if data.event_type == mouse.UP:
-    #                     mouse.press(data.button)
-    #                     mouse.release(data.button)
-    #                     time.sleep(mouse_click_delay)
-    #
-    #             elif isinstance(data, mouse.WheelEvent):
-    #                 mouse.wheel(data.delta)
-    #                 time.sleep(mouse_scroll_delay)
+    def replay(self,
+               filename: str,
+               type_delay: int = 0.05,
+               mouse_click_delay: int = 0.03,
+               mouse_move_delay: int = 0.001,
+               mouse_scroll_delay: int = 0.01
+               ) -> None:
+        """
+        filename: str, recorded file to load and replay
+        type_delay: int, delay between each key press (speed of typing)
+        mouse_click_delay: int, delay between each mouse click
+        mouse_move_delay: int, control how slow the mouse moves
+        mouse_scroll_delay: int, control how slow mouse scrolls
+        """
+        time.sleep(5)
+        with open(filename, "rb") as f:
+            self.recording_data = pickle.load(f)
+
+        events = self.recording_data["events"]
+
+        for event in events:
+            if event.event_type == EventType.KeyUp or event.event_type == EventType.KeyDown:
+                if event.data.event_type == keyboard.KEY_DOWN:
+                    keyboard.press(event.data.name.lower())
+                    time.sleep(type_delay)
+                elif event.data.event_type == keyboard.KEY_UP:
+                    keyboard.release(event.data.name.lower())
+            else:
+                data = event.data
+                if isinstance(data, mouse.MoveEvent):
+                    mouse.move(data.x, event.data.y)
+                    time.sleep(mouse_move_delay)
+                elif isinstance(data, mouse.ButtonEvent):
+                    if data.event_type == mouse.UP:
+                        mouse.press(data.button)
+                        mouse.release(data.button)
+                        time.sleep(mouse_click_delay)
+
+                elif isinstance(data, mouse.WheelEvent):
+                    mouse.wheel(data.delta)
+                    time.sleep(mouse_scroll_delay)
 
     def record(self):
         print("Starting recording in 3 sec...")
@@ -161,7 +168,7 @@ class KeyboardAndMouseModuleRecorder:
 
 
 if __name__ == "__main__":
-    time.sleep(1)
+    time.sleep(5)
     er = KeyboardAndMouseModuleRecorder()
     er.record()
     # er.replay("recording_1.zvt")
