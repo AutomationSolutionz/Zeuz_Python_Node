@@ -56,7 +56,7 @@ stateDiagram-v2
         cancel_callback --> deploy_svc_connect : Stop running and start new session
 
         response_callback --> proto_adapter
-        proto_adapter --> save_json : converts the protobuf into expected json format
+        adapter --> save_json : converts the test case data into node's expected json format
         save_json --> MainDriver : reads the json content
 
         MainDriver --> run_tc

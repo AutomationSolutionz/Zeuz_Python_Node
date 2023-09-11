@@ -48,7 +48,6 @@ rich
 beautifulsoup4
 premailer
 html-diff
-protobuf
 pytz
 rauth
 python-dotenv

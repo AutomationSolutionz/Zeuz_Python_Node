@@ -33,10 +33,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-import sys, time, os.path, base64, signal, argparse, requests, zipfile
+import sys, time, os.path, base64, signal, argparse, requests
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
-from tqdm import tqdm
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -117,8 +116,8 @@ import json
 from rich import traceback
 traceback.install(show_locals=True, max_frames=1)
 
-from Framework.deploy_handler import handler
-from Framework.deploy_handler import proto_adapter
+from Framework.deploy_handler import long_poll_handler
+from Framework.deploy_handler import adapter
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -482,7 +481,9 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
 
         server_addr = f"{protocol}://{server_url.netloc}"
         live_log_service_addr = f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
-        deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
+
+        deploy_srv_addr = f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
+        # deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
 
         # Connect to the live log service.
         live_log_service.connect(live_log_service_addr)
@@ -496,7 +497,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             nonlocal node_json
 
             # 1. Adapt the proto response to appropriate json format
-            node_json = proto_adapter.adapt(response, node_id)
+            node_json = adapter.adapt(response, node_id)
 
             # 2. Save the json for MainDriver to find
             with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
@@ -529,7 +530,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             print("[deploy] Run cancelled.")
             CommonUtil.run_cancelled = True
 
-        deploy_handler = handler.DeployHandler(
+        deploy_handler = long_poll_handler.DeployHandler(
             on_connect_callback=on_connect_callback,
             response_callback=response_callback,
             cancel_callback=cancel_callback,
