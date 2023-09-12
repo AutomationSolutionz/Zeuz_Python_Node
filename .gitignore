@@ -24,7 +24,6 @@ node-bigquery-privkey.json
 AutomationLog/
 iosSimulator/*
 node_state.json
-*.zvt
 
 # Nodejs gitignore
 # Logs
