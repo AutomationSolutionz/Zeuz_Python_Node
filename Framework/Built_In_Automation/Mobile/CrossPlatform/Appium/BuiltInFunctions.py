@@ -920,7 +920,7 @@ def start_appium_driver(
             count = 1
             while count <= 5:
                 try:
-                    appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
+                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, desired_caps)  # Create instance
                     if appium_driver:
                         break
                     count += 1
@@ -4632,10 +4632,20 @@ def zoom_action(data_set):
 
     global appium_driver
 
-    xs = 0
-    xe = int(appium_driver.get_window_size()['width'])
-    xx = appium_driver.get_window_size()['width']//2
-    yy = appium_driver.get_window_size()['height']//2
+    zoom_element = LocateElement.Get_Element(data_set, appium_driver)
+    if zoom_element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Zoom element is not found", 3)
+        return "zeuz_failed"
+    
+    height = zoom_element.size["height"]
+    width = zoom_element.size["width"]
+    xstart_location = zoom_element.location["x"]
+    ystart_location = zoom_element.location["y"]
+    xx = xstart_location+int((width)//2)
+    yy = ystart_location+int((height)//2)
+
+    xs = xstart_location
+    xe = xstart_location+width  
 
     action = ''
     scale = 3
@@ -4678,8 +4688,8 @@ def zoom_action(data_set):
                 if x_cord2:
                     xe = x_cord2
 
-                action1.long_press(x=xs+const, y=yy).move_to(x=xs+(const*1*scale), y=yy).move_to(x=xs+(const*2*scale), y=yy).move_to(x=xs+(const*3*scale), y=yy).release()
-                action2.long_press(x=xe-const, y=yy).move_to(x=xe-(const*1*scale), y=yy).move_to(x=xe-(const*2*scale), y=yy).move_to(x=xe-(const*3*scale), y=yy).release()
+                action1.long_press(x=xs+const, y=yy).move_to(x=xs+(const*1*scale), y=yy).move_to(x=xs+int((const*1.5*scale)), y=yy).move_to(x=xs+(const*2*scale), y=yy).move_to(x=xs+int((const*2.5*scale)), y=yy).move_to(x=xs+(const*3*scale), y=yy).release()
+                action2.long_press(x=xe-const, y=yy).move_to(x=xe-(const*1*scale), y=yy).move_to(x=xe-int((const*1.5*scale)), y=yy).move_to(x=xe-(const*2*scale), y=yy).move_to(x=xe-int((const*2.5*scale)), y=yy).move_to(x=xe-(const*3*scale), y=yy).release()
                 m_action.add(action1, action2)
                 m_action.perform()      
                 time.sleep(2) 
@@ -4693,8 +4703,8 @@ def zoom_action(data_set):
                     xx2 = x_cord2
 
                 if double_tap == False:
-                    action1.long_press(x=xx1, y=yy).move_to(x=xx1-(const*1*scale), y=yy).move_to(x=xx1-(const*2*scale), y=yy).move_to(x=xx1-(const*3*scale), y=yy).release()
-                    action2.long_press(x=xx2, y=yy).move_to(x=xx2+(const*1*scale), y=yy).move_to(x=xx2+(const*2*scale), y=yy).move_to(x=xx+(const*3*scale), y=yy).release()
+                    action1.long_press(x=xx1, y=yy).move_to(x=xx1-(const*1*scale), y=yy).move_to(x=xx1-int((const*1.5*scale)), y=yy).move_to(x=xx1-(const*2*scale), y=yy).move_to(x=xx1-int((const*2.5*scale)), y=yy).move_to(x=xx1-(const*3*scale), y=yy).release()
+                    action2.long_press(x=xx2, y=yy).move_to(x=xx2+(const*1*scale), y=yy).move_to(x=xx2+int((const*1.5*scale)), y=yy).move_to(x=xx2+(const*2*scale), y=yy).move_to(x=xx2+int((const*2.5*scale)), y=yy).move_to(x=xx2+(const*3*scale), y=yy).release()
                     m_action.add(action1, action2)
                     m_action.perform()      
                     time.sleep(2)  
@@ -4722,8 +4732,18 @@ def pan_action(data_set):
 
     global appium_driver
 
-    xx = appium_driver.get_window_size()['width']//2
-    yy = appium_driver.get_window_size()['height']//2
+    zoom_element = LocateElement.Get_Element(data_set, appium_driver)
+    if zoom_element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Zoom element is not found", 3)
+        return "zeuz_failed"
+    
+    height = zoom_element.size["height"]
+    width = zoom_element.size["width"]
+    xstart_location = zoom_element.location["x"]
+    ystart_location = zoom_element.location["y"]
+    xx = xstart_location+int((width)//2)
+    yy = ystart_location+int((height)//2)
+
     const = 75
 
     direction = ''
