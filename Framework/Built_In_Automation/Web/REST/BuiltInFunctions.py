@@ -751,6 +751,7 @@ def handle_rest_call(
     allow_redirects=True,
     cert=None,
     print_output=True,
+    auth=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -872,6 +873,8 @@ def handle_rest_call(
                     method=method,
                     url=url,
                     headers=headers,
+                    json=body,
+                    auth=auth,
                     verify=False,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
@@ -1182,6 +1185,7 @@ def Get_Response(step_data, save_cookie=False):
         allow_redirects = True
         cert = None
         print_output = True
+        auth = None
 
         for left, mid, right in step_data:
             left = left.lower()
@@ -1210,6 +1214,8 @@ def Get_Response(step_data, save_cookie=False):
                 allow_redirects = True if "true" in right.lower() else False
             elif "print output" in left:
                 print_output = True if "true" in right.lower() else False
+            elif "auth: basic" in left:
+                auth = tuple(right.split(":"))
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -1230,6 +1236,7 @@ def Get_Response(step_data, save_cookie=False):
                     allow_redirects=allow_redirects,
                     cert=cert,
                     print_output=print_output,
+                    auth=auth,
                 )
                 return return_result
             except Exception:
