@@ -4672,8 +4672,7 @@ def zoom_action(data_set):
                 x_cord1 = int(cords[0].replace('(',''))
                 x_cord2 = int(cords[1].replace(')',''))
             elif left.strip().lower() == 'double tap':
-                if right.strip().lower() == 'true':
-                    double_tap = True
+                double_tap = right.strip().lower() in ('true', 'enable', 'ok', 'yes')
         
         action1 = TouchAction(appium_driver)
         action2 = TouchAction(appium_driver)
