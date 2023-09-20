@@ -818,11 +818,11 @@ def set_important_variables():
                 continue
         if "sr" not in shared.shared_variables:
             shared.shared_variables.update({"sr": shared})
-        
+
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         raise Exception
-    
+
 
 def set_runid_status(item,tc=False):
     if tc:
@@ -881,7 +881,7 @@ def send_to_bigquery(execution_log, metrics):
                 action["run_id"] = run_id
                 action["tc_id"] = tc_id
                 action["step_name"] = step_names[action["step_id"]]
-        
+
             send(actions_table_id, actions, "actions")
 
 
@@ -1117,7 +1117,7 @@ def run_test_case(
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables(run_id)
-            
+
             if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                 runid_status = "In-Progress"
             else:
@@ -1382,7 +1382,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         del step["log"]
             perf_report_html = None
             processed_tc_id = None
-            if CommonUtil.processed_performance_data:    
+            if CommonUtil.processed_performance_data:
                 env = Environment(loader=FileSystemLoader('../reporting/html_templates'))
                 template = env.get_template('pref_report.html')
                 html = template.render(CommonUtil.processed_performance_data)
@@ -1409,7 +1409,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report),
                                   "processed_tc_id":processed_tc_id
-                                  
+
                                   },
                             files=[("file",perf_report_html)],
                             verify=False,
@@ -1479,10 +1479,10 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 time.sleep(4)
             else:
                 print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
-                        
+
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
-        
+
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
@@ -2011,7 +2011,7 @@ def main(device_dict, user_info_object):
                     "duration": TestSetDuration
                 }
                 CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-                
+
                 CommonUtil.generate_time_based_performance_report(each_session)
 
                 # if float(server_version.split(".")[0]) < 7:
