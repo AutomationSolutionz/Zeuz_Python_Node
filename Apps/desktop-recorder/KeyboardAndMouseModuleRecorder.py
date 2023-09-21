@@ -107,10 +107,10 @@ class KeyboardAndMouseModuleRecorder:
 
     def replay(self,
                filename: str,
-               type_delay: int = 0.05,
-               mouse_click_delay: int = 0.03,
-               mouse_move_delay: int = 0.001,
-               mouse_scroll_delay: int = 0.01
+               type_delay: float = 0.05,
+               mouse_click_delay: float = 0.03,
+               mouse_move_delay: float = 0.001,
+               mouse_scroll_delay: float = 0.01
                ) -> None:
         """
         filename: str, recorded file to load and replay

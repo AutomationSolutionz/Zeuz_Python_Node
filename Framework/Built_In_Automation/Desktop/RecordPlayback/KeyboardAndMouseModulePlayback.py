@@ -1,18 +1,10 @@
-import time
 import pickle
-from enum import Enum, auto
+import time
 
-import mouse
 import keyboard
+import mouse
 
-
-class EventType(Enum):
-    MouseMove = auto()
-    MouseUp = auto()
-    MouseDown = auto()
-    MouseWheel = auto()
-    KeyDown = auto()
-    KeyUp = auto()
+from .commons import EventType
 
 
 class KeyboardAndMouseModulePlayback:
@@ -21,10 +13,10 @@ class KeyboardAndMouseModulePlayback:
 
     def play(self,
              speed_factor=1.0,
-             type_delay: int = 0.05,
-             mouse_click_delay: int = 0.03,
-             mouse_move_delay: int = 0.001,
-             mouse_scroll_delay: int = 0.01
+             type_delay: float = 0.05,
+             mouse_click_delay: float = 0.03,
+             mouse_move_delay: float = 0.001,
+             mouse_scroll_delay: float = 0.01
              ) -> None:
         if not self.data:
             raise RuntimeError("`data` cannot be None")

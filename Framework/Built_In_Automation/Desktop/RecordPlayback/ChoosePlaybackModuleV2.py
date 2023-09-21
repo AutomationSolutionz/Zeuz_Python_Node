@@ -37,11 +37,11 @@ class ChoosePlaybackModuleV2:
     def choose(self, filepath) -> KeyboardAndMouseModulePlayback:
         """
         choose will automatically pick the playback module to use based on the
-        recorder type specified in the loaded data. In future, this will may also
+        recorder type specified in the loaded data. In the future, this will may also
         check for version and platform compatibility.
         """
         self.data = load_recording_data_from_file(filepath)
-        if self.data["recorder_type"] == "keyboardandmousemodule":
+        if self.data["recorder_type"] == "mouseandkeyboardmodule":  # old: keyboardandmousemodule
             return KeyboardAndMouseModulePlayback
 
     def play(self, speed_factor):
