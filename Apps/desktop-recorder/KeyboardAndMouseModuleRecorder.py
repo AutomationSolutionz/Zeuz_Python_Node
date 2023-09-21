@@ -52,7 +52,7 @@ class KeyboardAndMouseModuleRecorder:
           with different modules.
         """
         self.recording_data = {
-            "recorder_type": "keyboardandmousemodule",
+            "recorder_type": "mouseandkeyboardmodule",
             "version": 1,
             "platform": sys.platform,
             "events": []
