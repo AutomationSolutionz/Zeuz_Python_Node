@@ -458,7 +458,7 @@ def set_extension_variables():
     # if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
     with open(Path(aiplugin_path) / "background.js", "w") as file:
         aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
-        aiplugin_key = ConfigModule.get_config_value("Authentication", "api-key").strip()
+        aiplugin_key = CommonUtil.jwt_token.strip()
         zeuz_url_var_idx = text.find("let zeuz_url = ")
         zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
         zeuz_key_var_idx = text.find("let zeuz_key = ")

@@ -136,6 +136,7 @@ current_step_sequence = None
 current_tc_no = ""
 current_session_name = ""
 custom_step_duration = ""
+jwt_token = ""
 run_cancel = ""
 run_cancelled = False
 disabled_step = []  # 1 based indexing

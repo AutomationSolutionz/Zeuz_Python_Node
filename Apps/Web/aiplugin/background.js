@@ -56,11 +56,11 @@ function toggle(tab) {
                 if(zeuz_url.startsWith('__ZeuZ__UrL_maP'))
                   var server_url = prompt("Please enter your ZeuZ server address", "");
                 else
-                  var server_url = zeuz_url
+                  var server_url = zeuz_url;
                 if (zeuz_key.startsWith('__ZeuZ__KeY_maP'))
                   var api_key = prompt("Please enter your API key", "");
                 else
-                  var api_key = zeuz_key
+                  var api_key = zeuz_key;
 
                 var verify_status;
                 var verify_token;
@@ -85,62 +85,72 @@ function toggle(tab) {
 
                     }
 
-                    // verify api key
-                    var xhr = new XMLHttpRequest();
-                    xhr.withCredentials = true;
+                    if(zeuz_key.startsWith('__ZeuZ__KeY_maP')){
+                      var xhr = new XMLHttpRequest();
+                      xhr.withCredentials = true;
+                      xhr.addEventListener("readystatechange", function() {
+                            if(this.readyState === 4) {
+                                console.log(this.responseText);
+  
+                                verify_status = this.status;
+                                verify_token = this.responseText;
+                                
+                                // show message for verification
+                                  if (verify_status === 200){
+  
+                                      if (verify_token === null){
+                                          alert("Sorry! Api key is wrong.");
+                                      }
+                                      else{
+                                          // save server url and api key
+                                          // chrome.storage.local.set({ url: server_url ,key: api_key }, function () {
+                                          chrome.storage.local.set({ 
+                                              url: server_url,
+                                              key: JSON.parse(this.responseText).token
+                                          },
+                                          function () {
+                                              console.log('Value is set to ' , server_url , this.responseText);
+                                              if(zeuz_url.startsWith('__ZeuZ__UrL_maP'))
+                                                alert("Logged in successfully!");
+                                              else
+                                                console.log("Logged in successfully!");
+                                          });
+  
+                                          // activate plugin
+                                          tabs[tab.id] = Object.create(inspect);
+                                          inspect.toggleActivate(tab.id, 'activate', activeIcon);
+                                      }
+  
+                                  }
+                                  else if ((verify_status === 403) || (verify_status === 0)){
+                                      alert("Sorry! Server URL is incorrect.");
+                                  }
+                                  else if (verify_status === 404){
+                                      alert("Sorry! Api key is incorrect.");
+                                  }
+                                  else{
+                                      alert("Sorry! Server url/key is incorrect.");
+                                  }
+  
+                                
+                            }
+                      });
+                      xhr.open("GET", server_url + "/api/auth/token/verify?api_key=" + api_key);
+                      xhr.send();
+                    }
+                    else{
+                      chrome.storage.local.set({ 
+                        url: server_url,
+                        key: zeuz_key,
+                      },
+                      function () {
+                          console.log("Logged in successfully!");
+                      });
 
-
-                    xhr.addEventListener("readystatechange", function() {
-                          if(this.readyState === 4) {
-                              console.log(this.responseText);
-
-                              verify_status = this.status;
-                              verify_token = this.responseText;;
-                              
-                              // show message for verification
-                                if (verify_status === 200){
-
-                                    if (verify_token === null){
-                                        alert("Sorry! Api key is wrong.");
-                                    }
-                                    else{
-                                        // save server url and api key
-                                        // chrome.storage.local.set({ url: server_url ,key: api_key }, function () {
-                                        chrome.storage.local.set({ 
-                                            url: server_url,
-                                            key: JSON.parse(this.responseText).token
-                                        },
-                                        function () {
-                                            console.log('Value is set to ' , server_url , this.responseText);
-                                            if(zeuz_url.startsWith('__ZeuZ__UrL_maP'))
-                                              alert("Logged in successfully!");
-                                            else
-                                              console.log("Logged in successfully!");
-                                        });
-
-                                        // activate plugin
-                                        tabs[tab.id] = Object.create(inspect);
-                                        inspect.toggleActivate(tab.id, 'activate', activeIcon);
-                                    }
-
-                                }
-                                else if ((verify_status === 403) || (verify_status === 0)){
-                                    alert("Sorry! Server URL is incorrect.");
-                                }
-                                else if (verify_status === 404){
-                                    alert("Sorry! Api key is incorrect.");
-                                }
-                                else{
-                                    alert("Sorry! Server url/key is incorrect.");
-                                }
-
-                              
-                          }
-                    });
-
-                    xhr.open("GET", server_url + "/api/auth/token/verify?api_key=" + api_key);
-
-                    xhr.send();
+                      // activate plugin
+                      tabs[tab.id] = Object.create(inspect);
+                      inspect.toggleActivate(tab.id, 'activate', activeIcon);
+                    }
 
 
                 }

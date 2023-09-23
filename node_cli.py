@@ -266,7 +266,7 @@ def Login(cli=False, run_once=False, log_dir=None):
         r = RequestFormatter.Get(url)
         if r:
             try:
-                token = r['token']
+                CommonUtil.jwt_token = token = r['token']
                 res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
                 if "data" in res:   # Todo: implement it with proper server versioning
                     info = res["data"][0]
