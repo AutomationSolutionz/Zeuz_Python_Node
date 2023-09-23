@@ -77,7 +77,8 @@ temp_config = os.path.join(
     )
 )
 temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
-aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"aiplugin")
+aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
+ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -697,6 +698,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                     set_extension_variables()
                     options.add_argument(f"load-extension={aiplugin_path}")
+                    options.add_argument(f"load-extension={ai_recorder_path}")
 
             if "chromeheadless" in browser:
                 def chromeheadless():
