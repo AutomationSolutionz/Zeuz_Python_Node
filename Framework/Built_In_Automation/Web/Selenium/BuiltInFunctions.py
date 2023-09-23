@@ -697,8 +697,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 # On Debug run open inspector with credentials
                 if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                     set_extension_variables()
-                    options.add_argument(f"load-extension={aiplugin_path}")
-                    options.add_argument(f"load-extension={ai_recorder_path}")
+                    options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
+                    # options.add_argument(f"load-extension={ai_recorder_path}")
 
             if "chromeheadless" in browser:
                 def chromeheadless():

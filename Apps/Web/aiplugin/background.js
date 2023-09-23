@@ -2,7 +2,7 @@ const browserAppData = this.browser || this.chrome;
 const tabs = {};
 const inspectFile = 'inspect.js';
 const activeIcon = 'active-64.png';
-const defaultIcon = 'default-64.png';
+const defaultIcon = 'small_logo.png';
 let zeuz_url = '__ZeuZ__UrL_maPP';
 let zeuz_key = '__ZeuZ__KeY_maPP';
 
