@@ -98,23 +98,8 @@ chrome.storage.local.get(['key'], function (result) {
                     }
 
                     // choose sibling element
-                    let zeuz_sibling2 = '__ZeuZ__SibLing_maPP';
                     chrome.storage.local.get(['sibling'], function (result) {
-                      if ( (zeuz_sibling2.startsWith('__ZeuZ__SibLing_maPP_tru') || result.sibling) && confirm('Do you want to select a helper sibling element?')){   
-                        // let user select another element
-                        // show message about element 
-                        const modalText = '"' + element_text + '" element will be sent with a helper element. Please select a suitable one.';
-
-                        if (modalNode) {
-                          modalNode.innerText = modalText;
-                        }
-                        else {
-                          const modalHtml = document.createElement('div');
-                          modalHtml.innerText = modalText;
-                          modalHtml.id = this.modalNode;
-                          document.body.appendChild(modalHtml);
-                        }
-
+                      if (result.sibling && confirm('Do you want to select a helper sibling element?')){
 
                         // store main
                         //chrome.storage.local.set({mainelem: this.elem['html']});
@@ -147,9 +132,6 @@ chrome.storage.local.get(['key'], function (result) {
 
                               var backup_data = JSON.stringify({ "content": JSON.stringify(backup_tracker_info), "source": "web" });
 
-                              var status = 200;
-                              var state = 4;
-
                               var xhr = new XMLHttpRequest();
 
                               xhr.addEventListener("readystatechange", function () {
@@ -159,6 +141,20 @@ chrome.storage.local.get(['key'], function (result) {
                                 }
                                 state = this.readyState;
                                 status = this.status;
+                                if(this.status == 200){
+                                  // show message about element 
+                                  const modalText = 'Element data was recorded. Please Click "Add by AI"';
+                                  console.log(modalText);
+                                  if (modalNode) {
+                                    modalNode.innerText = modalText;
+                                  }
+                                  else {
+                                    const modalHtml = document.createElement('div');
+                                    modalHtml.innerText = modalText;
+                                    modalHtml.id = this.modalNode;
+                                    document.body.appendChild(modalHtml);
+                                  }                                  
+                                }
                               });
 
                               xhr.open("POST", server_url + "/api/contents/");
@@ -172,26 +168,7 @@ chrome.storage.local.get(['key'], function (result) {
                                 xhr.send(backup_data);
                               }
 
-
                         });
-
-
-                        
-                        // show message about element 
-                        const modalText = '"' + element_text + '" element data was recorded. Please go to ZeuZ and select "Add Action by AI.';
-                        console.log(modalText);
-                        
-                        if (modalNode) {
-                          modalNode.innerText = modalText;
-                        }
-                        else {
-                          const modalHtml = document.createElement('div');
-                          modalHtml.innerText = modalText;
-                          modalHtml.id = this.modalNode;
-                          document.body.appendChild(modalHtml);
-                        }
-
-
                         // remove zeuz attribute
                         e.target.removeAttributeNode(att);
 
@@ -297,6 +274,20 @@ chrome.storage.local.get(['key'], function (result) {
                           }
                           state = this.readyState;
                           status = this.status;
+                          if(status == 200){
+                            // show message about element
+                            const modalText = 'Element data was recorded. Please Click "Add by AI"';
+                            console.log(modalText);
+                            if (modalNode) {
+                              modalNode.innerText = modalText;
+                            }
+                            else {
+                              const modalHtml = document.createElement('div');
+                              modalHtml.innerText = modalText;
+                              modalHtml.id = this.modalNode;
+                              document.body.appendChild(modalHtml);
+                            }
+                          }
                         });
 
                         xhr.open("POST", server_url + "/api/contents/");
@@ -309,27 +300,7 @@ chrome.storage.local.get(['key'], function (result) {
                         catch (err) {
                           xhr.send(backup_data);
                         }
-
-
                     });
-
-                    
-
-
-                    // show message about element 
-                    const modalText = '"' + element_text + '" element data was recorded as helper. Please go to ZeuZ and select "Add Action by AI.';
-
-                    if (modalNode) {
-                      modalNode.innerText = modalText;
-                    }
-                    else {
-                      const modalHtml = document.createElement('div');
-                      modalHtml.innerText = modalText;
-                      modalHtml.id = this.modalNode;
-                      document.body.appendChild(modalHtml);
-                    }
-
-
                     // remove zeuz attribute
                     e.target.removeAttributeNode(att);
                     

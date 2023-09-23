@@ -464,19 +464,6 @@ def set_extension_variables():
         zeuz_key_var_idx = text.find("let zeuz_key = ")
         zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
         file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{aiplugin_url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{aiplugin_key}';", 1))
-    ask_for_sibling = ConfigModule.get_config_value("Inspector", "sibling").strip().lower() not in ("false", "off", "disabled", "no")
-    if ask_for_sibling:
-        with open(Path(aiplugin_path) / "inspect.js") as file:
-            text = file.read()
-        if "__ZeuZ__SibLing_maPP" in text:
-            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
-                file.write(text.replace("__ZeuZ__SibLing_maPP", "__ZeuZ__SibLing_maPP_true", 1))
-    else:
-        with open(Path(aiplugin_path) / "inspect.js") as file:
-            text = file.read()
-        if "__ZeuZ__SibLing_maPP_true" in text:
-            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
-                file.write(text.replace("__ZeuZ__SibLing_maPP_true", "__ZeuZ__SibLing_maPP", 1))
 
 
 def browser_process_status(browser:str):
