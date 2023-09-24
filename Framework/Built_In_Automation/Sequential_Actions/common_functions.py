@@ -3712,7 +3712,9 @@ def execute_python_code(data_set):
         new_variables = current_vars - previous_vars - {'__builtins__'}
         removed_variables = previous_vars - current_vars  - {'__builtins__'}
 
-        text = "Newly declared variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
+        text = ("Newly declared variables:\n" +
+                "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
+                )
         text += (
             "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
             "and accessible in next python_code action or in %| |%.\n" +
