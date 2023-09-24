@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>ZeuZ 1.0</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
+
+
+    <!-- <link rel="stylesheet" href="assets/css/jquery-ui.min.css"> -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/font-awesome-all.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/mystyle.css">
+
+    <!-- Library Files -->
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/lib/jquery-ui.min.js"></script>
+    <script src="assets/js/lib/utils_js.js"></script><!-- modi -->
+    <script src="assets/js/lib/jquery-ui-slider-pips.js"></script>
+    <script src="assets/js/lib/jquery.tablesorter.min.js"></script>
+    <script src="assets/js/lib/jquery.equalHeight.js"></script>
+    <script src="assets/js/lib/jquery.tabletab.js"></script>
+    <script src="assets/js/lib/colResizable-1.5.min.js"></script>
+
+    <!-- encode library -->
+    <script src="assets/js/lib/hmac-sha256.js"></script>
+    <script src="assets/js/lib/enc-base64-min.js"></script>
+
+    <!-- UI Files -->
+    <script src="assets/js/UI/hideshow.js"></script>
+    <script src="assets/js/UI/panelSetting.js"></script>
+    <script src="assets/js/UI/sortable-ui.js"></script>
+
+    <!-- Custom Files -->
+    <script src="assets/js/popper.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/custom.js"></script>
+    
+    <!-- Content Js -->
+    <script src="../content/utils_js.js"></script> <!-- modi -->
+    <script src="../content/atoms_js.js"></script> <!-- modi -->
+    <script src="../content/sel_api.js"></script> <!-- modi -->
+    
+
+    <!-- background -->
+    <script src="assets/js/background/doc.js"></script>
+
+    
+    <!-- Zeuz Library -->
+    <script src="assets/js/zeuz/selenium-ide/testCase.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/lib/codemirror.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/clike/clike.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/groovy/groovy.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/javascript/javascript.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/php/php.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/python/python.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/ruby/ruby.js"></script>
+    <script src="assets/js/zeuz/codemirror-5.31.0/mode/xml/xml.js"></script>
+
+    <script src="assets/js/zeuz/detect_bowser.js"></script>
+    <script src="assets/js/zeuz/papaparse.js"></script>
+
+
+  </head>
+  <body>
+    <div class="wrapper d-flex align-items-stretch">
+      <nav id="sidebar">
+        <div class="nav_upper">
+          <div class="img bg-wrap tablink opensection text-center py-4" id="defaultOpen" data-section="welcome_page">
+            <img src="assets/images/logo_ZeuZ_dark_background.png" id="logo_dark" class="img-fluid">
+          </div>
+          <ul class="list-unstyled components">
+            <!-- <li class="tablink opensection" data-section="content" id="add_new_case_action"> -->
+            <li class="tablink" id="add_new_case_action">
+              <div class="pl-0 sidebar_menu" href="#">
+                <img 
+                  src="assets/images/icons/new_test_case-on.png"
+                  style="margin-left: 32px;"
+                >
+              </div>
+            </li>
+            <li class="tablink push_right" id="record_wrap">
+              <div class="pl-0 sidebar_menu" id="record">
+                <img class="normal-image" id="start_record_image" src="assets/images/icons/record.png">
+                <img class="hover-image" src="assets/images/icons/record-on.png">
+              </div>
+            </li>
+
+            <li class="tablink push_right" id="stop_wrap" style="display: none;">
+              <div class="pl-0 sidebar_menu" id="record_stop">
+                <img class="normal-image" id="stop_record_image" src="assets/images/icons/stop.png">
+                <img class="hover-image" src="assets/images/icons/stop-on.png">
+              </div>
+            </li>
+
+
+            <li class="tablink push_right" id="play_wrap">
+              <div class="pl-0 sidebar_menu" id="playback">
+                <img class="normal-image" src="assets/images/icons/play.png">
+                <img class="hover-image" src="assets/images/icons/play-on.png">
+              </div>
+            </li>
+
+            <li class="tablink push_right" id="pause_wrap" style="display: none;">
+              <div class="pl-0 sidebar_menu" id="pause">
+                <img class="normal-image" src="assets/images/icons/pause.png">
+                <img class="hover-image" src="assets/images/icons/pause-on.png">
+              </div>
+            </li>
+
+            <li class="tablink push_right" id="resume_wrap" style="display: none;">
+              <div class="pl-0 sidebar_menu" id="resume">
+                <img class="normal-image" src="assets/images/icons/play.png">
+                <img class="hover-image" src="assets/images/icons/play-on.png">
+              </div>
+            </li>
+
+            <li class="tablink push_right" id="replay_wrap">
+              <div class="pl-0 sidebar_menu" id="replay">
+                <img class="normal-image" src="assets/images/icons/replay.png">
+                <img class="hover-image" src="assets/images/icons/replay-on.png">
+              </div>
+            </li>
+            <li class="tablink push_right" id="play_all_wrap">
+              <div class="pl-0 sidebar_menu" id="playAll">
+                <img class="normal-image" src="assets/images/icons/playall.png"> 
+                <img class="hover-image" src="assets/images/icons/playall-on.png"> 
+              </div>
+            </li>
+            <li class="tablink push_right" id="export_wrap">
+              
+            </li>
+            <li class="tablink push_right" id="import_wrap">
+              <div class="pl-0 sidebar_menu" id="import_case">
+                <img class="normal-image" src="assets/images/icons/import.png">
+                <img class="hover-image" src="assets/images/icons/import-on.png">
+              </div>
+              <input id="import_json" type="file" accept="*.json" style="display: none;">
+            </li>
+          </ul>
+        </div>
+        <ul id="bottom_section" class="list-unstyled bottom_left_icon components mb-5">
+          <li class="tablink push_right opensection bottom_menu_sidebar" data-section="help">
+            <div class="pl-0 sidebar_menu" href="#">
+              <img class="normal-image" style="margin-left:41px"  src="assets/images/leftIcon/help.png">
+              <img class="hover-image" style="margin-left:41px"  src="assets/images/leftIcon/help-on.png">
+            </div>
+          </li>
+          <li class="tablink push_right configuration_section opensection bottom_menu_sidebar" data-section="settings">
+            <div class="pl-0 sidebar_menu" href="#">
+              <img class="normal-image" style="margin-left:41px"  src="assets/images/leftIcon/settingss.png">
+              <img class="hover-image" style="margin-left:41px"  src="assets/images/leftIcon/settingson.png">
+            </div>
+          </li>
+          <li class="tablink push_right opensection1" data-section="server">
+            <div class="pl-0 sidebar_menu" id="servericon" style="padding-top: 5px;">
+              <!-- <img class="normal-image" style="width: 100px; margin-left:41px" src="assets/images/leftIcon/server.png">
+              <img class="hover-image" style="width: 100px; margin-left:41px" src="assets/images/leftIcon/serveron.png"> -->
+            </div>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Page Content  -->
+      <div id="content" class="tabcontent scrollBar" style="display: none;">
+        <div id="nav_menu_up" class="clearfix">
+          <nav style="display: flex; width: 100%;">
+            <ul class="list-unstyled components d-flex row" id="header_tab" style="width: 95%">
+              <li class="head_text pl-3"><a data-toggle="tab" href="#home">Home</a></li>
+              <li><a data-toggle="tab" href="#test1">Test 1</a></li>
+              <li><a data-toggle="tab" href="#test2">Another Test</a></li>
+              <li><a data-toggle="tab" href="#menu3">Transactions</a></li>
+              <li><a data-toggle="tab" href="#menu3">Another Test</a></li>
+              <li><a data-toggle="tab" href="#menu3">Tab 5</a></li>
+              <li class="pr-3">
+                <div class="dropdown">
+                  <a class="dropdown-toggle" href="#" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    More<span><img src="assets/images/more-arrow-down.png"> </span></a>
+                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg-left" aria-labelledby="dropdownMenuLink">
+                      <a class="dropdown-item" href="#">Tab 6</a>
+                      <a class="dropdown-item" href="#">Tab 7</a>
+                      <a class="dropdown-item" href="#">Tab 8</a>
+                      <a class="dropdown-item" href="#">Tab 9</a>
+                      <a class="dropdown-item" href="#">Tab 10</a>
+                    </div>
+                  </div>
+                </li>
+            </ul>
+            <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
+              <img src="assets/images/icons/add_new_suite.png">
+            </a>
+          </nav>
+        </div>
+        <div id="recorder_step" class="clearfix">
+          <div class="second_table table-responsive" id="main_table">
+            
+            <!-- Fixed header table-->
+              <table class="table table-borderless border_separate table-fixed" id="sortable">
+                <thead>
+                  <tr>
+                    <!-- <th id="draggable" scope="col" class="col-1"> AI</th> -->
+                    <th scope="col" class="col-1 tbl-header"> AI</th>
+                    <th scope="col" class="col-3 tbl-header">Action</th>
+                    <th scope="col" class="col-4 tbl-header">Element</th>
+                    <th scope="col" class="col-4 tbl-header">Value</th>
+                  </tr>
+                </thead>
+                <tbody class="table_body" id="case_data_wrap">
+                  
+                </tbody>
+              </table>
+               <!-- <div id="droppable">
+                 <p>Drop here</p>
+               </div> -->
+            <nav class="icon_container row" style="display: flex;">
+              <ul class="icon_grid m-0 d-flex row" id="active_action_icon" style="display: none !important; padding-left: 0px;">
+                <li>
+                  <a href="javascript:void(0);" id="edit_case" class="action-icons">
+                    <img class="normal-image" src="assets/images/Edit.png">
+                    <img class="hover-image" src="assets/images/Edit_blue.png">
+                  </a>
+                </li>
+
+                <li>
+                  <a href="javascript:void(0);" id="add_case_step" class="action-icons">
+                    <img class="normal-image" src="assets/images/AddStep.png">
+                    <img class="hover-image" src="assets/images/AddStep_blue.png">
+                  </a>
+                </li>
+                <li>
+                  <a href="javascript:void(0);" id="add_action" class="action-icons">
+                    <img class="normal-image" src="assets/images/AddAction.png">
+                    <img class="hover-image" src="assets/images/AddAction_blue.png">
+                  </a>
+                </li>
+                <li>
+                  <a href="javascript:void(0);" id="case_disable" class="action-icons">
+                    <img class="normal-image" src="assets/images/Disable.png">
+                    <img class="hover-image" src="assets/images/Disable_blue.png">
+                  </a>
+                <li>
+                  <a href="javascript:void(0);" id="case_enable" class="action-icons">
+                    <img class="normal-image" src="assets/images/Enable.png">
+                    <img class="hover-image" src="assets/images/Enable_blue.png">
+                  </a>
+                <li>
+                  <a href="javascript:void(0);" id="case_copy" class="action-icons">
+                    <img class="normal-image" src="assets/images/Copy.png">
+                    <img class="hover-image" src="assets/images/Copy_blue.png">
+                  </a>
+                </li>
+                <li>
+                  <a href="javascript:void(0);" id="case_paste" class="action-icons">
+                    <img class="normal-image" src="assets/images/Paste.png">
+                    <img class="hover-image" src="assets/images/Paste_blue.png">
+                  </a>
+                </li>
+                <li>
+                  <a href="javascript:void(0);" id="case_delete" class="action-icons">
+                    <img class="normal-image" src="assets/images/Delete.png">
+                    <img class="hover-image" src="assets/images/Delete_blue.png">
+                  </a>
+                </li>
+              </ul>
+
+              <div class="text_container">
+                <p style="font-size: 12px; font-style: italic;padding-top:7px;"><span class="blue_highlite">Shift+Click</span> to select, <span class="blue_highlite">Esc</span> to deselect all</p>
+              </div>
+            </nav>
+          </div>
+        </div>  <!-- Recorder Step END HERE -->
+
+        <div id="log_section_bottom" class="card shadow mh-manual pl-5 clearfix">
+          <div class="card-body">
+            <div class="log_section_head px-1 py-1 d-flex row">
+              <div class="log_section_head_left d-flex row">
+                <div class="log_section_head_left_text d-flex row">
+                  <h6 style="color: #4a4a4a">Passed : </h6>&nbsp;
+                  <h6 style="color: #4a4a4a" id="passed_record">0</h6>
+                </div>
+                <div class="log_section_head_left_text d-flex row">
+                  <h6 style="color: #FF0000">Failed : </h6>&nbsp;
+                  <h6 style="color: #FF0000" id="failed_record">0</h6>
+                </div>
+                <div class="log_section_head_left_text d-flex row">
+                  <h6 style="color: #4a4a4a">Disabled : </h6>&nbsp;
+                  <h6 style="color: #4a4a4a" id="disable_record">0</h6>
+                </div>
+              </div>
+              <div class="log_section_head_right">
+                <a href="javascript:void(0);" id="export_logs" title="Export logs">
+                  <img src="assets/images/exportLog.png">
+                </a>
+              </div>
+            </div>
+            <div id="logcontainer" class="log_container d-flex row log_date mt-3" style="padding-top: 5px;">
+            </div>
+          </div>
+        </div>
+      </div>  <!-- Right Side Page Content Container Div Close Here -->
+            
+      <!-- Settings Page Start Here -->
+      <div id="settings" class="tabcontent scrollBar" style="display: none;">
+        <!-- <div class="settings_header text-right">
+          <img class="p-2" src="assets/images/Close.png">
+        </div> -->
+        <div class="d-flex rwo close_div">
+            <a href="javascript:void(0);" class="close_main_page">
+              <img class="p-2" src="assets/images/Close.png">
+            </a>
+        </div>
+        <div class="settings_container">
+          <div class="settings_left_section col-sm-5 col-lg-5 col-xl-5">
+            <div class="settings_main_container">
+              <div class="settings_form ">
+                <h3 class="settings-title app-title">Setting Configuration</h3>
+                <div class="form_input d-flex row setting-frm-row">
+                  <p>Server URL:</p>
+                  <input type="text" placeholder="https://yourdomain.com" class="input_form" id="server_url">
+                </div>
+                <div class="form_input d-flex row setting-frm-row">
+                  <p>Username:</p>
+                  <input type="text" placeholder="Your Account" class="input_form" id="username">
+                </div>
+                <div class="form_input d-flex row setting-frm-row">
+                  <p>Password:</p>
+                  <input type="password" placeholder="Password" class="input_form" id="password">
+                </div>
+                <div class="form_input d-flex row setting-frm-row">
+                  <p>Server Port:</p>
+                  <input type="text" placeholder="Server Port" class="input_form" id="server_port">
+                </div>
+              </div>
+              <div class="authenticate_button">
+                <img src="assets/images/loader.gif" style="width: 20px;display: none;" id="auth_loading">
+                <a href="javascript:void(0);" id="authenticate">
+                  <img src="assets/images/Authenticate-on.png">
+                </a>
+              </div>
+            </div>
+            <div class="settings_middle_section">
+              <div class="err-wrap" style="display: none;">
+              </div>
+              <div class="succ-wrap" style="display: none;">
+              </div>
+              <div class="description">
+                <p>Your API Token can be found by logging to your ZeuZ Server,</p>
+                <p>clicking on your account (top right) and selecting API token TAB </p>
+              </div>
+            </div>
+            <div class="playback_container d-flex row">
+              <p>Playback Speed :</p>
+              <div class="speed_dropdown ml-5">
+                <select id="playback_select" class="w-100">
+                  <option value="3000">Very Slow</option>
+                  <option value="2400">Slow</option>
+                  <option value="1800">Normal</option>
+                  <option value="1200">Fast</option>
+                  <option value="600">Very Fast</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="settings_right_section col-sm-6 col-lg-6 col-xl-6">
+            <div class="settings_right_section_up">
+              <div class="text_one">
+                <p>The settings are optional and allow you to have more advance test automation features that seamlessly work with the ZeuZ Server and the ZeuZ Node.</p>
+              </div>
+              <div class="text_one">
+                <p>Visit <a href="https://www.zeuz.ai/recorder/" target="_blank">https://www.zeuz.ai/recorder/</a> and ask to get a free evaluation of the ZeuZ Test Automation framework.</p>
+              </div>
+              <div class="text_one">
+                <p>Unless you installed ZeuZ Server on a specific port, please keep the Server Port setting empty.</p>
+              </div>
+            </div>
+            <div class="settings_right_section_bottom">
+              <p>Setting it to Very Slow will reduce speed by 50%.</p>
+              <p>Setting it to Very Fast will increase speed by 100%.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Help Section Start Here -->
+      <div id="help" class="tabcontent scrollBar" style="display: none;">
+
+        <div class="help_section">
+          <div class="d-flex rwo close_div">
+            <a href="javascript:void(0);" class="close_main_page">
+              <img class="p-2" src="assets/images/Close.png">
+            </a>
+        </div>
+         <!-- Nav tabs -->
+          <ul class="nav nav-tabs" role="tablist" style="background: #fff">
+            <li class="nav-item">
+              <a class="nav-link active" data-toggle="tab" href="#howTo">How To</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#faq">FAQ</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#zeuZInfo">zeuZInfo</a>
+            </li>
+          </ul>
+
+          <!-- Tab panes -->
+          <div class="tab-content">
+            <div id="howTo" class="howTo_container_main  tab-pane active"><br>
+              <div class="howTo_main_container d-flex row">
+                <!-- <div class="howTo_left d-flex col-sm-7 col-md-7 col-xl-7 col-lg-7" style="justify-content: space-between;"> -->
+
+                <div class="howTo_left d-flex col-sm-7 col-md-7 col-xl-7 col-lg-7"> 
+                  <div class="howTo_heading text-center mt-4" style="padding-bottom: 5px;">
+                    <h4 class="app-title">It's Simple !</h4>
+                    <h5 class="app-sub-title">Using ZeuZ "Click-and-tell" recorder is simple as 4 steps</h5>
+                  </div>
+                  <div class="howTo_card_row d-flex mt-5 row" style="padding-bottom: 5px;">
+                    <img src="assets/images/cardOne.png" class="img-fluid">
+                    <img src="assets/images/cardTwo.png" class="img-fluid">
+                  </div>
+                  <div class="howTo_card_row mt-5 d-flex row">
+                    <img src="assets/images/cardThree.png" class="img-fluid">
+                    <img src="assets/images/cardFour.png" class="img-fluid">
+                  </div>
+                </div>
+                <div class="howTo_right col-sm-4 col-md-4 col-xl-4 col-lg-4">
+                  <div class="howTo_youtube">
+                    <h5 class="mt-3 mb-2 app-sub-title">Introduction: How to</h5>
+                    <iframe width="100%" height="200" src="https://www.youtube.com/embed/Xj_XNx4ym2w" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                  <div class="howTo_youtube">
+                    <h5 class="mt-3 mb-2 app-sub-title">ZeuZ AI Element Recorder</h5>
+                    <iframe width="100%" height="200" src="https://www.youtube.com/embed/Tz3WkdvKK4o" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                  <div class="howTo_youtube">
+                    <h5 class="mt-3 mb-2 app-sub-title">Advance Functioanlity</h5>
+                    <iframe width="100%" height="200" src="https://www.youtube.com/embed/6PJ-vveaT4k" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div id="faq" class="faq_container tab-pane fade"><br>
+               <div>
+                <h3 style="letter-spacing: 2px;" class="app-title">Frequently ask question</h3>
+              </div>
+              <div class="accordian_section">
+                <div class="accordian_app">
+                  <button class="accordion mt-4 app-sub-title">What is this app ?</button>
+                  <div class="panel">
+                    <p class="mt-1">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                  </div>
+
+                  <button class="accordion mt-4 app-sub-title">What is ZeuZ ?</button>
+                  <div class="panel">
+                    <p class="mt-1">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                  </div>
+
+                  <button class="accordion mt-4 app-sub-title">How do I use this application ?</button>
+                  <div class="panel">
+                    <p class="mt-3">ZeuZ Recorder is an easy to use, "click-and-test" approach to testing web applications.</p>
+                    <p>Step 1. Click on "New Test Case"</p>
+                    <p>Step 2. Click on Record and using Chrome, go to a website you would like to test and click on links,submit a form.</p>
+                    <p>Step 3.Test the website by playing it back</p>
+                    <p>Step 4.You might encounter issues.Check errors and if required, click on the ZeuZ icon for our AI engine to recommend a different element</p>
+                    <p class="mt-5">You may also watch videos in the help section or to zeuz.ai/recorder to get more information</p>
+                  </div>
+
+                  <button class="accordion mt-4">FAQ 4 ?</button>
+                  <div class="panel">
+                    <p class="mt-1">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                  </div>
+
+                  <button class="accordion mt-4">Another FAQ question ?</button>
+                  <div class="panel">
+                    <p class="mt-1">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                  </div>
+                </div>
+                  <div class="faq_bottom_text">
+                    <h5 style="color: #C83962; font-size: 12px;letter-spacing: 2px;">Need more help ? Go to <a href="https://www.zeuz.ai/recorder" target="_blank">ZeuZ.ai/recorder</a> for further information.</h5>
+                  </div>
+              </div>
+            </div>
+
+
+            <div id="zeuZInfo" class="container tab-pane fade"><br>
+              <div class="zeuZInfo_header w-100 text-center">
+                <h2 style="letter-spacing: 2px;" class="app-title">This is ZeuZ</h2>
+              </div>
+              <div class="faq_bottom_text_bottom">
+                <h5 style="color: #C83962; font-size: 12px;letter-spacing: 2px;">Need more help ? Go to <a href="https://www.zeuz.ai/recorder" target="_blank">ZeuZ.ai/recorder</a> for further information.</h5>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Welcome Section Start Here -->
+      <div id="welcome_page" class="tabcontent w-100 scrollBar" style="display: none;">
+        <div class="help_section">
+         <!-- Header -->
+          <div class="d-flex rwo close_div">
+            <a href="javascript:void(0);" class="close_main_page">
+              <img class="p-2" src="assets/images/Close.png">
+            </a>
+          </div>
+
+          <!-- Tab panes -->
+          <div class="tab-content" style="margin-top: 30px;">
+            <div id="howTo" class="howTo_container_main  tab-pane active">
+              <div class="d-flex row m-0 mh-90" style="justify-content: space-between;">
+                <div class="welcome_left col-sm-6 col-md-6 col-xl-6 col-lg-6">
+                  <div class="welcome_head">
+                    <h3 class="app-title">Welcome to Zeuz</h3>
+                    <h3 class="app-title">"Click and test" recorder</h3>
+                  </div>
+                  <div class="welcome_left_text clearfix">
+                    <p class="app-description">This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.</p>
+                    <p class="app-description">ZeuZ's goal is to deliver on our promise of a true, simple, cross plateform "click-and-test" framework.</p>
+                  </div>
+                  <div class="welcome_left_text clearfix">
+                    <h4 class="app-title">LET'S GET YOU STARTED</h4>
+                    <P class="app-description"><span>Step 1:</span>See the "introduction: How to" video to get familiar with the ZeuZ Click-and-Test Recorder and start testing in less than 3 minutes. </P>
+                    <P class="app-description"><span>Step 2:</span>Check-out how to use our AI Element Recorder for a more acurate testing. </P>
+                    <P class="app-description"><span>Step 3:</span>Visit the case page @https://www.zeuz.ai/testcase/, close this screen and click on "+New Test" and start testing. </P>
+                  </div>
+                  <div class="howTo_bottom_section clearfix">
+                    <p style="color: #C83962; font-size: 15px; font-weight:500">Looking for an advanced test automation framework ?</p>
+                    <p class="app-description">Have a more complex requirement? Need a platform to manage your manual
+                       and automated cases? Want to create a test case spanning web, mobile,
+                       desktop, API, lot, and cloud services?, Check out the "Advanced Functionality"
+                       video and visit ZeuZ.ai for more information.
+                    </p>
+                  </div>
+                </div>
+                <div class="howTo_right col-sm-4 col-md-4 col-xl-4 col-lg-4">
+                  <div class="howTo_youtube">
+                    <h5 class="mt-3 mb-2 app-sub-title">Introduction: How to</h5>
+                    <iframe width="100%" height="200" src="https://www.youtube.com/embed/Xj_XNx4ym2w" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                  <div class="howTo_youtube">
+                    <h5 class="mt-3 mb-2 app-sub-title">ZeuZ AI Element Recorder</h5>
+                    <iframe width="100%" height="200" src="https://www.youtube.com/embed/Tz3WkdvKK4o" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                  <div class="howTo_youtube">
+                    <h5 class="mt-3 mb-2 app-sub-title">Advance Functioanlity</h5>
+                    <iframe width="100%" height="200" src="https://www.youtube.com/embed/6PJ-vveaT4k" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>  <!-- Main Div Close Here -->
+
+
+    <div id="hidden_wrap" style="display: none;">
+        <div id="suite-grid-menu"></div><div id="load-testSuite-show-menu"></div><div id="add-testSuite-menu"></div><div id="command-grid-menu"></div><div id="grid-add"></div><div id="grid-delete"></div><div id="grid-deleteAll"></div><div id="grid-copy"></div><div id="grid-paste"></div><div id="grid-breakpoint"></div><div id="main"></div><div id="toolbar-container"></div><input id="load-testSuite-hidden" type="file" multiple accept="text/*" style="display: none"></input> <input id="load-older-testSuite" type="file" multiple accept="text/*" style="display: none"> <input id="load-testSuite-show" type="button" value="OpenSuite" style="display: none"></input> <div id="save-testSuite"></div><div id="close-testSuite"></div><div id="close-all-testSuites"></div><div id="add-testSuite"></div><div id="add-testCase"></div><div id="delete-testCase"></div><div id="downloadlink"></div><div id="logo_kr_icon"></div><div id="logo_kr_full"></div><div id="new"></div><div id="record"></div><div id="playback_old"></div><div id="stop"></div><div id="playSuite"></div><div id="playSuites"></div><div id="pause"></div><div id="resume"></div><div id="export"></div><div id="speed-wrapper"></div><div id="speed"></div><div id="slider-container"></div><div id="settings"></div><div id="help"></div><div id="slider"></div><div id="middle-container"></div><div id="suite-fun"></div><div id="suite-open"></div><div id="suite-plus"></div><div id="testCase-container"></div><div id="testCase-grid"></div><div id="result-container"></div><div id="result1"></div><div id="result-runs"></div><div id="result2"></div><div id="result-failures"></div><div id="command-container"></div><table id="command-grid"> <thead class="fixed"><tr><th></th><th></th><th></th></tr></thead><tbody id="records-grid"><input id="records-count" type="hidden" value="0"></input></tbody></table> <div id="command-toolbar"></div><div id="command-toolbar-buttons"></div><div id="grid-add-btn"></div><div id="grid-delete-btn"></div><div id="grid-copy-btn"></div><div id="grid-paste-btn"></div><input id="command-command" list="command-command-list" type="text"> <div id="command-"></div><div id="command-dropdown"></div><div id="command-command-list"></div><input id="command-target" list="command-target-list" type="text"> <div id="target-dropdown"></div><div id="selectElementButton"></div><div id="showElementButton"></div><div id="command-target-list"></div><input id="command-value" type="text"> <div id="history-log"></div><div id="screenshot"></div><div id="variable-log"></div><div id="data-files"></div><div id="extensions"></div><div id="reference-log"></div><div id="ka-upload"></div><div id="save-log"></div><div id="clear-log"></div><div id="data-files-add-csv"></div><div id="data-files-add-json"></div><div id="extension-add"></div><div id="collapse-console"></div><div id="show-hide-bottom-panel"></div><div id="tab4"></div><div id="logcontainer"></div><div id="screenshotcontainer"></div><div id="variablecontainer"></div><table id="variable-grid"><colgroup><col width="33.3333%"><col width="33.3333%"><col width="33.3333%"></colgroup><thead><tr><th></th><th></th><th></th></tr></thead><tbody></tbody></table> <div id="variable-grid-border"></div><div id="datacontainer"></div><input id="load-csv-hidden" type="file" accept=".csv" multiple style="display: none"> <input id="load-json-hidden" type="file" accept=".json" multiple style="display: none"> <table><colgroup><col width="33.3333%"><col width="33.3333%"><col width="33.3333%"></colgroup><thead><tr><th></th><th></th><th></th> </tr></thead> <tbody id="data-files-list"> </tbody> </table> <div id="extensionscontainer"></div><input id="load-extension-hidden" type="file" accept=".js" multiple style="display: none"></input> <table> <colgroup> <col width="33.3333%"> <col width="33.3333%"> <col width="33.3333%"> </colgroup> <thead> <tr> <th></th> <th></th> <th></th> </tr></thead> <tbody id="extensions-list"> </tbody> </table> <div id="refercontainer"></div><div id="generateToScriptsDialog"></div><div id="select-script-language-id"></div><div id="txt-script-id"></div><div id="ka-select-project-dialog"></div><div id="select-ka-project"></div><div id="helpDialog"></div><div id="helpDialog-close"></div><div id="panel-container"></div><div id="introduction"></div>
+      </div>
+    
+    <!-- script -->
+    <script src="../common_files/poly_fill.js"></script>
+    <script src="../common_files/escape.js"></script>
+
+    <script src="assets/js/IO/input_output_file_transformer.js"></script>
+    <script src="assets/js/IO/load_the_file.js"></script>
+    <script src="assets/js/IO/save_the_file.js"></script>
+
+    <script src="assets/js/UI/contextmenu.js"></script>
+    <script src="assets/js/UI/command_grid.js"></script>
+    <script src="assets/js/UI/cmdGridToolbar.js"></script>
+    <script src="assets/js/UI/testcaseGrid.js"></script>
+    <script src="assets/js/UI/log_file.js"></script>
+
+    <script src="assets/js/background/windowController.js"></script>
+    <script src="assets/js/background/recorder.js"></script> <!-- modi -->
+    <script src="assets/js/background/initialCall.js"></script>
+    <script src="assets/js/background/editor.js"></script>
+    <script src="assets/js/background/formatCommand.js"></script>
+    <script src="assets/js/background/play_back.js"></script>
+
+    <script src="assets/js/zeuz/main_zeuz.js"></script>
+    <script src="assets/js/zeuz/newformatters/sample.js"></script>
+    <script src="assets/js/zeuz/newformatters/nf_nrsynthetics.js"></script>
+    <script src="assets/js/zeuz/newformatters/nf_protractorts.js"></script>
+
+  </body>
+</html>

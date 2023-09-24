@@ -77,7 +77,8 @@ temp_config = os.path.join(
     )
 )
 temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
-aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"aiplugin")
+aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
+ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -457,25 +458,12 @@ def set_extension_variables():
     # if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
     with open(Path(aiplugin_path) / "background.js", "w") as file:
         aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
-        aiplugin_key = ConfigModule.get_config_value("Authentication", "api-key").strip()
+        aiplugin_key = CommonUtil.jwt_token.strip()
         zeuz_url_var_idx = text.find("let zeuz_url = ")
         zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
         zeuz_key_var_idx = text.find("let zeuz_key = ")
         zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
         file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{aiplugin_url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{aiplugin_key}';", 1))
-    ask_for_sibling = ConfigModule.get_config_value("Inspector", "sibling").strip().lower() not in ("false", "off", "disabled", "no")
-    if ask_for_sibling:
-        with open(Path(aiplugin_path) / "inspect.js") as file:
-            text = file.read()
-        if "__ZeuZ__SibLing_maPP" in text:
-            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
-                file.write(text.replace("__ZeuZ__SibLing_maPP", "__ZeuZ__SibLing_maPP_true", 1))
-    else:
-        with open(Path(aiplugin_path) / "inspect.js") as file:
-            text = file.read()
-        if "__ZeuZ__SibLing_maPP_true" in text:
-            with open(Path(aiplugin_path) / "inspect.js", "w") as file:
-                file.write(text.replace("__ZeuZ__SibLing_maPP_true", "__ZeuZ__SibLing_maPP", 1))
 
 
 def browser_process_status(browser:str):
@@ -696,7 +684,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 # On Debug run open inspector with credentials
                 if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                     set_extension_variables()
-                    options.add_argument(f"load-extension={aiplugin_path}")
+                    options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
+                    # options.add_argument(f"load-extension={ai_recorder_path}")
 
             if "chromeheadless" in browser:
                 def chromeheadless():

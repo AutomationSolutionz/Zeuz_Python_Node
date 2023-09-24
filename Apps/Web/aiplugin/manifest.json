@@ -1,0 +1,38 @@
+{
+  "manifest_version": 2,
+  "name": "ZeuZ Element Inspector",
+  "description": "Inspect page elements and use ZeuZ AI-supported plugin to automate testing in minutes.",
+  "homepage_url": "https://www.zeuz.ai/",
+  "version": "1.3",
+  "icons": {
+    "64": "icons/small_logo.png"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_action": {
+    "default_icon": "icons/small_logo.png",
+    "default_title": "Click on any element to get the locating info"
+  },
+  "content_scripts": [{
+    "all_frames": true,
+    "matches": ["<all_urls>"],
+    "js":["inspect.js"]
+  }],
+  "commands": {
+    "toggle-xpath": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+U",
+        "mac": "Command+Shift+U"
+      },
+      "description": "Toggle plugin"
+    }
+  },
+  "options_page": "options.html",
+  "permissions": [
+    "activeTab",
+    "<all_urls>", 
+    "contextMenus",
+    "storage"
+                 ]
+}
