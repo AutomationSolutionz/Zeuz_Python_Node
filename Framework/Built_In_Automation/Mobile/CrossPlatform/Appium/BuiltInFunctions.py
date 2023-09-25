@@ -4655,22 +4655,15 @@ def zoom_action(data_set):
 
     xx1 = xx-const
     xx2 = xx+const
-    x_cord1 = None
-    x_cord2 = None
-
 
     try:
         for left, mid, right in data_set:
             if left.strip().lower() == 'action':
-                action = right.strip().lower().replace(' ','')
+                action = right.lower().replace(' ','')
             elif left.strip().lower() == 'scale':
                 scale = int(right)
             elif left.strip().lower() == 'count':
                 count = int(right)
-            elif 'coordinates' in left.strip().lower():
-                cords = right.strip()
-                x_cord1 = int(cords[0].replace('(',''))
-                x_cord2 = int(cords[1].replace(')',''))
             elif left.strip().lower() == 'double tap':
                 double_tap = right.strip().lower() in ('true', 'enable', 'ok', 'yes')
         
@@ -4682,10 +4675,6 @@ def zoom_action(data_set):
         if action == 'zoomout':
             for i in range(count):   
                 CommonUtil.ExecLog(sModuleInfo, f"Zoomed {i+1} time", 1) 
-                if x_cord1:
-                    xs = x_cord1
-                if x_cord2:
-                    xe = x_cord2
 
                 action1.long_press(x=xs+const, y=yy).move_to(x=xs+(const*1*scale), y=yy).move_to(x=xs+int((const*1.5*scale)), y=yy).move_to(x=xs+(const*2*scale), y=yy).move_to(x=xs+int((const*2.5*scale)), y=yy).move_to(x=xs+(const*3*scale), y=yy).release()
                 action2.long_press(x=xe-const, y=yy).move_to(x=xe-(const*1*scale), y=yy).move_to(x=xe-int((const*1.5*scale)), y=yy).move_to(x=xe-(const*2*scale), y=yy).move_to(x=xe-int((const*2.5*scale)), y=yy).move_to(x=xe-(const*3*scale), y=yy).release()
@@ -4696,10 +4685,6 @@ def zoom_action(data_set):
         elif action == 'zoomin':
             for i in range(count):    
                 CommonUtil.ExecLog(sModuleInfo, f"Zoomed {i+1} time", 1)
-                if x_cord1:
-                    xx1 = x_cord1
-                if x_cord2:
-                    xx2 = x_cord2
 
                 if double_tap == False:
                     action1.long_press(x=xx1, y=yy).move_to(x=xx1-(const*1*scale), y=yy).move_to(x=xx1-int((const*1.5*scale)), y=yy).move_to(x=xx1-(const*2*scale), y=yy).move_to(x=xx1-int((const*2.5*scale)), y=yy).move_to(x=xx1-(const*3*scale), y=yy).release()
@@ -4752,7 +4737,7 @@ def pan_action(data_set):
     try:
         for left, mid, right in data_set:
             if left.strip().lower() == 'direction':
-                direction = right.strip().lower().replace(' ','')
+                direction = right.lower().replace(' ','')
             elif left.strip().lower() == 'scale':
                 scale = int(right)
             elif left.strip().lower() == 'count':
