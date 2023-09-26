@@ -1,5 +1,5 @@
 /* globals chrome */
-chrome.storage.local.get(['key'], function (result) {
+chrome.storage.local.get(['key'], function(result) {
 
   if (result.key != null) {
     var xPathFinder = xPathFinder || (() => {
@@ -20,7 +20,7 @@ chrome.storage.local.get(['key'], function (result) {
           this.elementNode = 'myElement';
 
         }
-          
+
 
         getData(e) {
 
@@ -29,293 +29,334 @@ chrome.storage.local.get(['key'], function (result) {
           e.stopPropagation && e.stopPropagation();
 
           if ((e.target.id !== this.modalNode) && (e.target.id !== this.elementNode)) {
-              
-              
-              // message element
-                const contentNode = document.getElementById(this.contentNode);
-                const modalNode = document.getElementById(this.modalNode);
-                const contentParentNode = document.getElementById(this.contentParentNode);
 
 
-            
+            // message element
+            const contentNode = document.getElementById(this.contentNode);
+            const modalNode = document.getElementById(this.modalNode);
+            const contentParentNode = document.getElementById(this.contentParentNode);
+
+
+
             // check if we are locating sibling now
-            chrome.storage.local.get('mainelem', function (result) {
-                
-                if (result.mainelem == null){   // no pre-selected element
-                    
-                    this.elem = {};
-                    this.modalNode = 'myModal';
-                    
-                    // Set custom Zeuz attribute
-                    var att = document.createAttribute("zeuz");
-                    att.value = "aiplugin";
-                    e.target.setAttributeNode(att);
+            chrome.storage.local.get('mainelem', function(result) {
 
-                    // Get element data
-                    this.elem['text'] = e.target.textContent;
-                    const element_text = e.target.textContent;
-                    this.elem['html'] = e.target.outerHTML;
-                    this.elem['original_html'] = e.target.outerHTML;    // save for backup data
+              if (result.mainelem == null) { // no pre-selected element
 
+                this.elem = {};
+                this.modalNode = 'myModal';
 
-                    // Get full page html, remove <style> and <script> tags //
-                    // create a new div container
-                    var div = document.createElement('div');
-                    var myString = document.documentElement.outerHTML;
+                // Set custom Zeuz attribute
+                var att = document.createAttribute("zeuz");
+                att.value = "aiplugin";
+                e.target.setAttributeNode(att);
 
-                    // assign your HTML to div's innerHTML
-                    div.innerHTML = myString;
-
-                    // get all <script> elements from div
-                    var elements = div.getElementsByTagName('script');
-
-                    // remove all <script> elements
-                    while (elements[0])
-                      elements[0].parentNode.removeChild(elements[0])
-
-                    // get all <style> elements from div
-                    var elements = div.getElementsByTagName('style');
-
-                    // remove all <style> elements
-                    while (elements[0])
-                      elements[0].parentNode.removeChild(elements[0])
-
-                    // get div's innerHTML into a new variable
-                    var refinedHtml = div.innerHTML;
-
-                    
-                    const tracker_info = {
-                      'elem': this.elem['html'],
-                      'html': refinedHtml,
-                      'url': window.location.href,
-                      'source': 'web'
-                    }
-
-                    const backup_tracker_info = {
-                      'elem': this.elem['original_html'],
-                      'url': window.location.href,
-                      'source': 'web'
-                    }
-
-                    // choose sibling element
-                    chrome.storage.local.get(['sibling'], function (result) {
-                      if (result.sibling && confirm('Do you want to select a helper sibling element?')){
-
-                        // store main
-                        //chrome.storage.local.set({mainelem: this.elem['html']});
-                        chrome.storage.local.set({mainelem: this.elem['html']}, function() {
-                            console.log('Main element is set to ' + element_text);
-                            
-                        });
-                      }
-
-                      else {      // don't select sibling, send directly
-
-                          // copy action/element data
-                          // this.options.clipboard && ( this.copyText(XPath) );
-                          // this.options.clipboard && ( this.copyText(JSON.stringify(tracker_info)));
-
-                          // send data to zeuz server
-                          // this.sendData(tracker_info, backup_tracker_info);
-                          
-                          // get url-key and send data to zeuz
-                          chrome.storage.local.get(['key', 'url'], function (result) {
-
-                              // console.log('Value currently is ' + result.key);
-                              var server_url = result.url;
-                              var api_key = result.key;
+                // Get element data
+                this.elem['text'] = e.target.textContent;
+                const element_text = e.target.textContent;
+                this.elem['html'] = e.target.outerHTML;
+                this.elem['original_html'] = e.target.outerHTML; // save for backup data
 
 
-                              // send data to zeuz server directly
+                // Get full page html, remove <style> and <script> tags //
+                // create a new div container
+                var div = document.createElement('div');
+                var myString = document.documentElement.outerHTML;
 
-                              var data = JSON.stringify({ "content": JSON.stringify(tracker_info), "source": "web" });
+                // assign your HTML to div's innerHTML
+                div.innerHTML = myString;
 
-                              var backup_data = JSON.stringify({ "content": JSON.stringify(backup_tracker_info), "source": "web" });
+                // get all <script> elements from div
+                var elements = div.getElementsByTagName('script');
 
-                              var xhr = new XMLHttpRequest();
+                // remove all <script> elements
+                while (elements[0])
+                  elements[0].parentNode.removeChild(elements[0])
 
-                              xhr.addEventListener("readystatechange", function () {
-                                if (this.readyState === 4) {
-                                    //console.log(this.responseText);
-                                    console.log(this.status);
-                                }
-                                state = this.readyState;
-                                status = this.status;
-                                if(this.status == 200){
-                                  // show message about element 
-                                  const modalText = 'Element data was recorded. Please Click "Add by AI"';
-                                  console.log(modalText);
-                                  if (modalNode) {
-                                    modalNode.innerText = modalText;
-                                  }
-                                  else {
-                                    const modalHtml = document.createElement('div');
-                                    modalHtml.innerText = modalText;
-                                    modalHtml.id = this.modalNode;
-                                    document.body.appendChild(modalHtml);
-                                  }                                  
-                                }
-                              });
+                // get all <style> elements from div
+                var elements = div.getElementsByTagName('style');
 
-                              xhr.open("POST", server_url + "/api/contents/");
-                              xhr.setRequestHeader("Content-Type", "application/json");
-                              xhr.setRequestHeader("Authorization", `Bearer ${api_key}`);
+                // remove all <style> elements
+                while (elements[0])
+                  elements[0].parentNode.removeChild(elements[0])
 
-                              try {
-                                xhr.send(data);
-                              }
-                              catch (err) {
-                                xhr.send(backup_data);
-                              }
-
-                        });
-                        // remove zeuz attribute
-                        e.target.removeAttributeNode(att);
+                // get div's innerHTML into a new variable
+                var refinedHtml = div.innerHTML;
 
 
-                    }
-                  });
-                    
-                    
+                const tracker_info = {
+                  'elem': this.elem['html'],
+                  'html': refinedHtml,
+                  'url': window.location.href,
+                  'source': 'web'
                 }
-                
-                else {      // we are locating sibling now, send it with the main element
-                    
-                    
-                    this.sibling = {};
-                    this.modalNode = 'myModal';
-                    
-                    // Set custom Zeuz-sibling attribute
-                    var att = document.createAttribute("zeuz-sibling");
-                    att.value = "aiplugin-sibling";
-                    e.target.setAttributeNode(att);
 
-                    // Get element data
-                    this.sibling['text'] = e.target.textContent;
-                    const element_text = e.target.textContent;
-                    this.sibling['html'] = e.target.outerHTML;
-                    this.sibling['original_html'] = e.target.outerHTML;    // save for backup data
+                const backup_tracker_info = {
+                  'elem': this.elem['original_html'],
+                  'url': window.location.href,
+                  'source': 'web'
+                }
 
+                // choose sibling element
+                chrome.storage.local.get(['sibling'], function(result) {
+                  if (result.sibling && confirm('Do you want to select a helper sibling element?')) {
 
-                    // message element
-                    const contentNode = document.getElementById(this.contentNode);
-                    const modalNode = document.getElementById(this.modalNode);
-                    const contentParentNode = document.getElementById(this.contentParentNode);
-                    
-                    // Get full page html, remove <style> and <script> tags //
-                    // create a new div container
-                    var div = document.createElement('div');
-                    var myString = document.documentElement.outerHTML;
+                    // store main
+                    //chrome.storage.local.set({mainelem: this.elem['html']});
+                    chrome.storage.local.set({
+                      mainelem: this.elem['html']
+                    }, function() {
+                      console.log('Main element is set to ' + element_text);
 
-                    // assign your HTML to div's innerHTML
-                    div.innerHTML = myString;
+                    });
+                  } else { // don't select sibling, send directly
 
-                    // get all <script> elements from div
-                    var elements = div.getElementsByTagName('script');
+                    // copy action/element data
+                    // this.options.clipboard && ( this.copyText(XPath) );
+                    // this.options.clipboard && ( this.copyText(JSON.stringify(tracker_info)));
 
-                    // remove all <script> elements
-                    while (elements[0])
-                      elements[0].parentNode.removeChild(elements[0])
-
-                    // get all <style> elements from div
-                    var elements = div.getElementsByTagName('style');
-
-                    // remove all <style> elements
-                    while (elements[0])
-                      elements[0].parentNode.removeChild(elements[0])
-
-                    // get div's innerHTML into a new variable
-                    var refinedHtml = div.innerHTML;
-
-                    
-                    // prepare data to send
-                    const tracker_info = {
-                      'elem': result.main,
-                      'sibling': this.sibling['html'],
-                      'html': refinedHtml,
-                      'url': window.location.href,
-                      'source': 'web'
-                    }
-
-                    const backup_tracker_info = {
-                      'elem': result.main,
-                      'sibling': this.sibling['original_html'],
-                      'url': window.location.href,
-                      'source': 'web'
-                    }
-                    
-                    
                     // send data to zeuz server
                     // this.sendData(tracker_info, backup_tracker_info);
-                    
+
                     // get url-key and send data to zeuz
-                    chrome.storage.local.get(['key', 'url'], function (result) {
+                    chrome.storage.local.get(['key', 'url'], function(result) {
 
-                        // console.log('Value currently is ' + result.key);
-                        var server_url = result.url;
-                        var api_key = result.key;
+                      // console.log('Value currently is ' + result.key);
+                      var server_url = result.url;
+                      var api_key = result.key;
 
 
-                        // send data to zeuz server directly
+                      // send data to zeuz server directly
 
-                        var data = JSON.stringify({ "content": JSON.stringify(tracker_info), "source": "web" });
+                      var data = JSON.stringify({
+                        "content": JSON.stringify(tracker_info),
+                        "source": "web"
+                      });
 
-                        var backup_data = JSON.stringify({ "content": JSON.stringify(backup_tracker_info), "source": "web" });
+                      var backup_data = JSON.stringify({
+                        "content": JSON.stringify(backup_tracker_info),
+                        "source": "web"
+                      });
 
-                        var status = 200;
-                        var state = 4;
-
-                        var xhr = new XMLHttpRequest();
-
-                        xhr.addEventListener("readystatechange", function () {
-                          if (this.readyState === 4) {
-                              //console.log(this.responseText);
-                              console.log(this.status);
+                      fetch(server_url + "/api/contents/", {
+                          method: "POST", // or 'PUT'
+                          headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${api_key}`,
+                          },
+                          body: data,
+                        })
+                        .then((response) => {
+                          if (response.readyState === 4) {
+                            //console.log(this.responseText);
+                            console.log(response.status);
                           }
-                          state = this.readyState;
-                          status = this.status;
-                          if(status == 200){
-                            // show message about element
+                          console.log(response);
+                          
+                          if (response.status == 200) {
+                            // show message about element 
                             const modalText = 'Element data was recorded. Please Click "Add by AI"';
                             console.log(modalText);
                             if (modalNode) {
                               modalNode.innerText = modalText;
-                            }
-                            else {
+                            } else {
                               const modalHtml = document.createElement('div');
                               modalHtml.innerText = modalText;
                               modalHtml.id = this.modalNode;
                               document.body.appendChild(modalHtml);
                             }
                           }
+                        })
+                        .catch((error) => {
+                          console.error("Error:", error);
                         });
 
-                        xhr.open("POST", server_url + "/api/contents/");
-                        xhr.setRequestHeader("Content-Type", "application/json");
-                        xhr.setRequestHeader("Authorization", `Bearer ${api_key}`);
+                      // var xhr = new XMLHttpRequest();
 
-                        try {
-                          xhr.send(data);
-                        }
-                        catch (err) {
-                          xhr.send(backup_data);
-                        }
+                      // xhr.addEventListener("readystatechange", function() {
+                      //   if (this.readyState === 4) {
+                      //     //console.log(this.responseText);
+                      //     console.log(this.status);
+                      //   }
+                      //   state = this.readyState;
+                      //   status = this.status;
+                      //   if (this.status == 200) {
+                      //     // show message about element 
+                      //     const modalText = 'Element data was recorded. Please Click "Add by AI"';
+                      //     console.log(modalText);
+                      //     if (modalNode) {
+                      //       modalNode.innerText = modalText;
+                      //     } else {
+                      //       const modalHtml = document.createElement('div');
+                      //       modalHtml.innerText = modalText;
+                      //       modalHtml.id = this.modalNode;
+                      //       document.body.appendChild(modalHtml);
+                      //     }
+                      //   }
+                      // });
+
+                      // xhr.open("POST", server_url + "/api/contents/");
+                      // xhr.setRequestHeader("Content-Type", "application/json");
+                      // xhr.setRequestHeader("Authorization", `Bearer ${api_key}`);
+
+                      // try {
+                      //   xhr.send(data);
+                      // } catch (err) {
+                      //   xhr.send(backup_data);
+                      // }
+
                     });
                     // remove zeuz attribute
                     e.target.removeAttributeNode(att);
-                    
-                    
-                    // delete main element from storage
-                    // chrome.storage.local.set({main: null});
-                    chrome.storage.local.set({mainelem: null}, function() {
-                        console.log('Sibling/helper element sending completed.');
-                    });
 
-                    
+
+                  }
+                });
+
+
+              } else { // we are locating sibling now, send it with the main element
+
+
+                this.sibling = {};
+                this.modalNode = 'myModal';
+
+                // Set custom Zeuz-sibling attribute
+                var att = document.createAttribute("zeuz-sibling");
+                att.value = "aiplugin-sibling";
+                e.target.setAttributeNode(att);
+
+                // Get element data
+                this.sibling['text'] = e.target.textContent;
+                const element_text = e.target.textContent;
+                this.sibling['html'] = e.target.outerHTML;
+                this.sibling['original_html'] = e.target.outerHTML; // save for backup data
+
+
+                // message element
+                const contentNode = document.getElementById(this.contentNode);
+                const modalNode = document.getElementById(this.modalNode);
+                const contentParentNode = document.getElementById(this.contentParentNode);
+
+                // Get full page html, remove <style> and <script> tags //
+                // create a new div container
+                var div = document.createElement('div');
+                var myString = document.documentElement.outerHTML;
+
+                // assign your HTML to div's innerHTML
+                div.innerHTML = myString;
+
+                // get all <script> elements from div
+                var elements = div.getElementsByTagName('script');
+
+                // remove all <script> elements
+                while (elements[0])
+                  elements[0].parentNode.removeChild(elements[0])
+
+                // get all <style> elements from div
+                var elements = div.getElementsByTagName('style');
+
+                // remove all <style> elements
+                while (elements[0])
+                  elements[0].parentNode.removeChild(elements[0])
+
+                // get div's innerHTML into a new variable
+                var refinedHtml = div.innerHTML;
+
+
+                // prepare data to send
+                const tracker_info = {
+                  'elem': result.main,
+                  'sibling': this.sibling['html'],
+                  'html': refinedHtml,
+                  'url': window.location.href,
+                  'source': 'web'
                 }
-                
+
+                const backup_tracker_info = {
+                  'elem': result.main,
+                  'sibling': this.sibling['original_html'],
+                  'url': window.location.href,
+                  'source': 'web'
+                }
+
+
+                // send data to zeuz server
+                // this.sendData(tracker_info, backup_tracker_info);
+
+                // get url-key and send data to zeuz
+                chrome.storage.local.get(['key', 'url'], function(result) {
+
+                  // console.log('Value currently is ' + result.key);
+                  var server_url = result.url;
+                  var api_key = result.key;
+
+
+                  // send data to zeuz server directly
+
+                  var data = JSON.stringify({
+                    "content": JSON.stringify(tracker_info),
+                    "source": "web"
+                  });
+
+                  var backup_data = JSON.stringify({
+                    "content": JSON.stringify(backup_tracker_info),
+                    "source": "web"
+                  });
+
+                  var status = 200;
+                  var state = 4;
+
+                  var xhr = new XMLHttpRequest();
+
+                  xhr.addEventListener("readystatechange", function() {
+                    if (this.readyState === 4) {
+                      //console.log(this.responseText);
+                      console.log(this.status);
+                    }
+                    state = this.readyState;
+                    status = this.status;
+                    if (status == 200) {
+                      // show message about element
+                      const modalText = 'Element data was recorded. Please Click "Add by AI"';
+                      console.log(modalText);
+                      if (modalNode) {
+                        modalNode.innerText = modalText;
+                      } else {
+                        const modalHtml = document.createElement('div');
+                        modalHtml.innerText = modalText;
+                        modalHtml.id = this.modalNode;
+                        document.body.appendChild(modalHtml);
+                      }
+                    }
+                  });
+
+                  xhr.open("POST", server_url + "/api/contents/");
+                  xhr.setRequestHeader("Content-Type", "application/json");
+                  xhr.setRequestHeader("Authorization", `Bearer ${api_key}`);
+
+                  try {
+                    xhr.send(data);
+                  } catch (err) {
+                    xhr.send(backup_data);
+                  }
+                });
+                // remove zeuz attribute
+                e.target.removeAttributeNode(att);
+
+
+                // delete main element from storage
+                // chrome.storage.local.set({main: null});
+                chrome.storage.local.set({
+                  mainelem: null
+                }, function() {
+                  console.log('Sibling/helper element sending completed.');
+                });
+
+
+              }
+
             });
-              
+
 
           }
 
@@ -339,10 +380,17 @@ chrome.storage.local.get(['key'], function (result) {
           let positionParent = 'top:0;left:0';
           let positionModal = 'top:50%;left:40%';
           switch (options.position) {
-            case 'tl': position = 'top:0;left:0'; break;
-            case 'tr': position = 'top:0;right:0'; break;
-            case 'br': position = 'bottom:0;right:0'; break;
-            default: break;
+            case 'tl':
+              position = 'top:0;left:0';
+              break;
+            case 'tr':
+              position = 'top:0;right:0';
+              break;
+            case 'br':
+              position = 'bottom:0;right:0';
+              break;
+            default:
+              break;
           }
           this.styles = `*{cursor:crosshair!important;}#xpath-content{${position};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#xpath-parent-content{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#myModal{${position};cursor:initial!important;padding:10px;background:#F2F2F2;color:green;position:fixed;font-size:14px;z-index:10000001;}#myElement{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}`;
           this.activate();
@@ -431,8 +479,7 @@ chrome.storage.local.get(['key'], function (result) {
             }
             if (elementNode) {
               elementNode.innerText = elementText;
-            }
-            else {
+            } else {
               const elementHtml = document.createElement('div');
               elementHtml.innerText = elementText;
               elementHtml.id = this.elementNode;
@@ -520,7 +567,9 @@ chrome.storage.local.get(['key'], function (result) {
         }
 
         getOwnerWindow(node) {
-          if (!node.ownerDocument) { return null; }
+          if (!node.ownerDocument) {
+            return null;
+          }
           return node.ownerDocument.defaultView;
         }
 
@@ -549,7 +598,9 @@ chrome.storage.local.get(['key'], function (result) {
 
         mergeRectOffsets(rects) {
           return rects.reduce((previousRect, rect) => {
-            if (previousRect === null) { return rect; }
+            if (previousRect === null) {
+              return rect;
+            }
             return {
               top: previousRect.top + rect.top,
               left: previousRect.left + rect.left,
@@ -571,7 +622,9 @@ chrome.storage.local.get(['key'], function (result) {
               const rect = this.getBoundingClientRectWithBorderOffset(currentIframe);
               rects.push(rect);
               currentIframe = this.getOwnerIframe(currentIframe);
-              if (onlyOneMore) { break; }
+              if (onlyOneMore) {
+                break;
+              }
               if (currentIframe && this.getOwnerWindow(currentIframe) === boundaryWindow) {
                 onlyOneMore = true;
               }
