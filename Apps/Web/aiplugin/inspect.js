@@ -377,46 +377,46 @@ chrome.storage.local.get(['key'], function (result) {
 
 				draw(e) {
 					const node = e.target;
-					if (node.id !== this.contentNode) {
-						this.removeOverlay();
 
-						const box = this.getNestedBoundingClientRect(node, this.win);
-						const dimensions = this.getElementDimensions(node);
+					this.removeOverlay();
 
-						this.boxWrap(dimensions, 'margin', this.node);
-						this.boxWrap(dimensions, 'border', this.border);
-						this.boxWrap(dimensions, 'padding', this.padding);
+					const box = this.getNestedBoundingClientRect(node, this.win);
+					const dimensions = this.getElementDimensions(node);
 
-						Object.assign(this.content.style, {
-							height: box.height - dimensions.borderTop - dimensions.borderBottom - dimensions.paddingTop - dimensions.paddingBottom + 'px',
-							width: box.width - dimensions.borderLeft - dimensions.borderRight - dimensions.paddingLeft - dimensions.paddingRight + 'px',
-						});
+					this.boxWrap(dimensions, 'margin', this.node);
+					this.boxWrap(dimensions, 'border', this.border);
+					this.boxWrap(dimensions, 'padding', this.padding);
 
-						Object.assign(this.node.style, {
-							top: box.top - dimensions.marginTop + 'px',
-							left: box.left - dimensions.marginLeft + 'px',
-						});
+					Object.assign(this.content.style, {
+						height: box.height - dimensions.borderTop - dimensions.borderBottom - dimensions.paddingTop - dimensions.paddingBottom + 'px',
+						width: box.width - dimensions.borderLeft - dimensions.borderRight - dimensions.paddingLeft - dimensions.paddingRight + 'px',
+					});
 
-						this.doc.body.appendChild(this.container);
+					Object.assign(this.node.style, {
+						top: box.top - dimensions.marginTop + 'px',
+						left: box.left - dimensions.marginLeft + 'px',
+					});
+
+					this.doc.body.appendChild(this.container);
 
 
-						// show element attributes
-						const elementNode = document.getElementById(this.elementNode);
-						var elementText = "";
-						for (let name of e.target.getAttributeNames()) {
-							let value = e.target.getAttribute(name);
-							var each = name + " = \"" + value + "\", ";
-							elementText += each;
-						}
-						if (elementNode) {
-							elementNode.innerText = elementText;
-						} else {
-							const elementHtml = document.createElement('div');
-							elementHtml.innerText = elementText;
-							elementHtml.id = this.elementNode;
-							document.body.appendChild(elementHtml);
-						}
+					// show element attributes
+					const elementNode = document.getElementById(this.elementNode);
+					var elementText = "";
+					for (let name of e.target.getAttributeNames()) {
+						let value = e.target.getAttribute(name);
+						var each = name + " = \"" + value + "\", ";
+						elementText += each;
 					}
+					if (elementNode) {
+						elementNode.innerText = elementText;
+					} else {
+						const elementHtml = document.createElement('div');
+						elementHtml.innerText = elementText;
+						elementHtml.id = this.elementNode;
+						document.body.appendChild(elementHtml);
+					}
+				
 				}
 
 				activate() {
@@ -437,17 +437,27 @@ chrome.storage.local.get(['key'], function (result) {
 					// remove overlay
 					this.removeOverlay();
 
-					//   this.cssNode = 'xpath-css';
-					//   this.overlayElement = 'xpath-overlay';
-					//   this.modalNode = 'zeuzMyModal';
-					//   this.elementNode = 'zeuzMyElement';
+					this.cssNode = 'xpath-css';
+					this.overlayElement = 'xpath-overlay';
+					this.modalNode = 'zeuzMyModal';
+					this.elementNode = 'zeuzMyElement';
+
+					let Remove = [
+						this.cssNode,
+						this.overlayElement,
+						this.modalNode,
+						this.elementNode,
+					]
+
+					for (let elem of Remove){
+						elem = document.getElementById(elem);
+						elem && elem.remove();
+					}
 
 					// remove styles
 					const cssNode = document.getElementById(this.cssNode);
 					cssNode && cssNode.remove();
-					// remove xpath html
-					const contentNode = document.getElementById(this.contentNode);
-					contentNode && contentNode.remove();
+
 					// remove listeners
 					document.removeEventListener('click', this.getData, true);
 					this.options && this.options.inspector && (document.removeEventListener('mouseover', this.draw));
