@@ -67,3 +67,4 @@ pywin32
 xmltodict
 configobj
 jinja2
+pandas
