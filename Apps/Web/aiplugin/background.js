@@ -228,3 +228,9 @@ browserAppData.commands.onCommand.addListener(command => {
 
 browserAppData.tabs.onUpdated.addListener(getActiveTab);
 browserAppData.action.onClicked.addListener(toggle);
+console.log(navigator.userAgentData.platform);
+if (navigator.userAgentData.platform.toLowerCase().includes('mac')){
+  browserAppData.action.setTitle({
+    title: "Cmd + Shift + X"
+  });
+}

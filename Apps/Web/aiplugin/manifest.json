@@ -17,7 +17,7 @@
       "24": "icons/small_logo.png",
       "32": "icons/small_logo.png"
     },
-    "default_title": "Ctrl + Shift + K"
+    "default_title": "Ctrl + Shift + X"
   },
   "content_scripts": [{
     "all_frames": true,
@@ -27,8 +27,8 @@
   "commands": {
     "toggle-xpath": {
       "suggested_key": {
-        "default": "Ctrl+Shift+U",
-        "mac": "Command+Shift+U"
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
       },
       "description": "Toggle plugin"
     }
