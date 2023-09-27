@@ -4,7 +4,7 @@ const inspectFile = 'inspect.js';
 const activeIcon = 'active-64.png';
 const defaultIcon = 'small_logo.png';
 let zeuz_url = 'https://qa.automationsolutionz.com';
-let zeuz_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdWxsX25hbWUiOiJNdW50YXNpYiBNdWhpYiBDaG93ZGh1cnkiLCJ1c2VybmFtZSI6Im11aGliMiIsImlkIjoyNTAsImV4cCI6MTY5ODMzMjkxM30.w08KotwhRgdYfYi8NqgsKFROerZtnThnd3YrFbrsOTM';
+let zeuz_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdWxsX25hbWUiOiJNdW50YXNpYiBNdWhpYiBDaG93ZGh1cnkiLCJ1c2VybmFtZSI6Im11aGliMiIsImlkIjoyNTAsImV4cCI6MTY5ODM0NTYxMH0.AsXWLjAhSeqV0dBTGBMMksp-ZJ_6Y5Q5sI84BEQvgWU';
 
 function logout() {
   chrome.storage.local.remove(['key'], function () {

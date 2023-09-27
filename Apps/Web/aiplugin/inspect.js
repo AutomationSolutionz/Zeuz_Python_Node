@@ -16,7 +16,7 @@ chrome.storage.local.get(['key'], function(result) {
           this.contentNode = 'xpath-content';
           this.contentParentNode = 'xpath-parent-content';
           this.overlayElement = 'xpath-overlay';
-          this.modalNode = 'myModal';
+          this.modalNode = 'zeuzMyModal';
           this.elementNode = 'myElement';
 
         }
@@ -36,7 +36,46 @@ chrome.storage.local.get(['key'], function(result) {
             const modalNode = document.getElementById(this.modalNode);
             const contentParentNode = document.getElementById(this.contentParentNode);
 
+            function insert_modal_text(response, modal_id){
+              console.log("insert_modal_text ..................")
+              if (response.status == 200) {
+                // show message about element 
+                const modalText = 'Element data was recorded. Please Click "Add by AI"';
+                console.log(modalText);
+                if (modalNode) {
+                  modalNode.innerText = modalText;
+                } else {
+                  const modalHtml = document.createElement('div');
+                  modalHtml.innerText = modalText;
+                  modalHtml.id = modal_id;
+                  document.body.appendChild(modalHtml);
+                }
+                return true;
+              }
+              return false;
 
+            }
+            
+            async function send_data(server_url, api_key, data, backup_data, modal_id){
+              let resp = await fetch(server_url + "/api/contents/", {
+                method: "POST", // or 'PUT'
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${api_key}`,
+                },
+                body: data,
+              });
+              if(insert_modal_text(resp, modal_id)) return;
+              resp = await fetch(server_url + "/api/contents/", {
+                method: "POST", // or 'PUT'
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${api_key}`,
+                },
+                body: backup_data,
+              });
+              insert_modal_text(resp, modal_id);
+            }
 
             // check if we are locating sibling now
             chrome.storage.local.get('mainelem', function(result) {
@@ -44,7 +83,7 @@ chrome.storage.local.get(['key'], function(result) {
               if (result.mainelem == null) { // no pre-selected element
 
                 this.elem = {};
-                this.modalNode = 'myModal';
+                this.modalNode = 'zeuzMyModal';
 
                 // Set custom Zeuz attribute
                 var att = document.createAttribute("zeuz");
@@ -138,72 +177,7 @@ chrome.storage.local.get(['key'], function(result) {
                         "source": "web"
                       });
 
-                      fetch(server_url + "/api/contents/", {
-                          method: "POST", // or 'PUT'
-                          headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${api_key}`,
-                          },
-                          body: data,
-                        })
-                        .then((response) => {
-                          if (response.readyState === 4) {
-                            //console.log(this.responseText);
-                            console.log(response.status);
-                          }
-                          console.log(response);
-                          
-                          if (response.status == 200) {
-                            // show message about element 
-                            const modalText = 'Element data was recorded. Please Click "Add by AI"';
-                            console.log(modalText);
-                            if (modalNode) {
-                              modalNode.innerText = modalText;
-                            } else {
-                              const modalHtml = document.createElement('div');
-                              modalHtml.innerText = modalText;
-                              modalHtml.id = this.modalNode;
-                              document.body.appendChild(modalHtml);
-                            }
-                          }
-                        })
-                        .catch((error) => {
-                          console.error("Error:", error);
-                        });
-
-                      // var xhr = new XMLHttpRequest();
-
-                      // xhr.addEventListener("readystatechange", function() {
-                      //   if (this.readyState === 4) {
-                      //     //console.log(this.responseText);
-                      //     console.log(this.status);
-                      //   }
-                      //   state = this.readyState;
-                      //   status = this.status;
-                      //   if (this.status == 200) {
-                      //     // show message about element 
-                      //     const modalText = 'Element data was recorded. Please Click "Add by AI"';
-                      //     console.log(modalText);
-                      //     if (modalNode) {
-                      //       modalNode.innerText = modalText;
-                      //     } else {
-                      //       const modalHtml = document.createElement('div');
-                      //       modalHtml.innerText = modalText;
-                      //       modalHtml.id = this.modalNode;
-                      //       document.body.appendChild(modalHtml);
-                      //     }
-                      //   }
-                      // });
-
-                      // xhr.open("POST", server_url + "/api/contents/");
-                      // xhr.setRequestHeader("Content-Type", "application/json");
-                      // xhr.setRequestHeader("Authorization", `Bearer ${api_key}`);
-
-                      // try {
-                      //   xhr.send(data);
-                      // } catch (err) {
-                      //   xhr.send(backup_data);
-                      // }
+                      send_data(server_url, api_key, data, backup_data, this.modalNode);
 
                     });
                     // remove zeuz attribute
@@ -218,7 +192,7 @@ chrome.storage.local.get(['key'], function(result) {
 
 
                 this.sibling = {};
-                this.modalNode = 'myModal';
+                this.modalNode = 'zeuzMyModal';
 
                 // Set custom Zeuz-sibling attribute
                 var att = document.createAttribute("zeuz-sibling");
@@ -303,42 +277,8 @@ chrome.storage.local.get(['key'], function(result) {
                     "source": "web"
                   });
 
-                  var status = 200;
-                  var state = 4;
+                  send_data(server_url, api_key, data, backup_data, this.modalNode);
 
-                  var xhr = new XMLHttpRequest();
-
-                  xhr.addEventListener("readystatechange", function() {
-                    if (this.readyState === 4) {
-                      //console.log(this.responseText);
-                      console.log(this.status);
-                    }
-                    state = this.readyState;
-                    status = this.status;
-                    if (status == 200) {
-                      // show message about element
-                      const modalText = 'Element data was recorded. Please Click "Add by AI"';
-                      console.log(modalText);
-                      if (modalNode) {
-                        modalNode.innerText = modalText;
-                      } else {
-                        const modalHtml = document.createElement('div');
-                        modalHtml.innerText = modalText;
-                        modalHtml.id = this.modalNode;
-                        document.body.appendChild(modalHtml);
-                      }
-                    }
-                  });
-
-                  xhr.open("POST", server_url + "/api/contents/");
-                  xhr.setRequestHeader("Content-Type", "application/json");
-                  xhr.setRequestHeader("Authorization", `Bearer ${api_key}`);
-
-                  try {
-                    xhr.send(data);
-                  } catch (err) {
-                    xhr.send(backup_data);
-                  }
                 });
                 // remove zeuz attribute
                 e.target.removeAttributeNode(att);
@@ -392,7 +332,7 @@ chrome.storage.local.get(['key'], function(result) {
             default:
               break;
           }
-          this.styles = `*{cursor:crosshair!important;}#xpath-content{${position};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#xpath-parent-content{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#myModal{${position};cursor:initial!important;padding:10px;background:#F2F2F2;color:green;position:fixed;font-size:14px;z-index:10000001;}#myElement{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}`;
+          this.styles = `*{cursor:crosshair!important;}#xpath-content{${position};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#xpath-parent-content{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#${this.modalNode}{${position};cursor:initial!important;padding:10px;background:#F2F2F2;color:green;position:fixed;font-size:14px;z-index:10000001;}#myElement{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}`;
           this.activate();
         }
 
