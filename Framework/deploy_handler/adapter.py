@@ -57,6 +57,7 @@ def read_steps(steps_pb) -> List[Dict]:
                 # "verify_point": step["stepInfo"]["verifyPoint"], //global verify_point ,step["verifyPoint"] // local verify point 
                 "verify_point": step["verifyPoint"], 
                 "continue_on_fail": step["continuePoint"],
+                "step_enable": step["stepInfo"]["stepEnable"],
                 "step_time": step["time"],
                 "actions": read_actions(step["actions"]),
             }
