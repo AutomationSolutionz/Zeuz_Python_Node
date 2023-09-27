@@ -49,3 +49,4 @@ deepdiff
 xmltodict
 configobj
 boto3
+pandas
