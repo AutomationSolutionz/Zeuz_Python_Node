@@ -600,7 +600,7 @@ def launch_application(data_set):
                 return "zeuz_failed"
 
             if launch_app:  # if ios simulator then no need to launch app again
-                appium_driver.launch_app()  # Launch program configured in the Appium capabilities
+                appium_driver.activate_app(package_name)  # Launch program configured in the Appium capabilities
             CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
     except Exception:
@@ -920,7 +920,8 @@ def start_appium_driver(
             count = 1
             while count <= 5:
                 try:
-                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, desired_caps)  # Create instance
+                    capabilities_options = UiAutomator2Options().load_capabilities(desired_caps)
+                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, options=capabilities_options)  # Create instance
                     if appium_driver:
                         break
                     count += 1
