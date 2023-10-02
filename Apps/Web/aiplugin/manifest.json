@@ -23,7 +23,8 @@
         {
             "all_frames": true,
             "matches": [
-                "<all_urls>"
+                "http://*/",
+                "https://*/"
             ],
             "js": [
                 "inspect.js"
@@ -47,6 +48,7 @@
         "scripting"
     ],
     "host_permissions": [
-        "<all_urls>"
+        "http://*/",
+        "https://*/"
     ]
 }

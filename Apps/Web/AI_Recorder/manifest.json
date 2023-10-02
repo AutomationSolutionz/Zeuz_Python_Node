@@ -1,13 +1,12 @@
 {
     "description": "This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.",
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "ZeuZ Test Recorder",
-    "version": "2.1",
-    "icons":
-    {
+    "version": "3.0",
+    "icons": {
         "16": "panel/assets/images/small_logo.png",
         "48": "panel/assets/images/small_logo.png",
-       "128": "panel/assets/images/small_logo.png"
+        "128": "panel/assets/images/small_logo.png"
     },
     "permissions": [
         "tabs",
@@ -17,23 +16,23 @@
         "downloads",
         "webNavigation",
         "notifications",
-        "http://*/",
-        "https://*/",
         "storage",
         "unlimitedStorage",
-        "<all_urls>",
         "debugger",
         "clipboardRead",
         "clipboardWrite"
     ],
-
-    "homepage_url":"https://www.zeuz.ai/",
-
-    "content_security_policy": "script-src 'self' 'unsafe-eval' https://ssl.google-analytics.com; object-src 'self'",
-
+    "host_permissions": [
+        "http://*/",
+        "https://*/"
+    ],
+    "homepage_url": "https://www.zeuz.ai/",
     "content_scripts": [
         {
-            "matches": ["<all_urls>"],
+            "matches": [
+                "http://*/",
+                "https://*/"
+            ],
             "js": [
                 "common_files/poly_fill.js",
                 "content/injecter.js"
@@ -43,7 +42,10 @@
             "run_at": "document_start"
         },
         {
-            "matches": ["<all_urls>"],
+            "matches": [
+                "http://*/",
+                "https://*/"
+            ],
             "js": [
                 "content/detect_bowser.js",
                 "content/atoms_js.js",
@@ -64,33 +66,36 @@
             "all_frames": true
         },
         {
-            "matches": ["<all_urls>"],
-            "js": ["content/jquery.simulate.js"],
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content/jquery.simulate.js"
+            ],
             "match_about_blank": true,
             "all_frames": true
         }
     ],
-
-    "background":
-    {
-        "scripts": [
-            "content/detect_bowser.js",
-            "common_files/poly_fill.js",
-            "background/back.js",
-            "background/back_zeuz.js"
-        ]
+    "background": {
+        "service_worker": "background/back.js",
+        "type": "module"
     },
-
-    "browser_action":
-    {
-        "default_icon": "panel/assets/images/small_logo.png",
-        "default_title": "ZeuZ"
+    "action": {
+        "default_icon": {
+            "32":"panel/assets/images/small_logo.png"
+        },
+        "default_title": "ZeuZ Recorder"
     },
-
     "web_accessible_resources": [
-        "page/prompt.js",
-        "page/runScript.js"
+        {
+            "resources": [
+                "page/prompt.js",
+                "page/runScript.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
     ],
-
     "offline_enabled": true
 }

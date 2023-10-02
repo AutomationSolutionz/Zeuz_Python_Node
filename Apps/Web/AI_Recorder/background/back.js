@@ -1,14 +1,36 @@
-
+const browserAppData = chrome || browser;
 /* Zeuz function start */
 var master = {};
 var clickEnabled = true;
 
 /* Open panel */
 
+// import {getWindowSize} from "/back_zeuz.js";
+function getWindowSize(callback) {
+    chrome.storage.local.get('window', function(result) {
+        var height = 740;
+        //var width = 780;
+        var width = 1110;
+        if (result) {
+            try {
+                result = result.window;
+                if (result.height) {
+                    height = result.height;
+                }
+                if (result.width) {
+                    width = result.width;
+                }
+            } catch (e) {
+            }
+        }
+        callback(height, width);
+    });
+}
+
 function open_panel(tab) {
     let contentWindowId = tab.windowId;
     if (master[contentWindowId] != undefined) {
-        browser.windows.update(master[contentWindowId], {
+        browserAppData.windows.update(master[contentWindowId], {
             focused: true
         }).catch(function(e) {
             master[contentWindowId] == undefined;
@@ -25,8 +47,8 @@ function open_panel(tab) {
     }, 1000);
 
     var f = function(height, width) {
-        browser.windows.create({
-            url: browser.runtime.getURL("panel/index.html"),
+        browserAppData.windows.create({
+            url: browserAppData.runtime.getURL("panel/index.html"),
             type: "popup",
             //height: 705,
             height: height,
@@ -41,7 +63,7 @@ function open_panel(tab) {
                         clearInterval(interval);
                     }
 
-                    browser.tabs.query({
+                    browserAppData.tabs.query({
                         active: true,
                         windowId: panelWindowInfo.id,
                         status: "complete"
@@ -61,7 +83,7 @@ function open_panel(tab) {
                 }, 200);
             });
         }).then(function bridge(panelWindowInfo){
-            return browser.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
+            return browserAppData.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
                 selfWindowId: panelWindowInfo.id,
                 commWindowId: contentWindowId
             });
@@ -74,55 +96,55 @@ function open_panel(tab) {
 
 /* Create menu */
 function create_menus() {
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "verifyText",
         title: "verifyText",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "verifyTitle",
         title: "verifyTitle",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "verifyValue",
         title: "verifyValue",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "assertText",
         title: "assertText",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "assertTitle",
         title: "assertTitle",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "assertValue",
         title: "assertValue",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "storeText",
         title: "storeText",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "storeTitle",
         title: "storeTitle",
         documentUrlPatterns: ["<all_urls>"],
         contexts: ["all"]
     });
-    browser.contextMenus.create({
+    browserAppData.contextMenus.create({
         id: "storeValue",
         title: "storeValue",
         documentUrlPatterns: ["<all_urls>"],
@@ -131,25 +153,25 @@ function create_menus() {
 }
 
 
-browser.browserAction.onClicked.addListener(open_panel);
-browser.windows.onRemoved.addListener(function(windowId) {
+browserAppData.action.onClicked.addListener(open_panel);
+browserAppData.windows.onRemoved.addListener(function(windowId) {
     let keys = Object.keys(master);
     for (let key of keys) {
         if (master[key] === windowId) {
             delete master[key];
             if (keys.length === 1) {
-                browser.contextMenus.removeAll();
+                browserAppData.contextMenus.removeAll();
             }
         }
     }
 });
 
 var port;
-browser.contextMenus.onClicked.addListener(function(info, tab) {
+browserAppData.contextMenus.onClicked.addListener(function(info, tab) {
     port.postMessage({ cmd: info.menuItemId });
 });
 
-browser.runtime.onConnect.addListener(function(m) {
+browserAppData.runtime.onConnect.addListener(function(m) {
     port = m;
 });
 
