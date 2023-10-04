@@ -57,3 +57,4 @@ deepdiff
 xmltodict
 configobj
 jinja2
+pandas
