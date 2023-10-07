@@ -64,16 +64,6 @@
             ],
             "match_about_blank": true,
             "all_frames": true
-        },
-        {
-            "matches": [
-                "<all_urls>"
-            ],
-            "js": [
-                "content/jquery.simulate.js"
-            ],
-            "match_about_blank": true,
-            "all_frames": true
         }
     ],
     "background": {

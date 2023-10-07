@@ -1,4 +1,8 @@
 const browserAppData = chrome || browser;
+
+import './back_zeuz.js';
+// import '../common_files/poly_fill.js';
+
 /* Zeuz function start */
 var master = {};
 var clickEnabled = true;

@@ -92,7 +92,7 @@ function notification(command, target, value) {
 
     setTimeout(function() {
         browser.notifications.clear(tempCount);
-    }, 1500);
+    }, 15000);
 }
 
 function tacPreprocess(target) {
