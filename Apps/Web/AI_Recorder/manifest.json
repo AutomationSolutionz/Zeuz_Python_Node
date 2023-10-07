@@ -3,6 +3,7 @@
     "manifest_version": 3,
     "name": "ZeuZ Test Recorder",
     "version": "3.0",
+    "minimum_chrome_version": "117",
     "icons": {
         "16": "panel/assets/images/small_logo.png",
         "48": "panel/assets/images/small_logo.png",
@@ -30,8 +31,8 @@
     "content_scripts": [
         {
             "matches": [
-                "http://*/",
-                "https://*/"
+                "http://*/*",
+                "https://*/*"
             ],
             "js": [
                 "common_files/poly_fill.js",
@@ -43,8 +44,8 @@
         },
         {
             "matches": [
-                "http://*/",
-                "https://*/"
+                "http://*/*",
+                "https://*/*"
             ],
             "js": [
                 "content/detect_bowser.js",
