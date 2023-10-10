@@ -302,10 +302,10 @@ def If_else_action(step_data, data_set_no):
                     if sum(operators.values()) == 0:
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
+                            "Specify a valid python condition or an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
                             3,
                         )
-                        return "zeuz_failed", []
+                        # return "zeuz_failed", [] # not returning because now we want to use eval for "5 == 5 and "s" in "stfing" kind of operators
                 if sum(operators.values()) == 1:
                     for i in operators:
                         if operators[i] == 1:
@@ -321,10 +321,12 @@ def If_else_action(step_data, data_set_no):
                 their actual values. Suppose, %|XY|% = "Hello " stripping will remove the last space"""
 
                 if statement != "else":
-                    Lvalue, Rvalue = left[len(statement + " "):].split(operator)  # remove "if "
-                    Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
-                    Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
-                    Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
+                    expression = left[len(statement + " "):] # remove "if "
+                    if operator:
+                        Lvalue, Rvalue = expression.split(operator)
+                        Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
+                        Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
+                        Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
             except:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -394,6 +396,15 @@ def If_else_action(step_data, data_set_no):
                         outer_skip += get_data_set_nums(str(right).strip())
                 elif operator == "|in|":
                     if Lvalue in Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        outer_skip += next_level_step_data
+                    else:
+                        outer_skip += get_data_set_nums(str(right).strip())
+                
+                elif operator == "":
+                    if eval(expression) == True and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
