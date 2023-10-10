@@ -1,6 +1,10 @@
- /*!
- */
-
+var jQuery;
+import('../panel/assets/js/lib/jquery-ui.min.js').then((module) => {
+  // Access the exported variable from the module
+  jQuery = module;
+}).catch((error) => {
+  console.error('Error loading the module:', error);
+});
 ;(function( $, undefined ) {
 
 var rkeyEvent = /^key/,

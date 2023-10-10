@@ -1,4 +1,5 @@
 /* start the zeuz editor function */
+const browser = chrome || browser;
 var contentWindowId;
 var selfWindowId = -1;
 var notificationCount = 0;
@@ -92,7 +93,7 @@ function notification(command, target, value) {
 
     setTimeout(function() {
         browser.notifications.clear(tempCount);
-    }, 1500);
+    }, 15000);
 }
 
 function tacPreprocess(target) {
