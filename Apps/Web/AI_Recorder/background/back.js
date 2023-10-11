@@ -1,3 +1,4 @@
+const metaData = {};
 const browserAppData = chrome || browser;
 
 import './back_zeuz.js';
@@ -6,7 +7,6 @@ import './back_zeuz.js';
 /* Zeuz function start */
 var master = {};
 var clickEnabled = true;
-const metaData = {};
 
 /* Open panel */
 
@@ -33,9 +33,6 @@ function getWindowSize(callback) {
 }
 
 function open_panel(tab) {
-    chrome.storage.local.set({
-        meta_data: metaData
-    })
     let contentWindowId = tab.windowId;
     if (master[contentWindowId] != undefined) {
         browserAppData.windows.update(master[contentWindowId], {

@@ -1,5 +1,4 @@
 /* start the zeuz editor function */
-// const BrowserAppData = chrome || browser;
 var contentWindowId;
 var selfWindowId = -1;
 var notificationCount = 0;
@@ -68,13 +67,13 @@ function handleMessage(message, sender, sendResponse) {
 
         button.classList.remove("active");
 
-        BrowserAppData.tabs.sendMessage(sender.tab.id, {selectMode: true, selecting: false});
+        browser.tabs.sendMessage(sender.tab.id, {selectMode: true, selecting: false});
         return;
     }
 
     if (message.attachRecorderRequest) {
         if (isRecording && !isPlaying) {
-            BrowserAppData.tabs.sendMessage(sender.tab.id, {attachRecorder: true});
+            browser.tabs.sendMessage(sender.tab.id, {attachRecorder: true});
         }
         return;
     }
@@ -84,7 +83,7 @@ function notification(command, target, value) {
     let tempCount = String(notificationCount);
     notificationCount++;
 
-    BrowserAppData.notifications.create(tempCount, {
+    browser.notifications.create(tempCount, {
         "type": "basic",
         "iconUrl": "assets/images/small_logo.png",
         "title": "Command Recorded",
@@ -92,7 +91,7 @@ function notification(command, target, value) {
     });
 
     setTimeout(function() {
-        BrowserAppData.notifications.clear(tempCount);
+        browser.notifications.clear(tempCount);
     }, 15000);
 }
 
@@ -102,15 +101,15 @@ function tacPreprocess(target) {
 }
 
 
-BrowserAppData.runtime.onMessage.addListener(handleMessage);
+browser.runtime.onMessage.addListener(handleMessage);
 
-BrowserAppData.runtime.onMessage.addListener(function contentWindowIdListener(message) {
+browser.runtime.onMessage.addListener(function contentWindowIdListener(message) {
     if (message.selfWindowId != undefined && message.commWindowId != undefined) {
         selfWindowId = message.selfWindowId;
         contentWindowId = message.commWindowId;
         extCommand.setContentWindowId(contentWindowId);
         recorder.setOpenedWindow(contentWindowId);
         recorder.setSelfWindowId(selfWindowId);
-        BrowserAppData.runtime.onMessage.removeListener(contentWindowIdListener);
+        browser.runtime.onMessage.removeListener(contentWindowIdListener);
     }
 })

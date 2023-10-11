@@ -1,7 +1,6 @@
 // inject scripts for promot command
-const BrowserAppData = chrome || browser;
 var injectingScript = document.createElement("script");
-injectingScript.src = BrowserAppData.runtime.getURL("page/prompt.js");
+injectingScript.src = browser.runtime.getURL("page/prompt.js");
 (document.head || document.documentElement).appendChild(injectingScript);
 if (window === window.top) {
     window.addEventListener("message", function(e) {
@@ -62,7 +61,7 @@ if (window === window.top) {
 // inject scripts for run script command
 
 var runInjectingScript = document.createElement("script");
-runInjectingScript.src = BrowserAppData.runtime.getURL("page/runScript.js");
+runInjectingScript.src = browser.runtime.getURL("page/runScript.js");
 (document.head || document.documentElement).appendChild(runInjectingScript);
 
 window.addEventListener("message", function(e) {

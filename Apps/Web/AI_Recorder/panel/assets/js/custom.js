@@ -1,4 +1,3 @@
-const BrowserAppData = chrome || browser;
 var CustomFunction = {
 	caseDataArr: {},
 	StepCopyData: null,
@@ -596,7 +595,7 @@ var CustomFunction = {
 				var case_data = {
 					case_data: CasemainArr,
 				};
-				BrowserAppData.storage.local.set(case_data);
+				browser.storage.local.set(case_data);
 				//CustomFunction.DisplayCaseData(true);
 				CustomFunction.DisplayCaseData('save_record_data', false);
 			}
@@ -656,7 +655,7 @@ var CustomFunction = {
 					case_data: SavedCaseData,
 				};
 
-				BrowserAppData.storage.local.set(case_data);
+				browser.storage.local.set(case_data);
 				/* Update the recorder html */
 				CustomFunction.LoadTheRecordDataHtml();
 			}
@@ -1057,7 +1056,7 @@ var CustomFunction = {
 									case_data: CustomFunction.caseDataArr,
 								};
 
-								BrowserAppData.storage.local.set(case_data);
+								browser.storage.local.set(case_data);
 								CustomFunction.DisplayCaseData('import_json', true);
 							}
 						} else {
@@ -1105,7 +1104,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: mainTestSuidData,
 					};
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 				}
 			} catch (e) {
 				console.log(e);
@@ -1203,7 +1202,7 @@ var CustomFunction = {
 				var base64_data = {
 					auth_data: base64,
 				};
-				BrowserAppData.storage.local.set(base64_data);
+				browser.storage.local.set(base64_data);
 				CustomFunction.is_auth_user = true;
 
 				var serverhtml = `<a target="_blank" href="` + server_url + `" style="background: transparent;border-bottom: 1px solid transparent;padding-top:0px;">
@@ -1248,7 +1247,7 @@ var CustomFunction = {
 						var base64_data = {
 							auth_data: '',
 						};
-						BrowserAppData.storage.local.set(base64_data);
+						browser.storage.local.set(base64_data);
 						CustomFunction.is_auth_user = false;
 						$('#servericon').html('');
 						$('#export_wrap').html('');
@@ -1257,7 +1256,7 @@ var CustomFunction = {
 						var base64_data = {
 							auth_data: '',
 						};
-						BrowserAppData.storage.local.set(base64_data);
+						browser.storage.local.set(base64_data);
 						CustomFunction.is_auth_user = false;
 						$('#servericon').html('');
 						$('#export_wrap').html('');
@@ -1274,7 +1273,7 @@ var CustomFunction = {
 					var base64_data = {
 						auth_data: '',
 					};
-					BrowserAppData.storage.local.set(base64_data);
+					browser.storage.local.set(base64_data);
 					CustomFunction.is_auth_user = false;
 					$('#servericon').html('');
 					$('#export_wrap').html('');
@@ -1318,7 +1317,7 @@ var CustomFunction = {
 			speed_data: speed,
 			is_initial_app_open: is_initial_app_open,
 		};
-		BrowserAppData.storage.local.set(sp_data);
+		browser.storage.local.set(sp_data);
 		document.getElementById("playback_select").value = speed;
 	},
 
@@ -1347,16 +1346,12 @@ var CustomFunction = {
 		});
 
 		$(document).on('click', '#add_new_case_action', function () {
-			chrome.storage.local.get('meta_data', function(result) {
-				console.log(result);
-			});
-			
-			// if ($('#content').attr('style') == "display: block;") {
-			// 	document.getElementById("add_new_test_case").click();
-			// } else {
-			// 	$('.close_main_page').trigger('click');
-			// 	document.getElementById("add_new_test_case").click();
-			// }
+			if ($('#content').attr('style') == "display: block;") {
+				document.getElementById("add_new_test_case").click();
+			} else {
+				$('.close_main_page').trigger('click');
+				document.getElementById("add_new_test_case").click();
+			}
 		})
 
 
@@ -1416,7 +1411,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('delete_suite', true);
 				}, 500);
 			}
@@ -1436,7 +1431,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('edit_suite', true);
 				}, 500);
 			}
@@ -1745,7 +1740,7 @@ var CustomFunction = {
 							case_data: CustomFunction.caseDataArr,
 						};
 
-						BrowserAppData.storage.local.set(case_data);
+						browser.storage.local.set(case_data);
 						CustomFunction.DisplayCaseData('paste_case', false);
 
 					} else if (CustomFunction.copyType == 'action') {
@@ -1758,7 +1753,7 @@ var CustomFunction = {
 								case_data: CustomFunction.caseDataArr,
 							};
 
-							BrowserAppData.storage.local.set(case_data);
+							browser.storage.local.set(case_data);
 							CustomFunction.DisplayCaseData('paste_action', false);
 						}
 					}
@@ -1781,7 +1776,7 @@ var CustomFunction = {
 								case_data: CustomFunction.caseDataArr,
 							};
 
-							BrowserAppData.storage.local.set(case_data);
+							browser.storage.local.set(case_data);
 							CustomFunction.DisplayCaseData('paste_action', false);
 						})
 					}
@@ -1801,7 +1796,7 @@ var CustomFunction = {
 		            case_data: CustomFunction.caseDataArr,
 		        };
 
-		        BrowserAppData.storage.local.set(case_data);
+		        browser.storage.local.set(case_data);
 				CustomFunction.DisplayCaseData(false);
 			}*/
 
@@ -1858,7 +1853,7 @@ var CustomFunction = {
 						case_data: CustomFunction.caseDataArr,
 					};
 
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 					CustomFunction.LoadTheRecordDataHtml();
 
 					$('.selected-case').addClass('disabled-case');
@@ -1923,7 +1918,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					}
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 					CustomFunction.LoadTheRecordDataHtml();
 
 					//$('.selected-case').removeClass('disabled-case');
@@ -1999,7 +1994,7 @@ var CustomFunction = {
 
 					//console.log('case_data',case_data);
 
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('delete_case', false);
 				}
 			}
@@ -2035,7 +2030,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
-					BrowserAppData.storage.local.set(case_data);
+					browser.storage.local.set(case_data);
 					var lstIndx = CustomFunction.caseDataArr.length;
 					lstIndx = lstIndx - 1;
 
@@ -2127,7 +2122,7 @@ var CustomFunction = {
 					case_data: CustomFunction.caseDataArr,
 				};
 
-				BrowserAppData.storage.local.set(case_data);
+				browser.storage.local.set(case_data);
 
 				CustomFunction.DisplayCaseData('add_case_step', false);
 
@@ -2200,7 +2195,7 @@ var CustomFunction = {
 
 			}
 
-			BrowserAppData.storage.local.set(case_data);
+			browser.storage.local.set(case_data);
 			CustomFunction.DisplayCaseData('add_action', false);
 
 			setTimeout(function () {
@@ -2267,7 +2262,7 @@ var CustomFunction = {
 								var case_data = {
 									case_data: CustomFunction.caseDataArr,
 								};
-								BrowserAppData.storage.local.set(case_data);
+								browser.storage.local.set(case_data);
 								CustomFunction.DisplayCaseData(false);
 							} else {
 								/* Update the action */
@@ -2317,7 +2312,7 @@ var CustomFunction = {
 								var case_data = {
 									case_data: CustomFunction.caseDataArr,
 								};
-								BrowserAppData.storage.local.set(case_data);
+								browser.storage.local.set(case_data);
 								CustomFunction.DisplayCaseData(false);
 							}
 

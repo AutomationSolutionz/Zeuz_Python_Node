@@ -1,5 +1,4 @@
 /* Zeuz Background Start */
-const BrowserAppData = chrome || browser;
 class BackgroundRecorder {
 
     /* Exq initial time */
@@ -33,11 +32,11 @@ class BackgroundRecorder {
             return;
         }
         this.attached = true;
-        BrowserAppData.tabs.onActivated.addListener(this.tabsOnActivatedHandler);
-        BrowserAppData.windows.onFocusChanged.addListener(this.windowsOnFocusChangedHandler);
-        BrowserAppData.tabs.onRemoved.addListener(this.tabsOnRemovedHandler);
-        BrowserAppData.webNavigation.onCreatedNavigationTarget.addListener(this.webNavigationOnCreatedNavigationTargetHandler);
-        BrowserAppData.runtime.onMessage.addListener(this.addCommandMessageHandler);
+        browser.tabs.onActivated.addListener(this.tabsOnActivatedHandler);
+        browser.windows.onFocusChanged.addListener(this.windowsOnFocusChangedHandler);
+        browser.tabs.onRemoved.addListener(this.tabsOnRemovedHandler);
+        browser.webNavigation.onCreatedNavigationTarget.addListener(this.webNavigationOnCreatedNavigationTargetHandler);
+        browser.runtime.onMessage.addListener(this.addCommandMessageHandler);
     }
 
     /* Detach  */
@@ -46,11 +45,11 @@ class BackgroundRecorder {
             return;
         }
         this.attached = false;
-        BrowserAppData.tabs.onActivated.removeListener(this.tabsOnActivatedHandler);
-        BrowserAppData.windows.onFocusChanged.removeListener(this.windowsOnFocusChangedHandler);
-        BrowserAppData.tabs.onRemoved.removeListener(this.tabsOnRemovedHandler);
-        BrowserAppData.webNavigation.onCreatedNavigationTarget.removeListener(this.webNavigationOnCreatedNavigationTargetHandler);
-        BrowserAppData.runtime.onMessage.removeListener(this.addCommandMessageHandler);
+        browser.tabs.onActivated.removeListener(this.tabsOnActivatedHandler);
+        browser.windows.onFocusChanged.removeListener(this.windowsOnFocusChangedHandler);
+        browser.tabs.onRemoved.removeListener(this.tabsOnRemovedHandler);
+        browser.webNavigation.onCreatedNavigationTarget.removeListener(this.webNavigationOnCreatedNavigationTargetHandler);
+        browser.runtime.onMessage.removeListener(this.addCommandMessageHandler);
     }
 
     /* Call window in focus change */
@@ -64,7 +63,7 @@ class BackgroundRecorder {
             return;
         }
 
-        if (windowId === BrowserAppData.windows.WINDOW_ID_NONE) {
+        if (windowId === browser.windows.WINDOW_ID_NONE) {
             return;
         }
 
@@ -73,7 +72,7 @@ class BackgroundRecorder {
 
         let self = this;
 
-        BrowserAppData.tabs.query({
+        browser.tabs.query({
             windowId: windowId,
             active: true
         }).then(function(tabs) {
@@ -165,7 +164,7 @@ class BackgroundRecorder {
                 this.setOpenedWindow(details.windowId);
             } else {
                 let self = this;
-                BrowserAppData.tabs.get(details.tabId)
+                browser.tabs.get(details.tabId)
                 .then(function(tabInfo) {
                     self.setOpenedWindow(tabInfo.windowId);
                 });
@@ -267,7 +266,7 @@ class BackgroundRecorder {
             zeuz_log.error("Error: This element does not have property 'Text'. Please change to use storeValue command.");
             return;
         } else if (message.command.includes("store")) {
-            BrowserAppData.windows.update(this.selfWindowId, {focused: true})
+            browser.windows.update(this.selfWindowId, {focused: true})
             .then(function() {
                 setTimeout(function() {
                     message.value = prompt("Enter the name of the variable");

@@ -7,7 +7,7 @@ class Recorder {
         this.attached = false;
         this.locatorBuilders = new LocatorBuilders(window);
         this.frameLocation = this.getFrameLocation();
-        BrowserAppData.runtime.sendMessage({
+        browser.runtime.sendMessage({
             frameLocation: this.frameLocation
         }).catch(function(reason) {
         });
@@ -51,7 +51,7 @@ class Recorder {
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
         console.log(signal);
-        BrowserAppData.runtime.sendMessage(signal).catch (function(reason) {
+        browser.runtime.sendMessage(signal).catch (function(reason) {
             console.log(reason);
         });
     }
@@ -118,4 +118,4 @@ function startShowElement(message, sender, sendResponse){
         return Promise.resolve({result: result});
     }
 }
-BrowserAppData.runtime.onMessage.addListener(startShowElement);
+browser.runtime.onMessage.addListener(startShowElement);
