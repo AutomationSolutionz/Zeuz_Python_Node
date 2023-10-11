@@ -85,8 +85,9 @@ action_support = (
     "graphql",
     "shared capability",
     "chrome option", "chrome options", "chrome experimental option", "chrome experimental options",
+    "pre sleep", "post sleep", "pre post sleep", "post pre sleep",
+    "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter"
     "profile option", "profile options",
-    "pre sleep", "post sleep", "pre post sleep", "post pre sleep"
 )
 patterns = [
     "^parent \d parameter$",

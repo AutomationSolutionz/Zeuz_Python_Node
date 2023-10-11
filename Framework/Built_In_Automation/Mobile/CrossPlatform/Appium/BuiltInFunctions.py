@@ -25,6 +25,7 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
+from appium.webdriver.common.multi_action import MultiAction
 from appium.webdriver.common.appiumby import AppiumBy
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -599,7 +600,7 @@ def launch_application(data_set):
                 return "zeuz_failed"
 
             if launch_app:  # if ios simulator then no need to launch app again
-                appium_driver.launch_app()  # Launch program configured in the Appium capabilities
+                appium_driver.activate_app(package_name)  # Launch program configured in the Appium capabilities
             CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
     except Exception:
@@ -919,7 +920,9 @@ def start_appium_driver(
             count = 1
             while count <= 5:
                 try:
-                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, desired_caps)  # Create instance
+                    capabilities_options = UiAutomator2Options().load_capabilities(desired_caps)
+                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, options=capabilities_options)  # Create instance
+
                     if appium_driver:
                         break
                     count += 1
@@ -1839,7 +1842,8 @@ def add_media_ios(data_set):
 def take_screenshot_appium(data_set):
     """
     Data set:
-    take screenshot     appium action           filename_format
+    'filename'            'optional option'         'image1.jpg'
+    'take screenshot'     'appium action'           'screenshot_folder'
 
     The filename of the saved screenshot will be stored in the "zeuz_screenshot"
     """
@@ -1848,25 +1852,34 @@ def take_screenshot_appium(data_set):
     from pathlib import Path
     import time
 
+    global appium_driver
+
+    filename = None
+    var_name = 'ss_path'
+
     # Parse data set
     try:
-        # There's only one row
-        left, mid, right = data_set[0]
+        for left, mid, right in data_set:
+            if left.strip().lower() == 'filename':
+                filename = right.strip().lower()
+            elif 'action' in mid.strip().lower():
+                var_name = right.strip()
 
-        filename_format = right
-        if "default" in filename_format:
+        if filename == None:
             filename_format = "%Y_%m_%d_%H-%M-%S"
+            filename = time.strftime(filename_format) + ".png"
 
         screenshot_folder = ConfigModule.get_config_value(
             "sectionOne", "screen_capture_folder", temp_config
         )
-        filename = time.strftime(filename_format) + ".png"
+        
         screenshot_path = str(Path(screenshot_folder) / Path(filename))
         appium_driver.save_screenshot(screenshot_path)
 
         # Save the screenshot's name into a variable
         Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
         Shared_Resources.Set_Shared_Variables("zeuz_screenshot_path", screenshot_path)
+        Shared_Resources.Set_Shared_Variables(var_name, screenshot_folder)
 
         return "passed"
     except:
@@ -4606,4 +4619,157 @@ def scroll_to_element(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
+    
+
+def zoom_action(data_set):
+    """
+    This function is used for zoom in or zoom out. The scale and count parameters controls the amount of zoom.
+    :param data_set:
+        [['Action',         'zoom parameter',       'zoom in'/'zoom out'],
+        ['Scale',           'zoom parameter',        3],
+        ['Count',           'zoom parameter',        5],
+        ['zoom',            'appium action',        'Zoom in or out']]
+    """        
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    global appium_driver
+
+    zoom_element = LocateElement.Get_Element(data_set, appium_driver)
+    if zoom_element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Zoom element is not found", 3)
+        return "zeuz_failed"
+    
+    height = zoom_element.size["height"]
+    width = zoom_element.size["width"]
+    xstart_location = zoom_element.location["x"]
+    ystart_location = zoom_element.location["y"]
+    xx = xstart_location+int((width)//2)
+    yy = ystart_location+int((height)//2)
+
+    xs = xstart_location
+    xe = xstart_location+width  
+
+    action = ''
+    scale = 3
+    count = 5
+    const = 25
+    double_tap = False
+
+    xx1 = xx-const
+    xx2 = xx+const
+
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == 'action':
+                action = right.lower().replace(' ','')
+            elif left.strip().lower() == 'scale':
+                scale = int(right)
+            elif left.strip().lower() == 'count':
+                count = int(right)
+            elif left.strip().lower() == 'double tap':
+                double_tap = right.strip().lower() in ('true', 'enable', 'ok', 'yes')
+        
+        action1 = TouchAction(appium_driver)
+        action2 = TouchAction(appium_driver)
+        m_action = MultiAction(appium_driver)
+        CommonUtil.ExecLog(sModuleInfo, f"Starting with scale:{scale} | count:{count} | const:{const} ", 1)
+            
+        if action == 'zoomout':
+            for i in range(count):   
+                CommonUtil.ExecLog(sModuleInfo, f"Zoomed {i+1} time", 1) 
+
+                action1.long_press(x=xs+const, y=yy).move_to(x=xs+(const*1*scale), y=yy).move_to(x=xs+int((const*1.5*scale)), y=yy).move_to(x=xs+(const*2*scale), y=yy).move_to(x=xs+int((const*2.5*scale)), y=yy).move_to(x=xs+(const*3*scale), y=yy).release()
+                action2.long_press(x=xe-const, y=yy).move_to(x=xe-(const*1*scale), y=yy).move_to(x=xe-int((const*1.5*scale)), y=yy).move_to(x=xe-(const*2*scale), y=yy).move_to(x=xe-int((const*2.5*scale)), y=yy).move_to(x=xe-(const*3*scale), y=yy).release()
+                m_action.add(action1, action2)
+                m_action.perform()      
+                time.sleep(2) 
+            return "passed"
+        elif action == 'zoomin':
+            for i in range(count):    
+                CommonUtil.ExecLog(sModuleInfo, f"Zoomed {i+1} time", 1)
+
+                if double_tap == False:
+                    action1.long_press(x=xx1, y=yy).move_to(x=xx1-(const*1*scale), y=yy).move_to(x=xx1-int((const*1.5*scale)), y=yy).move_to(x=xx1-(const*2*scale), y=yy).move_to(x=xx1-int((const*2.5*scale)), y=yy).move_to(x=xx1-(const*3*scale), y=yy).release()
+                    action2.long_press(x=xx2, y=yy).move_to(x=xx2+(const*1*scale), y=yy).move_to(x=xx2+int((const*1.5*scale)), y=yy).move_to(x=xx2+(const*2*scale), y=yy).move_to(x=xx2+int((const*2.5*scale)), y=yy).move_to(x=xx2+(const*3*scale), y=yy).release()
+                    m_action.add(action1, action2)
+                    m_action.perform()      
+                    time.sleep(2)  
+                else:
+                    TouchAction(appium_driver).tap(None, xx, yy, 2).perform()
+                    time.sleep(2)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Please specify whether you need Zoom in or Zoom out action", 3)
+            return "zeuz_failed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data for Zoom. Please write data in correct format")
+
+
+def pan_action(data_set):
+    """
+    This function is used for pan. The scale and count parameters controls the amount of pan.
+    :param data_set:
+        [['direction',      'pan parameter',       'right'/'left'/'up'/'down'],
+        ['Scale',           'pan parameter',        3],
+        ['Count',           'pan parameter',        5],
+        ['pan',             'appium action',       'Pan in a direction']]
+    """        
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    global appium_driver
+
+    zoom_element = LocateElement.Get_Element(data_set, appium_driver)
+    if zoom_element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Zoom element is not found", 3)
+        return "zeuz_failed"
+    
+    height = zoom_element.size["height"]
+    width = zoom_element.size["width"]
+    xstart_location = zoom_element.location["x"]
+    ystart_location = zoom_element.location["y"]
+    xx = xstart_location+int((width)//2)
+    yy = ystart_location+int((height)//2)
+
+    const = 75
+
+    direction = ''
+    scale = 15
+    count = 3
+
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == 'direction':
+                direction = right.lower().replace(' ','')
+            elif left.strip().lower() == 'scale':
+                scale = int(right)
+            elif left.strip().lower() == 'count':
+                count = int(right)
+            elif 'coordinates' in left.strip().lower():
+                cords = right.strip()
+                xx = int(cords[0].replace('(',''))
+                yy = int(cords[1].replace(')','')) 
+        CommonUtil.ExecLog(sModuleInfo, f"Starting with scale:{scale} | count:{count} | const:{const} ", 1)
+
+        for i in range(count):
+            CommonUtil.ExecLog(sModuleInfo, f"Panned {i+1} time", 1) 
+            action = TouchAction(appium_driver)
+            if direction.strip().lower() == 'right':
+                action.long_press(x=xx, y=yy).move_to(x=xx-(const*scale), y=yy).release().perform()    
+                time.sleep(1)
+            elif direction.strip().lower() == 'left':
+                action.long_press(x=xx, y=yy).move_to(x=xx+(const*scale), y=yy).release().perform()
+                time.sleep(1)
+            elif direction.strip().lower() == 'down':
+                action.long_press(x=xx, y=yy).move_to(x=xx, y=yy-(const*scale)).release().perform()    
+                time.sleep(1)
+            elif direction.strip().lower() == 'up':
+                action.long_press(x=xx, y=yy).move_to(x=xx, y=yy+(const*scale)).release().perform()    
+                time.sleep(1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f'Please provide any of the follwoing directions -> Left, Right, Up, Down', 3) 
+                return "zeuz_failed"
+            
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data for Pan. Please write data in correct format")
 
