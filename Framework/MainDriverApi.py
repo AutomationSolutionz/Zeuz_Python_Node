@@ -15,6 +15,7 @@ import requests
 import zipfile
 from multiprocessing.pool import ThreadPool
 from urllib3.exceptions import InsecureRequestWarning
+import pyperclip
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 import threading
@@ -818,6 +819,10 @@ def set_important_variables():
                 continue
         if "sr" not in shared.shared_variables:
             shared.shared_variables.update({"sr": shared})
+        shared.shared_variables.update({
+            "clipboard_paste": pyperclip.paste,
+            "clipboard_set": pyperclip.copy
+        })
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())

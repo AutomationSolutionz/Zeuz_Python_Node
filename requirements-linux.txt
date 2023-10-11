@@ -54,3 +54,4 @@ xmltodict
 configobj
 jinja2
 pandas
+pyperclip
