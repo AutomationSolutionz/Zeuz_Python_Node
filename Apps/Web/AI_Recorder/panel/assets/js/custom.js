@@ -1346,12 +1346,16 @@ var CustomFunction = {
 		});
 
 		$(document).on('click', '#add_new_case_action', function () {
-			if ($('#content').attr('style') == "display: block;") {
-				document.getElementById("add_new_test_case").click();
-			} else {
-				$('.close_main_page').trigger('click');
-				document.getElementById("add_new_test_case").click();
-			}
+			chrome.storage.local.get('meta_data', function(result) {
+				console.log(result);
+			});
+			
+			// if ($('#content').attr('style') == "display: block;") {
+			// 	document.getElementById("add_new_test_case").click();
+			// } else {
+			// 	$('.close_main_page').trigger('click');
+			// 	document.getElementById("add_new_test_case").click();
+			// }
 		})
 
 
