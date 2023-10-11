@@ -1,3 +1,4 @@
+// const BrowserAppData = chrome || browser;
 
 var newFormatters = {};
 var dataFiles;
@@ -36,7 +37,7 @@ $(function() {
                     var data = {
                         backup: result.data
                     };
-                    browser.storage.local.set(data);
+                    BrowserAppData.storage.local.set(data);
                 }
                 for (var i = 0; i < result.data.length; i++) {
                     readSuiteFromString(result.data[i]);
@@ -103,7 +104,7 @@ $(window).on('resize', function() {
             height: window.outerHeight
         }
     };
-    browser.storage.local.set(data);
+    BrowserAppData.storage.local.set(data);
 });
 
 
@@ -112,7 +113,7 @@ function saveSetting() {
         var data = {
             language: $("#select-script-language-id").val()
         };
-        browser.storage.local.set(data);
+        BrowserAppData.storage.local.set(data);
     } catch (e) {
         console.log(e);
     }
@@ -127,7 +128,7 @@ function saveData() {
             data: storeAllTestSuites()
         };
 
-        browser.storage.local.set(data);
+        BrowserAppData.storage.local.set(data);
         if (s_suite) {
             setSelectedSuite(s_suite.id);
         }
@@ -288,19 +289,19 @@ function addContextMenuButton(id, node, menu, isCase) {
 
 function saveAsFileOfTestCase(fileName, content) {
     var link = makeTextFile(content);
-    var downloading = browser.downloads.download({
+    var downloading = BrowserAppData.downloads.download({
         filename: fileName,
         url: link,
         saveAs: true,
         conflictAction: 'overwrite'
     });
     var result = function(id) {
-        browser.downloads.onChanged.addListener(function downloadCompleted(downloadDelta) {
+        BrowserAppData.downloads.onChanged.addListener(function downloadCompleted(downloadDelta) {
             if (downloadDelta.id == id && downloadDelta.state &&
                 downloadDelta.state.current == "complete") {
                 $( "#generateToScriptsDialog" ).dialog("close");
             } else if (downloadDelta.id == id && downloadDelta.error) {
-                browser.downloads.onChanged.removeListener(downloadCompleted);
+                BrowserAppData.downloads.onChanged.removeListener(downloadCompleted);
             }
         })
     };
@@ -312,7 +313,7 @@ function saveAsFileOfTestCase(fileName, content) {
 
 $(function() {
     $("#export").click(function() {
-        browser.runtime.sendMessage({
+        BrowserAppData.runtime.sendMessage({
             getExternalCapabilities: true
         }).then(function(externalCapabilities) {
             var selectInput = $('#select-script-language-id');
@@ -633,7 +634,7 @@ function generateScripts(isExternalCapability, language, newFormatter) {
             defaultExtension: 'txt',
             mimetype: 'text/plain'
         };
-        browser.runtime.sendMessage(
+        BrowserAppData.runtime.sendMessage(
             extensionId,
             {
                 type: 'zeuz_recorder_export',
@@ -804,7 +805,7 @@ $(function() {
 
 $(function() {
     /*$('#settings').on('click', function() {
-        browser.windows.update(
+        BrowserAppData.windows.update(
             contentWindowId,
             { focused: true }
         );
@@ -1233,7 +1234,7 @@ function readJson(f) {
 }
 
 function saveDataFiles() {
-    browser.storage.local.set({
+    BrowserAppData.storage.local.set({
         dataFiles: dataFiles
     });
     resetDataList();
@@ -1289,7 +1290,7 @@ function renderDataListItem(name) {
     return tr;
 }
 
-browser.runtime.onMessage.addListener(handleFormatCommand);
+BrowserAppData.runtime.onMessage.addListener(handleFormatCommand);
 
 function parseData(name) {
     var dataFile = dataFiles[name];
@@ -1343,7 +1344,7 @@ function readExtension(f) {
 }
 
 function saveExtensions() {
-    browser.storage.local.set({
+    BrowserAppData.storage.local.set({
         extensions: extensions
     });
     resetExtensionsList();

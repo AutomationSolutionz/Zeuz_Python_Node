@@ -1,4 +1,5 @@
 /* Recorder handlers functions start */
+// const BrowserAppData = chrome || browser;
 var typeLock = 0;
 var typeTarget;
 
@@ -392,7 +393,7 @@ Recorder.addEventHandler('checkPageLoaded', 'readystatechange', function(event) 
 }, true);
 
 Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
-    var myPort = browser.runtime.connect();
+    var myPort = BrowserAppData.runtime.connect();
     var tmpText = this.locatorBuilders.buildAll(event.target);
     var tmpVal = getText(event.target);
     var tmpTitle = normalizeSpaces(event.target.ownerDocument.title);
@@ -433,7 +434,7 @@ Recorder.addEventHandler('editContent', 'blur', function(event) {
     }
 }, true);
 
-browser.runtime.sendMessage({
+BrowserAppData.runtime.sendMessage({
     attachRecorderRequest: true
 }).catch(function(reason){
 });

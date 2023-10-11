@@ -1,4 +1,5 @@
 /* Zeuz start play back function */
+// const BrowserAppData = chrome || browser;
 
 var labels = {};
 var expectingLabel = null;
@@ -78,12 +79,12 @@ window.onload = function() {
             recorder.attach();
             notificationCount = 0;
             if (contentWindowId) {
-                browser.windows.update(contentWindowId, {focused: true});
+                BrowserAppData.windows.update(contentWindowId, {focused: true});
             }
-            browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+            BrowserAppData.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
             .then(function(tabs) {
                 for(let tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, {attachRecorder: true});
+                    BrowserAppData.tabs.sendMessage(tab.id, {attachRecorder: true});
                 }
             });
 
@@ -95,10 +96,10 @@ window.onload = function() {
         }
         else {
             recorder.detach();
-            browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+            BrowserAppData.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
             .then(function(tabs) {
                 for(let tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+                    BrowserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
                 }
             });
 
@@ -115,10 +116,10 @@ window.onload = function() {
         if (!isRecording) {
             saveData();
             recorder.detach();
-            browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+            BrowserAppData.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
             .then(function(tabs) {
                 for(let tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+                    BrowserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
                 }
             });
             switchRecordButton(true);
@@ -146,7 +147,7 @@ window.onload = function() {
         setCaseScrollTop(getSelectedCase());
 
         if (contentWindowId) {
-            browser.windows.update(contentWindowId, {focused: true});
+            BrowserAppData.windows.update(contentWindowId, {focused: true});
         }
         declaredVars = {};
         clearScreenshotContainer();
@@ -179,7 +180,7 @@ window.onload = function() {
             setCaseScrollTop(getSelectedCase());
 
             if (contentWindowId) {
-                browser.windows.update(contentWindowId, {focused: true});
+                BrowserAppData.windows.update(contentWindowId, {focused: true});
             }
             declaredVars = {};
             clearScreenshotContainer();
@@ -284,7 +285,7 @@ window.onload = function() {
                 setCaseScrollTop(getSelectedCase());
 
                 if (contentWindowId) {
-                    browser.windows.update(contentWindowId, {focused: true});
+                    BrowserAppData.windows.update(contentWindowId, {focused: true});
                 }
                 declaredVars = {};
                 clearScreenshotContainer();
@@ -313,7 +314,7 @@ window.onload = function() {
         initAllSuite();
 
         if (contentWindowId) {
-            browser.windows.update(contentWindowId, {focused: true});
+            BrowserAppData.windows.update(contentWindowId, {focused: true});
         }
         declaredVars = {};
         clearScreenshotContainer();
@@ -327,7 +328,7 @@ window.onload = function() {
         recorder.detach();
         initAllSuite();
         if (contentWindowId) {
-            browser.windows.update(contentWindowId, {focused: true});
+            BrowserAppData.windows.update(contentWindowId, {focused: true});
         }
         declaredVars = {};
         clearScreenshotContainer();
@@ -338,11 +339,11 @@ window.onload = function() {
         if (isSelecting) {
             isSelecting = false;
             button.classList.remove("active");
-            browser.tabs.query({
+            BrowserAppData.tabs.query({
                 active: true,
                 windowId: contentWindowId
             }).then(function(tabs) {
-                browser.tabs.sendMessage(tabs[0].id, {selectMode: true, selecting: false});
+                BrowserAppData.tabs.sendMessage(tabs[0].id, {selectMode: true, selecting: false});
             }).catch(function(reason) {
                 console.log(reason);
             })
@@ -353,7 +354,7 @@ window.onload = function() {
         if (isRecording)
             recordButton.click();
         button.classList.add("active")
-        browser.tabs.query({
+        BrowserAppData.tabs.query({
             active: true,
             windowId: contentWindowId
         }).then(function(tabs) {
@@ -362,7 +363,7 @@ window.onload = function() {
                 isSelecting = false;
                 button.classList.remove("active");
             } else
-                browser.tabs.sendMessage(tabs[0].id, {selectMode: true, selecting: true});
+                BrowserAppData.tabs.sendMessage(tabs[0].id, {selectMode: true, selecting: true});
         })
     });
     showElementButton.addEventListener("click", function(){
@@ -371,14 +372,14 @@ window.onload = function() {
             if (targetValue == "auto-located-by-tac") {
                 targetValue = document.getElementById("command-target-list").options[0].text;
             }
-            browser.tabs.query({
+            BrowserAppData.tabs.query({
                 active: true,
                 windowId: contentWindowId
             }).then(function(tabs) {
                 if (tabs.length === 0) {
                     console.log("No match tabs");
                 } else {
-                    browser.webNavigation.getAllFrames({tabId: tabs[0].id})
+                    BrowserAppData.webNavigation.getAllFrames({tabId: tabs[0].id})
                         .then(function(framesInfo){
                             var frameIds = [];
                             for (let i = 0; i < framesInfo.length; i++) {
@@ -411,7 +412,7 @@ function prepareSendNextFrame(infos) {
 }
 
 function sendShowElementMessage(infos) {
-    browser.tabs.sendMessage(infos.tabId, {
+    BrowserAppData.tabs.sendMessage(infos.tabId, {
         showElement: true,
         targetValue: infos.targetValue
     }, {
@@ -496,7 +497,7 @@ function resume() {
 
         /* Custom */
         if (contentWindowId) {
-            browser.windows.update(contentWindowId, {focused: true});
+            BrowserAppData.windows.update(contentWindowId, {focused: true});
         }
          /* Custom */
 
@@ -602,12 +603,12 @@ function executeCommand(index) {
 
     setColor(id + 1, "executing");
 
-    browser.tabs.query({
+    BrowserAppData.tabs.query({
             windowId: extCommand.getContentWindowId(),
             active: true
         })
         .then(function(tabs) {
-            return browser.tabs.sendMessage(tabs[0].id, {
+            return BrowserAppData.tabs.sendMessage(tabs[0].id, {
                 commands: commandName,
                 target: commandTarget,
                 value: commandValue
@@ -1290,7 +1291,7 @@ function doCommand() {
                     caseFailed = true;
                     currentPlayingCommandIndex = commands.length;
                 }
-                return browser.runtime.sendMessage({
+                return BrowserAppData.runtime.sendMessage({
                     captureEntirePageScreenshot: true,
                     captureWindowId: extCommand.getContentWindowId()
                 }).then(function(captureResponse) {

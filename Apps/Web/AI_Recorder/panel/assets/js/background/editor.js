@@ -1,5 +1,5 @@
 /* start the zeuz editor function */
-const browser = chrome || browser;
+// const BrowserAppData = chrome || browser;
 var contentWindowId;
 var selfWindowId = -1;
 var notificationCount = 0;
@@ -68,13 +68,13 @@ function handleMessage(message, sender, sendResponse) {
 
         button.classList.remove("active");
 
-        browser.tabs.sendMessage(sender.tab.id, {selectMode: true, selecting: false});
+        BrowserAppData.tabs.sendMessage(sender.tab.id, {selectMode: true, selecting: false});
         return;
     }
 
     if (message.attachRecorderRequest) {
         if (isRecording && !isPlaying) {
-            browser.tabs.sendMessage(sender.tab.id, {attachRecorder: true});
+            BrowserAppData.tabs.sendMessage(sender.tab.id, {attachRecorder: true});
         }
         return;
     }
@@ -84,7 +84,7 @@ function notification(command, target, value) {
     let tempCount = String(notificationCount);
     notificationCount++;
 
-    browser.notifications.create(tempCount, {
+    BrowserAppData.notifications.create(tempCount, {
         "type": "basic",
         "iconUrl": "assets/images/small_logo.png",
         "title": "Command Recorded",
@@ -92,7 +92,7 @@ function notification(command, target, value) {
     });
 
     setTimeout(function() {
-        browser.notifications.clear(tempCount);
+        BrowserAppData.notifications.clear(tempCount);
     }, 15000);
 }
 
@@ -102,15 +102,15 @@ function tacPreprocess(target) {
 }
 
 
-browser.runtime.onMessage.addListener(handleMessage);
+BrowserAppData.runtime.onMessage.addListener(handleMessage);
 
-browser.runtime.onMessage.addListener(function contentWindowIdListener(message) {
+BrowserAppData.runtime.onMessage.addListener(function contentWindowIdListener(message) {
     if (message.selfWindowId != undefined && message.commWindowId != undefined) {
         selfWindowId = message.selfWindowId;
         contentWindowId = message.commWindowId;
         extCommand.setContentWindowId(contentWindowId);
         recorder.setOpenedWindow(contentWindowId);
         recorder.setSelfWindowId(selfWindowId);
-        browser.runtime.onMessage.removeListener(contentWindowIdListener);
+        BrowserAppData.runtime.onMessage.removeListener(contentWindowIdListener);
     }
 })

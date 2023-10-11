@@ -1,3 +1,4 @@
+const BrowserAppData = chrome || browser;
 var CustomFunction = {
 	caseDataArr: {},
 	StepCopyData: null,
@@ -595,7 +596,7 @@ var CustomFunction = {
 				var case_data = {
 					case_data: CasemainArr,
 				};
-				browser.storage.local.set(case_data);
+				BrowserAppData.storage.local.set(case_data);
 				//CustomFunction.DisplayCaseData(true);
 				CustomFunction.DisplayCaseData('save_record_data', false);
 			}
@@ -655,7 +656,7 @@ var CustomFunction = {
 					case_data: SavedCaseData,
 				};
 
-				browser.storage.local.set(case_data);
+				BrowserAppData.storage.local.set(case_data);
 				/* Update the recorder html */
 				CustomFunction.LoadTheRecordDataHtml();
 			}
@@ -1056,7 +1057,7 @@ var CustomFunction = {
 									case_data: CustomFunction.caseDataArr,
 								};
 
-								browser.storage.local.set(case_data);
+								BrowserAppData.storage.local.set(case_data);
 								CustomFunction.DisplayCaseData('import_json', true);
 							}
 						} else {
@@ -1104,7 +1105,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: mainTestSuidData,
 					};
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 				}
 			} catch (e) {
 				console.log(e);
@@ -1202,7 +1203,7 @@ var CustomFunction = {
 				var base64_data = {
 					auth_data: base64,
 				};
-				browser.storage.local.set(base64_data);
+				BrowserAppData.storage.local.set(base64_data);
 				CustomFunction.is_auth_user = true;
 
 				var serverhtml = `<a target="_blank" href="` + server_url + `" style="background: transparent;border-bottom: 1px solid transparent;padding-top:0px;">
@@ -1247,7 +1248,7 @@ var CustomFunction = {
 						var base64_data = {
 							auth_data: '',
 						};
-						browser.storage.local.set(base64_data);
+						BrowserAppData.storage.local.set(base64_data);
 						CustomFunction.is_auth_user = false;
 						$('#servericon').html('');
 						$('#export_wrap').html('');
@@ -1256,7 +1257,7 @@ var CustomFunction = {
 						var base64_data = {
 							auth_data: '',
 						};
-						browser.storage.local.set(base64_data);
+						BrowserAppData.storage.local.set(base64_data);
 						CustomFunction.is_auth_user = false;
 						$('#servericon').html('');
 						$('#export_wrap').html('');
@@ -1273,7 +1274,7 @@ var CustomFunction = {
 					var base64_data = {
 						auth_data: '',
 					};
-					browser.storage.local.set(base64_data);
+					BrowserAppData.storage.local.set(base64_data);
 					CustomFunction.is_auth_user = false;
 					$('#servericon').html('');
 					$('#export_wrap').html('');
@@ -1317,7 +1318,7 @@ var CustomFunction = {
 			speed_data: speed,
 			is_initial_app_open: is_initial_app_open,
 		};
-		browser.storage.local.set(sp_data);
+		BrowserAppData.storage.local.set(sp_data);
 		document.getElementById("playback_select").value = speed;
 	},
 
@@ -1415,7 +1416,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('delete_suite', true);
 				}, 500);
 			}
@@ -1435,7 +1436,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('edit_suite', true);
 				}, 500);
 			}
@@ -1744,7 +1745,7 @@ var CustomFunction = {
 							case_data: CustomFunction.caseDataArr,
 						};
 
-						browser.storage.local.set(case_data);
+						BrowserAppData.storage.local.set(case_data);
 						CustomFunction.DisplayCaseData('paste_case', false);
 
 					} else if (CustomFunction.copyType == 'action') {
@@ -1757,7 +1758,7 @@ var CustomFunction = {
 								case_data: CustomFunction.caseDataArr,
 							};
 
-							browser.storage.local.set(case_data);
+							BrowserAppData.storage.local.set(case_data);
 							CustomFunction.DisplayCaseData('paste_action', false);
 						}
 					}
@@ -1780,7 +1781,7 @@ var CustomFunction = {
 								case_data: CustomFunction.caseDataArr,
 							};
 
-							browser.storage.local.set(case_data);
+							BrowserAppData.storage.local.set(case_data);
 							CustomFunction.DisplayCaseData('paste_action', false);
 						})
 					}
@@ -1800,7 +1801,7 @@ var CustomFunction = {
 		            case_data: CustomFunction.caseDataArr,
 		        };
 
-		        browser.storage.local.set(case_data);
+		        BrowserAppData.storage.local.set(case_data);
 				CustomFunction.DisplayCaseData(false);
 			}*/
 
@@ -1857,7 +1858,7 @@ var CustomFunction = {
 						case_data: CustomFunction.caseDataArr,
 					};
 
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 					CustomFunction.LoadTheRecordDataHtml();
 
 					$('.selected-case').addClass('disabled-case');
@@ -1922,7 +1923,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					}
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 					CustomFunction.LoadTheRecordDataHtml();
 
 					//$('.selected-case').removeClass('disabled-case');
@@ -1998,7 +1999,7 @@ var CustomFunction = {
 
 					//console.log('case_data',case_data);
 
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('delete_case', false);
 				}
 			}
@@ -2034,7 +2035,7 @@ var CustomFunction = {
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
-					browser.storage.local.set(case_data);
+					BrowserAppData.storage.local.set(case_data);
 					var lstIndx = CustomFunction.caseDataArr.length;
 					lstIndx = lstIndx - 1;
 
@@ -2126,7 +2127,7 @@ var CustomFunction = {
 					case_data: CustomFunction.caseDataArr,
 				};
 
-				browser.storage.local.set(case_data);
+				BrowserAppData.storage.local.set(case_data);
 
 				CustomFunction.DisplayCaseData('add_case_step', false);
 
@@ -2199,7 +2200,7 @@ var CustomFunction = {
 
 			}
 
-			browser.storage.local.set(case_data);
+			BrowserAppData.storage.local.set(case_data);
 			CustomFunction.DisplayCaseData('add_action', false);
 
 			setTimeout(function () {
@@ -2266,7 +2267,7 @@ var CustomFunction = {
 								var case_data = {
 									case_data: CustomFunction.caseDataArr,
 								};
-								browser.storage.local.set(case_data);
+								BrowserAppData.storage.local.set(case_data);
 								CustomFunction.DisplayCaseData(false);
 							} else {
 								/* Update the action */
@@ -2316,7 +2317,7 @@ var CustomFunction = {
 								var case_data = {
 									case_data: CustomFunction.caseDataArr,
 								};
-								browser.storage.local.set(case_data);
+								BrowserAppData.storage.local.set(case_data);
 								CustomFunction.DisplayCaseData(false);
 							}
 
