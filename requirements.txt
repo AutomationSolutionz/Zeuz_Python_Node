@@ -39,7 +39,6 @@ beautifulsoup4
 premailer
 html-diff
 pdf2image
-protobuf
 pytz
 rauth
 python-dotenv
@@ -48,4 +47,6 @@ google-cloud-bigquery-storage
 xvfbwrapper
 deepdiff
 xmltodict
+configobj
 boto3
+pandas

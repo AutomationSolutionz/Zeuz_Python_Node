@@ -136,6 +136,7 @@ current_step_sequence = None
 current_tc_no = ""
 current_session_name = ""
 custom_step_duration = ""
+jwt_token = ""
 run_cancel = ""
 run_cancelled = False
 disabled_step = []  # 1 based indexing
@@ -909,7 +910,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
         # Lower the picture quality
         if os.path.exists(ImageName):  # Make sure image was saved
             image = Image.open(ImageName)  # Re-open in standard format
-            image.thumbnail(picture_size, Image.ANTIALIAS)  # Resize picture to lower file size
+            image.thumbnail(picture_size, Image.LANCZOS)  # Resize picture to lower file size
             image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
 
             if debug_status:

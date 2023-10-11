@@ -2,12 +2,18 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 import os
+import shutil
 from pathlib import Path
 from urllib.parse import urlparse
 import platform
 import datetime
+
+from datetime import date
+from datetime import datetime as dt
+
 import shutil
 import time
+
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -21,16 +27,15 @@ with open(version_path, "r"):
     print(version_path.read_text())
 from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
-
+from configobj import ConfigObj
 from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
 
-import sys, time, os.path, base64, signal, argparse, requests, zipfile
+import sys, time, os.path, base64, signal, argparse, requests
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
-from tqdm import tqdm
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -111,8 +116,8 @@ import json
 from rich import traceback
 traceback.install(show_locals=True, max_frames=1)
 
-from Framework.deploy_handler import handler
-from Framework.deploy_handler import proto_adapter
+from Framework.deploy_handler import long_poll_handler
+from Framework.deploy_handler import adapter
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -261,7 +266,7 @@ def Login(cli=False, run_once=False, log_dir=None):
         r = RequestFormatter.Get(url)
         if r:
             try:
-                token = r['token']
+                CommonUtil.jwt_token = token = r['token']
                 res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
                 if "data" in res:   # Todo: implement it with proper server versioning
                     info = res["data"][0]
@@ -476,7 +481,9 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
 
         server_addr = f"{protocol}://{server_url.netloc}"
         live_log_service_addr = f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
-        deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
+
+        deploy_srv_addr = f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
+        # deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
 
         # Connect to the live log service.
         live_log_service.connect(live_log_service_addr)
@@ -490,7 +497,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             nonlocal node_json
 
             # 1. Adapt the proto response to appropriate json format
-            node_json = proto_adapter.adapt(response, node_id)
+            node_json = adapter.adapt(response, node_id)
 
             # 2. Save the json for MainDriver to find
             with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
@@ -523,7 +530,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             print("[deploy] Run cancelled.")
             CommonUtil.run_cancelled = True
 
-        deploy_handler = handler.DeployHandler(
+        deploy_handler = long_poll_handler.DeployHandler(
             on_connect_callback=on_connect_callback,
             response_callback=response_callback,
             cancel_callback=cancel_callback,
@@ -889,6 +896,22 @@ def Local_run(log_dir=None):
         )
         CommonUtil.ExecLog("", Error_Detail, 4, False)
 
+
+def get_folder_creation_time(folder_path):
+    if platform.system() == 'Windows':
+        creation_time = os.path.getctime(folder_path)
+    else:
+        stat = os.stat(folder_path)
+        if hasattr(stat, 'st_birthtime'):
+            # Use st_birthtime if available (Mac)
+            creation_time = stat.st_birthtime
+        else:
+            # Use st_mtime (last modification time) as an alternative
+            creation_time = stat.st_mtime
+
+    return dt.fromtimestamp(creation_time).date()
+
+
 def command_line_args() -> Path:
     """
     This function handles command line scripts with given arguments.
@@ -1023,31 +1046,32 @@ def command_line_args() -> Path:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    last_module_modules_date_filepath = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog' + os.sep + 'last_modules_update_date.txt'
-    if os.path.exists(last_module_modules_date_filepath):
-        with open(last_module_modules_date_filepath, "r") as file:
-            date = file.read()
-
-        date_from_file = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    settings_conf_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'Framework' + os.sep + 'settings.conf'
+    config = ConfigObj(settings_conf_path)
+    date_str = config.get('Advanced Options', {}).get('last_module_update_date', '')
+    module_update_interval = config.get('Advanced Options', {}).get('module_update_interval', '')
+    if date_str:
+        # Parse the date from the configuration file
+        config_date = date.fromisoformat(date_str)
         current_date = datetime.date.today()
-        time_difference = (current_date - date_from_file).days
+        time_difference = (current_date - config_date).days
         CommonUtil.ai_module_update_flag = stop_pip_auto_update
         CommonUtil.ai_module_update_time_difference = time_difference
         # Check if the time difference is greater than one month
-        if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > 30:
+        if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > int(module_update_interval):
             update_outdated_modules()
-            # Update the date in the file
-            with open(last_module_modules_date_filepath, "w") as file:
-                # Write the current date as content
-                file.write(str(current_date))
+            config_date = date.today()
+            config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
+            config.write()
             print("module_updater: Module Updated..")
         else:
             print("module_updater: All modules are already up to date.")
     else:
-        # Create the text file
-        with open(last_module_modules_date_filepath, "w") as file:
-            current_date = datetime.date.today()
-            file.write(str(current_date))
+        # Assign the current date
+        config_date = date.today()
+        config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
+        # Save the updated configuration file
+        config.write()
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
         print("module_updater: Module Updated..")
@@ -1079,6 +1103,31 @@ def command_line_args() -> Path:
             for subfolder in auto_log_subfolders:
                 shutil.rmtree(subfolder)
             print(f'automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days')
+
+    folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework",
+                                                                     os.sep + '') + os.sep + 'AutomationLog'
+    log_date_str = config.get('Advanced Options', {}).get('last_log_delete_date', '')
+    log_delete_interval = config.get('Advanced Options', {}).get('log_delete_interval', '')
+    if log_date_str:
+        log_config_date = date.fromisoformat(log_date_str)
+        current_date = datetime.date.today()
+        time_difference = (current_date - log_config_date).days
+        if time_difference > int(log_delete_interval):
+            print("Cleaning Up AutomationLog Folder...")
+            for root, dirs, files in os.walk(folder_path, topdown=False):
+                for dir_name in dirs:
+                    folder = os.path.join(root, dir_name)
+                    shutil.rmtree(folder)
+            config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
+            config.write()
+        else:
+            pass
+            # remaining_time = 7 - time_difference
+            # print(f"AutomationLog Folder will be deleted after {remaining_time+1} Days")
+    else:
+        config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
+        config.write()
+        # print("AutomationLog Folder Not Found")
 
     if show_browser_log:
         CommonUtil.show_browser_log = True

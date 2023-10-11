@@ -2258,7 +2258,7 @@ def TakeScreenShot(step_data):
                 size = 800, 450
 
                 im = Image.open(file1)
-                im.thumbnail(size, Image.ANTIALIAS)
+                im.thumbnail(size, Image.LANCZOS)
                 im.save(file2, "JPEG")
                 CommonUtil.ExecLog(
                     sModuleInfo, 'screenshot saved as: "%s"' % full_location, 1
@@ -2283,7 +2283,7 @@ def TakeScreenShot(step_data):
             wpercent = basewidth / float(img.size[0])
             hsize = int((float(img.size[1]) * float(wpercent)))
             if img:    
-                img = img.resize((basewidth, hsize), Image.ANTIALIAS)
+                img = img.resize((basewidth, hsize), Image.LANCZOS)
                 img.save(path, "JPEG")
                 CommonUtil.ExecLog(sModuleInfo, 'screenshot saved as: "%s"' % path, 1)
                 return "passed"

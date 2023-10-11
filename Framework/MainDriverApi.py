@@ -818,11 +818,11 @@ def set_important_variables():
                 continue
         if "sr" not in shared.shared_variables:
             shared.shared_variables.update({"sr": shared})
-        
+
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         raise Exception
-    
+
 
 def set_runid_status(item,tc=False):
     if tc:
@@ -881,7 +881,7 @@ def send_to_bigquery(execution_log, metrics):
                 action["run_id"] = run_id
                 action["tc_id"] = tc_id
                 action["step_name"] = step_names[action["step_id"]]
-        
+
             send(actions_table_id, actions, "actions")
 
 
@@ -1117,7 +1117,7 @@ def run_test_case(
             if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
                 cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables(run_id)
-            
+
             if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
                 runid_status = "In-Progress"
             else:
@@ -1363,73 +1363,6 @@ def check_run_cancel(run_id):
     # CommonUtil.run_cancelled = False
 
 
-def upload_json_report_old(Userid, temp_ini_file, run_id):
-    try:
-        if CommonUtil.debug_status: return
-        zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
-        path = zip_path / "execution_log.json"
-        json_report = CommonUtil.get_all_logs(json=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(json_report, f)
-
-        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
-            FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
-
-            with open(str(zip_path) + ".zip", "rb") as fzip:
-                size = round(os.stat(str(zip_path) + ".zip").st_size / 1024, 2)
-                if size > 1024:
-                    size = str(round(size/1024, 2)) + " MB"
-                else:
-                    size = str(size) + " KB"
-                print("Uploading %s report of %s testcases of %s from:\n%s"
-                      % (CommonUtil.current_session_name, len(json_report[0]["test_cases"]), size, str(zip_path) + ".zip"))
-
-                headers = RequestFormatter.add_api_key_to_headers({})
-                for _ in range(5):
-                    try:
-                        res = requests.post(
-                            RequestFormatter.form_uri("create_report_log_api/"),
-                            files={"file": fzip},
-                            data={"machine_name": Userid, "file_name": json_report[CommonUtil.runid_index]["file_name"]},
-                            verify=False,
-                            **headers)
-                    except KeyError:
-                        res = requests.post(
-                            RequestFormatter.form_uri("create_report_log_api/"),
-                            files={"file": fzip},
-                            data={"machine_name": Userid},
-                            verify=False,
-                            **headers)
-                    if res.status_code == 200:
-                        try:
-                            res_json = res.json()
-                        except:
-                            print("Could not Upload json report to server")
-                            print("\nResponse Text = " + res.text + "\n")
-                            return
-                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                            print("Successfully Uploaded the report to server of run_id '%s'" % run_id)
-                        else:
-                            print("Could not Upload the report to server of run_id '%s'" % run_id)
-                            print("\nResponse Text = " + res.text + "\n")
-                        break
-                    time.sleep(1)
-                else:
-                    print("Could not Upload the report to server of run_id '%s'" % run_id)
-            # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(json_report, f, indent=2)
-
-        if CommonUtil.run_cancel != CANCELLED_TAG:
-            # Create a standard report format to be consumed by other tools.
-            junit_report_path = zip_path / "junitreport.xml"
-            junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
-        return zip_path
-    except:
-        CommonUtil.Exception_Handler(sys.exc_info())
-
-
 def upload_reports_and_zips(Userid, temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status: return
@@ -1449,7 +1382,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         del step["log"]
             perf_report_html = None
             processed_tc_id = None
-            if CommonUtil.processed_performance_data:    
+            if CommonUtil.processed_performance_data:
                 env = Environment(loader=FileSystemLoader('../reporting/html_templates'))
                 template = env.get_template('pref_report.html')
                 html = template.render(CommonUtil.processed_performance_data)
@@ -1476,7 +1409,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report),
                                   "processed_tc_id":processed_tc_id
-                                  
+
                                   },
                             files=[("file",perf_report_html)],
                             verify=False,
@@ -1546,10 +1479,10 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 time.sleep(4)
             else:
                 print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
-                        
+
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
-        
+
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
@@ -2078,13 +2011,11 @@ def main(device_dict, user_info_object):
                     "duration": TestSetDuration
                 }
                 CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-                
+
                 CommonUtil.generate_time_based_performance_report(each_session)
 
-                if float(server_version.split(".")[0]) < 7:
-                    upload_json_report_old(Userid, temp_ini_file, run_id)
-                else:
-                    upload_reports_and_zips(Userid, temp_ini_file, run_id)
+                # if float(server_version.split(".")[0]) < 7:
+                upload_reports_and_zips(Userid, temp_ini_file, run_id)
 
                 session_cnt += 1
 
