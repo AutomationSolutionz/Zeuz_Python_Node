@@ -5,6 +5,8 @@
 
 ### [Current changes]
 -
+## [17.1.1][Oct 12, 2023]
+- **[Improve]** If Else action to python expression
 ### [17.1.0][Oct 10, 2023]
 - **[Change]** HTTP Long poll is implemented in deploy handler 
 
