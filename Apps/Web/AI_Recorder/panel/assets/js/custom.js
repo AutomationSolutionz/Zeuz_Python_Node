@@ -1331,7 +1331,7 @@ var CustomFunction = {
 		})
 
 		/* Close the main page content */
-		$(document).on('click', '.close_main_page', function () {
+		function show_content_section () {
 			var section = "content";
 			var i, tabcontent, tablinks;
 			tabcontent = document.getElementsByClassName("tabcontent");
@@ -1343,16 +1343,10 @@ var CustomFunction = {
 				tablinks[i].style.backgroundColor = "";
 			}
 			document.getElementById(section).style.display = "block";
-		});
+		}
+		$(document).on('click', '.close_main_page', show_content_section);
 
-		$(document).on('click', '#add_new_case_action', function () {
-			if ($('#content').attr('style') == "display: block;") {
-				document.getElementById("add_new_test_case").click();
-			} else {
-				$('.close_main_page').trigger('click');
-				document.getElementById("add_new_test_case").click();
-			}
-		})
+		$(document).on('click', '#add_new_case_action', show_content_section)
 
 
 		/* Mange playing speed */
