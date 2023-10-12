@@ -22,7 +22,7 @@ from pathlib import Path
 from datetime import datetime
 
 from selenium.webdriver.chrome.service import Service
-
+import re
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -45,6 +45,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.support import expected_conditions as EC
 import selenium
+
+from bs4 import BeautifulSoup
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -464,6 +466,15 @@ def set_extension_variables():
         zeuz_key_var_idx = text.find("let zeuz_key = ")
         zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
         file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{aiplugin_url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{aiplugin_key}';", 1))
+
+    with open(Path(ai_recorder_path) / "panel" / "index.html", "r") as file:
+        soup = BeautifulSoup(file, "lxml")
+        soup.find("li", id="add_new_case_action").div.string = f"{CommonUtil.current_tc_no}"
+    with open(Path(ai_recorder_path) / "panel" / "index.html", "w") as file:
+        html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
+        file.write(html)
+        print()
+
 
 
 def browser_process_status(browser:str):

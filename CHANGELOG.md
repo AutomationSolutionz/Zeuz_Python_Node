@@ -1,10 +1,15 @@
 # Changelog
 
 
-# Version 16
+# Version 17
 
 ### [Current changes]
 -
+### [17.1.0][Oct 10, 2023]
+- **[Change]** HTTP Long poll is implemented in deploy handler 
+
+# Version 16
+
 ### [16.5.0][Aug 20, 2023]
 - **[Add]** profile add for browsers
 - **[Add]** easyocr implement for desktop

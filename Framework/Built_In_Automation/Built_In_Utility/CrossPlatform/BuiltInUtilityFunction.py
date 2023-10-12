@@ -2302,11 +2302,13 @@ def compare_images(data_set):
     This action compares two given images. At first, both the images are resized into same width
     and height (min width and height from either image) and then both of them are converted into
     grayscale images. Next, structural similarity is computed and compared with the given score.
+    The similarity score can be accessed via the 'score' variable. You can also provide the
+    variable name as desire e.g 'score1'/'final_score' etc
 
     :param data_set:
-        [['/path/to/a.png',  'compare',              '/path/to/b.png'],
-        ['min match score', 'element parameter',    '0.75'],
-        ['compare images',  'utility action',       'none']]
+        [['/path/to/a.png',     'compare',              '/path/to/b.png'],
+        ['min match score',     'element parameter',    '0.75'],
+        ['compare images',      'utility action',       'score']]
     :return: "passed" if both images match within the given matching score percentage
     """
 
@@ -2314,8 +2316,17 @@ def compare_images(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function: compare images", 0)
 
     try:
-        import skimage, cv2, imutils
-        from skimage.metrics import structural_similarity as ssim
+        # try to import the 'skimage' library. If 'skimage' library is not installed then install_missing_modules will install it
+        try:
+            import skimage, cv2, imutils
+            from skimage.metrics import structural_similarity as ssim
+        except:
+            from Framework.module_installer import install_missing_modules
+            install_missing_modules(['scikit-image'])
+            import skimage, cv2, imutils
+            from skimage.metrics import structural_similarity as ssim
+
+        score = 'score'
 
         default_ssim = float(1)
 
@@ -2334,6 +2345,8 @@ def compare_images(data_set):
                     user_ssim = float(
                         eachrow[2]
                     )  # User defined minimum match score (i.e. SSIM)
+            elif 'action' in eachrow[1]:
+                score = eachrow[2].strip()
 
         imageA = cv2.imread(imageA_path)  # Read first image
         imageB = cv2.imread(imageB_path)  # Read second image
@@ -2404,6 +2417,8 @@ def compare_images(data_set):
             req_ssim = default_ssim
 
         # Perform the image comparison based on the structural similarity index
+
+        Shared_Resources.Set_Shared_Variables(score, ssim_match)
         if ssim_match >= req_ssim:
             CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
             return "passed"

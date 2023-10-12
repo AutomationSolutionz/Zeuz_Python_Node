@@ -42,13 +42,17 @@ class Recorder {
     /* Recorder */
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
         let self = this;
-        browser.runtime.sendMessage({
+        console.log("... Action recorder start");
+        let signal = {
             command: command,
             target: target,
             value: value,
             insertBeforeLastCommand: insertBeforeLastCommand,
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
-        }).catch (function(reason) {
+        };
+        console.log(signal);
+        browser.runtime.sendMessage(signal).catch (function(reason) {
+            console.log(reason);
         });
     }
 

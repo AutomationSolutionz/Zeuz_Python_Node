@@ -1,5 +1,5 @@
 var attachedTabs = {};
-
+const browser = chrome || browser;
 /* Fetch the window size */
 function getWindowSize(callback) {
     chrome.storage.local.get('window', function(result) {

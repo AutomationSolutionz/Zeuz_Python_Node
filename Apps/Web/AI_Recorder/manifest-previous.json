@@ -1,13 +1,13 @@
 {
     "description": "This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.",
-    "manifest_version": 3,
+    "manifest_version": 2,
     "name": "ZeuZ Test Recorder",
-    "version": "3.0",
-    "minimum_chrome_version": "117",
-    "icons": {
+    "version": "2.1",
+    "icons":
+    {
         "16": "panel/assets/images/small_logo.png",
         "48": "panel/assets/images/small_logo.png",
-        "128": "panel/assets/images/small_logo.png"
+       "128": "panel/assets/images/small_logo.png"
     },
     "permissions": [
         "tabs",
@@ -17,24 +17,25 @@
         "downloads",
         "webNavigation",
         "notifications",
+        "http://*/",
+        "https://*/",
         "storage",
         "unlimitedStorage",
+        "<all_urls>",
         "debugger",
         "clipboardRead",
         "clipboardWrite"
     ],
-    "host_permissions": [
-        "http://*/",
-        "https://*/"
-    ],
-    "homepage_url": "https://www.zeuz.ai/",
+
+    "homepage_url":"https://www.zeuz.ai/",
+
+    "content_security_policy": "script-src 'self' 'unsafe-eval' https://ssl.google-analytics.com; object-src 'self'",
+
     "content_scripts": [
         {
-            "matches": [
-                "http://*/*",
-                "https://*/*"
-            ],
+            "matches": ["<all_urls>"],
             "js": [
+                "common_files/poly_fill.js",
                 "content/injecter.js"
             ],
             "all_frames": true,
@@ -42,10 +43,7 @@
             "run_at": "document_start"
         },
         {
-            "matches": [
-                "http://*/*",
-                "https://*/*"
-            ],
+            "matches": ["<all_urls>"],
             "js": [
                 "content/detect_bowser.js",
                 "content/atoms_js.js",
@@ -53,6 +51,7 @@
                 "content/commandhandlers.js",
                 "content/browserbot.js",
                 "common_files/escape.js",
+                "content/sel_api.js",
                 "content/loc_builders.js",
                 "content/recorder.js",
                 "content/rec_handlers.js",
@@ -63,28 +62,35 @@
             ],
             "match_about_blank": true,
             "all_frames": true
-        }
-    ],
-    "background": {
-        "service_worker": "background/back.js",
-        "type": "module"
-    },
-    "action": {
-        "default_icon": {
-            "32":"panel/assets/images/small_logo.png"
         },
-        "default_title": "ZeuZ Recorder"
-    },
-    "web_accessible_resources": [
         {
-            "resources": [
-                "page/prompt.js",
-                "page/runScript.js"
-            ],
-            "matches": [
-                "<all_urls>"
-            ]
+            "matches": ["<all_urls>"],
+            "js": ["content/jquery.simulate.js"],
+            "match_about_blank": true,
+            "all_frames": true
         }
     ],
+
+    "background":
+    {
+        "scripts": [
+            "content/detect_bowser.js",
+            "common_files/poly_fill.js",
+            "background/back.js",
+            "background/back_zeuz.js"
+        ]
+    },
+
+    "browser_action":
+    {
+        "default_icon": "panel/assets/images/small_logo.png",
+        "default_title": "ZeuZ"
+    },
+
+    "web_accessible_resources": [
+        "page/prompt.js",
+        "page/runScript.js"
+    ],
+
     "offline_enabled": true
 }

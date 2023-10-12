@@ -1,3 +1,4 @@
+const browser = chrome || browser;
 (function (global, factory) {
   if (typeof define === "function" && define.amd) {
     define("webextension-polyfill", ["module"], factory);
@@ -8,6 +9,7 @@
       exports: {}
     };
     factory(mod);
+    console.log(global);
     global.browser = mod.exports;
   }
 })(this, function (module) {

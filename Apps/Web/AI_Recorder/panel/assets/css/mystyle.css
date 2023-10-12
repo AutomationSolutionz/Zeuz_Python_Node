@@ -587,6 +587,7 @@ body
   display: block;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
+  text-align: center;
 }
 .sidebar_menu img
 {
