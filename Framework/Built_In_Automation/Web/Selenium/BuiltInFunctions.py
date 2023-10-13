@@ -47,6 +47,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import selenium
 
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -468,11 +469,16 @@ def set_extension_variables():
         zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
         file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{jwtKey}';", 1))
 
-    with open(Path(ai_recorder_path) / "panel" / "index.html", "r") as file:
-        soup = BeautifulSoup(file, "lxml")
-        soup.find("li", id="add_new_case_action").div.string = f"{CommonUtil.current_tc_no}"
+    # with open(Path(ai_recorder_path) / "panel" / "index.html", "r") as file:
+    #     soup = BeautifulSoup(file, "lxml")
+    #     soup.find("li", id="add_new_case_action").div.string = f"{CommonUtil.current_tc_no}"
+    tree = ET.parse(Path(ai_recorder_path) / "panel" / "index.html")
+    root = tree.getroot()
+    root.findall(".//li[@id='add_new_case_action']/div")[0].text = f"{CommonUtil.current_tc_no}"
+    ET.indent(root, "    ")
+    html = ET.tostring(root).decode()
     with open(Path(ai_recorder_path) / "panel" / "index.html", "w") as file:
-        html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
+        # html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
         file.write(html)
         print()
     with open(Path(ai_recorder_path) / "background" / "back.js") as file:
