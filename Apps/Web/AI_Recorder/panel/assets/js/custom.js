@@ -2375,8 +2375,48 @@ var CustomFunction = {
 		});
 	},
 
-	init: function () {
+	init: async function () {
 		CustomFunction.InitialTimeCheckAuthUserOrNot();
+		result = await browser.storage.local.get('meta_data');
+		meta_data = result.meta_data
+		console.log("metdata =====",result);
+		resp = await $.ajax({
+			type: "GET",
+			url: `${meta_data.url}/ai_recorder_init`,
+			headers: {
+				// "Content-Type": "application/json",
+				"X-Api-Key": `${meta_data.apiKey}`,
+			},
+			data: {"test_id":`${meta_data.testNo}`, "step_seq":`${meta_data.stepNo}`},
+		});
+		console.log("resp =====",resp);
+		case_data = [
+			{
+				"suite_name": meta_data.testName.substring(0,10),
+				"suite_value": [
+					{
+						"case_name": resp.step.name,
+						"case_value": resp.step.actions.map(action => {
+							return {
+								"action": action.short.action,
+								"element": action.short.element,
+								"value": action.short.value,
+								"is_disable": 0,
+								"data_list": [
+									action.short.value
+								]
+							}
+						}),
+
+					}
+				] 	
+			}	
+		]
+		console.log(case_data);
+		browser.storage.local.set({
+			case_data: case_data
+		})
+
 		CustomFunction.LoadEvent();
 	}
 }
