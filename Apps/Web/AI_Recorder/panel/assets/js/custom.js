@@ -2404,7 +2404,8 @@ var CustomFunction = {
 								"is_disable": 0,
 								"data_list": [
 									action.short.value
-								]
+								],
+								main: action.main,
 							}
 						}),
 
