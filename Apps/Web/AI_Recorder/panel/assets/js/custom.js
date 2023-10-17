@@ -7,9 +7,8 @@ var CustomFunction = {
 	isPreFocusElement: false,
 	/* Hidden field*/
 	LoadTheRecordDataHtml(recordData) {
-		CustomFunction.FetchChromeCaseData();
-
-		setTimeout(function () {
+		CustomFunction.FetchChromeCaseData()
+		.then(() => {
 			/* Fetch selected suite */
 			var selected_suite = -1;
 			$('.single-suite-tab').each(function () {
@@ -71,8 +70,8 @@ var CustomFunction = {
 			} else {
 				caseHtml = `<input id="records-count" value="0" type="hidden">`;
 				$('#records-grid').html(caseHtml);
-			}
-		}, 500);
+			}		
+		})
 	},
 
 	LoadCaseSuiteHtml(SuiteMainArr) {
@@ -504,6 +503,21 @@ var CustomFunction = {
 
 							CasemainArr.suite_name = suiteName;
 							CasemainArr.suite_value = caseTempArr;
+							CustomFunction.FetchChromeCaseData()
+							.then( () => {
+								if(CasemainArr.suite_value[0].case_value[0].action == 'open') 
+								CasemainArr.suite_value[0].case_value.shift();
+								CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(CasemainArr.suite_value[0].case_value)
+								if (CasemainArr != undefined) {
+									var case_data = {
+										case_data: CustomFunction.caseDataArr,
+									};
+									browser.storage.local.set(case_data);
+									//CustomFunction.DisplayCaseData(true);
+									CustomFunction.DisplayCaseData('save_record_data', false);
+								}
+							});
+							
 						}
 					}
 				}
@@ -512,108 +526,104 @@ var CustomFunction = {
 			}
 		});
 
+		// setTimeout(function () {
+		// 	/* auto assign the case if there is no already case exists */
+		// 	var mainArrLength = Object.keys(CasemainArr).length;
+		// 	if (CasemainArr == undefined || mainArrLength == 0) {
+		// 		var tempObj = {
+		// 			case_name: "Enter Step Name",
+		// 			case_value: [],
+		// 		};
+		// 		var objArr = [];
+		// 		objArr.push(tempObj);
+		// 		CasemainArr.suite_name = "Untitled";
+		// 		CasemainArr.suite_value = objArr;
 
-		CustomFunction.FetchChromeCaseData();
+		// 		var mainTestSuidData = [];
 
-		setTimeout(function () {
-			/* auto assign the case if there is no already case exists */
-			var mainArrLength = Object.keys(CasemainArr).length;
-			if (CasemainArr == undefined || mainArrLength == 0) {
-				var tempObj = {
-					case_name: "Enter Step Name",
-					case_value: [],
-				};
-				var objArr = [];
-				objArr.push(tempObj);
-				CasemainArr.suite_name = "Untitled";
-				CasemainArr.suite_value = objArr;
+		// 		/* initial time untitled test suit position is zero */
+		// 		mainTestSuidData.push(CasemainArr);
+		// 		CasemainArr = mainTestSuidData;
+		// 	} else {
+		// 		/* fetch selected case */
+		// 		var selectedCase = -1;
+		// 		var defaultCaseName = 'Enter Step Name';
+		// 		$('.case-main-wrap').each(function () {
+		// 			if ($(this).hasClass('selected-case')) {
+		// 				selectedCase = $(this).data('mainindex');
+		// 				defaultCaseName = $(this).children('.has-input').children('.case-input').val();
+		// 			}
+		// 		});
 
-				var mainTestSuidData = [];
+		// 		if (selectedCase == -1) {
+		// 			var selected_suite = -1;
+		// 			$('.single-suite-tab').each(function () {
+		// 				if ($(this).hasClass('current_selected_tab')) {
+		// 					selected_suite = $(this).data('suite');
+		// 				}
+		// 			});
+		// 			if (selected_suite != -1) {
+		// 				var currentCaseVal = CasemainArr.suite_value[0].case_value;
+		// 				var tempObj = {
+		// 					case_name: "Enter Step Name",
+		// 					case_value: currentCaseVal,
+		// 				};
+		// 				var objArr = [];
+		// 				objArr.push(tempObj);
+		// 				console.log(objArr);
+		// 				var SavedCaseData = CustomFunction.caseDataArr;
+		// 				SavedCaseData[selected_suite].suite_value = objArr;
+		// 				CasemainArr = SavedCaseData;
+		// 			}
 
-				/* initial time untitled test suit position is zero */
-				mainTestSuidData.push(CasemainArr);
-				CasemainArr = mainTestSuidData;
-			} else {
-				/* fetch selected case */
-				var selectedCase = -1;
-				var defaultCaseName = 'Enter Step Name';
-				$('.case-main-wrap').each(function () {
-					if ($(this).hasClass('selected-case')) {
-						selectedCase = $(this).data('mainindex');
-						defaultCaseName = $(this).children('.has-input').children('.case-input').val();
-					}
-				});
+		// 		} else {
 
-				if (selectedCase == -1) {
-					var selected_suite = -1;
-					$('.single-suite-tab').each(function () {
-						if ($(this).hasClass('current_selected_tab')) {
-							selected_suite = $(this).data('suite');
-						}
-					});
-					if (selected_suite != -1) {
-						var currentCaseVal = CasemainArr.suite_value[0].case_value;
-						var tempObj = {
-							case_name: "Enter Step Name",
-							case_value: currentCaseVal,
-						};
-						var objArr = [];
-						objArr.push(tempObj);
-						console.log(objArr);
-						var SavedCaseData = CustomFunction.caseDataArr;
-						SavedCaseData[selected_suite].suite_value = objArr;
-						CasemainArr = SavedCaseData;
-					}
+		// 			//if(selectedCase > -1){
 
-				} else {
+		// 			/* Fetch selected suite */
+		// 			var selected_suite = -1;
+		// 			$('.single-suite-tab').each(function () {
+		// 				if ($(this).hasClass('current_selected_tab')) {
+		// 					selected_suite = $(this).data('suite');
+		// 				}
+		// 			});
 
-					//if(selectedCase > -1){
+		// 			if (selected_suite != -1) {
+		// 				var currentCaseVal = CasemainArr.suite_value[0].case_value;
+		// 				var SavedCaseData = CustomFunction.caseDataArr;
 
-					/* Fetch selected suite */
-					var selected_suite = -1;
-					$('.single-suite-tab').each(function () {
-						if ($(this).hasClass('current_selected_tab')) {
-							selected_suite = $(this).data('suite');
-						}
-					});
+		// 				SavedCaseData[selected_suite].suite_value[selectedCase].case_value = currentCaseVal;
 
-					if (selected_suite != -1) {
-						var currentCaseVal = CasemainArr.suite_value[0].case_value;
-						var SavedCaseData = CustomFunction.caseDataArr;
+		// 				CasemainArr = SavedCaseData;
+		// 			}
 
-						SavedCaseData[selected_suite].suite_value[selectedCase].case_value = currentCaseVal;
+		// 		}
+		// 	}
 
-						CasemainArr = SavedCaseData;
-					}
+		// 	console.log('CasemainArr', CasemainArr);
 
-				}
-			}
-
-			console.log('CasemainArr', CasemainArr);
-
-			if (CasemainArr != undefined) {
-				var case_data = {
-					case_data: CasemainArr,
-				};
-				browser.storage.local.set(case_data);
-				//CustomFunction.DisplayCaseData(true);
-				CustomFunction.DisplayCaseData('save_record_data', false);
-			}
-		}, 1000);
+		// 	if (CasemainArr != undefined) {
+		// 		var case_data = {
+		// 			case_data: CasemainArr,
+		// 		};
+		// 		browser.storage.local.set(case_data);
+		// 		//CustomFunction.DisplayCaseData(true);
+		// 		CustomFunction.DisplayCaseData('save_record_data', false);
+		// 	}
+		// }, 1000);
 	},
 
 	UpdateCaseData(textValue, case_command, case_index, update_step_or_action, stepindex) {
 		/* fetch Pre save data */
-		CustomFunction.FetchChromeCaseData();
-
-		/* Fetch selected suite */
-		var selected_suite = -1;
-		$('.single-suite-tab').each(function () {
-			if ($(this).hasClass('current_selected_tab')) {
-				selected_suite = $(this).data('suite');
-			}
-		});
-		setTimeout(function () {
+		CustomFunction.FetchChromeCaseData()
+		.then(() => {
+			/* Fetch selected suite */
+			var selected_suite = -1;
+			$('.single-suite-tab').each(function () {
+				if ($(this).hasClass('current_selected_tab')) {
+					selected_suite = $(this).data('suite');
+				}
+			});	
 			if (selected_suite != -1) {
 				var SavedCaseData = CustomFunction.caseDataArr;
 				if (update_step_or_action == 'update_action') {
@@ -659,60 +669,60 @@ var CustomFunction = {
 				/* Update the recorder html */
 				CustomFunction.LoadTheRecordDataHtml();
 			}
-
-		}, 500);
+		});
 	},
 
 	DisplayCaseData(display_type, is_reload_header_tab, selectedTabIndx) {
 		//console.log('display_type',display_type);
-		CustomFunction.FetchChromeCaseData();
-		var sortposition = $('.selected-case').data('sortposition');
+		CustomFunction.FetchChromeCaseData().then(() => {
+			var sortposition = $('.selected-case').data('sortposition');
 
-		var selectedSuite = 0;
+			var selectedSuite = 0;
 
-		if (selectedTabIndx != undefined) {
-			selectedSuite = selectedTabIndx;
-		}
-
-		$('.single-suite-tab').each(function () {
-			if ($(this).hasClass('current_selected_tab')) {
-				selectedSuite = $(this).data('suite');
+			if (selectedTabIndx != undefined) {
+				selectedSuite = selectedTabIndx;
 			}
-		})
 
-		if (display_type == "delete_suite") {
-			selectedSuite = 0;
-		}
+			$('.single-suite-tab').each(function () {
+				if ($(this).hasClass('current_selected_tab')) {
+					selectedSuite = $(this).data('suite');
+				}
+			})
 
-		//console.log('CustomFunction.caseDataArr',CustomFunction.caseDataArr);
+			if (display_type == "delete_suite") {
+				selectedSuite = 0;
+			}
 
-		setTimeout(function () {
+			//console.log('CustomFunction.caseDataArr',CustomFunction.caseDataArr);
+
+
 			//CustomFunction.LoadCaseDataHtml(CustomFunction.caseDataArr,0,is_reload_header_tab,display_type);
 			CustomFunction.LoadCaseDataHtml(CustomFunction.caseDataArr, selectedSuite, is_reload_header_tab, display_type);
-		}, 500);
 
-		/* when add setp the suite is not auto matic click */
-		//if(display_type != 'add_case_step' && display_type != "add_action"){
-		setTimeout(function () {
-			if (selectedTabIndx != undefined) {
-				$('.suite-tab-' + selectedTabIndx).trigger('click');
-			} else {
-				$('.current_selected_tab').trigger('click');
-			}
-		}, 550);
-		//}
 
-		if (display_type == "save_record_data") {
+			/* when add setp the suite is not auto matic click */
+			//if(display_type != 'add_case_step' && display_type != "add_action"){
 			setTimeout(function () {
-				console.log('sortposition', sortposition);
-				$('.sortable-' + sortposition).trigger('click');
-			}, 800);
-		}
+				if (selectedTabIndx != undefined) {
+					$('.suite-tab-' + selectedTabIndx).trigger('click');
+				} else {
+					$('.current_selected_tab').trigger('click');
+				}
+			}, 550);
+			//}
+
+			if (display_type == "save_record_data") {
+				setTimeout(function () {
+					console.log('sortposition', sortposition);
+					$('.sortable-' + sortposition).trigger('click');
+				}, 800);
+			}					
+		});
+		
 	},
 
 	ExportCaseData() {
-		CustomFunction.FetchChromeCaseData();
-		setTimeout(function () {
+		CustomFunction.FetchChromeCaseData().then(() => {
 			/* Change Command */
 			jsonObj = CustomFunction.caseDataArr;
 			if (jsonObj.length > 0) {
@@ -784,8 +794,8 @@ var CustomFunction = {
 
 				})
 			}
-			CustomFunction.caseDataArr = newjsonObj;
-		}, 1500);
+			CustomFunction.caseDataArr = newjsonObj;		
+		});
 	},
 
 	ExportCaseDataApi() {
@@ -1074,42 +1084,42 @@ var CustomFunction = {
 		}
 	},
 
-	FetchChromeCaseData() {
+	async FetchChromeCaseData() {
 		CustomFunction.caseDataArr = {};
-		chrome.storage.local.get(null, function (result) {
-			try {
-				if (result.case_data) {
-					CustomFunction.caseDataArr = result.case_data;
-				} else {
-					/* Create a new record initial time */
-					var tempObj = {
-						case_name: "Enter Step Name",
-						case_value: [],
-					};
-					var objArr = [];
-					objArr.push(tempObj);
-					var tempMainArr = {
-						suite_name: "Untitled",
-						suite_value: objArr,
-					}
-
-					var mainTestSuidData = [];
-
-					/* initial time untitled test suit position is zero */
-					mainTestSuidData.push(tempMainArr);
-
-					CustomFunction.caseDataArr = mainTestSuidData;
-
-					/* save on local storage */
-					var case_data = {
-						case_data: mainTestSuidData,
-					};
-					browser.storage.local.set(case_data);
+		result = await chrome.storage.local.get(null);
+		try {
+			if (result.case_data) {
+				CustomFunction.caseDataArr = result.case_data;
+			} else {
+				/* Create a new record initial time */
+				var tempObj = {
+					case_name: "Enter Step Name",
+					case_value: [],
+				};
+				var objArr = [];
+				objArr.push(tempObj);
+				var tempMainArr = {
+					suite_name: "Untitled",
+					suite_value: objArr,
 				}
-			} catch (e) {
-				console.log(e);
+
+				var mainTestSuidData = [];
+
+				/* initial time untitled test suit position is zero */
+				mainTestSuidData.push(tempMainArr);
+
+				CustomFunction.caseDataArr = mainTestSuidData;
+
+				/* save on local storage */
+				var case_data = {
+					case_data: mainTestSuidData,
+				};
+				browser.storage.local.set(case_data);
 			}
-		});
+		} catch (e) {
+			console.log(e);
+		}
+		
 	},
 
 	LoadAccordion: function () {
@@ -1399,15 +1409,15 @@ var CustomFunction = {
 			var suiteid = $(this).data('suite');
 			var r = confirm("Are you sure? you want to delete!");
 			if (r == true) {
-				CustomFunction.FetchChromeCaseData();
-				setTimeout(function () {
+				CustomFunction.FetchChromeCaseData()
+				.then(() => {
 					CustomFunction.caseDataArr.splice(suiteid, 1);
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
 					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('delete_suite', true);
-				}, 500);
+				});
 			}
 		})
 
@@ -1419,15 +1429,15 @@ var CustomFunction = {
 			var changeSuiteName = prompt("Please enter the suite name", suitename);
 			if (changeSuiteName != null) {
 				THIS.parent('.suite-action').siblings('.single-suite-tab').html(changeSuiteName);
-				CustomFunction.FetchChromeCaseData();
-				setTimeout(function () {
+				CustomFunction.FetchChromeCaseData()
+				.then(() => {
 					CustomFunction.caseDataArr[suiteid].suite_name = changeSuiteName;
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
 					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('edit_suite', true);
-				}, 500);
+				})
 			}
 		})
 
