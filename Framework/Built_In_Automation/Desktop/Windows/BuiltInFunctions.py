@@ -1095,7 +1095,6 @@ def image_search(step_data_set):
         left_width = ""
         top_height = ""
         colour_state = ""
-        method_image = ""
         language = ""
         t_conf = 0.9
         text_screenshot = ''
@@ -1121,8 +1120,6 @@ def image_search(step_data_set):
                     colour_state = right
                 elif 'language' in left:
                     language = right
-                elif 'method_image' in left:
-                    method_image = right
                 elif 't_conf' in left:
                     t_conf = float(right)
                 elif 't_screenshot' in left:
@@ -1145,8 +1142,6 @@ def image_search(step_data_set):
             top_height = 1
         if colour_state == '':
             colour_state = 'black_white'
-        if method_image == '':
-            method = 'method_1'
         if language == '':
             language = 'en'
 
@@ -1180,129 +1175,54 @@ def image_search(step_data_set):
     try:
         if image_text:
 
-            if method_image == 'method_1':
-                import cv2
-                from pytesseract import pytesseract
-                pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
+            import cv2
+            from pytesseract import pytesseract
+            pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
-                image_text = image_text.replace(" ", "").lower()
-                PIL.ImageGrab.grab().crop((left, top, left + width * left_width, top + height * top_height)).save("sample.jpg")
-                imge = cv2.imread("sample.jpg")
-                gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
+            image_text = image_text.replace(" ", "").lower()
+            PIL.ImageGrab.grab().crop((left, top, left + width * left_width, top + height * top_height)).save("sample.jpg")
+            imge = cv2.imread("sample.jpg")
+            gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
 
-                if colour_state == "black_white":
-                    data = pytesseract.image_to_boxes(gray)
-                else:
-                    data = pytesseract.image_to_boxes(imge)
-                all_letters = data.split("\n")
-                print(all_letters)
-                full_string = ""
-                for i in all_letters:
-                    full_string += i[0] if len(i) > 0 else "~"
-                full_string = full_string.lower()
-
-                all_pos = [m.start() for m in re.finditer(image_text, full_string)]
-
-                if -len(all_pos) <= idx < len(all_pos):
-                    CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
-                    i = all_pos[idx]
-                elif len(all_pos) != 0:
-                    CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
-                    return "zeuz_failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
-                    return "zeuz_failed"
-
-                msg = ""
-                a = all_letters[i:i + len(image_text)]
-                for i in a:
-                    msg += i + "\n"
-                left_top = list(map(int, a[0].split(" ")[1:3]))
-                right_bottom = list(map(int, a[-1].split(" ")[3:5]))
-                center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
-                msg += "Center = " + str(center) + "\n"
-                # pyautogui.moveTo(center)
-
-                element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
-                msg += "Coordinates = " + str(element) + "\n"
-                CommonUtil.ExecLog(sModuleInfo, msg, 5)
-
-                return _Element(element)
-
+            if colour_state == "black_white":
+                data = pytesseract.image_to_boxes(gray)
             else:
-                import easyocr
-                import numpy as np
-                import cv2
-                from pytesseract import pytesseract
-                from difflib import SequenceMatcher
+                data = pytesseract.image_to_boxes(imge)
+            all_letters = data.split("\n")
+            print(all_letters)
+            full_string = ""
+            for i in all_letters:
+                full_string += i[0] if len(i) > 0 else "~"
+            full_string = full_string.lower()
 
-                pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
+            all_pos = [m.start() for m in re.finditer(image_text, full_string)]
 
-                PIL.ImageGrab.grab().save("sample.png")
-                reader = easyocr.Reader([language])
-                if easyocr_paragraph == 'true':
-                    output = reader.readtext("sample.png",paragraph=True)
-                else:
-                    output = reader.readtext("sample.png", paragraph=False)
+            if -len(all_pos) <= idx < len(all_pos):
+                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
+                i = all_pos[idx]
+            elif len(all_pos) != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
+                return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                return "zeuz_failed"
 
-                item = []
-                count = 0
-                crop_counter = 0
-                for text in output:
-                    def seq(a, b):
-                        c = SequenceMatcher(a=a, b=b).ratio()
-                        print(c)
-                        if c > 0.8:
-                            return c
+            msg = ""
+            a = all_letters[i:i + len(image_text)]
+            for i in a:
+                msg += i + "\n"
+            left_top = list(map(int, a[0].split(" ")[1:3]))
+            right_bottom = list(map(int, a[-1].split(" ")[3:5]))
+            center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
+            msg += "Center = " + str(center) + "\n"
+            # pyautogui.moveTo(center)
 
-                        else:
-                            return .00004
+            element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
+            msg += "Coordinates = " + str(element) + "\n"
+            CommonUtil.ExecLog(sModuleInfo, msg, 5)
 
-                    rslt = seq(image_text, text[1])
-                    if rslt >= float(t_conf):
-                    # if image_text in text[1]:
-                        item.append([text])
-                        print(text)
-                        CommonUtil.ExecLog(sModuleInfo, "Found %s text. Returning element of index %s" % (image_text, count), 1)
-                        count = count + 1
-                    else:
-                        print(text)
-                        continue
+            return _Element(element)
 
-                if item == []:
-                    CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
-                    return "zeuz_failed"
-                cord = np.array(item[idx][0])
-                cord1 = cord.tolist()
-                #
-                x_min, y_min = [min(cord_val) for cord_val in zip(*cord1[0])]
-                x_max, y_max = [max(cord_val) for cord_val in zip(*cord1[0])]
-
-                if text_screenshot !='':
-                    img = cv2.imread("sample.png")
-                    cropping = img[y_min:y_max , x_min:x_max]
-                    cv2.imwrite('cropped_image.png', cropping)
-                    from PIL import Image
-
-                    image = Image.open('cropped_image.png')
-                    gray_image = image.convert('L')
-                    output_2 = pytesseract.image_to_string(gray_image)
-                    print(output_2)
-
-                    if output_2 in image_text or image_text in output_2:
-                        element = x_min, y_min, x_max - x_min, y_max - y_min
-                        crop_counter = 1
-                        return _Element(element)
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
-                        return "zeuz_failed"
-                else:
-                    pass
-                if crop_counter == 0:
-                    element = x_min,y_min,x_max-x_min,y_max-y_min
-                    return _Element(element)
-                else:
-                    pass
 
         else:
             # Scale image if required
@@ -1341,7 +1261,6 @@ def image_search(step_data_set):
 
 @logger
 def new_image_text(step_data_set):
-    install_ocr()
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
@@ -1570,7 +1489,6 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 left_width = 1
                 top_height = 1
                 colour_state = 'black_white'
-                method_image = 'method_1'
                 t_conf = 0.9
                 language = 'en'
                 text_screenshot = ''
@@ -1590,8 +1508,6 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                             colour_state = right
                         elif 'language' in left:
                             language = right
-                        elif 'method_image' in left:
-                            method_image = right
                         elif 't_conf' in left:
                             t_conf = right
                         elif 't_screenshot' in left:
@@ -1616,7 +1532,6 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 element_image.append(("top_height", "element parameter", str(top_height)))
                 element_image.append(("colour_state", "element parameter", str(colour_state)))
                 element_image.append(("language", "element parameter", str(language)))
-                element_image.append(("method_image", "element parameter", str(method_image)))
                 element_image.append(("t_conf", "element parameter", str(t_conf)))
                 element_image.append(("t_screenshot", "element parameter", str(text_screenshot)))
                 element_image.append(("easyocr_paragraph", "element parameter", str(easyocr_paragraph)))
