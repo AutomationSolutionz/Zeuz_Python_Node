@@ -1095,10 +1095,7 @@ def image_search(step_data_set):
         left_width = ""
         top_height = ""
         colour_state = ""
-        language = ""
-        t_conf = 0.9
-        text_screenshot = ''
-        easyocr_paragraph = ''
+
 
         for left, mid, right in step_data_set:
             left = left.strip().lower()
@@ -1118,14 +1115,7 @@ def image_search(step_data_set):
                     top_height = float(right)
                 elif "colour" in left:
                     colour_state = right
-                elif 'language' in left:
-                    language = right
-                elif 't_conf' in left:
-                    t_conf = float(right)
-                elif 't_screenshot' in left:
-                    text_screenshot = right
-                elif 'easyocr_paragraph' in left:
-                    easyocr_paragraph = right
+
 
                 else:
                     if not image_text:
@@ -1142,8 +1132,7 @@ def image_search(step_data_set):
             top_height = 1
         if colour_state == '':
             colour_state = 'black_white'
-        if language == '':
-            language = 'en'
+
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
@@ -1301,7 +1290,8 @@ def new_image_text(step_data_set):
                 elif 'previous_value' in left:
                     previous_stored_data = CommonUtil.parse_value_into_object(right.strip())
 
-
+        if language == '':
+            language = 'en'
         PIL.ImageGrab.grab().save("sample.png")
         if previous_stored_data == None:
             if easyocr_paragraph == 'true':
