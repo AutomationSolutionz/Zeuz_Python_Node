@@ -42,7 +42,7 @@ except:
 
 # Import colorama for console color support
 from colorama import init as colorama_init
-from colorama import Fore, Back
+from colorama import Fore, Back, Style
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
@@ -555,7 +555,7 @@ def ExecLog(
 
     # Terminal output color
     line_color = ""
-
+    text_style = ""
     # Convert logLevel from int to string for clarity
     if iLogLevel == 0:
         if debug_mode.lower() == "true":
@@ -579,6 +579,10 @@ def ExecLog(
         status = "Info"
         iLogLevel = 1
         line_color = Fore.CYAN
+    elif iLogLevel == 7:
+        status = "Info"
+        line_color = Fore.CYAN + Style.BRIGHT
+        # text_style = Style.BRIGHT
     elif iLogLevel == 6:
         status = "BrowserConsole"
     else:

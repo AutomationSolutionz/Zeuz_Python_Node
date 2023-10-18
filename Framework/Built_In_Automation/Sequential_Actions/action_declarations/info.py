@@ -88,6 +88,7 @@ action_support = (
     "pre sleep", "post sleep", "pre post sleep", "post pre sleep",
     "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter"
     "profile option", "profile options",
+    "fail message",
 )
 patterns = [
     "^parent \d parameter$",
