@@ -505,7 +505,7 @@ var CustomFunction = {
 							CasemainArr.suite_value = caseTempArr;
 							CustomFunction.FetchChromeCaseData()
 							.then( () => {
-								if(CasemainArr.suite_value[0].case_value[0].action == 'open') 
+								if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && CasemainArr.suite_value[0].case_value[0].action == 'open') 
 								CasemainArr.suite_value[0].case_value.shift();
 								CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(CasemainArr.suite_value[0].case_value)
 								if (CasemainArr != undefined) {
