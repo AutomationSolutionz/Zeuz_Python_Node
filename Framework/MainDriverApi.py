@@ -15,6 +15,7 @@ import requests
 import zipfile
 from multiprocessing.pool import ThreadPool
 from urllib3.exceptions import InsecureRequestWarning
+import pyperclip
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 import threading
@@ -525,7 +526,7 @@ def run_all_test_steps_in_a_test_case(
                 continue
 
             # get step info
-            current_step_name = all_step_info[StepSeq - 1]["step_name"]
+            CommonUtil.current_step_name = current_step_name = all_step_info[StepSeq - 1]["step_name"]
             CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
             CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
 
@@ -818,6 +819,10 @@ def set_important_variables():
                 continue
         if "sr" not in shared.shared_variables:
             shared.shared_variables.update({"sr": shared})
+        shared.shared_variables.update({
+            "clipboard_paste": pyperclip.paste,
+            "clipboard_set": pyperclip.copy
+        })
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -940,6 +945,7 @@ def run_test_case(
         shared.Set_Shared_Variables("run_id", run_id)
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
+        CommonUtil.current_tc_name = testcase_info['title']
         CommonUtil.load_testing = False
         CommonUtil.clear_performance_metrics()
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}

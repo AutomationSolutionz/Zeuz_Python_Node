@@ -47,6 +47,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import selenium
 
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -455,24 +456,46 @@ def use_xvfb_or_headless(callback):
 
 
 def set_extension_variables():
+    url = ConfigModule.get_config_value("Authentication", "server_address").strip()
+    apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
+    jwtKey = CommonUtil.jwt_token.strip()
     with open(Path(aiplugin_path) / "background.js") as file:
         text = file.read()
     # if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
     with open(Path(aiplugin_path) / "background.js", "w") as file:
-        aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
-        aiplugin_key = CommonUtil.jwt_token.strip()
         zeuz_url_var_idx = text.find("let zeuz_url = ")
         zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
         zeuz_key_var_idx = text.find("let zeuz_key = ")
         zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
-        file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{aiplugin_url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{aiplugin_key}';", 1))
+        file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{jwtKey}';", 1))
 
-    with open(Path(ai_recorder_path) / "panel" / "index.html", "r") as file:
-        soup = BeautifulSoup(file, "lxml")
-        soup.find("li", id="add_new_case_action").div.string = f"{CommonUtil.current_tc_no}"
+    # with open(Path(ai_recorder_path) / "panel" / "index.html", "r") as file:
+    #     soup = BeautifulSoup(file, "lxml")
+    #     soup.find("li", id="add_new_case_action").div.string = f"{CommonUtil.current_tc_no}"
+    tree = ET.parse(Path(ai_recorder_path) / "panel" / "index.html")
+    root = tree.getroot()
+    root.findall(".//li[@id='add_new_case_action']/div")[0].text = f"{CommonUtil.current_tc_no}"
+    ET.indent(root, "    ")
+    html = ET.tostring(root).decode()
     with open(Path(ai_recorder_path) / "panel" / "index.html", "w") as file:
-        html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
+        # html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
         file.write(html)
+        print()
+    with open(Path(ai_recorder_path) / "background" / "back.js") as file:
+        recorder_back_js_text = file.read()
+    with open(Path(ai_recorder_path) / "background" / "back.js", "w") as file:
+        metaData_idx = recorder_back_js_text.find("const metaData = ")
+        metaData_var = recorder_back_js_text[metaData_idx:metaData_idx+recorder_back_js_text[metaData_idx:].find("\n")]
+        metaData = {
+            "testNo": CommonUtil.current_tc_no,
+            "testName": CommonUtil.current_tc_name,
+            "stepNo": CommonUtil.current_step_sequence,
+            "stepName": CommonUtil.current_step_name,
+            "url": url,
+            "apiKey": apiKey,
+            "jwtKey": jwtKey,
+        }
+        file.write(recorder_back_js_text.replace(metaData_var, f"const metaData = {metaData};", 1))
         print()
 
 

@@ -164,21 +164,49 @@ Selenium.prototype.doStoreEval = function(value, varName) {
 };
 
 Selenium.prototype.doPrePageWait = function() {
-    window.zeuz_new_page = window.eval('(function() {return window.new_page;}())');
+    // The following code is untested!! just replaced Eval()
+    // window.zeuz_new_page = window.eval('(function() {return window.new_page;}())');
+    window.zeuz_new_page = window.new_page;;
 };
 Selenium.prototype.doPageWait = function() {
-    var expression = 'if(window.document.readyState=="complete"){return true;}else{return false;}';
-    window.zeuz_page_done = window.eval('(function() {' + expression + '}())');
+    // The following code is untested!! just replaced Eval()
+    // var expression = 'if(window.document.readyState=="complete"){return true;}else{return false;}';
+    // window.zeuz_page_done = window.eval('(function() {' + expression + '}())');
+    window.zeuz_page_done = window.document.readyState=="complete";
 };
 
 Selenium.prototype.doAjaxWait = function() {
-    var expression = 'if (window.ajax_obj) { if (window.ajax_obj.length == 0) {return true;} else {\
-                      for (var index in window.ajax_obj) {\
-                      if (window.ajax_obj[index].readyState !== 4 &&\
-                      window.ajax_obj[index].readyState !== undefined &&\
-                      window.ajax_obj[index].readyState !== 0) {return false;}}return true;}}\
-                      else {if (window.origXMLHttpRequest) {window.origXMLHttpRequest = "";}return true;}';
-    window.zeuz_ajax_done = window.eval('(function() {' + expression + '}())');
+    // var expression = 'if (window.ajax_obj) { if (window.ajax_obj.length == 0) {return true;} else {\
+    //                   for (var index in window.ajax_obj) {\
+    //                   if (window.ajax_obj[index].readyState !== 4 &&\
+    //                   window.ajax_obj[index].readyState !== undefined &&\
+    //                   window.ajax_obj[index].readyState !== 0) {return false;}}return true;}}\
+    //                   else {if (window.origXMLHttpRequest) {window.origXMLHttpRequest = "";}return true;}';
+    // window.zeuz_ajax_done = window.eval('(function() {' + expression + '}())');
+
+    // The following code is untested!! just replaced Eval()
+    if (window.ajax_obj) { 
+        if (window.ajax_obj.length == 0) {
+            window.zeuz_ajax_done= true;
+        } 
+        else {
+            for (var index in window.ajax_obj) {
+                if (window.ajax_obj[index].readyState !== 4 &&
+                window.ajax_obj[index].readyState !== undefined &&
+                window.ajax_obj[index].readyState !== 0) {
+                    window.zeuz_ajax_done = false;
+                    break;
+                }
+            }
+            return true;
+        }
+    }
+    else {
+        if (window.origXMLHttpRequest) {
+            window.origXMLHttpRequest = "";
+        }
+        window.zeuz_ajax_done = true; 
+    };
 };
 
 Selenium.createForWindow = function(window, proxyInjectionMode) {
@@ -190,24 +218,49 @@ Selenium.createForWindow = function(window, proxyInjectionMode) {
 
 
 Selenium.prototype.doWaitPreparation = function() {
-    window.eval('function setNewPageValue(e) {window.new_page = true;};\
-                window.addEventListener("beforeunload", setNewPageValue, false);\
-                if (window.XMLHttpRequest) {if (!window.origXMLHttpRequest || !window.ajax_obj) {\
-                window.ajax_obj = []; window.origXMLHttpRequest = window.XMLHttpRequest;\
-                window.XMLHttpRequest = function() { var xhr = new window.origXMLHttpRequest();\
-                window.ajax_obj.push(xhr); return xhr;}}} function setDOMModifiedTime() {\
-                window.domModifiedTime = Date.now();}var _win = window.document.body;\
-                _win.addEventListener("DOMNodeInserted", setDOMModifiedTime, false);\
-                _win.addEventListener("DOMNodeInsertedIntoDocument", setDOMModifiedTime, false);\
-                _win.addEventListener("DOMNodeRemoved", setDOMModifiedTime, false);\
-                _win.addEventListener("DOMNodeRemovedFromDocument", setDOMModifiedTime, false);\
-                _win.addEventListener("DOMSubtreeModified", setDOMModifiedTime, false);');
+    // window.eval('function setNewPageValue(e) {window.new_page = true;};\
+    //             window.addEventListener("beforeunload", setNewPageValue, false);\
+    //             if (window.XMLHttpRequest) {if (!window.origXMLHttpRequest || !window.ajax_obj) {\
+    //             window.ajax_obj = []; window.origXMLHttpRequest = window.XMLHttpRequest;\
+    //             window.XMLHttpRequest = function() { var xhr = new window.origXMLHttpRequest();\
+    //             window.ajax_obj.push(xhr); return xhr;}}} function setDOMModifiedTime() {\
+    //             window.domModifiedTime = Date.now();}var _win = window.document.body;\
+    //             _win.addEventListener("DOMNodeInserted", setDOMModifiedTime, false);\
+    //             _win.addEventListener("DOMNodeInsertedIntoDocument", setDOMModifiedTime, false);\
+    //             _win.addEventListener("DOMNodeRemoved", setDOMModifiedTime, false);\
+    //             _win.addEventListener("DOMNodeRemovedFromDocument", setDOMModifiedTime, false);\
+    //             _win.addEventListener("DOMSubtreeModified", setDOMModifiedTime, false);');
+
+    // The following code is untested!! just replaced Eval()
+    function setNewPageValue(e) {
+        window.new_page = true;
+    };
+    window.addEventListener("beforeunload", setNewPageValue, false);
+    if (window.XMLHttpRequest) {
+        if (!window.origXMLHttpRequest || !window.ajax_obj) {
+            window.ajax_obj = []; window.origXMLHttpRequest = window.XMLHttpRequest;
+            window.XMLHttpRequest = function() { var xhr = new window.origXMLHttpRequest();
+            window.ajax_obj.push(xhr); return xhr;}
+        }
+    }
+    function setDOMModifiedTime() {
+        window.domModifiedTime = Date.now();
+    }
+    var _win = window.document.body;
+    _win.addEventListener("DOMNodeInserted", setDOMModifiedTime, false);
+    _win.addEventListener("DOMNodeInsertedIntoDocument", setDOMModifiedTime, false);
+    _win.addEventListener("DOMNodeRemoved", setDOMModifiedTime, false);
+    _win.addEventListener("DOMNodeRemovedFromDocument", setDOMModifiedTime, false);
+    _win.addEventListener("DOMSubtreeModified", setDOMModifiedTime, false);
 };
 
 
 Selenium.prototype.doDomWait = function() {
     //sdx
-    window.zeuz_dom_time = window.eval('(function() {return window.domModifiedTime;}())');
+    // window.zeuz_dom_time = window.eval('(function() {return window.domModifiedTime;}())');
+    // The following code is untested!! just replaced Eval()
+
+    window.zeuz_dom_time = window.domModifiedTime;
 };
 
 Selenium.prototype.doClick = function(locator) {
@@ -783,16 +836,18 @@ Selenium.prototype.doHighlight = function(locator) {
     this.browserbot.highlight(element, true);
 };
 
-Selenium.prototype.getEval = function(script) {
-    try {
-        var window = this.browserbot.getCurrentWindow();
-        var result = eval(script);
-        if (null == result) return "null";
-        return result;
-    } catch (e) {
-        throw new SeleniumError("Threw an exception: " + extractExceptionMessage(e));
-    }
-};
+// The following code is untested!! just replaced Eval()
+
+// Selenium.prototype.getEval = function(script) {
+//     try {
+//         var window = this.browserbot.getCurrentWindow();
+//         var result = eval(script);
+//         if (null == result) return "null";
+//         return result;
+//     } catch (e) {
+//         throw new SeleniumError("Threw an exception: " + extractExceptionMessage(e));
+//     }
+// };
 
 Selenium.prototype.isChecked = function(locator) {
     var element = this.browserbot.findElement(locator);
@@ -1038,47 +1093,52 @@ Selenium.prototype.getAllFields = function() {
     return this.browserbot.getAllFields();
 };
 
-Selenium.prototype.getAttributeFromAllWindows = function(attributeName) {
-    var attributes = new Array();
+// The following code is untested!! just replaced Eval()
 
-    var win = selenium.browserbot.topWindow;
-    try {
-        attributes.push(eval("win." + attributeName));
-    } catch (ignored) {
-    }
-    for (var windowName in this.browserbot.openedWindows) {
-        try {
-            win = selenium.browserbot.openedWindows[windowName];
-            if (!selenium.browserbot._windowClosed(win)) {
-                attributes.push(eval("win." + attributeName));
-            }
-        } catch (e) {}
-    }
-    return attributes;
-};
+// Selenium.prototype.getAttributeFromAllWindows = function(attributeName) {
+//     var attributes = new Array();
 
-Selenium.prototype.findWindow = function(soughtAfterWindowPropertyValue) {
-    var targetPropertyName = "name";
-    if (soughtAfterWindowPropertyValue.match("^title=")) {
-        targetPropertyName = "document.title";
-        soughtAfterWindowPropertyValue = soughtAfterWindowPropertyValue.replace(/^title=/, "");
-    } else {
-        if (PatternMatcher.matches(soughtAfterWindowPropertyValue, "")) {
-            return this.browserbot.getCurrentWindow();
-        }
-    }
+//     var win = selenium.browserbot.topWindow;
+//     try {
+//         attributes.push(eval("win." + attributeName));
+//     } catch (ignored) {
+//     }
+//     for (var windowName in this.browserbot.openedWindows) {
+//         try {
+//             win = selenium.browserbot.openedWindows[windowName];
+//             if (!selenium.browserbot._windowClosed(win)) {
+//                 attributes.push(eval("win." + attributeName));
+//             }
+//         } catch (e) {}
+//     }
+//     return attributes;
+// };
 
-    if (PatternMatcher.matches(soughtAfterWindowPropertyValue, eval("this.browserbot.topWindow." + targetPropertyName))) {
-        return this.browserbot.topWindow;
-    }
-    for (windowName in selenium.browserbot.openedWindows) {
-        var openedWindow = selenium.browserbot.openedWindows[windowName];
-        if (PatternMatcher.matches(soughtAfterWindowPropertyValue, eval("openedWindow." + targetPropertyName))) {
-            return openedWindow;
-        }
-    }
-    throw new SeleniumError("could not find window with property " + targetPropertyName + " matching " + soughtAfterWindowPropertyValue);
-};
+
+// The following code is untested!! just replaced Eval()
+
+// Selenium.prototype.findWindow = function(soughtAfterWindowPropertyValue) {
+//     var targetPropertyName = "name";
+//     if (soughtAfterWindowPropertyValue.match("^title=")) {
+//         targetPropertyName = "document.title";
+//         soughtAfterWindowPropertyValue = soughtAfterWindowPropertyValue.replace(/^title=/, "");
+//     } else {
+//         if (PatternMatcher.matches(soughtAfterWindowPropertyValue, "")) {
+//             return this.browserbot.getCurrentWindow();
+//         }
+//     }
+
+//     if (PatternMatcher.matches(soughtAfterWindowPropertyValue, eval("this.browserbot.topWindow." + targetPropertyName))) {
+//         return this.browserbot.topWindow;
+//     }
+//     for (windowName in selenium.browserbot.openedWindows) {
+//         var openedWindow = selenium.browserbot.openedWindows[windowName];
+//         if (PatternMatcher.matches(soughtAfterWindowPropertyValue, eval("openedWindow." + targetPropertyName))) {
+//             return openedWindow;
+//         }
+//     }
+//     throw new SeleniumError("could not find window with property " + targetPropertyName + " matching " + soughtAfterWindowPropertyValue);
+// };
 
 Selenium.prototype.doSetMouseSpeed = function(pixels) {
     var intValue = new Number(pixels);
@@ -1408,7 +1468,8 @@ Selenium.prototype.doIgnoreAttributesWithoutValue = function(ignore) {
 Selenium.prototype.doWaitForCondition = function(script, timeout) {
     return Selenium.decorateFunctionWithTimeout(function() {
         var window = selenium.browserbot.getCurrentWindow();
-        return eval(script);
+        // The following code is untested!! just replaced Eval()
+        // return eval(script);
     }, timeout);
 };
 
@@ -1443,14 +1504,16 @@ Selenium.prototype._abortXhrRequest = function() {
 
 Selenium.prototype.doWaitForPageToLoad.dontCheckAlertsAndConfirms = true;
 
-Selenium.prototype.preprocessParameter = function(value) {
-    var match = value.match(/^javascript\{((.|\r?\n)+)\}$/);
-    if (match && match[1]) {
-        var result = eval(match[1]);
-        return result == null ? null : result.toString();
-    }
-    return this.replaceVariables(value);
-};
+// The following code is untested!! just replaced Eval()
+
+// Selenium.prototype.preprocessParameter = function(value) {
+//     var match = value.match(/^javascript\{((.|\r?\n)+)\}$/);
+//     if (match && match[1]) {
+//         var result = eval(match[1]);
+//         return result == null ? null : result.toString();
+//     }
+//     return this.replaceVariables(value);
+// };
 
 Selenium.prototype.replaceVariables = function(str) {
     var stringResult = str;

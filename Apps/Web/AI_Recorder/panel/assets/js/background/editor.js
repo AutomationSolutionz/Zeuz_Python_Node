@@ -1,5 +1,4 @@
 /* start the zeuz editor function */
-const browser = chrome || browser;
 var contentWindowId;
 var selfWindowId = -1;
 var notificationCount = 0;

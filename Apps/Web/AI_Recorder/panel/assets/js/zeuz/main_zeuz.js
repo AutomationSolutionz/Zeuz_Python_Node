@@ -1,4 +1,3 @@
-
 var newFormatters = {};
 var dataFiles;
 var extensions;
@@ -1143,9 +1142,12 @@ $(function() {
     });
 });
 
-function evalIfCondition(expression) {
-    return eval(expandForStoreEval(expression));
-}
+
+// The following code is untested!! just replaced Eval()
+
+// function evalIfCondition(expression) {
+//     return eval(expandForStoreEval(expression));
+// }
 
 function isVarName(str) {
 

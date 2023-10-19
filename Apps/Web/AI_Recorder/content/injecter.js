@@ -1,5 +1,4 @@
 // inject scripts for promot command
-const browser = chrome || browser;
 var injectingScript = document.createElement("script");
 injectingScript.src = browser.runtime.getURL("page/prompt.js");
 (document.head || document.documentElement).appendChild(injectingScript);

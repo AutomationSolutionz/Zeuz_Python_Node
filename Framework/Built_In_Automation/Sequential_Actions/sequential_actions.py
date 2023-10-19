@@ -1022,6 +1022,9 @@ def Run_Sequential_Actions(
                 else:
                     data_set_list.append(i)
 
+        if len(data_set_list) == 0 and CommonUtil.debug_status and not sr.Test_Shared_Variables("selenium_driver") and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in CommonUtil.Affirmative_words:
+            return Action_Handler([["browser", "selenium action", "browser"]], ["browser", "selenium action", "browser"]), []
+
         for dataset_cnt in data_set_list:  # For each data set within step data
             data_set = step_data[dataset_cnt]  # Save data set to variable
             if test_action_info:
