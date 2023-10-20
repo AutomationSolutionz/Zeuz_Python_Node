@@ -1,4 +1,4 @@
-const browserAppData = chrome;
+const browserAppData = chrome || browser;
 const tabs = {};
 const inspectFile = 'inspect.js';
 const activeIcon = 'active-64.png';
@@ -7,18 +7,18 @@ let zeuz_url = '__ZeuZ__UrL_maPP';
 let zeuz_key = '__ZeuZ__KeY_maPP';
 
 function logout() {
-    chrome.storage.local.remove(['key'], function() {
+    browserAppData.storage.local.remove(['key'], function() {
         alert("Logged out successfully!");
     });
 }
-chrome.contextMenus.create({
+browserAppData.contextMenus.create({
     title: "Logout",
     contexts: ["all"],
     // onclick: logout,
     id: "zeuz_inspector"
 });
 
-chrome.contextMenus.onClicked.addListener(logout);
+browserAppData.contextMenus.onClicked.addListener(logout);
 
 const inspect = {
     toggleActivate: (id, type, icon) => {
@@ -71,7 +71,7 @@ function toggle(tab) {
         // inspect.toggleActivate(tab.id, 'activate', activeIcon);
 
         // check key exists
-        chrome.storage.local.get(['key'], function(result) {
+        browserAppData.storage.local.get(['key'], function(result) {
             // console.log('Value currently is ' + result.key);
 
             if (result.key != null) {
@@ -127,8 +127,8 @@ function toggle(tab) {
                                         alert("Sorry! Api key is wrong.");
                                     } else {
                                         // save server url and api key
-                                        // chrome.storage.local.set({ url: server_url ,key: api_key }, function () {
-                                        chrome.storage.local.set({
+                                        // browserAppData.storage.local.set({ url: server_url ,key: api_key }, function () {
+                                        browserAppData.storage.local.set({
                                                 url: server_url,
                                                 key: JSON.parse(this.responseText).token
                                             },
@@ -159,7 +159,7 @@ function toggle(tab) {
                         xhr.open("GET", server_url + "/api/auth/token/verify?api_key=" + api_key);
                         xhr.send();
                     } else {
-                        chrome.storage.local.set({
+                        browserAppData.storage.local.set({
                                 url: server_url,
                                 key: zeuz_key,
                             },
