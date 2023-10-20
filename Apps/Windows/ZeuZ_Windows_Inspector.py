@@ -462,7 +462,8 @@ def main():
             #     root = ET.fromstring(f.read())
             create_tree(root, window, 0)
 
-            ET.indent(root)
+            try: ET.indent(root)
+            except AttributeError: pass
             xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
             with open("Element.xml", "w") as f:
                 f.write(xml_str)
