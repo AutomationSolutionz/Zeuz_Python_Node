@@ -5,7 +5,13 @@
 
 ### [Current changes]
 -
-### [17.1.0][Oct 10, 2023]
+
+
+### [17.1.0][Oct 23, 2023]
+- **[Fix]** Inspector bug fixes and improvements
+- **[Fix]** Appium desired capabilities fix
+
+### [17.0.0][Oct 10, 2023]
 - **[Change]** HTTP Long poll is implemented in deploy handler 
 
 # Version 16
