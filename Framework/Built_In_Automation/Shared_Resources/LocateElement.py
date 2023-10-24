@@ -223,6 +223,11 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     CommonUtil.ExecLog(sModuleInfo, "You have Frames in your Webpage. Try switching Frame with \"Switch Iframe\" action", 3)
             except:
                 pass
+            try:
+                if CommonUtil.debug_status:
+                    CommonUtil.ExecLog(sModuleInfo, f"{generic_driver.execute_script('return document.body.outerHTML;')}", 3)
+            except:
+                pass
         return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
