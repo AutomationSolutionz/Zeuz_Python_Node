@@ -125,7 +125,7 @@ function saveData() {
         var data = {
             data: storeAllTestSuites()
         };
-
+        console.log(">>> data", data);
         browser.storage.local.set(data);
         if (s_suite) {
             setSelectedSuite(s_suite.id);

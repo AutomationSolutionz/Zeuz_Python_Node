@@ -1,4 +1,5 @@
 /* ZeuZ Start the recording function */
+browserAppData = chrome || browser;
 class Recorder {
 
     /* exq initial time */
@@ -40,8 +41,84 @@ class Recorder {
     }
 
     /* Recorder */
+    async fetchAIData(target, key){
+        for (let each of target) if (each[1] == 'xpath:position') var xpath = each[0];
+        var xPathResult = document.evaluate(xpath, document);
+        if(xPathResult) var main_elem = xPathResult.iterateNext();
+        else return;
+
+        main_elem.setAttribute('zeuz', 'aiplugin');
+        console.log(main_elem.hasAttribute('zeuz'), main_elem);
+
+        var html = document.createElement('html');
+        html.innerHTML = document.documentElement.outerHTML;
+
+        // get all <head> elements from html
+        var elements = html.getElementsByTagName('head');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        // get all <script> elements from html
+        var elements = html.getElementsByTagName('script');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        // get all <style> elements from html
+        var elements = html.getElementsByTagName('style');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        var xPathResult = document.evaluate(xpath, document);
+        if(xPathResult) console.log('doc true')
+
+        var xPathResult = document.evaluate(xpath, html);
+        if(xPathResult) console.log('html true')
+
+        main_elem.removeAttribute('zeuz');
+
+        const tracker_info = {
+            'html': html.outerHTML,
+            'url': window.location.href,
+            'source': 'web'
+        }
+
+        var data = JSON.stringify({
+            "content": JSON.stringify(tracker_info),
+            "source": "web"
+        });
+
+        var result = await browserAppData.storage.local.get('meta_data');
+        var api_key = result.meta_data.jwtKey;
+        var server_url = result.meta_data.url;
+
+        console.log(api_key, server_url);
+        var res = await fetch(server_url + "/api/contents/", {
+            method: "POST", // or 'PUT'
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${api_key}`,
+            },
+            body: data,
+        });
+        res = await res.json();
+        console.log(res);
+
+        var resp = await browserAppData.storage.local.get('recorded_actions');
+        var recorded_actions = resp.recorded_actions;
+        recorded_actions[key]['val'] = main_elem.tagName;
+        browserAppData.storage.local.set({
+            recorded_actions: recorded_actions,
+        })
+
+        // resp = await browserAppData.storage.local.get('recorded_actions');
+        // recorded_actions = resp.recorded_actions;
+        console.log(recorded_actions);
+
+    }
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
         let self = this;
+        if (command == 'doubleClick')
+            console.log('doubleClick')
         console.log("... Action recorder start");
         let signal = {
             command: command,
@@ -50,10 +127,28 @@ class Recorder {
             insertBeforeLastCommand: insertBeforeLastCommand,
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
+        browserAppData.storage.local.get('recorded_actions').then((res)=>{
+            var key;
+            while(true){
+                key = Math.random().toFixed(5);
+                if (!Object.keys(res.recorded_actions).includes(key)) break;
+            }
+            console.log(key);
+            var new_item = {}
+            new_item[key] = {
+                idx: Object.keys(res.recorded_actions).length,
+                val: null,
+            }
+            browserAppData.storage.local.set({
+                recorded_actions: Object.assign(res.recorded_actions,new_item),
+            }).then(()=>this.fetchAIData(target, key))
+            
+
+        });
         console.log(signal);
         browser.runtime.sendMessage(signal).catch (function(reason) {
             console.log(reason);
-        });
+        }) ;
     }
 
     /* attach */

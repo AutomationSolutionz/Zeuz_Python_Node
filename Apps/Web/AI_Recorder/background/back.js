@@ -34,8 +34,9 @@ function getWindowSize(callback) {
 
 function open_panel(tab) {
     browserAppData.storage.local.set({
-        meta_data: metaData
-    })
+        meta_data: metaData,
+        recorded_actions: {},
+    });
     let contentWindowId = tab.windowId;
     if (master[contentWindowId] != undefined) {
         browserAppData.windows.update(master[contentWindowId], {

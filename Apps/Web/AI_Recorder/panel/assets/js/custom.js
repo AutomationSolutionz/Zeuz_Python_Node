@@ -1,3 +1,4 @@
+browserAppData = chrome || browser;
 var CustomFunction = {
 	caseDataArr: {},
 	StepCopyData: null,
@@ -1445,6 +1446,9 @@ var CustomFunction = {
 		$(document).on('click', '#record', function () {
 			$('#record_wrap').hide();
 			$('#stop_wrap').show();
+			browserAppData.storage.local.set({
+				recorded_actions: {},
+			});
 		});
 
 		/* Stop recording */
