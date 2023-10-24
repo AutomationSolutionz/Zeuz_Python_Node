@@ -12,6 +12,8 @@ class Recorder {
             frameLocation: this.frameLocation
         }).catch(function(reason) {
         });
+        this.recorded_actions = [];
+        this.idx = 0;
     }
 
     /* Parse the key */
@@ -41,7 +43,7 @@ class Recorder {
     }
 
     /* Recorder */
-    async fetchAIData(target, key){
+    async fetchAIData(target, idx){
         for (let each of target) if (each[1] == 'xpath:position') var xpath = each[0];
         var xPathResult = document.evaluate(xpath, document);
         if(xPathResult) var main_elem = xPathResult.iterateNext();
@@ -101,18 +103,9 @@ class Recorder {
             body: data,
         });
         res = await res.json();
-        console.log(res);
 
-        var resp = await browserAppData.storage.local.get('recorded_actions');
-        var recorded_actions = resp.recorded_actions;
-        recorded_actions[key]['val'] = main_elem.tagName;
-        browserAppData.storage.local.set({
-            recorded_actions: recorded_actions,
-        })
-
-        // resp = await browserAppData.storage.local.get('recorded_actions');
-        // recorded_actions = resp.recorded_actions;
-        console.log(recorded_actions);
+        this.recorded_actions[idx] = main_elem.tagName;
+        console.log(this.recorded_actions);
 
     }
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
@@ -127,36 +120,21 @@ class Recorder {
             insertBeforeLastCommand: insertBeforeLastCommand,
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
-        browserAppData.storage.local.get('recorded_actions').then((res)=>{
-            var key;
-            while(true){
-                key = Math.random().toFixed(5);
-                if (!Object.keys(res.recorded_actions).includes(key)) break;
-            }
-            console.log(key);
-            var new_item = {}
-            new_item[key] = {
-                idx: Object.keys(res.recorded_actions).length,
-                val: null,
-            }
-            browserAppData.storage.local.set({
-                recorded_actions: Object.assign(res.recorded_actions,new_item),
-            }).then(()=>this.fetchAIData(target, key))
-            
-
-        });
+        this.idx += 1;
+        this.fetchAIData(target, this.idx-1)
         console.log(signal);
         browser.runtime.sendMessage(signal).catch (function(reason) {
             console.log(reason);
-        }) ;
+        });
     }
 
     /* attach */
     attach() {
+        
         console.log('attach2');
-        if (this.attached) {
-            return;
-        }
+        if (this.attached) return;
+        this.idx = 0;
+        this.recorded_actions = [];
         this.attached = true;
         this.eventListeners = {};
         var self = this;
@@ -183,6 +161,12 @@ class Recorder {
             return;
         }
         this.attached = false;
+        browserAppData.storage.local.set({
+            recorded_actions: this.recorded_actions,
+        });
+        this.idx = 0;
+        this.recorded_actions = [];
+        
         for (let event_key in this.eventListeners) {
             var event_info = this.parse_the_event_key(event_key);
             var event_name = event_info.event_name;
