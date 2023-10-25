@@ -75,7 +75,8 @@ window.onload = function() {
             /* Custom Function */
     
             isRecording = !isRecording;
-            if (isRecording) {
+            // if (isRecording) {
+            if (true) {
                 recorder.attach();
                 notificationCount = 0;
                 if (contentWindowId) {
@@ -132,7 +133,7 @@ window.onload = function() {
             }
         })
     
-    },2000)
+    },0)
     
 
     playButton.addEventListener("click", function() {

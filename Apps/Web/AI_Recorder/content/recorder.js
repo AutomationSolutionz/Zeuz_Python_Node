@@ -43,7 +43,7 @@ class Recorder {
     }
 
     /* Recorder */
-    async fetchAIData(target, idx){
+    async fetchAIData(target, idx, command, value){
         for (let each of target) if (each[1] == 'xpath:position') var xpath = each[0];
         var xPathResult = document.evaluate(xpath, document);
         if(xPathResult) var main_elem = xPathResult.iterateNext();
@@ -78,31 +78,28 @@ class Recorder {
 
         main_elem.removeAttribute('zeuz');
 
-        const tracker_info = {
-            'html': html.outerHTML,
-            'url': window.location.href,
-            'source': 'web'
-        }
-
         var data = JSON.stringify({
-            "content": JSON.stringify(tracker_info),
-            "source": "web"
+            "page_src": html.outerHTML,
+            "action_name": command,
+            "action_type": "selenium",
+            "action_value": value,
+            "source": "web",
         });
 
         var result = await browserAppData.storage.local.get('meta_data');
-        var api_key = result.meta_data.jwtKey;
+        var apiKey = result.meta_data.apiKey;
         var server_url = result.meta_data.url;
 
-        console.log(api_key, server_url);
-        var res = await fetch(server_url + "/api/contents/", {
-            method: "POST", // or 'PUT'
+        console.log(apiKey, server_url);
+        resp = await fetch(server_url + "/ai_record_single_action", {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${api_key}`,
+                "X-Api-Key": apiKey,
             },
             body: data,
         });
-        res = await res.json();
+		console.log("ai_achoice =====",resp);
 
         this.recorded_actions[idx] = main_elem.tagName;
         console.log(this.recorded_actions);
@@ -121,7 +118,7 @@ class Recorder {
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
         this.idx += 1;
-        this.fetchAIData(target, this.idx-1)
+        this.fetchAIData(target, this.idx-1, command, value)
         console.log(signal);
         browser.runtime.sendMessage(signal).catch (function(reason) {
             console.log(reason);
