@@ -413,115 +413,23 @@ var CustomFunction = {
 	},
 
 	SaveCaseDataAsJson() {
-		var CasemainArr = {};
 		chrome.storage.local.get(null, function (result) {
 			try {
-				if (result.data) {
-					console.log("result.data=",result.data);
-					var caseTempArr = [];
-					for (var i = 0; i < result.data.length; i++) {
-						var test_suite = result.data[i];
-						var pattern = /<title>(.*)<\/title>/gi;
-						var suiteName = pattern.exec(test_suite)[1];
-						var test_case = test_suite.match(/<table[\s\S]*?<\/table>/gi);
-						if (test_case) {
-							for (var j = 0; j < test_case.length; ++j) {
+				if (!result.recorded_actions) return;
+				CustomFunction.FetchChromeCaseData()
+				.then( () => {
+					console.log("CustomFunction.caseDataArr >>>",CustomFunction.caseDataArr);
+					console.log("result.recorded_actions >>>",result.recorded_actions);
+					if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions[0].action == 'open') 
+					result.recorded_actions.shift();
+					CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(result.recorded_actions)
 
-								var caseInfo = {};
-								var f = test_case[j]
-								var output = f.match(/<tbody>[\s\S]+?<\/tbody>/);
-								var thead_output = f.match(/<thead>[\s\S]+?<\/thead>/);
-								if (!output) {
-									return null;
-								}
-								output = output[0]
-									.replace(/<tbody>/, "")
-									.replace(/<\/tbody>/, "");
-
-
-								var caseName = thead_output[0]
-									.replace(/<thead>/, "")
-									.replace(/<\/thead>/, "");
-
-								caseName = caseName
-									.replace(/<tr>/, "")
-									.replace(/<\/tr>/, "");
-
-								caseName = caseName
-									.replace(/<td rowspan="1" colspan="3">/, "")
-									.replace(/<\/td>/, "");
-
-								var tr = output.match(/<tr>[\s\S]*?<\/tr>/gi);
-								output = "";
-
-								var singleCaseArr = [];
-								if (tr) {
-									for (var i = 0; i < tr.length; ++i) {
-										pattern = tr[i].match(/(?:<tr>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<datalist>)([\s\S]*?)(?:<\/datalist>([\s]*?)<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<\/tr>)/);
-										if (pattern === null) {
-											pattern = tr[i].match(/(?:<tr>)([\s]*?)(?:<td class="break">)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<datalist>)([\s\S]*?)(?:<\/datalist>([\s]*?)<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<\/tr>)/);
-										}
-										if (pattern == null) {
-											pattern = tr[i].match(/(?:<tr>)([\s]*?)(?:<td class="[\w\s-]*?">)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<datalist>)([\s\S]*?)(?:<\/datalist>([\s]*?)<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<\/tr>)/);
-										}
-										var index = pattern[4].indexOf('\n');
-										if (index > 0) {
-											pattern[4] = pattern[4].substring(0, index);
-										} else if (index === 0) {
-											pattern[4] = '';
-										}
-
-										var dataList = pattern[5];
-										var regex = /( |<([^>]+)>)/ig;
-										dataList = dataList.replace(regex, "#");
-										var res = dataList.split("#");
-
-										var mainDataArr = [];
-										if (res.length > 0) {
-											$.each(res, function (idx, val) {
-												if (val != '') {
-													mainDataArr.push(val);
-												}
-											})
-										}
-
-										var singleCaseDetasils = {
-											'action': pattern[2],
-											'element': pattern[4],
-											'value': pattern[8],
-											'is_disable': 0,
-											'data_list': mainDataArr,
-										};
-
-										singleCaseArr.push(singleCaseDetasils);
-									}
-								}
-
-								caseInfo.case_name = caseName;
-								caseInfo.case_value = singleCaseArr;
-								caseTempArr.push(caseInfo);
-							}
-
-							CasemainArr.suite_name = suiteName;
-							CasemainArr.suite_value = caseTempArr;
-							CustomFunction.FetchChromeCaseData()
-							.then( () => {
-								if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && CasemainArr.suite_value[0].case_value[0].action == 'open') 
-								CasemainArr.suite_value[0].case_value.shift();
-								CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(CasemainArr.suite_value[0].case_value)
-								if (CasemainArr != undefined) {
-									var case_data = {
-										case_data: CustomFunction.caseDataArr,
-									};
-									browser.storage.local.set(case_data);
-									//CustomFunction.DisplayCaseData(true);
-									CustomFunction.DisplayCaseData('save_record_data', false);
-								}
-							});
-							
-						}
-					}
-				}
+					browser.storage.local.set({
+						case_data: CustomFunction.caseDataArr,
+					})
+					.then(CustomFunction.DisplayCaseData);
+				});
+				
 			} catch (e) {
 				console.error(e);
 			}

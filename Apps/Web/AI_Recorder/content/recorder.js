@@ -96,12 +96,19 @@ class Recorder {
             console.log(response);
             response[0].short.value = value;
             this.recorded_actions[idx] = {
-                long: response[0].data_set,
-                short: response[0].short,
+                action: response[0].short.action,
+                data_list: [response[0].short.value],
+                element: response[0].short.element,
+                is_disabled: 0,
+                value: response[0].short.value,
+                main: response[0].long,
                 xpath: response[0].xpath,
             };
             console.log(idx);
             console.log(this.recorded_actions);
+            browserAppData.storage.local.set({
+                recorded_actions: this.recorded_actions,
+            })
         }
         );
     }
@@ -130,14 +137,16 @@ class Recorder {
         
         console.log('attach2');
         if (this.attached) return;
-        browserAppData.storage.local.get('recorded_actions')
-        .then(res=>{
-            if(res.recorded_actions){
-                console.log(res);
-                this.idx = res.recorded_actions.length;
-                this.recorded_actions = res.recorded_actions;
-            }
-        });
+        // browserAppData.storage.local.get('recorded_actions')
+        // .then(res=>{
+        //     if(res.recorded_actions){
+        //         console.log(res);
+        //         this.idx = res.recorded_actions.length;
+        //         this.recorded_actions = res.recorded_actions;
+        //     }
+        // });
+        this.idx = 0;
+        this.recorded_actions = [];
         this.attached = true;
         this.eventListeners = {};
         var self = this;
@@ -166,9 +175,10 @@ class Recorder {
         this.attached = false;
         browserAppData.storage.local.set({
             recorded_actions: this.recorded_actions,
+        }).then(()=>{
+            this.idx = 0;
+            this.recorded_actions = [];
         });
-        this.idx = 0;
-        this.recorded_actions = [];
         
         for (let event_key in this.eventListeners) {
             var event_info = this.parse_the_event_key(event_key);
