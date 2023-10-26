@@ -44,16 +44,16 @@ class Recorder {
 
     /* Recorder */
     async fetchAIData(target, idx, command, value){
-        for (let each of target) if (each[1] == 'xpath:position') var xpath = each[0];
-        var xPathResult = document.evaluate(xpath, document);
+        var html = document.createElement('html');
+        html.innerHTML = document.documentElement.outerHTML;
+
+        for (let each of target) if (each[1] == 'xpath:position') {var xpath = each[0];break;}
+        var xPathResult = document.evaluate(xpath, html);
         if(xPathResult) var main_elem = xPathResult.iterateNext();
         else return;
 
         main_elem.setAttribute('zeuz', 'aiplugin');
         console.log(main_elem.hasAttribute('zeuz'), main_elem);
-
-        var html = document.createElement('html');
-        html.innerHTML = document.documentElement.outerHTML;
 
         // get all <head> elements from html
         var elements = html.getElementsByTagName('head');
@@ -72,38 +72,38 @@ class Recorder {
 
         var xPathResult = document.evaluate(xpath, document);
         if(xPathResult) console.log('doc true')
+        else console.log('doc false');
 
         var xPathResult = document.evaluate(xpath, html);
         if(xPathResult) console.log('html true')
+        else console.log('html false');
 
-        main_elem.removeAttribute('zeuz');
-
-        var data = JSON.stringify({
+        var dataj = {
             "page_src": html.outerHTML,
             "action_name": command,
             "action_type": "selenium",
             "action_value": value,
             "source": "web",
-        });
+        };
+        var data = JSON.stringify(dataj);
 
-        var result = await browserAppData.storage.local.get('meta_data');
-        var apiKey = result.meta_data.apiKey;
-        var server_url = result.meta_data.url;
-
-        console.log(apiKey, server_url);
-        resp = await fetch(server_url + "/ai_record_single_action", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Api-Key": apiKey,
-            },
-            body: data,
-        });
-		console.log("ai_achoice =====",resp);
-
-        this.recorded_actions[idx] = main_elem.tagName;
-        console.log(this.recorded_actions);
-
+        browserAppData.runtime.sendMessage({
+            apiName: 'ai_single_action',
+            data: data,
+            dataj: dataj,
+        },
+        response => {
+            console.log(response);
+            response[0].short.value = value;
+            this.recorded_actions[idx] = {
+                long: response[0].data_set,
+                short: response[0].short,
+                xpath: response[0].xpath,
+            };
+            console.log(idx);
+            console.log(this.recorded_actions);
+        }
+        );
     }
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
         let self = this;
@@ -130,8 +130,14 @@ class Recorder {
         
         console.log('attach2');
         if (this.attached) return;
-        this.idx = 0;
-        this.recorded_actions = [];
+        browserAppData.storage.local.get('recorded_actions')
+        .then(res=>{
+            if(res.recorded_actions){
+                console.log(res);
+                this.idx = res.recorded_actions.length;
+                this.recorded_actions = res.recorded_actions;
+            }
+        });
         this.attached = true;
         this.eventListeners = {};
         var self = this;

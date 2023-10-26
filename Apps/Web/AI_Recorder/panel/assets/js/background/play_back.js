@@ -75,8 +75,8 @@ window.onload = function() {
             /* Custom Function */
     
             isRecording = !isRecording;
-            // if (isRecording) {
-            if (true) {
+            isRecording = true;
+            if (isRecording) {
                 recorder.attach();
                 notificationCount = 0;
                 if (contentWindowId) {

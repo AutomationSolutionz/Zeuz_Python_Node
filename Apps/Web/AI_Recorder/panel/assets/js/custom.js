@@ -417,7 +417,7 @@ var CustomFunction = {
 		chrome.storage.local.get(null, function (result) {
 			try {
 				if (result.data) {
-
+					console.log("result.data=",result.data);
 					var caseTempArr = [];
 					for (var i = 0; i < result.data.length; i++) {
 						var test_suite = result.data[i];
@@ -1446,9 +1446,6 @@ var CustomFunction = {
 		$(document).on('click', '#record', function () {
 			$('#record_wrap').hide();
 			$('#stop_wrap').show();
-			browserAppData.storage.local.set({
-				recorded_actions: {},
-			});
 		});
 
 		/* Stop recording */
@@ -2431,8 +2428,7 @@ var CustomFunction = {
 		browser.storage.local.set({
 			case_data: case_data
 		})
-
-		CustomFunction.LoadEvent();
+		.then(CustomFunction.LoadEvent);
 	}
 }
 
