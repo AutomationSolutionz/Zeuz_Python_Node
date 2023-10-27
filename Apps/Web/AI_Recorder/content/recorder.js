@@ -14,6 +14,12 @@ class Recorder {
         });
         this.recorded_actions = [];
         this.idx = 0;
+        // Convert to the zeuz defined action names
+        this.action_name_convert = {
+            type: "text",
+            open: "go to link",
+            doubleClick: "double click",
+        }
     }
 
     /* Parse the key */
@@ -93,15 +99,16 @@ class Recorder {
             dataj: dataj,
         },
         response => {
-            console.log(response);
             response[0].short.value = value;
+            if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
             this.recorded_actions[idx] = {
                 action: response[0].short.action,
                 data_list: [response[0].short.value],
                 element: response[0].short.element,
-                is_disabled: 0,
+                is_disable: false,
+                name: response[0].name,
                 value: response[0].short.value,
-                main: response[0].long,
+                main: response[0].data_set,
                 xpath: response[0].xpath,
             };
             console.log(idx);
@@ -116,6 +123,7 @@ class Recorder {
         let self = this;
         if (command == 'doubleClick')
             console.log('doubleClick')
+        if (Object.keys(this.action_name_convert).includes(command)) command = this.action_name_convert[command]
         console.log("... Action recorder start");
         let signal = {
             command: command,
@@ -125,6 +133,32 @@ class Recorder {
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
         this.idx += 1;
+        if (this.recorded_actions.length === 0){
+            this.recorded_actions[0] = {
+                action: 'go to link',
+                data_list: [window.location.href],
+                element: "",
+                is_disable: false,
+                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,30) + '...' : window.location.href}`,
+                value: window.location.href,
+                main: [['go to link', 'selenium action', window.location.href]],
+                xpath: "",
+            };
+            this.idx += 1;
+        }
+        if (this.recorded_actions.length > 0 && this.recorded_actions[0].action != 'go to link'){
+            this.recorded_actions.unshift({
+                action: 'go to link',
+                data_list: [window.location.href],
+                element: "",
+                is_disable: false,
+                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,30) + '...' : window.location.href}`,
+                value: window.location.href,
+                main: [['go to link', 'selenium action', window.location.href]],
+                xpath: "",
+            });
+            this.idx += 1;
+        }
         this.fetchAIData(target, this.idx-1, command, value)
         console.log(signal);
         browser.runtime.sendMessage(signal).catch (function(reason) {
@@ -137,16 +171,18 @@ class Recorder {
         
         console.log('attach2');
         if (this.attached) return;
-        // browserAppData.storage.local.get('recorded_actions')
-        // .then(res=>{
-        //     if(res.recorded_actions){
-        //         console.log(res);
-        //         this.idx = res.recorded_actions.length;
-        //         this.recorded_actions = res.recorded_actions;
-        //     }
-        // });
-        this.idx = 0;
-        this.recorded_actions = [];
+        browserAppData.storage.local.get('recorded_actions')
+        .then(res=>{
+            if(res.recorded_actions){
+                console.log(res);
+                this.idx = res.recorded_actions.length;
+                this.recorded_actions = res.recorded_actions;
+            }
+            else{
+                this.idx = 0;
+                this.recorded_actions = [];
+            }
+        });
         this.attached = true;
         this.eventListeners = {};
         var self = this;
@@ -169,6 +205,7 @@ class Recorder {
     }
     /*detach */
     detach() {
+        console.log('detach2');
         if (!this.attached) {
             return;
         }

@@ -115,8 +115,8 @@ window.onload = function() {
         recordStopButton.addEventListener("click", function(){
             isRecording = !isRecording;
             if (!isRecording) {
-                saveData();
                 recorder.detach();
+                saveData();
                 browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
                 .then(function(tabs) {
                     for(let tab of tabs) {

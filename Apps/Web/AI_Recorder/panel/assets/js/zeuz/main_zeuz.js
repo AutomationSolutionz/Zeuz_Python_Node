@@ -119,20 +119,21 @@ function saveSetting() {
 
 function saveData() {
     try {
+        // The following code is the previous method of recording which is not required for now
 
-        var s_suite = getSelectedSuite();
-        var s_case = getSelectedCase();
-        var data = {
-            data: storeAllTestSuites()
-        };
-        console.log(">>> data", data);
-        browser.storage.local.set(data);
-        if (s_suite) {
-            setSelectedSuite(s_suite.id);
-        }
-        if (s_case) {
-            setSelectedCase(s_case.id);
-        }
+        // var s_suite = getSelectedSuite();
+        // var s_case = getSelectedCase();
+        // var data = {
+        //     data: storeAllTestSuites()
+        // };
+        // console.log(">>> data", data);
+        // browser.storage.local.set(data);
+        // if (s_suite) {
+        //     setSelectedSuite(s_suite.id);
+        // }
+        // if (s_case) {
+        //     setSelectedCase(s_case.id);
+        // }
 
         /* Custom Function */
         CustomFunction.SaveCaseDataAsJson();

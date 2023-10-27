@@ -411,29 +411,40 @@ var CustomFunction = {
 
 		}
 	},
-
+	// This Function is called when Record_stop button is pressed
 	SaveCaseDataAsJson() {
-		chrome.storage.local.get(null, function (result) {
-			try {
-				if (!result.recorded_actions) return;
-				CustomFunction.FetchChromeCaseData()
-				.then( () => {
-					console.log("CustomFunction.caseDataArr >>>",CustomFunction.caseDataArr);
-					console.log("result.recorded_actions >>>",result.recorded_actions);
-					if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions[0].action == 'open') 
-					result.recorded_actions.shift();
-					CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(result.recorded_actions)
+		setTimeout(()=>{	// Setting 0.5 sec so that the last action is saved properly in storage.local
+			chrome.storage.local.get(null, function (result) {
+				try {
+					if (!result.recorded_actions) return;
+					CustomFunction.FetchChromeCaseData()
+					.then( () => {
+						console.log("CustomFunction.caseDataArr >>>",CustomFunction.caseDataArr);
+						console.log("result.recorded_actions >>>",result.recorded_actions);
+						result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
+						// If the step is not totally blank we dont add 'go to link' action
+						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions[0].action == 'go to link') 
+							result.recorded_actions.shift();
+						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(result.recorded_actions)
+	
+						// Save old actions + new actions in caseDataArr and display
+						browser.storage.local.set({
+							case_data: CustomFunction.caseDataArr,
+						})
 
-					browser.storage.local.set({
-						case_data: CustomFunction.caseDataArr,
-					})
-					.then(CustomFunction.DisplayCaseData);
-				});
-				
-			} catch (e) {
-				console.error(e);
-			}
-		});
+						// Wipe out recorded_actions
+						.then(CustomFunction.DisplayCaseData);
+						browserAppData.storage.local.set({
+							recorded_actions: [],
+						})
+					});
+					
+				} catch (e) {
+					console.error(e);
+				}
+			})}, 500
+		)
+		
 
 		// setTimeout(function () {
 		// 	/* auto assign the case if there is no already case exists */
@@ -1354,6 +1365,42 @@ var CustomFunction = {
 		$(document).on('click', '#record', function () {
 			$('#record_wrap').hide();
 			$('#stop_wrap').show();
+		});
+
+		/* Save all newlly recorded actions with old actions and auto naming */
+		$(document).on('click', '#save_button', async function () {
+			CustomFunction.FetchChromeCaseData()
+			.then(async ()=>{
+				var result = await browserAppData.storage.local.get(["meta_data"]);
+				var save_data = {
+					TC_Id: result.meta_data.testNo,
+					step_sequence: result.meta_data.stepNo,
+					step_data: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map(action => {
+						return action.main;
+					})),
+					dataset_name: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map((action, idx) => {
+						return [
+							action.name,
+							idx+1,
+							!action.is_disable,
+						]
+					}))
+				}
+				console.log("save_data >>>", save_data);
+				$.ajax({
+					url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+					method: 'POST',
+					data: save_data,
+					headers: {
+						// "Content-Type": "application/json",
+						"X-Api-Key": `${result.meta_data.apiKey}`,
+					},
+					success: function(response) {
+					  console.log(response);
+					  // do something with the response data
+					},
+				})
+			})
 		});
 
 		/* Stop recording */
@@ -2320,11 +2367,12 @@ var CustomFunction = {
 								"action": action.short.action,
 								"element": action.short.element,
 								"value": action.short.value,
-								"is_disable": 0,
+								"is_disable": action.is_disable,
+								"name": action.name,
 								"data_list": [
 									action.short.value
 								],
-								main: action.main,
+								"main": action.main,
 							}
 						}),
 
