@@ -1695,6 +1695,29 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
+            # Write into log file
+            import csv
+
+            parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            csv_file_path = os.path.join(parent_directory, 'testcase_run_history.csv')
+
+            csv_exists = os.path.exists(csv_file_path)
+            header = ['run_id', 'testcase_id']
+
+            testcase_ids = [r['testcase_no'] for r in run_id_info['test_cases']]
+
+            if csv_exists:
+                with open(csv_file_path, 'a', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    for testcase_id in testcase_ids:
+                        writer.writerow([run_id, testcase_id])
+            else:
+                with open(csv_file_path, 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(header)
+                    for testcase_id in testcase_ids:
+                        writer.writerow([run_id, testcase_id])
+
             set_runid_status(run_id)
 
             server_version = run_id_info["server_version"]
