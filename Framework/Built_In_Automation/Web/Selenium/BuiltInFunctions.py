@@ -3198,7 +3198,12 @@ def Scroll(step_data):
 def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    use_js = False
     try:
+        for row in step_data:
+
+            if "use js" in row[0].lower():
+                use_js = row[2].strip().lower() in ("true", "yes", "1")
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
         if scroll_element in failed_tag_list:
             CommonUtil.ExecLog(
@@ -3211,9 +3216,13 @@ def scroll_to_element(step_data):
             "Element to which instructed to scroll has been found. Scrolling to view it",
             1,
         )
-        actions = ActionChains(selenium_driver)
-        actions.move_to_element(scroll_element)
-        actions.perform()
+        if use_js:
+            selenium_driver.execute_script("arguments[0].scrollIntoView(true);", scroll_element)
+        else:
+            actions = ActionChains(selenium_driver)
+            
+            actions.move_to_element(scroll_element)
+            actions.perform()
         return "passed"
 
     except Exception:
