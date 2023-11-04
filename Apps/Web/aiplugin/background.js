@@ -234,3 +234,23 @@ if (navigator.userAgentData.platform.toLowerCase().includes('mac')){
     title: "Cmd + Shift + X"
   });
 }
+browserAppData.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+      if (request.apiName == 'ai_record_single_action') {
+        var url = `${zeuz_url}/ai_record_single_action/`
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                // "Content-Type": "application/json",
+                "X-Api-Key": zeuz_key,
+            },
+            body: request.data,
+        })
+        .then(response => response.json())
+        .then(text => {console.log(text);sendResponse(text);})
+
+        return true;  // Will respond asynchronously.
+      }
+    }
+  );

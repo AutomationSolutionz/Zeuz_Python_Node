@@ -117,29 +117,19 @@ def Authenticate():
 
 def Upload(auth_thread, window_name):
     try:
-        global auth
-        if not auth:
-            auth = auth_thread.result().json()["token"]
-        Authorization = 'Bearer ' + auth
         url = server + "/" if server[-1] != "/" else server
-        url += "api/contents/"
+        url += "ai_record_single_action/"
         content = json.dumps({
-            'html': xml_str,
+            'page_src': xml_str,
+            "action_type": "windows",
             "exact_path": {"path": path, "priority": path_priority},
             "window_name": window_name
         })
-
-        payload = json.dumps({
-            "content": content,
-            "source": "windows"
-        })
         headers = {
-            'Authorization': Authorization,
-            'Content-Type': 'application/json'
-
+            "X-Api-Key": api_key,
         }
 
-        r = requests.request("POST", url, headers=headers, data=payload, verify=False)
+        r = requests.request("POST", url, headers=headers, data=content, verify=False)
         response = r.json()
         del response["content"]
         r.ok and print("Content successfully sent to AI Engine\n")

@@ -31,7 +31,7 @@ class Inspector {
 
 			function insert_modal_text(response, modal_id) {
 				console.log("insert_modal_text ..................")
-				if (response.status == 200) {
+				if (response["info"] == "success") {
 					// show message about element
 					const modalText = 'Element data was recorded. Please Click "Add by AI"';
 					console.log(modalText);
@@ -45,29 +45,20 @@ class Inspector {
 					}
 					return true;
 				}
+				console.error(response["info"]);
 				return false;
 
 			}
 
-			async function send_data(server_url, api_key, data, backup_data, modal_id) {
-				let resp = await fetch(server_url + "/api/contents/", {
-					method: "POST", // or 'PUT'
-					headers: {
-						"Content-Type": "application/json",
-						"Authorization": `Bearer ${api_key}`,
-					},
-					body: data,
-				});
-				if (insert_modal_text(resp, modal_id)) return;
-				resp = await fetch(server_url + "/api/contents/", {
-					method: "POST", // or 'PUT'
-					headers: {
-						"Content-Type": "application/json",
-						"Authorization": `Bearer ${api_key}`,
-					},
-					body: backup_data,
-				});
-				insert_modal_text(resp, modal_id);
+			async function send_data(server_url, api_key, data, modal_id) {
+				browserAppData.runtime.sendMessage({
+					apiName: 'ai_record_single_action',
+					data: data,
+				},
+				response => {
+					insert_modal_text(response, modal_id);
+				}
+				);
 			}
 
 			// check if we are locating sibling now
@@ -115,20 +106,6 @@ class Inspector {
 					// get div's innerHTML into a new variable
 					var refinedHtml = div.innerHTML;
 
-
-					const tracker_info = {
-						'elem': this.elem['html'],	// main element not entire html. Not required in backend !!
-						'html': refinedHtml,
-						'url': window.location.href,
-						'source': 'web'
-					}
-
-					const backup_tracker_info = {
-						'elem': this.elem['original_html'], // main element not entire html. Not required in backend !!
-						'url': window.location.href,
-						'source': 'web'
-					}
-
 					// choose sibling element
 					browserAppData.storage.local.get(['sibling'], function (result) {
 						if (result.sibling && confirm('Do you want to select a helper sibling element?')) {
@@ -161,16 +138,11 @@ class Inspector {
 								// send data to zeuz server directly
 
 								var data = JSON.stringify({
-									"content": JSON.stringify(tracker_info),
-									"source": "web"
+									"page_src": refinedHtml,
+									"action_type": "selenium"
 								});
 
-								var backup_data = JSON.stringify({
-									"content": JSON.stringify(backup_tracker_info),
-									"source": "web"
-								});
-
-								send_data(server_url, api_key, data, backup_data, this.modalNode);
+								send_data(server_url, api_key, data, this.modalNode);
 
 							});
 							// remove zeuz attribute
@@ -224,26 +196,6 @@ class Inspector {
 					var refinedHtml = div.innerHTML;
 
 
-					// prepare data to send
-					const tracker_info = {
-						'elem': result.main,
-						'sibling': this.sibling['html'],
-						'html': refinedHtml,
-						'url': window.location.href,
-						'source': 'web'
-					}
-
-					const backup_tracker_info = {
-						'elem': result.main,
-						'sibling': this.sibling['original_html'],
-						'url': window.location.href,
-						'source': 'web'
-					}
-
-
-					// send data to zeuz server
-					// this.sendData(tracker_info, backup_tracker_info);
-
 					// get url-key and send data to zeuz
 					browserAppData.storage.local.get(['key', 'url'], function (result) {
 
@@ -255,16 +207,11 @@ class Inspector {
 						// send data to zeuz server directly
 
 						var data = JSON.stringify({
-							"content": JSON.stringify(tracker_info),
-							"source": "web"
+							"page_src": refinedHtml,
+							"action_type": "selenium"
 						});
 
-						var backup_data = JSON.stringify({
-							"content": JSON.stringify(backup_tracker_info),
-							"source": "web"
-						});
-
-						send_data(server_url, api_key, data, backup_data, this.modalNode);
+						send_data(server_url, api_key, data, this.modalNode);
 
 					});
 					// remove zeuz attribute
