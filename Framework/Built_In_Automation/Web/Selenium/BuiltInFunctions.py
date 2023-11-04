@@ -937,9 +937,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 if selenium_version.startswith('4.'):
-                    service = Service()
                     selenium_driver = webdriver.Edge(
-                        service=service,
                         options=options,
                     )
                 elif selenium_version.startswith('3.'):

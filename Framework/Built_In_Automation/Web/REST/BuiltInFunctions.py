@@ -1546,7 +1546,10 @@ def Validate_Step_Data(step_data):
         if graphql_dict:
             body = graphql_dict
         else:
-            body = temp_body
+            if temp_body == "{}":
+                body = None
+            else:
+                body = temp_body
 
         validated_data = (url, method, body, headers, payload)
         return validated_data
