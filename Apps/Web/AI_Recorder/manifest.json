@@ -9,6 +9,15 @@
         "48": "panel/assets/images/small_logo.png",
         "128": "panel/assets/images/small_logo.png"
     },
+    "commands": {
+        "toggle-xpath": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+U",
+                "mac": "Command+Shift+U"
+            },
+            "description": "Toggle plugin"
+        }
+    },
     "permissions": [
         "tabs",
         "activeTab",

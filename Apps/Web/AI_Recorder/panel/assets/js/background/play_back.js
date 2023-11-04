@@ -66,71 +66,75 @@ window.onload = function() {
     var logState=true;
     var referenceState=false;
 
-    recordButton.addEventListener("click", function(){
+    setTimeout(()=>{    // Add listener after 2 sec
+        recordButton.addEventListener("click", function(){
 
-        /* Custom Function */
-           clean_panel(); // clean the panel after one record is complate
-           $('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
-        /* Custom Function */
-
-        isRecording = !isRecording;
-        if (isRecording) {
-            recorder.attach();
-            notificationCount = 0;
-            if (contentWindowId) {
-                browser.windows.update(contentWindowId, {focused: true});
+            /* Custom Function */
+               clean_panel(); // clean the panel after one record is complate
+               $('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
+            /* Custom Function */
+    
+            isRecording = !isRecording;
+            isRecording = true;
+            if (isRecording) {
+                recorder.attach();
+                notificationCount = 0;
+                if (contentWindowId) {
+                    browser.windows.update(contentWindowId, {focused: true});
+                }
+                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+                .then(function(tabs) {
+                    for(let tab of tabs) {
+                        browser.tabs.sendMessage(tab.id, {attachRecorder: true});
+                    }
+                });
+    
+                recordButton.childNodes[1].textContent = " Stop";
+                switchRecordButton(false);
+    
+                $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').addClass('disable_action');
+    
             }
-            browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
-            .then(function(tabs) {
-                for(let tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, {attachRecorder: true});
-                }
-            });
-
-            recordButton.childNodes[1].textContent = " Stop";
-            switchRecordButton(false);
-
-            $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').addClass('disable_action');
-
-        }
-        else {
-            recorder.detach();
-            browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
-            .then(function(tabs) {
-                for(let tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, {detachRecorder: true});
-                }
-            });
-
-            recordButton.childNodes[1].textContent = " Record";
-            switchRecordButton(true);
-            console.log(777);
-            $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
-        }
-    })
-
-    /* Custom */
-    recordStopButton.addEventListener("click", function(){
-        isRecording = !isRecording;
-        if (!isRecording) {
-            saveData();
-            recorder.detach();
-            browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
-            .then(function(tabs) {
-                for(let tab of tabs) {
-                    browser.tabs.sendMessage(tab.id, {detachRecorder: true});
-                }
-            });
-            switchRecordButton(true);
-            $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
-            /* Custom Function */
-            //clean_panel(); // clean the panel after one record is complate
-            //$('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
-            /* Custom Function */
-
-        }
-    })
-
+            else {
+                recorder.detach();
+                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+                .then(function(tabs) {
+                    for(let tab of tabs) {
+                        browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+                    }
+                });
+    
+                recordButton.childNodes[1].textContent = " Record";
+                switchRecordButton(true);
+                console.log(777);
+                $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
+            }
+        })
+    
+        /* Custom */
+        recordStopButton.addEventListener("click", function(){
+            isRecording = !isRecording;
+            if (!isRecording) {
+                recorder.detach();
+                saveData();
+                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+                .then(function(tabs) {
+                    for(let tab of tabs) {
+                        browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+                    }
+                });
+                switchRecordButton(true);
+                $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
+                /* Custom Function */
+                //clean_panel(); // clean the panel after one record is complate
+                //$('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
+                /* Custom Function */
+    
+            }
+        })
+    
+    },0)
+    
 
     playButton.addEventListener("click", function() {
         if($('#records-count').val() == 0){

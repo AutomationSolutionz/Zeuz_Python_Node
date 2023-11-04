@@ -926,7 +926,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
             if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                 set_extension_variables()
-                options.add_argument(f"load-extension={aiplugin_path}")
+                options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
             if(remote_host):
                 capabilities = webdriver.EdgeOptions().capabilities
                 capabilities['acceptSslCerts'] = True
@@ -937,9 +937,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 if selenium_version.startswith('4.'):
-                    # service = Service(edge_path)
                     selenium_driver = webdriver.Edge(
-                        # service=service,
                         options=options,
                     )
                 elif selenium_version.startswith('3.'):

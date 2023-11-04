@@ -117,14 +117,14 @@ class Inspector {
 
 
 					const tracker_info = {
-						'elem': this.elem['html'],
+						'elem': this.elem['html'],	// main element not entire html. Not required in backend !!
 						'html': refinedHtml,
 						'url': window.location.href,
 						'source': 'web'
 					}
 
 					const backup_tracker_info = {
-						'elem': this.elem['original_html'],
+						'elem': this.elem['original_html'], // main element not entire html. Not required in backend !!
 						'url': window.location.href,
 						'source': 'web'
 					}
