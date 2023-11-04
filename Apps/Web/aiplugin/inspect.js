@@ -83,28 +83,29 @@ class Inspector {
 
 					// Get full page html, remove <style> and <script> tags //
 					// create a new div container
-					var div = document.createElement('div');
+					var html = document.createElement('html');
 					var myString = document.documentElement.outerHTML;
 
 					// assign your HTML to div's innerHTML
-					div.innerHTML = myString;
+					html.innerHTML = myString;
 
 					// get all <script> elements from div
-					var elements = div.getElementsByTagName('script');
+					var elements = html.getElementsByTagName('head');
+					while (elements[0])
+						elements[0].parentNode.removeChild(elements[0])
 
-					// remove all <script> elements
+					// get all <script> elements from div
+					var elements = html.getElementsByTagName('script');
 					while (elements[0])
 						elements[0].parentNode.removeChild(elements[0])
 
 					// get all <style> elements from div
-					var elements = div.getElementsByTagName('style');
-
-					// remove all <style> elements
+					var elements = html.getElementsByTagName('style');
 					while (elements[0])
 						elements[0].parentNode.removeChild(elements[0])
 
 					// get div's innerHTML into a new variable
-					var refinedHtml = div.innerHTML;
+					var refinedHtml = html.outerHTML;
 
 					// choose sibling element
 					browserAppData.storage.local.get(['sibling'], function (result) {
