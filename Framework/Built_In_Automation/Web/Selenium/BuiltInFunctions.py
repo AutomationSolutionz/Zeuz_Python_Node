@@ -468,7 +468,7 @@ def set_extension_variables():
             zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
             zeuz_key_var_idx = text.find("let zeuz_key = ")
             zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
-            file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{jwtKey}';", 1))
+            file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{apiKey}';", 1))
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 

@@ -98,7 +98,8 @@ class Recorder {
             data: data,
             dataj: dataj,
         },
-        response => {
+        resp => {
+            let response = resp.ai_choices;
             response[0].short.value = value;
             if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
             this.recorded_actions[idx] = {

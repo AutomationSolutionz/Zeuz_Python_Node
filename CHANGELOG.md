@@ -1,12 +1,15 @@
 # Changelog
 
 
-# Version 17
+# Version 18
 
 ### [Current changes]
 -
 
+### [18.0.0][Nov 5, 2023]
+- **[Change]** AI Inspector new api integrated 
 
+# Version 17
 ### [17.1.0][Oct 23, 2023]
 - **[Fix]** Inspector bug fixes and improvements
 - **[Fix]** Appium desired capabilities fix
