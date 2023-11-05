@@ -460,15 +460,12 @@ def set_extension_variables():
         url = ConfigModule.get_config_value("Authentication", "server_address").strip()
         apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
         jwtKey = CommonUtil.jwt_token.strip()
-        with open(Path(aiplugin_path) / "background.js") as file:
-            text = file.read()
-        # if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
-        with open(Path(aiplugin_path) / "background.js", "w") as file:
-            zeuz_url_var_idx = text.find("let zeuz_url = ")
-            zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
-            zeuz_key_var_idx = text.find("let zeuz_key = ")
-            zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
-            file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{apiKey}';", 1))
+        with open(Path(aiplugin_path) / "data.json", "w") as file:
+            json.dump({
+              "zeuz_url": url,
+              "zeuz_key": apiKey
+            }, file, indent=4)
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 
