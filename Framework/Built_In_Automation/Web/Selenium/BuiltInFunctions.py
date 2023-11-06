@@ -479,11 +479,7 @@ def set_extension_variables():
         with open(Path(ai_recorder_path) / "panel" / "index.html", "w") as file:
             # html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
             file.write(html)
-        with open(Path(ai_recorder_path) / "background" / "back.js") as file:
-            recorder_back_js_text = file.read()
-        with open(Path(ai_recorder_path) / "background" / "back.js", "w") as file:
-            metaData_idx = recorder_back_js_text.find("const metaData = ")
-            metaData_var = recorder_back_js_text[metaData_idx:metaData_idx+recorder_back_js_text[metaData_idx:].find("\n")]
+        with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
             metaData = {
                 "testNo": CommonUtil.current_tc_no,
                 "testName": CommonUtil.current_tc_name,
@@ -493,7 +489,7 @@ def set_extension_variables():
                 "apiKey": apiKey,
                 "jwtKey": jwtKey,
             }
-            file.write(recorder_back_js_text.replace(metaData_var, f"const metaData = {metaData};", 1))
+            json.dump(metaData, file, indent=4)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load recorder extension")
 
