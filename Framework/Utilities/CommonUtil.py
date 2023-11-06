@@ -485,6 +485,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                         fail_reason_str = "** Test case Failed on first run but Passed when Rerun **"
                         passed_after_rerun = False
                     testcase_info["execution_detail"]["failreason"] = fail_reason_str
+                    tc_error_logs = []
                     return
                 if step_id == "none":
                     return
