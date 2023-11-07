@@ -1,4 +1,11 @@
-const metaData = {};
+var metaData = {};
+
+fetch("data.json")
+    .then(Response => Response.json())
+    .then(data => {
+        metaData = data;
+    });
+
 const browserAppData = chrome || browser;
 
 import './back_zeuz.js';

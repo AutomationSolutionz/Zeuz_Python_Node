@@ -53,7 +53,10 @@ class Recorder {
         var html = document.createElement('html');
         html.innerHTML = document.documentElement.outerHTML;
 
-        for (let each of target) if (each[1] == 'xpath:position') {var xpath = each[0];break;}
+        for (let each of target) if (each[1] == 'xpath:position') {
+            var xpath = each[0];
+            break;
+        }
         var xPathResult = document.evaluate(xpath, html);
         if(xPathResult) var main_elem = xPathResult.iterateNext();
         else return;
@@ -61,6 +64,9 @@ class Recorder {
         main_elem.setAttribute('zeuz', 'aiplugin');
         console.log(main_elem.hasAttribute('zeuz'), main_elem);
 
+        // Recorder already changed the value which should not be sent to ai-engine
+        if (command === 'text')
+            main_elem.removeAttribute('value');
         // get all <head> elements from html
         var elements = html.getElementsByTagName('head');
         while (elements[0])
@@ -73,6 +79,11 @@ class Recorder {
 
         // get all <style> elements from html
         var elements = html.getElementsByTagName('style');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        // get all <link> elements from html
+        var elements = html.getElementsByTagName('link');
         while (elements[0])
             elements[0].parentNode.removeChild(elements[0])
 
@@ -211,12 +222,15 @@ class Recorder {
             return;
         }
         this.attached = false;
-        browserAppData.storage.local.set({
-            recorded_actions: this.recorded_actions,
-        }).then(()=>{
-            this.idx = 0;
-            this.recorded_actions = [];
-        });
+        console.log('saving recorded_actions from content file');
+        // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
+        if (this.recorded_actions.length > 0)
+            browserAppData.storage.local.set({
+                recorded_actions: this.recorded_actions,
+            }).then(()=>{
+                this.idx = 0;
+                this.recorded_actions = [];
+            });
         
         for (let event_key in this.eventListeners) {
             var event_info = this.parse_the_event_key(event_key);

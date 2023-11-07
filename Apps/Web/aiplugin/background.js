@@ -3,20 +3,31 @@ const tabs = {};
 const inspectFile = 'inspect.js';
 const activeIcon = 'active-64.png';
 const defaultIcon = 'small_logo.png';
-let zeuz_url = '__ZeuZ__UrL_maPP';
-let zeuz_key = '__ZeuZ__KeY_maPP';
+var zeuz_url;
+var zeuz_key;
+
+fetch("data.json")
+    .then(Response => Response.json())
+    .then(data => {
+        zeuz_url = data.zeuz_url;
+        zeuz_key = data.zeuz_key;
+        console.log(data);
+        console.log(zeuz_url);
+        console.log(zeuz_key);
+        browserAppData.storage.local.set({
+            url: zeuz_url,
+            key: zeuz_key,
+        },
+        function() {
+            console.log("Logged in successfully!");
+        });
+    });
 
 function logout() {
     browserAppData.storage.local.remove(['key'], function() {
         alert("Logged out successfully!");
     });
 }
-browserAppData.contextMenus.create({
-    title: "Logout",
-    contexts: ["all"],
-    // onclick: logout,
-    id: "zeuz_inspector"
-});
 
 browserAppData.contextMenus.onClicked.addListener(logout);
 
@@ -66,123 +77,11 @@ function toggle(tab) {
 
     if (!isSupportedProtocolAndFileType(tab.url)) return;
 
-    if (!tabs[tab.id]) {
-        // tabs[tab.id] = Object.create(inspect);
-        // inspect.toggleActivate(tab.id, 'activate', activeIcon);
-
-        // check key exists
-        browserAppData.storage.local.get(['key'], function(result) {
-            // console.log('Value currently is ' + result.key);
-
-            if (result.key != null) {
-                // activate
-                tabs[tab.id] = Object.create(inspect);
-                inspect.toggleActivate(tab.id, 'activate', activeIcon);
-            } else {
-                if (zeuz_url.startsWith('__ZeuZ__UrL_maP'))
-                    var server_url = prompt("Please enter your ZeuZ server address", "");
-                else
-                    var server_url = zeuz_url;
-                if (zeuz_key.startsWith('__ZeuZ__KeY_maP'))
-                    var api_key = prompt("Please enter your API key", "");
-                else
-                    var api_key = zeuz_key;
-
-                var verify_status;
-                var verify_token;
-
-                if (server_url != null && api_key != null) {
-
-                    //process the url
-
-                    var lastChar = server_url.substr(server_url.length - 1);
-                    if (lastChar == "/") {
-                        server_url = server_url.slice(0, -1); // remove last char '/'
-                    }
-
-                    if (server_url.startsWith("http") == false) {
-
-                        if ((server_url.indexOf("localhost") != -1) || (server_url.indexOf("127.0.0.1") != -1) || (server_url.indexOf("0.0.0.0") != -1)) {
-                            server_url = "http://" + server_url; // add http:// in the beginning      
-                        } else {
-                            server_url = "https://" + server_url; // add http:// in the beginning
-                        }
-
-                    }
-
-                    if (zeuz_key.startsWith('__ZeuZ__KeY_maP')) {
-                        var xhr = new XMLHttpRequest();
-                        xhr.withCredentials = true;
-                        xhr.addEventListener("readystatechange", function() {
-                            if (this.readyState === 4) {
-                                console.log(this.responseText);
-
-                                verify_status = this.status;
-                                verify_token = this.responseText;
-
-                                // show message for verification
-                                if (verify_status === 200) {
-
-                                    if (verify_token === null) {
-                                        alert("Sorry! Api key is wrong.");
-                                    } else {
-                                        // save server url and api key
-                                        // browserAppData.storage.local.set({ url: server_url ,key: api_key }, function () {
-                                        browserAppData.storage.local.set({
-                                                url: server_url,
-                                                key: JSON.parse(this.responseText).token
-                                            },
-                                            function() {
-                                                console.log('Value is set to ', server_url, this.responseText);
-                                                if (zeuz_url.startsWith('__ZeuZ__UrL_maP'))
-                                                    alert("Logged in successfully!");
-                                                else
-                                                    console.log("Logged in successfully!");
-                                            });
-
-                                        // activate plugin
-                                        tabs[tab.id] = Object.create(inspect);
-                                        inspect.toggleActivate(tab.id, 'activate', activeIcon);
-                                    }
-
-                                } else if ((verify_status === 403) || (verify_status === 0)) {
-                                    alert("Sorry! Server URL is incorrect.");
-                                } else if (verify_status === 404) {
-                                    alert("Sorry! Api key is incorrect.");
-                                } else {
-                                    alert("Sorry! Server url/key is incorrect.");
-                                }
-
-
-                            }
-                        });
-                        xhr.open("GET", server_url + "/api/auth/token/verify?api_key=" + api_key);
-                        xhr.send();
-                    } else {
-                        browserAppData.storage.local.set({
-                                url: server_url,
-                                key: zeuz_key,
-                            },
-                            function() {
-                                console.log("Logged in successfully!");
-                            });
-
-                        // activate plugin
-                        tabs[tab.id] = Object.create(inspect);
-                        inspect.toggleActivate(tab.id, 'activate', activeIcon);
-                    }
-
-
-                } else {
-                    alert("Sorry! Server url/key cannot be empty.");
-                }
-
-            }
-
-        });
-
-
-    } else {
+    if (!tabs[tab.id]){
+        tabs[tab.id] = Object.create(inspect);
+        inspect.toggleActivate(tab.id, 'activate', activeIcon);
+    }
+    else {
         // deactivate plugin
         inspect.toggleActivate(tab.id, 'deactivate', defaultIcon);
         for (const tabId in tabs) {
@@ -238,7 +137,7 @@ browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       if (request.apiName == 'ai_record_single_action') {
         var url = `${zeuz_url}/ai_record_single_action/`
-
+        console.log("zeuz_key", zeuz_key)
         fetch(url, {
             method: "POST",
             headers: {

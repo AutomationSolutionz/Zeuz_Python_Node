@@ -94,6 +94,11 @@ class Inspector {
 					while (elements[0])
 						elements[0].parentNode.removeChild(elements[0])
 
+					// get all <link> elements from div
+					var elements = html.getElementsByTagName('link');
+					while (elements[0])
+						elements[0].parentNode.removeChild(elements[0])
+
 					// get all <script> elements from div
 					var elements = html.getElementsByTagName('script');
 					while (elements[0])
