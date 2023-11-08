@@ -151,8 +151,22 @@ def get_system_info():
         }
 
         # Append data to the JSON file
-        with open('system_info.json', 'a') as file:
-            file.write(json.dumps(data, indent=4) + "\n")
+        with open('system_info.json', 'r+') as file:
+            try:
+                existing_data = json.load(file)
+            except json.decoder.JSONDecodeError:
+                existing_data = []
+
+            # Filter out data older than 3 days
+            existing_data = [entry for entry in existing_data if dt.strptime(entry['Timestamp'], '%Y-%m-%d %H:%M:%S') >= dt.now() - datetime.timedelta(days=3)]
+            
+            # Append new data
+            existing_data.append(data)
+
+            # Reset file pointer and write back to the file
+            file.seek(0)
+            file.truncate()
+            json.dump(existing_data, file, indent=4)
 
         time.sleep(5)  # Adjust the interval (in seconds) as needed
 
