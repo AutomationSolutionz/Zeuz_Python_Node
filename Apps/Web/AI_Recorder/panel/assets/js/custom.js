@@ -1276,7 +1276,7 @@ var CustomFunction = {
 		}
 		$(document).on('click', '.close_main_page', show_content_section);
 
-		$(document).on('click', '#add_new_case_action', show_content_section)
+		$(document).on('click', '#test_case', show_content_section)
 
 
 		/* Mange playing speed */

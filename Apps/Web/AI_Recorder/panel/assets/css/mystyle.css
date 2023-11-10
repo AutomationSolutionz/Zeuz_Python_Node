@@ -45,7 +45,7 @@ body
 
 #welcome_page::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
   border-radius: 50px;
 }
 #help::-webkit-scrollbar
@@ -56,7 +56,7 @@ body
 
 #help::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
 }
 
 #settings::-webkit-scrollbar
@@ -67,7 +67,7 @@ body
 
 #settings::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
 }
 #content::-webkit-scrollbar
 {
@@ -77,7 +77,7 @@ body
 
 #content::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
 }
 
 #header_tab li a {
