@@ -470,15 +470,6 @@ def set_extension_variables():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 
     try:
-        tree = ET.parse(Path(ai_recorder_path) / "panel" / "index.html")
-        root = tree.getroot()
-        root.findall(".//li[@id='add_new_case_action']/div")[0].text = f"{CommonUtil.current_tc_no}"
-        try: ET.indent(root, "    ")
-        except AttributeError: pass
-        html = ET.tostring(root).decode()
-        with open(Path(ai_recorder_path) / "panel" / "index.html", "w") as file:
-            # html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
-            file.write(html)
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
             metaData = {
                 "testNo": CommonUtil.current_tc_no,
