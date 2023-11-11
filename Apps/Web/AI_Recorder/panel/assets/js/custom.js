@@ -239,12 +239,9 @@ var CustomFunction = {
 								val = '&nbsp';
 							}
 
-							console.log('elm1', elm);
 							if (elm != undefined && elm.length > 30) {
 								elm = single_case_value.element.substring(0, 27) + '...';
 							}
-
-							console.log('elm2', elm);
 
 							var extraClass = "";
 							if (single_case_value.is_disable == 1) {
@@ -261,7 +258,7 @@ var CustomFunction = {
 							if (single_case_value.data_list != undefined && single_case_value.data_list.length > 0) {
 								casedatalist = single_case_value.data_list.join('#');
 							}
-							console.log('val', val);
+
 							html += `
 	                		<tr class="sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
 		                      <td class="col-1"><img id="more_button" src="assets/images/more.png">
@@ -412,6 +409,22 @@ var CustomFunction = {
 
 		}
 	},
+	
+	PostProcess(actions){
+		let new_actions = []
+		for(let i = 0; i < actions.length; i++){
+			action = actions[i];
+			if([null, undefined].includes(action)) continue;
+			if(
+				action.action == 'click' && 
+				i != actions.length && 
+				['click', 'text', 'double click'].includes(actions[i+1].action)  &&
+				action.xpath == actions[i+1].xpath
+			) continue;
+			new_actions.push(action);
+		}
+		return new_actions;
+	},
 	// This Function is called when Record_stop button is pressed
 	SaveCaseDataAsJson() {
 		setTimeout(()=>{	// Setting 0.5 sec so that the last action is saved properly in storage.local
@@ -424,9 +437,10 @@ var CustomFunction = {
 						console.log("result.recorded_actions >>>",result.recorded_actions);
 						result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
 						// If the step is not totally blank we dont add 'go to link' action
-						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions[0].action == 'go to link') 
+						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
 							result.recorded_actions.shift();
-						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(result.recorded_actions)
+						recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
+						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(recorded_actions)
 	
 						// Save old actions + new actions in caseDataArr and display
 						browser.storage.local.set({
@@ -443,8 +457,8 @@ var CustomFunction = {
 				} catch (e) {
 					console.error(e);
 				}
-			})}, 500
-		)
+			})
+		}, 500)
 		
 
 		// setTimeout(function () {
