@@ -1363,12 +1363,17 @@ var CustomFunction = {
 
 		/* Show and Hide Play Stop wrap */
 		$(document).on('click', '#record', function () {
-			$('#record_wrap').hide();
-			$('#stop_wrap').show();
-		});
+			// $('#record_wrap').hide();
+			// $('#stop_wrap').show();
+			let icon = $('#record_icon');
+			let label = $('#record_label');
 
+			label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
+			icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
+		})
 		/* Save all newlly recorded actions with old actions and auto naming */
 		$(document).on('click', '#save_button', async function () {
+			$('#save_label').text('Saving...');
 			CustomFunction.FetchChromeCaseData()
 			.then(async ()=>{
 				var result = await browserAppData.storage.local.get(["meta_data"]);
@@ -1396,17 +1401,17 @@ var CustomFunction = {
 						"X-Api-Key": `${result.meta_data.apiKey}`,
 					},
 					success: function(response) {
-					  console.log(response);
-					  // do something with the response data
+					    console.log(response);
+						$('#save_label').text('Success!');
+					    setTimeout(()=>$('#save_label').text('Save'),1500)
 					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.log(errorThrown);
+						$('#save_label').text('Error!!');
+					    setTimeout(()=>$('#save_label').text('Save'),1500)
+					}
 				})
 			})
-		});
-
-		/* Stop recording */
-		$(document).on('click', '#record_stop', function () {
-			$('#stop_wrap').hide();
-			$('#record_wrap').show();
 		});
 
 		/* export logs */
@@ -2356,6 +2361,7 @@ var CustomFunction = {
 			data: {"test_id":`${meta_data.testNo}`, "step_seq":`${meta_data.stepNo}`},
 		});
 		console.log("resp =====",resp);
+		$('#test_label').text(meta_data.testNo);
 		case_data = [
 			{
 				"suite_name": meta_data.testName.substring(0,10),

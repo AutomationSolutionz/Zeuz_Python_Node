@@ -3,14 +3,7 @@
         <title>
             ZeuZ 1.0
         </title>
-        <meta charset="utf-8" />
-        <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
-        <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet" />
-        <link href="assets/css/bootstrap5.3.2/bootstrap.min.css" rel="stylesheet" />
-        <link href="assets/css/font-awesome-all.css" rel="stylesheet" /> 
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link href="assets/css/style.css" rel="stylesheet" />
-        <link href="assets/css/mystyle.css" rel="stylesheet" />
+        <meta charset="utf-8" />        
         <script src="assets/js/jquery.min.js">
         </script>
         <script src="assets/js/lib/jquery-ui.min.js">
@@ -25,6 +18,14 @@
         </script>
         <script src="assets/js/lib/jquery.tabletab.js">
         </script>
+        <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
+        <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet" />
+        <link href="assets/css/bootstrap5.3.2/bootstrap.min.css" rel="stylesheet" />
+        <link href="assets/css/font-awesome-all.css" rel="stylesheet" /> 
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link href="assets/css/style.css" rel="stylesheet" />
+        <link href="assets/css/mystyle.css" rel="stylesheet" />
+
         <script src="assets/js/lib/colResizable-1.5.min.js">
         </script>
         <script src="assets/js/lib/hmac-sha256.js">
@@ -85,26 +86,19 @@
                         <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="test_case">
                             <button class="d-flex justify-content-start bg-transparent border-0">
                                 <span class="material-icons">biotech</span>
-                                <span class="material-icons-label">TEST-0000</span>
+                                <span class="material-icons-label" id="test_label">TEST-0000</span>
                             </button>
-                        </li>
                         </li>
                         <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="record_wrap">
                             <button class="d-flex justify-content-start bg-transparent border-0" id="record">
-                                <span class="material-icons">camera</span>
-                                <span class="material-icons-label">Record</span>
-                            </button>
-                        </li>
-                        <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="stop_wrap">
-                            <button class="d-flex justify-content-start bg-transparent border-0" id="record_stop">
-                                <span class="material-icons">stop</span>
-                                <span class="material-icons-label">Stop</span>
+                                <span class="material-icons" id="record_icon">camera</span>
+                                <span class="material-icons-label" id="record_label">Record</span>
                             </button>
                         </li>
                         <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="save_wrap">
                             <button class="d-flex justify-content-start bg-transparent border-0" id="save_button">
                                 <span class="material-icons">save</span>
-                                <span class="material-icons-label">Save</span>
+                                <span class="material-icons-label" id='save_label'>Save</span>
                             </button>
                         </li>
                         <li class="tablink push_right" id="play_wrap" style="display: none;">
