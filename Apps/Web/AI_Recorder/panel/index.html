@@ -83,19 +83,19 @@
                         <img class="img-fluid" id="logo_dark" src="assets/images/logo_ZeuZ_dark_background.png" />
                     </div>
                     <ul class="list-unstyled components">
-                        <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="test_case">
+                        <li class="tablink d-flex justify-content-start pl-5 my-3" id="test_case">
                             <button class="d-flex justify-content-start bg-transparent border-0">
                                 <span class="material-icons">biotech</span>
                                 <span class="material-icons-label" id="test_label">TEST-0000</span>
                             </button>
                         </li>
-                        <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="record_wrap">
+                        <li class="tablink d-flex justify-content-start pl-5 my-3" id="record_wrap">
                             <button class="d-flex justify-content-start bg-transparent border-0" id="record">
                                 <span class="material-icons" id="record_icon">camera</span>
                                 <span class="material-icons-label" id="record_label">Record</span>
                             </button>
                         </li>
-                        <li class="tablink d-flex justify-content-start pl-5 ml-4 my-3" id="save_wrap">
+                        <li class="tablink d-flex justify-content-start pl-5 my-3" id="save_wrap">
                             <button class="d-flex justify-content-start bg-transparent border-0" id="save_button">
                                 <span class="material-icons">save</span>
                                 <span class="material-icons-label" id='save_label'>Save</span>
@@ -142,18 +142,18 @@
                         </li>
                     </ul>
                 </div>
-                <ul class="list-unstyled bottom_left_icon components mb-5" id="bottom_section">
-                    <li class="tablink push_right opensection bottom_menu_sidebar" data-section="help">
-                        <div class="pl-0 sidebar_menu" href="#">
-                            <img class="normal-image" src="assets/images/leftIcon/help.png" style="margin-left:41px" />
-                            <img class="hover-image" src="assets/images/leftIcon/help-on.png" style="margin-left:41px" />
-                        </div>
+                <ul class="list-unstyled bottom_left_icon components" id="bottom_section">
+                    <li class="tablink d-flex justify-content-start pl-4 opensection bottom_menu_sidebar" data-section="help">
+                        <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
+                            <span class="material-icons" id="record_icon">help</span>
+                            <span class="material-icons-label" id="record_label">Help</span>
+                        </button>
                     </li>
-                    <li class="tablink push_right configuration_section opensection bottom_menu_sidebar" data-section="settings">
-                        <div class="pl-0 sidebar_menu" href="#">
-                            <img class="normal-image" src="assets/images/leftIcon/settingss.png" style="margin-left:41px" />
-                            <img class="hover-image" src="assets/images/leftIcon/settingson.png" style="margin-left:41px" />
-                        </div>
+                    <li class="tablink d-flex justify-content-start pl-4 opensection bottom_menu_sidebar" data-section="settings">
+                        <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
+                            <span class="material-icons" id="record_icon">settings</span>
+                            <span class="material-icons-label" id="record_label">Settings</span>
+                        </buttonx`>
                     </li>
                     <li class="tablink push_right opensection1" data-section="server">
                         <div class="pl-0 sidebar_menu" id="servericon" style="padding-top: 5px;">
@@ -224,9 +224,9 @@
                                 </div>
                             </li>
                         </ul>
-                        <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
+                        <!-- <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
                             <img src="assets/images/icons/add_new_suite.png" />
-                        </a>
+                        </a> -->
                     </nav>
                 </div>
                 <div class="clearfix" id="recorder_step">
@@ -248,12 +248,12 @@
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody class="table_body" id="case_data_wrap">
+                            <tbody class="table_body" id="case_data_wrap" style="min-height: 600px;">
                             </tbody>
                         </table>
                         <nav class="icon_container row" style="display: flex;">
                             <ul class="icon_grid m-0 d-flex row" id="active_action_icon" style="display: none !important; padding-left: 0px;">
-                                <li>
+                                <!-- <li>
                                     <a class="action-icons" href="javascript:void(0);" id="edit_case">
                                         <img class="normal-image" src="assets/images/Edit.png" />
                                         <img class="hover-image" src="assets/images/Edit_blue.png" />
@@ -294,7 +294,7 @@
                                         <img class="normal-image" src="assets/images/Paste.png" />
                                         <img class="hover-image" src="assets/images/Paste_blue.png" />
                                     </a>
-                                </li>
+                                </li> -->
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="case_delete">
                                         <img class="normal-image" src="assets/images/Delete.png" />
@@ -317,7 +317,7 @@
                         </nav>
                     </div>
                 </div>
-                <div class="card shadow mh-manual pl-5 clearfix" id="log_section_bottom">
+                <!-- <div class="card shadow mh-manual pl-5 clearfix" id="log_section_bottom">
                     <div class="card-body">
                         <div class="log_section_head px-1 py-1 d-flex row">
                             <div class="log_section_head_left d-flex row">
@@ -355,7 +355,7 @@
                         <div class="log_container d-flex row log_date mt-3" id="logcontainer" style="padding-top: 5px;">
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
             <div class="tabcontent scrollBar" id="settings" style="display: none;">
                 <div class="d-flex rwo close_div">

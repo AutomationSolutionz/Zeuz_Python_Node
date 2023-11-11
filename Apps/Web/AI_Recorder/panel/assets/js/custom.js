@@ -160,6 +160,7 @@ var CustomFunction = {
 					sortableCount++;
 
 					var case_name = single_value.case_name;
+					var case_no = single_value.case_no;
 					var case_value = single_value.case_value;
 					var is_disable = single_value.is_disable;
 
@@ -184,7 +185,7 @@ var CustomFunction = {
 					html += `<tr class="sortable-` + sortableCount + ` case-main-wrap case-sub-wrap ` + extraSelectedClass + ` ` + disableClass + ` ` + parentClass + `" data-caseindex="` + (case_index + 1) + `" data-mainindex="` + (case_index) + `" data-sortposition="` + sortableCount + `">
 	                      <td class="col-2 place_italic">
 	                        <div class="table_data" data-toggle="collapse" data-target="#collapseten" aria-expanded="true" aria-controls="collapseten">
-	                          <img id="more_button" src="assets/images/more.png"> Step ` + (case_index + 1) + ` :
+	                          <img id="more_button" src="assets/images/more.png"> Step ${case_no}
 	                        </div>
 	                      </td>
 	                      <td class="col-10 has-input place_italic" data-case_commend="case_name">
@@ -1968,42 +1969,42 @@ var CustomFunction = {
 
 
 		/* Add New Test Case */
-		$(document).on('click', '#add_new_test_case', function () {
-			CustomFunction.FetchChromeCaseData();
+		// $(document).on('click', '#add_new_test_case', function () {
+		// 	CustomFunction.FetchChromeCaseData();
 
-			setTimeout(function () {
+		// 	setTimeout(function () {
 
-				var is_auth_user = CustomFunction.is_auth_user;
-				var caseDataLength = CustomFunction.caseDataArr.length;
+		// 		var is_auth_user = CustomFunction.is_auth_user;
+		// 		var caseDataLength = CustomFunction.caseDataArr.length;
 
-				/* For non auth user */
-				if (is_auth_user == false && caseDataLength >= 3) {
-					alert('only 3 tabs are allowed, please configure your authentication settings');
-				} else {
-					/* For auth user */
-					var suiteVal = {
-						'case_name': 'Enter Step Name',
-						'case_value': []
-					};
-					var objArr = [];
-					objArr.push(suiteVal);
-					var new_obj = {
-						'suite_name': 'Untitled',
-						'suite_value': objArr
-					};
-					CustomFunction.caseDataArr.push(new_obj);
-					var case_data = {
-						case_data: CustomFunction.caseDataArr,
-					};
-					browser.storage.local.set(case_data);
-					var lstIndx = CustomFunction.caseDataArr.length;
-					lstIndx = lstIndx - 1;
+		// 		/* For non auth user */
+		// 		if (is_auth_user == false && caseDataLength >= 3) {
+		// 			alert('only 3 tabs are allowed, please configure your authentication settings');
+		// 		} else {
+		// 			/* For auth user */
+		// 			var suiteVal = {
+		// 				'case_name': 'Enter Step Name',
+		// 				'case_value': []
+		// 			};
+		// 			var objArr = [];
+		// 			objArr.push(suiteVal);
+		// 			var new_obj = {
+		// 				'suite_name': 'Untitled',
+		// 				'suite_value': objArr
+		// 			};
+		// 			CustomFunction.caseDataArr.push(new_obj);
+		// 			var case_data = {
+		// 				case_data: CustomFunction.caseDataArr,
+		// 			};
+		// 			browser.storage.local.set(case_data);
+		// 			var lstIndx = CustomFunction.caseDataArr.length;
+		// 			lstIndx = lstIndx - 1;
 
-					CustomFunction.DisplayCaseData('add_new_test_case', true, lstIndx);
+		// 			CustomFunction.DisplayCaseData('add_new_test_case', true, lstIndx);
 
-				}
-			}, 500);
-		})
+		// 		}
+		// 	}, 500);
+		// })
 
 		/* Click on suit tab */
 		$(document).on('click', '.single-suite-tab', function () {
@@ -2364,10 +2365,11 @@ var CustomFunction = {
 		$('#test_label').text(meta_data.testNo);
 		case_data = [
 			{
-				"suite_name": meta_data.testName.substring(0,10),
+				"suite_name": meta_data.testName.substring(0,50),
 				"suite_value": [
-					{
+					{	
 						"case_name": resp.step.name,
+						"case_no": meta_data.stepNo,
 						"case_value": resp.step.actions.map(action => {
 							return {
 								"action": action.short.action,

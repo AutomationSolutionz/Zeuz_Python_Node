@@ -1581,6 +1581,7 @@ pre {
     .table-responsive-xl > .table-bordered {
       border: 0; } }
 
+
 .table-responsive {
   display: block;
   width: 100%;
@@ -5514,7 +5515,8 @@ button.bg-dark:focus {
 .clearfix::after {
   display: block;
   clear: both;
-  content: ""; }
+  content: ""; 
+}
 
 .d-none {
   display: none !important; }

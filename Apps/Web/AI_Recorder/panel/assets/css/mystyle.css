@@ -26,7 +26,8 @@ body
   font-family: Arial;
   color: #9FC8FA;
   /*width: 10%;*/
-  width: 15%;
+  min-width: 20%;
+  max-width: 60%;
   text-align: center;
 }
 .scrollBar
@@ -642,10 +643,10 @@ body
 {
   color: #000
 }
-.bottom_menu_sidebar:hover
+/* .bottom_menu_sidebar:hover
 {
   background: #af8fff
-}
+} */
 .head_text a
 {
   font-size: 16px;
