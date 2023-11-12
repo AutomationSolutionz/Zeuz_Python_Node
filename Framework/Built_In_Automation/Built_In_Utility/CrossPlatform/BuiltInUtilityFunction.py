@@ -2419,6 +2419,7 @@ def compare_images(data_set):
         # Perform the image comparison based on the structural similarity index
 
         Shared_Resources.Set_Shared_Variables(score, ssim_match)
+        print('Score:',ssim_match)
         if ssim_match >= req_ssim:
             CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
             return "passed"
