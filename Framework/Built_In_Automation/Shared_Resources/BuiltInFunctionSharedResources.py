@@ -109,9 +109,8 @@ def Set_Shared_Variables(
             )
 
             if pretty:
-                if key != 'rest_response' and key != 'http_response':
                 # Try to get a pretty print.
-                    CommonUtil.prettify(key, value)
+                CommonUtil.prettify(key, value)
 
         return "passed"
     except:
