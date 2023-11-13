@@ -108,7 +108,7 @@ def Set_Shared_Variables(
                 }
             )
 
-            if pretty:
+            # if pretty:
                 # Try to get a pretty print.
                 # CommonUtil.prettify(key, value)
 
