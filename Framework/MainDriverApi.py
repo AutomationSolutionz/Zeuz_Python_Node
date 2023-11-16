@@ -1288,6 +1288,11 @@ def get_performance_testing_data_for_test_case(run_id, TestCaseID):
         {"run_id": run_id, "test_case": TestCaseID},
     )
 
+def create_timestamped_folder():
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    folder_path = os.path.join("errors", timestamp)
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
 
 def write_locust_input_file(
     time_period,
@@ -1429,6 +1434,25 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         print(f"Failed to upload the execution report of run_id {run_id}")
                         print(f"Status: {res.status_code}")
                         print("Retrying...")
+                        
+                    if res.status_code == 200:
+                        timestamped_folder = create_timestamped_folder()
+                        if perf_report_html:
+                            file_path = os.path.join(timestamped_folder, "offline_file_content.html")
+                            with open(file_path, "w") as file:
+                                file.write(perf_report_html)
+
+                        request_details = {
+                            "url": res.url,
+                            "method": res.request.method,
+                            "headers": dict(res.request.headers),
+                            "data": res.request.body,
+                        }
+
+                        file_path = os.path.join(timestamped_folder, "offline_file_content.html")
+                        with open(file_path, "w") as file:
+                            json.dump(request_details, file)
+
                     time.sleep(4)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())

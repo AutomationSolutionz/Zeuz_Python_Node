@@ -13,6 +13,7 @@ from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from datetime import datetime
 from Framework.Utilities.decorators import logger, deprecated
 from .data_collector import DataCollector
 
@@ -112,6 +113,28 @@ def Set_Shared_Variables(
                 # Try to get a pretty print.
                 if key != 'rest_response' and key != 'http_response':
                     CommonUtil.prettify(key, value)
+
+            if key == 'http_response':
+                
+                if sys.getsizeof(value) > 500 * 1024:
+                    json_folder = os.path.join(shared_variables['zeuz_download_folder'],'HTTP_Responses')
+                    if not os.path.exists(json_folder):
+                        os.makedirs(json_folder)
+                    
+                    
+                    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                    json_filepath = os.path.join(json_folder,f"{timestamp}.json")
+                    
+
+
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"HTTP response is more than 500kb. Saving it directy to JSON file\nFile Directory: {json_filepath}",
+                        3,
+                    )
+
+                
+
 
         return "passed"
     except:
