@@ -1134,8 +1134,8 @@ def _pyautogui(step_data_set):
 
     # Recall file attachment, if not already set
     file_attachment = []
-    if sr.Test_Shared_Variables("file_attachment"):
-        file_attachment = sr.Get_Shared_Variables("file_attachment")
+    if sr.attachment_variables:
+        file_attachment = sr.attachment_variables
 
     # Parse data set
     try:
@@ -1171,6 +1171,8 @@ def _pyautogui(step_data_set):
         # Check that we have some value
         if file_name == "":
             return "zeuz_failed"
+        
+
 
         # Try to find the image file
         if file_name not in file_attachment and not os.path.exists(file_name):

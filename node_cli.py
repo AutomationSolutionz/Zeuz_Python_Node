@@ -14,6 +14,10 @@ from datetime import datetime as dt
 import shutil
 import time
 
+import psutil
+import threading
+
+
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -118,6 +122,39 @@ traceback.install(show_locals=True, max_frames=1)
 
 from Framework.deploy_handler import long_poll_handler
 from Framework.deploy_handler import adapter
+
+def get_system_info():
+    while True:
+        # Current timestamp
+        current_time = dt.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Current CPU usage
+        cpu_usage = psutil.cpu_percent(interval=1)
+        
+        # Current RAM usage
+        ram_usage = psutil.virtual_memory().percent
+        
+        # Top 10 processes with highest CPU usage
+        top_cpu_processes = [p.info for p in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent'])]
+        top_cpu_processes = sorted(top_cpu_processes, key=lambda x: x['cpu_percent'], reverse=True)[:10]
+
+        # Top 10 processes with highest RAM usage
+        top_ram_processes = [p.info for p in psutil.process_iter(attrs=['pid', 'name', 'memory_percent'])]
+        top_ram_processes = sorted(top_ram_processes, key=lambda x: x['memory_percent'], reverse=True)[:10]
+
+        data = {
+            "Timestamp": current_time,
+            "CPU_Usage": cpu_usage,
+            "RAM_Usage": ram_usage,
+            "Top_CPU_Processes": top_cpu_processes,
+            "Top_RAM_Processes": top_ram_processes
+        }
+
+        # Append data to the JSON file
+        with open('system_info.json', 'a') as file:
+            file.write(json.dumps(data, indent=4) + "\n")
+
+        time.sleep(5)  # Adjust the interval (in seconds) as needed
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -469,7 +506,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
         PreProcess(log_dir=log_dir)
 
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-        FL.CreateFolder(save_path)
+        save_path.mkdir(exist_ok=True, parents=True)
 
         # --- START websocket service connections --- #
 
@@ -500,6 +537,8 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             node_json = adapter.adapt(response, node_id)
 
             # 2. Save the json for MainDriver to find
+            # Ensure that the parent dirs actually exist before writing to the json file.
+            save_path.mkdir(exist_ok=True, parents=True)
             with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
                 f.write(json.dumps(node_json))
 
@@ -1201,10 +1240,17 @@ if __name__ == "__main__":
         print("Exiting...")
         sys.exit(1)
 
+    thread = threading.Thread(target=get_system_info)
+    thread.daemon = True
+    thread.start()
+    
     if local_run:
         Local_run(log_dir=log_dir)
     else:
         # Bypass()
         Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
+    
+    
+
     CommonUtil.run_cancelled = True
     CommonUtil.ShutdownExecutor()

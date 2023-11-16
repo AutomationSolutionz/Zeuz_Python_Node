@@ -160,6 +160,7 @@ var CustomFunction = {
 					sortableCount++;
 
 					var case_name = single_value.case_name;
+					var case_no = single_value.case_no;
 					var case_value = single_value.case_value;
 					var is_disable = single_value.is_disable;
 
@@ -184,7 +185,7 @@ var CustomFunction = {
 					html += `<tr class="sortable-` + sortableCount + ` case-main-wrap case-sub-wrap ` + extraSelectedClass + ` ` + disableClass + ` ` + parentClass + `" data-caseindex="` + (case_index + 1) + `" data-mainindex="` + (case_index) + `" data-sortposition="` + sortableCount + `">
 	                      <td class="col-2 place_italic">
 	                        <div class="table_data" data-toggle="collapse" data-target="#collapseten" aria-expanded="true" aria-controls="collapseten">
-	                          <img id="more_button" src="assets/images/more.png"> Step ` + (case_index + 1) + ` :
+	                          <img id="more_button" src="assets/images/more.png"> Step ${case_no}
 	                        </div>
 	                      </td>
 	                      <td class="col-10 has-input place_italic" data-case_commend="case_name">
@@ -238,12 +239,9 @@ var CustomFunction = {
 								val = '&nbsp';
 							}
 
-							console.log('elm1', elm);
 							if (elm != undefined && elm.length > 30) {
 								elm = single_case_value.element.substring(0, 27) + '...';
 							}
-
-							console.log('elm2', elm);
 
 							var extraClass = "";
 							if (single_case_value.is_disable == 1) {
@@ -260,7 +258,7 @@ var CustomFunction = {
 							if (single_case_value.data_list != undefined && single_case_value.data_list.length > 0) {
 								casedatalist = single_case_value.data_list.join('#');
 							}
-							console.log('val', val);
+
 							html += `
 	                		<tr class="sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
 		                      <td class="col-1"><img id="more_button" src="assets/images/more.png">
@@ -411,6 +409,22 @@ var CustomFunction = {
 
 		}
 	},
+	
+	PostProcess(actions){
+		let new_actions = []
+		for(let i = 0; i < actions.length; i++){
+			action = actions[i];
+			if([null, undefined].includes(action)) continue;
+			if(
+				action.action == 'click' && 
+				i != actions.length && 
+				['click', 'text', 'double click'].includes(actions[i+1].action)  &&
+				action.xpath == actions[i+1].xpath
+			) continue;
+			new_actions.push(action);
+		}
+		return new_actions;
+	},
 	// This Function is called when Record_stop button is pressed
 	SaveCaseDataAsJson() {
 		setTimeout(()=>{	// Setting 0.5 sec so that the last action is saved properly in storage.local
@@ -423,9 +437,10 @@ var CustomFunction = {
 						console.log("result.recorded_actions >>>",result.recorded_actions);
 						result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
 						// If the step is not totally blank we dont add 'go to link' action
-						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions[0].action == 'go to link') 
+						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
 							result.recorded_actions.shift();
-						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(result.recorded_actions)
+						recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
+						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(recorded_actions)
 	
 						// Save old actions + new actions in caseDataArr and display
 						browser.storage.local.set({
@@ -442,8 +457,8 @@ var CustomFunction = {
 				} catch (e) {
 					console.error(e);
 				}
-			})}, 500
-		)
+			})
+		}, 500)
 		
 
 		// setTimeout(function () {
@@ -1276,7 +1291,7 @@ var CustomFunction = {
 		}
 		$(document).on('click', '.close_main_page', show_content_section);
 
-		$(document).on('click', '#add_new_case_action', show_content_section)
+		$(document).on('click', '#test_case', show_content_section)
 
 
 		/* Mange playing speed */
@@ -1363,12 +1378,17 @@ var CustomFunction = {
 
 		/* Show and Hide Play Stop wrap */
 		$(document).on('click', '#record', function () {
-			$('#record_wrap').hide();
-			$('#stop_wrap').show();
-		});
+			// $('#record_wrap').hide();
+			// $('#stop_wrap').show();
+			let icon = $('#record_icon');
+			let label = $('#record_label');
 
+			label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
+			icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
+		})
 		/* Save all newlly recorded actions with old actions and auto naming */
 		$(document).on('click', '#save_button', async function () {
+			$('#save_label').text('Saving...');
 			CustomFunction.FetchChromeCaseData()
 			.then(async ()=>{
 				var result = await browserAppData.storage.local.get(["meta_data"]);
@@ -1396,17 +1416,17 @@ var CustomFunction = {
 						"X-Api-Key": `${result.meta_data.apiKey}`,
 					},
 					success: function(response) {
-					  console.log(response);
-					  // do something with the response data
+					    console.log(response);
+						$('#save_label').text('Success!');
+					    setTimeout(()=>$('#save_label').text('Save'),1500)
 					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.log(errorThrown);
+						$('#save_label').text('Error!!');
+					    setTimeout(()=>$('#save_label').text('Save'),1500)
+					}
 				})
 			})
-		});
-
-		/* Stop recording */
-		$(document).on('click', '#record_stop', function () {
-			$('#stop_wrap').hide();
-			$('#record_wrap').show();
 		});
 
 		/* export logs */
@@ -1963,42 +1983,42 @@ var CustomFunction = {
 
 
 		/* Add New Test Case */
-		$(document).on('click', '#add_new_test_case', function () {
-			CustomFunction.FetchChromeCaseData();
+		// $(document).on('click', '#add_new_test_case', function () {
+		// 	CustomFunction.FetchChromeCaseData();
 
-			setTimeout(function () {
+		// 	setTimeout(function () {
 
-				var is_auth_user = CustomFunction.is_auth_user;
-				var caseDataLength = CustomFunction.caseDataArr.length;
+		// 		var is_auth_user = CustomFunction.is_auth_user;
+		// 		var caseDataLength = CustomFunction.caseDataArr.length;
 
-				/* For non auth user */
-				if (is_auth_user == false && caseDataLength >= 3) {
-					alert('only 3 tabs are allowed, please configure your authentication settings');
-				} else {
-					/* For auth user */
-					var suiteVal = {
-						'case_name': 'Enter Step Name',
-						'case_value': []
-					};
-					var objArr = [];
-					objArr.push(suiteVal);
-					var new_obj = {
-						'suite_name': 'Untitled',
-						'suite_value': objArr
-					};
-					CustomFunction.caseDataArr.push(new_obj);
-					var case_data = {
-						case_data: CustomFunction.caseDataArr,
-					};
-					browser.storage.local.set(case_data);
-					var lstIndx = CustomFunction.caseDataArr.length;
-					lstIndx = lstIndx - 1;
+		// 		/* For non auth user */
+		// 		if (is_auth_user == false && caseDataLength >= 3) {
+		// 			alert('only 3 tabs are allowed, please configure your authentication settings');
+		// 		} else {
+		// 			/* For auth user */
+		// 			var suiteVal = {
+		// 				'case_name': 'Enter Step Name',
+		// 				'case_value': []
+		// 			};
+		// 			var objArr = [];
+		// 			objArr.push(suiteVal);
+		// 			var new_obj = {
+		// 				'suite_name': 'Untitled',
+		// 				'suite_value': objArr
+		// 			};
+		// 			CustomFunction.caseDataArr.push(new_obj);
+		// 			var case_data = {
+		// 				case_data: CustomFunction.caseDataArr,
+		// 			};
+		// 			browser.storage.local.set(case_data);
+		// 			var lstIndx = CustomFunction.caseDataArr.length;
+		// 			lstIndx = lstIndx - 1;
 
-					CustomFunction.DisplayCaseData('add_new_test_case', true, lstIndx);
+		// 			CustomFunction.DisplayCaseData('add_new_test_case', true, lstIndx);
 
-				}
-			}, 500);
-		})
+		// 		}
+		// 	}, 500);
+		// })
 
 		/* Click on suit tab */
 		$(document).on('click', '.single-suite-tab', function () {
@@ -2356,12 +2376,14 @@ var CustomFunction = {
 			data: {"test_id":`${meta_data.testNo}`, "step_seq":`${meta_data.stepNo}`},
 		});
 		console.log("resp =====",resp);
+		$('#test_label').text(meta_data.testNo);
 		case_data = [
 			{
-				"suite_name": meta_data.testName.substring(0,10),
+				"suite_name": meta_data.testName.substring(0,50),
 				"suite_value": [
-					{
+					{	
 						"case_name": resp.step.name,
+						"case_no": meta_data.stepNo,
 						"case_value": resp.step.actions.map(action => {
 							return {
 								"action": action.short.action,

@@ -68,14 +68,9 @@ window.onload = function() {
 
     setTimeout(()=>{    // Add listener after 2 sec
         recordButton.addEventListener("click", function(){
-
-            /* Custom Function */
-               clean_panel(); // clean the panel after one record is complate
-               $('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
-            /* Custom Function */
-    
-            isRecording = !isRecording;
-            isRecording = true;
+            clean_panel(); // clean the panel after one record is complate
+            $('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
+            isRecording = $('#record_label')[0].textContent == 'Record';
             if (isRecording) {
                 recorder.attach();
                 notificationCount = 0;
@@ -88,33 +83,11 @@ window.onload = function() {
                         browser.tabs.sendMessage(tab.id, {attachRecorder: true});
                     }
                 });
-    
-                recordButton.childNodes[1].textContent = " Stop";
-                switchRecordButton(false);
-    
+                // recordButton.childNodes[1].textContent = " Stop";
+                // switchRecordButton(false);
                 $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').addClass('disable_action');
-    
             }
             else {
-                recorder.detach();
-                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
-                .then(function(tabs) {
-                    for(let tab of tabs) {
-                        browser.tabs.sendMessage(tab.id, {detachRecorder: true});
-                    }
-                });
-    
-                recordButton.childNodes[1].textContent = " Record";
-                switchRecordButton(true);
-                console.log(777);
-                $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
-            }
-        })
-    
-        /* Custom */
-        recordStopButton.addEventListener("click", function(){
-            isRecording = !isRecording;
-            if (!isRecording) {
                 recorder.detach();
                 saveData();
                 browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
@@ -123,15 +96,32 @@ window.onload = function() {
                         browser.tabs.sendMessage(tab.id, {detachRecorder: true});
                     }
                 });
-                switchRecordButton(true);
+                // switchRecordButton(true);
                 $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
-                /* Custom Function */
-                //clean_panel(); // clean the panel after one record is complate
-                //$('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
-                /* Custom Function */
-    
             }
         })
+    
+        /* Custom */
+        // recordStopButton.addEventListener("click", function(){
+        //     isRecording = !isRecording;
+        //     if (!isRecording) {
+        //         recorder.detach();
+        //         saveData();
+        //         browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+        //         .then(function(tabs) {
+        //             for(let tab of tabs) {
+        //                 browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+        //             }
+        //         });
+        //         switchRecordButton(true);
+        //         $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
+        //         /* Custom Function */
+        //         //clean_panel(); // clean the panel after one record is complate
+        //         //$('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
+        //         /* Custom Function */
+    
+        //     }
+        // })
     
     },0)
     
