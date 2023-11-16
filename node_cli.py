@@ -469,7 +469,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
         PreProcess(log_dir=log_dir)
 
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-        FL.CreateFolder(save_path)
+        save_path.mkdir(exist_ok=True, parents=True)
 
         # --- START websocket service connections --- #
 
@@ -500,6 +500,8 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             node_json = adapter.adapt(response, node_id)
 
             # 2. Save the json for MainDriver to find
+            # Ensure that the parent dirs actually exist before writing to the json file.
+            save_path.mkdir(exist_ok=True, parents=True)
             with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
                 f.write(json.dumps(node_json))
 
