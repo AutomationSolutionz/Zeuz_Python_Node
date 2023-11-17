@@ -110,6 +110,10 @@ class Recorder {
             dataj: dataj,
         },
         resp => {
+            if (resp === 'error') {
+                console.error("Error happened pls check back.js devtool message");
+                return;
+            }
             let response = resp.ai_choices;
             response[0].short.value = value;
             if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;

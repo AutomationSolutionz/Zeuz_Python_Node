@@ -202,22 +202,6 @@ browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       if (request.apiName == 'ai_single_action') {
         var url = `${metaData.url}/ai_record_single_action/`
-        var url_get = `${url}?${new URLSearchParams(request.dataj)}`;
-        console.log(url)
-        console.log(metaData.apiKey)
-        console.log(request.data)
-        console.log(request.dataj)
-        // fetch(url, {
-        // method: "GET",
-        // headers: {
-        //     "Content-Type": "application/json",
-        //     "X-Api-Key": metaData.apiKey,
-        // },
-        // })
-        // .then(response => response.text())
-        // .then(text => {console.log(text);sendResponse(text);})
-        // .catch(error => console.error(error))
-
         fetch(url, {
             method: "POST",
             headers: {
@@ -227,7 +211,14 @@ browserAppData.runtime.onMessage.addListener(
             body: request.data,
         })
         .then(response => response.json())
-        .then(text => {console.log(text);sendResponse(text);})
+        .then(text => {
+            console.log(text);
+            sendResponse(text);
+        })
+        .catch(error => {
+            console.error(error);
+            sendResponse("error");
+        })
 
         return true;  // Will respond asynchronously.
       }
