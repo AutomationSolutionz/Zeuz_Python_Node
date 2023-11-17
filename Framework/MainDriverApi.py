@@ -1288,9 +1288,9 @@ def get_performance_testing_data_for_test_case(run_id, TestCaseID):
         {"run_id": run_id, "test_case": TestCaseID},
     )
 
-def create_timestamped_folder():
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    folder_path = os.path.join("errors", timestamp)
+def create_errors_folder(run_id,tc_id):
+    from os.path import dirname, abspath
+    folder_path = os.path.join(dirname(dirname(abspath(__file__))), "AutomationLog", "errors",f"{run_id}-{tc_id}")
     os.makedirs(folder_path, exist_ok=True)
     return folder_path
 
@@ -1409,22 +1409,57 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
 
             for _ in range(5):
                 try:
+                    url = None
+                    data = None
+                    verify = False
                     if perf_report_html is None:
+                        url = RequestFormatter.form_uri("create_report_log_api/")
+                        data = {"execution_report": json.dumps(tc_report)}
                         res = requests.post(
-                            RequestFormatter.form_uri("create_report_log_api/"),
-                            data={"execution_report": json.dumps(tc_report)},
-                            verify=False,
+                            url,
+                            data=data,
+                            verify=verify,
                             **RequestFormatter.add_api_key_to_headers({}))
                     else:
-                            res = requests.post(
-                            RequestFormatter.form_uri("create_report_log_api/"),
-                            data={"execution_report": json.dumps(tc_report),
+                            url = RequestFormatter.form_uri("create_report_log_api/")
+                            data = {"execution_report": json.dumps(tc_report),
                                   "processed_tc_id":processed_tc_id
-
-                                  },
+                                  }
+                            res = requests.post(
+                            url,
+                            data=data,
                             files=[("file",perf_report_html)],
-                            verify=False,
+                            verify=verify,
                             **RequestFormatter.add_api_key_to_headers({}))
+
+                    if res.status_code != 200:
+                        timestamped_folder = create_errors_folder(tc_report[0]['run_id'],processed_tc_id)
+                        if perf_report_html:
+                            perf_report_filepath = perf_report_html.name
+                        else:
+                            perf_report_filepath = None
+
+                        request_details = {
+                            "url": res.url,
+                            "method": res.request.method,
+                            "headers": dict(res.request.headers),
+                            "data": data,
+                            "file": perf_report_filepath
+                        }
+
+                        response_details = {
+                            "code": res.status_code,
+                            "body": res.text
+                        }
+
+                        all_details = {
+                            "request_details":request_details,
+                            "response_details": response_details
+                        }
+
+                        file_path = os.path.join(timestamped_folder, "report_upload.json")
+                        with open(file_path, "w") as file:
+                            json.dump(all_details, file)
 
 
                     if res.status_code == 200:
@@ -1435,24 +1470,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         print(f"Status: {res.status_code}")
                         print("Retrying...")
                         
-                    if res.status_code == 200:
-                        timestamped_folder = create_timestamped_folder()
-                        if perf_report_html:
-                            file_path = os.path.join(timestamped_folder, "offline_file_content.html")
-                            with open(file_path, "w") as file:
-                                file.write(perf_report_html)
-
-                        request_details = {
-                            "url": res.url,
-                            "method": res.request.method,
-                            "headers": dict(res.request.headers),
-                            "data": res.request.body,
-                        }
-
-                        file_path = os.path.join(timestamped_folder, "offline_file_content.html")
-                        with open(file_path, "w") as file:
-                            json.dump(request_details, file)
-
+                    
                     time.sleep(4)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
