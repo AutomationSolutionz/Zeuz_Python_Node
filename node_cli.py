@@ -1240,9 +1240,9 @@ if __name__ == "__main__":
         print("Exiting...")
         sys.exit(1)
 
-    thread = threading.Thread(target=get_system_info)
-    thread.daemon = True
-    thread.start()
+    # thread = threading.Thread(target=get_system_info)
+    # thread.daemon = True
+    # thread.start()
     
     if local_run:
         Local_run(log_dir=log_dir)
