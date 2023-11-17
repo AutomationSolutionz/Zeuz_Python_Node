@@ -18,7 +18,9 @@ class Recorder {
         this.action_name_convert = {
             type: "text",
             open: "go to link",
+            Go_to_link: "go to link",
             doubleClick: "double click",
+            Validate_Text: "validate full text",
         }
     }
 
@@ -50,6 +52,25 @@ class Recorder {
 
     /* Recorder */
     async fetchAIData(target, idx, command, value){
+        if (command === 'go to link'){
+            var go_to_link = {
+                action: 'go to link',
+                data_list: [window.location.href],
+                element: "",
+                is_disable: false,
+                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,25) + '...' : window.location.href}`,
+                value: window.location.href,
+                main: [['go to link', 'selenium action', window.location.href]],
+                xpath: "",
+            };
+            this.recorded_actions[idx] = go_to_link;
+            console.log(this.recorded_actions);
+            browserAppData.storage.local.set({
+                recorded_actions: this.recorded_actions,
+            })
+            return;
+        }
+
         var html = document.createElement('html');
         html.innerHTML = document.documentElement.outerHTML;
 
@@ -104,43 +125,57 @@ class Recorder {
         };
         var data = JSON.stringify(dataj);
 
-        browserAppData.runtime.sendMessage({
-            apiName: 'ai_single_action',
-            data: data,
-            dataj: dataj,
-        },
-        resp => {
-            if (resp === 'error') {
-                console.error("Error happened pls check back.js devtool message");
-                return;
+        browserAppData.runtime.sendMessage(
+            {
+                apiName: 'ai_single_action',
+                data: data,
+                dataj: dataj,
+            },
+            resp => {
+                if (resp === 'error') {
+                    console.error("Error happened pls check back.js devtool message");
+                    return;
+                }
+                let response = resp.ai_choices;
+                response[0].short.value = value;
+                if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
+                this.recorded_actions[idx] = {
+                    action: response[0].short.action,
+                    data_list: [response[0].short.value],
+                    element: response[0].short.element,
+                    is_disable: false,
+                    name: response[0].name,
+                    value: response[0].short.value,
+                    main: response[0].data_set,
+                    xpath: response[0].xpath,
+                };
+                console.log(this.recorded_actions);
+                browserAppData.storage.local.set({
+                    recorded_actions: this.recorded_actions,
+                })
             }
-            let response = resp.ai_choices;
-            response[0].short.value = value;
-            if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
-            this.recorded_actions[idx] = {
-                action: response[0].short.action,
-                data_list: [response[0].short.value],
-                element: response[0].short.element,
-                is_disable: false,
-                name: response[0].name,
-                value: response[0].short.value,
-                main: response[0].data_set,
-                xpath: response[0].xpath,
-            };
-            console.log(idx);
-            console.log(this.recorded_actions);
-            browserAppData.storage.local.set({
-                recorded_actions: this.recorded_actions,
-            })
-        }
         );
     }
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
-        let self = this;
-        if (command == 'doubleClick')
-            console.log('doubleClick')
         if (Object.keys(this.action_name_convert).includes(command)) command = this.action_name_convert[command]
         console.log("... Action recorder start");
+        this.idx += 1;
+        if (this.recorded_actions.length === 0 || this.recorded_actions.length > 0 && this.recorded_actions[0].action != 'go to link'){
+            var go_to_link = {
+                action: 'go to link',
+                data_list: [window.location.href],
+                element: "",
+                is_disable: false,
+                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,25) + '...' : window.location.href}`,
+                value: window.location.href,
+                main: [['go to link', 'selenium action', window.location.href]],
+                xpath: "",
+            };
+            if (this.recorded_actions.length === 0) this.recorded_actions[0] = go_to_link;
+            else this.recorded_actions.unshift(go_to_link);
+            this.idx += 1;
+        }
+        this.fetchAIData(target, this.idx-1, command, value)
         let signal = {
             command: command,
             target: target,
@@ -148,34 +183,6 @@ class Recorder {
             insertBeforeLastCommand: insertBeforeLastCommand,
             frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
-        this.idx += 1;
-        if (this.recorded_actions.length === 0){
-            this.recorded_actions[0] = {
-                action: 'go to link',
-                data_list: [window.location.href],
-                element: "",
-                is_disable: false,
-                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,30) + '...' : window.location.href}`,
-                value: window.location.href,
-                main: [['go to link', 'selenium action', window.location.href]],
-                xpath: "",
-            };
-            this.idx += 1;
-        }
-        if (this.recorded_actions.length > 0 && this.recorded_actions[0].action != 'go to link'){
-            this.recorded_actions.unshift({
-                action: 'go to link',
-                data_list: [window.location.href],
-                element: "",
-                is_disable: false,
-                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,30) + '...' : window.location.href}`,
-                value: window.location.href,
-                main: [['go to link', 'selenium action', window.location.href]],
-                xpath: "",
-            });
-            this.idx += 1;
-        }
-        this.fetchAIData(target, this.idx-1, command, value)
         console.log(signal);
         browser.runtime.sendMessage(signal).catch (function(reason) {
             console.log(reason);

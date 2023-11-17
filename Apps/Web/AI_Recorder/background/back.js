@@ -113,57 +113,21 @@ function open_panel(tab) {
 /* Create menu */
 function create_menus() {
     browserAppData.contextMenus.create({
-        id: "verifyText",
-        title: "verifyText",
-        documentUrlPatterns: ["<all_urls>"],
+        id: "Validate_Text",
+        title: "Validate Text",
+        documentUrlPatterns: [
+            "http://*/*",
+            "https://*/*"
+        ],
         contexts: ["all"]
     });
     browserAppData.contextMenus.create({
-        id: "verifyTitle",
-        title: "verifyTitle",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "verifyValue",
-        title: "verifyValue",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "assertText",
-        title: "assertText",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "assertTitle",
-        title: "assertTitle",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "assertValue",
-        title: "assertValue",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "storeText",
-        title: "storeText",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "storeTitle",
-        title: "storeTitle",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "storeValue",
-        title: "storeValue",
-        documentUrlPatterns: ["<all_urls>"],
+        id: "Go_to_link",
+        title: "Go to link",
+        documentUrlPatterns: [
+            "http://*/*",
+            "https://*/*"
+        ],
         contexts: ["all"]
     });
 }
@@ -184,11 +148,14 @@ browserAppData.windows.onRemoved.addListener(function(windowId) {
 
 var port;
 browserAppData.contextMenus.onClicked.addListener(function(info, tab) {
+    console.log('info >>', info);
+    console.log('tab >>', tab);
     port.postMessage({ cmd: info.menuItemId });
 });
 
 browserAppData.runtime.onConnect.addListener(function(m) {
     port = m;
+    console.log(port);
 });
 
 /* After install open the url */

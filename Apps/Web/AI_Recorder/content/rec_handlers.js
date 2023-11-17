@@ -90,7 +90,7 @@ Recorder.addEventHandler('doubleClickAt', 'dblclick', function(event) {
         left -= element.offsetLeft;
         element = element.offsetParent;
     } while (element);
-    this.record("doubleClick", this.locatorBuilders.buildAll(event.target), '');
+    this.record("double click", this.locatorBuilders.buildAll(event.target), '');
 }, true);
 
 
@@ -404,6 +404,9 @@ Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
             self.record(m.cmd, [[tmpTitle]], '');
         } else if (m.cmd.includes("Value")) {
             self.record(m.cmd, tmpText, getInputValue(event.target));
+        }
+        else{
+            self.record(m.cmd, tmpText, tmpVal);
         }
         myPort.onMessage.removeListener(portListener);
     });
