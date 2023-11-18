@@ -21,6 +21,7 @@ class Recorder {
             Go_to_link: "go to link",
             doubleClick: "double click",
             Validate_Text: "validate full text",
+            Validate_Text_By_AI: "validate full text by ai",
         }
     }
 
@@ -58,7 +59,7 @@ class Recorder {
                 data_list: [window.location.href],
                 element: "",
                 is_disable: false,
-                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,25) + '...' : window.location.href}`,
+                name: `Open ${(window.location.href.length>25) ? window.location.href.slice(0,20) + '...' : window.location.href}`,
                 value: window.location.href,
                 main: [['go to link', 'selenium action', window.location.href]],
                 xpath: "",
@@ -69,6 +70,11 @@ class Recorder {
                 recorded_actions: this.recorded_actions,
             })
             return;
+        }
+        let validate_full_text_by_ai = false
+        if (command === 'validate full text by ai'){
+            command = 'validate full text';
+            validate_full_text_by_ai = true;
         }
 
         var html = document.createElement('html');
@@ -125,36 +131,50 @@ class Recorder {
         };
         var data = JSON.stringify(dataj);
 
-        browserAppData.runtime.sendMessage(
-            {
-                apiName: 'ai_single_action',
-                data: data,
-                dataj: dataj,
-            },
-            resp => {
-                if (resp === 'error') {
-                    console.error("Error happened pls check back.js devtool message");
-                    return;
-                }
-                let response = resp.ai_choices;
-                response[0].short.value = value;
-                if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
-                this.recorded_actions[idx] = {
-                    action: response[0].short.action,
-                    data_list: [response[0].short.value],
-                    element: response[0].short.element,
-                    is_disable: false,
-                    name: response[0].name,
-                    value: response[0].short.value,
-                    main: response[0].data_set,
-                    xpath: response[0].xpath,
-                };
-                console.log(this.recorded_actions);
-                browserAppData.storage.local.set({
-                    recorded_actions: this.recorded_actions,
-                })
-            }
-        );
+        let resp = await browserAppData.runtime.sendMessage({
+            apiName: 'ai_single_action',
+            data: data,
+            dataj: dataj,
+        })
+        if (resp === 'error') {
+            console.error("Error happened pls check back.js devtool message");
+            return;
+        }
+        let response = resp.ai_choices;
+
+        if (validate_full_text_by_ai){
+            let text_classifier = await chrome.runtime.sendMessage({
+                action: 'classify',
+                text: value,
+            });
+            console.log("text_classifier", text_classifier);
+            let label = text_classifier[0].label;
+            label = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+            let offset = Number((text_classifier[0].score * 0.9).toFixed(2));
+            offset = Math.max(0.8, offset);
+            response[0].data_set = response[0].data_set.slice(0,-1)
+            .concat([[label, "text classifier offset", offset]])
+            .concat(response[0].data_set.slice(-1))
+            value = null;
+        }
+        response[0].short.value = value;
+        if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
+        this.recorded_actions[idx] = {
+            action: response[0].short.action,
+            data_list: [response[0].short.value],
+            element: response[0].short.element,
+            is_disable: false,
+            name: response[0].name,
+            value: response[0].short.value,
+            main: response[0].data_set,
+            xpath: response[0].xpath,
+        };
+        console.log(this.recorded_actions);
+        browserAppData.storage.local.set({
+            recorded_actions: this.recorded_actions,
+        })
+        
+        
     }
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
         if (Object.keys(this.action_name_convert).includes(command)) command = this.action_name_convert[command]
@@ -166,7 +186,7 @@ class Recorder {
                 data_list: [window.location.href],
                 element: "",
                 is_disable: false,
-                name: `Open ${(window.location.href.length>30) ? window.location.href.slice(0,25) + '...' : window.location.href}`,
+                name: `Open ${(window.location.href.length>25) ? window.location.href.slice(0,20) + '...' : window.location.href}`,
                 value: window.location.href,
                 main: [['go to link', 'selenium action', window.location.href]],
                 xpath: "",

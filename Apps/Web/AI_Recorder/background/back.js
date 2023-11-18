@@ -9,6 +9,7 @@ fetch("data.json")
 const browserAppData = chrome || browser;
 
 import './back_zeuz.js';
+import './sentiment_analyzer.js';
 // import '../common_files/poly_fill.js';
 
 /* Zeuz function start */
@@ -113,6 +114,15 @@ function open_panel(tab) {
 /* Create menu */
 function create_menus() {
     browserAppData.contextMenus.create({
+        id: "Go_to_link",
+        title: "Go to link",
+        documentUrlPatterns: [
+            "http://*/*",
+            "https://*/*"
+        ],
+        contexts: ["all"]
+    });
+    browserAppData.contextMenus.create({
         id: "Validate_Text",
         title: "Validate Text",
         documentUrlPatterns: [
@@ -122,8 +132,8 @@ function create_menus() {
         contexts: ["all"]
     });
     browserAppData.contextMenus.create({
-        id: "Go_to_link",
-        title: "Go to link",
+        id: "Validate_Text_By_AI",
+        title: "Validate Text by AI",
         documentUrlPatterns: [
             "http://*/*",
             "https://*/*"
@@ -148,8 +158,6 @@ browserAppData.windows.onRemoved.addListener(function(windowId) {
 
 var port;
 browserAppData.contextMenus.onClicked.addListener(function(info, tab) {
-    console.log('info >>', info);
-    console.log('tab >>', tab);
     port.postMessage({ cmd: info.menuItemId });
 });
 
@@ -167,27 +175,27 @@ chrome.runtime.onInstalled.addListener(function (details) {
 
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-      if (request.apiName == 'ai_single_action') {
-        var url = `${metaData.url}/ai_record_single_action/`
-        fetch(url, {
-            method: "POST",
-            headers: {
-                // "Content-Type": "application/json",
-                "X-Api-Key": metaData.apiKey,
-            },
-            body: request.data,
-        })
-        .then(response => response.json())
-        .then(text => {
-            console.log(text);
-            sendResponse(text);
-        })
-        .catch(error => {
-            console.error(error);
-            sendResponse("error");
-        })
+        if (request.apiName == 'ai_single_action') {
+            var url = `${metaData.url}/ai_record_single_action/`
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    // "Content-Type": "application/json",
+                    "X-Api-Key": metaData.apiKey,
+                },
+                body: request.data,
+            })
+            .then(response => response.json())
+            .then(text => {
+                console.log(text);
+                sendResponse(text);
+            })
+            .catch(error => {
+                console.error(error);
+                sendResponse("error");
+            })
 
-        return true;  // Will respond asynchronously.
-      }
+            return true;  // Will respond asynchronously.
+        }
     }
-  );
+);

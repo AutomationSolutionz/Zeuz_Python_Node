@@ -37,6 +37,9 @@
         "https://*/"
     ],
     "homepage_url": "https://www.zeuz.ai/",
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
+    },
     "content_scripts": [
         {
             "matches": [
