@@ -22,6 +22,9 @@ class Recorder {
             doubleClick: "double click",
             Validate_Text: "validate full text",
             Validate_Text_By_AI: "validate full text by ai",
+            Save_Text: "save attribute",
+            Wait_For_Element_To_Appear: "wait",
+            Wait_For_Element_To_Disappear: "wait disable",
         }
     }
 
@@ -155,7 +158,18 @@ class Recorder {
             response[0].data_set = response[0].data_set.slice(0,-1)
             .concat([[label, "text classifier offset", offset]])
             .concat(response[0].data_set.slice(-1))
-            value = null;
+            value = '';
+        }
+        else if (command === 'save attribute'){
+            response[0].data_set = response[0].data_set.slice(0,-1)
+            .concat([
+                ["text", "save parameter", "var_name"],
+                ["save attribute", "selenium action", "save attribute"],
+            ])
+            value = '';
+        }
+        else if (['wait', 'wait disable'].includes(command)){
+            value = 10;
         }
         response[0].short.value = value;
         if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;

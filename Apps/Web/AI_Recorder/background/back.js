@@ -113,33 +113,25 @@ function open_panel(tab) {
 
 /* Create menu */
 function create_menus() {
-    browserAppData.contextMenus.create({
-        id: "Go_to_link",
-        title: "Go to link",
-        documentUrlPatterns: [
-            "http://*/*",
-            "https://*/*"
-        ],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "Validate_Text",
-        title: "Validate Text",
-        documentUrlPatterns: [
-            "http://*/*",
-            "https://*/*"
-        ],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "Validate_Text_By_AI",
-        title: "Validate Text by AI",
-        documentUrlPatterns: [
-            "http://*/*",
-            "https://*/*"
-        ],
-        contexts: ["all"]
-    });
+    let menus = [
+        ["Go_to_link", "Go to link"],
+        ["Save_Text", "Save Text"],
+        ["Validate_Text", "Validate Text"],
+        ["Validate_Text_By_AI", "Validate Text by AI"],
+        ["Wait_For_Element_To_Appear", "Wait for Element to Appear"],
+        ["Wait_For_Element_To_Disappear", "Wait for Element to Disappear"],
+    ]
+    for(let i =0; i< menus.length; i++){
+        browserAppData.contextMenus.create({
+            id: menus[i][0],
+            title: menus[i][1],
+            documentUrlPatterns: [
+                "http://*/*",
+                "https://*/*"
+            ],
+            contexts: ["all"]
+        })
+    }
 }
 
 
