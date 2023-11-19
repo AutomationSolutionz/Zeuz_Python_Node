@@ -14,10 +14,6 @@ from datetime import datetime as dt
 import shutil
 import time
 
-import psutil
-import threading
-
-
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -122,39 +118,6 @@ traceback.install(show_locals=True, max_frames=1)
 
 from Framework.deploy_handler import long_poll_handler
 from Framework.deploy_handler import adapter
-
-def get_system_info():
-    while True:
-        # Current timestamp
-        current_time = dt.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Current CPU usage
-        cpu_usage = psutil.cpu_percent(interval=1)
-        
-        # Current RAM usage
-        ram_usage = psutil.virtual_memory().percent
-        
-        # Top 10 processes with highest CPU usage
-        top_cpu_processes = [p.info for p in psutil.process_iter(attrs=['pid', 'name', 'cpu_percent'])]
-        top_cpu_processes = sorted(top_cpu_processes, key=lambda x: x['cpu_percent'], reverse=True)[:10]
-
-        # Top 10 processes with highest RAM usage
-        top_ram_processes = [p.info for p in psutil.process_iter(attrs=['pid', 'name', 'memory_percent'])]
-        top_ram_processes = sorted(top_ram_processes, key=lambda x: x['memory_percent'], reverse=True)[:10]
-
-        data = {
-            "Timestamp": current_time,
-            "CPU_Usage": cpu_usage,
-            "RAM_Usage": ram_usage,
-            "Top_CPU_Processes": top_cpu_processes,
-            "Top_RAM_Processes": top_ram_processes
-        }
-
-        # Append data to the JSON file
-        with open('system_info.json', 'a') as file:
-            file.write(json.dumps(data, indent=4) + "\n")
-
-        time.sleep(5)  # Adjust the interval (in seconds) as needed
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -1240,17 +1203,10 @@ if __name__ == "__main__":
         print("Exiting...")
         sys.exit(1)
 
-    thread = threading.Thread(target=get_system_info)
-    thread.daemon = True
-    thread.start()
-    
     if local_run:
         Local_run(log_dir=log_dir)
     else:
         # Bypass()
         Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
-    
-    
-
     CommonUtil.run_cancelled = True
     CommonUtil.ShutdownExecutor()
