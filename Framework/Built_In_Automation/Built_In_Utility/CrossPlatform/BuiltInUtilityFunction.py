@@ -1528,11 +1528,11 @@ def Show_Log(step_data):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         show_log = step_data[0][-1]
         if show_log.lower().strip() in ['no','false']:
-            CommonUtil.ExecLog(sModuleInfo, "Disabling printing detail logs", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Disabling printing detail logs", 2)
             CommonUtil.show_log = False
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Enabling printing detail logs", 3)
             CommonUtil.show_log = True
+            CommonUtil.ExecLog(sModuleInfo, "Enabling printing detail logs", 2)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

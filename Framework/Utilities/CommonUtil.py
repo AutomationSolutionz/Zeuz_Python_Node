@@ -539,7 +539,7 @@ def ExecLog(
     sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None, print_Execlog=True
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
-    if show_log == False:
+    if show_log == False and iLogLevel != 3:
         return
     if performance_testing:
         return
