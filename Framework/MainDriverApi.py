@@ -434,6 +434,7 @@ def run_all_test_steps_in_a_test_case(
         debug = False
         cleanup_drivers_during_debug = False
         debug_actions = ""
+        CommonUtil.show_log = True
 
         if run_id.startswith("debug"):
             debug = True

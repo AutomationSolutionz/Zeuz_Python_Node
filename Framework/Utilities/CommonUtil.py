@@ -541,6 +541,8 @@ def ExecLog(
     # Do not log anything if load testing is going on and we're not forced to write logs
     if show_log == False and iLogLevel != 3:
         return
+    if 'test case failed' in sDetails.lower():
+        show_log = True
     if performance_testing:
         return
     if load_testing and not force_write:
