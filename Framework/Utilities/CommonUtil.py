@@ -113,6 +113,7 @@ performance_testing = False
 previous_log_line = None
 teardown = True
 print_execlog = True
+show_log = True
 prettify_limit = None
 show_browser_log = False
 step_module_name = None
@@ -273,6 +274,8 @@ dont_prettify_on_server = ["step_data"]
 
 
 def prettify(key, val):
+    if show_log == False:
+        return
     """Tries to pretty print the given value."""
     for each_var in zeuz_disable_var_print.keys():
         if each_var != None:
@@ -536,6 +539,8 @@ def ExecLog(
     sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None, print_Execlog=True
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
+    if show_log == False:
+        return
     if performance_testing:
         return
     if load_testing and not force_write:

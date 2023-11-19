@@ -1522,6 +1522,19 @@ def Add_Log(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def Show_Log(step_data):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        show_log = step_data[0][-1]
+        if show_log.lower().strip() in ['no','false']:
+            CommonUtil.ExecLog(sModuleInfo, "Disabling printing detail logs", 3)
+            CommonUtil.show_log = False
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Enabling printing detail logs", 3)
+            CommonUtil.show_log = True
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
 def Calculate(step_data):
