@@ -434,7 +434,6 @@ def run_all_test_steps_in_a_test_case(
         debug = False
         cleanup_drivers_during_debug = False
         debug_actions = ""
-        CommonUtil.show_log = True
 
         if run_id.startswith("debug"):
             debug = True
@@ -694,6 +693,7 @@ def run_all_test_steps_in_a_test_case(
                 break
 
         for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i, attachment_var=True)   # Cleanup tc_attachment variables
+        CommonUtil.show_log = True
         return sTestStepResultList
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
