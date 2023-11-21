@@ -2961,8 +2961,8 @@ def Validate_Text(step_data):
                 validation_type = each_step_data_item[0]
             elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0] == "ignore case":
                 ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
-            elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0].replace(" ", "").replace("_", "") == "zeuzai":
-                zeuz_ai = CommonUtil.parse_value_into_object(each_step_data_item[2])
+            elif each_step_data_item[1].strip().lower() == "text classifier offset":
+                zeuz_ai = [each_step_data_item[0].strip(), float(each_step_data_item[2])]
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
         if ignore_case:
             expected_text_data = expected_text_data.lower()
@@ -2984,8 +2984,8 @@ def Validate_Text(step_data):
              }
              """
             message = " ".join(visible_list_of_element_text)
-            labels = [zeuz_ai["binary_classification"]["expected_category"]]
-            confidence = zeuz_ai["binary_classification"]["confidence"]
+            labels = [zeuz_ai[0]]
+            confidence = zeuz_ai[1]
             return binary_classification(message, labels, confidence)["status"]
 
         elif validation_type == "validate partial text":

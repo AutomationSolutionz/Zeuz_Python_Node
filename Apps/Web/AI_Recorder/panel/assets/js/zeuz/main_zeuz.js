@@ -21,6 +21,19 @@ function readSuiteFromString(test_suite) {
     }
 }
 
+browserAppData.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if (request.action == 'content_classify') {
+            console.log("content_classify", request)
+            browserAppData.runtime.sendMessage({
+                action: 'classify',
+                text: request.text,
+            }).then(text_classifier => sendResponse(text_classifier));
+            return true;  // Will respond asynchronously.
+        }
+    }
+);
+
 function parseSuiteName(test_suite) {
     var pattern = /<title>(.*)<\/title>/gi;
     var suiteName = pattern.exec(test_suite)[1];

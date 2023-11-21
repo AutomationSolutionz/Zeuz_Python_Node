@@ -417,7 +417,7 @@ var CustomFunction = {
 			if([null, undefined].includes(action)) continue;
 			if(
 				action.action == 'click' && 
-				i != actions.length && 
+				i < actions.length - 1 && 
 				['click', 'text', 'double click'].includes(actions[i+1].action)  &&
 				action.xpath == actions[i+1].xpath
 			) continue;
@@ -428,7 +428,7 @@ var CustomFunction = {
 	// This Function is called when Record_stop button is pressed
 	SaveCaseDataAsJson() {
 		setTimeout(()=>{	// Setting 0.5 sec so that the last action is saved properly in storage.local
-			chrome.storage.local.get(null, function (result) {
+			browserAppData.storage.local.get(null, function (result) {
 				try {
 					if (!result.recorded_actions) return;
 					CustomFunction.FetchChromeCaseData()
@@ -1021,7 +1021,7 @@ var CustomFunction = {
 
 	async FetchChromeCaseData() {
 		CustomFunction.caseDataArr = {};
-		result = await chrome.storage.local.get(null);
+		result = await browserAppData.storage.local.get(null);
 		try {
 			if (result.case_data) {
 				CustomFunction.caseDataArr = result.case_data;
@@ -1296,7 +1296,7 @@ var CustomFunction = {
 
 		/* Mange playing speed */
 		/* initial time set speed */
-		chrome.storage.local.get(null, function (result) {
+		browserAppData.storage.local.get(null, function (result) {
 			try {
 				if (result.speed_data) {
 					var speed_data = result.speed_data;
@@ -1389,6 +1389,7 @@ var CustomFunction = {
 		/* Save all newlly recorded actions with old actions and auto naming */
 		$(document).on('click', '#save_button', async function () {
 			$('#save_label').text('Saving...');
+			$("#save_button").attr('disabled', true).css('opacity',0.5);
 			CustomFunction.FetchChromeCaseData()
 			.then(async ()=>{
 				var result = await browserAppData.storage.local.get(["meta_data"]);
@@ -1418,7 +1419,10 @@ var CustomFunction = {
 					success: function(response) {
 					    console.log(response);
 						$('#save_label').text('Success!');
-					    setTimeout(()=>$('#save_label').text('Save'),1500)
+					    setTimeout(()=>{
+							$('#save_label').text('Save');
+							$("#save_button").removeAttr('disabled').css('opacity',1);
+						},1500)
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
 						console.log(errorThrown);
@@ -1819,7 +1823,7 @@ var CustomFunction = {
 						selectedCase = $(this).data('mainindex'); //action
 						selectedStep = $(this).data('stepindex');
 
-						/* Update the chrome case date as disable */
+						/* Update the browserAppData case date as disable */
 						var textValue = 1;
 						var case_command = 'is_disable';
 						var case_index = $(this).data('mainindex');
@@ -1881,7 +1885,7 @@ var CustomFunction = {
 
 						if (!$('.parent_step' + selectedStep).hasClass('disabled-case')) {
 
-							/* Update the chrome case date as disable */
+							/* Update the browserAppData case date as disable */
 							var textValue = 0;
 							var case_command = 'is_disable';
 							var case_index = $(this).data('mainindex');
@@ -2327,7 +2331,7 @@ var CustomFunction = {
 			document.getElementById(section).style.display = "block";
 		})
 
-		chrome.storage.local.get(null, function (result) {
+		browserAppData.storage.local.get(null, function (result) {
 			try {
 				if (result.is_initial_app_open) {
 					$('.close_main_page').trigger('click');
@@ -2342,7 +2346,7 @@ var CustomFunction = {
 
 	InitialTimeCheckAuthUserOrNot() {
 		/* fetch username and password for browser storage */
-		chrome.storage.local.get(null, function (result) {
+		browserAppData.storage.local.get(null, function (result) {
 			try {
 				if (result.auth_data) {
 					var auth_data = result.auth_data;

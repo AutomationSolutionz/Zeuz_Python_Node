@@ -9,7 +9,6 @@ const browser = chrome || browser;
       exports: {}
     };
     factory(mod);
-    console.log(global);
     global.browser = mod.exports;
   }
 })(this, function (module) {

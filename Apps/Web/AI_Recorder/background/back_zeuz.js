@@ -1,5 +1,5 @@
 var attachedTabs = {};
-const browser = chrome || browser;
+const browserAppData = chrome || browser;
 /* Fetch the window size */
 function getWindowSize(callback) {
     chrome.storage.local.get('window', function(result) {
@@ -222,10 +222,10 @@ if (chrome.debugger) {
 
 var externalCapabilities = {};
 
-browser.runtime.onMessage.addListener(function(request, sender, sendResponse, type) {
+browserAppData.runtime.onMessage.addListener(function(request, sender, sendResponse, type) {
     if (request.captureEntirePageScreenshot) {
         var windowId = request.captureWindowId || sender.tab.windowId;
-        browser.tabs.captureVisibleTab(windowId, { format: 'png' }).then(function(image) {
+        browserAppData.tabs.captureVisibleTab(windowId, { format: 'png' }).then(function(image) {
             sendResponse({
                 image: image
             });
@@ -288,7 +288,7 @@ chrome.runtime.onMessageExternal.addListener(function(message, sender) {
     }
 });
 
-browser.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+browserAppData.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message.getExternalCapabilities) {
         var now = new Date().getTime();
         Object.keys(externalCapabilities).forEach(function(capabilityGlobalId) {
@@ -302,7 +302,7 @@ browser.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     }
 });
 
-browser.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+browserAppData.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message.checkChromeDebugger) {
         sendResponse({
             status: !!chrome.debugger
