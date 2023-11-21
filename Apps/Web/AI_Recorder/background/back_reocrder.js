@@ -1,4 +1,3 @@
-
 var metaData = {};
 
 fetch("./data.json")
@@ -56,6 +55,10 @@ async function fetchAIData(idx, command, value, url, document){
         })
         return;
     }
+    recorded_actions[idx] = 'empty';
+    browserAppData.storage.local.set({
+        recorded_actions: recorded_actions,
+    })
     let validate_full_text_by_ai = false
     if (command === 'validate full text by ai'){
         command = 'validate full text';
@@ -85,16 +88,10 @@ async function fetchAIData(idx, command, value, url, document){
     let response = resp.ai_choices;
 
     if (validate_full_text_by_ai){
-        // let text_classifier = await browserAppData.runtime.sendMessage({
-        //     action: 'classify',
-        //     text: value,
-        // });
         let text_classifier = await browserAppData.runtime.sendMessage({
             action: 'content_classify',
             text: value,
         });
-
-        // let text_classifier = await classify(value);
 
         console.log("text_classifier", text_classifier);
         let label = text_classifier[0].label;

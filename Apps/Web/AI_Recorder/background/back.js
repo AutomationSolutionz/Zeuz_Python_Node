@@ -165,30 +165,3 @@ browserAppData.runtime.onInstalled.addListener(function (details) {
         console.log("Recorder Installed");
     }
 });
-
-browserAppData.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-        if (request.apiName == 'ai_single_action') {
-            var url = `${metaData.url}/ai_record_single_action/`
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    // "Content-Type": "application/json",
-                    "X-Api-Key": metaData.apiKey,
-                },
-                body: request.data,
-            })
-            .then(response => response.json())
-            .then(text => {
-                console.log(text);
-                sendResponse(text);
-            })
-            .catch(error => {
-                console.error(error);
-                sendResponse("error");
-            })
-
-            return true;  // Will respond asynchronously.
-        }
-    }
-);

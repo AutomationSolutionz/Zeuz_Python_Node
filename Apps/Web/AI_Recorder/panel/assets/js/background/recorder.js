@@ -14,6 +14,24 @@ class BackgroundRecorder {
         this.contentWindowId = -1;
         this.attached = false;
         this.rebind();
+        setInterval(async ()=>{
+            if (!this.attached) return;
+			browserAppData.storage.local.get(null, function (result) {
+				if (result.recorded_actions.length === 0) return;
+                console.log("Opacity =================", result.recorded_actions);
+				for(let i = 0; i < result.recorded_actions.length; i++){
+					if (result.recorded_actions[i] === 'empty'){
+                        console.log("Opacity 2222 =================", result.recorded_actions);
+						$("#record_label").text("Waiting...");
+						$("#record").attr('disabled', true).css('opacity',0.5);
+						return;
+					}
+				}
+				$("#record").removeAttr('disabled').css('opacity',1);
+				$("#record_label").text("Stop");
+			})
+			return;
+		}, 500)
     }
 
     /* Bind initial time */
