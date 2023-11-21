@@ -1,6 +1,6 @@
 var metaData = {};
 
-fetch("data.json")
+fetch("./data.json")
     .then(Response => Response.json())
     .then(data => {
         metaData = data;
@@ -10,6 +10,7 @@ const browserAppData = chrome || browser;
 
 import './back_zeuz.js';
 import './sentiment_analyzer.js';
+import './back_reocrder.js';
 // import '../common_files/poly_fill.js';
 
 /* Zeuz function start */
@@ -20,7 +21,7 @@ var clickEnabled = true;
 
 // import {getWindowSize} from "/back_zeuz.js";
 function getWindowSize(callback) {
-    chrome.storage.local.get('window', function(result) {
+    browserAppData.storage.local.get('window', function(result) {
         var height = 740;
         //var width = 780;
         var width = 1110;
@@ -159,7 +160,7 @@ browserAppData.runtime.onConnect.addListener(function(m) {
 });
 
 /* After install open the url */
-chrome.runtime.onInstalled.addListener(function (details) {
+browserAppData.runtime.onInstalled.addListener(function (details) {
     if (details.reason === 'install') {
         console.log("Recorder Installed");
     }
