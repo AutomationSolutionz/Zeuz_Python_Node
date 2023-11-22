@@ -51,3 +51,4 @@ configobj
 boto3
 pandas
 pyperclip
+google-cloud-bigquery[pandas]

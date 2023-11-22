@@ -59,3 +59,4 @@ configobj
 jinja2
 pandas
 pyperclip
+google-cloud-bigquery[pandas]
