@@ -681,7 +681,7 @@ def start_appium_server():
                 appium_server = subprocess.Popen(cmd, shell=True)  # Needs to run in a shell due to the execution command
             elif sys.platform == "darwin":
                 appium_server = subprocess.Popen(
-                    "%s --allow-insecure chromedriver_autodownload -p %s"
+                    "%s --allow-insecure chromedriver_autodownload -p %s --use-plugins=images"
                     % (appium_binary, str(appium_port)),
                     shell=True,
                 )
@@ -867,17 +867,21 @@ def start_appium_driver(
                         # saving simulator path for future use
                         Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
-                    app = os.path.join(app, ios)
-                    encoding = "utf-8"
-                    bundle_id = str(
-                        subprocess.check_output(
-                            ["osascript", "-e", 'id of app "%s"' % str(app)]
-                        ),
-                        encoding=encoding,
-                    ).strip()
+                    ios_part = ios.split('.')[0]
+                    if ios_part == 'com':
+                        desired_caps["bundleId"] = ios
+                    else:               
+                        app = os.path.join(app, ios)
+                        encoding = "utf-8"
+                        bundle_id = str(
+                            subprocess.check_output(
+                                ["osascript", "-e", 'id of app "%s"' % str(app)]
+                            ),
+                            encoding=encoding,
+                        ).strip()
 
-                    desired_caps["app"] = app  # Use set_value() for writing to element
-                    desired_caps["bundleId"] = bundle_id.replace("\\n", "")
+                        desired_caps["app"] = app  # Use set_value() for writing to element
+                        desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
                 desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
                 desired_caps["platformVersion"] = platform_version
@@ -4773,3 +4777,28 @@ def pan_action(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data for Pan. Please write data in correct format")
 
+
+def appium_image_search(image_base64, score=None):
+    """
+    This action will just check if an image is present in the IOS/Android device
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global appium_driver
+    try:
+        print(appium_driver)
+        el = appium_driver.find_element(by=AppiumBy.IMAGE , value=image_base64)
+        if score != None:
+            image_score = float(el.get_attribute('score'))
+            if image_score >= score:
+                CommonUtil.ExecLog(sModuleInfo, f'The image has been located!', 1)
+                return True
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f'Match score is lower!', 3)
+                return False
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f'The image has been located!', 1)
+            return True
+    except Exception as e:
+        print(e)
+        CommonUtil.ExecLog(sModuleInfo, f'Could not find the image in the mobile screen!', 3)
+        return False

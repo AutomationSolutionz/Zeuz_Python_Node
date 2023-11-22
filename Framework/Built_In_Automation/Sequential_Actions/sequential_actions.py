@@ -1132,6 +1132,14 @@ def Run_Sequential_Actions(
                             return result, skip_for_loop
                         break
 
+                    elif action_name.lower().strip() == "appium image conditional action":
+                        result, to_skip = Appium_Conditional_Image_Action_Handler(step_data, dataset_cnt)
+                        skip += to_skip
+                        skip_for_loop += to_skip
+                        if result in failed_tag_list:
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                            return result, skip_for_loop
+                        break
 
                     elif action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
                         # old style conditional action
@@ -2118,6 +2126,123 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     return "passed", outer_skip
 
+
+def Appium_Conditional_Image_Action_Handler(step_data, dataset_cnt):
+    from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_image_search
+    import base64
+    """ Process appium image related conditional action, called only by Sequential_Actions() """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    log_msg = ""
+
+    # get the conditional action from the list of actions
+    data_set = step_data[dataset_cnt]
+    data_set = common.shared_variable_to_value(data_set)
+    if data_set in failed_tag_list:
+        return "zeuz_failed", []
+    
+    global step_exit_fail_called, step_exit_pass_called
+    step_exit_fail_called = False
+    step_exit_pass_called = False
+
+    image_path = ""
+    min_score = None
+
+    try:
+        for left, mid, right in data_set:
+            if left.lower().strip() == "image path":
+                image_path = right.strip()
+            elif left.lower().strip() == "minimum score":
+                min_score = float(right.strip())
+
+        try:
+            if image_path == '':
+                raise Exception()
+        except Exception:
+                errMsg = "Image path was not provided!"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg), []
+        
+        try:
+            with open(image_path, "rb") as image_file:
+                image_base64 = base64.b64encode(image_file.read()).decode("utf-8")
+        except:
+            errMsg = "The image could not be opened or converted into base64 format! Check if the path is valid or not"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg), []
+        
+        logic_decision = appium_image_search(image_base64, min_score)
+
+        inner_skip, outer_skip, next_level_step_data = [], [], []
+        for left, mid, right in data_set:
+            left = left.lower()
+            mid = mid.lower()
+            if "true" in left and "conditional action" in mid:
+                outer_skip += get_data_set_nums(str(right).strip())
+                if logic_decision:
+                    for i in get_data_set_nums(str(right).strip()):
+                        next_level_step_data.append(i)
+                    log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
+
+            elif "false" in left and "conditional action" in mid:
+                outer_skip += get_data_set_nums(str(right).strip())
+                if not logic_decision:
+                    for i in get_data_set_nums(str(right).strip()):
+                        next_level_step_data.append(i)
+                    log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
+
+        CommonUtil.ExecLog(sModuleInfo, log_msg, 1)
+
+        while "f" in outer_skip: outer_skip.remove("f")
+        while "p" in outer_skip: outer_skip.remove("p")
+        if next_level_step_data == []:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "No actions found regarding. Skipping action %s" % [i+1 for i in outer_skip],
+                2,
+            )
+
+        for data_set_index in next_level_step_data:
+            if data_set_index in ("p", "f"):
+                outer_skip = [i for i in range(len(step_data))]
+                CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                if data_set_index == "p":
+                    step_exit_fail_called = False   # Actually its already false. just adding for precaution
+                    step_exit_pass_called = True
+                    return "passed", outer_skip
+                else:
+                    step_exit_fail_called = True
+                    step_exit_pass_called = False
+                    return "zeuz_failed", outer_skip
+            elif data_set_index >= len(step_data):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You did not define action %s. So skipping this action index" % str(data_set_index + 1),
+                    2
+                )
+                continue
+            elif data_set_index == dataset_cnt:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You are running an if else action within another if else action. It may create infinite recursion in some cases",
+                    2
+                )
+            if data_set_index not in inner_skip:
+                result, skip = Run_Sequential_Actions(
+                    [data_set_index]
+                )  # Running
+                inner_skip = list(set(inner_skip + skip))
+                outer_skip = list(set(outer_skip + inner_skip))
+                if result in failed_tag_list:
+                    return result, outer_skip
+
+        CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
+
+        return "passed", outer_skip
+
+    except:  # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
+            logic_decision = False
+            log_msg += "Element is not found\n"
+    
 
 def bypass_bug(*args,):
     """ Suppose, there is a bug in the test product which is a pop-up that appears randomly and you need to close that pop-up
