@@ -14,8 +14,8 @@ from datetime import datetime as dt
 import shutil
 import time
 
-import psutil
-import threading
+
+# import threading
 
 
 
@@ -124,6 +124,7 @@ from Framework.deploy_handler import long_poll_handler
 from Framework.deploy_handler import adapter
 
 def get_system_info():
+    import psutil
     while True:
         # Current timestamp
         current_time = dt.now().strftime('%Y-%m-%d %H:%M:%S')
