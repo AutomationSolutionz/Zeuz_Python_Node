@@ -225,7 +225,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 pass
             try:
                 if CommonUtil.debug_status:
-                    CommonUtil.ExecLog(sModuleInfo, f"{generic_driver.execute_script('return document.body.outerHTML;')}", 3)
+                    # CommonUtil.ExecLog(sModuleInfo, f"{generic_driver.execute_script('return document.body.outerHTML;')}", 3)
+                    pass
             except:
                 pass
         return "zeuz_failed"
