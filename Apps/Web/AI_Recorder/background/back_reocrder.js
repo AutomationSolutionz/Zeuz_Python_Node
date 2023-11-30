@@ -11,6 +11,7 @@ const browserAppData = chrome || browser;
 var idx = 0;
 var recorded_actions = [];
 var action_name_convert = {
+    select: "click",
     type: "text",
     open: "go to link",
     Go_to_link: "go to link",
@@ -59,6 +60,7 @@ async function fetchAIData(idx, command, value, url, document){
     browserAppData.storage.local.set({
         recorded_actions: recorded_actions,
     })
+    if (['select', 'click'].includes(command)) value = ""
     let validate_full_text_by_ai = false
     if (command === 'validate full text by ai'){
         command = 'validate full text';

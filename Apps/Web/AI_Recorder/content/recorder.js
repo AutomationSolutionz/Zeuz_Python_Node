@@ -54,7 +54,7 @@ class Recorder {
         return frameLocation = "root" + frameLocation;
     }
 
-    prepare_dom(target, command){
+    prepare_dom(target, command, value){
         for (let each of target) if (each[1] == 'xpath:position') {
             var xpath = each[0];
             break;
@@ -66,6 +66,11 @@ class Recorder {
         var xPathResult = document.evaluate(xpath, html);
         if(xPathResult) var main_elem = xPathResult.iterateNext();
         else return;
+
+        if (main_elem.tagName === 'SELECT' && command === 'select'){
+            xPathResult = document.evaluate(`./option[normalize-space(text())="${value.substr(6).trim()}"]`, main_elem);
+            if(xPathResult) main_elem = xPathResult.iterateNext();
+        }
         
         main_elem.setAttribute('zeuz', 'aiplugin');
         console.log(main_elem.hasAttribute('zeuz'), main_elem);
@@ -97,7 +102,7 @@ class Recorder {
     }
 
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
-        const dom = this.prepare_dom(target, command)
+        const dom = this.prepare_dom(target, command, value)
         browserAppData.runtime.sendMessage({
             apiName: 'record_action',
             command: command,
