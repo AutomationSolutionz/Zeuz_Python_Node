@@ -654,7 +654,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             except:
                 CommonUtil.ExecLog(sModuleInfo, "Unable to download chromedriver using ChromedriverManager", 2)
             options = Options()
-
+            options.add_argument("enable-automation")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--dns-prefetch-disable")
+            options.add_argument("--disable-gpu")
             if remote_browser_version:
                 options.set_capability("browserVersion",remote_browser_version)
             # capability
