@@ -42,6 +42,7 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import live_log_service
+from Framework.Built_In_Automation.Desktop.RecordPlayback.commons import EventType, EventData
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
 # Append correct paths so that it can find the configuration files and other modules
