@@ -540,8 +540,17 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             # 2. Save the json for MainDriver to find
             # Ensure that the parent dirs actually exist before writing to the json file.
             save_path.mkdir(exist_ok=True, parents=True)
+            test_path = save_path.parent / node_json[0]['run_id'] / "test"
+            test_path.mkdir(exist_ok=True, parents=True)
             with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
                 f.write(json.dumps(node_json))
+
+            with open(save_path.parent / node_json[0]['run_id'] / "test" / f"{node_json[0]['run_id'] + '-' + node_json[0]['test_cases'][0]['testcase_no']}.zeuz.json", "w", encoding="utf-8") as f:
+                f.write(json.dumps(node_json))
+
+            
+
+            
 
             # 3. Call MainDriver
             MainDriverApi.main(device_dict, user_info_object)
