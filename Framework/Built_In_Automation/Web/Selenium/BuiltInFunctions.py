@@ -503,7 +503,8 @@ initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None, profile_options=None):
     """ Launch browser and create instance """
-
+    import os
+    os.system("pkill chrome")
     global selenium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
