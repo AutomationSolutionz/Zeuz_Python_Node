@@ -74,6 +74,7 @@ async function fetchAIData(idx, command, value, url, document){
         "action_value": value,
         "source": "web",
     };
+    console.log(document);
     var data = JSON.stringify(dataj);
 
     const url_ = `${metaData.url}/ai_record_single_action/`
