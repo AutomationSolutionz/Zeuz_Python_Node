@@ -2141,6 +2141,8 @@ def main(device_dict, user_info_object):
                     CommonUtil.run_cancelled = True
                 del CommonUtil.all_threads["run_cancel"]
             CommonUtil.run_cancelled = False
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                input("[Local run] Press any key to finish")
 
             break   # Todo: remove this after server side multiple run-id problem is fixed
 

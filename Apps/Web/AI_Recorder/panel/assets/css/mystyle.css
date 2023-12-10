@@ -583,11 +583,7 @@ body
 }
 .sidebar_menu
 {
-  /*padding: 15px 30px;*/
-  padding: 10px 30px;
-  display: block;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
+  width: 170px;
 }
 .sidebar_menu img
 {
@@ -621,7 +617,7 @@ body
 
 .bottom_left_icon a
 {
-  background: none
+  background: none;
   color:transparent;
   background-color: transparent;
 }
