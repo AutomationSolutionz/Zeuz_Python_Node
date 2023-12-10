@@ -118,7 +118,7 @@ function create_menus() {
         ["Go_to_link", "Go to link"],
         ["Save_Text", "Save Text"],
         ["Validate_Text", "Validate Text"],
-        ["Validate_Text_By_AI", "Validate Text by AI"],
+        // ["Validate_Text_By_AI", "Validate Text by AI"],
         ["Wait_For_Element_To_Appear", "Wait for Element to Appear"],
         ["Wait_For_Element_To_Disappear", "Wait for Element to Disappear"],
     ]
@@ -133,6 +133,22 @@ function create_menus() {
             contexts: ["all"]
         })
     }
+    browserAppData.runtime.sendMessage({
+        action: 'content_classify',
+        text: "Hello world",
+    })
+    .then(()=>{
+        console.log("Classify init finished");
+        browserAppData.contextMenus.create({
+            id: "Validate_Text_By_AI",
+            title: "Validate Text by AI",
+            documentUrlPatterns: [
+                "http://*/*",
+                "https://*/*"
+            ],
+            contexts: ["all"]
+        })
+    });
 }
 
 
