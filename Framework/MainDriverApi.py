@@ -808,6 +808,20 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
     except:
         pass
 
+
+def advanced_float(text):
+    try:
+        return float(text)
+    except:
+        import re
+        nums = re.findall(r"-?\d+\.?\d*", text)
+        if len(nums) == 0:
+            raise ValueError(f"could not convert string to float: '{text}'")
+        num = nums[0]
+        num = num[:-1] if num.endswith('.') else num
+        return float(num)
+
+
 def set_important_variables():
     try:
         for module in CommonUtil.common_modules[:-1]:
@@ -821,7 +835,8 @@ def set_important_variables():
             shared.shared_variables.update({"sr": shared})
         shared.shared_variables.update({
             "clipboard_paste": pyperclip.paste,
-            "clipboard_set": pyperclip.copy
+            "clipboard_set": pyperclip.copy,
+            "number": advanced_float
         })
 
     except:
