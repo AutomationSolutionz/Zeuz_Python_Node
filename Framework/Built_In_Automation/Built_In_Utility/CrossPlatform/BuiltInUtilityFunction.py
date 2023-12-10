@@ -3430,12 +3430,12 @@ def extract_number(data_set):
                 all_digit = [s for s in re.findall(r"-?\d+\.?\d*", from_var)]
                 extracted_number = all_digit[index - 1]
 
-                if re.match("-?\d+(\.?\d)*", digit) is None:
+                if re.match("-?\d+?\.\d+?$", digit) is None:
                     digit = int(digit)
                 else:
                     digit = float(digit)
 
-                if re.match("-?\d+(\.?\d)*", extracted_number) is None:
+                if re.match("-?\d+?\.\d+?$", extracted_number) is None:
                     extracted_number = int(extracted_number)
                 else:
                     extracted_number = float(extracted_number)
