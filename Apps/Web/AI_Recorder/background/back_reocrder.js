@@ -100,7 +100,7 @@ async function fetchAIData(idx, command, value, url, document){
         let label = text_classifier[0].label;
         label = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
         let offset = Number((text_classifier[0].score * 0.9).toFixed(2));
-        offset = Math.max(0.8, offset);
+        // offset = Math.max(0.8, offset);
         response[0].data_set = response[0].data_set.slice(0,-1)
         .concat([[label, "text classifier offset", offset]])
         .concat(response[0].data_set.slice(-1))
