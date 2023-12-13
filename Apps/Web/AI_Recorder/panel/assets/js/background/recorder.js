@@ -21,7 +21,7 @@ class BackgroundRecorder {
                 console.log("Opacity =================", result.recorded_actions);
 				for(let i = 0; i < result.recorded_actions.length; i++){
 					if (result.recorded_actions[i] === 'empty'){
-                        console.log("Opacity 2222 =================", result.recorded_actions);
+                        // console.log("Opacity 2222 =================", result.recorded_actions);
 						$("#record_label").text("Recording...");
 						$("#record").attr('disabled', true).css('opacity',0.5);
 						return;
