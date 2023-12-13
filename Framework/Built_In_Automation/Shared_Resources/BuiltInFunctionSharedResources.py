@@ -552,6 +552,8 @@ def parse_variable(name):
 
     try:
         # Pattern to match [] {} () brackets.
+        class a:
+            pass
         pattern = r"[\[\{\(](.*?)[\)\}\]]"
         indices = re.findall(pattern, name)
 
@@ -583,7 +585,7 @@ def parse_variable(name):
             # Print to console.
             CommonUtil.prettify(copy_of_name, result)
             return result
-        elif len(indices) > 0 and re.search("^[a-zA-Z_][a-zA-Z_0-9]*\(", name) and Test_Shared_Variables(name[: name.find("(")]):
+        elif len(indices) > 0 and re.search("^[a-zA-Z_][a-zA-Z_0-9]*\(", name) and Test_Shared_Variables(name[: name.find("(")]) and type(Get_Shared_Variables(name[: name.find("(")], log=False)) not in (type(lambda a:a), type(a)):
             # regex: startswith valid_var_name(
             # Data collector with keys.
             # Match with the following pattern.

@@ -1,3 +1,4 @@
+browserAppData = chrome || browser;
 var CustomFunction = {
 	caseDataArr: {},
 	StepCopyData: null,
@@ -7,9 +8,8 @@ var CustomFunction = {
 	isPreFocusElement: false,
 	/* Hidden field*/
 	LoadTheRecordDataHtml(recordData) {
-		CustomFunction.FetchChromeCaseData();
-
-		setTimeout(function () {
+		CustomFunction.FetchChromeCaseData()
+		.then(() => {
 			/* Fetch selected suite */
 			var selected_suite = -1;
 			$('.single-suite-tab').each(function () {
@@ -71,8 +71,8 @@ var CustomFunction = {
 			} else {
 				caseHtml = `<input id="records-count" value="0" type="hidden">`;
 				$('#records-grid').html(caseHtml);
-			}
-		}, 500);
+			}		
+		})
 	},
 
 	LoadCaseSuiteHtml(SuiteMainArr) {
@@ -160,6 +160,7 @@ var CustomFunction = {
 					sortableCount++;
 
 					var case_name = single_value.case_name;
+					var case_no = single_value.case_no;
 					var case_value = single_value.case_value;
 					var is_disable = single_value.is_disable;
 
@@ -184,7 +185,7 @@ var CustomFunction = {
 					html += `<tr class="sortable-` + sortableCount + ` case-main-wrap case-sub-wrap ` + extraSelectedClass + ` ` + disableClass + ` ` + parentClass + `" data-caseindex="` + (case_index + 1) + `" data-mainindex="` + (case_index) + `" data-sortposition="` + sortableCount + `">
 	                      <td class="col-2 place_italic">
 	                        <div class="table_data" data-toggle="collapse" data-target="#collapseten" aria-expanded="true" aria-controls="collapseten">
-	                          <img id="more_button" src="assets/images/more.png"> Step ` + (case_index + 1) + ` :
+	                          <img id="more_button" src="assets/images/more.png"> Step ${case_no}
 	                        </div>
 	                      </td>
 	                      <td class="col-10 has-input place_italic" data-case_commend="case_name">
@@ -238,12 +239,9 @@ var CustomFunction = {
 								val = '&nbsp';
 							}
 
-							console.log('elm1', elm);
 							if (elm != undefined && elm.length > 30) {
 								elm = single_case_value.element.substring(0, 27) + '...';
 							}
-
-							console.log('elm2', elm);
 
 							var extraClass = "";
 							if (single_case_value.is_disable == 1) {
@@ -260,7 +258,7 @@ var CustomFunction = {
 							if (single_case_value.data_list != undefined && single_case_value.data_list.length > 0) {
 								casedatalist = single_case_value.data_list.join('#');
 							}
-							console.log('val', val);
+
 							html += `
 	                		<tr class="sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
 		                      <td class="col-1"><img id="more_button" src="assets/images/more.png">
@@ -411,209 +409,156 @@ var CustomFunction = {
 
 		}
 	},
-
+	
+	PostProcess(actions){
+		let new_actions = []
+		for(let i = 0; i < actions.length; i++){
+			action = actions[i];
+			if([null, undefined].includes(action)) continue;
+			if(
+				action.action == 'click' && 
+				i < actions.length - 1 && 
+				['click', 'text', 'double click'].includes(actions[i+1].action)  &&
+				action.xpath == actions[i+1].xpath
+			) continue;
+			new_actions.push(action);
+		}
+		return new_actions;
+	},
+	// This Function is called when Record_stop button is pressed
 	SaveCaseDataAsJson() {
-		var CasemainArr = {};
-		chrome.storage.local.get(null, function (result) {
-			try {
-				if (result.data) {
+		setTimeout(()=>{	// Setting 0.5 sec so that the last action is saved properly in storage.local
+			browserAppData.storage.local.get(null, function (result) {
+				try {
+					if (!result.recorded_actions) return;
+					CustomFunction.FetchChromeCaseData()
+					.then( () => {
+						console.log("CustomFunction.caseDataArr >>>",CustomFunction.caseDataArr);
+						console.log("result.recorded_actions >>>",result.recorded_actions);
+						result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
+						// If the step is not totally blank we dont add 'go to link' action
+						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
+							result.recorded_actions.shift();
+						recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
+						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(recorded_actions)
+	
+						// Save old actions + new actions in caseDataArr and display
+						browser.storage.local.set({
+							case_data: CustomFunction.caseDataArr,
+						})
 
-					var caseTempArr = [];
-					for (var i = 0; i < result.data.length; i++) {
-						var test_suite = result.data[i];
-						var pattern = /<title>(.*)<\/title>/gi;
-						var suiteName = pattern.exec(test_suite)[1];
-						var test_case = test_suite.match(/<table[\s\S]*?<\/table>/gi);
-						if (test_case) {
-							for (var j = 0; j < test_case.length; ++j) {
-
-								var caseInfo = {};
-								var f = test_case[j]
-								var output = f.match(/<tbody>[\s\S]+?<\/tbody>/);
-								var thead_output = f.match(/<thead>[\s\S]+?<\/thead>/);
-								if (!output) {
-									return null;
-								}
-								output = output[0]
-									.replace(/<tbody>/, "")
-									.replace(/<\/tbody>/, "");
-
-
-								var caseName = thead_output[0]
-									.replace(/<thead>/, "")
-									.replace(/<\/thead>/, "");
-
-								caseName = caseName
-									.replace(/<tr>/, "")
-									.replace(/<\/tr>/, "");
-
-								caseName = caseName
-									.replace(/<td rowspan="1" colspan="3">/, "")
-									.replace(/<\/td>/, "");
-
-								var tr = output.match(/<tr>[\s\S]*?<\/tr>/gi);
-								output = "";
-
-								var singleCaseArr = [];
-								if (tr) {
-									for (var i = 0; i < tr.length; ++i) {
-										pattern = tr[i].match(/(?:<tr>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<datalist>)([\s\S]*?)(?:<\/datalist>([\s]*?)<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<\/tr>)/);
-										if (pattern === null) {
-											pattern = tr[i].match(/(?:<tr>)([\s]*?)(?:<td class="break">)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<datalist>)([\s\S]*?)(?:<\/datalist>([\s]*?)<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<\/tr>)/);
-										}
-										if (pattern == null) {
-											pattern = tr[i].match(/(?:<tr>)([\s]*?)(?:<td class="[\w\s-]*?">)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<datalist>)([\s\S]*?)(?:<\/datalist>([\s]*?)<\/td>)([\s]*?)(?:<td>)([\s\S]*?)(?:<\/td>)([\s]*?)(?:<\/tr>)/);
-										}
-										var index = pattern[4].indexOf('\n');
-										if (index > 0) {
-											pattern[4] = pattern[4].substring(0, index);
-										} else if (index === 0) {
-											pattern[4] = '';
-										}
-
-										var dataList = pattern[5];
-										var regex = /( |<([^>]+)>)/ig;
-										dataList = dataList.replace(regex, "#");
-										var res = dataList.split("#");
-
-										var mainDataArr = [];
-										if (res.length > 0) {
-											$.each(res, function (idx, val) {
-												if (val != '') {
-													mainDataArr.push(val);
-												}
-											})
-										}
-
-										var singleCaseDetasils = {
-											'action': pattern[2],
-											'element': pattern[4],
-											'value': pattern[8],
-											'is_disable': 0,
-											'data_list': mainDataArr,
-										};
-
-										singleCaseArr.push(singleCaseDetasils);
-									}
-								}
-
-								caseInfo.case_name = caseName;
-								caseInfo.case_value = singleCaseArr;
-								caseTempArr.push(caseInfo);
-							}
-
-							CasemainArr.suite_name = suiteName;
-							CasemainArr.suite_value = caseTempArr;
-						}
-					}
-				}
-			} catch (e) {
-				console.error(e);
-			}
-		});
-
-
-		CustomFunction.FetchChromeCaseData();
-
-		setTimeout(function () {
-			/* auto assign the case if there is no already case exists */
-			var mainArrLength = Object.keys(CasemainArr).length;
-			if (CasemainArr == undefined || mainArrLength == 0) {
-				var tempObj = {
-					case_name: "Enter Step Name",
-					case_value: [],
-				};
-				var objArr = [];
-				objArr.push(tempObj);
-				CasemainArr.suite_name = "Untitled";
-				CasemainArr.suite_value = objArr;
-
-				var mainTestSuidData = [];
-
-				/* initial time untitled test suit position is zero */
-				mainTestSuidData.push(CasemainArr);
-				CasemainArr = mainTestSuidData;
-			} else {
-				/* fetch selected case */
-				var selectedCase = -1;
-				var defaultCaseName = 'Enter Step Name';
-				$('.case-main-wrap').each(function () {
-					if ($(this).hasClass('selected-case')) {
-						selectedCase = $(this).data('mainindex');
-						defaultCaseName = $(this).children('.has-input').children('.case-input').val();
-					}
-				});
-
-				if (selectedCase == -1) {
-					var selected_suite = -1;
-					$('.single-suite-tab').each(function () {
-						if ($(this).hasClass('current_selected_tab')) {
-							selected_suite = $(this).data('suite');
-						}
+						// Wipe out recorded_actions
+						.then(CustomFunction.DisplayCaseData);
+						browserAppData.storage.local.set({
+							recorded_actions: [],
+						})
 					});
-					if (selected_suite != -1) {
-						var currentCaseVal = CasemainArr.suite_value[0].case_value;
-						var tempObj = {
-							case_name: "Enter Step Name",
-							case_value: currentCaseVal,
-						};
-						var objArr = [];
-						objArr.push(tempObj);
-						console.log(objArr);
-						var SavedCaseData = CustomFunction.caseDataArr;
-						SavedCaseData[selected_suite].suite_value = objArr;
-						CasemainArr = SavedCaseData;
-					}
-
-				} else {
-
-					//if(selectedCase > -1){
-
-					/* Fetch selected suite */
-					var selected_suite = -1;
-					$('.single-suite-tab').each(function () {
-						if ($(this).hasClass('current_selected_tab')) {
-							selected_suite = $(this).data('suite');
-						}
-					});
-
-					if (selected_suite != -1) {
-						var currentCaseVal = CasemainArr.suite_value[0].case_value;
-						var SavedCaseData = CustomFunction.caseDataArr;
-
-						SavedCaseData[selected_suite].suite_value[selectedCase].case_value = currentCaseVal;
-
-						CasemainArr = SavedCaseData;
-					}
-
+					
+				} catch (e) {
+					console.error(e);
 				}
-			}
+			})
+		}, 500)
+		
 
-			console.log('CasemainArr', CasemainArr);
+		// setTimeout(function () {
+		// 	/* auto assign the case if there is no already case exists */
+		// 	var mainArrLength = Object.keys(CasemainArr).length;
+		// 	if (CasemainArr == undefined || mainArrLength == 0) {
+		// 		var tempObj = {
+		// 			case_name: "Enter Step Name",
+		// 			case_value: [],
+		// 		};
+		// 		var objArr = [];
+		// 		objArr.push(tempObj);
+		// 		CasemainArr.suite_name = "Untitled";
+		// 		CasemainArr.suite_value = objArr;
 
-			if (CasemainArr != undefined) {
-				var case_data = {
-					case_data: CasemainArr,
-				};
-				browser.storage.local.set(case_data);
-				//CustomFunction.DisplayCaseData(true);
-				CustomFunction.DisplayCaseData('save_record_data', false);
-			}
-		}, 1000);
+		// 		var mainTestSuidData = [];
+
+		// 		/* initial time untitled test suit position is zero */
+		// 		mainTestSuidData.push(CasemainArr);
+		// 		CasemainArr = mainTestSuidData;
+		// 	} else {
+		// 		/* fetch selected case */
+		// 		var selectedCase = -1;
+		// 		var defaultCaseName = 'Enter Step Name';
+		// 		$('.case-main-wrap').each(function () {
+		// 			if ($(this).hasClass('selected-case')) {
+		// 				selectedCase = $(this).data('mainindex');
+		// 				defaultCaseName = $(this).children('.has-input').children('.case-input').val();
+		// 			}
+		// 		});
+
+		// 		if (selectedCase == -1) {
+		// 			var selected_suite = -1;
+		// 			$('.single-suite-tab').each(function () {
+		// 				if ($(this).hasClass('current_selected_tab')) {
+		// 					selected_suite = $(this).data('suite');
+		// 				}
+		// 			});
+		// 			if (selected_suite != -1) {
+		// 				var currentCaseVal = CasemainArr.suite_value[0].case_value;
+		// 				var tempObj = {
+		// 					case_name: "Enter Step Name",
+		// 					case_value: currentCaseVal,
+		// 				};
+		// 				var objArr = [];
+		// 				objArr.push(tempObj);
+		// 				console.log(objArr);
+		// 				var SavedCaseData = CustomFunction.caseDataArr;
+		// 				SavedCaseData[selected_suite].suite_value = objArr;
+		// 				CasemainArr = SavedCaseData;
+		// 			}
+
+		// 		} else {
+
+		// 			//if(selectedCase > -1){
+
+		// 			/* Fetch selected suite */
+		// 			var selected_suite = -1;
+		// 			$('.single-suite-tab').each(function () {
+		// 				if ($(this).hasClass('current_selected_tab')) {
+		// 					selected_suite = $(this).data('suite');
+		// 				}
+		// 			});
+
+		// 			if (selected_suite != -1) {
+		// 				var currentCaseVal = CasemainArr.suite_value[0].case_value;
+		// 				var SavedCaseData = CustomFunction.caseDataArr;
+
+		// 				SavedCaseData[selected_suite].suite_value[selectedCase].case_value = currentCaseVal;
+
+		// 				CasemainArr = SavedCaseData;
+		// 			}
+
+		// 		}
+		// 	}
+
+		// 	console.log('CasemainArr', CasemainArr);
+
+		// 	if (CasemainArr != undefined) {
+		// 		var case_data = {
+		// 			case_data: CasemainArr,
+		// 		};
+		// 		browser.storage.local.set(case_data);
+		// 		//CustomFunction.DisplayCaseData(true);
+		// 		CustomFunction.DisplayCaseData('save_record_data', false);
+		// 	}
+		// }, 1000);
 	},
 
 	UpdateCaseData(textValue, case_command, case_index, update_step_or_action, stepindex) {
 		/* fetch Pre save data */
-		CustomFunction.FetchChromeCaseData();
-
-		/* Fetch selected suite */
-		var selected_suite = -1;
-		$('.single-suite-tab').each(function () {
-			if ($(this).hasClass('current_selected_tab')) {
-				selected_suite = $(this).data('suite');
-			}
-		});
-		setTimeout(function () {
+		CustomFunction.FetchChromeCaseData()
+		.then(() => {
+			/* Fetch selected suite */
+			var selected_suite = -1;
+			$('.single-suite-tab').each(function () {
+				if ($(this).hasClass('current_selected_tab')) {
+					selected_suite = $(this).data('suite');
+				}
+			});	
 			if (selected_suite != -1) {
 				var SavedCaseData = CustomFunction.caseDataArr;
 				if (update_step_or_action == 'update_action') {
@@ -659,60 +604,60 @@ var CustomFunction = {
 				/* Update the recorder html */
 				CustomFunction.LoadTheRecordDataHtml();
 			}
-
-		}, 500);
+		});
 	},
 
 	DisplayCaseData(display_type, is_reload_header_tab, selectedTabIndx) {
 		//console.log('display_type',display_type);
-		CustomFunction.FetchChromeCaseData();
-		var sortposition = $('.selected-case').data('sortposition');
+		CustomFunction.FetchChromeCaseData().then(() => {
+			var sortposition = $('.selected-case').data('sortposition');
 
-		var selectedSuite = 0;
+			var selectedSuite = 0;
 
-		if (selectedTabIndx != undefined) {
-			selectedSuite = selectedTabIndx;
-		}
-
-		$('.single-suite-tab').each(function () {
-			if ($(this).hasClass('current_selected_tab')) {
-				selectedSuite = $(this).data('suite');
+			if (selectedTabIndx != undefined) {
+				selectedSuite = selectedTabIndx;
 			}
-		})
 
-		if (display_type == "delete_suite") {
-			selectedSuite = 0;
-		}
+			$('.single-suite-tab').each(function () {
+				if ($(this).hasClass('current_selected_tab')) {
+					selectedSuite = $(this).data('suite');
+				}
+			})
 
-		//console.log('CustomFunction.caseDataArr',CustomFunction.caseDataArr);
+			if (display_type == "delete_suite") {
+				selectedSuite = 0;
+			}
 
-		setTimeout(function () {
+			//console.log('CustomFunction.caseDataArr',CustomFunction.caseDataArr);
+
+
 			//CustomFunction.LoadCaseDataHtml(CustomFunction.caseDataArr,0,is_reload_header_tab,display_type);
 			CustomFunction.LoadCaseDataHtml(CustomFunction.caseDataArr, selectedSuite, is_reload_header_tab, display_type);
-		}, 500);
 
-		/* when add setp the suite is not auto matic click */
-		//if(display_type != 'add_case_step' && display_type != "add_action"){
-		setTimeout(function () {
-			if (selectedTabIndx != undefined) {
-				$('.suite-tab-' + selectedTabIndx).trigger('click');
-			} else {
-				$('.current_selected_tab').trigger('click');
-			}
-		}, 550);
-		//}
 
-		if (display_type == "save_record_data") {
+			/* when add setp the suite is not auto matic click */
+			//if(display_type != 'add_case_step' && display_type != "add_action"){
 			setTimeout(function () {
-				console.log('sortposition', sortposition);
-				$('.sortable-' + sortposition).trigger('click');
-			}, 800);
-		}
+				if (selectedTabIndx != undefined) {
+					$('.suite-tab-' + selectedTabIndx).trigger('click');
+				} else {
+					$('.current_selected_tab').trigger('click');
+				}
+			}, 550);
+			//}
+
+			if (display_type == "save_record_data") {
+				setTimeout(function () {
+					console.log('sortposition', sortposition);
+					$('.sortable-' + sortposition).trigger('click');
+				}, 800);
+			}					
+		});
+		
 	},
 
 	ExportCaseData() {
-		CustomFunction.FetchChromeCaseData();
-		setTimeout(function () {
+		CustomFunction.FetchChromeCaseData().then(() => {
 			/* Change Command */
 			jsonObj = CustomFunction.caseDataArr;
 			if (jsonObj.length > 0) {
@@ -784,8 +729,8 @@ var CustomFunction = {
 
 				})
 			}
-			CustomFunction.caseDataArr = newjsonObj;
-		}, 1500);
+			CustomFunction.caseDataArr = newjsonObj;		
+		});
 	},
 
 	ExportCaseDataApi() {
@@ -1074,42 +1019,42 @@ var CustomFunction = {
 		}
 	},
 
-	FetchChromeCaseData() {
+	async FetchChromeCaseData() {
 		CustomFunction.caseDataArr = {};
-		chrome.storage.local.get(null, function (result) {
-			try {
-				if (result.case_data) {
-					CustomFunction.caseDataArr = result.case_data;
-				} else {
-					/* Create a new record initial time */
-					var tempObj = {
-						case_name: "Enter Step Name",
-						case_value: [],
-					};
-					var objArr = [];
-					objArr.push(tempObj);
-					var tempMainArr = {
-						suite_name: "Untitled",
-						suite_value: objArr,
-					}
-
-					var mainTestSuidData = [];
-
-					/* initial time untitled test suit position is zero */
-					mainTestSuidData.push(tempMainArr);
-
-					CustomFunction.caseDataArr = mainTestSuidData;
-
-					/* save on local storage */
-					var case_data = {
-						case_data: mainTestSuidData,
-					};
-					browser.storage.local.set(case_data);
+		result = await browserAppData.storage.local.get(null);
+		try {
+			if (result.case_data) {
+				CustomFunction.caseDataArr = result.case_data;
+			} else {
+				/* Create a new record initial time */
+				var tempObj = {
+					case_name: "Enter Step Name",
+					case_value: [],
+				};
+				var objArr = [];
+				objArr.push(tempObj);
+				var tempMainArr = {
+					suite_name: "Untitled",
+					suite_value: objArr,
 				}
-			} catch (e) {
-				console.log(e);
+
+				var mainTestSuidData = [];
+
+				/* initial time untitled test suit position is zero */
+				mainTestSuidData.push(tempMainArr);
+
+				CustomFunction.caseDataArr = mainTestSuidData;
+
+				/* save on local storage */
+				var case_data = {
+					case_data: mainTestSuidData,
+				};
+				browser.storage.local.set(case_data);
 			}
-		});
+		} catch (e) {
+			console.log(e);
+		}
+		
 	},
 
 	LoadAccordion: function () {
@@ -1331,7 +1276,7 @@ var CustomFunction = {
 		})
 
 		/* Close the main page content */
-		$(document).on('click', '.close_main_page', function () {
+		function show_content_section () {
 			var section = "content";
 			var i, tabcontent, tablinks;
 			tabcontent = document.getElementsByClassName("tabcontent");
@@ -1343,21 +1288,15 @@ var CustomFunction = {
 				tablinks[i].style.backgroundColor = "";
 			}
 			document.getElementById(section).style.display = "block";
-		});
+		}
+		$(document).on('click', '.close_main_page', show_content_section);
 
-		$(document).on('click', '#add_new_case_action', function () {
-			if ($('#content').attr('style') == "display: block;") {
-				document.getElementById("add_new_test_case").click();
-			} else {
-				$('.close_main_page').trigger('click');
-				document.getElementById("add_new_test_case").click();
-			}
-		})
+		$(document).on('click', '#test_case', show_content_section)
 
 
 		/* Mange playing speed */
 		/* initial time set speed */
-		chrome.storage.local.get(null, function (result) {
+		browserAppData.storage.local.get(null, function (result) {
 			try {
 				if (result.speed_data) {
 					var speed_data = result.speed_data;
@@ -1405,15 +1344,15 @@ var CustomFunction = {
 			var suiteid = $(this).data('suite');
 			var r = confirm("Are you sure? you want to delete!");
 			if (r == true) {
-				CustomFunction.FetchChromeCaseData();
-				setTimeout(function () {
+				CustomFunction.FetchChromeCaseData()
+				.then(() => {
 					CustomFunction.caseDataArr.splice(suiteid, 1);
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
 					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('delete_suite', true);
-				}, 500);
+				});
 			}
 		})
 
@@ -1425,28 +1364,73 @@ var CustomFunction = {
 			var changeSuiteName = prompt("Please enter the suite name", suitename);
 			if (changeSuiteName != null) {
 				THIS.parent('.suite-action').siblings('.single-suite-tab').html(changeSuiteName);
-				CustomFunction.FetchChromeCaseData();
-				setTimeout(function () {
+				CustomFunction.FetchChromeCaseData()
+				.then(() => {
 					CustomFunction.caseDataArr[suiteid].suite_name = changeSuiteName;
 					var case_data = {
 						case_data: CustomFunction.caseDataArr,
 					};
 					browser.storage.local.set(case_data);
 					CustomFunction.DisplayCaseData('edit_suite', true);
-				}, 500);
+				})
 			}
 		})
 
 		/* Show and Hide Play Stop wrap */
 		$(document).on('click', '#record', function () {
-			$('#record_wrap').hide();
-			$('#stop_wrap').show();
-		});
+			// $('#record_wrap').hide();
+			// $('#stop_wrap').show();
+			let icon = $('#record_icon');
+			let label = $('#record_label');
 
-		/* Stop recording */
-		$(document).on('click', '#record_stop', function () {
-			$('#stop_wrap').hide();
-			$('#record_wrap').show();
+			label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
+			icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
+		})
+		/* Save all newlly recorded actions with old actions and auto naming */
+		$(document).on('click', '#save_button', async function () {
+			$('#save_label').text('Saving...');
+			$("#save_button").attr('disabled', true).css('opacity',0.5);
+			CustomFunction.FetchChromeCaseData()
+			.then(async ()=>{
+				var result = await browserAppData.storage.local.get(["meta_data"]);
+				var save_data = {
+					TC_Id: result.meta_data.testNo,
+					step_sequence: result.meta_data.stepNo,
+					step_data: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map(action => {
+						return action.main;
+					})),
+					dataset_name: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map((action, idx) => {
+						return [
+							action.name,
+							idx+1,
+							!action.is_disable,
+						]
+					}))
+				}
+				console.log("save_data >>>", save_data);
+				$.ajax({
+					url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+					method: 'POST',
+					data: save_data,
+					headers: {
+						// "Content-Type": "application/json",
+						"X-Api-Key": `${result.meta_data.apiKey}`,
+					},
+					success: function(response) {
+					    console.log(response);
+						$('#save_label').text('Success!');
+					    setTimeout(()=>{
+							$('#save_label').text('Save');
+							$("#save_button").removeAttr('disabled').css('opacity',1);
+						},1500)
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.log(errorThrown);
+						$('#save_label').text('Error!!');
+					    setTimeout(()=>$('#save_label').text('Save'),1500)
+					}
+				})
+			})
 		});
 
 		/* export logs */
@@ -1839,7 +1823,7 @@ var CustomFunction = {
 						selectedCase = $(this).data('mainindex'); //action
 						selectedStep = $(this).data('stepindex');
 
-						/* Update the chrome case date as disable */
+						/* Update the browserAppData case date as disable */
 						var textValue = 1;
 						var case_command = 'is_disable';
 						var case_index = $(this).data('mainindex');
@@ -1901,7 +1885,7 @@ var CustomFunction = {
 
 						if (!$('.parent_step' + selectedStep).hasClass('disabled-case')) {
 
-							/* Update the chrome case date as disable */
+							/* Update the browserAppData case date as disable */
 							var textValue = 0;
 							var case_command = 'is_disable';
 							var case_index = $(this).data('mainindex');
@@ -2003,42 +1987,42 @@ var CustomFunction = {
 
 
 		/* Add New Test Case */
-		$(document).on('click', '#add_new_test_case', function () {
-			CustomFunction.FetchChromeCaseData();
+		// $(document).on('click', '#add_new_test_case', function () {
+		// 	CustomFunction.FetchChromeCaseData();
 
-			setTimeout(function () {
+		// 	setTimeout(function () {
 
-				var is_auth_user = CustomFunction.is_auth_user;
-				var caseDataLength = CustomFunction.caseDataArr.length;
+		// 		var is_auth_user = CustomFunction.is_auth_user;
+		// 		var caseDataLength = CustomFunction.caseDataArr.length;
 
-				/* For non auth user */
-				if (is_auth_user == false && caseDataLength >= 3) {
-					alert('only 3 tabs are allowed, please configure your authentication settings');
-				} else {
-					/* For auth user */
-					var suiteVal = {
-						'case_name': 'Enter Step Name',
-						'case_value': []
-					};
-					var objArr = [];
-					objArr.push(suiteVal);
-					var new_obj = {
-						'suite_name': 'Untitled',
-						'suite_value': objArr
-					};
-					CustomFunction.caseDataArr.push(new_obj);
-					var case_data = {
-						case_data: CustomFunction.caseDataArr,
-					};
-					browser.storage.local.set(case_data);
-					var lstIndx = CustomFunction.caseDataArr.length;
-					lstIndx = lstIndx - 1;
+		// 		/* For non auth user */
+		// 		if (is_auth_user == false && caseDataLength >= 3) {
+		// 			alert('only 3 tabs are allowed, please configure your authentication settings');
+		// 		} else {
+		// 			/* For auth user */
+		// 			var suiteVal = {
+		// 				'case_name': 'Enter Step Name',
+		// 				'case_value': []
+		// 			};
+		// 			var objArr = [];
+		// 			objArr.push(suiteVal);
+		// 			var new_obj = {
+		// 				'suite_name': 'Untitled',
+		// 				'suite_value': objArr
+		// 			};
+		// 			CustomFunction.caseDataArr.push(new_obj);
+		// 			var case_data = {
+		// 				case_data: CustomFunction.caseDataArr,
+		// 			};
+		// 			browser.storage.local.set(case_data);
+		// 			var lstIndx = CustomFunction.caseDataArr.length;
+		// 			lstIndx = lstIndx - 1;
 
-					CustomFunction.DisplayCaseData('add_new_test_case', true, lstIndx);
+		// 			CustomFunction.DisplayCaseData('add_new_test_case', true, lstIndx);
 
-				}
-			}, 500);
-		})
+		// 		}
+		// 	}, 500);
+		// })
 
 		/* Click on suit tab */
 		$(document).on('click', '.single-suite-tab', function () {
@@ -2347,7 +2331,7 @@ var CustomFunction = {
 			document.getElementById(section).style.display = "block";
 		})
 
-		chrome.storage.local.get(null, function (result) {
+		browserAppData.storage.local.get(null, function (result) {
 			try {
 				if (result.is_initial_app_open) {
 					$('.close_main_page').trigger('click');
@@ -2362,7 +2346,7 @@ var CustomFunction = {
 
 	InitialTimeCheckAuthUserOrNot() {
 		/* fetch username and password for browser storage */
-		chrome.storage.local.get(null, function (result) {
+		browserAppData.storage.local.get(null, function (result) {
 			try {
 				if (result.auth_data) {
 					var auth_data = result.auth_data;
@@ -2381,9 +2365,52 @@ var CustomFunction = {
 		});
 	},
 
-	init: function () {
+	init: async function () {
 		CustomFunction.InitialTimeCheckAuthUserOrNot();
-		CustomFunction.LoadEvent();
+		result = await browser.storage.local.get('meta_data');
+		meta_data = result.meta_data
+		console.log("metdata =====",result);
+		resp = await $.ajax({
+			type: "GET",
+			url: `${meta_data.url}/ai_recorder_init`,
+			headers: {
+				// "Content-Type": "application/json",
+				"X-Api-Key": `${meta_data.apiKey}`,
+			},
+			data: {"test_id":`${meta_data.testNo}`, "step_seq":`${meta_data.stepNo}`},
+		});
+		console.log("resp =====",resp);
+		$('#test_label').text(meta_data.testNo);
+		case_data = [
+			{
+				"suite_name": meta_data.testName.substring(0,50),
+				"suite_value": [
+					{	
+						"case_name": resp.step.name,
+						"case_no": meta_data.stepNo,
+						"case_value": resp.step.actions.map(action => {
+							return {
+								"action": action.short.action,
+								"element": action.short.element,
+								"value": action.short.value,
+								"is_disable": action.is_disable,
+								"name": action.name,
+								"data_list": [
+									action.short.value
+								],
+								"main": action.main,
+							}
+						}),
+
+					}
+				] 	
+			}	
+		]
+		console.log(case_data);
+		browser.storage.local.set({
+			case_data: case_data
+		})
+		.then(CustomFunction.LoadEvent);
 	}
 }
 

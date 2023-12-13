@@ -1,4 +1,3 @@
-
 var newFormatters = {};
 var dataFiles;
 var extensions;
@@ -21,6 +20,19 @@ function readSuiteFromString(test_suite) {
         }
     }
 }
+
+browserAppData.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if (request.action == 'content_classify') {
+            console.log("content_classify", request)
+            browserAppData.runtime.sendMessage({
+                action: 'classify',
+                text: request.text,
+            }).then(text_classifier => sendResponse(text_classifier));
+            return true;  // Will respond asynchronously.
+        }
+    }
+);
 
 function parseSuiteName(test_suite) {
     var pattern = /<title>(.*)<\/title>/gi;
@@ -120,20 +132,21 @@ function saveSetting() {
 
 function saveData() {
     try {
+        // The following code is the previous method of recording which is not required for now
 
-        var s_suite = getSelectedSuite();
-        var s_case = getSelectedCase();
-        var data = {
-            data: storeAllTestSuites()
-        };
-
-        browser.storage.local.set(data);
-        if (s_suite) {
-            setSelectedSuite(s_suite.id);
-        }
-        if (s_case) {
-            setSelectedCase(s_case.id);
-        }
+        // var s_suite = getSelectedSuite();
+        // var s_case = getSelectedCase();
+        // var data = {
+        //     data: storeAllTestSuites()
+        // };
+        // console.log(">>> data", data);
+        // browser.storage.local.set(data);
+        // if (s_suite) {
+        //     setSelectedSuite(s_suite.id);
+        // }
+        // if (s_case) {
+        //     setSelectedCase(s_case.id);
+        // }
 
         /* Custom Function */
         CustomFunction.SaveCaseDataAsJson();
@@ -1143,9 +1156,12 @@ $(function() {
     });
 });
 
-function evalIfCondition(expression) {
-    return eval(expandForStoreEval(expression));
-}
+
+// The following code is untested!! just replaced Eval()
+
+// function evalIfCondition(expression) {
+//     return eval(expandForStoreEval(expression));
+// }
 
 function isVarName(str) {
 

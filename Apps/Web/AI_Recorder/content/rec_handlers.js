@@ -60,7 +60,13 @@ Recorder.addEventHandler('type', 'change', function(event) {
 
 /* Recorder Click event */
 var preventClickTwice = false;
+var select_xpath
 Recorder.addEventHandler('clickAt', 'click', function(event) {
+    // console.log('click event', event);
+    // console.log("event.target", event.target);
+    var xpaths = this.locatorBuilders.buildAll(event.target);
+    if ('select' == event.target.nodeName.toLowerCase()) select_xpath = xpaths
+    // console.log("xpaths", xpaths);
     if (event.button == 0 && !preventClick && event.isTrusted) {
         if (!preventClickTwice) {
             var top = event.pageY,
@@ -71,9 +77,7 @@ Recorder.addEventHandler('clickAt', 'click', function(event) {
                 left -= element.offsetLeft;
                 element = element.offsetParent;
             } while (element);
-            var target = event.target;
-            this.record("click", this.locatorBuilders.buildAll(event.target), '');
-            var arrayTest = this.locatorBuilders.buildAll(event.target);
+            this.record("click", xpaths, '');
             preventClickTwice = true;
         }
         setTimeout(function() { preventClickTwice = false; }, 30);
@@ -90,7 +94,7 @@ Recorder.addEventHandler('doubleClickAt', 'dblclick', function(event) {
         left -= element.offsetLeft;
         element = element.offsetParent;
     } while (element);
-    this.record("doubleClick", this.locatorBuilders.buildAll(event.target), '');
+    this.record("double click", this.locatorBuilders.buildAll(event.target), '');
 }, true);
 
 
@@ -405,6 +409,9 @@ Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
         } else if (m.cmd.includes("Value")) {
             self.record(m.cmd, tmpText, getInputValue(event.target));
         }
+        else{
+            self.record(m.cmd, tmpText, tmpVal);
+        }
         myPort.onMessage.removeListener(portListener);
     });
 }, true);
@@ -453,14 +460,37 @@ Recorder.addEventHandler('select', 'focus', function(event) {
     }
 }, true);
 
+/* on focusout */
+var change_event_invoked = false;
+Recorder.addEventHandler('select_focusout', 'focusout', function(event) {
+    // if (event.target.tagName.toLowerCase() == 'select') console.log('select focusout', event);
+    if (event.target.tagName.toLowerCase() !== 'select') return;
+    setTimeout(()=>{
+        if (change_event_invoked) return;
+        var option = event.target.options[event.target.selectedIndex];
+        // console.log("event.target", event.target);
+        var xpaths = this.locatorBuilders.buildAll(event.target);
+        if (xpaths.length == 0) xpaths = select_xpath;
+        // console.log("xpaths", xpaths);
+        this.record("select", xpaths, this.getOptionLocator(option));
+        // console.log("option from select focusout event", option);
+        change_event_invoked = false;
+    }, 250)
+}, true);
+
 /* change */
-Recorder.addEventHandler('select', 'change', function(event) {
+Recorder.addEventHandler('select_change', 'change', function(event) {
     if (event.target.tagName) {
         var tagName = event.target.tagName.toLowerCase();
         if ('select' == tagName) {
+            console.log("select change event", event);
             if (!event.target.multiple) {
                 var option = event.target.options[event.target.selectedIndex];
                 this.record("select", this.locatorBuilders.buildAll(event.target), this.getOptionLocator(option));
+                change_event_invoked = true;
+                setTimeout(()=>{
+                    change_event_invoked = false;
+                },500)
             } else {
                 var options = event.target.options;
                 for (var i = 0; i < options.length; i++) {

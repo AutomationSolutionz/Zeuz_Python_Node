@@ -9,6 +9,15 @@
         "48": "panel/assets/images/small_logo.png",
         "128": "panel/assets/images/small_logo.png"
     },
+    "commands": {
+        "toggle-xpath": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+U",
+                "mac": "Command+Shift+U"
+            },
+            "description": "Toggle plugin"
+        }
+    },
     "permissions": [
         "tabs",
         "activeTab",
@@ -28,6 +37,9 @@
         "https://*/"
     ],
     "homepage_url": "https://www.zeuz.ai/",
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
+    },
     "content_scripts": [
         {
             "matches": [
@@ -35,6 +47,7 @@
                 "https://*/*"
             ],
             "js": [
+                "common_files/poly_fill.js",
                 "content/injecter.js"
             ],
             "all_frames": true,
@@ -53,6 +66,7 @@
                 "content/commandhandlers.js",
                 "content/browserbot.js",
                 "common_files/escape.js",
+                "content/sel_api.js",
                 "content/loc_builders.js",
                 "content/recorder.js",
                 "content/rec_handlers.js",

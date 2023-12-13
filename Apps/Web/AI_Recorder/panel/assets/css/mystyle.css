@@ -26,7 +26,8 @@ body
   font-family: Arial;
   color: #9FC8FA;
   /*width: 10%;*/
-  width: 15%;
+  min-width: 20%;
+  max-width: 60%;
   text-align: center;
 }
 .scrollBar
@@ -45,7 +46,7 @@ body
 
 #welcome_page::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
   border-radius: 50px;
 }
 #help::-webkit-scrollbar
@@ -56,7 +57,7 @@ body
 
 #help::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
 }
 
 #settings::-webkit-scrollbar
@@ -67,7 +68,7 @@ body
 
 #settings::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
 }
 #content::-webkit-scrollbar
 {
@@ -77,7 +78,7 @@ body
 
 #content::-webkit-scrollbar-thumb
 {
-  background: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);  
+  background: white;
 }
 
 #header_tab li a {
@@ -582,12 +583,7 @@ body
 }
 .sidebar_menu
 {
-  /*padding: 15px 30px;*/
-  padding: 10px 30px;
-  display: block;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  text-align: center;
+  width: 170px;
 }
 .sidebar_menu img
 {
@@ -621,7 +617,7 @@ body
 
 .bottom_left_icon a
 {
-  background: none
+  background: none;
   color:transparent;
   background-color: transparent;
 }
@@ -643,10 +639,10 @@ body
 {
   color: #000
 }
-.bottom_menu_sidebar:hover
+/* .bottom_menu_sidebar:hover
 {
   background: #af8fff
-}
+} */
 .head_text a
 {
   font-size: 16px;

@@ -1581,6 +1581,7 @@ pre {
     .table-responsive-xl > .table-bordered {
       border: 0; } }
 
+
 .table-responsive {
   display: block;
   width: 100%;
@@ -5514,7 +5515,8 @@ button.bg-dark:focus {
 .clearfix::after {
   display: block;
   clear: both;
-  content: ""; }
+  content: ""; 
+}
 
 .d-none {
   display: none !important; }
@@ -8193,12 +8195,49 @@ h1, h2, h3, h4, h5,
   height: 100vh;
   overflow:hidden;
 }
+.material-icons {
+  font-family: "Material Icons";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 32px; /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  color: white;
 
+  /* Support for all WebKit browsers. */
+  -webkit-font-smoothing: antialiased;
+  /* Support for Safari and Chrome. */
+  text-rendering: optimizeLegibility;
+
+  /* Support for Firefox. */
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Support for IE. */
+  font-feature-settings: "liga";
+}
+.material-icons-label {
+  font-size: 19px;
+  color: white;
+  padding-left: 7px;
+}
 #sidebar {
-  min-width: 300px;
+  width: 30%;
+  min-width: 200px;
   max-width: 300px;
-  /*background: #32373d;*/
-  background-image: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff);
+  /* background: #32373d; */
+  /* background-image: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff); */
+  /* background-image: linear-gradient(109.6deg, rgb(20, 30, 48) 11.2%, rgb(36, 59, 85) 91.1%); */
+  background: linear-gradient(to left, #434343 0%, black 100%);;
+  /* background: radial-gradient(circle at 10% 20%, rgb(0, 0, 0) 0%, rgb(64, 64, 64) 90.2%); */
+  /* border-style: solid;
+  border-width: 5px;
+  border-color: black; */
+  /* border-radius: 20px; */
   color: #fff;
   -webkit-transition: all 0.3s;
   -o-transition: all 0.3s;

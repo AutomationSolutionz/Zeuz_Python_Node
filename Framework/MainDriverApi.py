@@ -15,6 +15,7 @@ import requests
 import zipfile
 from multiprocessing.pool import ThreadPool
 from urllib3.exceptions import InsecureRequestWarning
+import pyperclip
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 import threading
@@ -525,7 +526,7 @@ def run_all_test_steps_in_a_test_case(
                 continue
 
             # get step info
-            current_step_name = all_step_info[StepSeq - 1]["step_name"]
+            CommonUtil.current_step_name = current_step_name = all_step_info[StepSeq - 1]["step_name"]
             CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
             CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
 
@@ -807,6 +808,20 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
     except:
         pass
 
+
+def advanced_float(text):
+    try:
+        return float(text)
+    except:
+        import re
+        nums = re.findall(r"-?\d+\.?\d*", text)
+        if len(nums) == 0:
+            raise ValueError(f"could not convert string to float: '{text}'")
+        num = nums[0]
+        num = num[:-1] if num.endswith('.') else num
+        return float(num)
+
+
 def set_important_variables():
     try:
         for module in CommonUtil.common_modules[:-1]:
@@ -818,6 +833,11 @@ def set_important_variables():
                 continue
         if "sr" not in shared.shared_variables:
             shared.shared_variables.update({"sr": shared})
+        shared.shared_variables.update({
+            "clipboard_paste": pyperclip.paste,
+            "clipboard_set": pyperclip.copy,
+            "number": advanced_float
+        })
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -940,6 +960,7 @@ def run_test_case(
         shared.Set_Shared_Variables("run_id", run_id)
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
+        CommonUtil.current_tc_name = testcase_info['title']
         CommonUtil.load_testing = False
         CommonUtil.clear_performance_metrics()
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
@@ -2069,6 +2090,8 @@ def main(device_dict, user_info_object):
                     CommonUtil.run_cancelled = True
                 del CommonUtil.all_threads["run_cancel"]
             CommonUtil.run_cancelled = False
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                input("[Local run] Press any key to finish")
 
             break   # Todo: remove this after server side multiple run-id problem is fixed
 

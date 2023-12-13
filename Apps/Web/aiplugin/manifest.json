@@ -23,8 +23,8 @@
         {
             "all_frames": true,
             "matches": [
-                "http://*/",
-                "https://*/"
+                "http://*/*",
+                "https://*/*"
             ],
             "js": [
                 "inspect.js"

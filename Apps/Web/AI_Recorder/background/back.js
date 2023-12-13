@@ -1,6 +1,16 @@
+var metaData = {};
+
+fetch("./data.json")
+    .then(Response => Response.json())
+    .then(data => {
+        metaData = data;
+    });
+
 const browserAppData = chrome || browser;
 
 import './back_zeuz.js';
+import './sentiment_analyzer.js';
+import './back_reocrder.js';
 // import '../common_files/poly_fill.js';
 
 /* Zeuz function start */
@@ -11,7 +21,7 @@ var clickEnabled = true;
 
 // import {getWindowSize} from "/back_zeuz.js";
 function getWindowSize(callback) {
-    chrome.storage.local.get('window', function(result) {
+    browserAppData.storage.local.get('window', function(result) {
         var height = 740;
         //var width = 780;
         var width = 1110;
@@ -32,6 +42,10 @@ function getWindowSize(callback) {
 }
 
 function open_panel(tab) {
+    browserAppData.storage.local.set({
+        meta_data: metaData,
+        recorded_actions: [],
+    });
     let contentWindowId = tab.windowId;
     if (master[contentWindowId] != undefined) {
         browserAppData.windows.update(master[contentWindowId], {
@@ -100,59 +114,40 @@ function open_panel(tab) {
 
 /* Create menu */
 function create_menus() {
-    browserAppData.contextMenus.create({
-        id: "verifyText",
-        title: "verifyText",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "verifyTitle",
-        title: "verifyTitle",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "verifyValue",
-        title: "verifyValue",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "assertText",
-        title: "assertText",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "assertTitle",
-        title: "assertTitle",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "assertValue",
-        title: "assertValue",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "storeText",
-        title: "storeText",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "storeTitle",
-        title: "storeTitle",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
-    });
-    browserAppData.contextMenus.create({
-        id: "storeValue",
-        title: "storeValue",
-        documentUrlPatterns: ["<all_urls>"],
-        contexts: ["all"]
+    let menus = [
+        ["Go_to_link", "Go to link"],
+        ["Save_Text", "Save Text"],
+        ["Validate_Text", "Validate Text"],
+        // ["Validate_Text_By_AI", "Validate Text by AI"],
+        ["Wait_For_Element_To_Appear", "Wait for Element to Appear"],
+        ["Wait_For_Element_To_Disappear", "Wait for Element to Disappear"],
+    ]
+    for(let i =0; i< menus.length; i++){
+        browserAppData.contextMenus.create({
+            id: menus[i][0],
+            title: menus[i][1],
+            documentUrlPatterns: [
+                "http://*/*",
+                "https://*/*"
+            ],
+            contexts: ["all"]
+        })
+    }
+    browserAppData.runtime.sendMessage({
+        action: 'content_classify',
+        text: "Hello world",
+    })
+    .then(()=>{
+        console.log("Classify init finished");
+        browserAppData.contextMenus.create({
+            id: "Validate_Text_By_AI",
+            title: "Validate Text by AI",
+            documentUrlPatterns: [
+                "http://*/*",
+                "https://*/*"
+            ],
+            contexts: ["all"]
+        })
     });
 }
 
@@ -177,10 +172,11 @@ browserAppData.contextMenus.onClicked.addListener(function(info, tab) {
 
 browserAppData.runtime.onConnect.addListener(function(m) {
     port = m;
+    console.log(port);
 });
 
 /* After install open the url */
-chrome.runtime.onInstalled.addListener(function (details) {
+browserAppData.runtime.onInstalled.addListener(function (details) {
     if (details.reason === 'install') {
         console.log("Recorder Installed");
     }

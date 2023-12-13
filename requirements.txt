@@ -50,3 +50,4 @@ xmltodict
 configobj
 boto3
 pandas
+pyperclip

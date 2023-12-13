@@ -122,6 +122,7 @@ rerunning_on_fail = False
 upload_on_fail = True
 rerun_on_fail = True
 passed_after_rerun = False
+Affirmative_words = ("yes", "true", "ok", "enable")
 
 runid_index = 0
 tc_index = 0
@@ -134,6 +135,7 @@ current_step_name = ""
 current_step_id = None
 current_step_sequence = None
 current_tc_no = ""
+current_tc_name = ""
 current_session_name = ""
 custom_step_duration = ""
 jwt_token = ""

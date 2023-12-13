@@ -231,8 +231,8 @@ def lorust_performance_action_handler(
         # executables for each os. We may also download on demand.
         uname = platform.uname()
 
-        # Example: lorust_Linux_x86_64, lorust_Darwin_arm64
-        binary_name = f"lorust_{uname.system}_{uname.machine}"
+        # Example: lorust_Linux_x86_64.exe, lorust_Darwin_arm64.exe, lorust_Windows_x86_64.exe
+        binary_name = f"lorust_{uname.system}_{uname.machine}.exe"
         lorust_path = lorust_path / binary_name
 
         subprocess.run(' '.join([

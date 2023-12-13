@@ -1,25 +1,15 @@
-<!DOCTYPE html>
 <html lang="en">
     <head>
         <title>
             ZeuZ 1.0
         </title>
-        <meta charset="utf-8"/>
-        <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
-        <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet"/>
-        <!-- <link rel="stylesheet" href="assets/css/jquery-ui.min.css"> -->
-        <link href="assets/css/bootstrap.min.css" rel="stylesheet"/>
-        <link href="assets/css/font-awesome-all.css" rel="stylesheet"/>
-        <link href="assets/css/style.css" rel="stylesheet"/>
-        <link href="assets/css/mystyle.css" rel="stylesheet"/>
-        <!-- Library Files -->
+        <meta charset="utf-8" />        
         <script src="assets/js/jquery.min.js">
         </script>
         <script src="assets/js/lib/jquery-ui.min.js">
         </script>
         <script src="assets/js/lib/utils_js.js">
         </script>
-        <!-- modi -->
         <script src="assets/js/lib/jquery-ui-slider-pips.js">
         </script>
         <script src="assets/js/lib/jquery.tablesorter.min.js">
@@ -28,39 +18,40 @@
         </script>
         <script src="assets/js/lib/jquery.tabletab.js">
         </script>
+        <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
+        <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet" />
+        <link href="assets/css/bootstrap5.3.2/bootstrap.min.css" rel="stylesheet" />
+        <link href="assets/css/font-awesome-all.css" rel="stylesheet" /> 
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link href="assets/css/style.css" rel="stylesheet" />
+        <link href="assets/css/mystyle.css" rel="stylesheet" />
+
         <script src="assets/js/lib/colResizable-1.5.min.js">
         </script>
-        <!-- encode library -->
         <script src="assets/js/lib/hmac-sha256.js">
         </script>
         <script src="assets/js/lib/enc-base64-min.js">
         </script>
-        <!-- UI Files -->
         <script src="assets/js/UI/hideshow.js">
         </script>
         <script src="assets/js/UI/panelSetting.js">
         </script>
         <script src="assets/js/UI/sortable-ui.js">
         </script>
-        <!-- Custom Files -->
         <script src="assets/js/popper.min.js">
         </script>
         <script src="assets/js/bootstrap.min.js">
         </script>
         <script src="assets/js/custom.js">
         </script>
-        <!-- Content Js -->
         <script src="../content/utils_js.js">
         </script>
-        <!-- modi -->
         <script src="../content/atoms_js.js">
         </script>
-        <!-- modi -->
-        <!-- <script src="../content/sel_api.js"></script> modi -->
-        <!-- background -->
+        <script src="../content/sel_api.js">
+        </script>
         <script src="assets/js/background/doc.js">
         </script>
-        <!-- Zeuz Library -->
         <script src="assets/js/zeuz/selenium-ide/testCase.js">
         </script>
         <script src="assets/js/zeuz/codemirror-5.31.0/lib/codemirror.js">
@@ -89,90 +80,83 @@
             <nav id="sidebar">
                 <div class="nav_upper">
                     <div class="img bg-wrap tablink opensection text-center py-4" data-section="welcome_page" id="defaultOpen">
-                        <img class="img-fluid" id="logo_dark" src="assets/images/logo_ZeuZ_dark_background.png"/>
+                        <img class="img-fluid" id="logo_dark" src="assets/images/logo_ZeuZ_dark_background.png" />
                     </div>
-                    <ul class="list-unstyled components">
-                        <!-- <li class="tablink opensection" data-section="content" id="add_new_case_action"> -->
-                        <li class="tablink" id="add_new_case_action">
-                            <div class="pl-0 sidebar_menu" href="#">
-                                TEST-0000
-                            </div>
+                    <ul class="d-flex flex-column justify-content-center">
+                        <li class="tablink d-flex flex-wrap justify-content-center" id="test_case">
+                            <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu">
+                                <span class="material-icons">biotech</span>
+                                <span class="material-icons-label" id="test_label">TEST-0000</span>
+                            </button>
                         </li>
-                        <li class="tablink push_right" id="record_wrap">
-                            <div class="pl-0 sidebar_menu" id="record">
-                                <img class="normal-image" id="start_record_image" src="assets/images/icons/record.png"/>
-                                <img class="hover-image" src="assets/images/icons/record-on.png"/>
-                            </div>
+                        <li class="tablink d-flex flex-wrap justify-content-center" id="record_wrap">
+                            <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" id="record">
+                                <span class="material-icons" id="record_icon">camera</span>
+                                <span class="material-icons-label" id="record_label">Record</span>
+                            </button>
                         </li>
-                        <li class="tablink push_right" id="stop_wrap" style="display: none;">
-                            <div class="pl-0 sidebar_menu" id="record_stop">
-                                <img class="normal-image" id="stop_record_image" src="assets/images/icons/stop.png"/>
-                                <img class="hover-image" src="assets/images/icons/stop-on.png"/>
-                            </div>
+                        <li class="tablink d-flex flex-wrap justify-content-center" id="save_wrap">
+                            <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" id="save_button">
+                                <span class="material-icons">save</span>
+                                <span class="material-icons-label" id='save_label'>Save</span>
+                            </button>
                         </li>
-                        <li class="tablink push_right" id="play_wrap">
+                        <li class="tablink push_right" id="play_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="playback">
-                                <img class="normal-image" src="assets/images/icons/play.png"/>
-                                <img class="hover-image" src="assets/images/icons/play-on.png"/>
+                                <img class="normal-image" src="assets/images/icons/play.png" />
+                                <img class="hover-image" src="assets/images/icons/play-on.png" />
                             </div>
                         </li>
                         <li class="tablink push_right" id="pause_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="pause">
-                                <img class="normal-image" src="assets/images/icons/pause.png"/>
-                                <img class="hover-image" src="assets/images/icons/pause-on.png"/>
+                                <img class="normal-image" src="assets/images/icons/pause.png" />
+                                <img class="hover-image" src="assets/images/icons/pause-on.png" />
                             </div>
                         </li>
                         <li class="tablink push_right" id="resume_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="resume">
-                                <img class="normal-image" src="assets/images/icons/play.png"/>
-                                <img class="hover-image" src="assets/images/icons/play-on.png"/>
+                                <img class="normal-image" src="assets/images/icons/play.png" />
+                                <img class="hover-image" src="assets/images/icons/play-on.png" />
                             </div>
                         </li>
-                        <li class="tablink push_right" id="replay_wrap">
+                        <li class="tablink push_right" id="replay_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="replay">
-                                <img class="normal-image" src="assets/images/icons/replay.png"/>
-                                <img class="hover-image" src="assets/images/icons/replay-on.png"/>
+                                <img class="normal-image" src="assets/images/icons/replay.png" />
+                                <img class="hover-image" src="assets/images/icons/replay-on.png" />
                             </div>
                         </li>
-                        <li class="tablink push_right" id="play_all_wrap">
+                        <li class="tablink push_right" id="play_all_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="playAll">
-                                <img class="normal-image" src="assets/images/icons/playall.png"/>
-                                <img class="hover-image" src="assets/images/icons/playall-on.png"/>
+                                <img class="normal-image" src="assets/images/icons/playall.png" />
+                                <img class="hover-image" src="assets/images/icons/playall-on.png" />
                             </div>
                         </li>
-                        <li class="tablink push_right" id="export_wrap">
+                        <li class="tablink push_right" id="export_wrap" style="display: none;">
                         </li>
-                        <li class="tablink push_right" id="import_wrap">
+                        <li class="tablink push_right" id="import_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="import_case">
-                                <img class="normal-image" src="assets/images/icons/import.png"/>
-                                <img class="hover-image" src="assets/images/icons/import-on.png"/>
+                                <img class="normal-image" src="assets/images/icons/import.png" />
+                                <img class="hover-image" src="assets/images/icons/import-on.png" />
                             </div>
-                            <input accept="*.json" id="import_json" style="display: none;" type="file"/>
+                            <input accept="*.json" id="import_json" style="display: none;" type="file" />
                         </li>
                     </ul>
                 </div>
-                <ul class="list-unstyled bottom_left_icon components mb-5" id="bottom_section">
-                    <li class="tablink push_right opensection bottom_menu_sidebar" data-section="help">
-                        <div class="pl-0 sidebar_menu" href="#">
-                            <img class="normal-image" src="assets/images/leftIcon/help.png" style="margin-left:41px"/>
-                            <img class="hover-image" src="assets/images/leftIcon/help-on.png" style="margin-left:41px"/>
-                        </div>
+                <ul class="d-flex flex-column justify-content-center" id="bottom_section">
+                    <li class="tablink d-flex justify-content-center opensection my-2" data-section="help">
+                        <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
+                            <span class="material-icons" id="record_icon">help</span>
+                            <span class="material-icons-label" id="record_label">Help</span>
+                        </button>
                     </li>
-                    <li class="tablink push_right configuration_section opensection bottom_menu_sidebar" data-section="settings">
-                        <div class="pl-0 sidebar_menu" href="#">
-                            <img class="normal-image" src="assets/images/leftIcon/settingss.png" style="margin-left:41px"/>
-                            <img class="hover-image" src="assets/images/leftIcon/settingson.png" style="margin-left:41px"/>
-                        </div>
-                    </li>
-                    <li class="tablink push_right opensection1" data-section="server">
-                        <div class="pl-0 sidebar_menu" id="servericon" style="padding-top: 5px;">
-                            <!-- <img class="normal-image" style="width: 100px; margin-left:41px" src="assets/images/leftIcon/server.png">
-                                                        <img class="hover-image" style="width: 100px; margin-left:41px" src="assets/images/leftIcon/serveron.png"> -->
-                        </div>
+                    <li class="tablink d-flex justify-content-center opensection my-2" data-section="settings">
+                        <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
+                            <span class="material-icons" id="record_icon">settings</span>
+                            <span class="material-icons-label" id="record_label">Settings</span>
+                        </button>
                     </li>
                 </ul>
             </nav>
-            <!-- Page Content  -->
             <div class="tabcontent scrollBar" id="content" style="display: none;">
                 <div class="clearfix" id="nav_menu_up">
                     <nav style="display: flex; width: 100%;">
@@ -212,7 +196,7 @@
                                     <a aria-expanded="false" aria-haspopup="true" class="dropdown-toggle" data-toggle="dropdown" href="#" id="dropdownMenuLink">
                                         More
                                         <span>
-                                            <img src="assets/images/more-arrow-down.png"/>
+                                            <img src="assets/images/more-arrow-down.png" />
                                         </span>
                                     </a>
                                     <div aria-labelledby="dropdownMenuLink" class="dropdown-menu dropdown-menu-right dropdown-menu-lg-left">
@@ -235,18 +219,16 @@
                                 </div>
                             </li>
                         </ul>
-                        <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
-                            <img src="assets/images/icons/add_new_suite.png"/>
-                        </a>
+                        <!-- <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
+                            <img src="assets/images/icons/add_new_suite.png" />
+                        </a> -->
                     </nav>
                 </div>
                 <div class="clearfix" id="recorder_step">
                     <div class="second_table table-responsive" id="main_table">
-                        <!-- Fixed header table-->
                         <table class="table table-borderless border_separate table-fixed" id="sortable">
                             <thead>
                                 <tr>
-                                    <!-- <th id="draggable" scope="col" class="col-1"> AI</th> -->
                                     <th class="col-1 tbl-header" scope="col">
                                         AI
                                     </th>
@@ -261,60 +243,57 @@
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody class="table_body" id="case_data_wrap">
+                            <tbody class="table_body" id="case_data_wrap" style="min-height: 600px;">
                             </tbody>
                         </table>
-                        <!-- <div id="droppable">
-                                                                    <p>Drop here</p>
-                                                            </div> -->
                         <nav class="icon_container row" style="display: flex;">
                             <ul class="icon_grid m-0 d-flex row" id="active_action_icon" style="display: none !important; padding-left: 0px;">
-                                <li>
+                                <!-- <li>
                                     <a class="action-icons" href="javascript:void(0);" id="edit_case">
-                                        <img class="normal-image" src="assets/images/Edit.png"/>
-                                        <img class="hover-image" src="assets/images/Edit_blue.png"/>
+                                        <img class="normal-image" src="assets/images/Edit.png" />
+                                        <img class="hover-image" src="assets/images/Edit_blue.png" />
                                     </a>
                                 </li>
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="add_case_step">
-                                        <img class="normal-image" src="assets/images/AddStep.png"/>
-                                        <img class="hover-image" src="assets/images/AddStep_blue.png"/>
+                                        <img class="normal-image" src="assets/images/AddStep.png" />
+                                        <img class="hover-image" src="assets/images/AddStep_blue.png" />
                                     </a>
                                 </li>
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="add_action">
-                                        <img class="normal-image" src="assets/images/AddAction.png"/>
-                                        <img class="hover-image" src="assets/images/AddAction_blue.png"/>
+                                        <img class="normal-image" src="assets/images/AddAction.png" />
+                                        <img class="hover-image" src="assets/images/AddAction_blue.png" />
                                     </a>
                                 </li>
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="case_disable">
-                                        <img class="normal-image" src="assets/images/Disable.png"/>
-                                        <img class="hover-image" src="assets/images/Disable_blue.png"/>
+                                        <img class="normal-image" src="assets/images/Disable.png" />
+                                        <img class="hover-image" src="assets/images/Disable_blue.png" />
                                     </a>
                                 </li>
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="case_enable">
-                                        <img class="normal-image" src="assets/images/Enable.png"/>
-                                        <img class="hover-image" src="assets/images/Enable_blue.png"/>
+                                        <img class="normal-image" src="assets/images/Enable.png" />
+                                        <img class="hover-image" src="assets/images/Enable_blue.png" />
                                     </a>
                                 </li>
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="case_copy">
-                                        <img class="normal-image" src="assets/images/Copy.png"/>
-                                        <img class="hover-image" src="assets/images/Copy_blue.png"/>
+                                        <img class="normal-image" src="assets/images/Copy.png" />
+                                        <img class="hover-image" src="assets/images/Copy_blue.png" />
                                     </a>
                                 </li>
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="case_paste">
-                                        <img class="normal-image" src="assets/images/Paste.png"/>
-                                        <img class="hover-image" src="assets/images/Paste_blue.png"/>
+                                        <img class="normal-image" src="assets/images/Paste.png" />
+                                        <img class="hover-image" src="assets/images/Paste_blue.png" />
                                     </a>
-                                </li>
+                                </li> -->
                                 <li>
                                     <a class="action-icons" href="javascript:void(0);" id="case_delete">
-                                        <img class="normal-image" src="assets/images/Delete.png"/>
-                                        <img class="hover-image" src="assets/images/Delete_blue.png"/>
+                                        <img class="normal-image" src="assets/images/Delete.png" />
+                                        <img class="hover-image" src="assets/images/Delete_blue.png" />
                                     </a>
                                 </li>
                             </ul>
@@ -333,8 +312,7 @@
                         </nav>
                     </div>
                 </div>
-                <!-- Recorder Step END HERE -->
-                <div class="card shadow mh-manual pl-5 clearfix" id="log_section_bottom">
+                <!-- <div class="card shadow mh-manual pl-5 clearfix" id="log_section_bottom">
                     <div class="card-body">
                         <div class="log_section_head px-1 py-1 d-flex row">
                             <div class="log_section_head_left d-flex row">
@@ -365,24 +343,19 @@
                             </div>
                             <div class="log_section_head_right">
                                 <a href="javascript:void(0);" id="export_logs" title="Export logs">
-                                    <img src="assets/images/exportLog.png"/>
+                                    <img src="assets/images/exportLog.png" />
                                 </a>
                             </div>
                         </div>
                         <div class="log_container d-flex row log_date mt-3" id="logcontainer" style="padding-top: 5px;">
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
-            <!-- Right Side Page Content Container Div Close Here -->
-            <!-- Settings Page Start Here -->
             <div class="tabcontent scrollBar" id="settings" style="display: none;">
-                <!-- <div class="settings_header text-right">
-                                        <img class="p-2" src="assets/images/Close.png">
-                                </div> -->
                 <div class="d-flex rwo close_div">
                     <a class="close_main_page" href="javascript:void(0);">
-                        <img class="p-2" src="assets/images/Close.png"/>
+                        <img class="p-2" src="assets/images/Close.png" />
                     </a>
                 </div>
                 <div class="settings_container">
@@ -396,31 +369,31 @@
                                     <p>
                                         Server URL:
                                     </p>
-                                    <input class="input_form" id="server_url" placeholder="https://yourdomain.com" type="text"/>
+                                    <input class="input_form" id="server_url" placeholder="https://yourdomain.com" type="text" />
                                 </div>
                                 <div class="form_input d-flex row setting-frm-row">
                                     <p>
                                         Username:
                                     </p>
-                                    <input class="input_form" id="username" placeholder="Your Account" type="text"/>
+                                    <input class="input_form" id="username" placeholder="Your Account" type="text" />
                                 </div>
                                 <div class="form_input d-flex row setting-frm-row">
                                     <p>
                                         Password:
                                     </p>
-                                    <input class="input_form" id="password" placeholder="Password" type="password"/>
+                                    <input class="input_form" id="password" placeholder="Password" type="password" />
                                 </div>
                                 <div class="form_input d-flex row setting-frm-row">
                                     <p>
                                         Server Port:
                                     </p>
-                                    <input class="input_form" id="server_port" placeholder="Server Port" type="text"/>
+                                    <input class="input_form" id="server_port" placeholder="Server Port" type="text" />
                                 </div>
                             </div>
                             <div class="authenticate_button">
-                                <img id="auth_loading" src="assets/images/loader.gif" style="width: 20px;display: none;"/>
+                                <img id="auth_loading" src="assets/images/loader.gif" style="width: 20px;display: none;" />
                                 <a href="javascript:void(0);" id="authenticate">
-                                    <img src="assets/images/Authenticate-on.png"/>
+                                    <img src="assets/images/Authenticate-on.png" />
                                 </a>
                             </div>
                         </div>
@@ -496,15 +469,13 @@
                     </div>
                 </div>
             </div>
-            <!-- Help Section Start Here -->
             <div class="tabcontent scrollBar" id="help" style="display: none;">
                 <div class="help_section">
                     <div class="d-flex rwo close_div">
                         <a class="close_main_page" href="javascript:void(0);">
-                            <img class="p-2" src="assets/images/Close.png"/>
+                            <img class="p-2" src="assets/images/Close.png" />
                         </a>
                     </div>
-                    <!-- Nav tabs -->
                     <ul class="nav nav-tabs" role="tablist" style="background: #fff">
                         <li class="nav-item">
                             <a class="nav-link active" data-toggle="tab" href="#howTo">
@@ -522,12 +493,10 @@
                             </a>
                         </li>
                     </ul>
-                    <!-- Tab panes -->
                     <div class="tab-content">
                         <div class="howTo_container_main tab-pane active" id="howTo">
-                            <br/>
+                            <br />
                             <div class="howTo_main_container d-flex row">
-                                <!-- <div class="howTo_left d-flex col-sm-7 col-md-7 col-xl-7 col-lg-7" style="justify-content: space-between;"> -->
                                 <div class="howTo_left d-flex col-sm-7 col-md-7 col-xl-7 col-lg-7">
                                     <div class="howTo_heading text-center mt-4" style="padding-bottom: 5px;">
                                         <h4 class="app-title">
@@ -538,12 +507,12 @@
                                         </h5>
                                     </div>
                                     <div class="howTo_card_row d-flex mt-5 row" style="padding-bottom: 5px;">
-                                        <img class="img-fluid" src="assets/images/cardOne.png"/>
-                                        <img class="img-fluid" src="assets/images/cardTwo.png"/>
+                                        <img class="img-fluid" src="assets/images/cardOne.png" />
+                                        <img class="img-fluid" src="assets/images/cardTwo.png" />
                                     </div>
                                     <div class="howTo_card_row mt-5 d-flex row">
-                                        <img class="img-fluid" src="assets/images/cardThree.png"/>
-                                        <img class="img-fluid" src="assets/images/cardFour.png"/>
+                                        <img class="img-fluid" src="assets/images/cardThree.png" />
+                                        <img class="img-fluid" src="assets/images/cardFour.png" />
                                     </div>
                                 </div>
                                 <div class="howTo_right col-sm-4 col-md-4 col-xl-4 col-lg-4">
@@ -572,7 +541,7 @@
                             </div>
                         </div>
                         <div class="faq_container tab-pane fade" id="faq">
-                            <br/>
+                            <br />
                             <div>
                                 <h3 class="app-title" style="letter-spacing: 2px;">
                                     Frequently ask question
@@ -648,7 +617,7 @@
                             </div>
                         </div>
                         <div class="container tab-pane fade" id="zeuZInfo">
-                            <br/>
+                            <br />
                             <div class="zeuZInfo_header w-100 text-center">
                                 <h2 class="app-title" style="letter-spacing: 2px;">
                                     This is ZeuZ
@@ -667,23 +636,20 @@
                     </div>
                 </div>
             </div>
-            <!-- Welcome Section Start Here -->
             <div class="tabcontent w-100 scrollBar" id="welcome_page" style="display: none;">
                 <div class="help_section">
-                    <!-- Header -->
                     <div class="d-flex rwo close_div">
                         <a class="close_main_page" href="javascript:void(0);">
-                            <img class="p-2" src="assets/images/Close.png"/>
+                            <img class="p-2" src="assets/images/Close.png" />
                         </a>
                     </div>
-                    <!-- Tab panes -->
                     <div class="tab-content" style="margin-top: 30px;">
                         <div class="howTo_container_main tab-pane active" id="howTo">
                             <div class="d-flex row m-0 mh-90" style="justify-content: space-between;">
                                 <div class="welcome_left col-sm-6 col-md-6 col-xl-6 col-lg-6">
                                     <div class="welcome_head">
                                         <h3 class="app-title">
-                                            Welcome to Zeuz
+                                            Welcome to ZeuZ
                                         </h3>
                                         <h3 class="app-title">
                                             "Click and test" recorder
@@ -691,10 +657,10 @@
                                     </div>
                                     <div class="welcome_left_text clearfix">
                                         <p class="app-description">
-                                            This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.
+                                            This ZeuZ Chrome extension allows you to record a test case, use ZeuZ AI to get an accurate page element, and play back the test case right in your browser.
                                         </p>
                                         <p class="app-description">
-                                            ZeuZ's goal is to deliver on our promise of a true, simple, cross plateform "click-and-test" framework.
+                                            ZeuZ's goal is to deliver on our promise of a true, simple, cross platform "click-and-test" framework.
                                         </p>
                                     </div>
                                     <div class="welcome_left_text clearfix">
@@ -711,7 +677,7 @@
                                             <span>
                                                 Step 2:
                                             </span>
-                                            Check-out how to use our AI Element Recorder for a more acurate testing.
+                                            Check out how to use our AI Element Recorder for more acurate testing.
                                         </p>
                                         <p class="app-description">
                                             <span>
@@ -726,9 +692,9 @@
                                         </p>
                                         <p class="app-description">
                                             Have a more complex requirement? Need a platform to manage your manual
-                                                                                            and automated cases? Want to create a test case spanning web, mobile,
-                                                                                            desktop, API, lot, and cloud services?, Check out the "Advanced Functionality"
-                                                                                            video and visit ZeuZ.ai for more information.
+                                                                                                                                                                                                                                                                                                                                                                                and automated cases? Want to create a test case spanning web, mobile,
+                                                                                                                                                                                                                                                                                                                                                                                desktop, API, lot, and cloud services?, Check out the "Advanced Functionality"
+                                                                                                                                                                                                                                                                                                                                                                                video and visit ZeuZ.ai for more information.
                                         </p>
                                     </div>
                                 </div>
@@ -749,7 +715,7 @@
                                     </div>
                                     <div class="howTo_youtube">
                                         <h5 class="mt-3 mb-2 app-sub-title">
-                                            Advance Functioanlity
+                                            Advance Functioanality
                                         </h5>
                                         <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/6PJ-vveaT4k" width="100%">
                                         </iframe>
@@ -761,7 +727,6 @@
                 </div>
             </div>
         </div>
-        <!-- Main Div Close Here -->
         <div id="hidden_wrap" style="display: none;">
             <div id="suite-grid-menu">
             </div>
@@ -787,9 +752,9 @@
             </div>
             <div id="toolbar-container">
             </div>
-            <input accept="text/*" id="load-testSuite-hidden" multiple="" style="display: none" type="file"/>
-            <input accept="text/*" id="load-older-testSuite" multiple="" style="display: none" type="file"/>
-            <input id="load-testSuite-show" style="display: none" type="button" value="OpenSuite"/>
+            <input accept="text/*" id="load-testSuite-hidden" multiple="" style="display: none" type="file" />
+            <input accept="text/*" id="load-older-testSuite" multiple="" style="display: none" type="file" />
+            <input id="load-testSuite-show" style="display: none" type="button" value="OpenSuite" />
             <div id="save-testSuite">
             </div>
             <div id="close-testSuite">
@@ -874,7 +839,7 @@
                     </tr>
                 </thead>
                 <tbody id="records-grid">
-                    <input id="records-count" type="hidden" value="0"/>
+                    <input id="records-count" type="hidden" value="0" />
                 </tbody>
             </table>
             <div id="command-toolbar">
@@ -889,14 +854,14 @@
             </div>
             <div id="grid-paste-btn">
             </div>
-            <input id="command-command" list="command-command-list" type="text"/>
+            <input id="command-command" list="command-command-list" type="text" />
             <div id="command-">
             </div>
             <div id="command-dropdown">
             </div>
             <div id="command-command-list">
             </div>
-            <input id="command-target" list="command-target-list" type="text"/>
+            <input id="command-target" list="command-target-list" type="text" />
             <div id="target-dropdown">
             </div>
             <div id="selectElementButton">
@@ -905,7 +870,7 @@
             </div>
             <div id="command-target-list">
             </div>
-            <input id="command-value" type="text"/>
+            <input id="command-value" type="text" />
             <div id="history-log">
             </div>
             <div id="screenshot">
@@ -944,9 +909,9 @@
             </div>
             <table id="variable-grid">
                 <colgroup>
-                    <col width="33.3333%"/>
-                    <col width="33.3333%"/>
-                    <col width="33.3333%"/>
+                    <col width="33.3333%" />
+                    <col width="33.3333%" />
+                    <col width="33.3333%" />
                 </colgroup>
                 <thead>
                     <tr>
@@ -965,13 +930,13 @@
             </div>
             <div id="datacontainer">
             </div>
-            <input accept=".csv" id="load-csv-hidden" multiple="" style="display: none" type="file"/>
-            <input accept=".json" id="load-json-hidden" multiple="" style="display: none" type="file"/>
+            <input accept=".csv" id="load-csv-hidden" multiple="" style="display: none" type="file" />
+            <input accept=".json" id="load-json-hidden" multiple="" style="display: none" type="file" />
             <table>
                 <colgroup>
-                    <col width="33.3333%"/>
-                    <col width="33.3333%"/>
-                    <col width="33.3333%"/>
+                    <col width="33.3333%" />
+                    <col width="33.3333%" />
+                    <col width="33.3333%" />
                 </colgroup>
                 <thead>
                     <tr>
@@ -988,12 +953,12 @@
             </table>
             <div id="extensionscontainer">
             </div>
-            <input accept=".js" id="load-extension-hidden" multiple="" style="display: none" type="file"/>
+            <input accept=".js" id="load-extension-hidden" multiple="" style="display: none" type="file" />
             <table>
                 <colgroup>
-                    <col width="33.3333%"/>
-                    <col width="33.3333%"/>
-                    <col width="33.3333%"/>
+                    <col width="33.3333%" />
+                    <col width="33.3333%" />
+                    <col width="33.3333%" />
                 </colgroup>
                 <thead>
                     <tr>
@@ -1029,8 +994,8 @@
             <div id="introduction">
             </div>
         </div>
-        <!-- script -->
-        <!--    <script src="../common_files/poly_fill.js"></script>-->
+        <script src="../common_files/poly_fill.js">
+        </script>
         <script src="../common_files/escape.js">
         </script>
         <script src="assets/js/IO/input_output_file_transformer.js">
@@ -1053,7 +1018,6 @@
         </script>
         <script src="assets/js/background/recorder.js">
         </script>
-        <!-- modi -->
         <script src="assets/js/background/initialCall.js">
         </script>
         <script src="assets/js/background/editor.js">

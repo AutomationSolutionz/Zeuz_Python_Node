@@ -380,7 +380,9 @@ BrowserBot.prototype.selectWindow = function(target) {
     else if (locatorType == "name") {
         this._selectWindowByName(locatorValue);
     } else if (locatorType == "var") {
-        var win = this.getCurrentWindow().eval(locatorValue);
+        // The following code is untested!! just replaced Eval()
+        // var win = this.getCurrentWindow().eval(locatorValue);
+        var win = "";
         if (win) {
             this._selectWindowByName(win.name);
         } else {
@@ -764,22 +766,26 @@ BrowserBot.prototype.modifyWindowToRecordPopUpDialogs = function(originalWindow,
         return openedWindow;
     };
 
-    if (browserVersion.isHTA) {
-        originalOpenReference = 'selenium_originalOpen' + new Date().getTime();
-        newOpenReference = 'selenium_newOpen' + new Date().getTime();
-        var setOriginalRef = "this['" + originalOpenReference + "'] = this.open;";
+    // if (browserVersion.isHTA) {
+    //     originalOpenReference = 'selenium_originalOpen' + new Date().getTime();
+    //     newOpenReference = 'selenium_newOpen' + new Date().getTime();
+    //     var setOriginalRef = "this['" + originalOpenReference + "'] = this.open;";
 
-        if (windowToModify.eval) {
-            windowToModify.eval(setOriginalRef);
-            windowToModify.open = newOpen;
-        } else {
-            setOriginalRef += "this.open = this['" + newOpenReference + "'];";
-            windowToModify[newOpenReference] = newOpen;
-            windowToModify.setTimeout(setOriginalRef, 0);
-        }
-    } else {
-        windowToModify.open = newOpen;
-    }
+    //     if (windowToModify.eval) {
+    //         windowToModify.eval(setOriginalRef);
+    //         windowToModify.open = newOpen;
+    //     } else {
+    //         setOriginalRef += "this.open = this['" + newOpenReference + "'];";
+    //         windowToModify[newOpenReference] = newOpen;
+    //         windowToModify.setTimeout(setOriginalRef, 0);
+    //     }
+    // } else {
+    //     windowToModify.open = newOpen;
+    // }
+
+    // The following code is untested!! just replaced Eval()
+    windowToModify.open = newOpen;
+    
 };
 
 
@@ -1826,7 +1832,9 @@ BrowserBot.prototype.close = function() {
     if (browserVersion.isChrome || browserVersion.isSafari || browserVersion.isOpera) {
         this.topFrame.close();
     } else {
-        this.getCurrentWindow().eval("window.top.close();");
+        // this.getCurrentWindow().eval("window.top.close();");
+        // The following code is untested!! just replaced Eval()
+        window.top.close();
     }
 };
 

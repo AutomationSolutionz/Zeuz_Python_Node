@@ -1,4 +1,5 @@
 /* ZeuZ Start the recording function */
+browserAppData = chrome || browser;
 class Recorder {
 
     /* exq initial time */
@@ -11,6 +12,20 @@ class Recorder {
             frameLocation: this.frameLocation
         }).catch(function(reason) {
         });
+        this.recorded_actions = [];
+        this.idx = 0;
+        // Convert to the zeuz defined action names
+        this.action_name_convert = {
+            type: "text",
+            open: "go to link",
+            Go_to_link: "go to link",
+            doubleClick: "double click",
+            Validate_Text: "validate full text",
+            Validate_Text_By_AI: "validate full text by ai",
+            Save_Text: "save attribute",
+            Wait_For_Element_To_Appear: "wait",
+            Wait_For_Element_To_Disappear: "wait disable",
+        }
     }
 
     /* Parse the key */
@@ -39,10 +54,63 @@ class Recorder {
         return frameLocation = "root" + frameLocation;
     }
 
-    /* Recorder */
+    prepare_dom(target, command, value){
+        for (let each of target) if (each[1] == 'xpath:position') {
+            var xpath = each[0];
+            break;
+        }
+
+        var html = document.createElement('html');
+        html.innerHTML = document.documentElement.outerHTML;
+
+        var xPathResult = document.evaluate(xpath, html);
+        if(xPathResult) var main_elem = xPathResult.iterateNext();
+        else return;
+
+        if (main_elem.tagName === 'SELECT' && command === 'select'){
+            xPathResult = document.evaluate(`./option[normalize-space(text())="${value.substr(6).trim()}"]`, main_elem);
+            if(xPathResult) main_elem = xPathResult.iterateNext();
+        }
+        
+        main_elem.setAttribute('zeuz', 'aiplugin');
+        console.log(main_elem.hasAttribute('zeuz'), main_elem);
+
+        // Recorder already changed the value which should not be sent to ai-engine
+        if (command === 'text')
+            main_elem.removeAttribute('value');
+        // get all <head> elements from html
+        var elements = html.getElementsByTagName('head');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        // get all <script> elements from html
+        var elements = html.getElementsByTagName('script');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        // get all <style> elements from html
+        var elements = html.getElementsByTagName('style');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        // get all <link> elements from html
+        var elements = html.getElementsByTagName('link');
+        while (elements[0])
+            elements[0].parentNode.removeChild(elements[0])
+
+        return html.outerHTML
+    }
+
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
-        let self = this;
-        console.log("... Action recorder start");
+        const dom = this.prepare_dom(target, command, value)
+        browserAppData.runtime.sendMessage({
+            apiName: 'record_action',
+            command: command,
+            target: target,
+            value: value,
+            url: window.location.href,
+            document: dom,
+        })
         let signal = {
             command: command,
             target: target,
@@ -59,9 +127,10 @@ class Recorder {
     /* attach */
     attach() {
         console.log('attach2');
-        if (this.attached) {
-            return;
-        }
+        if (this.attached) return;
+        browserAppData.runtime.sendMessage({
+            apiName: 'start_recording',
+        })
         this.attached = true;
         this.eventListeners = {};
         var self = this;
@@ -84,9 +153,11 @@ class Recorder {
     }
     /*detach */
     detach() {
-        if (!this.attached) {
-            return;
-        }
+        console.log('detach2');
+        if (!this.attached) return;
+        browserAppData.runtime.sendMessage({
+            apiName: 'stop_recording',
+        })
         this.attached = false;
         for (let event_key in this.eventListeners) {
             var event_info = this.parse_the_event_key(event_key);

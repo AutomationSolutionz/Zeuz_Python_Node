@@ -2419,6 +2419,7 @@ def compare_images(data_set):
         # Perform the image comparison based on the structural similarity index
 
         Shared_Resources.Set_Shared_Variables(score, ssim_match)
+        print('Score:',ssim_match)
         if ssim_match >= req_ssim:
             CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
             return "passed"
@@ -3424,6 +3425,7 @@ def extract_number(data_set):
             )
             return "zeuz_failed"
         else:
+            """as111.a2.3"""
             try:
                 all_digit = [s for s in re.findall(r"-?\d+\.?\d*", from_var)]
                 extracted_number = all_digit[index - 1]
@@ -3746,6 +3748,10 @@ def str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
 
     return out_variable_value
 
+"""
+^[-+]?\d+?\.\d+?$
+14.012
+"""
 
 def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
     """

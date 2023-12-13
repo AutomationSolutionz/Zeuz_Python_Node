@@ -47,6 +47,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import selenium
 
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -455,26 +456,33 @@ def use_xvfb_or_headless(callback):
 
 
 def set_extension_variables():
-    with open(Path(aiplugin_path) / "background.js") as file:
-        text = file.read()
-    # if "__ZeuZ__UrL_maPP" in text or "__ZeuZ__KeY_maPP" in text:
-    with open(Path(aiplugin_path) / "background.js", "w") as file:
-        aiplugin_url = ConfigModule.get_config_value("Authentication", "server_address").strip()
-        aiplugin_key = CommonUtil.jwt_token.strip()
-        zeuz_url_var_idx = text.find("let zeuz_url = ")
-        zeuz_url_var = text[zeuz_url_var_idx:zeuz_url_var_idx+text[zeuz_url_var_idx:].find("\n")]
-        zeuz_key_var_idx = text.find("let zeuz_key = ")
-        zeuz_key_var = text[zeuz_key_var_idx:zeuz_key_var_idx+text[zeuz_key_var_idx:].find("\n")]
-        file.write(text.replace(zeuz_url_var, f"let zeuz_url = '{aiplugin_url}';", 1).replace(zeuz_key_var, f"let zeuz_key = '{aiplugin_key}';", 1))
+    try:
+        url = ConfigModule.get_config_value("Authentication", "server_address").strip()
+        apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
+        jwtKey = CommonUtil.jwt_token.strip()
+        with open(Path(aiplugin_path) / "data.json", "w") as file:
+            json.dump({
+              "zeuz_url": url,
+              "zeuz_key": apiKey
+            }, file, indent=4)
 
-    with open(Path(ai_recorder_path) / "panel" / "index.html", "r") as file:
-        soup = BeautifulSoup(file, "lxml")
-        soup.find("li", id="add_new_case_action").div.string = f"{CommonUtil.current_tc_no}"
-    with open(Path(ai_recorder_path) / "panel" / "index.html", "w") as file:
-        html = re.compile(r'^(\s*)', re.MULTILINE).sub(r'\1' * 4, soup.prettify())
-        file.write(html)
-        print()
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 
+    try:
+        with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
+            metaData = {
+                "testNo": CommonUtil.current_tc_no,
+                "testName": CommonUtil.current_tc_name,
+                "stepNo": CommonUtil.current_step_sequence,
+                "stepName": CommonUtil.current_step_name,
+                "url": url,
+                "apiKey": apiKey,
+                "jwtKey": jwtKey,
+            }
+            json.dump(metaData, file, indent=4)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load recorder extension")
 
 
 def browser_process_status(browser:str):
@@ -902,7 +910,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
             if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                 set_extension_variables()
-                options.add_argument(f"load-extension={aiplugin_path}")
+                options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
             if(remote_host):
                 capabilities = webdriver.EdgeOptions().capabilities
                 capabilities['acceptSslCerts'] = True
@@ -913,9 +921,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 if selenium_version.startswith('4.'):
-                    service = Service(edge_path)
                     selenium_driver = webdriver.Edge(
-                        service=service,
                         options=options,
                     )
                 elif selenium_version.startswith('3.'):
@@ -2955,8 +2961,8 @@ def Validate_Text(step_data):
                 validation_type = each_step_data_item[0]
             elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0] == "ignore case":
                 ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
-            elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0].replace(" ", "").replace("_", "") == "zeuzai":
-                zeuz_ai = CommonUtil.parse_value_into_object(each_step_data_item[2])
+            elif each_step_data_item[1].strip().lower() == "text classifier offset":
+                zeuz_ai = [each_step_data_item[0].strip(), float(each_step_data_item[2])]
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
         if ignore_case:
             expected_text_data = expected_text_data.lower()
@@ -2978,8 +2984,8 @@ def Validate_Text(step_data):
              }
              """
             message = " ".join(visible_list_of_element_text)
-            labels = [zeuz_ai["binary_classification"]["expected_category"]]
-            confidence = zeuz_ai["binary_classification"]["confidence"]
+            labels = [zeuz_ai[0]]
+            confidence = zeuz_ai[1]
             return binary_classification(message, labels, confidence)["status"]
 
         elif validation_type == "validate partial text":
@@ -3174,7 +3180,12 @@ def Scroll(step_data):
 def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    use_js = False
     try:
+        for row in step_data:
+
+            if "use js" in row[0].lower():
+                use_js = row[2].strip().lower() in ("true", "yes", "1")
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
         if scroll_element in failed_tag_list:
             CommonUtil.ExecLog(
@@ -3187,9 +3198,13 @@ def scroll_to_element(step_data):
             "Element to which instructed to scroll has been found. Scrolling to view it",
             1,
         )
-        actions = ActionChains(selenium_driver)
-        actions.move_to_element(scroll_element)
-        actions.perform()
+        if use_js:
+            selenium_driver.execute_script("arguments[0].scrollIntoView(true);", scroll_element)
+        else:
+            actions = ActionChains(selenium_driver)
+            
+            actions.move_to_element(scroll_element)
+            actions.perform()
         return "passed"
 
     except Exception:
