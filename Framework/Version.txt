@@ -1,4 +1,4 @@
 [ZeuZ Python Version]
-version = 18.0.0
+version = 18.0.1
 [Release Date]
 date = November 5, 2023

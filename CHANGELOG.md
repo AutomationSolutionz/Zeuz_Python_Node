@@ -4,7 +4,7 @@
 # Version 18
 
 ### [Current changes]
--
+- **[Add]** Custom error msg feature
 
 ### [18.0.0][Nov 5, 2023]
 - **[Change]** AI Inspector new api integrated 
