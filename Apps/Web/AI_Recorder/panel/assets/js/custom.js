@@ -2331,17 +2331,6 @@ var CustomFunction = {
 			document.getElementById(section).style.display = "block";
 		})
 
-		browserAppData.storage.local.get(null, function (result) {
-			try {
-				if (result.is_initial_app_open) {
-					$('.close_main_page').trigger('click');
-				} else {
-					document.getElementById("defaultOpen").click();
-				}
-			} catch (e) {
-				document.getElementById("defaultOpen").click();
-			}
-		});
 	},
 
 	InitialTimeCheckAuthUserOrNot() {
