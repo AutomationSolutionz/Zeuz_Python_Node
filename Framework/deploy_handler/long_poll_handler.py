@@ -65,7 +65,7 @@ class DeployHandler:
             self.on_connect_callback(reconnect)
             try:
                 reconnect = True
-                resp = requests.get(host)
+                resp = requests.get(host,verify=False)
 
                 if resp.content.startswith(self.ERROR_PREFIX):
                     self.on_error(resp.content)
