@@ -1390,48 +1390,104 @@ var CustomFunction = {
 		$(document).on('click', '#save_button', async function () {
 			$('#save_label').text('Saving...');
 			$("#save_button").attr('disabled', true).css('opacity',0.5);
-			CustomFunction.FetchChromeCaseData()
-			.then(async ()=>{
-				var result = await browserAppData.storage.local.get(["meta_data"]);
-				var save_data = {
-					TC_Id: result.meta_data.testNo,
-					step_sequence: result.meta_data.stepNo,
-					step_data: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map(action => {
-						return action.main;
-					})),
-					dataset_name: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map((action, idx) => {
-						return [
-							action.name,
-							idx+1,
-							!action.is_disable,
-						]
-					}))
+			await CustomFunction.FetchChromeCaseData()
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			var save_data = {
+				TC_Id: result.meta_data.testNo,
+				step_sequence: result.meta_data.stepNo,
+				step_data: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map(action => {
+					return action.main;
+				})),
+				dataset_name: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map((action, idx) => {
+					return [
+						action.name,
+						idx+1,
+						!action.is_disable,
+					]
+				}))
+			}
+			console.log("save_data >>>", save_data);
+			$.ajax({
+				url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+				method: 'POST',
+				data: save_data,
+				headers: {
+					// "Content-Type": "application/json",
+					"X-Api-Key": `${result.meta_data.apiKey}`,
+				},
+				success: function(response) {
+					console.log(response);
+					$('#save_label').text('Success!');
+					setTimeout(()=>{
+						$('#save_label').text('Save');
+						$("#save_button").removeAttr('disabled').css('opacity',1);
+					},1500)
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.log(errorThrown);
+					$('#save_label').text('Error!!');
+					setTimeout(()=>$('#save_label').text('Save'),1500)
 				}
-				console.log("save_data >>>", save_data);
-				$.ajax({
-					url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
-					method: 'POST',
-					data: save_data,
-					headers: {
-						// "Content-Type": "application/json",
-						"X-Api-Key": `${result.meta_data.apiKey}`,
-					},
-					success: function(response) {
-					    console.log(response);
-						$('#save_label').text('Success!');
-					    setTimeout(()=>{
-							$('#save_label').text('Save');
-							$("#save_button").removeAttr('disabled').css('opacity',1);
-						},1500)
-					},
-					error: function(jqXHR, textStatus, errorThrown) {
-						console.log(errorThrown);
-						$('#save_label').text('Error!!');
-					    setTimeout(()=>$('#save_label').text('Save'),1500)
-					}
-				})
 			})
 		});
+
+		$(document).on('click', '#run_button', async function () {
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			const input = {
+				method: "POST",
+				headers: {
+					// "Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				}
+			}
+			var r = await fetch(result.meta_data.url + '/run_config_ai_recorder/', input)
+			var response = await r.json();					
+			console.log("response_1", response);
+
+			const machine = response["machine"];
+			const project_id = response["project_id"];
+			const team_id = response["team_id"];
+			const user_id = response["user_id"];
+
+			if (navigator.userAgent.indexOf("Edg") != -1)
+				var browser = 'Microsoft Edge Chromium'
+			else if (navigator.userAgent.indexOf("Chrome") != -1) 
+				var browser = 'Chrome'
+			dependency = {"Browser": browser,"Mobile":"Android"}
+			const run_data = {
+				"test_case_list": JSON.stringify([result.meta_data.testNo]),
+				"dependency_list": JSON.stringify(dependency),
+				"all_machine": JSON.stringify([machine]),
+				"debug": 'yes',
+				"debug_clean": "yes",
+				"debug_steps": JSON.stringify([result.meta_data.stepNo.toString()]),
+				"RunTestQuery": JSON.stringify([result.meta_data.testNo, machine]),
+				"dataAttr": JSON.stringify(["Test Case"]),
+				"project_id": project_id,
+				"team_id": team_id,
+				"user_id": user_id,
+			}
+			console.log("run_data", run_data)
+			var url = `${result.meta_data.url}/Home/nothing/Run_Test/`;
+
+			$.ajax({
+				url: url,
+				method: 'GET',
+				data: run_data,
+				headers: {
+					"Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				},
+				success: function(response) {
+					console.log("response_2",response);
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.log(errorThrown);
+					$('#save_label').text('Error!!');
+					setTimeout(()=>$('#save_label').text('Save'),1500)
+				}
+			})
+		})
 
 		/* export logs */
 		$(document).on('click', '#export_logs', function () {
