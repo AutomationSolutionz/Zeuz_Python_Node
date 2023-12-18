@@ -8,6 +8,8 @@ class Recorder {
         this.attached = false;
         this.locatorBuilders = new LocatorBuilders(window);
         this.frameLocation = this.getFrameLocation();
+        console.log("getFrameLocation() =",this.frameLocation);
+        console.log("document", document)
         browser.runtime.sendMessage({
             frameLocation: this.frameLocation
         }).catch(function(reason) {
@@ -102,6 +104,7 @@ class Recorder {
     }
 
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
+        console.log("getFrameLocation() =",this.frameLocation);
         const dom = this.prepare_dom(target, command, value)
         browserAppData.runtime.sendMessage({
             apiName: 'record_action',

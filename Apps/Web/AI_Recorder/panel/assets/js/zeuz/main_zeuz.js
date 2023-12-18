@@ -930,14 +930,6 @@ $(function() {
 })
 
 
-function switchRecordButton(stop) {
-    var record = $('#record');
-    if (stop) {
-        record.removeClass("record--stop");
-    } else {
-        record.addClass("record--stop");
-    }
-}
 
 $(function() {
     $('#command-toolbar .fieldset').on("dblclick", function(event) {

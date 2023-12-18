@@ -784,10 +784,6 @@ document.addEventListener("dblclick", function(event) {
 });
 
 function playDisable(setting) {
-    if (setting) {
-        document.getElementById("record").childNodes[1].textContent = "Record";
-        switchRecordButton(true);
-    }
     document.getElementById("record").disabled = setting;
     document.getElementById("playback").disabled = setting;
     document.getElementById("playSuite").disabled = setting;

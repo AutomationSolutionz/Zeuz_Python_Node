@@ -2181,10 +2181,7 @@ var CustomFunction = {
 
 			}
 		});
-
-		$(document).on('click', '.child_wrap', function () {
-			$('#record_wrap,#play_wrap,#replay_wrap').addClass('disable_action');
-		})
+		
 		$(document).on('click', '.parent_wrap', function () {
 			$('#record_wrap,#play_wrap,#replay_wrap').removeClass('disable_action');
 		})
