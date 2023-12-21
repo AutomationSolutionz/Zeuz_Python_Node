@@ -24,7 +24,9 @@ with open(version_path, "r"):
     text = text[text.find("=")+1:].split("\n")[0].strip()
     if os.name == "nt":
         os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
-    print(version_path.read_text())
+    print(version_path.read_text().strip())
+    print("[Python version]")
+    print("Python " + platform.python_version() + "(" + platform.architecture()[0] + ")\n")
 from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
 from configobj import ConfigObj

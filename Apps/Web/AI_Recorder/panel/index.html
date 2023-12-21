@@ -101,6 +101,12 @@
                                 <span class="material-icons-label" id='save_label'>Save</span>
                             </button>
                         </li>
+                        <li class="tablink d-flex flex-wrap justify-content-center" id="run_wrap">
+                            <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" id="run_button">
+                                <span class="material-icons">play_circle</span>
+                                <span class="material-icons-label" id='run_label'>Run</span>
+                            </button>
+                        </li>
                         <li class="tablink push_right" id="play_wrap" style="display: none;">
                             <div class="pl-0 sidebar_menu" id="playback">
                                 <img class="normal-image" src="assets/images/icons/play.png" />
@@ -143,81 +149,18 @@
                     </ul>
                 </div>
                 <ul class="d-flex flex-column justify-content-center" id="bottom_section">
-                    <li class="tablink d-flex justify-content-center opensection my-2" data-section="help">
-                        <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
-                            <span class="material-icons" id="record_icon">help</span>
-                            <span class="material-icons-label" id="record_label">Help</span>
-                        </button>
-                    </li>
                     <li class="tablink d-flex justify-content-center opensection my-2" data-section="settings">
                         <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
-                            <span class="material-icons" id="record_icon">settings</span>
-                            <span class="material-icons-label" id="record_label">Settings</span>
+                            <span class="material-icons" id="settings_icon">settings</span>
+                            <span class="material-icons-label" id="settings _label">Settings</span>
                         </button>
                     </li>
                 </ul>
             </nav>
-            <div class="tabcontent scrollBar" id="content" style="display: none;">
+            <div class="tabcontent scrollBar" id="content" style="display: block;">
                 <div class="clearfix" id="nav_menu_up">
                     <nav style="display: flex; width: 100%;">
                         <ul class="list-unstyled components d-flex row" id="header_tab" style="width: 95%">
-                            <li class="head_text pl-3">
-                                <a data-toggle="tab" href="#home">
-                                    Home
-                                </a>
-                            </li>
-                            <li>
-                                <a data-toggle="tab" href="#test1">
-                                    Test 1
-                                </a>
-                            </li>
-                            <li>
-                                <a data-toggle="tab" href="#test2">
-                                    Another Test
-                                </a>
-                            </li>
-                            <li>
-                                <a data-toggle="tab" href="#menu3">
-                                    Transactions
-                                </a>
-                            </li>
-                            <li>
-                                <a data-toggle="tab" href="#menu3">
-                                    Another Test
-                                </a>
-                            </li>
-                            <li>
-                                <a data-toggle="tab" href="#menu3">
-                                    Tab 5
-                                </a>
-                            </li>
-                            <li class="pr-3">
-                                <div class="dropdown">
-                                    <a aria-expanded="false" aria-haspopup="true" class="dropdown-toggle" data-toggle="dropdown" href="#" id="dropdownMenuLink">
-                                        More
-                                        <span>
-                                            <img src="assets/images/more-arrow-down.png" />
-                                        </span>
-                                    </a>
-                                    <div aria-labelledby="dropdownMenuLink" class="dropdown-menu dropdown-menu-right dropdown-menu-lg-left">
-                                        <a class="dropdown-item" href="#">
-                                            Tab 6
-                                        </a>
-                                        <a class="dropdown-item" href="#">
-                                            Tab 7
-                                        </a>
-                                        <a class="dropdown-item" href="#">
-                                            Tab 8
-                                        </a>
-                                        <a class="dropdown-item" href="#">
-                                            Tab 9
-                                        </a>
-                                        <a class="dropdown-item" href="#">
-                                            Tab 10
-                                        </a>
-                                    </div>
-                                </div>
-                            </li>
                         </ul>
                         <!-- <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
                             <img src="assets/images/icons/add_new_suite.png" />
@@ -465,263 +408,6 @@
                             <p>
                                 Setting it to Very Fast will increase speed by 100%.
                             </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="tabcontent scrollBar" id="help" style="display: none;">
-                <div class="help_section">
-                    <div class="d-flex rwo close_div">
-                        <a class="close_main_page" href="javascript:void(0);">
-                            <img class="p-2" src="assets/images/Close.png" />
-                        </a>
-                    </div>
-                    <ul class="nav nav-tabs" role="tablist" style="background: #fff">
-                        <li class="nav-item">
-                            <a class="nav-link active" data-toggle="tab" href="#howTo">
-                                How To
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-toggle="tab" href="#faq">
-                                FAQ
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-toggle="tab" href="#zeuZInfo">
-                                zeuZInfo
-                            </a>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="howTo_container_main tab-pane active" id="howTo">
-                            <br />
-                            <div class="howTo_main_container d-flex row">
-                                <div class="howTo_left d-flex col-sm-7 col-md-7 col-xl-7 col-lg-7">
-                                    <div class="howTo_heading text-center mt-4" style="padding-bottom: 5px;">
-                                        <h4 class="app-title">
-                                            It's Simple !
-                                        </h4>
-                                        <h5 class="app-sub-title">
-                                            Using ZeuZ "Click-and-tell" recorder is simple as 4 steps
-                                        </h5>
-                                    </div>
-                                    <div class="howTo_card_row d-flex mt-5 row" style="padding-bottom: 5px;">
-                                        <img class="img-fluid" src="assets/images/cardOne.png" />
-                                        <img class="img-fluid" src="assets/images/cardTwo.png" />
-                                    </div>
-                                    <div class="howTo_card_row mt-5 d-flex row">
-                                        <img class="img-fluid" src="assets/images/cardThree.png" />
-                                        <img class="img-fluid" src="assets/images/cardFour.png" />
-                                    </div>
-                                </div>
-                                <div class="howTo_right col-sm-4 col-md-4 col-xl-4 col-lg-4">
-                                    <div class="howTo_youtube">
-                                        <h5 class="mt-3 mb-2 app-sub-title">
-                                            Introduction: How to
-                                        </h5>
-                                        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/Xj_XNx4ym2w" width="100%">
-                                        </iframe>
-                                    </div>
-                                    <div class="howTo_youtube">
-                                        <h5 class="mt-3 mb-2 app-sub-title">
-                                            ZeuZ AI Element Recorder
-                                        </h5>
-                                        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/Tz3WkdvKK4o" width="100%">
-                                        </iframe>
-                                    </div>
-                                    <div class="howTo_youtube">
-                                        <h5 class="mt-3 mb-2 app-sub-title">
-                                            Advance Functioanlity
-                                        </h5>
-                                        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/6PJ-vveaT4k" width="100%">
-                                        </iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="faq_container tab-pane fade" id="faq">
-                            <br />
-                            <div>
-                                <h3 class="app-title" style="letter-spacing: 2px;">
-                                    Frequently ask question
-                                </h3>
-                            </div>
-                            <div class="accordian_section">
-                                <div class="accordian_app">
-                                    <button class="accordion mt-4 app-sub-title">
-                                        What is this app ?
-                                    </button>
-                                    <div class="panel">
-                                        <p class="mt-1">
-                                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                                        </p>
-                                    </div>
-                                    <button class="accordion mt-4 app-sub-title">
-                                        What is ZeuZ ?
-                                    </button>
-                                    <div class="panel">
-                                        <p class="mt-1">
-                                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                                        </p>
-                                    </div>
-                                    <button class="accordion mt-4 app-sub-title">
-                                        How do I use this application ?
-                                    </button>
-                                    <div class="panel">
-                                        <p class="mt-3">
-                                            ZeuZ Recorder is an easy to use, "click-and-test" approach to testing web applications.
-                                        </p>
-                                        <p>
-                                            Step 1. Click on "New Test Case"
-                                        </p>
-                                        <p>
-                                            Step 2. Click on Record and using Chrome, go to a website you would like to test and click on links,submit a form.
-                                        </p>
-                                        <p>
-                                            Step 3.Test the website by playing it back
-                                        </p>
-                                        <p>
-                                            Step 4.You might encounter issues.Check errors and if required, click on the ZeuZ icon for our AI engine to recommend a different element
-                                        </p>
-                                        <p class="mt-5">
-                                            You may also watch videos in the help section or to zeuz.ai/recorder to get more information
-                                        </p>
-                                    </div>
-                                    <button class="accordion mt-4">
-                                        FAQ 4 ?
-                                    </button>
-                                    <div class="panel">
-                                        <p class="mt-1">
-                                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                                        </p>
-                                    </div>
-                                    <button class="accordion mt-4">
-                                        Another FAQ question ?
-                                    </button>
-                                    <div class="panel">
-                                        <p class="mt-1">
-                                            Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="faq_bottom_text">
-                                    <h5 style="color: #C83962; font-size: 12px;letter-spacing: 2px;">
-                                        Need more help ? Go to
-                                        <a href="https://www.zeuz.ai/recorder" target="_blank">
-                                            ZeuZ.ai/recorder
-                                        </a>
-                                        for further information.
-                                    </h5>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="container tab-pane fade" id="zeuZInfo">
-                            <br />
-                            <div class="zeuZInfo_header w-100 text-center">
-                                <h2 class="app-title" style="letter-spacing: 2px;">
-                                    This is ZeuZ
-                                </h2>
-                            </div>
-                            <div class="faq_bottom_text_bottom">
-                                <h5 style="color: #C83962; font-size: 12px;letter-spacing: 2px;">
-                                    Need more help ? Go to
-                                    <a href="https://www.zeuz.ai/recorder" target="_blank">
-                                        ZeuZ.ai/recorder
-                                    </a>
-                                    for further information.
-                                </h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="tabcontent w-100 scrollBar" id="welcome_page" style="display: none;">
-                <div class="help_section">
-                    <div class="d-flex rwo close_div">
-                        <a class="close_main_page" href="javascript:void(0);">
-                            <img class="p-2" src="assets/images/Close.png" />
-                        </a>
-                    </div>
-                    <div class="tab-content" style="margin-top: 30px;">
-                        <div class="howTo_container_main tab-pane active" id="howTo">
-                            <div class="d-flex row m-0 mh-90" style="justify-content: space-between;">
-                                <div class="welcome_left col-sm-6 col-md-6 col-xl-6 col-lg-6">
-                                    <div class="welcome_head">
-                                        <h3 class="app-title">
-                                            Welcome to ZeuZ
-                                        </h3>
-                                        <h3 class="app-title">
-                                            "Click and test" recorder
-                                        </h3>
-                                    </div>
-                                    <div class="welcome_left_text clearfix">
-                                        <p class="app-description">
-                                            This ZeuZ Chrome extension allows you to record a test case, use ZeuZ AI to get an accurate page element, and play back the test case right in your browser.
-                                        </p>
-                                        <p class="app-description">
-                                            ZeuZ's goal is to deliver on our promise of a true, simple, cross platform "click-and-test" framework.
-                                        </p>
-                                    </div>
-                                    <div class="welcome_left_text clearfix">
-                                        <h4 class="app-title">
-                                            LET'S GET YOU STARTED
-                                        </h4>
-                                        <p class="app-description">
-                                            <span>
-                                                Step 1:
-                                            </span>
-                                            See the "introduction: How to" video to get familiar with the ZeuZ Click-and-Test Recorder and start testing in less than 3 minutes.
-                                        </p>
-                                        <p class="app-description">
-                                            <span>
-                                                Step 2:
-                                            </span>
-                                            Check out how to use our AI Element Recorder for more acurate testing.
-                                        </p>
-                                        <p class="app-description">
-                                            <span>
-                                                Step 3:
-                                            </span>
-                                            Visit the case page @https://www.zeuz.ai/testcase/, close this screen and click on "+New Test" and start testing.
-                                        </p>
-                                    </div>
-                                    <div class="howTo_bottom_section clearfix">
-                                        <p style="color: #C83962; font-size: 15px; font-weight:500">
-                                            Looking for an advanced test automation framework ?
-                                        </p>
-                                        <p class="app-description">
-                                            Have a more complex requirement? Need a platform to manage your manual
-                                                                                                                                                                                                                                                                                                                                                                                and automated cases? Want to create a test case spanning web, mobile,
-                                                                                                                                                                                                                                                                                                                                                                                desktop, API, lot, and cloud services?, Check out the "Advanced Functionality"
-                                                                                                                                                                                                                                                                                                                                                                                video and visit ZeuZ.ai for more information.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="howTo_right col-sm-4 col-md-4 col-xl-4 col-lg-4">
-                                    <div class="howTo_youtube">
-                                        <h5 class="mt-3 mb-2 app-sub-title">
-                                            Introduction: How to
-                                        </h5>
-                                        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/Xj_XNx4ym2w" width="100%">
-                                        </iframe>
-                                    </div>
-                                    <div class="howTo_youtube">
-                                        <h5 class="mt-3 mb-2 app-sub-title">
-                                            ZeuZ AI Element Recorder
-                                        </h5>
-                                        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/Tz3WkdvKK4o" width="100%">
-                                        </iframe>
-                                    </div>
-                                    <div class="howTo_youtube">
-                                        <h5 class="mt-3 mb-2 app-sub-title">
-                                            Advance Functioanality
-                                        </h5>
-                                        <iframe allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" frameborder="0" height="200" src="https://www.youtube.com/embed/6PJ-vveaT4k" width="100%">
-                                        </iframe>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
