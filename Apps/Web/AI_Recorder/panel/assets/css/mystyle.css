@@ -93,11 +93,12 @@ body
 .dropdown-item{
   font-size: 15px;
 }
-#nav_menu_up
+#test_id
 {
-  background: #fff;
-  /*min-height: 50px;*/
-  padding-top: 10px;
+  display: inline-block;
+  width: 49px;
+  border: 2px solid black;
+  border-radius: 8px;
 }
 .tr_body
 {

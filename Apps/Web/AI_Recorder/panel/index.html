@@ -79,7 +79,7 @@
         <div class="wrapper d-flex align-items-stretch">
             <nav id="sidebar">
                 <div class="nav_upper">
-                    <div class="img bg-wrap tablink opensection text-center py-4" data-section="welcome_page" id="defaultOpen">
+                    <div class="img bg-wrap text-center py-4" data-section="welcome_page" id="defaultOpen">
                         <img class="img-fluid" id="logo_dark" src="assets/images/logo_ZeuZ_dark_background.png" />
                     </div>
                     <ul class="d-flex flex-column justify-content-center">
@@ -158,16 +158,16 @@
                 </ul>
             </nav>
             <div class="tabcontent scrollBar" id="content" style="display: block;">
-                <div class="clearfix" id="nav_menu_up">
-                    <nav style="display: flex; width: 100%;">
-                        <ul class="list-unstyled components d-flex row" id="header_tab" style="width: 95%">
-                        </ul>
-                        <!-- <a href="javascript:void(0);" id="add_new_test_case" style="width: 5%;" title="Add new test case">
-                            <img src="assets/images/icons/add_new_suite.png" />
-                        </a> -->
-                    </nav>
+                <div class="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
+                    <span class="">TEST-</span>
+                    <input id="test_id" value="0000">
+                    <button class="btn btn-dark btn-sm" id="fetch">Fetch</button>
+                    <h3 id="test_title">My test name</h2>
                 </div>
-                <div class="clearfix" id="recorder_step">
+                <select class="form-select form-select-sm m-4 w-50" id="step_select">
+                    <!-- <option selected>Step-1 : Loading ...</option> -->
+                </select>
+                <div class="clearfix mx-2" id="recorder_step">
                     <div class="second_table table-responsive" id="main_table">
                         <table class="table table-borderless border_separate table-fixed" id="sortable">
                             <thead>
