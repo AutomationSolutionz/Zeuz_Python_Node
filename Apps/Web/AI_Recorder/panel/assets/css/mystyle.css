@@ -96,7 +96,7 @@ body
 #test_id
 {
   display: inline-block;
-  width: 49px;
+  width: 70px;
   border: 2px solid black;
   border-radius: 8px;
 }
@@ -303,13 +303,6 @@ body
   padding-top: 125px;
   width: 100%;
   padding-right: 120px;
-}
-.settings_container
-{
-  display: flex;
-  flex-direction: row;
-  min-height: 94vh;
-  justify-content: space-between
 }
 .settings_form h3
 {

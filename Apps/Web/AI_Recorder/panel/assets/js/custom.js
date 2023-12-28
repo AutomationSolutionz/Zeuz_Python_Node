@@ -1247,9 +1247,45 @@ jQuery(document).ready(async function () {
 	$('#api_key').val(result.meta_data.apiKey);
 
 	$(document).on('click', '#fetch', async function () {
-		await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
-		CustomFunction.FetchActions();
+		try{
+			$('#fetch').text('Fetching...');
+			$("#fetch").attr('disabled', true).css('opacity',0.5);
+	
+			if (!(4,5).includes($('#test_id').val().length)){
+				alert('Provide 4 digit test-id. Ex: TEST-1234');
+				$('#fetch').text('Error!!');
+				$("#fetch").attr('disabled', true).css('opacity',0.5);
+				setTimeout(()=>{
+					$('#fetch').text('Fetch');
+					$("#fetch").removeAttr('disabled').css('opacity',1);
+				},1500)
+				return;
+			}
+			await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
+			CustomFunction.FetchActions();
+			$('#fetch').text('Fetched!');
+			setTimeout(()=>{
+				$('#fetch').text('Fetch');
+				$("#fetch").removeAttr('disabled').css('opacity',1);
+			},1500)
+			return;
+		}
+		catch(e){
+			$('#fetch').text('Error!!');
+			$("#fetch").attr('disabled', true).css('opacity',0.5);
+			setTimeout(()=>{
+				$('#fetch').text('Fetch');
+				$("#fetch").removeAttr('disabled').css('opacity',1);
+			},1500)
+			return;
+		}
 	})
+
+	$('input#test_id').attr('maxLength','5').keypress(function(e) {
+		if (e.keyCode == 8) { return true; }
+		return this.value.length < $(this).attr("maxLength");
+	});
+
 	$(document).on('change', '#step_select', async function () {
 		console.log(this.value);
 		var result = await browserAppData.storage.local.get(null);
@@ -1268,7 +1304,7 @@ jQuery(document).ready(async function () {
 
 		label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
 		icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
-	})
+	})	
 	/* Save all newlly recorded actions with old actions and auto naming */
 	$(document).on('click', '#save_button', async function () {
 		$('#save_label').text('Saving...');
