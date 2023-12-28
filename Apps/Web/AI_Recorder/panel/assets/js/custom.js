@@ -145,6 +145,8 @@ var CustomFunction = {
 			var response = await r.json();
 			if (response.error){
 				$('#test_title').val(response.error);
+				console.log("response.error", response.error)
+				alert(response.error);
 				return Promise.reject("Invalid test-id");
 			}
 			result.meta_data['testNo'] = test_id;
@@ -162,6 +164,7 @@ var CustomFunction = {
 			$(`#step_select option[value="${step_no}"]`).prop('selected', true);
 		} catch (e) {
 			console.error(e);
+			alert(e);
 			$('#test_title').val(e);
 		}
 	},
@@ -1236,11 +1239,13 @@ var CustomFunction = {
 
 jQuery(document).ready(async function () {
 	result = await browser.storage.local.get('meta_data');
-	meta_data = result.meta_data
+	meta_data = result.meta_data;
 	CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
 	CustomFunction.FetchActions();
 
-	/* Show and Hide Play Stop wrap */
+	$('#server_address').val(result.meta_data.url);
+	$('#api_key').val(result.meta_data.apiKey);
+
 	$(document).on('click', '#fetch', async function () {
 		await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
 		CustomFunction.FetchActions();
@@ -1286,7 +1291,7 @@ jQuery(document).ready(async function () {
 		}
 		console.log("save_data >>>", save_data);
 		$.ajax({
-			url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+			url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_onlyx/',
 			method: 'POST',
 			data: save_data,
 			headers: {
@@ -1304,12 +1309,51 @@ jQuery(document).ready(async function () {
 			error: function(jqXHR, textStatus, errorThrown) {
 				console.log(errorThrown);
 				$('#save_label').text('Error!!');
-				setTimeout(()=>$('#save_label').text('Save'),1500)
+				setTimeout(()=>{
+					$('#save_label').text('Save');
+					$("#save_button").removeAttr('disabled').css('opacity',1);
+				}, 1500)
+			}
+		})
+	});
+	
+	$(document).on('click', '#authenticate', async function () {
+		$('#authenticate').text('Authenticaing...');
+		$("#authenticate").attr('disabled', true).css('opacity',0.5);
+		await CustomFunction.FetchChromeCaseData()
+		var result = await browserAppData.storage.local.get(["meta_data"]);
+		var server_address = $('#server_address').val();
+		var api_key = $('#api_key').val();
+		$.ajax({
+			url: `${server_address}/api/auth/token/verify`,
+			method: 'GET',
+			data: {
+				api_key: api_key,
+			},
+			success: function(response) {
+				console.log(response);
+				result.meta_data.url = server_address;
+				result.meta_data.apiKey = api_key;
+				browserAppData.storage.local.set({
+					meta_data: result.meta_data
+				})
+				$('#authenticate').text('Success!');
+				setTimeout(()=>{
+					$('#authenticate').text('Authenticate');
+					$("#authenticate").removeAttr('disabled').css('opacity',1);
+				},1500)
+			},
+			error: function(jqXHR, textStatus, errorThrown) {
+				console.log(errorThrown);
+				$('#authenticate').text('Error!!');
+				setTimeout(()=>$('#authenticate').text('Authenticate'),1500)
 			}
 		})
 	});
 
 	$(document).on('click', '#run_button', async function () {
+		$('#run_label').text('Running...');
+		$("#run_button").attr('disabled', true).css('opacity',0.5);
 		var result = await browserAppData.storage.local.get(["meta_data"]);
 		const input = {
 			method: "POST",
@@ -1358,11 +1402,19 @@ jQuery(document).ready(async function () {
 			},
 			success: function(response) {
 				console.log("response_2",response);
+				$('#run_label').text('Queued!');
+				setTimeout(()=>{
+					$('#run_label').text('Run');
+					$("#run_button").removeAttr('disabled').css('opacity',1);
+				},1500)
 			},
 			error: function(jqXHR, textStatus, errorThrown) {
 				console.log(errorThrown);
-				$('#save_label').text('Error!!');
-				setTimeout(()=>$('#save_label').text('Save'),1500)
+				$('#run_label').text('Error!!');
+				setTimeout(()=>{
+					$('#run_label').text('Run');
+					$("#run_button").removeAttr('disabled').css('opacity',1);
+				},1500)
 			}
 		})
 	})

@@ -149,19 +149,47 @@
                     </ul>
                 </div>
                 <ul class="d-flex flex-column justify-content-center" id="bottom_section">
-                    <li class="tablink d-flex justify-content-center opensection my-2" data-section="settings">
+                    <!-- <li class="tablink d-flex justify-content-center opensection my-2" data-section="settings">
                         <button class="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
                             <span class="material-icons" id="settings_icon">settings</span>
                             <span class="material-icons-label" id="settings _label">Settings</span>
                         </button>
-                    </li>
+                    </li> -->
                 </ul>
             </nav>
             <div class="tabcontent scrollBar" id="content" style="display: block;">
                 <div class="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
                     <span class="">TEST-</span>
-                    <input id="test_id" value="0000">
+                    <input id="test_id" value="0000" type="number" maxlength="3">
                     <button class="btn btn-dark btn-sm" id="fetch">Fetch</button>
+                    
+                    <!-- Modal -->
+                    <button type="button" class="btn btn-primary btn-sm d-flex float-end" data-toggle="modal" data-target="#exampleModal">
+                        Login
+                    </button>
+                    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Login to ZeuZ server</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <label for="server_address" class="col-form-label">Server Address:</label>
+                                <input type="text" class="form-control border border-1" id="server_address" placeholder="https://apollo.zeuz.ai">
+                                <label for="api_key" class="col-form-label">API-key:</label>
+                                <input type="text" class="form-control border border-1" id="api_key" placeholder="32 digit api-key">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" id="authenticate">Authenticate</button>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <h3 id="test_title">My test name</h2>
                 </div>
                 <select class="form-select form-select-sm m-4 w-50" id="step_select">
@@ -295,123 +323,21 @@
                     </div>
                 </div> -->
             </div>
-            <div class="tabcontent scrollBar" id="settings" style="display: none;">
-                <div class="d-flex rwo close_div">
-                    <a class="close_main_page" href="javascript:void(0);">
-                        <img class="p-2" src="assets/images/Close.png" />
-                    </a>
+            <!-- <div class="tabcontent scrollBar d-flex flex-column justify-content-center" id="settings" style="display: none;">
+                <div class="pl-5 ml-5" style="width: 300px;">
+                    <form class="">
+                        <div class="form-group">
+                            <h5>Server Address</h5>
+                            <input type="email" class="form-control" id="inputEmail" placeholder="Email">
+                        </div>
+                        <div class="form-group">
+                            <h5>API Key</h5>
+                            <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Sign in</button>
+                    </form>
                 </div>
-                <div class="settings_container">
-                    <div class="settings_left_section col-sm-5 col-lg-5 col-xl-5">
-                        <div class="settings_main_container">
-                            <div class="settings_form">
-                                <h3 class="settings-title app-title">
-                                    Setting Configuration
-                                </h3>
-                                <div class="form_input d-flex row setting-frm-row">
-                                    <p>
-                                        Server URL:
-                                    </p>
-                                    <input class="input_form" id="server_url" placeholder="https://yourdomain.com" type="text" />
-                                </div>
-                                <div class="form_input d-flex row setting-frm-row">
-                                    <p>
-                                        Username:
-                                    </p>
-                                    <input class="input_form" id="username" placeholder="Your Account" type="text" />
-                                </div>
-                                <div class="form_input d-flex row setting-frm-row">
-                                    <p>
-                                        Password:
-                                    </p>
-                                    <input class="input_form" id="password" placeholder="Password" type="password" />
-                                </div>
-                                <div class="form_input d-flex row setting-frm-row">
-                                    <p>
-                                        Server Port:
-                                    </p>
-                                    <input class="input_form" id="server_port" placeholder="Server Port" type="text" />
-                                </div>
-                            </div>
-                            <div class="authenticate_button">
-                                <img id="auth_loading" src="assets/images/loader.gif" style="width: 20px;display: none;" />
-                                <a href="javascript:void(0);" id="authenticate">
-                                    <img src="assets/images/Authenticate-on.png" />
-                                </a>
-                            </div>
-                        </div>
-                        <div class="settings_middle_section">
-                            <div class="err-wrap" style="display: none;">
-                            </div>
-                            <div class="succ-wrap" style="display: none;">
-                            </div>
-                            <div class="description">
-                                <p>
-                                    Your API Token can be found by logging to your ZeuZ Server,
-                                </p>
-                                <p>
-                                    clicking on your account (top right) and selecting API token TAB
-                                </p>
-                            </div>
-                        </div>
-                        <div class="playback_container d-flex row">
-                            <p>
-                                Playback Speed :
-                            </p>
-                            <div class="speed_dropdown ml-5">
-                                <select class="w-100" id="playback_select">
-                                    <option value="3000">
-                                        Very Slow
-                                    </option>
-                                    <option value="2400">
-                                        Slow
-                                    </option>
-                                    <option value="1800">
-                                        Normal
-                                    </option>
-                                    <option value="1200">
-                                        Fast
-                                    </option>
-                                    <option value="600">
-                                        Very Fast
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="settings_right_section col-sm-6 col-lg-6 col-xl-6">
-                        <div class="settings_right_section_up">
-                            <div class="text_one">
-                                <p>
-                                    The settings are optional and allow you to have more advance test automation features that seamlessly work with the ZeuZ Server and the ZeuZ Node.
-                                </p>
-                            </div>
-                            <div class="text_one">
-                                <p>
-                                    Visit
-                                    <a href="https://www.zeuz.ai/recorder/" target="_blank">
-                                        https://www.zeuz.ai/recorder/
-                                    </a>
-                                    and ask to get a free evaluation of the ZeuZ Test Automation framework.
-                                </p>
-                            </div>
-                            <div class="text_one">
-                                <p>
-                                    Unless you installed ZeuZ Server on a specific port, please keep the Server Port setting empty.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="settings_right_section_bottom">
-                            <p>
-                                Setting it to Very Slow will reduce speed by 50%.
-                            </p>
-                            <p>
-                                Setting it to Very Fast will increase speed by 100%.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </div> -->
         </div>
         <div id="hidden_wrap" style="display: none;">
             <div id="suite-grid-menu">

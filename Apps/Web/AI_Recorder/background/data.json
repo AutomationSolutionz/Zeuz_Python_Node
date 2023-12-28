@@ -3,7 +3,7 @@
     "testName": "Test_name",
     "stepNo": 0,
     "stepName": "Step_name",
-    "url": "url",
-    "apiKey": "apiKey",
-    "jwtKey": "jwtKey"
+    "url": "",
+    "apiKey": "",
+    "jwtKey": ""
 }
