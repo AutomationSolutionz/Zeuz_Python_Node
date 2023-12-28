@@ -837,7 +837,7 @@ def set_important_variables():
         shared.shared_variables.update({
             "clipboard_paste": pyperclip.paste,
             "clipboard_set": pyperclip.copy,
-            "number": advanced_float
+            "num": advanced_float
         })
 
     except:
