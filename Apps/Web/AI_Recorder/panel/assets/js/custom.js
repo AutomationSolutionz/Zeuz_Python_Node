@@ -251,7 +251,7 @@ var CustomFunction = {
 			<tr class="sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
 				<td class="col-1"><img id="more_button" src="assets/images/more.png">
 				<img src="assets/images/small_logo.png">
-				${single_case_index + 1}
+				<span>${single_case_index + 1}</span>
 				</td>
 				<td class="col-11 font_black has-input" data-case_commend="action">
 				${single_case_value.name}
@@ -1069,104 +1069,18 @@ var CustomFunction = {
 				},
 
 				update: function (event, ui) {
-
-					/* Fetch selected suite */
-					var selected_suite = -1;
-					$('.single-suite-tab').each(function () {
-						if ($(this).hasClass('current_selected_tab')) {
-							selected_suite = $(this).data('suite');
-						}
-					});
-
-					if (selected_suite != -1) {
-						var mainindex = ui.item.data("mainindex");
-						var caseindex = ui.item.data("caseindex");
-
-						var sortposition = ui.item.data("sortposition");
-						var drop_position = ui.item.index();
-						drop_position = drop_position + 1;
-						var arrPosition = mainindex - 1;
-
-						var sort_condition = false;
-						if ($('.sortable-' + sortposition).hasClass('parent_wrap') && $('.sortable-' + drop_position).hasClass('parent_wrap')) {
-							sort_condition = true;
-						} else if ($('.sortable-' + sortposition).hasClass('child_wrap') && ($('.sortable-' + drop_position).hasClass('child_wrap') || $('.sortable-' + drop_position).hasClass('parent_wrap'))) {
-							sort_condition = true;
-						}
-
-
-						if (sort_condition == true) {
-							var stepIndex = ui.item.data("stepindex"); /* Current element step index */
-							if (stepIndex == undefined) {
-								/* Update the step position */
-								/* swap the data */
-								var tempHold = CustomFunction.caseDataArr[selected_suite].suite_value[mainindex];
-								var dropMainIndex = $('.sortable-' + drop_position).data('mainindex');
-								CustomFunction.caseDataArr[selected_suite].suite_value[mainindex] = CustomFunction.caseDataArr[selected_suite].suite_value[dropMainIndex];
-								CustomFunction.caseDataArr[selected_suite].suite_value[dropMainIndex] = tempHold;
-
-								var case_data = {
-									case_data: CustomFunction.caseDataArr,
-								};
-								browser.storage.local.set(case_data);
-								CustomFunction.DisplayCaseData(false);
-							} else {
-								/* Update the action */
-								var dropMainIndex = $('.sortable-' + drop_position).data('mainindex');
-								var nextPos = dropMainIndex;
-								if ($('.sortable-' + drop_position).hasClass('case-main-wrap')) {
-									var dropStepIndex = dropMainIndex;
-								} else {
-									var dropStepIndex = $('.sortable-' + drop_position).data('stepindex');
-								}
-								var is_same_step = true;
-								if ($('.sortable-' + drop_position).hasClass('case-main-wrap')) {
-									is_same_step = false;
-								}
-								if (stepIndex != dropStepIndex || is_same_step == false) {
-									var val = CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value[mainindex];
-									if (is_same_step == false) {
-										if (sortposition > drop_position) {
-											CustomFunction.caseDataArr[selected_suite].suite_value[(dropStepIndex - 1)].case_value.push(val);
-										} else {
-											CustomFunction.caseDataArr[selected_suite].suite_value[dropStepIndex].case_value.splice(0, 0, val);
-										}
-									} else {
-										if (sortposition > drop_position) {
-											CustomFunction.caseDataArr[selected_suite].suite_value[dropStepIndex].case_value.splice(nextPos, 0, val);
-										} else {
-											CustomFunction.caseDataArr[selected_suite].suite_value[dropStepIndex].case_value.splice((nextPos + 1), 0, val);
-										}
-									}
-									CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value.splice((mainindex), 1);
-								} else {
-
-									/* exq this section when drop in under same step */
-									if (nextPos < mainindex) {
-										/* move to up */
-										var val = CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value[mainindex];
-										CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value.splice(nextPos, 0, val);
-										CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value.splice((mainindex + 1), 1);
-									} else {
-										/* Move to down */
-										var val = CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value[mainindex];
-										CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value.splice((mainindex), 1);
-										CustomFunction.caseDataArr[selected_suite].suite_value[stepIndex].case_value.splice(nextPos, 0, val);
-									}
-								}
-
-								var case_data = {
-									case_data: CustomFunction.caseDataArr,
-								};
-								browser.storage.local.set(case_data);
-								CustomFunction.DisplayCaseData(false);
-							}
-
-						} else {
-							$("#case_data_wrap").sortable("cancel");
-							console.log('not update');
-						}
+					var new_cases = [];
+					for (var step of $('#case_data_wrap').children('tr')) {
+						console.log($(step).attr('data-mainindex'));
+						new_cases.push(CustomFunction.caseDataArr[0].suite_value[0].case_value[parseInt($(step).attr('data-mainindex'))]);
+						$(step).attr('data-mainindex', new_cases.length-1);
+						$($(step).children()[0]).find('span').text(new_cases.length);
 					}
+					console.log("new_cases", new_cases);
+					CustomFunction.caseDataArr[0].suite_value[0].case_value = new_cases;
+					browser.storage.local.set({
+						case_data: CustomFunction.caseDataArr,
+					});
 				}
 			});
 			$("#case_data_wrap").disableSelection();
