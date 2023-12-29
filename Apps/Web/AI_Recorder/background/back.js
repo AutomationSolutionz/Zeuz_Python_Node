@@ -62,7 +62,7 @@ function getWindowSize(callback) {
         // var width = 1110;
         var win = await chrome.windows.getCurrent();
         var height = Math.round(win.height*0.9);
-        var width = Math.round(win.width/2);
+        var width = Math.round(win.width*0.6);
         if (result) {
             try {
                 result = result.window;

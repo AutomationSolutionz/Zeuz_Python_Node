@@ -6,6 +6,7 @@ var CustomFunction = {
 	is_auth_user: false,
 	isPreFocus: false,
 	isPreFocusElement: false,
+	unsavedActionsFlag: false,
 	/* Hidden field*/
 	LoadTheRecordDataHtml(recordData) {
 		CustomFunction.FetchChromeCaseData()
@@ -420,6 +421,7 @@ var CustomFunction = {
 						browserAppData.storage.local.set({
 							recorded_actions: [],
 						})
+						CustomFunction.unsavedActionsFlag = true;
 					});
 					
 				} catch (e) {
@@ -987,6 +989,7 @@ var CustomFunction = {
 					browser.storage.local.set({
 						case_data: CustomFunction.caseDataArr,
 					});
+					CustomFunction.unsavedActionsFlag = true;
 				}
 			});
 			$("#case_data_wrap").disableSelection();
@@ -1070,6 +1073,7 @@ jQuery(document).ready(async function () {
 		browser.storage.local.set({
 			case_data: CustomFunction.caseDataArr,
 		});
+		CustomFunction.unsavedActionsFlag = true;
 	})
 	$(document).on('click', '#fetch', async function () {
 		try{
@@ -1112,13 +1116,17 @@ jQuery(document).ready(async function () {
 	});
 
 	$(document).on('change', '#step_select', async function () {
-		console.log(this.value);
+		if(CustomFunction.unsavedActionsFlag && confirm("Recorded actions will vanish. Save changes?")){
+			$("#save_button").click();
+		}
+		if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
 		var result = await browserAppData.storage.local.get(null);
 		result.meta_data['stepNo'] = this.value;
 		await browserAppData.storage.local.set({
 			meta_data: result.meta_data,
 		})
 		CustomFunction.FetchActions();
+		CustomFunction.unsavedActionsFlag = false;
 	})
 
 	$(document).on('click', '#record', function () {
@@ -1132,6 +1140,8 @@ jQuery(document).ready(async function () {
 	})	
 	/* Save all newlly recorded actions with old actions and auto naming */
 	$(document).on('click', '#save_button', async function () {
+		if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
+		
 		$('#save_label').text('Saving...');
 		$("#save_button").attr('disabled', true).css('opacity',0.5);
 		await CustomFunction.FetchChromeCaseData()
@@ -1176,6 +1186,7 @@ jQuery(document).ready(async function () {
 				}, 1500)
 			}
 		})
+		CustomFunction.unsavedActionsFlag = false;
 	});
 	
 	$(document).on('click', '#authenticate', async function () {
@@ -1269,7 +1280,7 @@ jQuery(document).ready(async function () {
 				console.log("response_2",response);
 				$('#run_label').text('Queued!');
 				setTimeout(()=>{
-					$('#run_label').text('Run');
+					$('#run_label').text('Run all');
 					$("#run_button").removeAttr('disabled').css('opacity',1);
 				},1500)
 			},
@@ -1277,7 +1288,7 @@ jQuery(document).ready(async function () {
 				console.log(errorThrown);
 				$('#run_label').text('Error!!');
 				setTimeout(()=>{
-					$('#run_label').text('Run');
+					$('#run_label').text('Run all');
 					$("#run_button").removeAttr('disabled').css('opacity',1);
 				},1500)
 			}
