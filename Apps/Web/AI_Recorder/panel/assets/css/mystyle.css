@@ -93,11 +93,12 @@ body
 .dropdown-item{
   font-size: 15px;
 }
-#nav_menu_up
+#test_id
 {
-  background: #fff;
-  /*min-height: 50px;*/
-  padding-top: 10px;
+  display: inline-block;
+  width: 70px;
+  border: 2px solid black;
+  border-radius: 8px;
 }
 .tr_body
 {
@@ -302,13 +303,6 @@ body
   padding-top: 125px;
   width: 100%;
   padding-right: 120px;
-}
-.settings_container
-{
-  display: flex;
-  flex-direction: row;
-  min-height: 94vh;
-  justify-content: space-between
 }
 .settings_form h3
 {
@@ -634,7 +628,22 @@ body
    font-style: italic;
 }
 
-
+.tr{
+  background-color:white;
+}
+.td-no{
+  min-width: 75px;
+}
+.table-custom{
+  width: 640px;
+}
+.del-btn:hover{
+  opacity: 1;
+}
+.del-btn{
+  /* visibility: hidden; */
+  opacity: 0.3;
+}
 .font_black ::-webkit-input-placeholder
 {
   color: #000
