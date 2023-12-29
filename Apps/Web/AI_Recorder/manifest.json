@@ -2,7 +2,7 @@
     "description": "This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.",
     "manifest_version": 3,
     "name": "ZeuZ Test Recorder",
-    "version": "3.0",
+    "version": "4.0",
     "minimum_chrome_version": "117",
     "icons": {
         "16": "panel/assets/images/small_logo.png",
