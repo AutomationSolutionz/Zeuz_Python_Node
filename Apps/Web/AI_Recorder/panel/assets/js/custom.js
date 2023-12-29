@@ -248,13 +248,16 @@ var CustomFunction = {
 			}
 
 			html += `
-			<tr class="sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
-				<td class="col-1"><img id="more_button" src="assets/images/more.png">
+			<tr class="tr sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
+				<td class="col-1 td-no"><img id="more_button" src="assets/images/more.png">
 				<img src="assets/images/small_logo.png">
 				<span>${single_case_index + 1}</span>
 				</td>
-				<td class="col-11 font_black has-input" data-case_commend="action">
+				<td class="col-9 font_black has-input" data-case_commend="action">
 				${single_case_value.name}
+				</td>
+				<td class="col-1 font_black has-input" data-case_commend="action">
+				<button class="btn btn-outline-danger btn-sm del-btn">Del</button>
 				</td>
 			</tr>`;
 		})
@@ -831,102 +834,6 @@ var CustomFunction = {
 			CustomFunction.UserAuthentication();
 		})
 
-		/* Click case or action */
-		$(document).on('click', '.case-sub-wrap', function (e) {
-
-			var shiftHeld = e.shiftKey;
-
-
-			//var is_class_deactive = '';
-			var is_class_deactive = false;
-			//if ($('.case-sub-wrap').hasClass('disabled-case')) {
-			/*if ($(this).hasClass('disabled-case')) {
-				is_class_deactive = true;
-			}else {
-				is_class_deactive = false;
-			}*/
-
-			if (is_class_deactive != true) {
-				if (!$(this).hasClass('show_text_box')) {
-					if (shiftHeld == true) {
-						if ($(this).hasClass('case-main-wrap')) {
-							$('.case-sub-wrap').removeClass('selected-case');
-						}
-						/* using shift key user only selected either action or step.*/
-						$('.case-main-wrap').removeClass('selected-case');
-						$(this).addClass('selected-case');
-					} else {
-						$('.case-sub-wrap').removeClass('selected-case');
-						$(this).addClass('selected-case');
-					}
-					$('.case-sub-wrap').removeClass('show_text_box');
-					$('.case-input').addClass('display_hide');
-					$('.down-arrow').addClass('display_hide');
-					$('.down-arrow-element').addClass('display_hide');
-					$('.case_value_lable').removeClass('display_hide');
-
-					//$('#inactive_action_icon').attr('style','display:none !important');
-					$('#active_action_icon').show();
-
-					$('.case-input').removeClass('input-focus');
-				}
-
-
-				/*if(shiftHeld == true){
-					window.getSelection().empty(); // Remove the default text select when press shift and click
-
-					/* Working with shift key */
-				/*var first_selected_case_index = $('.selected-case').data('caseindex');
-					var current_selected_case_index = $(this).data('caseindex');
-
-					var min = first_selected_case_index;
-					var max = current_selected_case_index;
-
-					if(first_selected_case_index < current_selected_case_index){
-						min = first_selected_case_index;
-						max = current_selected_case_index;
-					}else{
-						min = current_selected_case_index;
-						max = first_selected_case_index;
-					}
-
-					$('.case-sub-wrap').removeClass('selected-case');
-
-					for(var i = min; i <= max; i++){
-						$('.sub_tr_index_'+i).addClass('selected-case');
-					}
-				}else{
-
-					/* Working without shift key */
-				/*if(!$(this).hasClass('show_text_box')){
-
-						$('.case-sub-wrap').removeClass('selected-case');
-						$(this).addClass('selected-case');
-						$('.case-sub-wrap').removeClass('show_text_box');
-						$('.case-input').addClass('display_hide');
-						$('.case_value_lable').removeClass('display_hide');
-
-						$('#inactive_action_icon').attr('style','display:none !important');
-						$('#active_action_icon').show();
-
-						$('.case-input').removeClass('input-focus');
-					}
-				}*/
-
-			}
-
-
-			if ($(this).hasClass('case-main-wrap')) {
-				CustomFunction.LoadTheRecordDataHtml();
-			} else {
-
-				/* Play not working when user click on action */
-				var caseHtml = `<input id="records-count" value="0" type="hidden">`;
-				$('#records-grid').html(caseHtml);
-			}
-		})
-
-
 		/* Update Case */
 		$(document).on('blur', '.case-input', function () {
 			var textValue = $(this).val();
@@ -1076,7 +983,6 @@ var CustomFunction = {
 						$(step).attr('data-mainindex', new_cases.length-1);
 						$($(step).children()[0]).find('span').text(new_cases.length);
 					}
-					console.log("new_cases", new_cases);
 					CustomFunction.caseDataArr[0].suite_value[0].case_value = new_cases;
 					browser.storage.local.set({
 						case_data: CustomFunction.caseDataArr,
@@ -1147,6 +1053,24 @@ jQuery(document).ready(async function () {
 	$('#server_address').val(result.meta_data.url);
 	$('#api_key').val(result.meta_data.apiKey);
 
+	/* Click case or action */
+	$(document).on('click', '.del-btn', function (e) {
+		const target = $(e.target.parentElement.parentElement)
+		const idx = target.attr('data-mainindex');
+		console.log('idx', idx)
+		target.remove();
+		var i = 0;
+		for (var step of $('#case_data_wrap').children('tr')) {
+			$(step).attr('data-mainindex', i);
+			$($(step).children()[0]).find('span').text(i+1);
+			i++;
+		}
+		CustomFunction.caseDataArr[0].suite_value[0].case_value.splice(idx, 1);
+		console.log('Remove Case', CustomFunction.caseDataArr[0].suite_value[0].case_value)
+		browser.storage.local.set({
+			case_data: CustomFunction.caseDataArr,
+		});
+	})
 	$(document).on('click', '#fetch', async function () {
 		try{
 			$('#fetch').text('Fetching...');

@@ -628,7 +628,22 @@ body
    font-style: italic;
 }
 
-
+.tr{
+  background-color:white;
+}
+.td-no{
+  min-width: 75px;
+}
+.table-custom{
+  width: 640px;
+}
+.del-btn:hover{
+  opacity: 1;
+}
+.del-btn{
+  /* visibility: hidden; */
+  opacity: 0.3;
+}
 .font_black ::-webkit-input-placeholder
 {
   color: #000

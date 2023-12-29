@@ -57,10 +57,12 @@ function create_menus() {
 
 
 function getWindowSize(callback) {
-    browserAppData.storage.local.get('window', function(result) {
-        var height = 740;
-        //var width = 780;
-        var width = 1110;
+    browserAppData.storage.local.get('window', async function(result) {
+
+        // var width = 1110;
+        var win = await chrome.windows.getCurrent();
+        var height = Math.round(win.height*0.9);
+        var width = Math.round(win.width/2);
         if (result) {
             try {
                 result = result.window;
