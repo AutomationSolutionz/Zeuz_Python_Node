@@ -144,9 +144,8 @@ var CustomFunction = {
 			var r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`);
 			var response = await r.json();
 			if (response.error){
-				$('#test_title').val(response.error);
 				console.log("response.error", response.error)
-				alert(response.error);
+				await alert(response.error);
 				return Promise.reject("Invalid test-id");
 			}
 			result.meta_data['testNo'] = test_id;
@@ -165,7 +164,6 @@ var CustomFunction = {
 		} catch (e) {
 			console.error(e);
 			alert(e);
-			$('#test_title').val(e);
 		}
 	},
 
@@ -253,29 +251,10 @@ var CustomFunction = {
 			<tr class="sortable-` + sortableCount + ` ` + extraClass + ` ` + childClass + ` case-sub-wrap sub_tr_index_` + (single_case_index + 1) + ` ui-state-default" data-caseindex="` + (single_case_index + 1) + `" data-mainindex="` + (single_case_index) + `" data-stepindex="` + case_index + `" data-sortposition="` + sortableCount + `" data-caselist="` + encodeURI(casedatalist) + `">
 				<td class="col-1"><img id="more_button" src="assets/images/more.png">
 				<img src="assets/images/small_logo.png">
-				` + (single_case_index + 1) + `
+				${single_case_index + 1}
 				</td>
-				<td class="col-3 font_black has-input" data-case_commend="action">
-				<span class="case_value_lable">` + action + `</span>
-				<input list="actionlist` + single_case_index + `" type="text" class="inpt display_hide case-input supported-command-auto" name="" placeholder="Action" value="` + action + `">
-				<a class="down-arrow display_hide" href="javascript:void(0);" id="downArrow` + single_case_index + `">
-					<svg class="bi bi-chevron-down" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						<path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z" clip-rule="evenodd"/>
-					</svg>
-				</a>
-				</td>
-				<td class="col-4 has-input" data-case_commend="element">
-				<span class="case_value_lable  gray-font">` + elm + `</span>
-				<input type="text" style="padding-right:25px" class="inpt display_hide case-input single-case-data-list" name="" placeholder="Element" value='` + single_case_value.element + `'>
-				<a class="down-arrow-element display_hide" href="javascript:void(0);" id="downArrowElement` + single_case_index + `">
-					<svg class="bi bi-chevron-down" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						<path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z" clip-rule="evenodd"/>
-					</svg>
-				</a>
-				</td>
-				<td class="col-4 has-input" data-case_commend="value">
-				<span class="case_value_lable gray-font">` + val + `</span>
-				<input type="text" class="inpt display_hide case-input" name="" placeholder="Value" value='` + single_case_value.value + `'>
+				<td class="col-11 font_black has-input" data-case_commend="action">
+				${single_case_value.name}
 				</td>
 			</tr>`;
 		})
@@ -416,9 +395,15 @@ var CustomFunction = {
 						console.log("CustomFunction.caseDataArr >>>",CustomFunction.caseDataArr);
 						console.log("result.recorded_actions >>>",result.recorded_actions);
 						result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
+
 						// If the step is not totally blank we dont add 'go to link' action
-						if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
-							result.recorded_actions.shift();
+						// var shift = false;
+						// if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
+						// 	shift = true
+						// if(shift)
+						// 	result.recorded_actions.shift();
+						result.recorded_actions.shift();
+
 						recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
 						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(recorded_actions)
 	
@@ -1240,8 +1225,10 @@ var CustomFunction = {
 jQuery(document).ready(async function () {
 	result = await browser.storage.local.get('meta_data');
 	meta_data = result.meta_data;
-	CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
-	CustomFunction.FetchActions();
+	if (result.meta_data.testNo != "TEST-0000"){
+		CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
+		CustomFunction.FetchActions();
+	}
 
 	$('#server_address').val(result.meta_data.url);
 	$('#api_key').val(result.meta_data.apiKey);
@@ -1251,7 +1238,7 @@ jQuery(document).ready(async function () {
 			$('#fetch').text('Fetching...');
 			$("#fetch").attr('disabled', true).css('opacity',0.5);
 	
-			if (!(4,5).includes($('#test_id').val().length)){
+			if (![4,5].includes($('#test_id').val().length)){
 				alert('Provide 4 digit test-id. Ex: TEST-1234');
 				$('#fetch').text('Error!!');
 				$("#fetch").attr('disabled', true).css('opacity',0.5);
@@ -1327,7 +1314,7 @@ jQuery(document).ready(async function () {
 		}
 		console.log("save_data >>>", save_data);
 		$.ajax({
-			url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_onlyx/',
+			url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
 			method: 'POST',
 			data: save_data,
 			headers: {
@@ -1359,6 +1346,7 @@ jQuery(document).ready(async function () {
 		await CustomFunction.FetchChromeCaseData()
 		var result = await browserAppData.storage.local.get(["meta_data"]);
 		var server_address = $('#server_address').val();
+		server_address = server_address.endsWith("/") ? server_address.slice(0,-1) : server_address
 		var api_key = $('#api_key').val();
 		$.ajax({
 			url: `${server_address}/api/auth/token/verify`,
@@ -1382,7 +1370,10 @@ jQuery(document).ready(async function () {
 			error: function(jqXHR, textStatus, errorThrown) {
 				console.log(errorThrown);
 				$('#authenticate').text('Error!!');
-				setTimeout(()=>$('#authenticate').text('Authenticate'),1500)
+				setTimeout(()=>{
+					$('#authenticate').text('Authenticate');
+					$("#authenticate").removeAttr('disabled').css('opacity',1);
+				},1500)
 			}
 		})
 	});
@@ -1411,14 +1402,14 @@ jQuery(document).ready(async function () {
 			var browser = 'Microsoft Edge Chromium'
 		else if (navigator.userAgent.indexOf("Chrome") != -1) 
 			var browser = 'Chrome'
-		dependency = {"Browser": browser,"Mobile":"Android"}
+		dependency = {"Browser": browser, "Mobile": "Android"}
 		const run_data = {
 			"test_case_list": JSON.stringify([result.meta_data.testNo]),
 			"dependency_list": JSON.stringify(dependency),
 			"all_machine": JSON.stringify([machine]),
 			"debug": 'yes',
 			"debug_clean": "yes",
-			"debug_steps": JSON.stringify([result.meta_data.stepNo.toString()]),
+			"debug_steps": JSON.stringify([]), // [] means Run all steps
 			"RunTestQuery": JSON.stringify([result.meta_data.testNo, machine]),
 			"dataAttr": JSON.stringify(["Test Case"]),
 			"project_id": project_id,
