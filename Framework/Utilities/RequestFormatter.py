@@ -4,6 +4,7 @@
 from . import ConfigModule
 import requests
 import json
+import pickle
 from urllib3.exceptions import InsecureRequestWarning
 
 # Tags for reading data from settings.conf file.
@@ -18,6 +19,60 @@ API_KEY_HEADER_NAME = "X-API-KEY"
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
+
+session = requests.Session()
+SESSION_FILE_NAME = "session.bin"
+
+
+def save_cookies(session: requests.Session, filename: str):
+    try:
+        with open(filename, 'wb') as f:
+            pickle.dump(session.cookies, f)
+    except:
+        print("[RequestFormatter] ERROR saving cookies to disk.")
+
+
+def load_cookies(session: requests.Session, filename: str):
+    try:
+        with open(filename, 'rb') as f:
+            session.cookies.update(pickle.load(f))
+    except:
+        print("[RequestFormatter] ERROR loading cookies from disk.")
+
+
+def renew_token():
+    r = session.post(
+        url=form_uri("/zsvc/auth/v1/renew")
+    )
+
+    if r.status_code != 200:
+        print("[RequestFormatter] token could not be renewed. Please login again.")
+        # TODO remove the login credentials and force user to login again.
+        return
+
+    # Save new tokens to disk
+    save_cookies(session=session, filename=SESSION_FILE_NAME)
+
+
+def login():
+    api_key = ConfigModule.get_config_value(AUTHENTICATION_CATEGORY, API_KEY_TAG)
+    payload = {
+        "type": "api_key",
+        "api_key": api_key,
+    }
+    r = session.post(
+        url=form_uri("/zsvc/auth/v1/login"),
+        json=payload,
+    )
+
+    if r.status_code != 200:
+        print("[RequestFormatter]. Please login again.")
+        # TODO remove the login credentials and force user to login again.
+        return
+
+    # Save new tokens to disk
+    save_cookies(session=session, filename=SESSION_FILE_NAME)
 
 
 def form_uri(resource_path):
@@ -53,7 +108,7 @@ def Post(resource_path, payload=None, **kwargs):
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return requests.post(
+        return session.post(
             form_uri(resource_path + "/"),
             data=json.dumps(payload),
             verify=False,
@@ -70,7 +125,7 @@ def Get(resource_path, payload=None, **kwargs):
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return requests.get(
+        return session.get(
             form_uri(resource_path),
             params=json.dumps(payload),
             timeout=REQUEST_TIMEOUT,
@@ -97,7 +152,7 @@ def UpdatedGet(resource_path, payload=None, **kwargs):
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return requests.get(
+        return session.get(
             form_uri(resource_path + "/"),
             params=payload,
             timeout=REQUEST_TIMEOUT,
@@ -122,7 +177,7 @@ def Head(resource_path, **kwargs):
     try:
         kwargs = add_api_key_to_headers(kwargs)
         uri = form_uri(resource_path)
-        return requests.head(
+        return session.head(
             uri,
             timeout=REQUEST_TIMEOUT,
             verify=False,
