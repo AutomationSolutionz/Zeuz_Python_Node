@@ -165,6 +165,7 @@ var CustomFunction = {
 		} catch (e) {
 			console.error(e);
 			alert(e);
+			return Promise.reject("Failed to fetch");
 		}
 	},
 
