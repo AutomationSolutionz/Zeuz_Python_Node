@@ -175,18 +175,14 @@ var CustomFunction = {
 		var singleSuiteDataArr = CasemainArr[0];
 		var singleSuiteValue = singleSuiteDataArr.suite_value;
 
-		var sortableCount = 0;
 		if (singleSuiteValue.length == 0) {
 			$('#case_data_wrap').html(''); //new code 9-6-2020
 		}
 		var single_value = singleSuiteValue[case_index];
-		sortableCount++;
 		var case_name = single_value.case_name;
 		var case_no = single_value.case_no;
 		var case_value = single_value.case_value;
-
 		$.each(case_value, function (single_case_index, single_case_value) {
-			sortableCount++;
 			var action = single_case_value.action;
 			if (single_case_value.action == '') {
 				action = '&nbsp';
@@ -233,9 +229,9 @@ var CustomFunction = {
 				elm = single_case_value.element.substring(0, 27) + '...';
 			}
 
-			var extraClass = "";
+			var disableClass = "";
 			if (single_case_value.is_disable == 1) {
-				extraClass = 'disabled-case';
+				disableClass = 'disabled-case';
 			}
 
 			var childClass = 'child_wrap child_action' + case_index;
@@ -246,7 +242,7 @@ var CustomFunction = {
 			}
 
 			html += 
-			`<tr class="tr sortable-${sortableCount} ${extraClass} ${childClass} case-sub-wrap data-mainindex="${single_case_index}>"
+			`<tr class="tr ${disableClass}" data-mainindex="${single_case_index}">
 				<td class="col-1 td-no">
 				<img src="assets/images/small_logo.png" class="mr-2"><span>${single_case_index + 1}</span>
 				</td>
@@ -501,6 +497,16 @@ var CustomFunction = {
 				}
 			}, 550);
 			//}
+			//}
+
+			if (display_type == "save_record_data") {
+				var sortposition = $('.selected-case').data('sortposition');
+				setTimeout(function () {
+					console.log('sortposition', sortposition);
+					$('.sortable-' + sortposition).trigger('click');
+				}, 800);
+			}					
+			//}					
 
 			if (display_type == "save_record_data") {
 				var sortposition = $('.selected-case').data('sortposition');
@@ -767,20 +773,6 @@ var CustomFunction = {
 				CustomFunction.UpdateCaseData(textValue, case_command, case_index, 'update_step');
 			} else {
 				CustomFunction.UpdateCaseData(textValue, case_command, case_index, 'update_action', stepindex);
-			}
-		})
-
-		/* when out side click then hide the edit text box */
-		$(document).mouseup(function (e) {
-			var container = $(".case-sub-wrap");
-			if (!container.is(e.target) && container.has(e.target).length === 0) {
-				$('.case-sub-wrap').removeClass('show_text_box');
-				$('.case-input').addClass('display_hide');
-				$('.down-arrow').addClass('display_hide');
-				$('.down-arrow-element').addClass('display_hide');
-				$('.case_value_lable').removeClass('display_hide');
-				CustomFunction.isPreFocus = false;
-				CustomFunction.isPreFocusElement = false;
 			}
 		})
 
@@ -1213,14 +1205,6 @@ jQuery(document).ready(async function () {
 		}
 		document.getElementById(section).style.display = "block";
 	})
-	
-	/* *===* Dselect All by click esc start *===* */
-	$(document).on('keydown', function (event) {
-		if (event.key == "Escape") {
-			$(".case-sub-wrap").removeClass("selected-case");
-			$('.current_selected_tab').trigger('click');
-		}
-	});
 	/* function of main.js */
 	var fullHeight = function () {
 		$('.js-fullheight').css('height', $(window).height());
