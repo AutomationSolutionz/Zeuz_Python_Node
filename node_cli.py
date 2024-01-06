@@ -350,10 +350,6 @@ def Login(cli=False, run_once=False, log_dir=None):
         if exit_script:
             break
 
-        # Load device information
-        global device_dict
-        device_dict = All_Device_Info.get_all_connected_device_info()
-
         CommonUtil.node_manager_json(
             {
                 "state": "idle",
@@ -364,7 +360,7 @@ def Login(cli=False, run_once=False, log_dir=None):
             }
         )
         node_id = CommonUtil.MachineInfo().getLocalUser().lower()
-        RunProcess(node_id, device_dict, user_data, run_once=run_once, log_dir=log_dir)
+        RunProcess(node_id, run_once=run_once, log_dir=log_dir)
 
     if run_once:
         print("[OFFLINE]", "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.")
@@ -395,7 +391,7 @@ def update_machine_info(node_id, should_print=True):
     RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
-def RunProcess(node_id, device_dict, user_info_object: UserData, run_once=False, log_dir=None):
+def RunProcess(node_id, run_once=False, log_dir=None):
     try:
         PreProcess(log_dir=log_dir)
 
@@ -437,7 +433,7 @@ def RunProcess(node_id, device_dict, user_info_object: UserData, run_once=False,
                 f.write(json.dumps(node_json))
 
             # 3. Call MainDriver
-            MainDriverApi.main(device_dict)
+            MainDriverApi.main(All_Device_Info.get_all_connected_device_info())
 
         def on_connect_callback(reconnected: bool):
             update_machine_info(node_id, should_print=not reconnected)
@@ -965,11 +961,10 @@ def command_line_args() -> Path:
 
 def Bypass():
     while True:
-        user_info_object = {'project': 'zeuz', 'team': 'zeuz'}
         oLocalInfo = CommonUtil.MachineInfo()
         testerid = (oLocalInfo.getLocalUser()).lower()
         print("[Bypass] Zeuz Node is online: %s" % testerid)
-        RunProcess(testerid, device_dict, user_info_object)
+        RunProcess(testerid)
 
 
 if __name__ == "__main__":
