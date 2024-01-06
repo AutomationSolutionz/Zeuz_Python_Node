@@ -79,9 +79,25 @@ window.onload = function() {
                 }
                 browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
                 .then(function(tabs) {
-                    for(let tab of tabs) {
-                        browser.tabs.sendMessage(tab.id, {attachRecorder: true});
+                    try {
+                        console.log("attachRecorder=true sendMessage() call");
+                        for(let tab of tabs) {
+                            browser.tabs.sendMessage(tab.id, {attachRecorder: true})
+                            .catch((error)=>{
+                                console.log('error in sendMessage from tab.url=', tab.url);
+                                console.error(error);
+                                if (tab.url.startsWith("http://") || tab.url.startsWith("https://")){
+                                    msg = (tabs.length == 1) ?
+                                    `Recorder Disconnected!\n  1. Close the Recorder\n  2. Refresh the page (optional)\n  3. Open Recorder again` :
+                                    `Recorder Disconnected!\n  1. Close the Recorder\n  2. Close all tabs except the main tab\n  3. Refresh the page (optional)\n  4. Open Recorder again` ;
+                                    alert(msg)
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error(error);
                     }
+                    
                 });
                 // recordButton.childNodes[1].textContent = " Stop";
                 // switchRecordButton(false);
