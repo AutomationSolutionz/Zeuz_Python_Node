@@ -254,6 +254,7 @@ def Login(cli=False, run_once=False, log_dir=None):
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
     api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+    api = api.strip('"')
     api_flag = True
     if not api or not server_name:
         zeuz_authentication_prompts_for_cli()
@@ -263,8 +264,9 @@ def Login(cli=False, run_once=False, log_dir=None):
             server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
             if api and server_name:
                 break
-    while api and server_name:
-        url = f"{server_name}/zsvc/auth/v1/login"
+
+    url = f"{server_name}/zsvc/auth/v1/login"
+    while len(api) > 0 and server_name:
         res = RequestFormatter.session.post(url, json={
             "type": "api_key",
             "api_key": api,
@@ -284,9 +286,7 @@ def Login(cli=False, run_once=False, log_dir=None):
             print("Server down. Trying again after 30 seconds")
             time.sleep(30)
 
-    if password == "YourUserNameGoesHere":
-        password = password
-    else:
+    if password != "YourUserNameGoesHere":
         password = pass_decode("zeuz", password)
 
     # form payload object
