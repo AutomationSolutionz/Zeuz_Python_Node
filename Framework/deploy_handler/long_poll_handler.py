@@ -62,9 +62,13 @@ class DeployHandler:
 
     def run(self, host: str) -> None:
         reconnect = False
+        server_online = False
         while True:
             if reconnect:
-                time.sleep(random.randint(1, 3))
+                if server_online:
+                    time.sleep(0.1)
+                else:
+                    time.sleep(random.randint(1, 3))
 
             self.on_connect_callback(reconnect)
 
@@ -73,18 +77,22 @@ class DeployHandler:
                 resp = RequestFormatter.request("get", host, verify=False)
 
                 if resp.content.startswith(self.ERROR_PREFIX):
+                    server_online = False
                     self.on_error(resp.content)
                     continue
 
                 if resp.status_code == requests.codes['no_content']:
+                    server_online = False
                     continue
 
                 if resp.status_code != requests.codes['ok']:
+                    server_online = False
                     print("[deploy] error communicating with the deploy service, status code:", resp.status_code, " | reconnecting")
                     continue
 
                 self.on_message(resp.content)
                 reconnect = False
+                server_online = True
             except:
                 traceback.print_exc()
                 print("[deploy] RETRYING...")
