@@ -1218,7 +1218,7 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
         if "local" in device_order["mobile"]:
             pass
         elif "browser_stack" in device_order["mobile"]:
-            project = f"PROJECT: {user_info_object['project']} & TEAM: {user_info_object['team']}"
+            project = f"PROJECT:{user_info_object['project_id']} & TEAM:{user_info_object['team_id']}"
             # build = f"{test_case_no} : {test_case_name}"
             build = kwargs['run_id']
             # Todo: session_name will be the run_id of the test case. So, we can reference with our zeuz better
@@ -1251,8 +1251,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             }
     # Todo: remove this section. Changing this for new device_info.
     # elif "browser_stack" in device_order and device_order["browser_stack"]:
-    #     project = user_info_object["project"]
-    #     team = user_info_object["team"]
+    #     project ["project"]
+    #     team ["team"]
     #
     #     project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
     #     build = test_case_no + " :: " + test_case_name
@@ -1659,7 +1659,7 @@ def download_attachments(testcase_info):
 
 
 # main function
-def main(device_dict, user_info_object):
+def main(device_dict):
     try:
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1888,6 +1888,10 @@ def main(device_dict, user_info_object):
                         performance_test_case = True
                     test_case_no = testcase_info["testcase_no"]
                     test_case_name = testcase_info["title"]
+                    user_info_object = {
+                        "project_id": run_id_info["project_id"],
+                        "team_id": str(run_id_info["team_id"]),
+                    }
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid, run_id=run_id)
                     CommonUtil.disabled_step = []
 
