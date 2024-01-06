@@ -56,7 +56,7 @@ class BackgroundRecorder {
 				}
 			})
 			return;
-		}, 10000)
+		}, 30000)
     }
 
     /* Bind initial time */
