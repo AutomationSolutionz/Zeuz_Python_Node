@@ -25,6 +25,7 @@ AutomationLog/
 iosSimulator/*
 node_state.json
 *.zvt
+Framework/session.bin
 
 # Nodejs gitignore
 # Logs

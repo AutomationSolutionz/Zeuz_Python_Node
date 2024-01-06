@@ -38,7 +38,9 @@ def save_cookies(session: requests.Session, filename: str):
         print("[RequestFormatter] ERROR saving cookies to disk.")
 
 
-def load_cookies(session: requests.Session, filename: str):
+import os
+def load_cookies(filename: os.PathLike):
+    global session
     try:
         with open(filename, 'rb') as f:
             session.cookies.update(pickle.load(f))

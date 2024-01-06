@@ -288,6 +288,12 @@ def Login(cli=False, run_once=False, log_dir=None):
         project_id="PROJ-17",
         team_id=2,
     )
+
+    # Load session from disk if available.
+    session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
+    if session_bin_path.exists():
+        RequestFormatter.load_cookies(session_bin_path)
+
     while len(api) > 0 and len(server_name) > 0:
         try:
             data, status_code = RequestFormatter.login()
@@ -845,7 +851,7 @@ def command_line_args() -> Path:
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
             update_outdated_modules()
         print("module_updater: Module Updated..")
-    
+
     # Delete Old Subfolders in Automationlog folder.
 
     def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
@@ -868,7 +874,7 @@ def command_line_args() -> Path:
     if log_delete_interval:
         auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
         auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini']]
-        
+
         if auto_log_subfolders:
             for subfolder in auto_log_subfolders:
                 shutil.rmtree(subfolder)
