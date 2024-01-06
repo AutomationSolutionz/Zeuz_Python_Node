@@ -281,6 +281,11 @@ def Login(cli=False, run_once=False, log_dir=None):
             if api and server_name:
                 break
 
+    global exit_script
+    global processing_test_case
+
+    exit_script = False  # Reset exit variable
+
     # Login to ZeuZ server.
     user_data = UserData(
         username="admin",
@@ -291,12 +296,24 @@ def Login(cli=False, run_once=False, log_dir=None):
 
     # Load session from disk if available.
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
-    if session_bin_path.exists():
+    load_from_session = session_bin_path.exists()
+    if load_from_session:
         RequestFormatter.load_cookies(session_bin_path)
 
-    while len(api) > 0 and len(server_name) > 0:
+    if not ((load_from_session or len(api) > 0) and len(server_name) > 0):
+        return
+
+    while True:
         try:
-            data, status_code = RequestFormatter.login()
+            if load_from_session:
+                data, status_code = RequestFormatter.renew_token()
+            else:
+                data, status_code = RequestFormatter.login()
+
+            # Upon successful login, replace the api key in the settings
+            # file with a dummy value since we don't need it anymore.
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
+
             if status_code == 200:
                 user_data = UserData(
                     username=data["user"]["username"],
@@ -319,7 +336,6 @@ def Login(cli=False, run_once=False, log_dir=None):
                 table.add_row("Project ID", user_data.project_id)
 
                 console.print(table)
-                break
             else:
                 line_color = Fore.RED
                 print(line_color + "Incorrect credentials, please try again.")
@@ -329,15 +345,8 @@ def Login(cli=False, run_once=False, log_dir=None):
         except ConnectionError:
             print("Failed to connect to the server, retrying after 30s")
             time.sleep(30)
+            continue
 
-    # Iniitalize GUI Offline call
-    # CommonUtil.set_exit_mode(False)
-    global exit_script
-    global processing_test_case
-
-    exit_script = False  # Reset exit variable
-
-    while True:
         if exit_script:
             break
 

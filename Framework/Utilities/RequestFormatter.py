@@ -66,25 +66,34 @@ def is_less_than_N_minutes_away(target_datetime, n):
     return time_difference < timedelta(minutes=n)
 
 
-def renew_token():
+def renew_token_with_expiry_check():
     global ACCESS_TOKEN_EXPIRES_AT
     if not is_less_than_N_minutes_away(ACCESS_TOKEN_EXPIRES_AT, 1):
         return
+
+    renew_token()
+
+
+def renew_token():
+    global ACCESS_TOKEN_EXPIRES_AT
 
     r = session.post(
         url=form_uri("/zsvc/auth/v1/renew"),
     )
 
+    data = {}
     if r.status_code != 200:
         line_color = Fore.RED
         print(line_color + "[RequestFormatter] token could not be renewed. Please login again.")
-        return
+        return data, r.status_code
 
     data = r.json()
     ACCESS_TOKEN_EXPIRES_AT = datestring_to_obj(data["access_token_expires_at"])
 
     # Save new tokens to disk
     save_cookies(session=session, filename=SESSION_FILE_NAME)
+
+    return data, r.status_code
 
 
 def login():
@@ -144,12 +153,12 @@ def request(*args, **kwargs):
     request() is a wrapper for requests.request which handles automatic session
     management.
     """
-    renew_token()
+    renew_token_with_expiry_check()
     return session.request(*args, **kwargs)
 
 
 def Post(resource_path, payload=None, **kwargs):
-    renew_token()
+    renew_token_with_expiry_check()
     if payload is None:  # Removing default mutable argument
         payload = {}
     try:
@@ -168,7 +177,7 @@ def Post(resource_path, payload=None, **kwargs):
 
 
 def Get(resource_path, payload=None, **kwargs):
-    renew_token()
+    renew_token_with_expiry_check()
     if payload is None:  # Removing default mutable argument
         payload = {}
     try:
@@ -196,7 +205,7 @@ def Get(resource_path, payload=None, **kwargs):
 
 # here params are passed as a plain dictionary for better catching get parameter values
 def UpdatedGet(resource_path, payload=None, **kwargs):
-    renew_token()
+    renew_token_with_expiry_check()
     if payload is None:  # Removing default mutable argument
         payload = {}
     try:
