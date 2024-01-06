@@ -6,6 +6,8 @@ import time
 import random
 import requests
 
+from Framework.Utilities import RequestFormatter
+
 
 class DeployHandler:
     """
@@ -65,7 +67,7 @@ class DeployHandler:
             self.on_connect_callback(reconnect)
             try:
                 reconnect = True
-                resp = requests.get(host,verify=False)
+                resp = RequestFormatter.session.get(host, verify=False)
 
                 if resp.content.startswith(self.ERROR_PREFIX):
                     self.on_error(resp.content)

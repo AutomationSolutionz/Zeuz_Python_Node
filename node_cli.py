@@ -264,18 +264,15 @@ def Login(cli=False, run_once=False, log_dir=None):
             if api and server_name:
                 break
     while api and server_name:
-        url = '/api/auth/token/verify?api_key=%s' % (api)
-        r = RequestFormatter.Get(url)
-        if r:
+        url = f"{server_name}/zsvc/auth/v1/login"
+        res = RequestFormatter.session.post(url, json={
+            "type": "api_key",
+            "api_key": api,
+        })
+        if res.status_code == 200:
             try:
-                CommonUtil.jwt_token = token = r['token']
-                res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
-                if "data" in res:   # Todo: implement it with proper server versioning
-                    info = res["data"][0]
-                else:
-                    info = res[0]
-
-                username = info['username']
+                data = res.json()
+                username = data["user"]["username"]
                 api_flag = False
                 ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
                 break
