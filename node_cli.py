@@ -29,11 +29,15 @@ with open(version_path, "r"):
     print("Python " + platform.python_version() + "(" + platform.architecture()[0] + ")\n")
 from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
+
 from configobj import ConfigObj
 from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+from colorama import init as colorama_init
+from colorama import Fore
+colorama_init(autoreset=True)
 
 import sys, time, os.path, base64, signal, argparse, requests
 from getpass import getpass
@@ -253,37 +257,41 @@ def Login(cli=False, run_once=False, log_dir=None):
     username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-    api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
-    api = api.strip('"')
+    api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
     api_flag = True
+
+    # If login information is not present in the settings file, take input from user.
     if not api or not server_name:
         zeuz_authentication_prompts_for_cli()
-        for i in range(30):     # it takes time to save in the file. so lets wait 15 sec
+        for _ in range(30):     # it takes time to save in the file. so lets wait 15 sec
             time.sleep(0.5)
-            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
             server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
             if api and server_name:
                 break
 
+    # Login to ZeuZ server.
     url = f"{server_name}/zsvc/auth/v1/login"
-    while len(api) > 0 and server_name:
-        res = RequestFormatter.session.post(url, json={
-            "type": "api_key",
-            "api_key": api,
-        })
-        if res.status_code == 200:
-            try:
+    while len(api) > 0 and len(server_name) > 0:
+        try:
+            res = RequestFormatter.session.post(url, json={
+                "type": "api_key",
+                "api_key": api,
+            })
+            if res.status_code == 200:
                 data = res.json()
                 username = data["user"]["username"]
                 api_flag = False
                 ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
                 break
-            except:
-                print("Incorrect API key...")
+            else:
+                line_color = Fore.RED
+                print(line_color + "Incorrect credentials, please try again.")
                 server_name, api = zeuz_authentication_prompts_for_cli()
+                api = api.strip('"')
                 continue
-        else:
-            print("Server down. Trying again after 30 seconds")
+        except ConnectionError:
+            print("Failed to connect to the server, retrying after 30s")
             time.sleep(30)
 
     if password != "YourUserNameGoesHere":
