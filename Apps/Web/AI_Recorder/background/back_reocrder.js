@@ -118,7 +118,8 @@ async function fetchAIData(idx, command, value, url, document){
         value = 10;
     }
     response[0].short.value = value;
-    if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
+    if (command === 'text') response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
+    else if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     recorded_actions[idx] = {
         action: response[0].short.action,
         data_list: [response[0].short.value],

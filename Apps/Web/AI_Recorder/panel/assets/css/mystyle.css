@@ -80,7 +80,9 @@ body
 {
   background: white;
 }
-
+#content{
+  background-color: #eeeeee;
+}
 #header_tab li a {
   color: #9FC8FA;
 }
@@ -604,11 +606,6 @@ body
   display: inline;
 }
 
-
-
-
-
-
 .bottom_left_icon a
 {
   background: none;
@@ -631,23 +628,34 @@ body
 .tr:not(thead>tr){
   background-color:white;
   cursor: grab;
+  border-radius: 15px;
 }
-
+#case_data_wrap tr td{
+  padding: 0;
+}
 .tr:active:not(thead>tr){
   cursor: grabbing;
 }
 .td-no{
   min-width: 75px;
+  border-radius: 15px;
 }
 .table-custom{
   width: 640px;
 }
 .del-btn:hover{
   opacity: 1;
+  cursor: pointer;
+
+}
+.tr:hover .del-btn{
+  opacity: 0.75;
 }
 .del-btn{
-  /* visibility: hidden; */
-  opacity: 0.3;
+  opacity: 0;
+}
+.opacity1{
+  opacity: 1;
 }
 .font_black ::-webkit-input-placeholder
 {
@@ -761,9 +769,6 @@ body
   border-radius: 10px;
   height: 41px;
   padding-left: 5px;
-}
-.show_text_box .has-input{
-  padding: 4px !important;
 }
 
 .disabled-case{

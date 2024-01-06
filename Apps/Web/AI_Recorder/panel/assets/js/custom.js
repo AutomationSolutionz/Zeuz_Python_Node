@@ -1,140 +1,11 @@
 browserAppData = chrome || browser;
 var CustomFunction = {
-	caseDataArr: {},
 	StepCopyData: null,
 	copyType: null,
 	is_auth_user: false,
 	isPreFocus: false,
 	isPreFocusElement: false,
 	unsavedActionsFlag: false,
-	/* Hidden field*/
-	LoadTheRecordDataHtml(recordData) {
-		CustomFunction.FetchChromeCaseData()
-		.then(() => {
-			/* Fetch selected suite */
-			var selected_suite = 0;
-
-			var selectedCase = -1;
-			$('.case-main-wrap').each(function () {
-				if ($(this).hasClass('selected-case')) {
-					selectedCase = $(this).data('mainindex');
-				}
-			});
-
-			var caseDataValues = CustomFunction.caseDataArr[selected_suite].suite_value;
-			if (selected_suite != -1 && selectedCase != -1 && caseDataValues.length > 0 && CustomFunction.caseDataArr[selected_suite].suite_value[selectedCase] != undefined) {
-				var actionData = CustomFunction.caseDataArr[selected_suite].suite_value[selectedCase];
-				if (actionData.case_value != undefined && actionData.case_value.length > 0 && (actionData.is_disable == undefined || actionData.is_disable == 0)) {
-
-
-					//var caseHtml = `<input id="records-count" value="`+actionData.case_value.length+`" type="hidden">`;
-					var caseHtml = ``;
-					var caseValLength = 0;
-					var disableCount = 0;
-					$.each(actionData.case_value, function (indx, val) {
-						if (val.is_disable == undefined || val.is_disable == 0) {
-							caseValLength++;
-							caseHtml += `<tr id="records-` + caseValLength + `" class="odd">
-								<td>
-									<div style="display: none;">` + val.action + `</div>
-									<div style="overflow:hidden;height:15px;">` + val.action + `</div>
-								</td>
-								<td>
-									<div style="display: none;">` + val.element + `</div>
-									<div style="overflow:hidden;height:15px;">` + val.element + `</div>
-		        					<datalist>
-		        						<option>
-		        							` + val.element + `
-		        						</option>
-		        					</datalist>
-		        				</td>
-		        				<td>
-		        					<div style="display: none;">` + val.value + `</div>
-		        					<div style="overflow:hidden;height:15px;">` + val.value + `</div>
-		        				</td>
-							</tr>`;
-						} else {
-							disableCount = disableCount + 1;
-						}
-					})
-					caseHtml += `<input id="records-count" value="` + caseValLength + `" type="hidden">`;
-					caseHtml += `<input id="disable-count" value="` + disableCount + `" type="hidden">`;
-					$('#records-grid').html(caseHtml);
-				} else {
-					caseHtml = `<input id="records-count" value="0" type="hidden">`;
-					$('#records-grid').html(caseHtml);
-				}
-			} else {
-				caseHtml = `<input id="records-count" value="0" type="hidden">`;
-				$('#records-grid').html(caseHtml);
-			}		
-		})
-	},
-
-	LoadCaseSuiteHtml(SuiteMainArr) {
-		var suiteHtml = ``;
-		if (SuiteMainArr != undefined && SuiteMainArr.length > 0) {
-			$.each(SuiteMainArr, function (indx, val) {
-				if (indx < 5) {
-					var suite_name = val.suite_name;
-					var extraCls = '';
-					var ChildExtraCls = '';
-					if (indx == 0) {
-						extraCls = 'head_text pl-3';
-						ChildExtraCls = 'current_selected_tab';
-					}
-					suiteHtml += `<li class="` + extraCls + `">
-					<a data-toggle="tab" class="single-suite-tab suite-tab-` + indx + ` ` + ChildExtraCls + `" href="javascript:void(0);" data-suite="` + indx + `">` + suite_name + `</a>
-					<span class="suite-action" style="display:none">`;
-					if (indx > 0) {
-						suiteHtml += `<a href="javascript:void(0);" title="Remove" style="color:red" class="delete-suite" data-name="` + suite_name + `" data-suite="` + indx + `">
-						<svg class="bi bi-x-circle" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						  <path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm0 1A8 8 0 108 0a8 8 0 000 16z" clip-rule="evenodd"/>
-						  <path fill-rule="evenodd" d="M11.854 4.146a.5.5 0 010 .708l-7 7a.5.5 0 01-.708-.708l7-7a.5.5 0 01.708 0z" clip-rule="evenodd"/>
-						  <path fill-rule="evenodd" d="M4.146 4.146a.5.5 0 000 .708l7 7a.5.5 0 00.708-.708l-7-7a.5.5 0 00-.708 0z" clip-rule="evenodd"/>
-						</svg>
-					</a>`;
-					}
-
-					suiteHtml += `<a href="javascript:void(0);" title="Edit" style="color:black" class="edit-suite" data-name="` + suite_name + `" data-suite="` + indx + `">
-						<svg class="bi bi-pencil" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						  <path fill-rule="evenodd" d="M11.293 1.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-9 9a1 1 0 01-.39.242l-3 1a1 1 0 01-1.266-1.265l1-3a1 1 0 01.242-.391l9-9zM12 2l2 2-9 9-3 1 1-3 9-9z" clip-rule="evenodd"/>
-						  <path fill-rule="evenodd" d="M12.146 6.354l-2.5-2.5.708-.708 2.5 2.5-.707.708zM3 10v.5a.5.5 0 00.5.5H4v.5a.5.5 0 00.5.5H5v.5a.5.5 0 00.5.5H6v-1.5a.5.5 0 00-.5-.5H5v-.5a.5.5 0 00-.5-.5H3z" clip-rule="evenodd"/>
-						</svg>
-					</a>
-					</span></li>`;
-				}
-			});
-
-			if (SuiteMainArr.length > 5) {
-				suiteHtml += `<li class="pr-3 has-dropdown-menu"> <div class="dropdown">
-                  <a class="dropdown-toggle" href="#" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    More<span><img src="assets/images/more-arrow-down.png"> </span></a>
-                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg-left" aria-labelledby="dropdownMenuLink">`;
-				/* For more tab */
-				$.each(SuiteMainArr, function (indx, val) {
-					if (indx > 4) {
-						var suite_name = val.suite_name;
-						suiteHtml += `<div class="single-drop"><a data-toggle="tab" class="dropdown-item single-suite-tab" href="javascript:void(0);" data-suite="` + indx + `">` + suite_name + `</a>
-						<span class="suite-action" id="suitaction` + indx + `" style="display:none;">
-						<a href="javascript:void(0);" title="Remove" style="color:red" class="delete-suite" data-name="` + suite_name + `" data-suite="` + indx + `">
-						<svg class="bi bi-x-circle" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						  <path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm0 1A8 8 0 108 0a8 8 0 000 16z" clip-rule="evenodd"/>
-						  <path fill-rule="evenodd" d="M11.854 4.146a.5.5 0 010 .708l-7 7a.5.5 0 01-.708-.708l7-7a.5.5 0 01.708 0z" clip-rule="evenodd"/>
-						  <path fill-rule="evenodd" d="M4.146 4.146a.5.5 0 000 .708l7 7a.5.5 0 00.708-.708l-7-7a.5.5 0 00-.708 0z" clip-rule="evenodd"/>
-						</svg>
-					</a><a href="javascript:void(0);" title="Edit" style="color:black" class="edit-suite" data-name="` + suite_name + `" data-suite="` + indx + `">
-						<svg class="bi bi-pencil" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-						  <path fill-rule="evenodd" d="M11.293 1.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-9 9a1 1 0 01-.39.242l-3 1a1 1 0 01-1.266-1.265l1-3a1 1 0 01.242-.391l9-9zM12 2l2 2-9 9-3 1 1-3 9-9z" clip-rule="evenodd"/>
-						  <path fill-rule="evenodd" d="M12.146 6.354l-2.5-2.5.708-.708 2.5 2.5-.707.708zM3 10v.5a.5.5 0 00.5.5H4v.5a.5.5 0 00.5.5H5v.5a.5.5 0 00.5.5H6v-1.5a.5.5 0 00-.5-.5H5v-.5a.5.5 0 00-.5-.5H3z" clip-rule="evenodd"/>
-						</svg>
-					</a></span></div>`;
-					}
-				});
-			}
-			$('#header_tab').html(suiteHtml);
-		}
-	},
 
 	async FetchTestData(test_id, step_no) {
 		var result = await browserAppData.storage.local.get(null);
@@ -142,7 +13,7 @@ var CustomFunction = {
 			var r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`);
 			var response = await r.json();
 			if (response.error){
-				console.log("response.error", response.error)
+				console.error("response.error", response.error)
 				await alert(response.error);
 				return Promise.reject("Invalid test-id");
 			}
@@ -165,204 +36,36 @@ var CustomFunction = {
 		}
 	},
 
-	LoadActions(CasemainArr, case_index, isReloadHeaderTab, display_type) {
-		var html = '';
-		// console.log('CasemainArr',CasemainArr);
-		// console.log('case_index',case_index);
-
-		if (CasemainArr === undefined || CasemainArr.length === 0) return;
-
-		var singleSuiteDataArr = CasemainArr[0];
-		var singleSuiteValue = singleSuiteDataArr.suite_value;
-
-		if (singleSuiteValue.length == 0) {
-			$('#case_data_wrap').html(''); //new code 9-6-2020
-		}
-		var single_value = singleSuiteValue[case_index];
-		var case_name = single_value.case_name;
-		var case_no = single_value.case_no;
-		var case_value = single_value.case_value;
+	LoadActions(case_value) {
+		console.log('case_value',case_value);
+		var len = $('#case_data_wrap>tr').length
 		$.each(case_value, function (single_case_index, single_case_value) {
-			var action = single_case_value.action;
-			if (single_case_value.action == '') {
-				action = '&nbsp';
-			}
-
-			/* Change the command */
-			if (action == "assertValue") {
-				action = "validate text";
-			} else if (action == "close") {
-				action = "teardown";
-			} else if (action == "open") {
-				action = "go to link";
-			} else if (action == "pause") {
-				action = "sleep";
-			} else if (action == "select") {
-				action = "Select by Visible Text";
-			} else if (action == "sendKeys") {
-				action = "Keystroke keys";
-			} else if (action == "store") {
-				action = "save";
-			} else if (action == "submit") {
-				action = "click(submit)";
-			} else if (action == "type") {
-				action = "text";
-			}
-
-
-			// if(action == "open"){
-			// 	action = "go to";
-			// }
-
-			var elm = single_case_value.element;
-
-			if (single_case_value.element == '') {
-				elm = '&nbsp';
-			}
-
-			var val = single_case_value.value;
-			if (single_case_value.value == '') {
-				val = '&nbsp';
-			}
-
-			if (elm != undefined && elm.length > 30) {
-				elm = single_case_value.element.substring(0, 27) + '...';
-			}
-
 			var disableClass = "";
 			if (single_case_value.is_disable == 1) {
 				disableClass = 'disabled-case';
 			}
-
-			var childClass = 'child_wrap child_action' + case_index;
-
 			var casedatalist = '';
 			if (single_case_value.data_list != undefined && single_case_value.data_list.length > 0) {
 				casedatalist = single_case_value.data_list.join('#');
 			}
-
-			html += 
-			`<tr class="tr ${disableClass}" data-mainindex="${single_case_index}">
-				<td class="col-1 td-no">
-				<img src="assets/images/small_logo.png" class="mr-2"><span>${single_case_index + 1}</span>
+			data_json = JSON.stringify(single_case_value);
+			`ToDo: Use flexbox below`
+			tr = $(
+			`<tr class="tr ${disableClass} pt-2 px-2 fs-7">
+				<td class="col-1 td-no pt-1 ml-1">
+					<img src="assets/images/small_logo.png" class="mr-2"><span>${single_case_index + len + 1}</span>
 				</td>
-				<td class="col-9 font_black has-input" data-case_commend="action">
+				<td class="col-8 font_black pt-1 mb-2" data-case_commend="action">
 				${single_case_value.name}
 				</td>
-				<td class="col-1 font_black has-input" data-case_commend="action">
-				<button class="btn btn-outline-danger btn-sm del-btn">Del</button>
+				<td class="col-1 font_black" data-case_commend="action">
+					<span class="material-icons-outlined del-btn">delete</span>
 				</td>
-			</tr>`;
+			</tr>`);
+			tr.attr('data-json',data_json);
+			// console.log(JSON.parse(tr.attr('data-json')))
+			$('#case_data_wrap').append(tr);
 		})
-		$('#case_data_wrap').html(html);
-		$('#active_action_icon').show();
-
-		CustomFunction.LoadTheRecordDataHtml();
-		if (isReloadHeaderTab == true) {
-			CustomFunction.LoadCaseSuiteHtml(CasemainArr);
-		}
-
-		var supportedComm = supportedAllCommand();
-
-		/* Action autocomplete as a dropdown */
-		$(".supported-command-auto").autocomplete({
-			source: supportedComm,
-			minLength: 0,
-		}).focus(function () {
-			$(this).autocomplete({
-				disabled: false
-			});
-			$(this).autocomplete('search', "")
-			$(this).autocomplete("widget").css({
-				"width": (250 + "px"),
-			}).hide();
-		}).keyup(function (e) {
-			$(this).autocomplete({
-				disabled: true
-			});
-		})
-
-		$(document).on('click', '.down-arrow', function (e) {
-			e.stopImmediatePropagation();
-			$(this).siblings('.supported-command-auto').autocomplete({
-				disabled: false
-			});
-			if ($(this).siblings('.supported-command-auto').autocomplete("widget").is(":visible") || CustomFunction.isPreFocus == true) {
-				$(this).siblings('.supported-command-auto').autocomplete("widget").hide();
-				CustomFunction.isPreFocus = false;
-			} else {
-				if (!$(this).siblings('.supported-command-auto').is(":focus")) {
-					$(this).siblings('.supported-command-auto').focus().autocomplete("widget").show();
-					CustomFunction.isPreFocus = true;
-				} else {
-					$(this).siblings('.supported-command-auto').autocomplete("widget").show();
-					CustomFunction.isPreFocus = true;
-				}
-			}
-		});
-
-		/* Action autocomplete as a dropdown end */
-
-
-		/* Element autocomplete as a dropdown */
-		$('.single-case-data-list').autocomplete({
-			source: [],
-			minLength: 0,
-		}).focus(function () {
-			$(this).autocomplete({
-				disabled: false
-			});
-			var list = $(this).parent('td').parent('tr').data('caselist');
-			if (list != undefined && list != '') {
-				var decodedlist = decodeURI(list);
-				var res = decodedlist.split("#");
-				//res.push($(this).val());
-				$(this).autocomplete('option', {
-					source: res
-				});
-			} else {
-				$(this).autocomplete('option', {
-					source: res
-				});
-			}
-			$(this).autocomplete('search', "");
-			$(this).autocomplete("widget").css({
-				"width": (330 + "px")
-			}).hide();
-		}).keyup(function (e) {
-			$(this).autocomplete({
-				disabled: true
-			});
-		});
-		// /down-arrow-element
-		$(document).on('click', '.down-arrow-element', function (e) {
-			e.stopImmediatePropagation();
-			$(this).siblings('.single-case-data-list').autocomplete({
-				disabled: false
-			});
-			if ($(this).siblings('.single-case-data-list').autocomplete("widget").is(":visible") || CustomFunction.isPreFocusElement == true) {
-				$(this).siblings('.single-case-data-list').autocomplete("widget").hide();
-				CustomFunction.isPreFocusElement = false;
-			} else {
-				if (!$(this).siblings('.single-case-data-list').is(":focus")) {
-					$(this).siblings('.single-case-data-list').focus().autocomplete("widget").show();
-					CustomFunction.isPreFocusElement = true;
-				} else {
-					$(this).siblings('.single-case-data-list').autocomplete("widget").show();
-					CustomFunction.isPreFocusElement = true;
-				}
-			}
-		});
-
-
-
-		$.extend($.ui.autocomplete.prototype.options, {
-			open: function (event, ui) {
-				$(this).autocomplete("widget").css({
-					"width": ($(this).width() + "px")
-				});
-			}
-		});
 	},
 	
 	PostProcess(actions){
@@ -386,507 +89,29 @@ var CustomFunction = {
 			browserAppData.storage.local.get(null, function (result) {
 				try {
 					if (!result.recorded_actions) return;
-					CustomFunction.FetchChromeCaseData()
-					.then( () => {
-						console.log("CustomFunction.caseDataArr >>>",CustomFunction.caseDataArr);
-						console.log("result.recorded_actions >>>",result.recorded_actions);
-						result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
+					console.log("result.recorded_actions >>>",result.recorded_actions);
+					result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined].includes(element));
 
-						// If the step is not totally blank we dont add 'go to link' action
-						// var shift = false;
-						// if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
-						// 	shift = true
-						// if(shift)
-						// 	result.recorded_actions.shift();
-						result.recorded_actions.shift();
-
-						recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
-						CustomFunction.caseDataArr[0].suite_value[0].case_value = CustomFunction.caseDataArr[0].suite_value[0].case_value.concat(recorded_actions)
-	
-						// Save old actions + new actions in caseDataArr and display
-						browser.storage.local.set({
-							case_data: CustomFunction.caseDataArr,
-						})
-
-						// Wipe out recorded_actions
-						.then(CustomFunction.DisplayCaseData);
-						browserAppData.storage.local.set({
-							recorded_actions: [],
-						})
-						CustomFunction.unsavedActionsFlag = true;
-					});
+					// If the step is not totally blank we dont add 'go to link' action
+					// var shift = false;
+					// if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
+					// 	shift = true
+					// if(shift)
+					// 	result.recorded_actions.shift();
+					result.recorded_actions.shift();
+					recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
+					CustomFunction.LoadActions(recorded_actions)
+					CustomFunction.unsavedActionsFlag = true;
 					
 				} catch (e) {
 					console.error(e);
 				}
 			})
 		}, 500)
-
 	},
 
-	UpdateCaseData(textValue, case_command, case_index, update_step_or_action, stepindex) {
-		/* fetch Pre save data */
-		CustomFunction.FetchChromeCaseData()
-		.then(() => {
-			/* Fetch selected suite */
-			var selected_suite = -1;
-			$('.single-suite-tab').each(function () {
-				if ($(this).hasClass('current_selected_tab')) {
-					selected_suite = $(this).data('suite');
-				}
-			});	
-			if (selected_suite != -1) {
-				var SavedCaseData = CustomFunction.caseDataArr;
-				if (update_step_or_action == 'update_action') {
-
-					// if(case_command == 'action' && textValue == "go to"){
-					// 	textValue = "open";
-					// }
-
-					if (case_command == 'action') {
-
-						if (textValue == "validate text") {
-							textValue = "assertValue";
-						} else if (textValue == "teardown") {
-							textValue = "close";
-						} else if (textValue == "go to link") {
-							textValue = "open";
-						} else if (textValue == "sleep") {
-							textValue = "pause";
-						} else if (textValue == "Select by Visible Text") {
-							textValue = "select";
-						} else if (textValue == "Keystroke keys") {
-							textValue = "sendKeys";
-						} else if (textValue == "save") {
-							textValue = "store";
-						} else if (textValue == "click(submit)") {
-							textValue = "submit";
-						} else if (textValue == "text") {
-							textValue = "type";
-						}
-					}
-
-					SavedCaseData[selected_suite].suite_value[stepindex].case_value[case_index][case_command] = textValue;
-				} else {
-					//SavedCaseData[selected_suite].suite_value[case_index].case_name = textValue
-					SavedCaseData[selected_suite].suite_value[case_index][case_command] = textValue
-				}
-
-				var case_data = {
-					case_data: SavedCaseData,
-				};
-
-				browser.storage.local.set(case_data);
-				/* Update the recorder html */
-				CustomFunction.LoadTheRecordDataHtml();
-			}
-		});
-	},
-
-	DisplayCaseData(display_type, is_reload_header_tab, selectedTabIndx) {
-		CustomFunction.FetchChromeCaseData().then(() => {
-			console.log('CustomFunction.caseDataArr',CustomFunction.caseDataArr);
-			CustomFunction.LoadActions(CustomFunction.caseDataArr, 0, is_reload_header_tab, display_type);
-			/* when add setp the suite is not auto matic click */
-			//if(display_type != 'add_case_step' && display_type != "add_action"){
-			setTimeout(function () {
-				if (selectedTabIndx != undefined) {
-					$('.suite-tab-' + selectedTabIndx).trigger('click');
-				} else {
-					$('.current_selected_tab').trigger('click');
-				}
-			}, 550);
-			//}
-			//}
-
-			if (display_type == "save_record_data") {
-				var sortposition = $('.selected-case').data('sortposition');
-				setTimeout(function () {
-					console.log('sortposition', sortposition);
-					$('.sortable-' + sortposition).trigger('click');
-				}, 800);
-			}					
-			//}					
-
-			if (display_type == "save_record_data") {
-				var sortposition = $('.selected-case').data('sortposition');
-				setTimeout(function () {
-					console.log('sortposition', sortposition);
-					$('.sortable-' + sortposition).trigger('click');
-				}, 800);
-			}					
-		});
-		
-	},
-
-	async FetchChromeCaseData() {
-		CustomFunction.caseDataArr = {};
-		result = await browserAppData.storage.local.get(null);
-		try {
-			if (result.case_data) {
-				CustomFunction.caseDataArr = result.case_data;
-			} else {
-				/* Create a new record initial time */
-				var tempObj = {
-					case_name: "Enter Step Name",
-					case_value: [],
-				};
-				var objArr = [];
-				objArr.push(tempObj);
-				var tempMainArr = {
-					suite_name: "Untitled",
-					suite_value: objArr,
-				}
-
-				var mainTestSuidData = [];
-
-				/* initial time untitled test suit position is zero */
-				mainTestSuidData.push(tempMainArr);
-
-				CustomFunction.caseDataArr = mainTestSuidData;
-
-				/* save on local storage */
-				var case_data = {
-					case_data: mainTestSuidData,
-				};
-				browser.storage.local.set(case_data);
-			}
-		} catch (e) {
-			console.error(e);
-		}
-		
-	},
-
-	LoadAccordion: function () {
-		var acc = document.getElementsByClassName("accordion");
-		var i;
-
-		for (i = 0; i < acc.length; i++) {
-			acc[i].addEventListener("click", function () {
-				this.classList.toggle("active");
-				var panel = this.nextElementSibling;
-				if (panel.style.maxHeight) {
-					panel.style.maxHeight = null;
-				} else {
-					panel.style.maxHeight = panel.scrollHeight + "px";
-				}
-			});
-		}
-	},
-
-	UserAuthAjaxCall(server_url, username, password, server_port, callType) {
-		if (callType == "setting_page") {
-			$('#auth_loading').show();
-		}
-		/* Api calling to authenticate the user */
-		var form = new FormData();
-		form.append("username", username);
-		form.append("password", password);
-		var settings = {
-			"async": true,
-			"crossDomain": true,
-			//"url": "https://qa.zeuz.ai/api/auth/token/generate",
-			"url": server_url + "/api/auth/token/generate",
-			"method": "POST",
-			"headers": {
-				"cache-control": "no-cache",
-			},
-			"processData": false,
-			"contentType": false,
-			"mimeType": "multipart/form-data",
-			"data": form
-		}
-
-		$.ajax(settings).done(function (response) {
-			$('#auth_loading').hide();
-			var succobj = JSON.parse(response);
-			if (succobj.access_token != undefined && succobj.access_token != '') {
-
-				var accessToken = succobj.access_token;
-				var recorder_settings = {
-					"async": true,
-					"crossDomain": true,
-					"url": server_url + "/api/recorder/",
-					"method": "POST",
-					"headers": {
-						"content-type": "application/json",
-						"authorization": "Bearer " + accessToken,
-						"cache-control": "no-cache",
-						"postman-token": "0d962438-f69b-3319-20de-a026197f55e3"
-					}
-				}
-
-				$.ajax(recorder_settings).done(function (response) {
-					$('#export_wrap').show();
-				}).fail(function (xhr, err) {
-					$('#export_wrap').hide();
-				})
-
-
-				var data = {
-					"server_url": server_url,
-					"username": username,
-					"password": password,
-					"server_port": server_port,
-				};
-
-				var textString = JSON.stringify(data);
-				var words = CryptoJS.enc.Utf8.parse(textString); // WordArray object
-				var base64 = CryptoJS.enc.Base64.stringify(words);
-
-				var base64_data = {
-					auth_data: base64,
-				};
-				browser.storage.local.set(base64_data);
-				CustomFunction.is_auth_user = true;
-
-				var serverhtml = `<a target="_blank" href="` + server_url + `" style="background: transparent;border-bottom: 1px solid transparent;padding-top:0px;">
-                <img class="normal-image" style="width: 100px; margin-left:20px" src="assets/images/leftIcon/server-new.png">
-                <img class="hover-image" style="width: 100px; margin-left:20px" src="assets/images/leftIcon/server-new.png">
-                <span>` + server_url + `</>
-              </a>`;
-				$('#servericon').html(serverhtml);
-
-				var exportBtnHtml = `<div class="pl-0 sidebar_menu" id="export_case">
-                <img class="normal-image" src="assets/images/icons/export.png">
-                <img class="hover-image" src="assets/images/icons/export-on.png">
-              </div>`;
-				$('#export_wrap').html(exportBtnHtml);
-
-				if (callType == "setting_page") {
-					$('.err-wrap').html('').hide();
-					$('.succ-wrap').show().html('<p>Your username and API token has been registered. Feel free to export your test case to your ZeuZ server</p>');
-					setTimeout(function () {
-						$('.succ-wrap,.err-wrap').hide();
-					}, 5000);
-				} else {
-					$('#server_url').val(server_url);
-					$('#username').val(username);
-					$('#password').val(password);
-					$('#server_port').val(server_port);
-				}
-			}
-		}).fail(function (jqXHR, textStatus, errorThrown) {
-			CustomFunction.is_auth_user = false;
-			if (callType == "setting_page") {
-				if (jqXHR.responseText != undefined) {
-					try {
-						var errobj = JSON.parse(jqXHR.responseText);
-						$('.succ-wrap').html('').hide();
-						$('.err-wrap').show().html('<p>' + errobj.message + '</p>');
-						$('#auth_loading').hide();
-						setTimeout(function () {
-							$('.succ-wrap,.err-wrap').hide();
-						}, 5000);
-
-						var base64_data = {
-							auth_data: '',
-						};
-						browser.storage.local.set(base64_data);
-						CustomFunction.is_auth_user = false;
-						$('#servericon').html('');
-						$('#export_wrap').html('');
-					} catch (e) {
-
-						var base64_data = {
-							auth_data: '',
-						};
-						browser.storage.local.set(base64_data);
-						CustomFunction.is_auth_user = false;
-						$('#servericon').html('');
-						$('#export_wrap').html('');
-
-						$('.succ-wrap').html('').hide();
-						$('.err-wrap').show().html('<p> Please try again! You might need to regenerate your API token or contact ZeuZ if you feel something is wrong. </p>');
-						$('#auth_loading').hide();
-						setTimeout(function () {
-							$('.succ-wrap,.err-wrap').hide();
-						}, 5000);
-					}
-				} else {
-
-					var base64_data = {
-						auth_data: '',
-					};
-					browser.storage.local.set(base64_data);
-					CustomFunction.is_auth_user = false;
-					$('#servericon').html('');
-					$('#export_wrap').html('');
-
-					$('.succ-wrap').html('').hide();
-					$('.err-wrap').show().html('<p> Please try again! You might need to regenerate your API token or contact ZeuZ if you feel something is wrong. </p>');
-					$('#auth_loading').hide();
-					setTimeout(function () {
-						$('.succ-wrap,.err-wrap').hide();
-					}, 5000);
-				}
-			}
-		});
-	},
-
-	LoadEvent: function () {
-		CustomFunction.LoadAccordion();
-		CustomFunction.DisplayCaseData('initial_load', true);
-
-		/* Close the main page content */
-		function show_content_section () {
-			var section = "content";
-			var i, tabcontent, tablinks;
-			tabcontent = document.getElementsByClassName("tabcontent");
-			for (i = 0; i < tabcontent.length; i++) {
-				tabcontent[i].style.display = "none";
-			}
-			tablinks = document.getElementsByClassName("tablink");
-			for (i = 0; i < tablinks.length; i++) {
-				tablinks[i].style.backgroundColor = "";
-			}
-			document.getElementById(section).style.display = "block";
-		}
-		$(document).on('click', '.close_main_page', show_content_section);
-
-		$(document).on('click', '#test_case', show_content_section)
-
-		/* user authentication */
-		$(document).on('click', '#authenticate', function () {
-			CustomFunction.UserAuthentication();
-		})
-
-		/* Update Case */
-		$(document).on('blur', '.case-input', function () {
-			var textValue = $(this).val();
-			var spanTxt = textValue;
-			if (spanTxt == "") {
-				spanTxt = "&nbsp;"
-			}
-
-			if (spanTxt != undefined && spanTxt.length > 30) {
-				spanTxt = spanTxt.substring(0, 27) + '...';
-			}
-
-			$(this).siblings('.case_value_lable').html(spanTxt);
-			var case_command = $(this).parent('td').data('case_commend');
-			var case_index = $(this).parent('td').parent('tr').data('mainindex');
-			var stepindex = $(this).parent('td').parent('tr').data('stepindex');
-
-			/* Check edit step name or action */
-			if ($(this).parent('td').parent('tr').hasClass('case-main-wrap')) {
-				CustomFunction.UpdateCaseData(textValue, case_command, case_index, 'update_step');
-			} else {
-				CustomFunction.UpdateCaseData(textValue, case_command, case_index, 'update_action', stepindex);
-			}
-		})
-
-		/* Edit Case */
-		$(document).on('click', '#edit_case', function () {
-			$('.selected-case').each(function () {
-				if (!$(this).hasClass('disabled-case')) {
-					$(this).children('td').children('.case-input').removeClass('display_hide');
-					$(this).children('td').children('.down-arrow').removeClass('display_hide');
-					$(this).children('td').children('.down-arrow-element').removeClass('display_hide');
-					$(this).children('td').children('.case_value_lable').addClass('display_hide');
-					$(this).addClass('show_text_box');
-				}
-			})
-		});
-
-		/* add  class when click on the text box */
-		$(document).on('click', '.case-input', function () {
-			$('.case-input').removeClass('input-focus');
-			$(this).addClass('input-focus');
-		});
-
-		/* Delete case and suit */
-		$(document).on('click', '#case_delete', function (event) {
-			event.preventDefault();
-			var r = confirm("Are you sure? you want to delete!");
-
-			if (r == true) {
-				var selected_suite = -1;
-				$('.single-suite-tab').each(function () {
-					if ($(this).hasClass('current_selected_tab')) {
-						selected_suite = $(this).data('suite');
-					}
-				});
-
-				if (selected_suite != -1) {
-					var selectedCase = $('.selected-case').data('mainindex');
-					var selectedStep = $('.selected-case').data('stepindex');
-
-					if (selectedStep == undefined) {
-						/* Remove the step */
-						$('.case-main-wrap').each(function () {
-							if ($(this).hasClass('selected-case')) {
-								selectedStep = $(this).data('mainindex');
-							}
-						});
-
-						/* After delete creat a new array */
-						var afterDeleteArr = [];
-						$.each(CustomFunction.caseDataArr[selected_suite].suite_value, function (indx, val) {
-							if (indx != selectedStep) {
-								afterDeleteArr.push(val);
-							}
-						});
-
-						console.log('afterDeleteArr', afterDeleteArr);
-						CustomFunction.caseDataArr[selected_suite].suite_value = afterDeleteArr;
-						//}
-						var case_data = {
-							case_data: CustomFunction.caseDataArr,
-						};
-
-					} else {
-						var currentDataArr = CustomFunction.caseDataArr;
-						/* Remove the action */
-						var newArr = [];
-						var temp = 0;
-						$('.selected-case').each(function () {
-							selectedCase = $(this).data('mainindex'); //action
-							selectedStep = $(this).data('stepindex');
-
-							selectedCase = selectedCase - temp;
-							CustomFunction.caseDataArr[selected_suite].suite_value[selectedStep].case_value.splice(selectedCase, 1);
-							temp++;
-						})
-						var case_data = {
-							case_data: CustomFunction.caseDataArr,
-						};
-					}
-					browser.storage.local.set(case_data);
-					CustomFunction.DisplayCaseData('delete_case', false);
-				}
-			}
-		});
-
-		/* Sudipto Start*/
-		/* *===* Draggable & Droppable start *===* */
-		$(function () {
-			$("#case_data_wrap").sortable({
-				// stop: function( event, ui ) {
-				start: function (event, ui) {
-
-				},
-				stop: function (event, ui) {
-
-				},
-
-				update: function (event, ui) {
-					var new_cases = [];
-					for (var step of $('#case_data_wrap').children('tr')) {
-						new_cases.push(CustomFunction.caseDataArr[0].suite_value[0].case_value[parseInt($(step).attr('data-mainindex'))]);
-						$(step).attr('data-mainindex', new_cases.length-1);
-						$($(step).children()[0]).find('span').text(new_cases.length);
-					}
-					CustomFunction.caseDataArr[0].suite_value[0].case_value = new_cases;
-					browser.storage.local.set({
-						case_data: CustomFunction.caseDataArr,
-					});
-					CustomFunction.unsavedActionsFlag = true;
-				}
-			});
-			$("#case_data_wrap").disableSelection();
-		});
-
+	LoadEvent: function (case_data) {
+		CustomFunction.LoadActions(case_data);
 	},
 
 	FetchActions: async function () {
@@ -904,35 +129,21 @@ var CustomFunction = {
 		});
 		console.log("resp =====",resp);
 		$('#test_label').text(meta_data.testNo);
-		case_data = [
-			{
-				"suite_name": meta_data.testName.substring(0,50),
-				"suite_value": [
-					{	
-						"case_name": resp.step.name,
-						"case_no": meta_data.stepNo,
-						"case_value": resp.step.actions.map(action => {
-							return {
-								"action": action.short.action,
-								"element": action.short.element,
-								"value": action.short.value,
-								"is_disable": action.is_disable,
-								"name": action.name,
-								"data_list": [
-									action.short.value
-								],
-								"main": action.main,
-							}
-						}),
 
-					}
-				] 	
-			}	
-		]
-		browser.storage.local.set({
-			case_data: case_data
-		})
-		.then(CustomFunction.LoadEvent);
+		case_data = resp.step.actions.map(action => {
+			return {
+				"action": action.short.action,
+				"element": action.short.element,
+				"value": action.short.value,
+				"is_disable": action.is_disable,
+				"name": action.name,
+				"data_list": [
+					action.short.value
+				],
+				"main": action.main,
+			}
+		}),
+		CustomFunction.LoadEvent(case_data)
 	}
 }
 
@@ -943,24 +154,36 @@ jQuery(document).ready(async function () {
 		CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
 		CustomFunction.FetchActions();
 	}
-
+	setTimeout(()=>{
+		$('#record').attr('disabled', false).css('opacity',1);
+	},3000)
 	$('#server_address').val(result.meta_data.url);
 	$('#api_key').val(result.meta_data.apiKey);
+
+	$(function () {
+		$("#case_data_wrap").sortable({
+			// stop: function( event, ui ) {
+			start: function (event, ui) {},
+			stop: function (event, ui) {},
+			update: function (event, ui) {
+				var idx = 1
+				for (var step of $('#case_data_wrap').children('tr')) {
+					$($(step).children()[0]).find('span').text(idx++);
+				}
+				CustomFunction.unsavedActionsFlag = true;
+			}
+		});
+		$("#case_data_wrap").disableSelection();
+	});
 
 	$(document).on('click', '.del-btn', function (e) {
 		const target = $(e.target.parentElement.parentElement)
 		const idx = target.attr('data-mainindex');
 		target.remove();
-		var i = 0;
+		var i = 1;
 		for (var step of $('#case_data_wrap').children('tr')) {
-			$(step).attr('data-mainindex', i);
-			$($(step).children()[0]).find('span').text(i+1);
-			i++;
+			$($(step).children()[0]).find('span').text(i++);
 		}
-		CustomFunction.caseDataArr[0].suite_value[0].case_value.splice(idx, 1);
-		browser.storage.local.set({
-			case_data: CustomFunction.caseDataArr,
-		});
 		CustomFunction.unsavedActionsFlag = true;
 	})
 
@@ -984,6 +207,7 @@ jQuery(document).ready(async function () {
 				return;
 			}
 			await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
+			$('#case_data_wrap').html('');
 			await CustomFunction.FetchActions();
 			$('#fetch').text('Fetched!');
 			setTimeout(()=>{
@@ -1009,18 +233,42 @@ jQuery(document).ready(async function () {
 	});
 
 	$(document).on('change', '#step_select', async function () {
-		if(CustomFunction.unsavedActionsFlag && confirm("Recorded actions will vanish. Save changes?")){
-			$("#save_button").click();
+		try {
+			if(CustomFunction.unsavedActionsFlag && confirm("Recorded actions will vanish. Save changes?")){
+				$("#save_button").click();
+			}
+			if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
+			var result = await browserAppData.storage.local.get(null);
+			result.meta_data['stepNo'] = this.value;
+			await browserAppData.storage.local.set({
+				meta_data: result.meta_data,
+			})
+			$('#case_data_wrap').html('');
+			CustomFunction.FetchActions();
+			CustomFunction.unsavedActionsFlag = false;
+		} catch (error) {
+			alert(error);
 		}
-		if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
-		var result = await browserAppData.storage.local.get(null);
-		result.meta_data['stepNo'] = this.value;
-		await browserAppData.storage.local.set({
-			meta_data: result.meta_data,
-		})
-		CustomFunction.FetchActions();
-		CustomFunction.unsavedActionsFlag = false;
 	})
+
+	$(document).on('hover', '.del-btn', async function (e) {
+		try {
+			$(e.target).attr('opacity', 1);
+			console.log($(e.target).attr('opacity'))
+		} catch (error) {
+			console.error(error);
+		}
+	})
+	
+	$( ".del-btn" ).hover(
+		() => { //hover
+		  $(this).attr("opacity",1);
+		  console.log($(this).attr("opacity"))
+		}, 
+		() => { //out
+		  $(this).removeClass("hover");
+		}
+  	);
 
 	$(document).on('click', '#record', function () {
 		// $('#record_wrap').hide();
@@ -1033,94 +281,118 @@ jQuery(document).ready(async function () {
 	})	
 	/* Save all newlly recorded actions with old actions and auto naming */
 	$(document).on('click', '#save_button', async function () {
-		if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
-		
-		$('#save_label').text('Saving...');
-		$("#save_button").attr('disabled', true).css('opacity',0.5);
-		await CustomFunction.FetchChromeCaseData()
-		var result = await browserAppData.storage.local.get(["meta_data"]);
-		var save_data = {
-			TC_Id: result.meta_data.testNo,
-			step_sequence: result.meta_data.stepNo,
-			step_data: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map(action => {
-				return action.main;
-			})),
-			dataset_name: JSON.stringify(CustomFunction.caseDataArr[0].suite_value[0].case_value.map((action, idx) => {
-				return [
-					action.name,
-					idx+1,
-					!action.is_disable,
-				]
-			}))
-		}
-		$.ajax({
-			url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
-			method: 'POST',
-			data: save_data,
-			headers: {
-				// "Content-Type": "application/json",
-				"X-Api-Key": `${result.meta_data.apiKey}`,
-			},
-			success: function(response) {
-				console.log(response);
-				$('#save_label').text('Success!');
-				setTimeout(()=>{
-					$('#save_label').text('Save');
-					$("#save_button").removeAttr('disabled').css('opacity',1);
-				},1500)
-			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				console.error(errorThrown);
-				$('#save_label').text('Error!!');
-				setTimeout(()=>{
-					$('#save_label').text('Save');
-					$("#save_button").removeAttr('disabled').css('opacity',1);
-				}, 1500)
+		try{
+			if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
+			$('#save_label').text('Saving...');
+			$("#save_button").attr('disabled', true).css('opacity',0.5);
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			trs = $('#case_data_wrap>tr');
+			case_value = trs.map((i) =>{
+				return JSON.parse($(trs[i]).attr('data-json'));
+			}).get();
+			console.log('case_value', case_value);
+			var save_data = {
+				TC_Id: result.meta_data.testNo,
+				step_sequence: result.meta_data.stepNo,
+				step_data: JSON.stringify(case_value.map(action => {
+					return action.main;
+				})),
+				dataset_name: JSON.stringify(case_value.map((action, idx) => {
+					return [
+						action.name,
+						idx+1,
+						!action.is_disable,
+					]
+				}))
 			}
-		})
-		CustomFunction.unsavedActionsFlag = false;
+			$.ajax({
+				url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+				method: 'POST',
+				data: save_data,
+				headers: {
+					// "Content-Type": "application/json",
+					"X-Api-Key": `${result.meta_data.apiKey}`,
+				},
+				success: function(response) {
+					console.log(response);
+					$('#save_label').text('Success!');
+					setTimeout(()=>{
+						$('#save_label').text('Save');
+						$("#save_button").removeAttr('disabled').css('opacity',1);
+					},1500)
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error(errorThrown);
+					$('#save_label').text('Error!!');
+					setTimeout(()=>{
+						$('#save_label').text('Save');
+						$("#save_button").removeAttr('disabled').css('opacity',1);
+					}, 1500)
+				}
+			})
+			CustomFunction.unsavedActionsFlag = false;
+		}
+		catch(e){
+			console.error(e);
+			$('#save_label').text('Error!!');
+			setTimeout(()=>{
+				$('#save_label').text('Save');
+				$("#save_button").removeAttr('disabled').css('opacity',1);
+			}, 1500)
+		}
+		
 	});
 	
 	$(document).on('click', '#authenticate', async function () {
-		$('#authenticate').text('Authenticaing...');
-		$("#authenticate").attr('disabled', true).css('opacity',0.5);
-		await CustomFunction.FetchChromeCaseData()
-		var result = await browserAppData.storage.local.get(["meta_data"]);
-		var server_address = $('#server_address').val();
-		server_address = server_address.endsWith("/") ? server_address.slice(0,-1) : server_address
-		var api_key = $('#api_key').val();
-		$.ajax({
-			url: `${server_address}/api/auth/token/verify`,
-			method: 'GET',
-			data: {
-				api_key: api_key,
-			},
-			success: function(response) {
-				console.log(response);
-				result.meta_data.url = server_address;
-				result.meta_data.apiKey = api_key;
-				browserAppData.storage.local.set({
-					meta_data: result.meta_data
-				})
-				$('#authenticate').text('Success!');
-				setTimeout(()=>{
-					$('#authenticate').text('Authenticate');
-					$("#authenticate").removeAttr('disabled').css('opacity',1);
-				},1500)
-			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				console.error(errorThrown);
-				$('#authenticate').text('Error!!');
-				setTimeout(()=>{
-					$('#authenticate').text('Authenticate');
-					$("#authenticate").removeAttr('disabled').css('opacity',1);
-				},1500)
-			}
-		})
+		try {
+			$('#authenticate').text('Authenticaing...');
+			$("#authenticate").attr('disabled', true).css('opacity',0.5);
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			var server_address = $('#server_address').val();
+			server_address = server_address.endsWith("/") ? server_address.slice(0,-1) : server_address
+			var api_key = $('#api_key').val();
+			$.ajax({
+				url: `${server_address}/api/auth/token/verify`,
+				method: 'GET',
+				data: {
+					api_key: api_key,
+				},
+				success: function(response) {
+					console.log(response);
+					result.meta_data.url = server_address;
+					result.meta_data.apiKey = api_key;
+					browserAppData.storage.local.set({
+						meta_data: result.meta_data
+					})
+					$('#authenticate').text('Success!');
+					setTimeout(()=>{
+						$('#authenticate').text('Authenticate');
+						$("#authenticate").removeAttr('disabled').css('opacity',1);
+					},1500)
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error(errorThrown);
+					$('#authenticate').text('Error!!');
+					setTimeout(()=>{
+						$('#authenticate').text('Authenticate');
+						$("#authenticate").removeAttr('disabled').css('opacity',1);
+					},1500)
+				}
+			})
+		} catch (error) {
+			console.error(error);
+			$('#authenticate').text('Error!!');
+			setTimeout(()=>{
+				$('#authenticate').text('Authenticate');
+				$("#authenticate").removeAttr('disabled').css('opacity',1);
+			},1500)
+		}
+		
 	});
-
+	$(window).off('beforeunload');
 	$(document).on('click', '#run_button', async function () {
-		$('#run_label').text('Running...');
+		try {
+			$('#run_label').text('Running...');
 		$("#run_button").attr('disabled', true).css('opacity',0.5);
 		var result = await browserAppData.storage.local.get(["meta_data"]);
 		const input = {
@@ -1184,47 +456,13 @@ jQuery(document).ready(async function () {
 				},1500)
 			}
 		})
-	})
-
-	/* tab select */
-	$(document).on('click', '.opensection', function () {
-		var THIS = $(this);
-		var section = THIS.data('section');
-
-		var i, tabcontent, tablinks;
-
-		tabcontent = document.getElementsByClassName("tabcontent");
-
-		for (i = 0; i < tabcontent.length; i++) {
-			tabcontent[i].style.display = "none";
+		} catch (error) {
+			console.error(error);
+			$('#run_label').text('Error!!');
+			setTimeout(()=>{
+				$('#run_label').text('Run all');
+				$("#run_button").removeAttr('disabled').css('opacity',1);
+			},1500)
 		}
-		tablinks = document.getElementsByClassName("tablink");
-
-		for (i = 0; i < tablinks.length; i++) {
-			tablinks[i].style.backgroundColor = "";
-		}
-		document.getElementById(section).style.display = "block";
 	})
-	/* function of main.js */
-	var fullHeight = function () {
-		$('.js-fullheight').css('height', $(window).height());
-		$(window).resize(function () {
-			$('.js-fullheight').css('height', $(window).height());
-		});
-	};
-	fullHeight();
-
-	$('#sidebarCollapse').on('click', function () {
-		$('#sidebar').toggleClass('active');
-	});
-
-	/* off the page inspect */
-	//    $(document).bind("contextmenu",function(e) {
-	//  e.preventDefault();
-	// });
-	// $(document).keydown(function(e){
-	//     if(e.which === 123){
-	//        return false;
-	//     }
-	// });
 })

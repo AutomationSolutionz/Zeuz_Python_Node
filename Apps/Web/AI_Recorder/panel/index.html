@@ -23,6 +23,8 @@
         <link href="assets/css/bootstrap5.3.2/bootstrap.min.css" rel="stylesheet" />
         <link href="assets/css/font-awesome-all.css" rel="stylesheet" /> 
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
         <link href="assets/css/style.css" rel="stylesheet" />
         <link href="assets/css/mystyle.css" rel="stylesheet" />
 
@@ -90,7 +92,7 @@
                             </button>
                         </li>
                         <li class="tablink d-flex flex-wrap justify-content-center" id="record_wrap">
-                            <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" id="record">
+                            <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" id="record" style="opacity: 0.5;" disabled>
                                 <span class="material-icons" id="record_icon">camera</span>
                                 <span class="material-icons-label" id="record_label">Record</span>
                             </button>
@@ -192,18 +194,18 @@
 
                     <h4 id="test_title">My test name</h2>
                 </div>
-                <select class="form-select form-select-sm m-4 w-50" id="step_select">
+                <select class="form-select form-select-sm m-4 w-50 fs-6" id="step_select">
                     <!-- <option selected>Step-1 : Loading ...</option> -->
                 </select>
                 <div class="clearfix mx-2" id="recorder_step">
                     <div class="second_table table-responsive" id="main_table">
                         <table class="table table-borderless border_separate table-fixed" id="sortable">
                             <thead>
-                                <tr class="tr">
+                                <!-- <tr class="tr">
                                     <th class="col-1 tbl-header td-no" scope="col">No</th>
                                     <th class="col-9 tbl-header" scope="col">AI Actions</th>
                                     <th class="col-1 tbl-header" scope="col" style="min-width: 75px;">&nbsp;</th>
-                                </tr>
+                                </tr> -->
                             </thead>
                             <tbody class="table_body" id="case_data_wrap" style="min-height: 600px;">
                             </tbody>
