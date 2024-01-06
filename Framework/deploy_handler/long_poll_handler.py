@@ -67,7 +67,7 @@ class DeployHandler:
             self.on_connect_callback(reconnect)
             try:
                 reconnect = True
-                resp = RequestFormatter.session.get(host, verify=False)
+                resp = RequestFormatter.request("get", host, verify=False)
 
                 if resp.content.startswith(self.ERROR_PREFIX):
                     self.on_error(resp.content)

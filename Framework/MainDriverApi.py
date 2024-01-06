@@ -1421,21 +1421,19 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             for _ in range(5):
                 try:
                     if perf_report_html is None:
-                        res = requests.post(
+                        res = RequestFormatter.request("post", 
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report)},
-                            verify=False,
-                            **RequestFormatter.add_api_key_to_headers({}))
+                            verify=False)
                     else:
-                            res = requests.post(
+                            res = RequestFormatter.request("post", 
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report),
                                   "processed_tc_id":processed_tc_id
 
                                   },
                             files=[("file",perf_report_html)],
-                            verify=False,
-                            **RequestFormatter.add_api_key_to_headers({}))
+                            verify=False)
 
 
                     if res.status_code == 200:
@@ -1475,12 +1473,11 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     files_list = []
                     for zips in opened_zips:
                         files_list.append(("file",zips))
-                    res = requests.post(
+                    res = RequestFormatter.request("post", 
                         RequestFormatter.form_uri("save_log_and_attachment_api/"),
                         files=files_list,
                         data={"machine_name": Userid},
-                        verify=False,
-                        **RequestFormatter.add_api_key_to_headers({}))
+                        verify=False)
                     if res.status_code == 200:
                         try:
                             res_json = res.json()
@@ -1564,7 +1561,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
     file_name = url[file_name_start_pos:]
     file_path = attachment_info["download_dir"] / file_name
 
-    r = requests.get(url, stream=True)
+    r = RequestFormatter.request("get", url, stream=True)
     if r.status_code == requests.codes.ok:
         with open(file_path, 'wb') as f:
             for data in r.iter_content(chunk_size=512*1024):

@@ -57,7 +57,6 @@ from Framework.Utilities import live_log_service
 PROJECT_ROOT = os.path.abspath(os.curdir)
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
-sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 
 # kill any process that is running  from the same node folder
 pid = os.getpid()
@@ -73,14 +72,14 @@ try:
     p = psutil.Process(pidNumber)
     p.terminate()
 except:
-    True
+    pass
 
 try:
     f = open(pidfile, "w")
     f.write(str(os.getpid()))
     f.close()
 except:
-    True
+    pass
 
 
 
@@ -289,15 +288,10 @@ def Login(cli=False, run_once=False, log_dir=None):
         project_id="PROJ-17",
         team_id=2,
     )
-    url = RequestFormatter.form_uri("zsvc/auth/v1/login")
     while len(api) > 0 and len(server_name) > 0:
         try:
-            res = RequestFormatter.session.post(url, json={
-                "type": "api_key",
-                "api_key": api,
-            })
-            if res.status_code == 200:
-                data = res.json()
+            data, status_code = RequestFormatter.login()
+            if status_code == 200:
                 user_data = UserData(
                     username=data["user"]["username"],
                     email=data["user"]["email"],
@@ -372,7 +366,7 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def update_machine_info(user_info_object, node_id, should_print=True):
+def update_machine_info(node_id, should_print=True):
     update_machine(
         False,
         should_print,
@@ -431,7 +425,7 @@ def RunProcess(node_id, device_dict, user_info_object: UserData, run_once=False,
             MainDriverApi.main(device_dict)
 
         def on_connect_callback(reconnected: bool):
-            update_machine_info(user_info_object, node_id, should_print=not reconnected)
+            update_machine_info(node_id, should_print=not reconnected)
             return
 
         def done_callback():
@@ -548,7 +542,7 @@ def update_machine(dependency, should_print=True):
             "allProject": allProject,
         }
         url = RequestFormatter.form_uri("update_automation_machine_api/")
-        resp = RequestFormatter.session.post(url, json=update_object)
+        resp = RequestFormatter.request("post", url, json=update_object)
 
         if resp.status_code != 200:
                 CommonUtil.ExecLog("", "Machine is not registered as online", 4)
