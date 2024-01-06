@@ -63,8 +63,11 @@ class DeployHandler:
     def run(self, host: str) -> None:
         reconnect = False
         while True:
-            time.sleep(random.randint(1, 3))
+            if reconnect:
+                time.sleep(random.randint(1, 3))
+
             self.on_connect_callback(reconnect)
+
             try:
                 reconnect = True
                 resp = RequestFormatter.request("get", host, verify=False)
