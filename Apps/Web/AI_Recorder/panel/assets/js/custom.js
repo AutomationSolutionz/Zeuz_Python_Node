@@ -52,7 +52,7 @@ var CustomFunction = {
 			`ToDo: Use flexbox below`
 			tr = $(
 			`<tr class="tr ${disableClass} pt-2 px-2 fs-7">
-				<td class="col-1 td-no pt-1 ml-1">
+				<td class="col-1 td-no pt-1 ml-1 mb-2">
 					<img src="assets/images/small_logo.png" class="mr-2"><span>${single_case_index + len + 1}</span>
 				</td>
 				<td class="col-8 font_black pt-1 mb-2" data-case_commend="action">
@@ -101,6 +101,9 @@ var CustomFunction = {
 					result.recorded_actions.shift();
 					recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
 					CustomFunction.LoadActions(recorded_actions)
+					browserAppData.storage.local.set({
+						recorded_actions: [],
+					})
 					CustomFunction.unsavedActionsFlag = true;
 					
 				} catch (e) {
