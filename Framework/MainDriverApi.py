@@ -1656,7 +1656,7 @@ def download_attachments(testcase_info):
 
 
 # main function
-def main(device_dict):
+def main(device_dict, all_run_id_info):
     try:
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1676,8 +1676,6 @@ def main(device_dict):
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-
         # FIXME: Need to decide what to do with the following code or how to
         # handle it differently in case there are residual folders from previous
         # test cases inside the attachments folder.
@@ -1696,9 +1694,12 @@ def main(device_dict):
         # TODO: Remove all_file_specific_steps at a later period. keeping this
         # only for custom driver purpose
 
-        json_path = save_path.glob("*.zeuz.json").__next__()
-        with open(json_path, "r", encoding="utf-8") as f:
-            all_run_id_info = json.loads(f.read())
+        # Ensure that the path exists
+        # save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+        # save_path.mkdir(exist_ok=True, parents=True)
+        # json_path = save_path.glob("*.zeuz.json").__next__()
+        # with open(json_path, "r", encoding="utf-8") as f:
+        #     all_run_id_info = json.loads(f.read())
 
         if len(all_run_id_info) == 0:
             CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)

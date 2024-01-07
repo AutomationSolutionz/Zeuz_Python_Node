@@ -5,6 +5,7 @@ import traceback
 import time
 import random
 import requests
+from colorama import Fore
 
 from Framework.Utilities import RequestFormatter
 
@@ -88,6 +89,8 @@ class DeployHandler:
                 if resp.status_code != requests.codes['ok']:
                     server_online = False
                     print("[deploy] error communicating with the deploy service, status code:", resp.status_code, " | reconnecting")
+                    try: print(Fore.YELLOW + str(resp.content))
+                    except: pass
                     continue
 
                 self.on_message(resp.content)

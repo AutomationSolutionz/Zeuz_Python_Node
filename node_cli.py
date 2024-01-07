@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from datetime import date
 from datetime import datetime as dt
 
-import shutil
 import time
 
 
@@ -44,7 +43,7 @@ from rich.table import Table
 from rich.console import Console
 console = Console()
 
-import sys, time, os.path, base64, signal, argparse, requests
+import sys, os.path, base64, signal, argparse, requests
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -241,18 +240,12 @@ def zeuz_authentication_prompts_for_cli():
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:
-        if prompt == "password":
-            value = getpass()
-            ConfigModule.add_config_value(
-                AUTHENTICATION_TAG, prompt, password_hash(False, "zeuz", value)
-            )
-        else:
-            display_text = prompt.replace("_", " ").capitalize()
-            value = input(f"{display_text}: ")
-            if prompt == "server_address":
-                value = urlparse(value)
-                value = f"{value.scheme}://{value.netloc}"
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
+        display_text = prompt.replace("_", " ").capitalize()
+        value = input(f"{display_text}: ")
+        if prompt == "server_address":
+            value = urlparse(value)
+            value = f"{value.scheme}://{value.netloc}"
+        ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
         values.append(value)
     return values
 
@@ -395,8 +388,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
     try:
         PreProcess(log_dir=log_dir)
 
-        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-        save_path.mkdir(exist_ok=True, parents=True)
+        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))
 
         # --- START websocket service connections --- #
 
@@ -422,18 +414,36 @@ def RunProcess(node_id, run_once=False, log_dir=None):
         node_json = None
         def response_callback(response: str):
             nonlocal node_json
+            nonlocal save_path
+            save_path.mkdir(exist_ok=True, parents=True)
+
+            try:
+                with open(save_path / "deploy-response.txt", "w", encoding="utf-8") as f:
+                    f.write(response)
+            except:
+                pass
 
             # 1. Adapt the proto response to appropriate json format
             node_json = adapter.adapt(response, node_id)
 
             # 2. Save the json for MainDriver to find
             # Ensure that the parent dirs actually exist before writing to the json file.
-            save_path.mkdir(exist_ok=True, parents=True)
-            with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
-                f.write(json.dumps(node_json))
+            try:
+                with open(save_path / f"deploy-tc.zeuz.json", "w", encoding="utf-8") as f:
+                    f.write(json.dumps(node_json))
+            except:
+                print(Fore.RED + "ERROR failed to save test case json into file")
+                print(Fore.YELLOW + "JSON CONTENT:")
+                print(node_json)
+                import traceback as tb
+                tb.print_exc()
 
             # 3. Call MainDriver
-            MainDriverApi.main(All_Device_Info.get_all_connected_device_info())
+            device_info = All_Device_Info.get_all_connected_device_info()
+            MainDriverApi.main(
+                device_dict=device_info,
+                all_run_id_info=node_json,
+            )
 
         def on_connect_callback(reconnected: bool):
             update_machine_info(node_id, should_print=not reconnected)
