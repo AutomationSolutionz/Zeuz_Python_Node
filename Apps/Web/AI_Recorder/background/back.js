@@ -152,27 +152,21 @@ function open_panel(tab) {
 
 var panelWindow;
 async function open_panel_2(tab) {
-    browserAppData.storage.local.set({
-        meta_data: metaData,
-        recorded_actions: [],
-    });
     let contentWindowId = tab.windowId;
     console.log('panelWindow', panelWindow);
     var result = await browserAppData.storage.local.get(['panelWindow']);
     console.log('result.panelWindow', result.panelWindow);
     // console.log('result.panelWindow', result.panelWindow);
 
-    if (result.panelWindow && result.panelWindow[contentWindowId]) {
-        browserAppData.windows.update(result.panelWindow[contentWindowId], {
+    if (result.panelWindow) {
+        browserAppData.windows.update(result.panelWindow, {
             focused: true
         }).catch(function(e) {
             console.log('panelWindow catch error', panelWindow);
             console.error('error', e);
-            var panel_dict = result.panelWindow
-            panel_dict[contentWindowId] = undefined;
             panelWindow = undefined;
             browserAppData.storage.local.set({
-                panelWindow: panel_dict
+                panelWindow: panelWindow
             }).then(open_panel(tab));
         });
         return;
@@ -183,7 +177,7 @@ async function open_panel_2(tab) {
     clickEnabled = false;
     setTimeout(function() {
         clickEnabled = true;
-    }, 1000);
+    }, 2000);
 
     var f = function(height, width) {
         browserAppData.windows.create({
@@ -211,14 +205,12 @@ async function open_panel_2(tab) {
                             count++;
                             return;
                         } else {
-                            var result = await browserAppData.storage.local.get(['panelWindow']);
-                            if (result.panelWindow) var panel_dict = result.panelWindow;
-                            else var panel_dict = {};
-                            panel_dict[contentWindowId] = panelWindowInfo.id;
+                            panelWindow= panelWindowInfo.id;
                             await browserAppData.storage.local.set({
-                                panelWindow: panel_dict
+                                panelWindow: panelWindow,
+                                meta_data: metaData,
+                                recorded_actions: [],
                             });
-                            console.log('panel_dict', panel_dict);
                             panelWindow = panelWindowInfo.id;
                             console.log('opening panelWindow', panelWindow);
                             create_menus();
@@ -226,7 +218,7 @@ async function open_panel_2(tab) {
                             clearInterval(interval);
                         }
                     })
-                }, 200);
+                }, 400);
             });
         }).then(function bridge(panelWindowInfo){
             return browserAppData.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
