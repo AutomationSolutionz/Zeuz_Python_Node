@@ -70,7 +70,7 @@ async function fetchAIData(idx, command, value, url, document){
     }
 
     var dataj = {
-        "page_src": "document",
+        "page_src": document,
         "action_name": command,
         "action_type": "selenium",
         "action_value": value,
@@ -98,15 +98,25 @@ async function fetchAIData(idx, command, value, url, document){
                 command:command,
             })
             console.error(resp.info);
+            var response = resp.ai_choices;
+            recorded_actions[idx] = 'error';
+            console.log(recorded_actions);
+            browserAppData.storage.local.set({
+                recorded_actions: recorded_actions,
+            })
             return;
         }
-        var response = resp.ai_choices;
     } catch (error) {
         console.error(error.message);
         browserAppData.runtime.sendMessage({
             action: 'ai_engine_error',
             text: error.message,
             command:command,
+        })
+        recorded_actions[idx] = 'error';
+        console.log(recorded_actions);
+        browserAppData.storage.local.set({
+            recorded_actions: recorded_actions,
         })
         return;
     }

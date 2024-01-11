@@ -96,7 +96,7 @@ var CustomFunction = {
 				try {
 					if (!result.recorded_actions) return;
 					console.log("result.recorded_actions >>>",result.recorded_actions);
-					result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined, 'empty'].includes(element));
+					result.recorded_actions = result.recorded_actions.filter(element => ![null, undefined, 'empty', 'error'].includes(element));
 
 					// If the step is not totally blank we dont add 'go to link' action
 					// var shift = false;

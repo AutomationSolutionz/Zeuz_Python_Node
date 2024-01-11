@@ -159,9 +159,9 @@ async function open_panel_2(tab) {
     // console.log('result.panelWindow', result.panelWindow);
 
     if (result.panelWindow) {
-        browserAppData.windows.update(result.panelWindow, {
-            focused: true
-        }).catch(function(e) {
+        // browserAppData.windows.update(result.panelWindow, {focused: true})
+        browserAppData.tabs.update(result.panelWindow, {'active': true})
+        .catch(function(e) {
             console.log('panelWindow catch error', panelWindow);
             console.error('error', e);
             panelWindow = undefined;
