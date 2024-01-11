@@ -1,4 +1,10 @@
 browserAppData = chrome || browser;
+browserAppData.runtime.onMessage.addListener(async (message, sender, sendRequest)=>{
+	if (message.action == 'ai_engine_error'){
+		alert(`Error in recording ${message.command} action. Copy the following message and ask for support:\n\n${message.text}`);
+	}
+});
+
 var CustomFunction = {
 	StepCopyData: null,
 	copyType: null,
@@ -58,7 +64,7 @@ var CustomFunction = {
 				<td class="col-8 font_black pt-1 mb-2" data-case_commend="action">
 				${single_case_value.name}
 				</td>
-				<td class="col-1 font_black" data-case_commend="action">
+				<td class="font_black" data-case_commend="action">
 					<span class="material-icons-outlined del-btn">delete</span>
 				</td>
 			</tr>`);

@@ -70,7 +70,7 @@ async function fetchAIData(idx, command, value, url, document){
     }
 
     var dataj = {
-        "page_src": document,
+        "page_src": "document",
         "action_name": command,
         "action_type": "selenium",
         "action_value": value,
@@ -88,9 +88,28 @@ async function fetchAIData(idx, command, value, url, document){
         },
         body: data,
     }
-    var r = await fetch(url_, input)
-    var resp = await r.json();
-    let response = resp.ai_choices;
+    try {
+        var r = await fetch(url_, input)
+        var resp = await r.json();
+        if(!resp.ai_choices && resp.info){
+            browserAppData.runtime.sendMessage({
+                action: 'ai_engine_error',
+                text: resp.info,
+                command:command,
+            })
+            console.error(resp.info);
+            return;
+        }
+        var response = resp.ai_choices;
+    } catch (error) {
+        console.error(error.message);
+        browserAppData.runtime.sendMessage({
+            action: 'ai_engine_error',
+            text: error.message,
+            command:command,
+        })
+        return;
+    }
 
     if (validate_full_text_by_ai){
         let text_classifier = await browserAppData.runtime.sendMessage({

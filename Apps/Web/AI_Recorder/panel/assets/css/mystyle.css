@@ -628,7 +628,7 @@ body
 .tr:not(thead>tr){
   background-color:white;
   cursor: grab;
-  border-radius: 15px;
+  border-radius: 18px;
 }
 #case_data_wrap tr td{
   padding: 0;
