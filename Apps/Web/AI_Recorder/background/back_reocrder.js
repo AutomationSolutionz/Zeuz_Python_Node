@@ -76,7 +76,7 @@ async function fetchAIData(idx, command, value, url, document){
         "action_value": value,
         "source": "web",
     };
-    console.log(document);
+    // console.log(document);
     var data = JSON.stringify(dataj);
 
     const url_ = `${metaData.url}/ai_record_single_action/`
@@ -98,7 +98,6 @@ async function fetchAIData(idx, command, value, url, document){
                 command:command,
             })
             console.error(resp.info);
-            var response = resp.ai_choices;
             recorded_actions[idx] = 'error';
             console.log(recorded_actions);
             browserAppData.storage.local.set({
@@ -106,6 +105,7 @@ async function fetchAIData(idx, command, value, url, document){
             })
             return;
         }
+        var response = resp.ai_choices;
     } catch (error) {
         console.error(error.message);
         browserAppData.runtime.sendMessage({

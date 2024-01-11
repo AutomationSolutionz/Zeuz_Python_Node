@@ -164,6 +164,11 @@ async function open_panel_2(tab) {
         .catch(function(e) {
             console.log('panelWindow catch error', panelWindow);
             console.error('error', e);
+            browserAppData.tabs.query({
+                windowId: panelWindow,
+            }).then((tab)=>{
+                console.log(panelWindow,tab)
+            })
             panelWindow = undefined;
             browserAppData.storage.local.set({
                 panelWindow: panelWindow

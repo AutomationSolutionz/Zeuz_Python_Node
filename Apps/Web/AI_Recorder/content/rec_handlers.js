@@ -62,30 +62,31 @@ Recorder.addEventHandler('type', 'change', function(event) {
 var preventClickTwice = false;
 var select_xpath
 Recorder.addEventHandler('clickAt', 'click', function(event) {
-    // console.log('click event', event);
-    // console.log("event.target", event.target);
-    var xpaths = this.locatorBuilders.buildAll(event.target);
-    if ('select' == event.target.nodeName.toLowerCase()) select_xpath = xpaths
-    // console.log("xpaths", xpaths);
-    if (event.button == 0 && !preventClick && event.isTrusted) {
-        if (!preventClickTwice) {
-            var top = event.pageY,
-                left = event.pageX;
-            var element = event.target;
-            do {
-                top -= element.offsetTop;
-                left -= element.offsetLeft;
-                element = element.offsetParent;
-            } while (element);
-            this.record("click", xpaths, '');
-            preventClickTwice = true;
+    setTimeout(()=>{
+        if (preventClickTwice){
+            setTimeout(()=>{
+                preventClickTwice = false;
+            },500)
+            return;
         }
-        setTimeout(function() { preventClickTwice = false; }, 30);
-    }
+        var xpaths = this.locatorBuilders.buildAll(event.target);
+        if ('select' == event.target.nodeName.toLowerCase()) select_xpath = xpaths
+        if (!(event.button == 0 && !preventClick && event.isTrusted)) return;
+        var top = event.pageY,
+            left = event.pageX;
+        var element = event.target;
+        do {
+            top -= element.offsetTop;
+            left -= element.offsetLeft;
+            element = element.offsetParent;
+        } while (element);
+        this.record("click", xpaths, '');
+    },500)
 }, true);
 
 /* Recorder Double click event */
 Recorder.addEventHandler('doubleClickAt', 'dblclick', function(event) {
+    preventClickTwice = true;
     var top = event.pageY,
         left = event.pageX;
     var element = event.target;

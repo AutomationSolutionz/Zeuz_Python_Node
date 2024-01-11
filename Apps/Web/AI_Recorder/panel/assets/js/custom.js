@@ -78,11 +78,10 @@ var CustomFunction = {
 		let new_actions = []
 		for(let i = 0; i < actions.length; i++){
 			action = actions[i];
-			if([null, undefined].includes(action)) continue;
 			if(
 				action.action == 'click' && 
 				i < actions.length - 1 && 
-				['click', 'text', 'double click'].includes(actions[i+1].action)  &&
+				['text'].includes(actions[i+1].action)  &&
 				action.xpath == actions[i+1].xpath
 			) continue;
 			new_actions.push(action);
