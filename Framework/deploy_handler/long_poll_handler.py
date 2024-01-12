@@ -25,8 +25,8 @@ class DeployHandler:
         self,
         on_connect_callback: Callable[[bool], None],
         response_callback: Callable[[Any], None],
-        cancel_callback: Callable[[None], None],
-        done_callback: Callable[[None], bool],
+        cancel_callback: Callable[[], None],
+        done_callback: Callable[[], bool],
     ) -> None:
         self.quit = False
         self.on_connect_callback = on_connect_callback
