@@ -296,12 +296,19 @@ def Login(cli=False, run_once=False, log_dir=None):
     if not ((load_from_session or len(api) > 0) and len(server_name) > 0):
         return
 
+    token_renew_failed = False
     while True:
         try:
             if load_from_session:
                 data, status_code = RequestFormatter.renew_token()
+                if status_code != 200:
+                    token_renew_failed = True
             else:
                 data, status_code = RequestFormatter.login()
+
+            if token_renew_failed:
+                data, status_code = RequestFormatter.login()
+                token_renew_failed = False
 
             # Upon successful login, replace the api key in the settings
             # file with a dummy value since we don't need it anymore.
