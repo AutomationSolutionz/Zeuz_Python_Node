@@ -7,13 +7,11 @@ class Recorder {
         this.window = window;
         this.attached = false;
         this.locatorBuilders = new LocatorBuilders(window);
-        this.frameLocation = this.getFrameLocation();
+        this.frameLocation = undefined;
+        this.iframeDom = undefined;
+        this.getFrameLocation();
         console.log("getFrameLocation() =",this.frameLocation);
-        console.log("document", document)
-        browser.runtime.sendMessage({
-            frameLocation: this.frameLocation
-        }).catch(function(reason) {
-        });
+        // console.log("document", document);
         this.recorded_actions = [];
         this.idx = 0;
         // Convert to the zeuz defined action names
@@ -39,22 +37,50 @@ class Recorder {
         }
     }
 
-    /* get location */
+    createElementFromHTML(htmlString) {
+        var div = document.createElement('div');
+        div.innerHTML = htmlString.trim();
+        // Change this to div.childNodes to support multiple top-level nodes.
+        return div.firstElementChild;
+      }
     getFrameLocation() {
         let currentWindow = window;
         let currentParentWindow;
-        let frameLocation = ""
+        let frameLocation = "";
+        let i_elem_list=[];
+        let temp_i_elem_list = [];
+        let add_flag_once = true;
         while (currentWindow !== window.top) {
             currentParentWindow = currentWindow.parent;
-            for (let idx = 0; idx < currentParentWindow.frames.length; idx++)
+            let iframe_elements = currentParentWindow.document.getElementsByTagName('iframe');
+            while(i_elem_list.length>0) temp_i_elem_list.push(i_elem_list.shift());
+            i_elem_list = [];
+            let i_elem;
+            for (let idx = 0; idx < currentParentWindow.frames.length; idx++){
+                i_elem = this.createElementFromHTML(iframe_elements[idx].outerHTML.replace('iframe', 'zframe'));
                 if (currentParentWindow.frames[idx] === currentWindow) {
                     frameLocation = ":" + idx + frameLocation;
                     currentWindow = currentParentWindow;
-                    break;
+                    if (add_flag_once) {
+                        i_elem.setAttribute("zeuz", "iframe");
+                        add_flag_once = false;
+                    }
+                    var temp = ''
+                    while(temp_i_elem_list.length>0) temp += temp_i_elem_list.shift().outerHTML;
+                    i_elem.innerHTML = temp;
                 }
+                i_elem_list.push(i_elem);
+            }
         }
-        return frameLocation = "root" + frameLocation;
+        let iframe_dom = document.createElement('zframes');
+        var iframes = '';
+        while(i_elem_list.length>0) iframes += i_elem_list.shift().outerHTML;
+        iframe_dom.innerHTML = iframes;
+        console.log("iframe_dom", iframe_dom);
+        this.frameLocation = "root" + frameLocation;
+        if(frameLocation) this.iframeDom = iframe_dom;
     }
+
 
     prepare_dom(target, command, value){
         for (let each of target) if (each[1] == 'xpath:position') {
@@ -103,24 +129,19 @@ class Recorder {
         return html.outerHTML
     }
 
-    record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
-        console.log("getFrameLocation() =",this.frameLocation);
+    record(command, target, value) {
         const dom = this.prepare_dom(target, command, value)
-        browserAppData.runtime.sendMessage({
+        let signal = {
             apiName: 'record_action',
             command: command,
             target: target,
             value: value,
             url: window.location.href,
             document: dom,
-        })
-        let signal = {
-            command: command,
-            target: target,
-            value: value,
-            insertBeforeLastCommand: insertBeforeLastCommand,
-            frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
+            iframeLoc: this.frameLocation,
+            iframeDom: this.iframeDom,
         };
+        browserAppData.runtime.sendMessage(signal);
         console.log(signal);
         browser.runtime.sendMessage(signal).catch (function(reason) {
             console.log(reason);

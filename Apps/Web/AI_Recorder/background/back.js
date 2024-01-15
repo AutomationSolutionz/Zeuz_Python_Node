@@ -152,15 +152,18 @@ function open_panel(tab) {
 
 var panelWindow;
 async function open_panel_2(tab) {
-    let contentWindowId = tab.windowId;
+    browserAppData.storage.local.set({
+        meta_data: metaData,
+        // recorded_actions: [],
+    });
+    // let contentWindowId = tab.windowId;
     console.log('panelWindow', panelWindow);
     var result = await browserAppData.storage.local.get(['panelWindow']);
-    console.log('result.panelWindow', result.panelWindow);
     // console.log('result.panelWindow', result.panelWindow);
 
-    if (result.panelWindow) {
-        // browserAppData.windows.update(result.panelWindow, {focused: true})
-        browserAppData.tabs.update(result.panelWindow, {'active': true})
+    if (panelWindow) {
+        browserAppData.windows.update(panelWindow, {focused: true})
+        // browserAppData.tabs.update(panelWindow, {'active': true})
         .catch(function(e) {
             console.log('panelWindow catch error', panelWindow);
             console.error('error', e);
@@ -188,49 +191,13 @@ async function open_panel_2(tab) {
         browserAppData.windows.create({
             url: browserAppData.runtime.getURL("panel/index.html"),
             type: "popup",
-            //height: 705,
             height: height,
-            //width: 1366
             width: width
-        }).then(function waitForPanelLoaded(panelWindowInfo) {
-            return new Promise(function(resolve, reject) {
-                let count = 0;
-                let interval = setInterval(function() {
-                    if (count > 100) {
-                        reject("editor has no response");
-                        clearInterval(interval);
-                    }
-
-                    browserAppData.tabs.query({
-                        active: true,
-                        windowId: panelWindowInfo.id,
-                        status: "complete"
-                    }).then(async function(tabs) {
-                        if (tabs.length != 1) {
-                            count++;
-                            return;
-                        } else {
-                            panelWindow= panelWindowInfo.id;
-                            await browserAppData.storage.local.set({
-                                panelWindow: panelWindow,
-                                meta_data: metaData,
-                                recorded_actions: [],
-                            });
-                            panelWindow = panelWindowInfo.id;
-                            console.log('opening panelWindow', panelWindow);
-                            create_menus();
-                            resolve(panelWindowInfo);
-                            clearInterval(interval);
-                        }
-                    })
-                }, 400);
-            });
-        }).then(function bridge(panelWindowInfo){
-            return browserAppData.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
-                selfWindowId: panelWindowInfo.id,
-                commWindowId: contentWindowId
-            });
-        }).catch(function(e) {
+        })
+        .then((newPanelInfo)=>{
+            panelWindow = newPanelInfo.id;
+        })
+        .catch(function(e) {
             console.log(e);
         });
     };

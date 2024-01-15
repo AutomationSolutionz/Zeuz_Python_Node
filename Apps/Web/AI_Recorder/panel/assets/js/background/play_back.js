@@ -77,9 +77,16 @@ window.onload = function() {
                 if (contentWindowId) {
                     browser.windows.update(contentWindowId, {focused: true});
                 }
-                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+                console.log('contentWindowId',contentWindowId)
+                let once = true;
+                browser.tabs.query({url: [
+                    "http://*/*",
+                    "https://*/*"
+                ]})
                 .then(function(tabs) {
                     try {
+                        console.log('tabs',tabs)
+                        browser.windows.update(tabs[0].windowId, {focused: true});
                         console.log("attachRecorder=true sendMessage() call");
                         for(let tab of tabs) {
                             browser.tabs.sendMessage(tab.id, {attachRecorder: true})
@@ -210,10 +217,10 @@ window.onload = function() {
     });
 
     
-    stopButton.addEventListener("click", function() {
-        //saveData();
-        stop();
-    });
+    // stopButton.addEventListener("click", function() {
+    //     //saveData();
+    //     stop();
+    // });
     pauseButton.addEventListener("click", pause);
     resumeButton.addEventListener("click", resume);
 

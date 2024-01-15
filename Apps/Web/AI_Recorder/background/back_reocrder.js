@@ -166,8 +166,14 @@ async function fetchAIData(idx, command, value, url, document){
         recorded_actions: recorded_actions,
     })
 }
-
-async function record_action(command, value, url, document){
+async function iframe_required(iframeLoc, iframeDom){
+    let actions = await browserAppData.runtime.sendMessage({
+        apiName:'custom_file_actions'
+    })
+    console.log(actions);
+    return false;
+}
+async function record_action(command, value, url, document, iframeLoc, iframeDom){
     if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command]
     console.log("... Action recorder start");
     idx += 1;
@@ -187,6 +193,9 @@ async function record_action(command, value, url, document){
         else recorded_actions.unshift(go_to_link);
         idx += 1;
     }
+    if(await iframe_required(iframeLoc, iframeDom)){
+        console.log('iframe required', iframeLoc);
+    }
     fetchAIData(idx-1, command, value, url, document);  
 }
 browserAppData.runtime.onMessage.addListener(
@@ -201,6 +210,8 @@ browserAppData.runtime.onMessage.addListener(
                 request.value,
                 request.url,
                 request.document,
+                request.iframeLoc,
+                request.iframeDom,
             );
         }
         else if (request.apiName == 'stop_recording') {

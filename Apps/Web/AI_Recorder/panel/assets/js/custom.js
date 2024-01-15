@@ -3,6 +3,13 @@ browserAppData.runtime.onMessage.addListener(async (message, sender, sendRequest
 	if (message.action == 'ai_engine_error'){
 		alert(`Error in recording ${message.command} action. Copy the following message and ask for support:\n\n${message.text}`);
 	}
+	if (message.apiName == 'custom_file_actions') {
+		let actions = [];
+		$('#case_data_wrap').each((idx)=>{
+			actions.push(JSON.parse($(this).attr('data-json')));
+		})
+		return actions;
+	}
 });
 
 var CustomFunction = {
