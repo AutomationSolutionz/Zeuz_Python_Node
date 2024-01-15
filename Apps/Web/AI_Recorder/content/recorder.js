@@ -143,9 +143,6 @@ class Recorder {
         };
         browserAppData.runtime.sendMessage(signal);
         console.log(signal);
-        browser.runtime.sendMessage(signal).catch (function(reason) {
-            console.log(reason);
-        });
     }
 
     /* attach */

@@ -4,6 +4,10 @@ fetch("./data.json")
     .then(Response => Response.json())
     .then(data => {
         metaData = data;
+        browserAppData.storage.local.set({
+            meta_data: metaData,
+            recorded_actions: [],
+        });
     });
 
 const browserAppData = chrome || browser;
@@ -54,6 +58,7 @@ function create_menus() {
         })
     });
 }
+create_menus();
 
 
 function getWindowSize(callback) {

@@ -10,6 +10,7 @@ const browserAppData = chrome || browser;
 
 var idx = 0;
 var recorded_actions = [];
+var current_iframe = 'root';
 var action_name_convert = {
     select: "click",
     type: "text",
@@ -27,7 +28,7 @@ async function start_recording(){
     let res = await browserAppData.storage.local.get('recorded_actions');    
     recorded_actions = res.recorded_actions;
     idx = recorded_actions.length;
-
+    current_iframe = 'root';
 }
 async function stop_recording(){
     // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
@@ -39,7 +40,7 @@ async function stop_recording(){
         recorded_actions = [];
     }); 
 }
-async function fetchAIData(idx, command, value, url, document){
+async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframeDom){
     if (command === 'go to link'){
         let go_to_link = {
             action: 'go to link',
@@ -51,14 +52,14 @@ async function fetchAIData(idx, command, value, url, document){
             main: [['go to link', 'selenium action', url]],
             xpath: "",
         };
-        recorded_actions[idx] = go_to_link;
+        recorded_actions[Idx] = go_to_link;
         console.log(recorded_actions);
         browserAppData.storage.local.set({
             recorded_actions: recorded_actions,
         })
         return;
     }
-    recorded_actions[idx] = 'empty';
+    recorded_actions[Idx] = 'empty';
     browserAppData.storage.local.set({
         recorded_actions: recorded_actions,
     })
@@ -88,6 +89,27 @@ async function fetchAIData(idx, command, value, url, document){
         },
         body: data,
     }
+    if (iframeLoc){
+        // write Iframe codes here
+        recorded_actions[Idx] = {
+            action: 'switch iframe',
+            data_list: [],
+            element: '',
+            is_disable: false,
+            name: `Iframe ${iframeLoc}`,
+            value: '',
+            main: [
+                ['index', 'iframe parameter', 'default content'],
+                ['switch iframe', 'selenium action', 'switch iframe']
+            ],
+            xpath: '',
+        };
+        console.log('iframe_action', recorded_actions);
+        browserAppData.storage.local.set({
+            recorded_actions: recorded_actions,
+        })
+        Idx += 1;
+    }
     try {
         var r = await fetch(url_, input)
         var resp = await r.json();
@@ -98,7 +120,7 @@ async function fetchAIData(idx, command, value, url, document){
                 command:command,
             })
             console.error(resp.info);
-            recorded_actions[idx] = 'error';
+            recorded_actions[Idx] = 'error';
             console.log(recorded_actions);
             browserAppData.storage.local.set({
                 recorded_actions: recorded_actions,
@@ -106,6 +128,10 @@ async function fetchAIData(idx, command, value, url, document){
             return;
         }
         var response = resp.ai_choices;
+        if (response.iframe){
+            // write Iframe codes here
+            
+        }
     } catch (error) {
         console.error(error.message);
         browserAppData.runtime.sendMessage({
@@ -113,7 +139,7 @@ async function fetchAIData(idx, command, value, url, document){
             text: error.message,
             command:command,
         })
-        recorded_actions[idx] = 'error';
+        recorded_actions[Idx] = 'error';
         console.log(recorded_actions);
         browserAppData.storage.local.set({
             recorded_actions: recorded_actions,
@@ -151,7 +177,7 @@ async function fetchAIData(idx, command, value, url, document){
     response[0].short.value = value;
     if (command === 'text') response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     else if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
-    recorded_actions[idx] = {
+    recorded_actions[Idx] = {
         action: response[0].short.action,
         data_list: [response[0].short.value],
         element: response[0].short.element,
@@ -170,7 +196,11 @@ async function iframe_required(iframeLoc, iframeDom){
     let actions = await browserAppData.runtime.sendMessage({
         apiName:'custom_file_actions'
     })
-    console.log(actions);
+    // console.log('actions', 'actions');
+    if (iframeLoc != current_iframe){
+        current_iframe = iframeLoc;
+        return true;
+    }
     return false;
 }
 async function record_action(command, value, url, document, iframeLoc, iframeDom){
@@ -195,8 +225,12 @@ async function record_action(command, value, url, document, iframeLoc, iframeDom
     }
     if(await iframe_required(iframeLoc, iframeDom)){
         console.log('iframe required', iframeLoc);
+        idx += 1;
+        fetchAIData(idx-2, command, value, url, document, iframeLoc, iframeDom);  
     }
-    fetchAIData(idx-1, command, value, url, document);  
+    else{
+        fetchAIData(idx-1, command, value, url, document);
+    }
 }
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
