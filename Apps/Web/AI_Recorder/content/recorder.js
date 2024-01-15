@@ -10,7 +10,10 @@ class Recorder {
         this.frameLocation = undefined;
         this.iframeDom = undefined;
         this.getFrameLocation();
-        console.log("getFrameLocation() =",this.frameLocation);
+        this.getFrameDom();
+        console.log("this.frameLocation",this.frameLocation);
+        console.log("this.iframeDom",this.iframeDom);
+
         // console.log("document", document);
         this.recorded_actions = [];
         this.idx = 0;
@@ -37,13 +40,28 @@ class Recorder {
         }
     }
 
+    getFrameLocation() {
+        let currentWindow = window;
+        let currentParentWindow;
+        let frameLocation = "";
+        while (currentWindow !== window.top) {
+            currentParentWindow = currentWindow.parent;
+            for (let idx = 0; idx < currentParentWindow.frames.length; idx++){
+                if (currentParentWindow.frames[idx] === currentWindow) {
+                    frameLocation = ":" + idx + frameLocation;
+                    currentWindow = currentParentWindow;
+                }
+            }
+        }
+        this.frameLocation = "root" + frameLocation;
+    }
     createElementFromHTML(htmlString) {
         var div = document.createElement('div');
         div.innerHTML = htmlString.trim();
         // Change this to div.childNodes to support multiple top-level nodes.
         return div.firstElementChild;
-      }
-    getFrameLocation() {
+    }
+    getFrameDom() {
         let currentWindow = window;
         let currentParentWindow;
         let frameLocation = "";
@@ -52,7 +70,9 @@ class Recorder {
         let add_flag_once = true;
         while (currentWindow !== window.top) {
             currentParentWindow = currentWindow.parent;
-            let iframe_elements = currentParentWindow.document.getElementsByTagName('iframe');
+            let iframe_elements = []
+            for(let i=0; i<currentParentWindow.frames.length;i++) 
+                iframe_elements.push(currentParentWindow.frames[i].frameElement);
             while(i_elem_list.length>0) temp_i_elem_list.push(i_elem_list.shift());
             i_elem_list = [];
             let i_elem;
@@ -76,9 +96,8 @@ class Recorder {
         var iframes = '';
         while(i_elem_list.length>0) iframes += i_elem_list.shift().outerHTML;
         iframe_dom.innerHTML = iframes;
-        console.log("iframe_dom", iframe_dom);
-        this.frameLocation = "root" + frameLocation;
-        if(frameLocation) this.iframeDom = iframe_dom;
+        // if(frameLocation) this.iframeDom = iframe_dom;
+        this.iframeDom = iframe_dom;
     }
 
 
