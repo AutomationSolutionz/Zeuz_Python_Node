@@ -1,4 +1,6 @@
 browserAppData = chrome || browser;
+var extCommand = new ExtCommand();
+
 browserAppData.runtime.onMessage.addListener(async (message, sender, sendRequest)=>{
 	if (message.action == 'ai_engine_error'){
 		alert(`Error in recording ${message.command} action. Copy the following message and ask for support:\n\n${message.text}`);
@@ -293,7 +295,61 @@ jQuery(document).ready(async function () {
 
 		label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
 		icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
+
+		isRecording = $('#record_label')[0].textContent != 'Record';
+		if (isRecording) {
+			recorder.attach();
+			notificationCount = 0;
+			if (contentWindowId) {
+				browser.windows.update(contentWindowId, {focused: true});
+			}
+			console.log('contentWindowId',contentWindowId)
+			browser.tabs.query({url: [
+				"http://*/*",
+				"https://*/*"
+			]})
+			.then(function(tabs) {
+				try {
+					console.log('tabs',tabs)
+					browser.windows.update(tabs[0].windowId, {focused: true});
+					console.log("attachRecorder=true sendMessage() call");
+					for(let tab of tabs) {
+						browser.tabs.sendMessage(tab.id, {attachRecorder: true})
+						.catch((error)=>{
+							console.log('error in sendMessage from tab.url=', tab.url);
+							console.error(error);
+							if (tab.url.startsWith("http://") || tab.url.startsWith("https://")){
+								msg = (tabs.length == 1) ?
+								`Recorder Disconnected!\n  1. Close the Recorder\n  2. Refresh the page (optional)\n  3. Open Recorder again` :
+								`Recorder Disconnected!\n  1. Close the Recorder\n  2. Close all tabs except the main tab\n  3. Refresh the page (optional)\n  4. Open Recorder again` ;
+								alert(msg)
+							}
+						});
+					}
+				} catch (error) {
+					console.error(error);
+				}
+				
+			});
+			// recordButton.childNodes[1].textContent = " Stop";
+			// switchRecordButton(false);
+		}
+		else {
+			recorder.detach();
+			saveData();
+			browser.tabs.query({url: [
+				"http://*/*",
+				"https://*/*"
+			]})
+			.then(function(tabs) {
+				for(let tab of tabs) {
+					browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+				}
+			});
+		}
 	})	
+
+
 	/* Save all newlly recorded actions with old actions and auto naming */
 	$(document).on('click', '#save_button', async function () {
 		try{
