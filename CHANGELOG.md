@@ -9,6 +9,10 @@
 - **[Change]** Removed unnecessary codes + APIs.
 - **[Change]** Improved general login time because of the above change.
 
+### [18.1.0][Jan 13, 2024]
+- **[Add]** AI Test recorder extension
+- **[Add]** `%|num()|%` variable to extract number from any text
+
 ### [18.0.0][Nov 5, 2023]
 - **[Change]** AI Inspector new api integrated 
 
