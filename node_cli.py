@@ -310,9 +310,10 @@ def Login(cli=False, run_once=False, log_dir=None):
                 data, status_code = RequestFormatter.login()
                 token_renew_failed = False
 
-            # Upon successful login, replace the api key in the settings
-            # file with a dummy value since we don't need it anymore.
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
+            # # Upon successful login, replace the api key in the settings
+            # # file with a dummy value since we don't need it anymore.
+            # TODO: Implement api key encryption.
+            # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
 
             if status_code == 200:
                 user_data = UserData(
