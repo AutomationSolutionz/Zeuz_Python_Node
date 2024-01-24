@@ -698,15 +698,65 @@ def check_for_element(data_set):
 
         if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
-            Shared_Resources.Set_Shared_Variables(var_name, result)
-            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
             result = True
-            Shared_Resources.Set_Shared_Variables(var_name, result)
-            return "passed"
+
+        Shared_Resources.Set_Shared_Variables(var_name, result)
+        return "passed"
     except Exception:
         errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def get_bbox(data_set):
+    """
+    This action provides the (x, y, width, height) parameters of a bbox of an image as a list. 
+
+    Field	                Sub Field	            Value
+    image	                element parameter	    filename.png  
+    get bounding box        desktop action          **variable name that will store the parameters 
+                                                    of the bounding box e.g. cords**
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    filename = ''
+    var_name = 'cords'
+
+    try:
+        for row in data_set:
+            if row[1] == "element parameter":
+                filename = row[2].strip()
+            elif "action" in row[1].strip().lower():
+                var_name = row[2].strip()
+
+        if filename == "":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
+                3,
+            )
+            return "zeuz_failed"
+
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+    try:
+        element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
+        if element in failed_tag_list:  # Error reason logged by Get_Element
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
+            return "zeuz_failed"
+
+        # Get parameters of the bbox
+        CommonUtil.ExecLog(
+            sModuleInfo, "Bbox paramaters on screen X:%d, Y:%d, Width:%d, Height:%d" %(element[0], element[1], element[2], element[3]), 0
+        )
+        Shared_Resources.Set_Shared_Variables(var_name, element)
+        return "passed"
+    except Exception:
+        errMsg = "Error locating the element"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
@@ -1094,9 +1144,12 @@ def playback_recorded_events(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 @logger
-def take_screenshot(data_set):
+def take_partial_screenshot(data_set):
     """
-    This action takes a screenshot of the active window. One has to provide the path where the screenshot will be saved. One can provide x,y coordinates, width and height to take screenshot of a specific region by using the bbox optional parameter. 
+    This action takes a partial screenshot of the active window.
+    One has to provide the path where the screenshot will be saved. 
+    One can provide x,y coordinates, width and height to take screenshot 
+    of a specific region by using the bbox optional parameter. 
 
     Field	                Sub Field	            Value
     screenshot save path	element parameter	    C:\\User\\path\\image.png
@@ -1116,8 +1169,8 @@ def take_screenshot(data_set):
     height = None
 
     try:
-        for left, mid, right in data_set:
-            if mid.lower().strip() == "element parameter":
+        for left, _, right in data_set:
+            if "path" in left.lower().strip():
                 path = right.strip()
             elif left.lower().strip() == "bbox":
                 x_cord, y_cord, width, height = right.replace('(','').replace(')','').split(',')
@@ -1125,7 +1178,11 @@ def take_screenshot(data_set):
                 y_cord = int(y_cord.strip())
                 width = int(width.strip())
                 height = int(height.strip())
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+    try:
         if path is None:
             filename_format = "%Y_%m_%d_%H-%M-%S"
             filename = time.strftime(filename_format) + ".png"
@@ -1135,14 +1192,49 @@ def take_screenshot(data_set):
             path = str(Path(screenshot_folder) / Path(filename))
         
         pyautogui.screenshot(path)
-
+    
         if x_cord is not None and y_cord is not None and width is not None and height is not None:
             im = Image.open(path)
             im1 = im.crop((x_cord, y_cord, (x_cord+width), (y_cord+height)))
             im1.save(path)
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Proper bounding box parameters are not provided", 3
+            )
+            return "zeuz_failed"
             
         return "passed"
     except:
-        traceback.print_exc()
-        errMsg = "Unable to parse data set"
+        errMsg = "Could not take the screenshot"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+
+@logger
+def keystroke_for_element(data_set):
+    """
+    Enter sequential characters or strings, for example, Hello World 
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        chars = ""
+        delay = 0.0
+        for left, mid, right in data_set:
+            if "delay" in left.lower().strip():
+                delay = float(right.strip())
+            elif "action" in mid.lower().strip():
+                chars = right.strip()
+        if chars == "":
+            CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
+            return "zeuz_failed"
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+    try:
+        pyautogui.write(chars, interval=delay)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters with pyautogui:\n%s" % chars, 1)
+        return "passed"
+
+    except:
+        errMsg = "Could not enter characters with pyautogui"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
