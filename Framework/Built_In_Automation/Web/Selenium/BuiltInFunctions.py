@@ -840,7 +840,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 if selenium_version.startswith('4.'):
-                    service = Service(firefox_path)
+                    service = Service()
                     selenium_driver = webdriver.Firefox(
                         service=service,
                         options=options,
@@ -1619,7 +1619,7 @@ def Enter_Text_In_Text_Box(step_data):
             if clear:
                 # Element.clear()
                 # Safari Keys are extremely slow and not working
-                if selenium_driver.desired_capabilities['browserName'] == "Safari":
+                if selenium_driver.capabilities['browserName'] == "Safari":
                     Element.clear()
                 else:
                     if sys.platform == "darwin":
