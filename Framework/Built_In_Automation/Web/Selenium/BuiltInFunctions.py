@@ -1278,7 +1278,12 @@ def Go_To_Link(step_data, page_title=False):
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
 
         if not driver_id:
-            driver_id = "default"
+            if len(selenium_details.keys()) == 0:
+                driver_id = "default"
+            elif current_driver_id is not None:
+                driver_id = current_driver_id
+            else:
+                driver_id = selenium_details.keys()[0]
 
         browser_map = {
             "Microsoft Edge Chromium": 'msedge',
