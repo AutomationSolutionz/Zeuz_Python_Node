@@ -237,6 +237,16 @@ exit_script = False  # Used by Zeuz Node GUI to exit script
 
 
 def zeuz_authentication_prompts_for_cli():
+    """
+    Prompts user for inputting new credentials.
+    """
+
+    # Remove session file if prompted for new authentication
+    session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
+    if session_bin_path.exists():
+        try: session_bin_path.unlink()
+        except: print("[ERROR] failed to remove session file")
+
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:
