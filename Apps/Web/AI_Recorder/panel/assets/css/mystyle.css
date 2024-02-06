@@ -95,13 +95,7 @@ body
 .dropdown-item{
   font-size: 15px;
 }
-#test_id
-{
-  display: inline-block;
-  width: 70px;
-  border: 2px solid black;
-  border-radius: 8px;
-}
+
 .tr_body
 {
   background: #fff
