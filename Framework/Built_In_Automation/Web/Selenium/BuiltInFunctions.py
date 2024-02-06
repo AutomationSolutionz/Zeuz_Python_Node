@@ -672,6 +672,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument('--zeuz_pid_finder')
                 options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
 
+                # Turn this on while experimenting with playwright
+                # options.add_argument('--remote-debugging-port=9222')
+
             # Todo: profile, add_argument => open_browser
             _prefs = {}
             if browser_options:
@@ -4769,6 +4772,39 @@ def drag_and_drop(dataset):
         ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
         # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Method to upload file
+@logger
+def playwright(dataset):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+
+        from playwright.sync_api import sync_playwright
+        devtools_url = selenium_driver.command_executor._url.replace('http://', 'ws://') + '/devtools/browser'
+        with sync_playwright() as p:
+            # browser = p.chromium.connect(browserURL=devtools_url)
+            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            page = browser.contexts[0].pages[0]
+
+            # source = page.locator("//div[contains(text(), 'abcd')]")
+            # dest = page.locator('(//div[@class="fc-timegrid-bg-harness"][1]/div)[1]')
+            # source.drag_to(dest)
+            #
+            # source = page.locator("//div[contains(text(), 'Wolfgang Donna')]")
+            # dest = page.locator('//span[contains(text(), "abcd")]/parent::div')
+            # source.drag_to(dest)
+
+            fileChooserPromise = page.wait_for_event('filechooser')
+            # await page.getByText('Upload file').click();
+            # fileChooser = await fileChooserPromise;
+            # await fileChooser.setFiles(path.join(__dirname, 'myfile.pdf'));
+
 
         return "passed"
     except Exception:
