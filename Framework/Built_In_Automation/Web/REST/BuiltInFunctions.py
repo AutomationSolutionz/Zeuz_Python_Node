@@ -752,6 +752,7 @@ def handle_rest_call(
     cert=None,
     print_output=True,
     auth=None,
+    save_local_filepath=True
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -987,105 +988,153 @@ def handle_rest_call(
         Shared_Resources.Set_Shared_Variables("status_code", result.status_code, print_variable=False)
         Shared_Resources.Set_Shared_Variables("http_status_code", result.status_code)
         Shared_Resources.Set_Shared_Variables("http_response_headers", result.headers)
-        try:
-            if result.json():
-                Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_variable=print_output, print_raw=print_output),
-                CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
+        if save_local_filepath:
+            with open(save_local_filepath, 'wb') as file:
+                file.write(result.content)
+            CommonUtil.ExecLog(sModuleInfo, f'Response saved successfully into {save_local_filepath}.', 1)
+            return "passed"
+        else:
+            try:
+                if result.json():
+                    Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
+                    Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_variable=print_output, print_raw=print_output),
+                    CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
-                # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
-                if save_cookie:
-                    all_cookies = requests.utils.dict_from_cookiejar(result.cookies)
-                    for each in list(all_cookies.keys()):
-                        Shared_Resources.Set_Shared_Variables(each, all_cookies[each])
+                    # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
+                    if save_cookie:
+                        all_cookies = requests.utils.dict_from_cookiejar(result.cookies)
+                        for each in list(all_cookies.keys()):
+                            Shared_Resources.Set_Shared_Variables(each, all_cookies[each])
 
-                if search:
-                    if apply_condition:
-                        search_result = search_condition_wrapper(
-                            result.json(), condition
-                        )
-                        if search_result in passed_tag_list:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                'Condition "%s" is TRUE in response' % (condition),
-                                1,
+                    if search:
+                        if apply_condition:
+                            search_result = search_condition_wrapper(
+                                result.json(), condition
                             )
-                            return "passed"
+                            if search_result in passed_tag_list:
+                                CommonUtil.ExecLog(
+                                    sModuleInfo,
+                                    'Condition "%s" is TRUE in response' % (condition),
+                                    1,
+                                )
+                                return "passed"
+                            else:
+                                CommonUtil.ExecLog(
+                                    sModuleInfo,
+                                    'Condition "%s" is FALSE in response' % (condition),
+                                    3,
+                                )
+                                return "zeuz_failed"
                         else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                'Condition "%s" is FALSE in response' % (condition),
-                                3,
+                            search_result = search_val_wrapper(
+                                result.json(), search_key, search_value, equal
                             )
-                            return "zeuz_failed"
+                            if equal:
+                                if search_result in passed_tag_list:
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        'Got "%s":"%s" in response'
+                                        % (search_key, search_value),
+                                        1,
+                                    )
+                                    return "passed"
+                                else:
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        'Couldnt Get "%s":"%s" in response'
+                                        % (search_key, search_value),
+                                        3,
+                                    )
+                                    return "zeuz_failed"
+                            else:
+                                if search_result in passed_tag_list:
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        'No "%s":"%s" in response'
+                                        % (search_key, search_value),
+                                        1,
+                                    )
+                                    return "passed"
+                                else:
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        'Got "%s":"%s" in response'
+                                        % (search_key, search_value),
+                                        3,
+                                    )
+                                    return "zeuz_failed"
                     else:
-                        search_result = search_val_wrapper(
-                            result.json(), search_key, search_value, equal
-                        )
-                        if equal:
-                            if search_result in passed_tag_list:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    'Got "%s":"%s" in response'
-                                    % (search_key, search_value),
-                                    1,
-                                )
-                                return "passed"
-                            else:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    'Couldnt Get "%s":"%s" in response'
-                                    % (search_key, search_value),
-                                    3,
-                                )
-                                return "zeuz_failed"
+                        if not save_into_list:
+                            save_fields_from_rest_call(result.json(), fields_to_be_saved)
                         else:
-                            if search_result in passed_tag_list:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    'No "%s":"%s" in response'
-                                    % (search_key, search_value),
-                                    1,
-                                )
-                                return "passed"
-                            else:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    'Got "%s":"%s" in response'
-                                    % (search_key, search_value),
-                                    3,
-                                )
+                            if list_name == "":
+                                CommonUtil.ExecLog(sModuleInfo, "List name not defined!", 3)
                                 return "zeuz_failed"
+                            insert_fields_from_rest_call_into_list(
+                                result.json(), fields_to_be_saved, list_name
+                            )
+                    return "passed"
                 else:
-                    if not save_into_list:
-                        save_fields_from_rest_call(result.json(), fields_to_be_saved)
-                    else:
-                        if list_name == "":
-                            CommonUtil.ExecLog(sModuleInfo, "List name not defined!", 3)
-                            return "zeuz_failed"
-                        insert_fields_from_rest_call_into_list(
-                            result.json(), fields_to_be_saved, list_name
+                    CommonUtil.ExecLog(sModuleInfo, "HTTP Request did not respond in json format", 1)
+                    response_text = result.json()
+                    CommonUtil.ExecLog(sModuleInfo, "Received Response", 1)
+                    try:
+                        # try to save as dict
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Trying to convert HTTP Request response text to json",
+                            1,
                         )
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "HTTP Request did not respond in json format", 1)
-                response_text = result.json()
-                CommonUtil.ExecLog(sModuleInfo, "Received Response", 1)
+                        json_of_response = ast.literal_eval(response_text)
+                        Shared_Resources.Set_Shared_Variables(
+                            "rest_response", json_of_response, print_variable=False
+                        )
+                        Shared_Resources.Set_Shared_Variables(
+                            "http_response", json_of_response,
+                            print_raw=True,
+                        )
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "REST Call Response Text converted to json and saved in 'http_response' shared variable",
+                            1,
+                        )
+                    except:
+                        # save the text
+                        response_text = result.text
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "REST Call Response Text couldn't be converted to json",
+                            2,
+                        )
+                        Shared_Resources.Set_Shared_Variables(
+                            "rest_response", response_text, print_variable=False
+                        )
+                        Shared_Resources.Set_Shared_Variables(
+                            "http_response", CommonUtil.parse_value_into_object(response_text),
+                            print_raw=True,
+                        )
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "REST Call Response Text saved in 'http_response' shared variable",
+                            1,
+                        )
+                    return "passed"
+            except Exception:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "REST Call did not respond in json format", 1
+                )
+                response_text = result.text
+                CommonUtil.ExecLog(
+                    sModuleInfo, "REST Call response is: %s" % str(response_text), 1
+                )
                 try:
                     # try to save as dict
                     CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Trying to convert HTTP Request response text to json",
-                        1,
+                        sModuleInfo, "Trying to convert REST Call Response Text to json", 1
                     )
                     json_of_response = ast.literal_eval(response_text)
-                    Shared_Resources.Set_Shared_Variables(
-                        "rest_response", json_of_response, print_variable=False
-                    )
-                    Shared_Resources.Set_Shared_Variables(
-                        "http_response", json_of_response,
-                        print_raw=True,
-                    )
+                    Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
+                    Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_variable=print_output, print_raw=print_output)
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "REST Call Response Text converted to json and saved in 'http_response' shared variable",
@@ -1093,61 +1142,20 @@ def handle_rest_call(
                     )
                 except:
                     # save the text
-                    response_text = result.text
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "REST Call Response Text couldn't be converted to json",
                         2,
                     )
-                    Shared_Resources.Set_Shared_Variables(
-                        "rest_response", response_text, print_variable=False
-                    )
-                    Shared_Resources.Set_Shared_Variables(
-                        "http_response", CommonUtil.parse_value_into_object(response_text),
-                        print_raw=True,
-                    )
+                    Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
+                    Shared_Resources.Set_Shared_Variables("http_response", response_text, print_variable=print_output, print_raw=print_output)
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "REST Call Response Text saved in 'http_response' shared variable",
                         1,
                     )
                 return "passed"
-        except Exception:
-            CommonUtil.ExecLog(
-                sModuleInfo, "REST Call did not respond in json format", 1
-            )
-            response_text = result.text
-            CommonUtil.ExecLog(
-                sModuleInfo, "REST Call response is: %s" % str(response_text), 1
-            )
-            try:
-                # try to save as dict
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Trying to convert REST Call Response Text to json", 1
-                )
-                json_of_response = ast.literal_eval(response_text)
-                Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_variable=print_output, print_raw=print_output)
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "REST Call Response Text converted to json and saved in 'http_response' shared variable",
-                    1,
-                )
-            except:
-                # save the text
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "REST Call Response Text couldn't be converted to json",
-                    2,
-                )
-                Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", response_text, print_variable=print_output, print_raw=print_output)
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "REST Call Response Text saved in 'http_response' shared variable",
-                    1,
-                )
-            return "passed"
+        
     except requests.Timeout:
         CommonUtil.ExecLog(sModuleInfo, f"Request '{url}' timed out after {timeout} seconds.", 3)
         return "zeuz_failed"
@@ -1186,6 +1194,7 @@ def Get_Response(step_data, save_cookie=False):
         cert = None
         print_output = True
         auth = None
+        save_local_filepath = None
 
         for left, mid, right in step_data:
             left = left.lower()
@@ -1216,6 +1225,8 @@ def Get_Response(step_data, save_cookie=False):
                 print_output = True if "true" in right.lower() else False
             elif "auth: basic" in left:
                 auth = tuple(right.split(":"))
+            elif "save local" in left:
+                save_local_filepath = right.strip()
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -1237,6 +1248,7 @@ def Get_Response(step_data, save_cookie=False):
                     cert=cert,
                     print_output=print_output,
                     auth=auth,
+                    save_local_filepath=save_local_filepath
                 )
                 return return_result
             except Exception:
