@@ -8,6 +8,7 @@
 - **[Change]** Improved reconnect time of node by 10x-30x once it detects a live server.
 - **[Change]** Removed unnecessary codes + APIs.
 - **[Change]** Improved general login time because of the above change.
+- **[Add]** Custom Profile Functionality
 
 ### [18.1.0][Jan 13, 2024]
 - **[Add]** AI Test recorder extension

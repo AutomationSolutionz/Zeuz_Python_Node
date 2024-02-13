@@ -517,6 +517,15 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     remote_host = None
     remote_browser_version = None
+    
+    for i in range(len(browser_options)):
+        if '--user-data-dir' in browser_options[i][1]:
+            custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
+            custom_profile_path = os.path.join(custom_profile_folder_path,browser_options[i][1].split('=')[-1].strip())
+
+            os.makedirs(custom_profile_folder_path, exist_ok=True)
+            browser_options[i][1] = f'--user-data-dir={custom_profile_path}'
+    
     if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
         run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
         remote_config = run_time_params.get("remote_config")
