@@ -89,6 +89,7 @@ action_support = (
     "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter",
     "profile option", "profile options",
     "text classifier offset"
+    "fail message",
 )
 patterns = [
     "^parent \d parameter$",

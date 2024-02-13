@@ -1,6 +1,7 @@
 import time
 import functools
 from . import CommonUtil
+from Framework.Utilities.CommonUtil import failed_tag_list
 
 
 def logger(func):
@@ -10,8 +11,14 @@ def logger(func):
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
         CommonUtil.ExecLog(None, f"Entering into function: {func.__name__!r}.", 5)
-
+        custom_fail_message = ""
         result = func(*args, **kwargs)
+        if result in failed_tag_list:
+            for row in args[0]:
+                if row[1].replace(" ", "").lower() == "failmessage":
+                    custom_fail_message = row[2]
+            # Todo: print the custom_fail_message
+            CommonUtil.ExecLog(None, custom_fail_message, 3)
         end_time = time.perf_counter()
         run_time = end_time - start_time
 
