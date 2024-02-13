@@ -24,9 +24,9 @@ recording_data = {
 
 
 def load_recording_data_from_file(filepath) -> Dict[str, Any]:
-        with open(filepath, "rb") as f:
-            data = pickle.load(f)
-            return data
+    with open(filepath, "rb") as f:
+        data = pickle.load(f)
+        return data
 
 
 class ChoosePlaybackModule:

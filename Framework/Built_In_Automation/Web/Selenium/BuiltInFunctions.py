@@ -517,6 +517,15 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     remote_host = None
     remote_browser_version = None
+    
+    for i in range(len(browser_options)):
+        if '--user-data-dir' in browser_options[i][1]:
+            custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
+            custom_profile_path = os.path.join(custom_profile_folder_path,browser_options[i][1].split('=')[-1].strip())
+
+            os.makedirs(custom_profile_folder_path, exist_ok=True)
+            browser_options[i][1] = f'--user-data-dir={custom_profile_path}'
+    
     if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
         run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
         remote_config = run_time_params.get("remote_config")
@@ -671,6 +680,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 options.add_argument('--ignore-ssl-errors')
                 options.add_argument('--zeuz_pid_finder')
                 options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
+
+                # Turn this on while experimenting with playwright
+                # options.add_argument('--remote-debugging-port=9222')
 
             # Todo: profile, add_argument => open_browser
             _prefs = {}
@@ -840,7 +852,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 if selenium_version.startswith('4.'):
-                    service = Service(firefox_path)
+                    service = Service()
                     selenium_driver = webdriver.Firefox(
                         service=service,
                         options=options,
@@ -1275,7 +1287,12 @@ def Go_To_Link(step_data, page_title=False):
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
 
         if not driver_id:
-            driver_id = "default"
+            if len(selenium_details.keys()) == 0:
+                driver_id = "default"
+            elif current_driver_id is not None:
+                driver_id = current_driver_id
+            else:
+                driver_id = selenium_details.keys()[0]
 
         browser_map = {
             "Microsoft Edge Chromium": 'msedge',
@@ -1619,7 +1636,7 @@ def Enter_Text_In_Text_Box(step_data):
             if clear:
                 # Element.clear()
                 # Safari Keys are extremely slow and not working
-                if selenium_driver.desired_capabilities['browserName'] == "Safari":
+                if selenium_driver.capabilities['browserName'] == "Safari":
                     Element.clear()
                 else:
                     if sys.platform == "darwin":
@@ -4769,6 +4786,39 @@ def drag_and_drop(dataset):
         ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
         # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Method to upload file
+@logger
+def playwright(dataset):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+
+        from playwright.sync_api import sync_playwright
+        devtools_url = selenium_driver.command_executor._url.replace('http://', 'ws://') + '/devtools/browser'
+        with sync_playwright() as p:
+            # browser = p.chromium.connect(browserURL=devtools_url)
+            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            page = browser.contexts[0].pages[0]
+
+            # source = page.locator("//div[contains(text(), 'abcd')]")
+            # dest = page.locator('(//div[@class="fc-timegrid-bg-harness"][1]/div)[1]')
+            # source.drag_to(dest)
+            #
+            # source = page.locator("//div[contains(text(), 'Wolfgang Donna')]")
+            # dest = page.locator('//span[contains(text(), "abcd")]/parent::div')
+            # source.drag_to(dest)
+
+            fileChooserPromise = page.wait_for_event('filechooser')
+            # await page.getByText('Upload file').click();
+            # fileChooser = await fileChooserPromise;
+            # await fileChooser.setFiles(path.join(__dirname, 'myfile.pdf'));
+
 
         return "passed"
     except Exception:

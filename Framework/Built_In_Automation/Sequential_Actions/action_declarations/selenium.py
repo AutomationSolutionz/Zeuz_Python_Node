@@ -39,6 +39,7 @@ declarations = (
     { "name": "upload file",                   "function": "upload_file",                   "screenshot": "web" },
     { "name": "upload through window",         "function": "upload_file_through_window",    "screenshot": "web" },
     { "name": "drag and drop",                 "function": "drag_and_drop",                 "screenshot": "web" },
+    { "name": "playwright",                    "function": "playwright",                 "screenshot": "web" },
     { "name": "scroll to element",             "function": "scroll_to_element",             "screenshot": "web" },
     { "name": "if element exists",             "function": "if_element_exists",             "screenshot": "web" },
     { "name": "click and enter text",          "function": "Click_and_Text",                "screenshot": "web" },

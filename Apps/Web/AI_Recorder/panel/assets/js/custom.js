@@ -10,8 +10,16 @@ var CustomFunction = {
 	async FetchTestData(test_id, step_no) {
 		var result = await browserAppData.storage.local.get(null);
 		try {
-			var r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`);
-			var response = await r.json();
+			let localStorageMetadata = await browser.storage.local.get('meta_data');
+			let meta_data = localStorageMetadata.meta_data;
+			let headers = {
+				"X-Api-Key": meta_data.apiKey,
+			};
+			let r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`, {
+				method: "GET",
+				headers: headers,
+			});
+			let response = await r.json();
 			if (response.error){
 				console.error("response.error", response.error)
 				await alert(response.error);

@@ -236,7 +236,23 @@ processing_test_case = (
 exit_script = False  # Used by Zeuz Node GUI to exit script
 
 
+def destroy_session():
+    """
+    Destroy session file.
+    """
+
+    # Remove session file if prompted for new authentication
+    session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
+    if session_bin_path.exists():
+        try: session_bin_path.unlink()
+        except: print("[ERROR] failed to remove session file")
+
+
 def zeuz_authentication_prompts_for_cli():
+    """
+    Prompts user for inputting new credentials.
+    """
+    destroy_session()
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:
@@ -937,6 +953,7 @@ def command_line_args() -> Path:
     if auto_update:
         check_for_updates()
     if username or password or server or logout or api:
+        destroy_session()
         if api and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)

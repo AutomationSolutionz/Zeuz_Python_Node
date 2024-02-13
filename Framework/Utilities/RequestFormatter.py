@@ -79,6 +79,7 @@ def renew_token():
 
     r = session.post(
         url=form_uri("/zsvc/auth/v1/renew"),
+        verify=False,
     )
 
     data = {}
@@ -107,6 +108,7 @@ def login():
     r = session.post(
         url=form_uri("/zsvc/auth/v1/login"),
         json=payload,
+        verify=False,
     )
 
 
@@ -154,6 +156,9 @@ def request(*args, **kwargs):
     management.
     """
     renew_token_with_expiry_check()
+    if "verify" not in kwargs:
+        kwargs["verify"] = False
+
     return session.request(*args, **kwargs)
 
 
