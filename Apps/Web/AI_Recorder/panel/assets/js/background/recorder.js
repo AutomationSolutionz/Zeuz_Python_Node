@@ -32,6 +32,31 @@ class BackgroundRecorder {
 			})
 			return;
 		}, 500)
+        this.recording_flag = false
+        setInterval(async ()=>{
+            if (!this.attached) return;
+			browserAppData.storage.local.get(null, function (result) {
+				if (result.recorded_actions.length === 0) return;
+				for(let i = 0; i < result.recorded_actions.length; i++){
+					if (result.recorded_actions[i] === 'empty'){
+						if (!this.recording_flag) this.recording_flag = true;
+                        else{
+                            var new_arr = [];
+                            for (const action of result.recorded_actions) {
+                                if (action !== 'empty') new_arr.push(action);
+                            }
+                            result.recorded_actions = new_arr;
+                            browserAppData.storage.local.set({
+                                recorded_actions: new_arr
+                            })
+                            this.recording_flag = false;
+                        }
+						return;
+					}
+				}
+			})
+			return;
+		}, 30000)
     }
 
     /* Bind initial time */

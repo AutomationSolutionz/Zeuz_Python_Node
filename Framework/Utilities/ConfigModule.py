@@ -49,7 +49,7 @@ def get_config_value(section, key, location=False):
 
 def remove_config_value(section, value, location=False):
     try:
-        config = configparser.SafeConfigParser()
+        config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name

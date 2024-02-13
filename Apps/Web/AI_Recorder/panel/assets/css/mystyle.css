@@ -80,7 +80,9 @@ body
 {
   background: white;
 }
-
+#content{
+  background-color: #eeeeee;
+}
 #header_tab li a {
   color: #9FC8FA;
 }
@@ -93,12 +95,7 @@ body
 .dropdown-item{
   font-size: 15px;
 }
-#nav_menu_up
-{
-  background: #fff;
-  /*min-height: 50px;*/
-  padding-top: 10px;
-}
+
 .tr_body
 {
   background: #fff
@@ -302,13 +299,6 @@ body
   padding-top: 125px;
   width: 100%;
   padding-right: 120px;
-}
-.settings_container
-{
-  display: flex;
-  flex-direction: row;
-  min-height: 94vh;
-  justify-content: space-between
 }
 .settings_form h3
 {
@@ -610,11 +600,6 @@ body
   display: inline;
 }
 
-
-
-
-
-
 .bottom_left_icon a
 {
   background: none;
@@ -634,7 +619,38 @@ body
    font-style: italic;
 }
 
+.tr:not(thead>tr){
+  background-color:white;
+  cursor: grab;
+  border-radius: 15px;
+}
+#case_data_wrap tr td{
+  padding: 0;
+}
+.tr:active:not(thead>tr){
+  cursor: grabbing;
+}
+.td-no{
+  min-width: 75px;
+  border-radius: 15px;
+}
+.table-custom{
+  width: 640px;
+}
+.del-btn:hover{
+  opacity: 1;
+  cursor: pointer;
 
+}
+.tr:hover .del-btn{
+  opacity: 0.75;
+}
+.del-btn{
+  opacity: 0;
+}
+.opacity1{
+  opacity: 1;
+}
 .font_black ::-webkit-input-placeholder
 {
   color: #000
@@ -748,9 +764,6 @@ body
   height: 41px;
   padding-left: 5px;
 }
-.show_text_box .has-input{
-  padding: 4px !important;
-}
 
 .disabled-case{
   opacity: 40%;
@@ -786,11 +799,6 @@ body
   padding-top: 5px !important;
 }
 .gray-font{
-  color: #4a4a4acf
-}
-.case-sub-wrap td:first-child { 
-  padding-left: 0px; 
-  padding-right: 0px;
   color: #4a4a4acf
 }
 .log_section_head_left_text h6{

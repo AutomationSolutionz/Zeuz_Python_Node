@@ -1,10 +1,20 @@
 # Changelog
 
 
-# Version 18
+# Version 19
 
 ### [Current changes]
 - **[Add]** Custom error msg feature
+- **[Change]** Support for the new Authentication System 2.0 has been added.
+- **[Change]** Improved reconnect time of node by 10x-30x once it detects a live server.
+- **[Change]** Removed unnecessary codes + APIs.
+- **[Change]** Improved general login time because of the above change.
+- **[Add]** Rest API response to raw file.
+- **[Add]** Custom Profile Functionality
+
+### [18.1.0][Jan 13, 2024]
+- **[Add]** AI Test recorder extension
+- **[Add]** `%|num()|%` variable to extract number from any text
 
 ### [18.0.0][Nov 5, 2023]
 - **[Change]** AI Inspector new api integrated 

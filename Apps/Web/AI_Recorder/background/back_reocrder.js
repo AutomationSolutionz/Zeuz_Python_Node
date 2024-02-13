@@ -24,8 +24,10 @@ var action_name_convert = {
 }
 
 async function start_recording(){
-    idx = 0;
-    recorded_actions = [];    
+    let res = await browserAppData.storage.local.get('recorded_actions');    
+    recorded_actions = res.recorded_actions;
+    idx = recorded_actions.length;
+
 }
 async function stop_recording(){
     // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
@@ -118,7 +120,8 @@ async function fetchAIData(idx, command, value, url, document){
         value = 10;
     }
     response[0].short.value = value;
-    if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
+    if (command === 'text') response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
+    else if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     recorded_actions[idx] = {
         action: response[0].short.action,
         data_list: [response[0].short.value],
@@ -139,7 +142,8 @@ async function record_action(command, value, url, document){
     if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command]
     console.log("... Action recorder start");
     idx += 1;
-    if (recorded_actions.length === 0 || recorded_actions.length > 0 && recorded_actions[0].action != 'go to link'){
+    if (recorded_actions.length === 0 || 
+        recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
         let go_to_link = {
             action: 'go to link',
             data_list: [url],

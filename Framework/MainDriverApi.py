@@ -693,6 +693,7 @@ def run_all_test_steps_in_a_test_case(
                 break
 
         for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i, attachment_var=True)   # Cleanup tc_attachment variables
+        CommonUtil.show_log = True
         return sTestStepResultList
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -836,7 +837,7 @@ def set_important_variables():
         shared.shared_variables.update({
             "clipboard_paste": pyperclip.paste,
             "clipboard_set": pyperclip.copy,
-            "number": advanced_float
+            "num": advanced_float
         })
 
     except:
@@ -1217,7 +1218,7 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
         if "local" in device_order["mobile"]:
             pass
         elif "browser_stack" in device_order["mobile"]:
-            project = f"PROJECT: {user_info_object['project']} & TEAM: {user_info_object['team']}"
+            project = f"PROJECT:{user_info_object['project_id']} & TEAM:{user_info_object['team_id']}"
             # build = f"{test_case_no} : {test_case_name}"
             build = kwargs['run_id']
             # Todo: session_name will be the run_id of the test case. So, we can reference with our zeuz better
@@ -1250,8 +1251,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             }
     # Todo: remove this section. Changing this for new device_info.
     # elif "browser_stack" in device_order and device_order["browser_stack"]:
-    #     project = user_info_object["project"]
-    #     team = user_info_object["team"]
+    #     project ["project"]
+    #     team ["team"]
     #
     #     project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
     #     build = test_case_no + " :: " + test_case_name
@@ -1420,21 +1421,19 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             for _ in range(5):
                 try:
                     if perf_report_html is None:
-                        res = requests.post(
+                        res = RequestFormatter.request("post", 
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report)},
-                            verify=False,
-                            **RequestFormatter.add_api_key_to_headers({}))
+                            verify=False)
                     else:
-                            res = requests.post(
+                            res = RequestFormatter.request("post", 
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report),
                                   "processed_tc_id":processed_tc_id
 
                                   },
                             files=[("file",perf_report_html)],
-                            verify=False,
-                            **RequestFormatter.add_api_key_to_headers({}))
+                            verify=False)
 
 
                     if res.status_code == 200:
@@ -1474,12 +1473,11 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     files_list = []
                     for zips in opened_zips:
                         files_list.append(("file",zips))
-                    res = requests.post(
+                    res = RequestFormatter.request("post", 
                         RequestFormatter.form_uri("save_log_and_attachment_api/"),
                         files=files_list,
                         data={"machine_name": Userid},
-                        verify=False,
-                        **RequestFormatter.add_api_key_to_headers({}))
+                        verify=False)
                     if res.status_code == 200:
                         try:
                             res_json = res.json()
@@ -1563,7 +1561,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
     file_name = url[file_name_start_pos:]
     file_path = attachment_info["download_dir"] / file_name
 
-    r = requests.get(url, stream=True)
+    r = RequestFormatter.request("get", url, stream=True)
     if r.status_code == requests.codes.ok:
         with open(file_path, 'wb') as f:
             for data in r.iter_content(chunk_size=512*1024):
@@ -1658,7 +1656,7 @@ def download_attachments(testcase_info):
 
 
 # main function
-def main(device_dict, user_info_object):
+def main(device_dict, all_run_id_info):
     try:
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1678,8 +1676,6 @@ def main(device_dict, user_info_object):
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-
         # FIXME: Need to decide what to do with the following code or how to
         # handle it differently in case there are residual folders from previous
         # test cases inside the attachments folder.
@@ -1698,9 +1694,12 @@ def main(device_dict, user_info_object):
         # TODO: Remove all_file_specific_steps at a later period. keeping this
         # only for custom driver purpose
 
-        json_path = save_path.glob("*.zeuz.json").__next__()
-        with open(json_path, "r", encoding="utf-8") as f:
-            all_run_id_info = json.loads(f.read())
+        # Ensure that the path exists
+        # save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+        # save_path.mkdir(exist_ok=True, parents=True)
+        # json_path = save_path.glob("*.zeuz.json").__next__()
+        # with open(json_path, "r", encoding="utf-8") as f:
+        #     all_run_id_info = json.loads(f.read())
 
         if len(all_run_id_info) == 0:
             CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
@@ -1887,6 +1886,10 @@ def main(device_dict, user_info_object):
                         performance_test_case = True
                     test_case_no = testcase_info["testcase_no"]
                     test_case_name = testcase_info["title"]
+                    user_info_object = {
+                        "project_id": run_id_info["project_id"],
+                        "team_id": str(run_id_info["team_id"]),
+                    }
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid, run_id=run_id)
                     CommonUtil.disabled_step = []
 
