@@ -27,8 +27,11 @@ class BackgroundRecorder {
 						return;
 					}
 				}
-				$("#record").removeAttr('disabled').css('opacity',1);
-				$("#record_label").text("Stop");
+                if($("#record_label").text() == 'Recording...'){
+                    $("#record").removeAttr('disabled').css('opacity',1);
+                    $("#record_label").text("Stop");
+                    $('#record_icon').text('stop');
+                }
 			})
 			return;
 		}, 500)
@@ -50,6 +53,11 @@ class BackgroundRecorder {
                                 recorded_actions: new_arr
                             })
                             this.recording_flag = false;
+                            if($("#record_label").text() == 'Recording...'){
+                                $("#record").removeAttr('disabled').css('opacity',1);
+                                $("#record_label").text("Stop");
+                                $('#record_icon').text('stop');
+                            }
                         }
 						return;
 					}
