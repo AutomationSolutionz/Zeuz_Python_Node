@@ -517,7 +517,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     remote_host = None
     remote_browser_version = None
-    
+
+    if browser_options is None:
+        browser_options = []
     for i in range(len(browser_options)):
         if '--user-data-dir' in browser_options[i][1]:
             custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
