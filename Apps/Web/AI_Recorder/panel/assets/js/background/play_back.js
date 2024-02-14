@@ -61,16 +61,12 @@ window.onload = function() {
     suiteOpen.addEventListener("mouseover", mouseOnSuiteTitleIcon);
     suiteOpen.addEventListener("mouseout", mouseOutSuiteTitleIcon);
 
-    var logLi=document.getElementById("history-log");
-    var referenceLi=document.getElementById("reference-log");
-    var logState=true;
-    var referenceState=false;
-
     setTimeout(()=>{    // Add listener after 2 sec
         recordButton.addEventListener("click", function(){
             clean_panel(); // clean the panel after one record is complate
             $('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
             isRecording = $('#record_label')[0].textContent == 'Record';
+            $('#save_wrap, #run_this_button, #run_wrap, #login_wrap').attr('disabled', true).css('opacity',0.5);
             if (isRecording) {
                 recorder.attach();
                 notificationCount = 0;
@@ -99,11 +95,9 @@ window.onload = function() {
                     }
                     
                 });
-                // recordButton.childNodes[1].textContent = " Stop";
-                // switchRecordButton(false);
-                $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').addClass('disable_action');
             }
             else {
+                $('#save_wrap, #run_this_button, #run_wrap, #login_wrap').removeAttr('disabled').css('opacity',1);
                 recorder.detach();
                 saveData();
                 browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
@@ -112,8 +106,6 @@ window.onload = function() {
                         browser.tabs.sendMessage(tab.id, {detachRecorder: true});
                     }
                 });
-                // switchRecordButton(true);
-                $('#play_wrap,#pause_wrap,#resume_wrap,#replay_wrap,#play_all_wrap,#export_wrap,#import_wrap').removeClass('disable_action');
             }
         })
     

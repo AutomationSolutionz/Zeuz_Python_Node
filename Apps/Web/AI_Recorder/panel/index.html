@@ -87,12 +87,6 @@
                     <img class="img-fluid" id="logo_dark" src="assets/images/logo_ZeuZ_dark_background.png" />
                 </div>
                 <ul class="d-flex flex-column justify-content-center">
-                    <li class="tablink d-flex flex-wrap justify-content-center" id="test_case">
-                        <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu">
-                            <span class="material-icons">biotech</span>
-                            <span class="material-icons-label" id="test_label">TEST-0000</span>
-                        </button>
-                    </li>
                     <li class="tablink d-flex flex-wrap justify-content-center" id="record_wrap">
                         <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
                             id="record" style="opacity: 0.5;" disabled>
@@ -107,6 +101,13 @@
                             <span class="material-icons-label" id='save_label'>Save</span>
                         </button>
                     </li>
+                    <li class="tablink d-flex flex-wrap justify-content-center" id="run_this_wrap">
+                        <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
+                            id="run_this_button">
+                            <span class="material-icons">play_circle</span>
+                            <span class="material-icons-label" id='run_this_label'>Run this</span>
+                        </button>
+                    </li>
                     <li class="tablink d-flex flex-wrap justify-content-center" id="run_wrap">
                         <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
                             id="run_button">
@@ -114,7 +115,7 @@
                             <span class="material-icons-label" id='run_label'>Run all</span>
                         </button>
                     </li>
-                    <li class="tablink d-flex flex-wrap justify-content-center">
+                    <li class="tablink d-flex flex-wrap justify-content-center" id="login_wrap">
                         <button class="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
                             data-toggle="modal" data-target="#exampleModal">
                             <span class="material-icons">login</span>
