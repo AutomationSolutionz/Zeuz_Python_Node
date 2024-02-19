@@ -662,6 +662,7 @@ def start_appium_server():
         while is_port_in_use(appium_port) and tries < 20:
             appium_port += 2
             wdaLocalPort += 2
+            tries += 1
 
         if tries >= 20:
             CommonUtil.ExecLog(
