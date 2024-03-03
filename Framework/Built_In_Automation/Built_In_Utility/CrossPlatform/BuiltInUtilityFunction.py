@@ -4300,3 +4300,241 @@ def create_and_edit_screenshot(data_set):
     except:
         CommonUtil.ExecLog(sModuleInfo, "Couldn't take screenshot or edit the image", 3)
         return "zeuz_failed"
+
+
+@logger
+def extract_text_by_page(pdf_path, text, pgn=None):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        from pdfminer.converter import TextConverter
+        from pdfminer.layout import LAParams
+        from pdfminer.pdfdocument import PDFDocument
+        from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+        from pdfminer.pdfpage import PDFPage
+        from pdfminer.pdfparser import PDFParser
+        from pdfminer.high_level import extract_text
+        import re
+        import io
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't import the libraries", 3)
+        return "zeuz_failed"
+
+    try:
+        output = io.StringIO()
+        pattern = re.compile(rf"{text}")
+
+        if pgn != None:
+            with open(pdf_path, 'rb') as file:
+                parser = PDFParser(file)
+                doc = PDFDocument(parser)
+                rsrcmgr = PDFResourceManager()
+                device = TextConverter(rsrcmgr, output, laparams=LAParams())
+                interpreter = PDFPageInterpreter(rsrcmgr, device)
+    
+                for i,page in enumerate(PDFPage.create_pages(doc)):
+                    interpreter.process_page(page)
+                    full_text = output.getvalue()
+                    if i+1 == pgn:
+                        CommonUtil.ExecLog(sModuleInfo, f"Searching in page Number {i+1}", 1)
+                        break
+                    output.truncate(0)
+                    output.seek(0)
+                
+                device.close()
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Searching in all over the PDF", 1)
+            full_text = extract_text(pdf_path)
+            
+        output.close()
+        matches = pattern.findall(full_text)
+        return matches
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "[extract_text_by_page] Couldn't extract data from PDF", 3)
+        return "zeuz_failed"
+
+
+@logger
+def extract_text_pdf(dataset):
+    """
+    This action lets you extract specific text/string from a PDF file. You can specify the page number where 
+    you want to coduct the extraction. You can also use regular expressions to extract a pattern of text/string.
+
+    filename  |  input parameter  |  Path to the PDF file.
+    text      |  input parameter  |  The text that you want to extract. Can be either string or regular expression pattern.
+    page      |  optional parameter  |  Page number where you want to execute the extraction
+    extract text pdf  |  utility action  | The variable name that will store the extracted strings
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # steps to install the Pdfminer module
+        pip_command = ['pip', 'list']
+        pdfminer_search_command = ['findstr', 'pdfminer.six']
+
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process = subprocess.Popen(pdfminer_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE,
+                                          text=True)
+
+        is_pdfminer, _ = search_process.communicate()
+
+        if is_pdfminer:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Pdfminer is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Pdfminer",
+                5,
+            )
+            subprocess.run(['pip', 'install', '--trusted-host', 'pypi.org', '--trusted-host', 'files.pythonhosted.org', 'pdfminer.six'], input='y\n', text=True)
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Could not install the Pdfminer module",
+            3,
+        )
+
+    filename = None
+    pg = None
+    text = None
+    var_name = "pdf_data"
+
+    try:
+        for left, mid, right in dataset:
+            if left.strip().lower() == "filename":
+                filename = right.strip()
+            elif left.strip().lower() == "page":
+                pg = int(right.strip())
+            elif left.strip().lower() == "text":
+                text = right.strip() 
+            elif mid.strip().lower() == "action":
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't parse the dataset", 3)
+        return "zeuz_failed"
+    
+    if filename == None or text == None:
+        CommonUtil.ExecLog(sModuleInfo, "filename or text field cannot be empty", 3)
+        return "zeuz_failed"
+
+    try:
+        data = extract_text_by_page(filename, text, pg)
+        Shared_Resources.Set_Shared_Variables(var_name, data)
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "[extract_text_pdf] Couldn't extract data from PDF", 3)
+        return "zeuz_failed"
+    
+
+@logger
+def extract_table_pdf(dataset):
+    """
+    This action lets you extract tabular data from PDF. You can also specify some additional parameters
+    to make the extraction more precise, for example, which page the table should be extracted from,
+    if there are multiple tables then you can select a single specific table, you can add filters to
+    narrow your search, specify the row and column to get the data
+
+    filename  |  input parameter  |  Path to the PDF file.
+    page      |  optional parameter  |  Page number where you want to execute the extraction
+    index     |  optional parameter  |  Specify which table you want to extract
+    filter    |  optional parameter  |  Add filter to the table just like we do in Pandas
+    row index |  optional parameter  |  Row numbers holding the data
+    column index |  optional parameter  | Column number holding the data 
+    extract table pdf  |  utility action  | The variable name that will store the extracted strings
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        # steps to install the Tabula module
+        pip_command = ['pip', 'list']
+        tabula_search_command = ['findstr', 'tabula-py']
+
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process = subprocess.Popen(tabula_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE,
+                                          text=True)
+
+        is_tabula, _ = search_process.communicate()
+
+        if is_tabula:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Tabula is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Tabula",
+                5,
+            )
+            subprocess.run(['pip', 'install', '--trusted-host', 'pypi.org', '--trusted-host', 'files.pythonhosted.org', 'tabula-py'], input='y\n', text=True)
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Could not install the Tabula module",
+            3,
+        )
+
+    try:
+        import tabula
+        import warnings
+        # Suppress FutureWarnings
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't import the libraries", 3)
+        return "zeuz_failed"
+    
+    filename = None
+    pg = "all"
+    index = 0
+    filter = None
+    row_index = "0"
+    col_index = "0"
+    var_name = "pdf_table_data"
+    global df, vals
+
+    try:
+        for left, mid, right in dataset:
+            if left.strip().lower() == "filename":
+                filename = right.strip()
+            elif left.strip().lower() == "page":
+                pg = right.strip()
+            elif left.strip().lower() == "index":
+                index = int(right.strip()) 
+            elif left.strip().lower() == "filter":
+                filter = right.strip() 
+            elif left.strip().lower() == "row index":
+                row_index = right.strip()
+            elif left.strip().lower() == "column index":
+                col_index = right.strip()
+            elif mid.strip().lower() == "action":
+                var_name = right.strip() 
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't parse the dataset", 3)
+        return "zeuz_failed"
+
+    try:
+        df = tabula.read_pdf(filename, pages=pg)[index]
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Could not read the table", 3)
+        return "zeuz_failed"
+    
+    if filter != None:
+        exec(f'df = df[{filter}]', globals())
+    
+    try:
+        if row_index.isnumeric():
+            exec(f'vals = [df.iloc[{row_index}, {col_index}]]', globals())
+        else:
+            exec(f'vals = df.iloc[{row_index}, {col_index}].to_list()', globals())
+        
+        Shared_Resources.Set_Shared_Variables(var_name, vals)
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Could not extract data", 3)
+        return "zeuz_failed"
