@@ -847,12 +847,12 @@ def set_important_variables():
 
 def set_runid_status(item,tc=False):
     if tc:
-        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status",log=False)=="In-Progress" else "Blocked")
+        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status",log=False)=="In-Progress" else "Blocked",print_variable=False)
     else:
         shared.Set_Shared_Variables("runid_status",
-                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id',log=False) else shared.Get_Shared_Variables("runid_status",log=False))
+                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id',log=False) else shared.Get_Shared_Variables("runid_status",log=False),print_variable=False)
 
-        shared.Set_Shared_Variables("run_id", item)
+        shared.Set_Shared_Variables("run_id", item,print_variable=False)
 
 
 def send_to_bigquery(execution_log, metrics):
@@ -1145,8 +1145,7 @@ def run_test_case(
             else:
                 runid_status = shared.Get_Shared_Variables("runid_status", log=False)
             # shared.Clean_Up_Shared_Variables()  # clean up shared variables
-            # shared.Set_Shared_Variables('runid_status',runid_status)
-            shared.Set_Shared_Variables('run_id', run_id)
+            shared.Set_Shared_Variables('run_id', run_id,print_variable=False)
             # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
@@ -1745,7 +1744,7 @@ def main(device_dict, all_run_id_info):
                     shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
                 # shared.Clean_Up_Shared_Variables()  # clean up shared variables
-                shared.Set_Shared_Variables("runid_status", runid_status)
+                shared.Set_Shared_Variables("runid_status", runid_status,print_variable=False)
                 # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
@@ -1880,7 +1879,6 @@ def main(device_dict, all_run_id_info):
                 # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
 
                 for testcase_info in all_testcases_info:
-                    # shared.Set_Shared_Variables("runid_status", get_status_of_runid(run_id))
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
                         performance_test_case = True
