@@ -676,7 +676,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             # argument
             if not browser_options:
-                options.add_argument("--no-sandbox")
+                # options.add_argument("--no-sandbox")
                 # options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
                 options.add_argument('--ignore-ssl-errors')
@@ -917,7 +917,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
-            options.add_argument("--no-sandbox")
+            # options.add_argument("--no-sandbox")
             # options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
