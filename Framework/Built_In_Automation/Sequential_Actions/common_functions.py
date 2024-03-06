@@ -2849,7 +2849,7 @@ def excel_read(data_set):
             # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
             from openpyxl import load_workbook
             from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
-            wb = load_workbook(filepath)
+            wb = load_workbook(filepath, data_only=True)
             sheet = wb[sheet_name]
             if key_reference is None:
                 key_reference = "row1"
