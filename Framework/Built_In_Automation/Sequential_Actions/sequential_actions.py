@@ -166,6 +166,8 @@ def load_sa_modules(
 def write_browser_logs():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
+        if str(sr.Get_Shared_Variables("zeuz_collect_browser_log")).strip().lower() in ("false", "no", "off", "disable"):
+            return
         if sr.Test_Shared_Variables("selenium_driver"):
             driver = sr.Get_Shared_Variables("selenium_driver")
             for browser_log in driver.get_log("browser"):
