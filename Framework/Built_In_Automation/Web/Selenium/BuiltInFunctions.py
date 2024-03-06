@@ -3929,14 +3929,6 @@ def Tear_Down_Selenium(step_data=[]):
                     errMsg = "Unable to tear down driver_id='%s'. may already been killed" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                     CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-            
-            try:
-                selenium_driver.quit()
-            except:
-                errMsg = "Unable to tear down driver='%s'. may already been killed" % selenium_driver
-                CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
-                CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
             selenium_details = {}
             selenium_driver = None
