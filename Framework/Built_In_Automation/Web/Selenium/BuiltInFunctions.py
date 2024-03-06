@@ -805,7 +805,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             if "headless" in browser:
                 #firefox headless mode needs add_argument
-                options.add_argument("-headless")
+                # options.add_argument("-headless")
+                options.headless = True
                 
                 '''
                 # commenting out as this is not working.  Make sure 
@@ -3928,14 +3929,6 @@ def Tear_Down_Selenium(step_data=[]):
                     errMsg = "Unable to tear down driver_id='%s'. may already been killed" % driver
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                     CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-            
-            try:
-                selenium_driver.quit()
-            except:
-                errMsg = "Unable to tear down driver='%s'. may already been killed" % selenium_driver
-                CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
-                CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
             selenium_details = {}
             selenium_driver = None

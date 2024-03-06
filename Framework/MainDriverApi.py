@@ -1136,7 +1136,7 @@ def run_test_case(
 
         if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-            if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
+            if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
                 cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables(run_id)
 
@@ -1738,10 +1738,9 @@ def main(device_dict, all_run_id_info):
                     runid_status = "In-Progress"
                 else:
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-                if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in (
-                "on", "yes", "true", "ok", "enable"):
+                if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
                     cleanup_driver_instances()  # clean up drivers
-                    shared.Clean_Up_Shared_Variables(run_id) # clean up variables
+                shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
                 # shared.Clean_Up_Shared_Variables()  # clean up shared variables
                 shared.Set_Shared_Variables("runid_status", runid_status,print_variable=False)
@@ -1820,6 +1819,8 @@ def main(device_dict, all_run_id_info):
 
             if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+            if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
+                shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
 
             final_run_params = {}
             for param in final_run_params_from_server:
