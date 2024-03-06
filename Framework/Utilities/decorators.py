@@ -19,7 +19,8 @@ def logger(func):
                     if row[1].replace(" ", "").lower() == "failmessage":
                         custom_fail_message = row[2]
                 # Todo: print the custom_fail_message
-                CommonUtil.ExecLog(None, custom_fail_message, 3)
+                if custom_fail_message:
+                    CommonUtil.ExecLog(None, custom_fail_message, 3)
             except:
                 pass
         end_time = time.perf_counter()
