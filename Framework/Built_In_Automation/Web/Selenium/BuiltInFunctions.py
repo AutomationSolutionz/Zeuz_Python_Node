@@ -19,10 +19,6 @@ import socket
 import requests
 import psutil
 from pathlib import Path
-from datetime import datetime
-
-from selenium.webdriver.chrome.service import Service
-import re
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -657,6 +653,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
         elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
             try:
                 if not chrome_path:
@@ -787,12 +784,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
         elif browser in ("firefox", "firefoxheadless"):
             firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
+            from selenium.webdriver.firefox.service import Service
+            from selenium.webdriver import FirefoxOptions
+
             if not firefox_path:
                 firefox_path = GeckoDriverManager().install()
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", firefox_path)
             from sys import platform as _platform
-            from selenium.webdriver.firefox.options import Options
-            options = Options()
+            options = FirefoxOptions()
 
             if profile_options:
                 for left, right in profile_options:
@@ -805,8 +804,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             if "headless" in browser:
                 #firefox headless mode needs add_argument
-                # options.add_argument("-headless")
-                options.headless = True
+                options.add_argument("-headless")
+                # options.headless = True
                 
                 '''
                 # commenting out as this is not working.  Make sure 
