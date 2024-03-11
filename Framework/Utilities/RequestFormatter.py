@@ -92,7 +92,7 @@ def renew_token():
     data = {}
     if r.status_code != 200:
         line_color = Fore.RED
-        print(line_color + "[RequestFormatter] token could not be renewed. Please login again.")
+        # print(line_color + "[RequestFormatter] token could not be renewed. Please login again.")
         return data, r.status_code
 
     data = r.json()
