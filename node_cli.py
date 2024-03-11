@@ -30,6 +30,19 @@ with open(version_path, "r"):
 from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
 
+# Conditionally monkey-patch datetime module to include the `fromisoformat` method.
+def monkeypatch_fromisoformat():
+    try:
+        import sys
+        target_version = (3, 11)
+        if sys.version_info < target_version:
+            from backports.datetime_fromisoformat import MonkeyPatch
+            MonkeyPatch.patch_fromisoformat()
+    except:
+        print("WARN: failed to monkeypatch fromisoformat")
+
+monkeypatch_fromisoformat()
+
 from configobj import ConfigObj
 from dotenv import load_dotenv
 # Load environment variables from .env file
