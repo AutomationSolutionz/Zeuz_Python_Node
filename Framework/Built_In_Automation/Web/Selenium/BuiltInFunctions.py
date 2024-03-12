@@ -2403,6 +2403,34 @@ def get_location_of_element(data_set):
     Shared_Resources.Set_Shared_Variables(shared_var, "%s,%s" % (x, y))
     return "passed"
 
+@logger
+def get_element_info(dataset):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        variable_name = None
+        new_ds = []
+        for each_step_data_item in dataset:
+            if "action" == each_step_data_item[1].strip().lower():
+                variable_name = each_step_data_item[2].strip()
+            else:
+                new_ds.append(each_step_data_item)
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(new_ds, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        else:
+            Shared_Resources.Set_Shared_Variables(variable_name, {"size": Element.size, "location": Element.location})
+            return "passed"
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, e, 3)
+        return "zeuz_failed"
+
 
 @logger
 def Save_Attribute(step_data):
