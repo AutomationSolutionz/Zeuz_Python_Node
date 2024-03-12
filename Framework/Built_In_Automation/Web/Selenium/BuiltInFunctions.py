@@ -2403,6 +2403,34 @@ def get_location_of_element(data_set):
     Shared_Resources.Set_Shared_Variables(shared_var, "%s,%s" % (x, y))
     return "passed"
 
+@logger
+def get_element_info(dataset):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        variable_name = None
+        new_ds = []
+        for each_step_data_item in dataset:
+            if "action" == each_step_data_item[1].strip().lower():
+                variable_name = each_step_data_item[2].strip()
+            else:
+                new_ds.append(each_step_data_item)
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(new_ds, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        else:
+            Shared_Resources.Set_Shared_Variables(variable_name, {"size": Element.size, "location": Element.location})
+            return "passed"
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, e, 3)
+        return "zeuz_failed"
+
 
 @logger
 def Save_Attribute(step_data):
@@ -4750,6 +4778,7 @@ def drag_and_drop(dataset):
     try:
         source = []
         destination = []
+        offset = None
         param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
@@ -4765,14 +4794,18 @@ def drag_and_drop(dataset):
             elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
+            elif left.strip().lower().startswith('offset'):
+                x,y = right.split(',')
+                offset = (x.strip(),y.strip())
+        
+        if offset == None and destination == []:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide either destination element or offset. Example:\n'+
+               "(id, dst element parameter, file) or (offse | element parameter | 25,75)", 3)
+            return "zeuz_failed"
 
         if not source:
             CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
                "(id, src element parameter, file)", 3)
-            return "zeuz_failed"
-        if not destination:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
-               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
         source_element = LocateElement.Get_Element(source, selenium_driver)
@@ -4780,12 +4813,16 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
             return "zeuz_failed"
 
-        destination_element = LocateElement.Get_Element(destination, selenium_driver)
-        if destination_element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
-            return "zeuz_failed"
+        if destination:
+            destination_element = LocateElement.Get_Element(destination, selenium_driver)
+            if destination_element == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+                return "zeuz_failed"
 
-        ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        if destination:
+            ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        elif offset:
+            ActionChains(selenium_driver).drag_and_drop_by_offset(source_element,offset[0],offset[1]).perform()
         # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
 
