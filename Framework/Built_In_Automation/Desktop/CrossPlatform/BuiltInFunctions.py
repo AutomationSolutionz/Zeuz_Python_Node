@@ -19,7 +19,6 @@ from fileinput import filename
 import os, os.path, sys, time, inspect, subprocess
 from turtle import right
 
-import pyautogui
 from Framework.Utilities import CommonUtil, FileUtilities as FL
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
@@ -37,6 +36,12 @@ from Framework.Built_In_Automation.Desktop.RecordPlayback.ChoosePlaybackModule i
 from Framework.Utilities import ConfigModule
 import traceback
 import platform
+import easyocr
+from thefuzz import fuzz
+import threading
+from pathlib import Path
+from itertools import repeat
+
 
 # Disable pyautogui failsafe when moving to top left corner
 gui.FAILSAFE = False
@@ -1156,7 +1161,6 @@ def take_partial_screenshot(data_set):
     bbox                    optional parameter      (x, y, width, height)
     take screenshot         desktop action          
     """
-    from pathlib import Path
     import time
     from PIL import Image
 
@@ -1191,7 +1195,7 @@ def take_partial_screenshot(data_set):
             )
             path = str(Path(screenshot_folder) / Path(filename))
         
-        pyautogui.screenshot(path)
+        gui.screenshot(path)
     
         if x_cord is not None and y_cord is not None and width is not None and height is not None:
             im = Image.open(path)
@@ -1231,10 +1235,148 @@ def keystroke_for_element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
     
     try:
-        pyautogui.write(chars, interval=delay)
+        gui.write(chars, interval=delay)
         CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters with pyautogui:\n%s" % chars, 1)
         return "passed"
 
     except:
         errMsg = "Could not enter characters with pyautogui"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+
+#########################
+#                       #
+#   OCR Functions       #
+#                       #
+#########################
+
+reader = None
+
+# initialize the OCR
+def get_easyocr_reader():
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global reader
+    if not reader:
+        CommonUtil.ExecLog(sModuleInfo, "Initializing EasyOCR reader...", 1)
+        reader = easyocr.Reader(['en'])
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "EasyOCR reader already initialized.", 1)
+        return reader
+    
+# create a list of texts
+def get_only_text(data:tuple):
+    return data[1]
+
+# get the index of the matching text
+def get_fuzzy_score(text1, text2, method):
+    if "partial" in method:
+        score = fuzz.partial_ratio(text1, text2)
+    elif "loose" in method:
+        score = fuzz.partial_token_sort_ratio(text1,text2)
+    else:
+        score = fuzz.ratio(text1,text2)
+    return score
+
+# take a screenshot of the screen
+def ocr_screenshot():
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    # take screenshot of the current screen
+    CommonUtil.ExecLog(sModuleInfo, "Taking full screenshot\n", 1)
+    local_time = time.localtime()
+    local_time_str = time.strftime("%H%M%S_%d%m%Y", local_time)
+    filename = f"{local_time_str}.png"
+    screenshot_folder = ConfigModule.get_config_value(
+        "sectionOne", "screen_capture_folder", temp_config
+    )
+    path = str(Path(screenshot_folder) / Path(filename))
+    gui.screenshot(path)
+
+    return path
+
+
+@logger
+def ocr_click(data_set):
+    """
+    This action lets you find a text through OCR and click on it.
+
+    Field	                    Sub Field	                Value
+    text	                    element parameter	        String you want to click on. ex: 'Advanced Settings'
+    method                      optional parameter          “match”/ “partial match”/ “loose match”
+    threshold                   optional parameter          Threshold of the match. ex: 90
+    ocr click                   desktop action              ocr click
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    text = None
+    method = "match"
+    threshold = 70
+    did_fuzzy = False
+    global reader
+
+    # parse the data
+    try:
+        for left, _, right in data_set:
+            if left.strip().lower() == "text":
+                text = right.strip()
+            elif left.strip().lower() == "method":
+                method = right.strip().lower()
+            elif left.strip().lower() == "threshold":
+                threshold = int(right.strip())
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+
+    if text == None:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Text field cannot be empty", 3
+            )
+        return "zeuz_failed"
+    
+    if reader is None:
+        ocr_thread = threading.Thread(target=get_easyocr_reader)
+        ocr_thread.start()
+        path = ocr_screenshot()
+        # wait for the OCR thread to finish
+        ocr_thread.join()
+    else:
+        path = ocr_screenshot()
+    result = reader.readtext(path) 
+
+    texts = list(map(get_only_text, result))
+
+    if text in texts:
+        idx = texts.index(text)
+    else:
+        # text_list = [text for _ in range(len(texts))]
+        fuzzy_text_scores = list(map(get_fuzzy_score, texts, repeat(text), repeat(method)))
+        idx = fuzzy_text_scores.index(max(fuzzy_text_scores))
+        did_fuzzy = True
+
+    # get the scores
+    if did_fuzzy:
+        text_score = fuzzy_text_scores[idx]
+        if text_score < threshold:
+            CommonUtil.ExecLog(sModuleInfo, f"After fuzzy match, score {text_score} falls below the threshold {threshold}", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"The closest  match is '{texts[idx]}'", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, f"If you want to interact with this word then either use differenet method or lower the threshold", 3
+            )
+            return "zeuz_failed"
+        CommonUtil.ExecLog(
+            sModuleInfo, f"Similar text after fuzzy {method} is '{texts[idx]}' with a score of {fuzzy_text_scores[idx]}", 1
+        )
+    else:
+        text_score = int(result[idx][2]*100)
+        if text_score < threshold: 
+            CommonUtil.ExecLog(sModuleInfo, f"Score {text_score} below the threshodl {threshold}", 3)
+            return "zeuz_failed"
+        
+    coordinates = result[idx][0]
+    coord_x = (coordinates[1][0] + coordinates[0][0])//2
+    coord_y = (coordinates[2][1] + coordinates[1][1])//2
+    gui.click(x=coord_x, y=coord_y)
+    return "passed"
