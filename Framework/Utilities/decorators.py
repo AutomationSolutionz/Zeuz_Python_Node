@@ -13,7 +13,7 @@ def logger(func):
         CommonUtil.ExecLog(None, f"Entering into function: {func.__name__!r}.", 5)
         custom_fail_message = ""
         result = func(*args, **kwargs)
-        if result in failed_tag_list:
+        if isinstance(result, str) and result in failed_tag_list:
             try:
                 for row in args[0]:
                     if row[1].replace(" ", "").lower() == "failmessage":
