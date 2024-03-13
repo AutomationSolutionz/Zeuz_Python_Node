@@ -69,3 +69,5 @@ configobj
 jinja2
 pandas
 pyperclip
+easyocr
+thefuzz
