@@ -13,13 +13,14 @@ def logger(func):
         CommonUtil.ExecLog(None, f"Entering into function: {func.__name__!r}.", 5)
         custom_fail_message = ""
         result = func(*args, **kwargs)
-        if result in failed_tag_list:
+        if isinstance(result, str) and result in failed_tag_list:
             try:
                 for row in args[0]:
                     if row[1].replace(" ", "").lower() == "failmessage":
                         custom_fail_message = row[2]
                 # Todo: print the custom_fail_message
-                CommonUtil.ExecLog(None, custom_fail_message, 3)
+                if custom_fail_message:
+                    CommonUtil.ExecLog(None, custom_fail_message, 3)
             except:
                 pass
         end_time = time.perf_counter()

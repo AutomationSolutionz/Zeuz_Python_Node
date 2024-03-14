@@ -34,7 +34,9 @@ var CustomFunction = {
 			$('#test_title').text(response.testCaseDetail.name);
 			$("#step_select").empty();
 			response.steps.forEach(step => {
-				$("#step_select").append(new Option(`Step-${step.sequence} : ${step.name}`, step.sequence));
+				const option = new Option(`Step-${step.sequence} : ${step.name}`, step.sequence);
+				option.setAttribute('step_id', step.stepId); // Adding step_id attribute
+				$("#step_select").append(option);
 			});
 			$(`#step_select option[value="${step_no}"]`).prop('selected', true);
 		} catch (e) {
@@ -308,6 +310,7 @@ jQuery(document).ready(async function () {
 				step_data: JSON.stringify(case_value.map(action => {
 					return action.main;
 				})),
+				step_id: $(`#step_select option[value="${result.meta_data.stepNo}"]`).attr('step_id'),
 				dataset_name: JSON.stringify(case_value.map((action, idx) => {
 					return [
 						action.name,

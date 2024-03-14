@@ -611,7 +611,7 @@ def ExecLog(
             msg = f"{info}{sDetails}" if sModuleInfo else sDetails
             print(line_color + msg)
         else:
-            msg = f"{status.upper()} - {info}{sDetails}"
+            msg = f"{(status.upper() + ' - ') if status != 'Passed' else ''}{info}{sDetails}"
             print(line_color + msg)
         max_char = max(max_char, len(msg))
 
