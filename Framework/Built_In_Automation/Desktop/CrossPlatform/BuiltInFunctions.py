@@ -1148,6 +1148,7 @@ def playback_recorded_events(data_set):
         errMsg = "Failed to playback recorded events from file: %s" % filepath
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+partial_ss_path = None
 @logger
 def take_partial_screenshot(data_set):
     """
@@ -1171,6 +1172,7 @@ def take_partial_screenshot(data_set):
     y_cord = None
     width = None
     height = None
+    global partial_ss_path
 
     try:
         for left, _, right in data_set:
@@ -1195,6 +1197,7 @@ def take_partial_screenshot(data_set):
             )
             path = str(Path(screenshot_folder) / Path(filename))
         
+        partial_ss_path = path
         gui.screenshot(path)
     
         if x_cord is not None and y_cord is not None and width is not None and height is not None:
@@ -1379,4 +1382,74 @@ def ocr_click(data_set):
     coord_x = (coordinates[1][0] + coordinates[0][0])//2
     coord_y = (coordinates[2][1] + coordinates[1][1])//2
     gui.click(x=coord_x, y=coord_y)
+    return "passed"
+
+
+@logger
+def ocr_get_value(data_set):
+    """
+    This action lets you a crop a portion of the image of the screen and extract the text shown in that 
+    particular portion of the image
+    Field	                    Sub Field	                Value
+    coordinates	                element parameter	        top, left, bottom, right coordinates. ex: 50, 120, 90, 320
+    ocr get value               desktop action              variable name that will hold the value
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    topcord = None
+    leftcord = None
+    bottomcord = None
+    rightcord = None
+    var_name = None
+    global partial_ss_path
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "coordinates":
+                coords = right.strip().split(",")
+                topcord = int(coords[0])
+                leftcord = int(coords[1])
+                bottomcord = int(coords[2])
+                rightcord = int(coords[3])
+            elif "action" in mid.strip().lower():
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    if (topcord >  bottomcord or leftcord > rightcord):
+        CommonUtil.ExecLog(
+                sModuleInfo, "Please insert correct coordinates", 3
+            )
+        return "zeuz_failed"
+    
+    if var_name is None:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Please provide a variable name to store the extracted value", 3
+            )
+        return "zeuz_failed"
+
+    data = (
+        ("bbox", "optional parameter", f"({leftcord}, {topcord}, {rightcord-leftcord}, {bottomcord-topcord})"),
+        ("take screenshot ", "desktop action", None)
+    )
+    
+    take_partial_screenshot(data)
+    get_easyocr_reader()
+    result = reader.readtext(partial_ss_path)
+
+    if not result:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not read any text", 3
+            )
+        return "zeuz_failed"
+    
+    text = result[0][1]
+    
+    CommonUtil.ExecLog(sModuleInfo, f"The extracted text is {text}", 1)
+    Shared_Resources.Set_Shared_Variables(var_name, text)
     return "passed"

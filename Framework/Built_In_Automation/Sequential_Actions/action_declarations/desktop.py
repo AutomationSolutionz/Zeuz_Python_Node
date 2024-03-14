@@ -20,6 +20,7 @@ declarations = (
     { "name": "get bounding box",           "function": "get_bbox",                     "screenshot": "desktop" },
     { "name": "keystroke chars",            "function": "keystroke_for_element",        "screenshot": "desktop" },
     { "name": "ocr click",                  "function": "ocr_click",                    "screenshot": "desktop" },
+    { "name": "ocr get value",              "function": "ocr_get_value",                "screenshot": "desktop" },
 ) # yapf: disable
 
 module_name = "desktop"
