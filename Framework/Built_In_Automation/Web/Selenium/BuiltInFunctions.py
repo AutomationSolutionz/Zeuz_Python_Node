@@ -749,6 +749,7 @@ def Open_Browser(
             chrome_path = ConfigModule.get_config_value(
                 "Selenium_driver_paths", "chrome_path"
             )
+            # TODO: remove the following block as its not needed anymore.
             try:
                 if not chrome_path:
                     chrome_path = ChromeDriverManager().install()
@@ -781,6 +782,7 @@ def Open_Browser(
                 options.add_argument(
                     "--allow-running-insecure-content"
                 )  # This is for running extension on a http server to call a https request
+                # pass
 
                 # Turn this on while experimenting with playwright
                 # options.add_argument('--remote-debugging-port=9222')
@@ -913,6 +915,8 @@ def Open_Browser(
                     if left in ("addargument", "addarguments"):
                         options.add_argument(right.strip())
                         print(left, right)
+
+            options.set_preference("media.navigator.streams.fake", True)
 
             if remote_browser_version:
                 options.set_capability("browserVersion", remote_browser_version)
@@ -1514,13 +1518,13 @@ def Go_To_Link(step_data, page_title=False):
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif (
                 mid.strip().lower() in ("chrome option", "chrome options")
-                and dependency["Browser"].lower() == "chrome"
+                and dependency["Browser"].lower() == "chrome" # type: ignore
             ):
                 browser_options.append([left, right.strip()])
             elif (
                 mid.strip().lower()
                 in ("chrome experimental option", "chrome experimental options")
-                and dependency["Browser"].lower() == "chrome"
+                and dependency["Browser"].lower() == "chrome" # type: ignore
             ):
                 browser_options.append(
                     [
