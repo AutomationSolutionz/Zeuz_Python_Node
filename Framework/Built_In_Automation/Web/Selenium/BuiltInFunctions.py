@@ -917,6 +917,7 @@ def Open_Browser(
                         print(left, right)
 
             options.set_preference("media.navigator.streams.fake", True)
+            options.set_preference("media.navigator.permission.disabled", True)
 
             if remote_browser_version:
                 options.set_capability("browserVersion", remote_browser_version)
