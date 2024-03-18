@@ -1316,17 +1316,20 @@ def ocr_click(data_set):
     method = "match"
     threshold = 70
     did_fuzzy = False
+    click_type = 'click'
     global reader
 
     # parse the data
     try:
-        for left, _, right in data_set:
+        for left, mid, right in data_set:
             if left.strip().lower() == "text":
                 text = right.strip()
             elif left.strip().lower() == "method":
                 method = right.strip().lower()
             elif left.strip().lower() == "threshold":
                 threshold = int(right.strip())
+            elif "action" in mid.strip().lower():
+                click_type = right.strip().lower()
     except:
         CommonUtil.ExecLog(
                 sModuleInfo, "Could not parse the data", 3
@@ -1381,7 +1384,12 @@ def ocr_click(data_set):
     coordinates = result[idx][0]
     coord_x = (coordinates[1][0] + coordinates[0][0])//2
     coord_y = (coordinates[2][1] + coordinates[1][1])//2
-    gui.click(x=coord_x, y=coord_y)
+    if click_type == "click":
+        gui.click(x=coord_x, y=coord_y)
+    elif click_type == "right click":
+        gui.click(x=coord_x, y=coord_y, button="right")
+    elif click_type == "double click":
+        gui.doubleClick(x=coord_x, y=coord_y)
     return "passed"
 
 
