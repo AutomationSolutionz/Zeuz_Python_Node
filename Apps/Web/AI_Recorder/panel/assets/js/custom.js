@@ -27,6 +27,7 @@ var CustomFunction = {
 			}
 			result.meta_data['testNo'] = test_id;
 			result.meta_data['stepNo'] = step_no;
+			result.meta_data['stepId'] = response.steps.filter((step)=>{if(step.sequence==step_no) return step.id})[0].stepId;
 			await browserAppData.storage.local.set({
 				meta_data: result.meta_data,
 			})
@@ -34,9 +35,7 @@ var CustomFunction = {
 			$('#test_title').text(response.testCaseDetail.name);
 			$("#step_select").empty();
 			response.steps.forEach(step => {
-				const option = new Option(`Step-${step.sequence} : ${step.name}`, step.sequence);
-				option.setAttribute('step_id', step.stepId); // Adding step_id attribute
-				$("#step_select").append(option);
+				$("#step_select").append(new Option(`Step-${step.sequence} : ${step.name}`, step.sequence));
 			});
 			$(`#step_select option[value="${step_no}"]`).prop('selected', true);
 		} catch (e) {
@@ -310,7 +309,7 @@ jQuery(document).ready(async function () {
 				step_data: JSON.stringify(case_value.map(action => {
 					return action.main;
 				})),
-				step_id: $(`#step_select option[value="${result.meta_data.stepNo}"]`).attr('step_id'),
+				step_id: result.meta_data.stepId,
 				dataset_name: JSON.stringify(case_value.map((action, idx) => {
 					return [
 						action.name,
