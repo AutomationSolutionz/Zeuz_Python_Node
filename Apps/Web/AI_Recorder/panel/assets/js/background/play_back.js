@@ -4,7 +4,6 @@ window.onload = function() {
     var recordButton = document.getElementById("record");
     setTimeout(()=>{    // Add listener after 2 sec
         recordButton.addEventListener("click", function(){
-            clean_panel(); // clean the panel after one record is complate
             $('#records-grid').html('<input id="records-count" type="hidden" value="0">'); 
             isRecording = $('#record_label')[0].textContent == 'Record';
             $('#save_wrap, #run_this_button, #run_wrap, #login_wrap').attr('disabled', true).css('opacity',0.5);
