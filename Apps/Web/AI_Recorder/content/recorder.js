@@ -107,7 +107,7 @@ class Recorder {
         console.log("getFrameLocation() =",this.frameLocation);
         const dom = this.prepare_dom(target, command, value)
         browserAppData.runtime.sendMessage({
-            apiName: 'record_action',
+            action: 'record_action',
             command: command,
             target: target,
             value: value,
@@ -115,6 +115,7 @@ class Recorder {
             document: dom,
         })
         let signal = {
+            action: 'record_start',
             command: command,
             target: target,
             value: value,
@@ -132,7 +133,7 @@ class Recorder {
         console.log('attach2');
         if (this.attached) return;
         browserAppData.runtime.sendMessage({
-            apiName: 'start_recording',
+            action: 'start_recording',
         })
         this.attached = true;
         this.eventListeners = {};
@@ -159,7 +160,7 @@ class Recorder {
         console.log('detach2');
         if (!this.attached) return;
         browserAppData.runtime.sendMessage({
-            apiName: 'stop_recording',
+            action: 'stop_recording',
         })
         this.attached = false;
         for (let event_key in this.eventListeners) {

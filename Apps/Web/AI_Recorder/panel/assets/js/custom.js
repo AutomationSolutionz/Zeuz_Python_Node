@@ -45,10 +45,12 @@ var CustomFunction = {
 		}
 	},
 
-	LoadActions(case_value) {
+	async LoadActions(case_value) {
 		console.log('case_value',case_value);
-		var len = $('#case_data_wrap>tr').length
-		$.each(case_value, function (single_case_index, single_case_value) {
+		let result = await browserAppData.storage.local.get(['meta_data']);
+		$('#case_data_wrap>tr').slice(result.meta_data['actionsLen']).remove();
+		var len = $('#case_data_wrap>tr').length;
+			$.each(case_value, function (single_case_index, single_case_value) {
 			var disableClass = "";
 			if (single_case_value.is_disable == 1) {
 				disableClass = 'disabled-case';
@@ -85,7 +87,7 @@ var CustomFunction = {
 			if(
 				action.action == 'click' && 
 				i < actions.length - 1 && 
-				['click', 'text', 'double click'].includes(actions[i+1].action)  &&
+				['click', 'text', 'double click', 'validate full text', 'validate full text by ai'].includes(actions[i+1].action)  &&
 				action.xpath == actions[i+1].xpath
 			) continue;
 			new_actions.push(action);
@@ -103,15 +105,15 @@ var CustomFunction = {
 
 					// If the step is not totally blank we dont add 'go to link' action
 					// var shift = false;
-					// if(CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
+					// if(result.meta_data.stepNo == 1 && CustomFunction.caseDataArr[0].suite_value[0].case_value.length > 0 && result.recorded_actions.length > 0 && result.recorded_actions[0].action == 'go to link') 
 					// 	shift = true
 					// if(shift)
 					// 	result.recorded_actions.shift();
-					result.recorded_actions.shift();
+					// result.recorded_actions.shift();
 					recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
 					CustomFunction.LoadActions(recorded_actions)
 					browserAppData.storage.local.set({
-						recorded_actions: [],
+						recorded_actions: recorded_actions,
 					})
 					CustomFunction.unsavedActionsFlag = true;
 					
@@ -282,14 +284,22 @@ jQuery(document).ready(async function () {
 		}
   	);
 
-	$(document).on('click', '#record', function () {
-		// $('#record_wrap').hide();
-		// $('#stop_wrap').show();
+	$(document).on('click', '#record', async function () {
 		let icon = $('#record_icon');
 		let label = $('#record_label');
 
+		if(label[0].textContent == 'Record'){
+			let result = await browserAppData.storage.local.get(['meta_data']);
+			result.meta_data['actionsLen'] = $('#case_data_wrap>tr').length;
+			browserAppData.storage.local.set({'meta_data': result.meta_data});
+		}
+		else{
+			browserAppData.storage.local.set({recorded_actions:[]});
+		}
+
 		label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
 		icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
+		
 	})	
 	/* Save all newlly recorded actions with old actions and auto naming */
 	$(document).on('click', '#save_button', async function () {
@@ -554,3 +564,14 @@ jQuery(document).ready(async function () {
 		}
 	})
 })
+
+browserAppData.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if (request.action == 'record_start') {
+
+        }
+        else if (request.action == 'record_finish') {
+            CustomFunction.SaveCaseDataAsJson();
+        }
+    }
+);

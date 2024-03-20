@@ -99,7 +99,7 @@ window.onload = function() {
             else {
                 $('#save_wrap, #run_this_button, #run_wrap, #login_wrap').removeAttr('disabled').css('opacity',1);
                 recorder.detach();
-                saveData();
+                // CustomFunction.SaveCaseDataAsJson();
                 browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
                 .then(function(tabs) {
                     for(let tab of tabs) {
