@@ -541,7 +541,7 @@ jQuery(document).ready(async function () {
 					console.log("response_2",response);
 					$('#run_this_label').text('Queued!');
 					setTimeout(()=>{
-						$('#run_this_label').text('Run all');
+						$('#run_this_label').text('Run this');
 						$("#run_this_button").removeAttr('disabled').css('opacity',1);
 					},1500)
 				},
@@ -549,7 +549,7 @@ jQuery(document).ready(async function () {
 					console.error(errorThrown);
 					$('#run_this_label').text('Error!!');
 					setTimeout(()=>{
-						$('#run_this_label').text('Run all');
+						$('#run_this_label').text('Run this');
 						$("#run_this_button").removeAttr('disabled').css('opacity',1);
 					},1500)
 				}
@@ -558,7 +558,7 @@ jQuery(document).ready(async function () {
 			console.error(error);
 			$('#run_label').text('Error!!');
 			setTimeout(()=>{
-				$('#run_label').text('Run all');
+				$('#run_label').text('Run this');
 				$("#run_button").removeAttr('disabled').css('opacity',1);
 			},1500)
 		}

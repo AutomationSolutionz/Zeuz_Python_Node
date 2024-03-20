@@ -1,27 +1,5 @@
 var attachedTabs = {};
 const browserAppData = chrome || browser;
-/* Fetch the window size */
-function getWindowSize(callback) {
-    chrome.storage.local.get('window', function(result) {
-        var height = 740;
-        var width = 780;
-        // var width = 1110;
-        if (result) {
-            try {
-                result = result.window;
-                if (result.height) {
-                    height = result.height;
-                }
-                if (result.width) {
-                    width = result.width;
-                }
-            } catch (e) {
-            }
-        }
-        callback(height, width);
-    });
-}
-
 /* call the on attach */
 function onDetach(debuggeeId) {
     var tabId = debuggeeId.tabId;
