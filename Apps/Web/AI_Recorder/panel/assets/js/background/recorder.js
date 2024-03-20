@@ -106,7 +106,7 @@ class BackgroundRecorder {
 
     /* Call window in focus change */
     windowsOnFocusChangedHandler(windowId) {
-        let testCase = getSelectedCase();
+        let testCase = null;
         if (!testCase) {
             return;
         }
