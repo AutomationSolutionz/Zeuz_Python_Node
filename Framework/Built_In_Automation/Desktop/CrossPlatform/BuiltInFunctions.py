@@ -759,7 +759,7 @@ def get_bbox(data_set):
             sModuleInfo, "Bbox paramaters on screen X:%d, Y:%d, Width:%d, Height:%d" %(element[0], element[1], element[2], element[3]), 0
         )
         Shared_Resources.Set_Shared_Variables(var_name, element)
-        return "passed"
+        return element
     except Exception:
         errMsg = "Error locating the element"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -1394,13 +1394,13 @@ def ocr_click(data_set):
 
 
 @logger
-def ocr_get_value(data_set):
+def ocr_get_value_with_coordinates(data_set):
     """
     This action lets you a crop a portion of the image of the screen and extract the text shown in that 
     particular portion of the image
-    Field	                    Sub Field	                Value
-    coordinates	                element parameter	        top, left, bottom, right coordinates. ex: 50, 120, 90, 320
-    ocr get value               desktop action              variable name that will hold the value
+    Field	                        Sub Field	                    Value
+    coordinates	                    element parameter	            top, left, bottom, right coordinates. ex: 50, 120, 90, 320
+    ocr get value with coordinate   desktop action                  variable name that will hold the value
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1459,5 +1459,106 @@ def ocr_get_value(data_set):
     text = result[0][1]
     
     CommonUtil.ExecLog(sModuleInfo, f"The extracted text is {text}", 1)
+    Shared_Resources.Set_Shared_Variables(var_name, text)
+    return "passed"
+
+
+def compare_ocr_coordinates(results, image_coords_updated,  direction):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    res_coords = [0, 0, 0, 0]
+    diff = 9999
+    tslr = 25
+    tstb = 100
+    
+    # extract top, left, bottom, right from the results and assign them to res_cords
+    res_coords[0] = results[0][0][1]
+    res_coords[1] = results[0][0][0]
+    res_coords[2] = results[0][2][1]
+    res_coords[3] = results[0][1][0]
+
+    if direction == "left" or direction == "right":
+        # check the difference between the top and bottom value of the image and OCR extracted text
+        if abs(res_coords[0]-image_coords_updated[0]) <= tslr and abs(res_coords[2]-image_coords_updated[2]) <= tslr:
+            if direction == "right":
+                diff = res_coords[1]-image_coords_updated[3] if res_coords[1]-image_coords_updated[3] > 0 else 9999
+            elif direction == "left":
+                diff = image_coords_updated[1]-res_coords[3] if image_coords_updated[1]-res_coords[3] > 0 else 9999
+    elif direction == "top" or direction == "bottom":
+        # check the difference between the left and right value of the image and OCR extracted text
+        if abs(res_coords[1]-image_coords_updated[1]) <= tstb and abs(res_coords[3]-image_coords_updated[3]) <= tstb:
+            if direction == "bottom":
+                diff = res_coords[0]-image_coords_updated[2] if res_coords[0]-image_coords_updated[2] > 0 else 9999
+            elif direction == "top":
+                diff = image_coords_updated[0]-res_coords[2] if image_coords_updated[0]-res_coords[2] > 0 else 9999
+    return diff
+
+
+@logger
+def ocr_get_value_with_image(data_set):
+    """
+    This action lets you extract a text based on the position of the image you provide. The image has to be attcahed
+    in the attachment section.
+    Field	                    Sub Field	                Value
+    image	                    element parameter	        enter the image that is closer to the text you want to extract
+    direction                   element parameter           direction of the image corresponding to the text you want to extract
+    ocr get value with image    desktop action              variable name that will hold the value
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    image_name = None
+    image_direction = None
+    var_name = None
+    image_coords_updated = [0, 0, 0, 0]
+    global reader
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "image":
+                image_name = right.strip()
+            elif left.strip().lower() == "direction":
+                image_direction = right.strip()
+            elif "action" in mid.strip().lower():
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    get_bbox_dataset = (
+        ("image", "element parameter", f"{image_name}"),
+        ("get bounding box", "desktop action", "coords")
+    )
+
+    # update the image_coords_updated to hold the coordinates like top, left, bottom, right
+    image_coords = get_bbox(get_bbox_dataset)
+    image_coords_updated[0] = image_coords[1]
+    image_coords_updated[1] = image_coords[0]
+    image_coords_updated[2] = image_coords[1]+image_coords[3]
+    image_coords_updated[3] = image_coords[0]+image_coords[2]
+
+    if reader is None:
+        ocr_thread = threading.Thread(target=get_easyocr_reader)
+        ocr_thread.start()
+        path = ocr_screenshot()
+        # wait for the OCR thread to finish
+        ocr_thread.join()
+    else:
+        path = ocr_screenshot()
+    
+    results = reader.readtext(path)
+
+    text_diff = list(map(compare_ocr_coordinates, results, repeat(image_coords_updated), repeat(image_direction)))
+    min_diff = min(text_diff)
+    if min_diff == 9999:
+        CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {image_direction} to the image", 3)
+        return "zeuz_failed"
+
+    idx = text_diff.index(min_diff)
+    text = results[idx][1]
+
     Shared_Resources.Set_Shared_Variables(var_name, text)
     return "passed"
