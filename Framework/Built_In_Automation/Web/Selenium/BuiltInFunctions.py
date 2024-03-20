@@ -1238,15 +1238,16 @@ def Go_To_Link_V2(step_data):
     
     url = None
     driver_tag = "default"
-    for left, mid, right in step_data:
+    options = Options()
+    for left, _, right in step_data:
         if "add argument" in left.lower():
             options.add_argument(right.strip())
             CommonUtil.ExecLog(sModuleInfo, "Added argument: " + right.strip(), 1)
-        elif "add experiemental option" in left.lower():
-            options.add_experimental_option(right.strip(), True)
+        elif 'add experimental option' in left.lower():
+            options.add_experimental_option(eval(right.split(",")[0].strip()),eval(right.split(",")[1].strip()))
             CommonUtil.ExecLog(sModuleInfo, "Added experimental option: " + right.strip(), 1)
-        elif "add capability" in left.lower():
-            options.set_capability(str(right.split(",")[0].strip()),eval(right.split(",")[1].strip()))
+        elif "set capability" in left.lower():
+            options.set_capability(eval(right.split(",")[0].strip()),eval(right.split(",")[1].strip()))
             CommonUtil.ExecLog(sModuleInfo, "Added capability: " + right.strip(), 1)
         elif "go to link v2" in left.lower():
             url = right.strip() if right.strip() != "" else None
@@ -1262,7 +1263,6 @@ def Go_To_Link_V2(step_data):
             raise ValueError("No dependency set - Cannot run")
         
         dependency_browser = dependency["Browser"].lower()
-        options = Options()
         if 'headless' in dependency_browser:
             options.add_argument("--headless")
             CommonUtil.ExecLog(sModuleInfo, "Added headless argument", 1)
