@@ -1244,10 +1244,10 @@ def Go_To_Link_V2(step_data):
             options.add_argument(right.strip())
             CommonUtil.ExecLog(sModuleInfo, "Added argument: " + right.strip(), 1)
         elif 'add experimental option' in left.lower():
-            options.add_experimental_option(eval(right.split(",")[0].strip()),eval(right.split(",")[1].strip()))
+            options.add_experimental_option(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
             CommonUtil.ExecLog(sModuleInfo, "Added experimental option: " + right.strip(), 1)
         elif "set capability" in left.lower():
-            options.set_capability(eval(right.split(",")[0].strip()),eval(right.split(",")[1].strip()))
+            options.set_capability(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
             CommonUtil.ExecLog(sModuleInfo, "Added capability: " + right.strip(), 1)
         elif "go to link v2" in left.lower():
             url = right.strip() if right.strip() != "" else None
