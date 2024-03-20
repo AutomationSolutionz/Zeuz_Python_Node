@@ -12,14 +12,14 @@ window.onload = function() {
                 recorder.attach();
                 notificationCount = 0;
                 if (contentWindowId) {
-                    browser.windows.update(contentWindowId, {focused: true});
+                    browserAppData.windows.update(contentWindowId, {focused: true});
                 }
-                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+                browserAppData.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
                 .then(function(tabs) {
                     try {
                         console.log("attachRecorder=true sendMessage() call");
                         for(let tab of tabs) {
-                            browser.tabs.sendMessage(tab.id, {attachRecorder: true})
+                            browserAppData.tabs.sendMessage(tab.id, {attachRecorder: true})
                             .catch((error)=>{
                                 console.log('error in sendMessage from tab.url=', tab.url);
                                 console.error(error);
@@ -41,10 +41,10 @@ window.onload = function() {
                 $('#save_wrap, #run_this_button, #run_wrap, #login_wrap').removeAttr('disabled').css('opacity',1);
                 recorder.detach();
                 // CustomFunction.SaveCaseDataAsJson();
-                browser.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
+                browserAppData.tabs.query({windowId: extCommand.getContentWindowId(), url: "<all_urls>"})
                 .then(function(tabs) {
                     for(let tab of tabs) {
-                        browser.tabs.sendMessage(tab.id, {detachRecorder: true});
+                        browserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
                     }
                 });
             }

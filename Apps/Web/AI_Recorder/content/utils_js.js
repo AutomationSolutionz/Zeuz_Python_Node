@@ -1,3 +1,5 @@
+const browser = chrome || browser;
+
 function classCreate() {
     return function() {
         this.initialize.apply(this, arguments);

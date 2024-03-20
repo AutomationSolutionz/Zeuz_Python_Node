@@ -5,6 +5,7 @@ var notificationCount = 0;
 var recorder = new BackgroundRecorder();
 var isPlaying = false;
 var isRecording = false;
+browserAppData = chrome || browser;
 
 class Editor {
 
@@ -67,13 +68,13 @@ function handleMessage(message, sender, sendResponse) {
 
         button.classList.remove("active");
 
-        browser.tabs.sendMessage(sender.tab.id, {selectMode: true, selecting: false});
+        browserAppData.tabs.sendMessage(sender.tab.id, {selectMode: true, selecting: false});
         return;
     }
 
     if (message.attachRecorderRequest) {
         if (isRecording && !isPlaying) {
-            browser.tabs.sendMessage(sender.tab.id, {attachRecorder: true});
+            browserAppData.tabs.sendMessage(sender.tab.id, {attachRecorder: true});
         }
         return;
     }
@@ -83,7 +84,7 @@ function notification(command, target, value) {
     let tempCount = String(notificationCount);
     notificationCount++;
 
-    browser.notifications.create(tempCount, {
+    browserAppData.notifications.create(tempCount, {
         "type": "basic",
         "iconUrl": "assets/images/small_logo.png",
         "title": "Command Recorded",
@@ -91,7 +92,7 @@ function notification(command, target, value) {
     });
 
     setTimeout(function() {
-        browser.notifications.clear(tempCount);
+        browserAppData.notifications.clear(tempCount);
     }, 15000);
 }
 
@@ -101,15 +102,15 @@ function tacPreprocess(target) {
 }
 
 
-browser.runtime.onMessage.addListener(handleMessage);
+browserAppData.runtime.onMessage.addListener(handleMessage);
 
-browser.runtime.onMessage.addListener(function contentWindowIdListener(message) {
+browserAppData.runtime.onMessage.addListener(function contentWindowIdListener(message) {
     if (message.selfWindowId != undefined && message.commWindowId != undefined) {
         selfWindowId = message.selfWindowId;
         contentWindowId = message.commWindowId;
         extCommand.setContentWindowId(contentWindowId);
         recorder.setOpenedWindow(contentWindowId);
         recorder.setSelfWindowId(selfWindowId);
-        browser.runtime.onMessage.removeListener(contentWindowIdListener);
+        browserAppData.runtime.onMessage.removeListener(contentWindowIdListener);
     }
 })

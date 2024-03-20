@@ -47,25 +47,11 @@
                 "https://*/*"
             ],
             "js": [
-                "common_files/poly_fill.js",
-                "content/injecter.js"
-            ],
-            "all_frames": true,
-            "match_about_blank": true,
-            "run_at": "document_start"
-        },
-        {
-            "matches": [
-                "http://*/*",
-                "https://*/*"
-            ],
-            "js": [
                 "content/detect_bowser.js",
                 "content/atoms_js.js",
                 "content/utils_js.js",
                 "content/commandhandlers.js",
                 "content/browserbot.js",
-                "common_files/escape.js",
                 "content/sel_api.js",
                 "content/loc_builders.js",
                 "content/recorder.js",

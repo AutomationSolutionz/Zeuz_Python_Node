@@ -10,7 +10,7 @@ var CustomFunction = {
 	async FetchTestData(test_id, step_no) {
 		var result = await browserAppData.storage.local.get(null);
 		try {
-			let localStorageMetadata = await browser.storage.local.get('meta_data');
+			let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
 			let meta_data = localStorageMetadata.meta_data;
 			let headers = {
 				"X-Api-Key": meta_data.apiKey,
@@ -129,7 +129,7 @@ var CustomFunction = {
 	},
 
 	FetchActions: async function () {
-		result = await browser.storage.local.get('meta_data');
+		result = await browserAppData.storage.local.get('meta_data');
 		meta_data = result.meta_data
 		console.log("metdata =====",result);
 		resp = await $.ajax({
@@ -162,7 +162,7 @@ var CustomFunction = {
 }
 
 jQuery(document).ready(async function () {
-	result = await browser.storage.local.get('meta_data');
+	result = await browserAppData.storage.local.get('meta_data');
 	meta_data = result.meta_data;
 	if (result.meta_data.testNo != "TEST-0000"){
 		CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
