@@ -274,9 +274,10 @@ dont_prettify_on_server = ["step_data"]
 
 
 def prettify(key, val):
+    """Tries to pretty print the given value."""
+
     if show_log == False:
         return
-    """Tries to pretty print the given value."""
     for each_var in zeuz_disable_var_print.keys():
         if each_var != None:
             if each_var in key:
@@ -285,14 +286,36 @@ def prettify(key, val):
         return
     color = Fore.MAGENTA
     try:
-        if prettify_limit is None:
+        try:
             if type(val) == str:
+                start_time = time.perf_counter()
                 val = parse_value_into_object(val)
-            print(color + "%s = " % (key), end="")
-            print_json(data=val)
-        else:
-            print(color + "%s = " % (key), end="")
-            print(json.dumps(val,indent=2)[:prettify_limit])
+                print(f"[info] parsing into object {time.perf_counter() - start_time}")
+            start_time = time.perf_counter()
+            val_output = json.dumps(val, indent=2)
+            print(f"[info] json dumps took {time.perf_counter() - start_time}")
+        except:
+            val_output = str(val)
+
+        if len(val_output) > 500:
+            val_output = f"{val_output[:500]}\n...(truncated {len(val_output)-500} chars)"
+
+        print(color + f"{key} = ", end="")
+        start_time = time.perf_counter()
+        print(val_output)
+        print(f"[info] printing the output took {time.perf_counter() - start_time}")
+
+        # import node_native
+        # node_native.pretty_print(str(key), val_output)
+
+        # if prettify_limit is None:
+        #     if type(val) == str:
+        #         val = parse_value_into_object(val)
+        #     print(color + "%s = " % (key), end="")
+        #     print(json.dumps(val,indent=2)[:prettify_limit])
+        # else:
+        #     print(color + "%s = " % (key), end="")
+        #     print(json.dumps(val,indent=2)[:prettify_limit])
 
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
         stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
