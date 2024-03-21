@@ -551,3 +551,18 @@ Recorder.prototype.findClickableElement = function(e) {
         }
     }
 };
+browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
+    if (request.attachRecorder) {
+        browserAppData.runtime.sendMessage({
+            attachHttpRecorder: true
+        });
+        recorder.attach();
+        return;
+    } else if (request.detachRecorder) {
+        browserAppData.runtime.sendMessage({
+            detachHttpRecorder: true
+        });
+        recorder.detach();
+        return;
+    }
+});
