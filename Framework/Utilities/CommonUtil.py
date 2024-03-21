@@ -274,8 +274,8 @@ dont_prettify_on_server = ["step_data"]
 
 
 def prettify(key, val):
-    global prettify_limit
     """Tries to pretty print the given value."""
+    global prettify_limit
 
     if show_log == False:
         return
