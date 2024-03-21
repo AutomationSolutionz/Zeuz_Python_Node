@@ -88,6 +88,7 @@ def Set_Shared_Variables(
                 CommonUtil.global_var[key] = shared_variables["run_id"]
             if key in CommonUtil.zeuz_disable_var_print.keys():
                 CommonUtil.zeuz_disable_var_print[key] = value
+
         if print_variable:
             if print_raw:
                 try:
@@ -97,7 +98,7 @@ def Set_Shared_Variables(
                 except:
                     pass
 
-            try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
+            try: val = json.dumps(value, indent=2)
             except: val = str(value)
 
             CommonUtil.ExecLog(
@@ -110,7 +111,7 @@ def Set_Shared_Variables(
 
             if pretty:
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, value)
+                CommonUtil.prettify(key, val)
 
         return "passed"
     except:
