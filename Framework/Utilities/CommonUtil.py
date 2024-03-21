@@ -279,38 +279,35 @@ def prettify(key, val):
 
     if show_log == False:
         return
-    for each_var in zeuz_disable_var_print.keys():
-        if each_var != None:
-            if each_var in key:
-                return
+
+    # skip printing output for performance testing
     if performance_testing:
         return
-    color = Fore.MAGENTA
+
+    # do not print variables which are marked hidden
+    if key in zeuz_disable_var_print.keys():
+        return
+
     try:
-        try:
-            if type(val) == str:
-                val = parse_value_into_object(val)
-            val_output = json.dumps(val, indent=2)
-        except:
-            val_output = str(val)
-
-        if len(val_output) > prettify_limit:
-            val_output = f"{val_output[:prettify_limit]}\n...(truncated {len(val_output)-prettify_limit} chars)"
-
-        print(color + f"{key} = ", end="")
-        print(val_output)
-
-        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
-        stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
-
-        if debug_status and key not in dont_prettify_on_server and ws_ss_log and stop_live_log == 'False':
-            live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
-            # 4 means console log which is Magenta color in server console
+        if type(val) == str:
+            val = parse_value_into_object(val)
+        val_output = json.dumps(val, indent=2)
     except:
-        print(color + str(val)[:prettify_limit])
-        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
-            live_log_service.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
+        val_output = str(val)
 
+    if len(val_output) > prettify_limit:
+        val_output = f"{val_output[:prettify_limit]}\n...(truncated {len(val_output)-prettify_limit} chars)"
+
+    color = Fore.MAGENTA
+    print(color + f"{key} = ", end="")
+    print(val_output)
+
+    expression = "%s = %s" % (key, val_output)
+    stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
+
+    if debug_status and key not in dont_prettify_on_server and ws_ss_log and stop_live_log == 'False':
+        # 4 means console log which is Magenta color in server console
+        live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
