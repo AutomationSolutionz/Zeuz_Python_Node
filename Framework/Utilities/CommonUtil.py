@@ -245,28 +245,32 @@ def parse_value_into_object(val):
     if not isinstance(val, str):
         return val
 
+    evaluated = False
     try:
-        # val2 = ast.literal_eval(val)  # previous method
         # encoding and decoding is for handling escape characters such as \a \1 \2
         val2 = ast.literal_eval(val.encode('unicode_escape').decode())
-        if not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
-            # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
-            pass
-        else:
-            val = val2
+        evaluated = True
     except:
         try:
-            val = ast.literal_eval(val)
+            val2 = ast.literal_eval(val)
+            evaluated = True
+        except:
+            val2 = val
+
+    if evaluated and not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
+        # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
+        return val
+
+    if not evaluated:
+        try:
+            val = json.loads(val)
         except:
             try:
-                val = json.loads(val)
+                if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
+                    #ToDo: find a way to convert the datatype to str or list
+                    val = ZeuZ_map_code[val]
             except:
-                try:
-                    if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
-                        #ToDo: find a way to convert the datatype to str or list
-                        val = ZeuZ_map_code[val]
-                except:
-                    pass
+                pass
     return val
 
 
@@ -300,7 +304,7 @@ def prettify(key, val):
 
     color = Fore.MAGENTA
     print(color + f"{key} = ", end="")
-    print(val_output)
+    print(color + val_output)
 
     expression = "%s = %s" % (key, val_output)
     stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
@@ -1362,14 +1366,14 @@ def generate_time_based_performance_report(session) -> None:
         endpoint_wise[endpoint]['percentile_vs_time'] = []
         endpoint_wise[endpoint]['fiftypercentile_per_second'] = []
         endpoint_wise[endpoint]['ninetypercentile_per_second'] = []
-        
+
         endpoint_wise[endpoint]['dict_response_time_per_time'] = dict(
             sorted(endpoint_wise[endpoint]['dict_response_time_per_time'].items(),
                    key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
         endpoint_wise[endpoint]['dict_byte_throughput_per_time'] = dict(
             sorted(endpoint_wise[endpoint]['dict_byte_throughput_per_time'].items(),
                    key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
-        
+
         for key, value_list in endpoint_wise[endpoint]['dict_response_time_per_time'].items():
             endpoint_wise[endpoint]['response_time_vs_time'].append([key, int(sum(value_list) / len(value_list))])
             endpoint_wise[endpoint]['user_count_per_second'].append([key, len(value_list) + endpoint_wise[endpoint]['user_count_per_second'][-1][1] if len(endpoint_wise[endpoint]['user_count_per_second']) > 0 else 0])
