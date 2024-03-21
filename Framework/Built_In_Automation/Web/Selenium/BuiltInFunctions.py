@@ -1238,6 +1238,7 @@ def Go_To_Link_V2(step_data):
     
     url = None
     driver_tag = "default"
+    page_load_timeout_sec = 120
     options = Options()
     for left, _, right in step_data:
         if "add argument" in left.lower():
@@ -1253,6 +1254,10 @@ def Go_To_Link_V2(step_data):
             url = right.strip() if right.strip() != "" else None
         elif "driver tag" in left.lower():
             driver_tag = right.strip()
+        elif "wait for element" in left.lower():
+            Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
+        elif "page load timeout" in left.lower():
+            page_load_timeout_sec = float(right.strip())
 
     if driver_tag in selenium_details.keys():
         selenium_driver = selenium_details[driver_tag]["driver"]
@@ -1272,6 +1277,8 @@ def Go_To_Link_V2(step_data):
         elif "firefox" in dependency_browser:
             selenium_driver = webdriver.Firefox(options=options)
             selenium_details[driver_tag] = dict()
+            
+        selenium_driver.set_page_load_timeout(page_load_timeout_sec)
         selenium_details[driver_tag] = dict()
         selenium_details[driver_tag]["driver"] = selenium_driver
         current_driver_id = selenium_driver
