@@ -245,32 +245,27 @@ def parse_value_into_object(val):
     if not isinstance(val, str):
         return val
 
-    evaluated = False
     try:
         # encoding and decoding is for handling escape characters such as \a \1 \2
         val2 = ast.literal_eval(val.encode('unicode_escape').decode())
-        evaluated = True
+        if not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
+            # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
+            pass
+        else:
+            val = val2
     except:
         try:
-            val2 = ast.literal_eval(val)
-            evaluated = True
-        except:
-            val2 = val
-
-    if evaluated and not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
-        # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
-        return val
-
-    if not evaluated:
-        try:
-            val = json.loads(val)
+            val = ast.literal_eval(val)
         except:
             try:
-                if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
-                    #ToDo: find a way to convert the datatype to str or list
-                    val = ZeuZ_map_code[val]
+                val = json.loads(val)
             except:
-                pass
+                try:
+                    if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
+                        #ToDo: find a way to convert the datatype to str or list
+                        val = ZeuZ_map_code[val]
+                except:
+                    pass
     return val
 
 
