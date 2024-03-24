@@ -2849,7 +2849,7 @@ def excel_read(data_set):
             # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
             from openpyxl import load_workbook
             from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
-            wb = load_workbook(filepath)
+            wb = load_workbook(filepath, data_only=True)
             sheet = wb[sheet_name]
             if key_reference is None:
                 key_reference = "row1"
@@ -6036,7 +6036,7 @@ def data_store_insert(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'data':
                 l = ast.literal_eval(right.strip())
-                print(l)
+
             if mid.strip() == "action":
                 var_name = right.strip()
         data={
@@ -6049,6 +6049,67 @@ def data_store_insert(data_set):
 
         res = RequestFormatter.request("post", 
             RequestFormatter.form_uri('data_store/data_store/data_store_list/'),
+            data=json.dumps(data),
+            verify=False,
+            **headers
+        )
+        if res.status_code==201:
+            CommonUtil.ExecLog(sModuleInfo, "data inserted successfully", 1)
+            return "passed"
+            # return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Cant insert , please check your dataset", 1)
+            return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def data_store_insert_column(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                data             | element parameter  | string_content
+                row              | input parameter    | row_number
+                data store: insert| common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `201 status` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = row = ""
+        params = {}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'row':
+                row = right.strip()
+
+            if left.strip() == 'data':
+                l = right.strip()
+            if mid.strip() == "action":
+                var_name = right.strip()
+        data={
+            'table_name':table_name,
+            'data_list':l,
+            'row':row
+
+        }
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+
+        res = requests.post(
+            RequestFormatter.form_uri('data_store/data_store/data_store_insert_column/'),
             data=json.dumps(data),
             verify=False,
             **headers

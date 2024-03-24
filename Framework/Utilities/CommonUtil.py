@@ -42,7 +42,7 @@ except:
 
 # Import colorama for console color support
 from colorama import init as colorama_init
-from colorama import Fore, Back
+from colorama import Fore, Back, Style
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
@@ -488,6 +488,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                         fail_reason_str = "** Test case Failed on first run but Passed when Rerun **"
                         passed_after_rerun = False
                     testcase_info["execution_detail"]["failreason"] = fail_reason_str
+                    tc_error_logs = []
                     return
                 if step_id == "none":
                     return
@@ -562,7 +563,7 @@ def ExecLog(
 
     # Terminal output color
     line_color = ""
-
+    text_style = ""
     # Convert logLevel from int to string for clarity
     if iLogLevel == 0:
         if debug_mode.lower() == "true":
@@ -586,6 +587,10 @@ def ExecLog(
         status = "Info"
         iLogLevel = 1
         line_color = Fore.CYAN
+    elif iLogLevel == 7:
+        status = "Info"
+        line_color = Fore.CYAN + Style.BRIGHT
+        # text_style = Style.BRIGHT
     elif iLogLevel == 6:
         status = "BrowserConsole"
     else:
@@ -607,7 +612,7 @@ def ExecLog(
             msg = f"{info}{sDetails}" if sModuleInfo else sDetails
             print(line_color + msg)
         else:
-            msg = f"{status.upper()} - {info}{sDetails}"
+            msg = f"{(status.upper() + ' - ') if status != 'Passed' else ''}{info}{sDetails}"
             print(line_color + msg)
         max_char = max(max_char, len(msg))
 

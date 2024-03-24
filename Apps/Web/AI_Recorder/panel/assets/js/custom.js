@@ -10,8 +10,16 @@ var CustomFunction = {
 	async FetchTestData(test_id, step_no) {
 		var result = await browserAppData.storage.local.get(null);
 		try {
-			var r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`);
-			var response = await r.json();
+			let localStorageMetadata = await browser.storage.local.get('meta_data');
+			let meta_data = localStorageMetadata.meta_data;
+			let headers = {
+				"X-Api-Key": meta_data.apiKey,
+			};
+			let r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`, {
+				method: "GET",
+				headers: headers,
+			});
+			let response = await r.json();
 			if (response.error){
 				console.error("response.error", response.error)
 				await alert(response.error);
@@ -26,7 +34,9 @@ var CustomFunction = {
 			$('#test_title').text(response.testCaseDetail.name);
 			$("#step_select").empty();
 			response.steps.forEach(step => {
-				$("#step_select").append(new Option(`Step-${step.sequence} : ${step.name}`, step.sequence));
+				const option = new Option(`Step-${step.sequence} : ${step.name}`, step.sequence);
+				option.setAttribute('step_id', step.stepId); // Adding step_id attribute
+				$("#step_select").append(option);
 			});
 			$(`#step_select option[value="${step_no}"]`).prop('selected', true);
 		} catch (e) {
@@ -131,7 +141,7 @@ var CustomFunction = {
 			data: {"test_id":`${meta_data.testNo}`, "step_seq":`${meta_data.stepNo}`},
 		});
 		console.log("resp =====",resp);
-		$('#test_label').text(meta_data.testNo);
+		// $('#test_label').text(meta_data.testNo);
 
 		case_data = resp.step.actions.map(action => {
 			return {
@@ -300,6 +310,7 @@ jQuery(document).ready(async function () {
 				step_data: JSON.stringify(case_value.map(action => {
 					return action.main;
 				})),
+				step_id: $(`#step_select option[value="${result.meta_data.stepNo}"]`).attr('step_id'),
 				dataset_name: JSON.stringify(case_value.map((action, idx) => {
 					return [
 						action.name,
@@ -396,69 +407,144 @@ jQuery(document).ready(async function () {
 	$(document).on('click', '#run_button', async function () {
 		try {
 			$('#run_label').text('Running...');
-		$("#run_button").attr('disabled', true).css('opacity',0.5);
-		var result = await browserAppData.storage.local.get(["meta_data"]);
-		const input = {
-			method: "POST",
-			headers: {
-				// "Content-Type": "application/json",
-				"X-Api-Key": result.meta_data.apiKey,
+			$("#run_button").attr('disabled', true).css('opacity',0.5);
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			const input = {
+				method: "POST",
+				headers: {
+					// "Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				}
 			}
-		}
-		var r = await fetch(result.meta_data.url + '/run_config_ai_recorder/', input)
-		var response = await r.json();					
-		console.log("response_1", response);
+			var r = await fetch(result.meta_data.url + '/run_config_ai_recorder/', input)
+			var response = await r.json();					
+			console.log("response_1", response);
 
-		const machine = response["machine"];
-		const project_id = response["project_id"];
-		const team_id = response["team_id"];
-		const user_id = response["user_id"];
+			const machine = response["machine"];
+			const project_id = response["project_id"];
+			const team_id = response["team_id"];
+			const user_id = response["user_id"];
 
-		if (navigator.userAgent.indexOf("Edg") != -1)
-			var browser = 'Microsoft Edge Chromium'
-		else if (navigator.userAgent.indexOf("Chrome") != -1) 
-			var browser = 'Chrome'
-		dependency = {"Browser": browser, "Mobile": "Android"}
-		const run_data = {
-			"test_case_list": JSON.stringify([result.meta_data.testNo]),
-			"dependency_list": JSON.stringify(dependency),
-			"all_machine": JSON.stringify([machine]),
-			"debug": 'yes',
-			"debug_clean": "yes",
-			"debug_steps": JSON.stringify([]), // [] means Run all steps
-			"RunTestQuery": JSON.stringify([result.meta_data.testNo, machine]),
-			"dataAttr": JSON.stringify(["Test Case"]),
-			"project_id": project_id,
-			"team_id": team_id,
-			"user_id": user_id,
-		}
-		var url = `${result.meta_data.url}/Home/nothing/Run_Test/`;
-
-		$.ajax({
-			url: url,
-			method: 'GET',
-			data: run_data,
-			headers: {
-				"Content-Type": "application/json",
-				"X-Api-Key": result.meta_data.apiKey,
-			},
-			success: function(response) {
-				console.log("response_2",response);
-				$('#run_label').text('Queued!');
-				setTimeout(()=>{
-					$('#run_label').text('Run all');
-					$("#run_button").removeAttr('disabled').css('opacity',1);
-				},1500)
-			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				console.error(errorThrown);
-				$('#run_label').text('Error!!');
-				setTimeout(()=>{
-					$('#run_label').text('Run all');
-					$("#run_button").removeAttr('disabled').css('opacity',1);
-				},1500)
+			if (navigator.userAgent.indexOf("Edg") != -1)
+				var browser = 'Microsoft Edge Chromium'
+			else if (navigator.userAgent.indexOf("Chrome") != -1) 
+				var browser = 'Chrome'
+			dependency = {"Browser": browser, "Mobile": "Android"}
+			const run_data = {
+				"test_case_list": JSON.stringify([result.meta_data.testNo]),
+				"dependency_list": JSON.stringify(dependency),
+				"all_machine": JSON.stringify([machine]),
+				"debug": 'yes',
+				"debug_clean": "yes",
+				"debug_steps": JSON.stringify([]), // [] means Run all steps
+				"RunTestQuery": JSON.stringify([result.meta_data.testNo, machine]),
+				"dataAttr": JSON.stringify(["Test Case"]),
+				"project_id": project_id,
+				"team_id": team_id,
+				"user_id": user_id,
 			}
-		})
+			var url = `${result.meta_data.url}/Home/nothing/Run_Test/`;
+
+			$.ajax({
+				url: url,
+				method: 'GET',
+				data: run_data,
+				headers: {
+					"Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				},
+				success: function(response) {
+					console.log("response_2",response);
+					$('#run_label').text('Queued!');
+					setTimeout(()=>{
+						$('#run_label').text('Run all');
+						$("#run_button").removeAttr('disabled').css('opacity',1);
+					},1500)
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error(errorThrown);
+					$('#run_label').text('Error!!');
+					setTimeout(()=>{
+						$('#run_label').text('Run all');
+						$("#run_button").removeAttr('disabled').css('opacity',1);
+					},1500)
+				}
+			})
+		} catch (error) {
+			console.error(error);
+			$('#run_label').text('Error!!');
+			setTimeout(()=>{
+				$('#run_label').text('Run all');
+				$("#run_button").removeAttr('disabled').css('opacity',1);
+			},1500)
+		}
+	})
+	$(document).on('click', '#run_this_button', async function () {
+		try {
+			$('#run_this_label').text('Running...');
+			$("#run_this_button").attr('disabled', true).css('opacity',0.5);
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			const input = {
+				method: "POST",
+				headers: {
+					// "Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				}
+			}
+			var r = await fetch(result.meta_data.url + '/run_config_ai_recorder/', input)
+			var response = await r.json();					
+			console.log("response_1", response);
+
+			const machine = response["machine"];
+			const project_id = response["project_id"];
+			const team_id = response["team_id"];
+			const user_id = response["user_id"];
+
+			if (navigator.userAgent.indexOf("Edg") != -1)
+				var browser = 'Microsoft Edge Chromium'
+			else if (navigator.userAgent.indexOf("Chrome") != -1) 
+				var browser = 'Chrome'
+			dependency = {"Browser": browser, "Mobile": "Android"}
+			const run_data = {
+				"test_case_list": JSON.stringify([result.meta_data.testNo]),
+				"dependency_list": JSON.stringify(dependency),
+				"all_machine": JSON.stringify([machine]),
+				"debug": 'yes',
+				"debug_clean": "yes",
+				"debug_steps": JSON.stringify([result.meta_data.stepNo]), // [] means Run all steps
+				"RunTestQuery": JSON.stringify([result.meta_data.testNo, machine]),
+				"dataAttr": JSON.stringify(["Test Case"]),
+				"project_id": project_id,
+				"team_id": team_id,
+				"user_id": user_id,
+			}
+			var url = `${result.meta_data.url}/Home/nothing/Run_Test/`;
+
+			$.ajax({
+				url: url,
+				method: 'GET',
+				data: run_data,
+				headers: {
+					"Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				},
+				success: function(response) {
+					console.log("response_2",response);
+					$('#run_this_label').text('Queued!');
+					setTimeout(()=>{
+						$('#run_this_label').text('Run all');
+						$("#run_this_button").removeAttr('disabled').css('opacity',1);
+					},1500)
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error(errorThrown);
+					$('#run_this_label').text('Error!!');
+					setTimeout(()=>{
+						$('#run_this_label').text('Run all');
+						$("#run_this_button").removeAttr('disabled').css('opacity',1);
+					},1500)
+				}
+			})
 		} catch (error) {
 			console.error(error);
 			$('#run_label').text('Error!!');

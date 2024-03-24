@@ -86,9 +86,10 @@ action_support = (
     "shared capability",
     "chrome option", "chrome options", "chrome experimental option", "chrome experimental options",
     "pre sleep", "post sleep", "pre post sleep", "post pre sleep",
-    "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter"
+    "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter",
     "profile option", "profile options",
     "text classifier offset"
+    "fail message",
 )
 patterns = [
     "^parent \d parameter$",

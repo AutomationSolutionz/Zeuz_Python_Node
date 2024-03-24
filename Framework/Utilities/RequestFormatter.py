@@ -5,9 +5,9 @@ from . import ConfigModule
 import requests
 import json
 import pickle
-from datetime import datetime, timezone, timedelta
 from urllib3.exceptions import InsecureRequestWarning
 from colorama import Fore
+from datetime import datetime, timedelta, timezone
 
 # Tags for reading data from settings.conf file.
 AUTHENTICATION_CATEGORY = "Authentication"
@@ -26,9 +26,6 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 session = requests.Session()
 SESSION_FILE_NAME = "session.bin"
 ACCESS_TOKEN_EXPIRES_AT = datetime.now()
-# TODO: session neeeds to be renewed every 10 mins, keep a global variable in
-# this module and track if a new token is necessary, if necessary, perform a
-# renewal.
 
 def save_cookies(session: requests.Session, filename: str):
     try:
@@ -48,27 +45,37 @@ def load_cookies(filename: os.PathLike):
         print("[RequestFormatter] ERROR loading cookies from disk.")
 
 
+def set_access_token_expiration(date_string: str):
+    global ACCESS_TOKEN_EXPIRES_AT
+
+    ACCESS_TOKEN_EXPIRES_AT = datestring_to_obj(date_string)
+
+
 def datestring_to_obj(date_string: str) -> datetime:
-    date_string = date_string[:date_string.index(".")]
-    date_obj = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
-    date_obj.replace(tzinfo=timezone.utc)
+    try:
+        date_obj = datetime.fromisoformat(date_string)
+    except:
+        date_string = date_string[:date_string.index(".")]
+        date_obj = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
+        date_obj.replace(tzinfo=timezone.utc)
+
     return date_obj
 
 
 def is_less_than_N_minutes_away(target_datetime, n):
     # Get the current time
-    current_time = datetime.utcnow()
+    current_time = datetime.utcnow().replace(tzinfo=timezone.utc)
 
     # Calculate the difference between the target datetime and the current time
     time_difference = target_datetime - current_time
 
-    # Check if the difference is less than 2 minutes
+    # Check if the difference is less than n minutes
     return time_difference < timedelta(minutes=n)
 
 
 def renew_token_with_expiry_check():
     global ACCESS_TOKEN_EXPIRES_AT
-    if not is_less_than_N_minutes_away(ACCESS_TOKEN_EXPIRES_AT, 1):
+    if not is_less_than_N_minutes_away(ACCESS_TOKEN_EXPIRES_AT, 10):
         return
 
     renew_token()
@@ -79,16 +86,17 @@ def renew_token():
 
     r = session.post(
         url=form_uri("/zsvc/auth/v1/renew"),
+        verify=False,
     )
 
     data = {}
     if r.status_code != 200:
         line_color = Fore.RED
-        print(line_color + "[RequestFormatter] token could not be renewed. Please login again.")
+        # print(line_color + "[RequestFormatter] token could not be renewed. Please login again.")
         return data, r.status_code
 
     data = r.json()
-    ACCESS_TOKEN_EXPIRES_AT = datestring_to_obj(data["access_token_expires_at"])
+    set_access_token_expiration(data["access_token_expires_at"])
 
     # Save new tokens to disk
     save_cookies(session=session, filename=SESSION_FILE_NAME)
@@ -107,6 +115,7 @@ def login():
     r = session.post(
         url=form_uri("/zsvc/auth/v1/login"),
         json=payload,
+        verify=False,
     )
 
 
@@ -114,7 +123,7 @@ def login():
     if r.status_code == 200:
         # Save new tokens to disk
         data = r.json()
-        ACCESS_TOKEN_EXPIRES_AT = datestring_to_obj(data["access_token_expires_at"])
+        set_access_token_expiration(data["access_token_expires_at"])
         save_cookies(session=session, filename=SESSION_FILE_NAME)
 
     return data, r.status_code
@@ -154,6 +163,9 @@ def request(*args, **kwargs):
     management.
     """
     renew_token_with_expiry_check()
+    if "verify" not in kwargs:
+        kwargs["verify"] = False
+
     return session.request(*args, **kwargs)
 
 

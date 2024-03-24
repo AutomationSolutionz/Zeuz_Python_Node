@@ -1,6 +1,7 @@
 declarations = (
     { "name": "click",                      "function": "Click_Element",                "screenshot": "desktop" },
     { "name": "double click",               "function": "Click_Element",                "screenshot": "desktop" },
+    { "name": "right click",                "function": "Click_Element",                "screenshot": "desktop" },
     { "name": "hover",                      "function": "move_mouse",                   "screenshot": "desktop" },
     { "name": "text",                       "function": "Enter_Text",                   "screenshot": "desktop" },
     { "name": "close program",              "function": "close_program",                "screenshot": "desktop" },
@@ -15,6 +16,9 @@ declarations = (
     { "name": "wait gui",                   "function": "Wait_For_Element_Pyautogui",   "screenshot": "desktop" },
     { "name": "wait disable gui",           "function": "Wait_For_Element_Pyautogui",   "screenshot": "desktop" },
     { "name": "playback recorded events",   "function": "playback_recorded_events",     "screenshot": "desktop" },
+    { "name": "take partial screenshot",    "function": "take_partial_screenshot",      "screenshot": "desktop" },
+    { "name": "get bounding box",           "function": "get_bbox",                     "screenshot": "desktop" },
+    { "name": "keystroke chars",            "function": "keystroke_for_element",        "screenshot": "desktop" },
 ) # yapf: disable
 
 module_name = "desktop"

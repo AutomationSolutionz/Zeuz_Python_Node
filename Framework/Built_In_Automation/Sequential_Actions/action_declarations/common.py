@@ -93,6 +93,8 @@ declarations = (
     {"name": "data store: read", "function": "data_store_read", "screenshot": "none"},
     {"name": "data store: write", "function": "data_store_write", "screenshot": "none"},
     {"name": "data store: insert", "function": "data_store_insert", "screenshot": "none"},
+    {"name": "data store: insert column", "function": "data_store_insert_column", "screenshot": "none"},
+
 
     # Client specific actions
     {"name": "write into text file",                         "function": "text_write",                            "screenshot": "none" },

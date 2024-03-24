@@ -19,10 +19,6 @@ import socket
 import requests
 import psutil
 from pathlib import Path
-from datetime import datetime
-
-from selenium.webdriver.chrome.service import Service
-import re
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -517,6 +513,17 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
     remote_host = None
     remote_browser_version = None
+
+    if browser_options is None:
+        browser_options = []
+    for i in range(len(browser_options)):
+        if '--user-data-dir' in browser_options[i][1]:
+            custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
+            custom_profile_path = os.path.join(custom_profile_folder_path,browser_options[i][1].split('=')[-1].strip())
+
+            os.makedirs(custom_profile_folder_path, exist_ok=True)
+            browser_options[i][1] = f'--user-data-dir={custom_profile_path}'
+    
     if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
         run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
         remote_config = run_time_params.get("remote_config")
@@ -646,6 +653,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
         elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
             try:
                 if not chrome_path:
@@ -665,12 +673,15 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             # argument
             if not browser_options:
-                options.add_argument("--no-sandbox")
+                # options.add_argument("--no-sandbox")
                 # options.add_argument("--disable-extensions")
                 options.add_argument('--ignore-certificate-errors')
                 options.add_argument('--ignore-ssl-errors')
                 options.add_argument('--zeuz_pid_finder')
                 options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
+
+                # Turn this on while experimenting with playwright
+                # options.add_argument('--remote-debugging-port=9222')
 
             # Todo: profile, add_argument => open_browser
             _prefs = {}
@@ -773,12 +784,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
         elif browser in ("firefox", "firefoxheadless"):
             firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
+            from selenium.webdriver.firefox.service import Service
+            from selenium.webdriver import FirefoxOptions
+
             if not firefox_path:
                 firefox_path = GeckoDriverManager().install()
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", firefox_path)
             from sys import platform as _platform
-            from selenium.webdriver.firefox.options import Options
-            options = Options()
+            options = FirefoxOptions()
 
             if profile_options:
                 for left, right in profile_options:
@@ -792,6 +805,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             if "headless" in browser:
                 #firefox headless mode needs add_argument
                 options.add_argument("-headless")
+                # options.headless = True
                 
                 '''
                 # commenting out as this is not working.  Make sure 
@@ -840,7 +854,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 if selenium_version.startswith('4.'):
-                    service = Service(firefox_path)
+                    service = Service()
                     selenium_driver = webdriver.Firefox(
                         service=service,
                         options=options,
@@ -903,7 +917,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             options.add_argument('--zeuz_pid_finder')
-            options.add_argument("--no-sandbox")
+            # options.add_argument("--no-sandbox")
             # options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
@@ -1275,7 +1289,12 @@ def Go_To_Link(step_data, page_title=False):
             CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
 
         if not driver_id:
-            driver_id = "default"
+            if len(selenium_details.keys()) == 0:
+                driver_id = "default"
+            elif current_driver_id is not None:
+                driver_id = current_driver_id
+            else:
+                driver_id = selenium_details.keys()[0]
 
         browser_map = {
             "Microsoft Edge Chromium": 'msedge',
@@ -1619,7 +1638,7 @@ def Enter_Text_In_Text_Box(step_data):
             if clear:
                 # Element.clear()
                 # Safari Keys are extremely slow and not working
-                if selenium_driver.desired_capabilities['browserName'] == "Safari":
+                if selenium_driver.capabilities['browserName'] == "Safari":
                     Element.clear()
                 else:
                     if sys.platform == "darwin":
@@ -2383,6 +2402,34 @@ def get_location_of_element(data_set):
     # Save location in shared variable
     Shared_Resources.Set_Shared_Variables(shared_var, "%s,%s" % (x, y))
     return "passed"
+
+@logger
+def get_element_info(dataset):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        variable_name = None
+        new_ds = []
+        for each_step_data_item in dataset:
+            if "action" == each_step_data_item[1].strip().lower():
+                variable_name = each_step_data_item[2].strip()
+            else:
+                new_ds.append(each_step_data_item)
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(new_ds, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        else:
+            Shared_Resources.Set_Shared_Variables(variable_name, {"size": Element.size, "location": Element.location})
+            return "passed"
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, e, 3)
+        return "zeuz_failed"
 
 
 @logger
@@ -4731,6 +4778,7 @@ def drag_and_drop(dataset):
     try:
         source = []
         destination = []
+        offset = None
         param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
@@ -4746,14 +4794,18 @@ def drag_and_drop(dataset):
             elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
+            elif left.strip().lower().startswith('offset'):
+                x,y = right.split(',')
+                offset = (x.strip(),y.strip())
+        
+        if offset == None and destination == []:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide either destination element or offset. Example:\n'+
+               "(id, dst element parameter, file) or (offse | element parameter | 25,75)", 3)
+            return "zeuz_failed"
 
         if not source:
             CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
                "(id, src element parameter, file)", 3)
-            return "zeuz_failed"
-        if not destination:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
-               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
         source_element = LocateElement.Get_Element(source, selenium_driver)
@@ -4761,14 +4813,51 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
             return "zeuz_failed"
 
-        destination_element = LocateElement.Get_Element(destination, selenium_driver)
-        if destination_element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
-            return "zeuz_failed"
+        if destination:
+            destination_element = LocateElement.Get_Element(destination, selenium_driver)
+            if destination_element == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+                return "zeuz_failed"
 
-        ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        if destination:
+            ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        elif offset:
+            ActionChains(selenium_driver).drag_and_drop_by_offset(source_element,offset[0],offset[1]).perform()
         # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Method to upload file
+@logger
+def playwright(dataset):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+
+        from playwright.sync_api import sync_playwright
+        devtools_url = selenium_driver.command_executor._url.replace('http://', 'ws://') + '/devtools/browser'
+        with sync_playwright() as p:
+            # browser = p.chromium.connect(browserURL=devtools_url)
+            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            page = browser.contexts[0].pages[0]
+
+            # source = page.locator("//div[contains(text(), 'abcd')]")
+            # dest = page.locator('(//div[@class="fc-timegrid-bg-harness"][1]/div)[1]')
+            # source.drag_to(dest)
+            #
+            # source = page.locator("//div[contains(text(), 'Wolfgang Donna')]")
+            # dest = page.locator('//span[contains(text(), "abcd")]/parent::div')
+            # source.drag_to(dest)
+
+            fileChooserPromise = page.wait_for_event('filechooser')
+            # await page.getByText('Upload file').click();
+            # fileChooser = await fileChooserPromise;
+            # await fileChooser.setFiles(path.join(__dirname, 'myfile.pdf'));
+
 
         return "passed"
     except Exception:

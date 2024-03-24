@@ -4,10 +4,15 @@
 # Version 19
 
 ### [Current changes]
+- **[Add]** Action has been added to know element size and location
+- **[Add]** Drag and Drop by offset has been added
+- **[Add]** Custom error msg feature
 - **[Change]** Support for the new Authentication System 2.0 has been added.
 - **[Change]** Improved reconnect time of node by 10x-30x once it detects a live server.
 - **[Change]** Removed unnecessary codes + APIs.
 - **[Change]** Improved general login time because of the above change.
+- **[Add]** Rest API response to raw file.
+- **[Add]** Custom Profile Functionality
 
 ### [18.1.0][Jan 13, 2024]
 - **[Add]** AI Test recorder extension

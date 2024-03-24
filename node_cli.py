@@ -30,6 +30,19 @@ with open(version_path, "r"):
 from Framework.module_installer import install_missing_modules,update_outdated_modules
 install_missing_modules()
 
+# Conditionally monkey-patch datetime module to include the `fromisoformat` method.
+def monkeypatch_fromisoformat():
+    try:
+        import sys
+        target_version = (3, 11)
+        if sys.version_info < target_version:
+            from backports.datetime_fromisoformat import MonkeyPatch
+            MonkeyPatch.patch_fromisoformat()
+    except:
+        print("WARN: failed to monkeypatch fromisoformat")
+
+monkeypatch_fromisoformat()
+
 from configobj import ConfigObj
 from dotenv import load_dotenv
 # Load environment variables from .env file
@@ -236,7 +249,23 @@ processing_test_case = (
 exit_script = False  # Used by Zeuz Node GUI to exit script
 
 
+def destroy_session():
+    """
+    Destroy session file.
+    """
+
+    # Remove session file if prompted for new authentication
+    session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
+    if session_bin_path.exists():
+        try: session_bin_path.unlink()
+        except: print("[ERROR] failed to remove session file")
+
+
 def zeuz_authentication_prompts_for_cli():
+    """
+    Prompts user for inputting new credentials.
+    """
+    destroy_session()
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:
@@ -937,6 +966,7 @@ def command_line_args() -> Path:
     if auto_update:
         check_for_updates()
     if username or password or server or logout or api:
+        destroy_session()
         if api and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)
