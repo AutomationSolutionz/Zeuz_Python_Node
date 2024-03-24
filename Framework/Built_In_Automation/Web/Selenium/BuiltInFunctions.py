@@ -3994,7 +3994,6 @@ def Tear_Down_Selenium(step_data=[]):
         if not driver_id:
             if not CommonUtil.teardown:
                 CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
-                return "passed"
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:
