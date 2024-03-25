@@ -4357,7 +4357,7 @@ def extract_text_by_page(pdf_path, text, pgn=None):
 def extract_text_pdf(dataset):
     """
     This action lets you extract specific text/string from a PDF file. You can specify the page number where 
-    you want to coduct the extraction. You can also use regular expressions to extract a pattern of text/string.
+    you want to conduct the extraction. You can also use regular expressions to extract a pattern of text/string.
 
     filename  |  input parameter  |  Path to the PDF file.
     text      |  input parameter  |  The text that you want to extract. Can be either string or regular expression pattern.
