@@ -41,6 +41,7 @@ LocatorBuilders.prototype.build = function(evnt) {
 
 LocatorBuilders.prototype.buildAll = function(element) {
     var e = core.firefox.unwrap(element);
+    // console.log('I am e from LocatorBuilder', e, 'Haha');
     var xpathLevel = 0;
     var maxLevel = 10;
     var buildWithResults;

@@ -33,7 +33,7 @@ async function stop_recording(){
     // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
     if (recorded_actions.length > 0)
     browserAppData.storage.local.set({
-        recorded_actions: recorded_actions,
+        recorded_actions: [],
     }).then(()=>{
         idx = 0;
         recorded_actions = [];
@@ -136,36 +136,37 @@ async function fetchAIData(idx, command, value, url, document){
     browserAppData.storage.local.set({
         recorded_actions: recorded_actions,
     })
+    browserAppData.runtime.sendMessage({action: 'record_finish'})
 }
 
 async function record_action(command, value, url, document){
     if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command]
     console.log("... Action recorder start");
     idx += 1;
-    if (recorded_actions.length === 0 || 
-        recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
-        let go_to_link = {
-            action: 'go to link',
-            data_list: [url],
-            element: "",
-            is_disable: false,
-            name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,
-            value: url,
-            main: [['go to link', 'selenium action', url]],
-            xpath: "",
-        };
-        if (recorded_actions.length === 0) recorded_actions[0] = go_to_link;
-        else recorded_actions.unshift(go_to_link);
-        idx += 1;
-    }
+    // if (recorded_actions.length === 0 || 
+    //     recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
+    //     let go_to_link = {
+    //         action: 'go to link',
+    //         data_list: [url],
+    //         element: "",
+    //         is_disable: false,
+    //         name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,
+    //         value: url,
+    //         main: [['go to link', 'selenium action', url]],
+    //         xpath: "",
+    //     };
+    //     if (recorded_actions.length === 0) recorded_actions[0] = go_to_link;
+    //     else recorded_actions.unshift(go_to_link);
+    //     idx += 1;
+    // }
     fetchAIData(idx-1, command, value, url, document);  
 }
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        if (request.apiName == 'start_recording') {
+        if (request.action == 'start_recording') {
             start_recording();
         }
-        else if (request.apiName == 'record_action') {
+        else if (request.action == 'record_action') {
             record_action(
                 request.command,
                 // request.target,
@@ -174,7 +175,7 @@ browserAppData.runtime.onMessage.addListener(
                 request.document,
             );
         }
-        else if (request.apiName == 'stop_recording') {
+        else if (request.action == 'stop_recording') {
             stop_recording();
         }
     }

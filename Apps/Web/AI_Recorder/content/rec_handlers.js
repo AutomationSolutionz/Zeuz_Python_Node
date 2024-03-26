@@ -1,4 +1,6 @@
 /* Recorder handlers functions start */
+browserAppData = chrome || browser;
+
 var typeLock = 0;
 var typeTarget;
 
@@ -396,7 +398,7 @@ Recorder.addEventHandler('checkPageLoaded', 'readystatechange', function(event) 
 }, true);
 
 Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
-    var myPort = browser.runtime.connect();
+    var myPort = browserAppData.runtime.connect();
     var tmpText = this.locatorBuilders.buildAll(event.target);
     var tmpVal = getText(event.target);
     var tmpTitle = normalizeSpaces(event.target.ownerDocument.title);
@@ -440,7 +442,7 @@ Recorder.addEventHandler('editContent', 'blur', function(event) {
     }
 }, true);
 
-browser.runtime.sendMessage({
+browserAppData.runtime.sendMessage({
     attachRecorderRequest: true
 }).catch(function(reason){
 });
@@ -549,3 +551,18 @@ Recorder.prototype.findClickableElement = function(e) {
         }
     }
 };
+browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
+    if (request.attachRecorder) {
+        browserAppData.runtime.sendMessage({
+            attachHttpRecorder: true
+        });
+        recorder.attach();
+        return;
+    } else if (request.detachRecorder) {
+        browserAppData.runtime.sendMessage({
+            detachHttpRecorder: true
+        });
+        recorder.detach();
+        return;
+    }
+});
