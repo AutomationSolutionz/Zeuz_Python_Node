@@ -981,8 +981,8 @@ def run_test_case(
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
-            shared.Set_Shared_Variables("zeuz_prettify_limit", None)
-            CommonUtil.prettify_limit = None
+            shared.Set_Shared_Variables("zeuz_prettify_limit", 500)
+            CommonUtil.prettify_limit = 500
 
         # shared.Set_Shared_Variables("zeuz_automation_log", Path(temp_ini_file).parent.__str__())
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
