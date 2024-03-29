@@ -495,6 +495,27 @@ def browser_process_status(browser:str):
     else:
         return False
 
+
+def perform_semantic_search(sModuleInfo, selenium_driver, semantic_query, element=None, k=3):
+    from Framework.AI.semantic_search import find_by_semantic_search
+    CommonUtil.ExecLog(sModuleInfo, "Performing a semantic search", 1)
+    top_elements = find_by_semantic_search(selenium_driver, semantic_query, element)
+
+    value_to_print = []
+    for elem in top_elements:
+        element_html_header = elem["elem"]["element"].get_attribute('outerHTML')
+        element_html_header = element_html_header[:element_html_header.find(">")]
+
+        value_to_print.append({
+            "score": elem["score"],
+            "elem": element_html_header,
+        })
+
+    print("[AI] Found the following matches for the semantic search:\n", value_to_print)
+    print("[AI] Picking top result")
+    return top_elements[0]["elem"]["element"]
+
+
 initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None, profile_options=None):
@@ -1605,11 +1626,9 @@ def Enter_Text_In_Text_Box(step_data):
         text_value = ""
         use_js = False
         clear = True
+        semantic_query = None
         global selenium_driver
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "zeuz_failed"
+
         for left, mid, right in step_data:
             mid = mid.strip().lower()
             left = left.strip().lower()
@@ -1621,6 +1640,31 @@ def Enter_Text_In_Text_Box(step_data):
                 use_js = right.strip().lower() in ("true", "yes", "1")
             elif left == "clear":
                 clear = False if right.strip().lower() in ("no", "false") else True
+            elif "semantic query" in mid:
+                semantic_query = right
+
+        Element = LocateElement.Get_Element(step_data, selenium_driver)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+
+            if semantic_query is not None:
+                # TODO: instead of returning failed, we can try doing a self-healing, semantic search to find an element.
+                Element = perform_semantic_search(
+                    sModuleInfo=sModuleInfo,
+                    selenium_driver=selenium_driver,
+                    semantic_query=semantic_query,
+                )
+            else:
+                return "zeuz_failed"
+        elif semantic_query is not None:
+            # Use the found element as a container element for semantic search.
+            Element = perform_semantic_search(
+                sModuleInfo=sModuleInfo,
+                selenium_driver=selenium_driver,
+                semantic_query=semantic_query,
+                element=Element,
+            )
+
         if use_js:  # Use js will automatically clear the field and then enter text
             try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
@@ -1878,9 +1922,45 @@ def Click_Element(data_set, retry=0):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
+
+    # Logic for semantic search
+    # 1. If we find an element, use it as a container to contain the search.
+    # 2. If no element is found, perform a full `body` container search.
+    # 3. Semantic search may have sibling search as well which should narrow
+    #    down the result by first searching for the main element and then the
+    #    sibling element. We pick the sibling that are closest to the element
+    #    that we just picked.
+
+    semantic_query = None
+    for left, mid, right in data_set:
+        left = left.lower().strip()
+        mid = mid.lower().strip()
+        right = right.strip()
+
+        if "semantic query" in mid:
+            semantic_query = right
+
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "zeuz_failed"
+
+        if semantic_query is not None:
+            # TODO: instead of returning failed, we can try doing a self-healing, semantic search to find an element.
+            Element = perform_semantic_search(
+                sModuleInfo=sModuleInfo,
+                selenium_driver=selenium_driver,
+                semantic_query=semantic_query,
+            )
+        else:
+            return "zeuz_failed"
+    elif semantic_query is not None:
+        # Use the found element as a container element for semantic search.
+        Element = perform_semantic_search(
+            sModuleInfo=sModuleInfo,
+            selenium_driver=selenium_driver,
+            semantic_query=semantic_query,
+            element=Element,
+        )
+
     if location == "":
         try:
             if use_js:
