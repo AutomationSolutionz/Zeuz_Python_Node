@@ -22,6 +22,7 @@ declarations = (
     { "name": "ocr click",                  "function": "ocr_click",                    "screenshot": "desktop" },
     { "name": "ocr get value with coordinates",   "function": "ocr_get_value_with_coordinates",      "screenshot": "desktop" },
     { "name": "ocr get value with image",   "function": "ocr_get_value_with_image",     "screenshot": "desktop" },
+    { "name": "ocr get value with text",    "function": "ocr_get_value_with_text",      "screenshot": "desktop" },
 ) # yapf: disable
 
 module_name = "desktop"

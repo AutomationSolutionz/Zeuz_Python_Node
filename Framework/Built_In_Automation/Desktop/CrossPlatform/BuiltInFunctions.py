@@ -1463,13 +1463,17 @@ def ocr_get_value_with_coordinates(data_set):
     return "passed"
 
 
-def compare_ocr_coordinates(results, image_coords_updated,  direction):
+def compare_ocr_coordinates(results, image_coords_updated,  direction, gap):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     res_coords = [0, 0, 0, 0]
     diff = 9999
-    tslr = 25
-    tstb = 100
+    if gap != 0:
+        tslr = gap
+        tstb = gap
+    else:
+        tslr = 25
+        tstb = 100
     
     # extract top, left, bottom, right from the results and assign them to res_cords
     res_coords[0] = results[0][0][1]
@@ -1555,6 +1559,106 @@ def ocr_get_value_with_image(data_set):
     min_diff = min(text_diff)
     if min_diff == 9999:
         CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {image_direction} to the image", 3)
+        return "zeuz_failed"
+
+    idx = text_diff.index(min_diff)
+    text = results[idx][1]
+
+    Shared_Resources.Set_Shared_Variables(var_name, text)
+    return "passed"
+
+
+@logger
+def ocr_get_value_with_text(data_set):
+    """
+    This action lets you extract a text based on the position of the text you provide.
+    Field	                    Sub Field	                Value
+    text	                    element parameter	        enter the text that is closer to the text you want to extract
+    direction                   element parameter           direction of the text to be extracted regarding the given tex
+    ocr get value with text     desktop action              variable name that will hold the value
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    given_text = None
+    text_direction = None
+    var_name = None
+    given_text_coordinates = [0, 0, 0, 0]
+    threshold = 70
+    method = "match"
+    did_fuzzy = False
+    text_gap = 0
+    global reader
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "text":
+                given_text = right.strip()
+            elif left.strip().lower() == "direction":
+                text_direction = right.strip()
+            elif left.strip().lower() == "threshold":
+                threshold = int(right.strip())
+            elif "gap" in left.strip().lower():
+                text_gap = int(right.strip())
+            elif "action" in mid.strip().lower():
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    if reader is None:
+        ocr_thread = threading.Thread(target=get_easyocr_reader)
+        ocr_thread.start()
+        path = ocr_screenshot()
+        # wait for the OCR thread to finish
+        ocr_thread.join()
+    else:
+        path = ocr_screenshot()
+    
+    results = reader.readtext(path)
+
+    text_list = list(map(get_only_text, results))
+
+    if given_text in text_list:
+        idx = text_list.index(given_text)
+    else:
+        fuzzy_text_scores = list(map(get_fuzzy_score, text_list, repeat(given_text), repeat(method)))
+        idx = fuzzy_text_scores.index(max(fuzzy_text_scores))
+        did_fuzzy = True
+
+    # get the scores
+    if did_fuzzy:
+        text_score = fuzzy_text_scores[idx]
+        if text_score < threshold:
+            CommonUtil.ExecLog(sModuleInfo, f"After fuzzy match, score {text_score} falls below the threshold {threshold}", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"The closest  match is '{text_list[idx]}'", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, f"If you want to use this word as reference then either use differenet method or lower the threshold", 3
+            )
+            return "zeuz_failed"
+        CommonUtil.ExecLog(
+            sModuleInfo, f"Similar text after fuzzy {method} is '{text_list[idx]}' with a score of {fuzzy_text_scores[idx]}", 1
+        )
+    else:
+        text_score = int(results[idx][2]*100)
+        if text_score < threshold: 
+            CommonUtil.ExecLog(sModuleInfo, f"Score {text_score} below the threshodl {threshold}", 3)
+            return "zeuz_failed"
+
+    
+    result = results[idx][0]
+    given_text_coordinates[0] = result[0][1]
+    given_text_coordinates[1] = result[0][0]
+    given_text_coordinates[2] = result[2][1]
+    given_text_coordinates[3] = result[1][0]
+
+    text_diff = list(map(compare_ocr_coordinates, results, repeat(given_text_coordinates), repeat(text_direction), repeat(text_gap)))
+    min_diff = min(text_diff)
+    if min_diff == 9999:
+        CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {text_direction} to the image", 3)
         return "zeuz_failed"
 
     idx = text_diff.index(min_diff)
