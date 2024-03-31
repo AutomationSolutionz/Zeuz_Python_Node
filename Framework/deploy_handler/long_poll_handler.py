@@ -86,18 +86,15 @@ class DeployHandler:
                     server_online = False
                     continue
 
-                if resp.status_code != requests.codes['ok']:
-                    if resp.status_code == 401:
-                        # Logged out - sleep for a sec before returning so we
-                        # don't retry too fast.
-                        time.sleep(1)
-                        return
-
+                if not resp.ok:
                     server_online = False
-                    print("[deploy] error communicating with the deploy service, status code:", resp.status_code, " | reconnecting")
+                    print("[deploy] facing difficulty communicating with the server, status code:", resp.status_code, " | reconnecting")
                     try: print(Fore.YELLOW + str(resp.content))
                     except: pass
-                    continue
+
+                    # Encountered a server error, retry.
+                    time.sleep(random.randint(1, 3))
+                    return
 
                 self.on_message(resp.content)
                 reconnect = False

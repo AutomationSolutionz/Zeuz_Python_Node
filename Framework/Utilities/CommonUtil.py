@@ -114,7 +114,7 @@ previous_log_line = None
 teardown = True
 print_execlog = True
 show_log = True
-prettify_limit = None
+prettify_limit = 500
 show_browser_log = False
 step_module_name = None
 
@@ -246,7 +246,6 @@ def parse_value_into_object(val):
         return val
 
     try:
-        # val2 = ast.literal_eval(val)  # previous method
         # encoding and decoding is for handling escape characters such as \a \1 \2
         val2 = ast.literal_eval(val.encode('unicode_escape').decode())
         if not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
@@ -274,38 +273,40 @@ dont_prettify_on_server = ["step_data"]
 
 
 def prettify(key, val):
+    """Tries to pretty print the given value."""
+    global prettify_limit
+
     if show_log == False:
         return
-    """Tries to pretty print the given value."""
-    for each_var in zeuz_disable_var_print.keys():
-        if each_var != None:
-            if each_var in key:
-                return
+
+    # skip printing output for performance testing
     if performance_testing:
         return
-    color = Fore.MAGENTA
+
+    # do not print variables which are marked hidden
+    if key in zeuz_disable_var_print.keys():
+        return
+
     try:
-        if prettify_limit is None:
-            if type(val) == str:
-                val = parse_value_into_object(val)
-            print(color + "%s = " % (key), end="")
-            print_json(data=val)
-        else:
-            print(color + "%s = " % (key), end="")
-            print(json.dumps(val,indent=2)[:prettify_limit])
-
-        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)[:prettify_limit])
-        stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
-
-        if debug_status and key not in dont_prettify_on_server and ws_ss_log and stop_live_log == 'False':
-            live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
-            # 4 means console log which is Magenta color in server console
+        if type(val) == str:
+            val = parse_value_into_object(val)
+        val_output = json.dumps(val, indent=2)
     except:
-        # expression = "%s" % (key, val)
-        print(color + str(val)[:prettify_limit])
-        if debug_status and key not in dont_prettify_on_server and ws_ss_log:
-            live_log_service.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
+        val_output = str(val)
 
+    if len(val_output) > prettify_limit:
+        val_output = f"{val_output[:prettify_limit]}\n...(truncated {len(val_output)-prettify_limit} chars)"
+
+    color = Fore.MAGENTA
+    print(color + f"{key} = ", end="")
+    print(color + val_output)
+
+    expression = "%s = %s" % (key, val_output)
+    stop_live_log = ConfigModule.get_config_value("Advanced Options", "stop_live_log")
+
+    if debug_status and key not in dont_prettify_on_server and ws_ss_log and stop_live_log == 'False':
+        # 4 means console log which is Magenta color in server console
+        live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
@@ -488,6 +489,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                         fail_reason_str = "** Test case Failed on first run but Passed when Rerun **"
                         passed_after_rerun = False
                     testcase_info["execution_detail"]["failreason"] = fail_reason_str
+                    tc_error_logs = []
                     return
                 if step_id == "none":
                     return
@@ -1359,14 +1361,14 @@ def generate_time_based_performance_report(session) -> None:
         endpoint_wise[endpoint]['percentile_vs_time'] = []
         endpoint_wise[endpoint]['fiftypercentile_per_second'] = []
         endpoint_wise[endpoint]['ninetypercentile_per_second'] = []
-        
+
         endpoint_wise[endpoint]['dict_response_time_per_time'] = dict(
             sorted(endpoint_wise[endpoint]['dict_response_time_per_time'].items(),
                    key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
         endpoint_wise[endpoint]['dict_byte_throughput_per_time'] = dict(
             sorted(endpoint_wise[endpoint]['dict_byte_throughput_per_time'].items(),
                    key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
-        
+
         for key, value_list in endpoint_wise[endpoint]['dict_response_time_per_time'].items():
             endpoint_wise[endpoint]['response_time_vs_time'].append([key, int(sum(value_list) / len(value_list))])
             endpoint_wise[endpoint]['user_count_per_second'].append([key, len(value_list) + endpoint_wise[endpoint]['user_count_per_second'][-1][1] if len(endpoint_wise[endpoint]['user_count_per_second']) > 0 else 0])

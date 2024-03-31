@@ -821,7 +821,8 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         if not (operation.replace(" ", "").replace("_", "") == "saveifnotdefined" and sr.Test_Shared_Variables(variable_name)):
-            sr.Set_Shared_Variables(variable_name, variable_value)
+            sr.Set_Shared_Variables(variable_name, variable_value, print_variable=False)
+            CommonUtil.prettify(variable_name, variable_value)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
