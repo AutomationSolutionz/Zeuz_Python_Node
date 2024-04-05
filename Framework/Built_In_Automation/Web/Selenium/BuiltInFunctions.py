@@ -1929,25 +1929,11 @@ def Click_Element(data_set, retry=0):
     # Click using location
     else:
         try:
-            location = location.replace(" ", "")
-            location = location.split(",")
-            x = float(location[0])
-            y = float(location[1])
-
-            height_width = Element.size
-
-            ele_width = int((height_width)["width"])
-            ele_height = int((height_width)["height"])
-
-            total_x_offset = int((ele_width // 2) * (x / 100))
-            total_y_offset = int((ele_height // 2) * (y / 100))
-
-            # Click coordinates
+            total_x_offset, total_y_offset = get_offsets(location, Element)
             actions = ActionChains(selenium_driver)  # Create actions object
             actions.move_to_element_with_offset(Element, total_x_offset, total_y_offset)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
-
             CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
             return "passed"
         except Exception:
@@ -4771,6 +4757,23 @@ def upload_file_through_window(step_data):
 
 
 # Method to upload file
+def get_offsets(location: str, Element: WebElement) -> tuple[int]:
+    location = location.replace(" ", "")
+    location = location.split(",")
+    x = float(location[0])
+    y = float(location[1])
+
+    height_width = Element.size
+
+    ele_width = int((height_width)["width"])
+    ele_height = int((height_width)["height"])
+
+    total_x_offset = int((ele_width // 2) * (x / 100))
+    total_y_offset = int((ele_height // 2) * (y / 100))
+
+    return total_x_offset, total_y_offset
+
+
 @logger
 def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4778,7 +4781,7 @@ def drag_and_drop(dataset):
     try:
         source = []
         destination = []
-        offset = None
+        destination_offset = None
         param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
@@ -4794,18 +4797,17 @@ def drag_and_drop(dataset):
             elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
-            elif left.strip().lower().startswith('offset'):
-                x,y = right.split(',')
-                offset = (x.strip(),y.strip())
-        
-        if offset == None and destination == []:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide either destination element or offset. Example:\n'+
-               "(id, dst element parameter, file) or (offse | element parameter | 25,75)", 3)
-            return "zeuz_failed"
+            elif left.strip().lower() == "destination offset" and mid.strip().lower() == 'optional parameter':
+                destination_offset = right
 
         if not source:
             CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
                "(id, src element parameter, file)", 3)
+            return "zeuz_failed"
+
+        if not destination:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
+               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
         source_element = LocateElement.Get_Element(source, selenium_driver)
@@ -4813,19 +4815,19 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
             return "zeuz_failed"
 
-        if destination:
-            destination_element = LocateElement.Get_Element(destination, selenium_driver)
-            if destination_element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
-                return "zeuz_failed"
+        destination_element = LocateElement.Get_Element(destination, selenium_driver)
+        if destination_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+            return "zeuz_failed"
 
-        if destination:
+        if destination_offset:
+            x, y = get_offsets(destination_offset, destination_element)
+            ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).release().perform()
+        else:
             ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        elif offset:
-            ActionChains(selenium_driver).drag_and_drop_by_offset(source_element,offset[0],offset[1]).perform()
-        # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
-        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+            # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
 
+        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
