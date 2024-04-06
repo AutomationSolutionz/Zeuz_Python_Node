@@ -769,7 +769,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -873,7 +872,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -951,7 +949,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -982,7 +979,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1005,7 +1001,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Ie(executable_path=ie_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1040,7 +1035,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1058,7 +1052,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 desired_capabilities=remote_desired_cap)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1283,10 +1276,11 @@ def Go_To_Link_V2(step_data):
         selenium_details[driver_tag]["driver"] = selenium_driver
         current_driver_id = selenium_driver
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-        
 
     if url:
         selenium_driver.get(url)
+
+    selenium_driver.maximize_window()
         
     CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
     return "passed"
