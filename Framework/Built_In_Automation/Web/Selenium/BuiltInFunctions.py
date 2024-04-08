@@ -1276,14 +1276,16 @@ def Go_To_Link_V2(step_data):
             selenium_driver = webdriver.Chrome(options=options)
         elif "firefox" in dependency_browser:
             selenium_driver = webdriver.Firefox(options=options)
-            selenium_details[driver_tag] = dict()
-            
+        
         selenium_driver.set_page_load_timeout(page_load_timeout_sec)
         selenium_details[driver_tag] = dict()
         selenium_details[driver_tag]["driver"] = selenium_driver
         current_driver_id = selenium_driver
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
         
+        # Handle headless mode window maximize
+        if '--headless' in options.arguments and '--start-maximized' in options.arguments:
+            selenium_driver.set_window_size(default_x, default_y)
 
     if url:
         selenium_driver.get(url)
