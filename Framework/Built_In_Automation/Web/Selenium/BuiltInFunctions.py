@@ -4277,7 +4277,7 @@ def switch_window_or_tab(step_data):
                     if (partial_match and switch_by_title.lower() in selenium_driver.title.lower()) or (
                             not partial_match and switch_by_title.lower() == selenium_driver.title.lower()):
                         window_handles_found = True
-                        CommonUtil.ExecLog(sModuleInfo, "Window switched to '%s'" % selenium_driver.title, 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Tab switched to '%s'" % selenium_driver.title, 1)
                         break
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Couldn't find the title. Trying again after 1 second delay", 2)
@@ -4289,7 +4289,7 @@ def switch_window_or_tab(step_data):
                 selenium_driver.switch_to.window(current_window)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "unable to find the title among the windows. If you want to match partially please use '*windows title'",
+                    "unable to find the title among the tabs. If you want to match partially please use '*tab title'",
                     3)
                 return "zeuz_failed"
 
@@ -4297,11 +4297,11 @@ def switch_window_or_tab(step_data):
             window_index = int(switch_by_index)
             window_to_switch = selenium_driver.window_handles[window_index]
             selenium_driver.switch_to.window(window_to_switch)
-            CommonUtil.ExecLog(sModuleInfo, "Window switched to index %s" % switch_by_index, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Tab switched to index %s" % switch_by_index, 1)
 
         return "passed"
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your window", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
