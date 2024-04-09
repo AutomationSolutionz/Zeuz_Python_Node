@@ -4226,18 +4226,18 @@ def switch_window_or_tab(step_data):
 
     Example 1:
     Field	                    Sub Field	        Value
-    *window title               element parameter	googl
+    *window title               input parameter	    googl
     switch window/tab           selenium action 	switch window or frame
 
 
     Example 2:
     Field	                    Sub Field	        Value
-    window title                element parameter	google
+    window title                input parameter	    google
     switch window/tab           selenium action 	switch window or frame
 
     Example 3:
     Field	                    Sub Field	        Value
-    window index                element parameter	9
+    window index                input parameter	    9
     switch window/tab           selenium action 	switch window or frame
 
     """
@@ -4297,7 +4297,81 @@ def switch_window_or_tab(step_data):
             window_index = int(switch_by_index)
             window_to_switch = selenium_driver.window_handles[window_index]
             selenium_driver.switch_to.window(window_to_switch)
-            CommonUtil.ExecLog(sModuleInfo, "Tab switched to index %s" % switch_by_index, 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Tab switched to index {switch_by_index} title {selenium_driver.title}", 1)
+
+        return "passed"
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def close_tab(step_data):
+    """
+    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
+
+    Example 1:
+    Field	                    Sub Field	        Value
+    close tab                   selenium action 	close tab
+
+    Example 2:
+    Field	                    Sub Field	        Value
+    tab title                   input parameter	    ['Zeuz', 'Google']
+    close tab                   selenium action 	close tab
+
+    Example 3:
+    Field	                    Sub Field	        Value
+    tab index                   input parameter	    [0,1,-1]
+    close tab                   selenium action 	close tab
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        close_tabs = []
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left in ("tabs"):
+                close_tabs = [i.strip().lower() if type(i) == str else i for i in CommonUtil.parse_value_into_object(right)]
+
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
+        return "zeuz_failed"
+
+    try:
+        window_handles_found = False
+        if len(close_tabs) > 1 and type(close_tabs[0]) == str:
+            current_window = selenium_driver.current_window_handle
+            for each in selenium_driver.window_handles:
+                selenium_driver.switch_to.window(each)
+                if selenium_driver.title.strip().lower() in close_tabs:
+                    title = selenium_driver.title
+                    selenium_driver.close()
+                    window_handles_found = True
+                    CommonUtil.ExecLog(sModuleInfo, "Tab closed '%s'" % title, 1)
+            if window_handles_found:
+                if current_window in selenium_driver.window_handles:
+                    selenium_driver.switch_to.window(current_window)
+                else:
+                    selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        elif len(close_tabs) > 1:
+            current_window = selenium_driver.current_window_handle
+            for each in [selenium_driver.window_handles[i] for i in close_tabs]:
+                selenium_driver.switch_to.window(each)
+                title = selenium_driver.title
+                selenium_driver.close()
+                CommonUtil.ExecLog(sModuleInfo, f"Tab closed '{title}'", 1)
+            if current_window in selenium_driver.window_handles:
+                selenium_driver.switch_to.window(current_window)
+            else:
+                selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        else:
+            title = selenium_driver.title
+            selenium_driver.close()
+            CommonUtil.ExecLog(sModuleInfo, f"Current tab closed '{title}'", 1)
+            selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
 
         return "passed"
     except Exception:
