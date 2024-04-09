@@ -4227,39 +4227,18 @@ def switch_window_or_tab(step_data):
     Example 1:
     Field	                    Sub Field	        Value
     *window title               element parameter	googl
-    switch window or frame      selenium action 	switch window or frame
+    switch window/tab           selenium action 	switch window or frame
 
 
     Example 2:
     Field	                    Sub Field	        Value
     window title                element parameter	google
-    switch window or frame      selenium action 	switch window or frame
+    switch window/tab           selenium action 	switch window or frame
 
     Example 3:
     Field	                    Sub Field	        Value
     window index                element parameter	9
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 4:
-    Field	                    Sub Field	        Value
-    frame index                 element parameter	1
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 5:
-    Field	                    Sub Field	        Value
-    frame title                 element parameter	iFrame1
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 6:
-    Field	                    Sub Field	        Value
-    frame index                 element parameter	default content
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 7:
-    Field	                    Sub Field	        Value
-    frame title                 element parameter	iFrame1
-    frame index                 element parameter	1
-    switch window or frame      selenium action 	switch window or frame
+    switch window/tab           selenium action 	switch window or frame
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4267,30 +4246,20 @@ def switch_window_or_tab(step_data):
     try:
         window_title_condition = False
         window_index_condition = False
-        frame_condition = False
         partial_match = False
-        frame_title_index = []
         for left, mid, right in step_data:
             left = left.lower().strip()
-            if left == "window title":
+            if left in ("window title", "tab title"):
                 switch_by_title = right
                 window_title_condition = True
-            elif left == "*window title":
+            elif left in ("*window title", "*tab title"):
                 switch_by_title = right
                 partial_match = True
                 window_title_condition = True
-            elif left == "window index":
+            elif left in ("window index", "tab index"):
                 switch_by_index = right.strip()
                 window_index_condition = True
                 window_title_condition = False
-                # break  # Index priority is highest so break the loop
-            elif left == "frame title":
-                frame_title_index += [right]
-                frame_condition = True
-            elif left == "frame index":
-                frame_title_index += [-1000] if "default" in right.lower() else [int(right.strip())]
-                # Using -1000 as a flag of default content
-                frame_condition = True
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
@@ -4299,13 +4268,14 @@ def switch_window_or_tab(step_data):
     try:
         if window_title_condition:
             all_windows = selenium_driver.window_handles
+            current_window = selenium_driver.current_window_handle
             window_handles_found = False
             Tries = 3
             for Try in range(Tries):
                 for each in all_windows:
                     selenium_driver.switch_to.window(each)
-                    if (partial_match and switch_by_title in (selenium_driver.title)) or (
-                            not partial_match and switch_by_title == (selenium_driver.title)):
+                    if (partial_match and switch_by_title.lower() in selenium_driver.title.lower()) or (
+                            not partial_match and switch_by_title.lower() == selenium_driver.title.lower()):
                         window_handles_found = True
                         CommonUtil.ExecLog(sModuleInfo, "Window switched to '%s'" % selenium_driver.title, 1)
                         break
@@ -4316,55 +4286,22 @@ def switch_window_or_tab(step_data):
                 break  # only executed if the inner loop did break
 
             if not window_handles_found:
+                selenium_driver.switch_to.window(current_window)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "unable to find the title among the windows. If you want to match partially please use '*windows title'",
                     3)
                 return "zeuz_failed"
-            # else:
-            #     return True
 
         elif window_index_condition:
             window_index = int(switch_by_index)
             window_to_switch = selenium_driver.window_handles[window_index]
             selenium_driver.switch_to.window(window_to_switch)
             CommonUtil.ExecLog(sModuleInfo, "Window switched to index %s" % switch_by_index, 1)
-            # return True
 
-        elif not frame_condition:
-            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title, window index, frame title or frame index", 3)
-            return "zeuz_failed"
-
+        return "passed"
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to switch your window", 3)
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-    try:
-        if frame_condition:
-            selenium_driver.switch_to.default_content()
-            CommonUtil.ExecLog(sModuleInfo, "Frame switched to default content", 1)
-            for i in frame_title_index:
-                if isinstance(i, int) and i != -1000:
-                    selenium_driver.switch_to.frame(i)
-                    CommonUtil.ExecLog(sModuleInfo, "Frame switched to index %s" % str(i), 1)
-                elif isinstance(i, str):
-                    if "default" in i:
-                        try:
-                            selenium_driver.switch_to.frame(i)
-                            CommonUtil.ExecLog(sModuleInfo, "Frame switched to '%s'" % i, 1)
-                        except NoSuchFrameException:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "No such frame named '%s'. Switching to default content exiting from all frames." % i,
-                                2)
-                            selenium_driver.switch_to.default_content()
-                    else:
-                        selenium_driver.switch_to.frame(i)
-                        CommonUtil.ExecLog(sModuleInfo, "Frame switched to '%s'" % i, 1)
-        return "passed"
-
-    except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch frame", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
