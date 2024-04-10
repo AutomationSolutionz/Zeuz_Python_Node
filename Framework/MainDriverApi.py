@@ -727,18 +727,8 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
         sTestCaseStatus = "Failed"
     elif "SKIPPED" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
-        skipped = True
-        for each in sTestStepResultList:
-            if each != "SKIPPED":
-                skipped = False
-                break
-        if skipped:
-            sTestCaseStatus = "Skipped"
-            CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
-        else:
-            sTestCaseStatus = "Passed"
-            CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
+        sTestCaseStatus = "Skipped"
+        CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
     elif "PASSED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
         sTestCaseStatus = "Passed"
@@ -940,7 +930,33 @@ def send_to_bigquery(execution_log, metrics):
     send_browser_perf_metrics()
 
 
+def check_test_skip(all_testcases_info, run_id, tc_num, skip_remaining=True) -> bool:
+    if run_id not in CommonUtil.skip_testcases:
+        return False
+    if skip_remaining and 'skip remaining' in CommonUtil.skip_testcases[run_id]:
+        return True
+    if tc_num in CommonUtil.skip_testcases[run_id]:
+        return True
+    ranges = [i for i in CommonUtil.skip_testcases[run_id] if type(i) == range]
+    if len(ranges) == 0:
+        return False
+    tc_nums = [int(i['testcase_no'].split('-')[-1]) for i in all_testcases_info]
+    target = tc_nums.index(tc_num)
+    for rang in ranges:
+        start = tc_nums.index(rang.start) if rang.start in tc_nums else None
+        end = tc_nums.index(rang.stop) if rang.stop in tc_nums else None
+        if start is None and end is None:
+            continue
+        if start is None and target <= end:
+            return True
+        if end is None and start <= target:
+            return True
+
+    return False
+
+
 def run_test_case(
+    all_testcases_info,
     TestCaseID,
     sModuleInfo,
     run_id,
@@ -1005,23 +1021,8 @@ def run_test_case(
         # get test case start time
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
-        if run_id not in CommonUtil.skip_testcases:
-            CommonUtil.skip_testcases_list = []
-            sTestStepResultList = run_all_test_steps_in_a_test_case(
-                testcase_info,
-                test_case,
-                sModuleInfo,
-                run_id,
-                file_specific_steps,
-                final_dependency,
-                final_run_params,
-                temp_ini_file,
-                debug_info,
-                performance
-            )
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'skip remaining' in CommonUtil.skip_testcases_list:
-            sTestStepResultList = ['SKIPPED']
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and tc_num in CommonUtil.skip_testcases_list:
+
+        if check_test_skip(all_testcases_info, run_id, tc_num):
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
@@ -1036,6 +1037,8 @@ def run_test_case(
                 debug_info,
                 performance
             )
+            if check_test_skip(all_testcases_info, run_id, tc_num, False):
+                sTestStepResultList[-1] = 'SKIPPED'
 
         # TODO: Test case run is completed here somewhere.
 
@@ -1977,6 +1980,7 @@ def main(device_dict, all_run_id_info):
                         except Exception as e:
                             print(e)
                             run_test_case(
+                                all_testcases_info,
                                 test_case_no,
                                 sModuleInfo,
                                 run_id,
@@ -1999,6 +2003,7 @@ def main(device_dict, all_run_id_info):
 
                     else:
                         run_test_case(
+                            all_testcases_info,
                             test_case_no,
                             sModuleInfo,
                             run_id,
