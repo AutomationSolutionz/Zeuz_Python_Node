@@ -183,7 +183,6 @@ api_performance_data: List[PerformanceDataPoint] = []
 processed_performance_data = {}
 
 skip_testcases = {}
-skip_testcases_list = []
 global_var = {}
 global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
 zeuz_disable_var_print = {}

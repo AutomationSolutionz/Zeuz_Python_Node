@@ -4380,18 +4380,22 @@ def skip_testcases(data_set):
                 test_cases = right.strip()
 
         run_id = sr.Get_Shared_Variables("run_id")
-        CommonUtil.skip_testcases[run_id] = True
+        if run_id not in CommonUtil.skip_testcases:
+            CommonUtil.skip_testcases[run_id] = []
         if test_cases == 'skip remaining':
-            CommonUtil.skip_testcases_list.append(test_cases)
+            CommonUtil.skip_testcases[run_id].append(test_cases)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
                 if '-' in test_case:
+                    CommonUtil.ExecLog(sModuleInfo, "Range wont work for now. Provide test case name in comma separated way or put 'skip remaining'", 3)
+                    return "zeuz_failed"
+                    ''' Range wont work for now because only single tc comes from server one by one '''
                     range_start, range_end = map(int, test_case.split('-'))
-                    CommonUtil.skip_testcases_list.extend(list(range(range_start, range_end + 1)))
+                    CommonUtil.skip_testcases[run_id].append(range(range_start, range_end))
                 else:
                     tc_num = int(test_case.split('-')[0])
-                    CommonUtil.skip_testcases_list.append(tc_num)
+                    CommonUtil.skip_testcases[run_id].append(tc_num)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Selected Test Case")
         return "passed"
 
