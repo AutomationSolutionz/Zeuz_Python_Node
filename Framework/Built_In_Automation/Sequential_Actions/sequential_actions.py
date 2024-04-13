@@ -192,7 +192,7 @@ def get_data_set_nums(action_value, step_loop=False):
             return []
 
         action_value = action_value.replace('nextactions', str([i for i in range(int(CommonUtil.current_action_no)+1, len(CommonUtil.all_step_dataset[int(CommonUtil.current_step_no)-1])+1)])[1:-1])
-        action_value = action_value.replace('nextsteps', str([i for i in range(int(CommonUtil.current_step_no), len(CommonUtil.all_step_dataset))])[1:-1])
+        action_value = action_value.replace('nextsteps', str([i for i in range(int(CommonUtil.current_step_no)+1, len(CommonUtil.all_step_dataset))])[1:-1])
         if 'next' in action_value:
             for each in set(['next' + m for m in re.findall('next([-+]\d+)?', action_value)]):
                 if each == 'next':
