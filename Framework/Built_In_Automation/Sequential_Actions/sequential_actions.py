@@ -178,30 +178,48 @@ def write_browser_logs():
 
 
 deprecateLog = True
-def get_data_set_nums(action_value):
+def get_data_set_nums(action_value, step_loop=False):
     try:
+        action_value = action_value.replace(" ", "").replace("_", "").lower()
         data_set_nums = []
         global deprecateLog
-        if "run" in action_value.lower() or "#" in action_value.lower():
-            if deprecateLog:
-                deprecateLog = False
-                CommonUtil.ExecLog(
-                    "",
-                    "remove 'action#', 'run'. This one is older syntax and will be removed on a later period. Try the simple syntax format writen in document",
-                    2,
-                )
-            splitted = str(action_value).split(",")
-            for each in splitted:
-                try:
-                    string = str(each).split("#")[1].strip()
-                    if string.endswith(")"):
-                        string = string[:-1]
-                    elif " " in string:
-                        string = string.split(" ")[0]
-                    data_set_nums.append(int(string) - 1)
-                except:
-                    pass
-        elif "if" in action_value.lower():
+
+        if step_loop and 'nextactions' in action_value:
+            CommonUtil.ExecLog("get_data_set_nums", "'next_actions' is not valid in step loop", 3)
+            return []
+        if not step_loop and 'nextsteps' in action_value:
+            CommonUtil.ExecLog("get_data_set_nums", "'next_steps' is only valid in step looping", 3)
+            return []
+
+        action_value = action_value.replace('nextactions', str([i for i in range(int(CommonUtil.current_action_no)+1, len(CommonUtil.all_step_dataset[int(CommonUtil.current_step_no)-1])+1)])[1:-1])
+        action_value = action_value.replace('nextsteps', str([i for i in range(int(CommonUtil.current_step_no)+1, len(CommonUtil.all_step_dataset))])[1:-1])
+        if 'next' in action_value:
+            for each in set(['next' + m for m in re.findall('next([-+]\d+)?', action_value)]):
+                if each == 'next':
+                    continue
+                if step_loop:
+                    action_value = action_value.replace(each, str(eval(each.replace('next', str(int(CommonUtil.current_step_no)+1)))))
+                else:
+                    action_value = action_value.replace(each, str(eval(each.replace('next', str(int(CommonUtil.current_action_no)+1)))))
+            if step_loop:
+                action_value = action_value.replace('next', str(int(CommonUtil.current_step_no) + 1))
+            else:
+                action_value = action_value.replace('next', str(int(CommonUtil.current_action_no)+1))
+        if 'this' in action_value:
+            for each in set(['this' + m for m in re.findall('this([-+]\d+)?', action_value)]):
+                if each == 'this':
+                    continue
+                if step_loop:
+                    action_value = action_value.replace(each, str(eval(each.replace('this', str(int(CommonUtil.current_step_no))))))
+                else:
+                    action_value = action_value.replace(each, str(eval(each.replace('this', str(int(CommonUtil.current_action_no))))))
+            if step_loop:
+                action_value = action_value.replace('this', str(int(CommonUtil.current_step_no)))
+            else:
+                action_value = action_value.replace('this', str(int(CommonUtil.current_action_no)))
+
+        action_value = action_value.replace('to', '')
+        if "if" in action_value:
             valid, data = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', ','), ""
             for i in action_value:
                 if i in valid:
@@ -209,7 +227,7 @@ def get_data_set_nums(action_value):
             data_set_nums += get_data_set_nums(data)
 
         else:
-            splitted = str(action_value).strip().split(",")
+            splitted = str(action_value).split(",")
             for each in splitted:
                 try:
                     if "-" in each:
@@ -530,7 +548,7 @@ def for_loop_action(step_data, data_set_no):
                 CommonUtil.ExecLog(sModuleInfo, "This dataset of for loop action is deprecated. Download the latest dataset and use", 2)
                 deprecation_log = False
             if row[1].strip().lower() == "for loop action":
-                values = get_data_set_nums(sr.get_previous_response_variables_in_strings(row[2].strip()))
+                values = get_data_set_nums(sr.get_previous_response_variables_in_strings(row[2].strip()), step_loop)
                 if step_loop:
                     loop_steps = [list(range(len(CommonUtil.all_step_dataset[i]))) if i in values else [] for i in list(range(len(CommonUtil.all_step_dataset)))]
                     CommonUtil.disabled_step += [i+1 for i in values]
@@ -582,6 +600,8 @@ def for_loop_action(step_data, data_set_no):
                     exit_loop_and_fail["cond"].append(row[2])
                 elif row[1].strip().lower() == "optional loop settings":
                     exit_loop_and_fail["cond"].append(sanitize_deprecated_dataset(row[2]))
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Wrong dataset provided for exit loop and fail", 2)
             elif row[0].strip().lower().startswith("exit loop"): # exit loop or exit loop and continue
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
@@ -606,6 +626,8 @@ def for_loop_action(step_data, data_set_no):
                     exit_loop_and_cont["cond"].append(row[2])
                 elif row[1].strip().lower() == "optional loop settings":
                     exit_loop_and_cont["cond"].append(sanitize_deprecated_dataset(row[2]))
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Wrong dataset provided for exit loop and continue", 2)
             elif row[0].strip().lower().startswith("continue to next iter"):
                 if not row[2].lower().startswith("if"):
                     CommonUtil.ExecLog(sModuleInfo, "'if' keyword is not provided at beginning", 3)
@@ -630,6 +652,8 @@ def for_loop_action(step_data, data_set_no):
                     continue_next_iter["cond"].append(row[2])
                 elif row[1].strip().lower() == "optional loop settings":
                     continue_next_iter["cond"].append(sanitize_deprecated_dataset(row[2]))
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Wrong dataset provided for continue to next iter", 2)
 
         if all([len(i) == 0 for i in loop_steps]):
             CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action doc for more info", 3)
@@ -651,9 +675,6 @@ def for_loop_action(step_data, data_set_no):
                 sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
                 sr.test_action_info = CommonUtil.all_action_info[step_cnt]
                 loop_this_data_sets = loop_steps[step_cnt]
-                if step_index == CommonUtil.step_index and step_loop:
-                    tmp_step_exit_fail_called = step_exit_fail_called
-                    tmp_step_exit_pass_called = step_exit_pass_called
                 for data_set_index in each_step:
                     if data_set_index in inner_skip:
                         continue
@@ -682,6 +703,8 @@ def for_loop_action(step_data, data_set_no):
                     outer_skip = list(set(outer_skip + inner_skip))
 
                     if result == "passed" and data_set_index in exit_loop_and_cont["pass"][step_cnt]:
+                        step_exit_fail_called = False
+                        step_exit_pass_called = False
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Loop exit condition satisfied. Action %s passed. Exiting loop" % str(data_set_index + 1),
@@ -696,6 +719,8 @@ def for_loop_action(step_data, data_set_no):
                         die = True
                         break
                     elif result == "zeuz_failed" and data_set_index in exit_loop_and_cont["fail"][step_cnt]:
+                        step_exit_fail_called = False
+                        step_exit_pass_called = False
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Loop exit condition satisfied. Action %s failed. Exiting loop" % str(data_set_index + 1),
@@ -710,10 +735,14 @@ def for_loop_action(step_data, data_set_no):
                         die = True
                         break
                     elif result == "passed" and data_set_index in continue_next_iter["pass"][step_cnt]:
+                        step_exit_fail_called = False
+                        step_exit_pass_called = False
                         CommonUtil.ExecLog(sModuleInfo, "Action %s passed. Continuing to next iteration." % str(data_set_index + 1), 1)
                         cont_break = True
                         break
                     elif result == "zeuz_failed" and data_set_index in continue_next_iter["fail"][step_cnt]:
+                        step_exit_fail_called = False
+                        step_exit_pass_called = False
                         CommonUtil.ExecLog(sModuleInfo, "Action %s failed. Continuing to next iteration." % str(data_set_index + 1), 1)
                         cont_break = True
                         break
@@ -749,10 +778,6 @@ def for_loop_action(step_data, data_set_no):
                         die = True
                         break
 
-                if step_index == CommonUtil.step_index and step_loop:
-                    # If this for loop is the one who initiated the step loop then recall its original step_exit values
-                    step_exit_fail_called = tmp_step_exit_fail_called
-                    step_exit_pass_called = tmp_step_exit_pass_called
                 if die or cont_break:
                     break
             if die:
@@ -2382,4 +2407,6 @@ if  4  ,9 ,10 pass
 if  4  ,9 ,10, 120-20 passes
 if any passes
 if any any passes
-if ay passes'''
+if ay passes
+this-1199athis+-1,this+1
+'''
