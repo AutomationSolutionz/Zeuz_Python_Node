@@ -40,6 +40,7 @@ from datetime import datetime
 import pytz
 import re
 import copy
+import traceback
 
 from . import common_functions as common, performance_action  # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
@@ -291,16 +292,24 @@ def If_else_action(step_data, data_set_no):
             statement = ""
             operator = ""
             operators = {" |==| ": 0, " |!=| ": 0, " |<=| ": 0, " |>=| ": 0, " |>| ": 0, " |<| ": 0, " |in| ": 0}
-            statements = ("else if", "else", "if")
+            statements = ("elif", "else if", "else", "if")
             for i in statements:
                 if left.lower().find(i) == 0:
                     statement = i
                     break
-
+            if statement == 'else if':
+                left = 'elif' + left[len(statement):]
+                statement = 'elif'
+                if CommonUtil.debug_status:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Syntax error. Convert 'else if' to 'elif'",
+                        3,
+                    )
             if statement not in statements:
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Specify a statement among (if, else if, else) and add a <single space> after that",
+                    "Specify a statement among (if, elif, else) and add a <single space> after that",
                     3,
                 )
                 return "zeuz_failed", []
@@ -314,18 +323,7 @@ def If_else_action(step_data, data_set_no):
                     for i in operators:
                         if i.strip() in left:
                             operators[i] += 1
-                    #TODO: Check these 2 lines, should not be needed anymore
 
-                    # operators[" |<| "] -= operators[" |<=| "]
-                    # operators[" |>| "] -= operators[" |>=| "]
-
-                    if sum(operators.values()) == 0:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
-                            3,
-                        )
-                        return "zeuz_failed", []
                 if sum(operators.values()) == 1:
                     for i in operators:
                         if operators[i] == 1:
@@ -340,7 +338,7 @@ def If_else_action(step_data, data_set_no):
                 Lvalue and Rvalue can have spaces at starting or ending so don't try stripping them. it can manipulate
                 their actual values. Suppose, %|XY|% = "Hello " stripping will remove the last space"""
 
-                if statement != "else":
+                if statement != "else" and operator:
                     Lvalue, Rvalue = left[len(statement + " "):].split(operator)  # remove "if "
                     Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
                     Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
@@ -358,68 +356,94 @@ def If_else_action(step_data, data_set_no):
                 if statement == "else":
                     if not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
+                    return
 
-                elif operator == "|==|":
+                try:
+                    if eval(left[len(statement):], sr.shared_variables):
+                        if not condition_matched:
+                            condition_matched = True
+                            for i in get_data_set_nums(right):
+                                next_level_step_data.append(i)
+                            outer_skip += next_level_step_data
+                        else:
+                            outer_skip += get_data_set_nums(right)
+                except SyntaxError as e:
+                    if CommonUtil.debug_status:
+                        m = traceback.format_exc()
+                        m = m.split('except SyntaxError as e:')[-1]
+                        m = m[m.find('\n')+1:]
+                        m = m.split('SyntaxError: invalid syntax')[0]
+
+                        correct = left.replace(operator, operator[1:-1]) if operator else left
+                        correct = correct.replace('%|', '').replace('|%', '')
+                        correct = statement + correct[len(statement):]
+
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            m+f"Syntax error. Correct form would be >> {correct}\nPlease migrate all if_else actions to this new dataset that is exactly similar to python syntax. Previous dataset is deprecated",
+                            3,
+                        )
+                if operator == "|==|":
                     if Lvalue == Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
                 elif operator == "|!=|":
                     if Lvalue != Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
                 elif operator == "|<=|":
                     if Lvalue <= Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
                 elif operator == "|>=|":
                     if Lvalue >= Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
                 elif operator == "|<|":
                     if Lvalue < Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
                 elif operator == "|>|":
                     if Lvalue > Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
                 elif operator == "|in|":
                     if Lvalue in Rvalue and not condition_matched:
                         condition_matched = True
-                        for i in get_data_set_nums(str(right).strip()):
+                        for i in get_data_set_nums(right):
                             next_level_step_data.append(i)
                         outer_skip += next_level_step_data
                     else:
-                        outer_skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(right)
 
             if statement == "if":
                 if_exists = True
@@ -428,7 +452,7 @@ def If_else_action(step_data, data_set_no):
                 if condition_matched:
                     log = if_else_log_for_actions(data_set_for_log[row_index][0], next_level_step_data)
                     CommonUtil.ExecLog(sModuleInfo, log, 1)
-            elif statement == "else if":
+            elif statement == "elif":
                 if not if_exists:
                     CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
                     return "zeuz_failed", []
@@ -2086,16 +2110,16 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         left = left.lower()
         mid = mid.lower()
         if "true" in left and "conditional action" in mid:
-            outer_skip += get_data_set_nums(str(right).strip())
+            outer_skip += get_data_set_nums(right)
             if logic_decision:
-                for i in get_data_set_nums(str(right).strip()):
+                for i in get_data_set_nums(right):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
 
         elif "false" in left and "conditional action" in mid:
-            outer_skip += get_data_set_nums(str(right).strip())
+            outer_skip += get_data_set_nums(right)
             if not logic_decision:
-                for i in get_data_set_nums(str(right).strip()):
+                for i in get_data_set_nums(right):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
 
