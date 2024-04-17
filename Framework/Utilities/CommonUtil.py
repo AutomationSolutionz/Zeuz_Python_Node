@@ -182,6 +182,7 @@ api_performance_data: List[PerformanceDataPoint] = []
 
 processed_performance_data = {}
 
+tc_nums = {}
 skip_testcases = {}
 global_var = {}
 global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}

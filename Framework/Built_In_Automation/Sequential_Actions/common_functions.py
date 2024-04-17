@@ -4370,10 +4370,8 @@ def skip_testcases(data_set):
               skip testcases | common action | 6716-6720
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
         test_cases = None
-
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "skip testcases" in left:
@@ -4388,9 +4386,6 @@ def skip_testcases(data_set):
         else:
             for test_case in test_cases.split(","):
                 if '-' in test_case:
-                    CommonUtil.ExecLog(sModuleInfo, "Range wont work for now. Provide test case name in comma separated way or put 'skip remaining'", 3)
-                    return "zeuz_failed"
-                    ''' Range wont work for now because only single tc comes from server one by one '''
                     range_start, range_end = map(int, test_case.split('-'))
                     CommonUtil.skip_testcases[run_id].append(range(range_start, range_end))
                 else:
