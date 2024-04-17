@@ -484,10 +484,7 @@ def run_all_test_steps_in_a_test_case(
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
-        # loop through the steps
         while StepSeq <= Stepscount:
-
-            # check if debug step
             CommonUtil.custom_step_duration = ""
             if debug and debug_steps:
                 if str(StepSeq) not in debug_steps:
@@ -525,14 +522,12 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.step_index += 1
                 continue
 
-            # get step info
             CommonUtil.current_step_name = current_step_name = all_step_info[StepSeq - 1]["step_name"]
             CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
             CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
 
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
-            # add config value
             ConfigModule.add_config_value(
                 "sectionOne",
                 "sTestStepExecLogId",
@@ -930,7 +925,7 @@ def send_to_bigquery(execution_log, metrics):
     send_browser_perf_metrics()
 
 
-def check_test_skip(all_testcases_info, run_id, tc_num, skip_remaining=True) -> bool:
+def check_test_skip(run_id, tc_num, skip_remaining=True) -> bool:
     if run_id not in CommonUtil.skip_testcases:
         return False
     if skip_remaining and 'skip remaining' in CommonUtil.skip_testcases[run_id]:
@@ -940,23 +935,24 @@ def check_test_skip(all_testcases_info, run_id, tc_num, skip_remaining=True) -> 
     ranges = [i for i in CommonUtil.skip_testcases[run_id] if type(i) == range]
     if len(ranges) == 0:
         return False
-    tc_nums = [int(i['testcase_no'].split('-')[-1]) for i in all_testcases_info]
-    target = tc_nums.index(tc_num)
+
+    target = CommonUtil.tc_nums[run_id].index(tc_num)
     for rang in ranges:
-        start = tc_nums.index(rang.start) if rang.start in tc_nums else None
-        end = tc_nums.index(rang.stop) if rang.stop in tc_nums else None
+        start = CommonUtil.tc_nums[run_id].index(rang.start) if rang.start in CommonUtil.tc_nums[run_id] else None
+        end = CommonUtil.tc_nums[run_id].index(rang.stop) if rang.stop in CommonUtil.tc_nums[run_id] else None
         if start is None and end is None:
             continue
         if start is None and target <= end:
-            return True
+            continue
         if end is None and start <= target:
+            return True
+        if start <= target <= end:
             return True
 
     return False
 
 
 def run_test_case(
-    all_testcases_info,
     TestCaseID,
     sModuleInfo,
     run_id,
@@ -984,12 +980,6 @@ def run_test_case(
 
         # Added this two global variable in CommonUtil to save log information and save filepath of test case report
         CommonUtil.error_log_info = ""
-        # FIXME: Remove these lines
-        # import random
-        # CommonUtil.d_day = random.randint(1, 4)
-        # CommonUtil.d_hours = random.randint(1, 11)
-        # CommonUtil.d_minutes = random.randint(0, 39)
-        # CommonUtil.d_seconds = random.randint(0, 50)
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
@@ -1000,15 +990,10 @@ def run_test_case(
             shared.Set_Shared_Variables("zeuz_prettify_limit", 500)
             CommonUtil.prettify_limit = 500
 
-        # shared.Set_Shared_Variables("zeuz_automation_log", Path(temp_ini_file).parent.__str__())
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
 
-        # log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
-        # print("#"*(len(log_line)))
-        # CommonUtil.ExecLog("", log_line, 4, False)
-        # print("#"*(len(log_line)))
         _color = "white"
         # danger_style = Style(color=_color, blink=False, bold=True)
         table = Table(border_style=_color, box=DOUBLE, expand=False, padding=1)
@@ -1022,7 +1007,7 @@ def run_test_case(
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
-        if check_test_skip(all_testcases_info, run_id, tc_num):
+        if check_test_skip(run_id, tc_num):
             sTestStepResultList = ['SKIPPED']
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
@@ -1037,7 +1022,7 @@ def run_test_case(
                 debug_info,
                 performance
             )
-            if check_test_skip(all_testcases_info, run_id, tc_num, False):
+            if check_test_skip(run_id, tc_num, False):
                 sTestStepResultList[-1] = 'SKIPPED'
 
         # TODO: Test case run is completed here somewhere.
@@ -1880,6 +1865,10 @@ def main(device_dict, all_run_id_info):
                 CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
                 all_testcases_info = each_session["test_cases"]
+                if run_id not in CommonUtil.tc_nums:
+                    CommonUtil.tc_nums[run_id] = []
+                for i in [int(i['testcase_no'].split('-')[-1]) for i in all_testcases_info]:
+                    i not in CommonUtil.tc_nums[run_id] and CommonUtil.tc_nums[run_id].append(i)
                 # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
 
                 for testcase_info in all_testcases_info:
@@ -1980,7 +1969,6 @@ def main(device_dict, all_run_id_info):
                         except Exception as e:
                             print(e)
                             run_test_case(
-                                all_testcases_info,
                                 test_case_no,
                                 sModuleInfo,
                                 run_id,
@@ -2003,7 +1991,6 @@ def main(device_dict, all_run_id_info):
 
                     else:
                         run_test_case(
-                            all_testcases_info,
                             test_case_no,
                             sModuleInfo,
                             run_id,
