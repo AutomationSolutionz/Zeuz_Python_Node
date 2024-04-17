@@ -946,7 +946,7 @@ def check_test_skip(run_id, tc_num, skip_remaining=True) -> bool:
             continue
         if end is None and start <= target:
             return True
-        if start <= target <= end:
+        if start is not None and end is not None and start <= target <= end:
             return True
 
     return False
@@ -1726,7 +1726,7 @@ def main(device_dict, all_run_id_info):
                     runid_status = "In-Progress"
                 else:
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-                if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
+                if not shared.Test_Shared_Variables("zeuz_auto_teardown") or shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() not in ("off", "no", "false", "disable"):
                     cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
