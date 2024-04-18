@@ -88,6 +88,7 @@ def Set_Shared_Variables(
                 CommonUtil.global_var[key] = shared_variables["run_id"]
             if key in CommonUtil.zeuz_disable_var_print.keys():
                 CommonUtil.zeuz_disable_var_print[key] = value
+
         if print_variable:
             if print_raw:
                 try:
@@ -97,7 +98,7 @@ def Set_Shared_Variables(
                 except:
                     pass
 
-            try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
+            try: val = json.dumps(value, indent=2)
             except: val = str(value)
 
             CommonUtil.ExecLog(
@@ -110,7 +111,7 @@ def Set_Shared_Variables(
 
             if pretty:
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, value)
+                CommonUtil.prettify(key, val)
 
         return "passed"
     except:
@@ -583,7 +584,7 @@ def parse_variable(name):
                 result = result[0]
 
             # Print to console.
-            CommonUtil.prettify(copy_of_name, result)
+            # CommonUtil.prettify(copy_of_name, result)
             return result
         elif len(indices) > 0 and re.search("^[a-zA-Z_][a-zA-Z_0-9]*\(", name) and Test_Shared_Variables(name[: name.find("(")]) and type(Get_Shared_Variables(name[: name.find("(")], log=False)) not in (type(lambda a:a), type(a)):
             # regex: startswith valid_var_name(
@@ -605,7 +606,7 @@ def parse_variable(name):
             if len(indices) == 1:
                 result = result[0]
 
-            CommonUtil.prettify(copy_of_name, result)
+            # CommonUtil.prettify(copy_of_name, result)
             return result
         else:
             val = eval(name, shared_variables)
@@ -617,8 +618,8 @@ def parse_variable(name):
                     break
 
             # Print to console.
-            if not "os.environ" in name:
-                CommonUtil.prettify(copy_of_name, val_to_print)
+            # if not "os.environ" in name:
+                # CommonUtil.prettify(copy_of_name, val_to_print)
             return generate_zeuz_code_if_not_json_obj(val)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

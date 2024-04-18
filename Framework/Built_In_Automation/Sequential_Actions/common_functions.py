@@ -821,7 +821,8 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         if not (operation.replace(" ", "").replace("_", "") == "saveifnotdefined" and sr.Test_Shared_Variables(variable_name)):
-            sr.Set_Shared_Variables(variable_name, variable_value)
+            sr.Set_Shared_Variables(variable_name, variable_value, print_variable=False)
+            CommonUtil.prettify(variable_name, variable_value)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -4369,28 +4370,27 @@ def skip_testcases(data_set):
               skip testcases | common action | 6716-6720
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
         test_cases = None
-
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "skip testcases" in left:
                 test_cases = right.strip()
 
         run_id = sr.Get_Shared_Variables("run_id")
-        CommonUtil.skip_testcases[run_id] = True
+        if run_id not in CommonUtil.skip_testcases:
+            CommonUtil.skip_testcases[run_id] = []
         if test_cases == 'skip remaining':
-            CommonUtil.skip_testcases_list.append(test_cases)
+            CommonUtil.skip_testcases[run_id].append(test_cases)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
                 if '-' in test_case:
                     range_start, range_end = map(int, test_case.split('-'))
-                    CommonUtil.skip_testcases_list.extend(list(range(range_start, range_end + 1)))
+                    CommonUtil.skip_testcases[run_id].append(range(range_start, range_end))
                 else:
                     tc_num = int(test_case.split('-')[0])
-                    CommonUtil.skip_testcases_list.append(tc_num)
+                    CommonUtil.skip_testcases[run_id].append(tc_num)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Selected Test Case")
         return "passed"
 

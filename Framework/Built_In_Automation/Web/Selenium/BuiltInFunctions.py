@@ -1929,25 +1929,11 @@ def Click_Element(data_set, retry=0):
     # Click using location
     else:
         try:
-            location = location.replace(" ", "")
-            location = location.split(",")
-            x = float(location[0])
-            y = float(location[1])
-
-            height_width = Element.size
-
-            ele_width = int((height_width)["width"])
-            ele_height = int((height_width)["height"])
-
-            total_x_offset = int((ele_width // 2) * (x / 100))
-            total_y_offset = int((ele_height // 2) * (y / 100))
-
-            # Click coordinates
+            total_x_offset, total_y_offset = get_offsets(location, Element)
             actions = ActionChains(selenium_driver)  # Create actions object
             actions.move_to_element_with_offset(Element, total_x_offset, total_y_offset)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
-
             CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
             return "passed"
         except Exception:
@@ -4240,40 +4226,19 @@ def switch_window_or_tab(step_data):
 
     Example 1:
     Field	                    Sub Field	        Value
-    *window title               element parameter	googl
-    switch window or frame      selenium action 	switch window or frame
+    *window title               input parameter	    googl
+    switch window/tab           selenium action 	switch window or frame
 
 
     Example 2:
     Field	                    Sub Field	        Value
-    window title                element parameter	google
-    switch window or frame      selenium action 	switch window or frame
+    window title                input parameter	    google
+    switch window/tab           selenium action 	switch window or frame
 
     Example 3:
     Field	                    Sub Field	        Value
-    window index                element parameter	9
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 4:
-    Field	                    Sub Field	        Value
-    frame index                 element parameter	1
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 5:
-    Field	                    Sub Field	        Value
-    frame title                 element parameter	iFrame1
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 6:
-    Field	                    Sub Field	        Value
-    frame index                 element parameter	default content
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 7:
-    Field	                    Sub Field	        Value
-    frame title                 element parameter	iFrame1
-    frame index                 element parameter	1
-    switch window or frame      selenium action 	switch window or frame
+    window index                input parameter	    9
+    switch window/tab           selenium action 	switch window or frame
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4281,30 +4246,20 @@ def switch_window_or_tab(step_data):
     try:
         window_title_condition = False
         window_index_condition = False
-        frame_condition = False
         partial_match = False
-        frame_title_index = []
         for left, mid, right in step_data:
             left = left.lower().strip()
-            if left == "window title":
+            if left in ("window title", "tab title"):
                 switch_by_title = right
                 window_title_condition = True
-            elif left == "*window title":
+            elif left in ("*window title", "*tab title"):
                 switch_by_title = right
                 partial_match = True
                 window_title_condition = True
-            elif left == "window index":
+            elif left in ("window index", "tab index"):
                 switch_by_index = right.strip()
                 window_index_condition = True
                 window_title_condition = False
-                # break  # Index priority is highest so break the loop
-            elif left == "frame title":
-                frame_title_index += [right]
-                frame_condition = True
-            elif left == "frame index":
-                frame_title_index += [-1000] if "default" in right.lower() else [int(right.strip())]
-                # Using -1000 as a flag of default content
-                frame_condition = True
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
@@ -4313,15 +4268,16 @@ def switch_window_or_tab(step_data):
     try:
         if window_title_condition:
             all_windows = selenium_driver.window_handles
+            current_window = selenium_driver.current_window_handle
             window_handles_found = False
             Tries = 3
             for Try in range(Tries):
                 for each in all_windows:
                     selenium_driver.switch_to.window(each)
-                    if (partial_match and switch_by_title in (selenium_driver.title)) or (
-                            not partial_match and switch_by_title == (selenium_driver.title)):
+                    if (partial_match and switch_by_title.lower() in selenium_driver.title.lower()) or (
+                            not partial_match and switch_by_title.lower() == selenium_driver.title.lower()):
                         window_handles_found = True
-                        CommonUtil.ExecLog(sModuleInfo, "Window switched to '%s'" % selenium_driver.title, 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Tab switched to '%s'" % selenium_driver.title, 1)
                         break
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Couldn't find the title. Trying again after 1 second delay", 2)
@@ -4330,55 +4286,96 @@ def switch_window_or_tab(step_data):
                 break  # only executed if the inner loop did break
 
             if not window_handles_found:
+                selenium_driver.switch_to.window(current_window)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "unable to find the title among the windows. If you want to match partially please use '*windows title'",
+                    "unable to find the title among the tabs. If you want to match partially please use '*tab title'",
                     3)
                 return "zeuz_failed"
-            # else:
-            #     return True
 
         elif window_index_condition:
             window_index = int(switch_by_index)
             window_to_switch = selenium_driver.window_handles[window_index]
             selenium_driver.switch_to.window(window_to_switch)
-            CommonUtil.ExecLog(sModuleInfo, "Window switched to index %s" % switch_by_index, 1)
-            # return True
+            CommonUtil.ExecLog(sModuleInfo, f"Tab switched to index {switch_by_index} title {selenium_driver.title}", 1)
 
-        elif not frame_condition:
-            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title, window index, frame title or frame index", 3)
-            return "zeuz_failed"
-
+        return "passed"
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your window", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def close_tab(step_data):
+    """
+    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
+
+    Example 1:
+    Field	                    Sub Field	        Value
+    close tab                   selenium action 	close tab
+
+    Example 2:
+    Field	                    Sub Field	        Value
+    tab title                   input parameter	    ['Zeuz', 'Google']
+    close tab                   selenium action 	close tab
+
+    Example 3:
+    Field	                    Sub Field	        Value
+    tab index                   input parameter	    [0,1,-1]
+    close tab                   selenium action 	close tab
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
     try:
-        if frame_condition:
-            selenium_driver.switch_to.default_content()
-            CommonUtil.ExecLog(sModuleInfo, "Frame switched to default content", 1)
-            for i in frame_title_index:
-                if isinstance(i, int) and i != -1000:
-                    selenium_driver.switch_to.frame(i)
-                    CommonUtil.ExecLog(sModuleInfo, "Frame switched to index %s" % str(i), 1)
-                elif isinstance(i, str):
-                    if "default" in i:
-                        try:
-                            selenium_driver.switch_to.frame(i)
-                            CommonUtil.ExecLog(sModuleInfo, "Frame switched to '%s'" % i, 1)
-                        except NoSuchFrameException:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "No such frame named '%s'. Switching to default content exiting from all frames." % i,
-                                2)
-                            selenium_driver.switch_to.default_content()
-                    else:
-                        selenium_driver.switch_to.frame(i)
-                        CommonUtil.ExecLog(sModuleInfo, "Frame switched to '%s'" % i, 1)
-        return "passed"
+        close_tabs = []
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left in ("tabs"):
+                close_tabs = [i.strip().lower() if type(i) == str else i for i in CommonUtil.parse_value_into_object(right)]
 
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch frame", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
+        return "zeuz_failed"
+
+    try:
+        window_handles_found = False
+        if len(close_tabs) > 1 and type(close_tabs[0]) == str:
+            current_window = selenium_driver.current_window_handle
+            for each in selenium_driver.window_handles:
+                selenium_driver.switch_to.window(each)
+                if selenium_driver.title.strip().lower() in close_tabs:
+                    title = selenium_driver.title
+                    selenium_driver.close()
+                    window_handles_found = True
+                    CommonUtil.ExecLog(sModuleInfo, "Tab closed '%s'" % title, 1)
+            if window_handles_found:
+                if current_window in selenium_driver.window_handles:
+                    selenium_driver.switch_to.window(current_window)
+                else:
+                    selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        elif len(close_tabs) > 1:
+            current_window = selenium_driver.current_window_handle
+            for each in [selenium_driver.window_handles[i] for i in close_tabs]:
+                selenium_driver.switch_to.window(each)
+                title = selenium_driver.title
+                selenium_driver.close()
+                CommonUtil.ExecLog(sModuleInfo, f"Tab closed '{title}'", 1)
+            if current_window in selenium_driver.window_handles:
+                selenium_driver.switch_to.window(current_window)
+            else:
+                selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        else:
+            title = selenium_driver.title
+            selenium_driver.close()
+            CommonUtil.ExecLog(sModuleInfo, f"Current tab closed '{title}'", 1)
+            selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        return "passed"
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -4771,6 +4768,23 @@ def upload_file_through_window(step_data):
 
 
 # Method to upload file
+def get_offsets(location: str, Element: WebElement) -> tuple[int]:
+    location = location.replace(" ", "")
+    location = location.split(",")
+    x = float(location[0])
+    y = float(location[1])
+
+    height_width = Element.size
+
+    ele_width = int((height_width)["width"])
+    ele_height = int((height_width)["height"])
+
+    total_x_offset = int((ele_width // 2) * (x / 100))
+    total_y_offset = int((ele_height // 2) * (y / 100))
+
+    return total_x_offset, total_y_offset
+
+
 @logger
 def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4778,7 +4792,7 @@ def drag_and_drop(dataset):
     try:
         source = []
         destination = []
-        offset = None
+        destination_offset = None
         param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
@@ -4794,18 +4808,17 @@ def drag_and_drop(dataset):
             elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
-            elif left.strip().lower().startswith('offset'):
-                x,y = right.split(',')
-                offset = (x.strip(),y.strip())
-        
-        if offset == None and destination == []:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide either destination element or offset. Example:\n'+
-               "(id, dst element parameter, file) or (offse | element parameter | 25,75)", 3)
-            return "zeuz_failed"
+            elif left.strip().lower() == "destination offset" and mid.strip().lower() == 'optional parameter':
+                destination_offset = right
 
         if not source:
             CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
                "(id, src element parameter, file)", 3)
+            return "zeuz_failed"
+
+        if not destination:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
+               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
         source_element = LocateElement.Get_Element(source, selenium_driver)
@@ -4813,19 +4826,19 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
             return "zeuz_failed"
 
-        if destination:
-            destination_element = LocateElement.Get_Element(destination, selenium_driver)
-            if destination_element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
-                return "zeuz_failed"
+        destination_element = LocateElement.Get_Element(destination, selenium_driver)
+        if destination_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+            return "zeuz_failed"
 
-        if destination:
+        if destination_offset:
+            x, y = get_offsets(destination_offset, destination_element)
+            ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).release().perform()
+        else:
             ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        elif offset:
-            ActionChains(selenium_driver).drag_and_drop_by_offset(source_element,offset[0],offset[1]).perform()
-        # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
-        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+            # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
 
+        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
