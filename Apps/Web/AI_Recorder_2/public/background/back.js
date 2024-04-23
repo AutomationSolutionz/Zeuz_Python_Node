@@ -162,18 +162,15 @@ async function open_panel_2(tab) {
     console.log('result.panelWindow', result.panelWindow);
     // console.log('result.panelWindow', result.panelWindow);
 
-    if (result.panelWindow && result.panelWindow[contentWindowId]) {
-        browserAppData.windows.update(result.panelWindow[contentWindowId], {
+    if (result.panelWindow) {
+        browserAppData.windows.update(result.panelWindow, {
             focused: true
         }).catch(function(e) {
             console.log('panelWindow catch error', panelWindow);
             console.error('error', e);
-            var panel_dict = result.panelWindow
-            panel_dict[contentWindowId] = undefined;
-            panelWindow = undefined;
             browserAppData.storage.local.set({
-                panelWindow: panel_dict
-            }).then(open_panel(tab));
+                panelWindow: null
+            }).then(open_panel_2(tab));
         });
         return;
     } else if (!clickEnabled) {
@@ -185,59 +182,65 @@ async function open_panel_2(tab) {
         clickEnabled = true;
     }, 1000);
 
-    var f = function(height, width) {
-        browserAppData.windows.create({
-            url: browserAppData.runtime.getURL("index.html"),
-            type: "popup",
-            //height: 705,
-            height: height,
-            //width: 1366
-            width: width
-        }).then(function waitForPanelLoaded(panelWindowInfo) {
-            return new Promise(function(resolve, reject) {
-                let count = 0;
-                let interval = setInterval(function() {
-                    if (count > 100) {
-                        reject("editor has no response");
-                        clearInterval(interval);
-                    }
+    result = await browserAppData.storage.local.get('window');
+    var win = await chrome.windows.getCurrent();
+    var height = Math.max(Math.round(win.height*0.9), 700) ;
+    var width = Math.max(Math.round(win.width*0.5), 600);
+    if (result) {
+        try {
+            result = result.window;
+            if (result.height) {
+                height = result.height;
+            }
+            if (result.width) {
+                width = result.width;
+            }
+        } catch (e) {
+        }
+    }
+    browserAppData.windows.create({
+        url: browserAppData.runtime.getURL("index.html"),
+        type: "popup",
+        //height: 705,
+        height: height,
+        //width: 1366
+        width: width
+    }).then(function waitForPanelLoaded(panelWindowInfo) {
+        return new Promise(function(resolve, reject) {
+            let count = 0;
+            let interval = setInterval(function() {
+                if (count > 100) {
+                    reject("editor has no response");
+                    clearInterval(interval);
+                }
 
-                    browserAppData.tabs.query({
-                        active: true,
-                        windowId: panelWindowInfo.id,
-                        status: "complete"
-                    }).then(async function(tabs) {
-                        if (tabs.length != 1) {
-                            count++;
-                            return;
-                        } else {
-                            var result = await browserAppData.storage.local.get(['panelWindow']);
-                            if (result.panelWindow) var panel_dict = result.panelWindow;
-                            else var panel_dict = {};
-                            panel_dict[contentWindowId] = panelWindowInfo.id;
-                            await browserAppData.storage.local.set({
-                                panelWindow: panel_dict
-                            });
-                            console.log('panel_dict', panel_dict);
-                            panelWindow = panelWindowInfo.id;
-                            console.log('opening panelWindow', panelWindow);
-                            create_menus();
-                            resolve(panelWindowInfo);
-                            clearInterval(interval);
-                        }
-                    })
-                }, 200);
-            });
-        }).then(function bridge(panelWindowInfo){
-            return browserAppData.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
-                selfWindowId: panelWindowInfo.id,
-                commWindowId: contentWindowId
-            });
-        }).catch(function(e) {
-            console.log(e);
+                browserAppData.tabs.query({
+                    // active: true,
+                    windowId: panelWindowInfo.id,
+                    // status: "complete",
+                }).then(async function(tabs) {
+                    if (tabs.length != 1) {
+                        count++;
+                        return;
+                    } 
+                    await browserAppData.storage.local.set({
+                        panelWindow: panelWindowInfo.id
+                    });
+                    panelWindow = panelWindowInfo.id;
+                    console.log('opening panelWindowId', panelWindow);
+                    create_menus();
+                    clearInterval(interval);
+                    browserAppData.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
+                        selfWindowId: panelWindowInfo.id,
+                        commWindowId: contentWindowId
+                    });
+                })
+            }, 200);
         });
-    };
-    getWindowSize(f);
+    }).catch(function(e) {
+        console.log(e);
+    });
+
 }
 
 browserAppData.action.onClicked.addListener(open_panel_2);
