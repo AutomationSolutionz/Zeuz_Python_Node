@@ -4,14 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "cross-env NODE_ENV=development react-scripts start",
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
+    "bootstrap": "^5.3.3",
+    "jquery": "^3.7.1",
+    "jquery-ui": "^1.13.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-helmet": "^6.1.0",
     "watch": "^0.13.0"
   },
   "devDependencies": {

@@ -1,0 +1,9 @@
+{
+    "testNo": "TEST-0000",
+    "testName": "Test_name",
+    "stepNo": 0,
+    "stepName": "Step_name",
+    "url": "",
+    "apiKey": "",
+    "jwtKey": ""
+}

@@ -77,7 +77,7 @@ temp_config = os.path.join(
 )
 temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
 aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
-ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder")
+ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder2")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
