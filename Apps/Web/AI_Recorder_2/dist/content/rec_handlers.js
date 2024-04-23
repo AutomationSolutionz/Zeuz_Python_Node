@@ -14,6 +14,25 @@ var enterTarget = null;
 var enterValue = null;
 var tabCheck = null;
 
+Recorder.eventHandlers = {};
+Recorder.addEventHandler = function(handlerName, event_name, handler, options) {
+    handler.handlerName = handlerName;
+    if (!options) options = false;
+    let key = options ? ('C_' + event_name) : event_name;
+    if (!this.eventHandlers[key]) {
+        this.eventHandlers[key] = [];
+    }
+    this.eventHandlers[key].push(handler);
+}
+
+var recorder = new Recorder(window);
+function startShowElement(message, sender, sendResponse){
+    if (message.showElement) {
+        result = selenium["doShowElement"](message.targetValue);
+        return Promise.resolve({result: result});
+    }
+}
+browserAppData.runtime.onMessage.addListener(startShowElement);
 /* Set recorder input type */
 Recorder.inputTypes = ["text", "password", "datetime", "time", "datetime-local", "date", "month", "week", "file", "number", "range", "email", "url", "search", "tel", "color"];
 
@@ -553,15 +572,9 @@ Recorder.prototype.findClickableElement = function(e) {
 };
 browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
     if (request.attachRecorder) {
-        browserAppData.runtime.sendMessage({
-            attachHttpRecorder: true
-        });
         recorder.attach();
         return;
     } else if (request.detachRecorder) {
-        browserAppData.runtime.sendMessage({
-            detachHttpRecorder: true
-        });
         recorder.detach();
         return;
     }

@@ -175,22 +175,4 @@ class Recorder {
 
 } // end the recorder class 
 
-Recorder.eventHandlers = {};
-Recorder.addEventHandler = function(handlerName, event_name, handler, options) {
-    handler.handlerName = handlerName;
-    if (!options) options = false;
-    let key = options ? ('C_' + event_name) : event_name;
-    if (!this.eventHandlers[key]) {
-        this.eventHandlers[key] = [];
-    }
-    this.eventHandlers[key].push(handler);
-}
 
-var recorder = new Recorder(window);
-function startShowElement(message, sender, sendResponse){
-    if (message.showElement) {
-        result = selenium["doShowElement"](message.targetValue);
-        return Promise.resolve({result: result});
-    }
-}
-browserAppData.runtime.onMessage.addListener(startShowElement);
