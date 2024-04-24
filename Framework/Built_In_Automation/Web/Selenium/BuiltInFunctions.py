@@ -690,7 +690,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     if left in ("addargument", "addarguments"):
                         options.add_argument(right.strip())
                         print(left, right)
-
+                    if "pageloadstrategy" in left:
+                        options.page_load_strategy = right.strip()
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
                     elif left in ("addexperimentaloption"):
@@ -1233,6 +1234,8 @@ def Go_To_Link_V2(step_data):
     driver_tag = "default"
     page_load_timeout_sec = 120
     options = Options()
+    page_load_strategy = "normal"
+
     for left, _, right in step_data:
         if "add argument" in left.lower():
             options.add_argument(right.strip())
@@ -1251,6 +1254,10 @@ def Go_To_Link_V2(step_data):
             Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
         elif "page load timeout" in left.lower():
             page_load_timeout_sec = float(right.strip())
+        elif "page load strategy" in left.lower():
+            page_load_strategy = right.strip()
+            options.page_load_strategy = page_load_strategy
+
 
     if driver_tag in selenium_details.keys():
         selenium_driver = selenium_details[driver_tag]["driver"]
@@ -1314,6 +1321,7 @@ def Go_To_Link(step_data, page_title=False):
         raise ValueError("No dependency set - Cannot run")
 
     page_load_timeout_sec = 120
+    page_load_strategy = "normal"
 
     try:
         driver_id = ""
