@@ -699,10 +699,10 @@ def run_all_test_steps_in_a_test_case(
 def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList, testcase_info):
     if "BLOCKED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
-        sTestCaseStatus = "Blocked"
+        return "Blocked"
     elif "CANCELLED" in sTestStepResultList or "Cancelled" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
-        sTestCaseStatus = "Cancelled"
+        return "Cancelled"
     elif "zeuz_failed".upper() in sTestStepResultList:
         step_index = 0
         for each in sTestStepResultList:
@@ -714,24 +714,23 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
         else:
             sTestCaseStatus = "Blocked"
         CommonUtil.ExecLog(sModuleInfo, "Test Case " + sTestCaseStatus, 3)
+        return sTestCaseStatus
 
     elif "WARNING" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
-        sTestCaseStatus = "Failed"
+        return "Failed"
     elif "NOT RUN" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
-        sTestCaseStatus = "Failed"
-    elif "SKIPPED" in sTestStepResultList:
-        sTestCaseStatus = "Skipped"
+        return "Failed"
+    elif all([i == "SKIPPED" for i in sTestStepResultList]):
         CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
+        return "Skipped"
     elif "PASSED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
-        sTestCaseStatus = "Passed"
+        return "Passed"
     else:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Status Unknown", 2)
-        sTestCaseStatus = "Unknown"
-
-    return sTestCaseStatus
+        return "Unknown"
 
 
 # writes the log file for a test case
@@ -1007,8 +1006,9 @@ def run_test_case(
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
+        sTestCaseStatus = None
         if check_test_skip(run_id, tc_num):
-            sTestStepResultList = ['SKIPPED']
+            sTestStepResultList = ['SKIPPED' for i in range(len(testcase_info['steps']))]
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
                 testcase_info,
@@ -1023,9 +1023,8 @@ def run_test_case(
                 performance
             )
             if check_test_skip(run_id, tc_num, False):
-                sTestStepResultList[-1] = 'SKIPPED'
-
-        # TODO: Test case run is completed here somewhere.
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
+                sTestCaseStatus = 'Skipped'
 
         ConfigModule.add_config_value(
             "sectionOne",
@@ -1039,7 +1038,8 @@ def run_test_case(
         sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
 
         # Decide if Test Case Pass/Failed
-        sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+        if sTestCaseStatus is None:
+            sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
 
         #Writing error information in a text file
         if sTestCaseStatus == "Failed" or sTestCaseStatus == "Blocked":
