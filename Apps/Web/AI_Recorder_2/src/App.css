@@ -11875,7 +11875,9 @@ h5,
   flex-direction: column;
   justify-content: space-between;
 }
-
+#root{
+  width: 100%;
+}
 #sidebar .h6 {
   color: #fff;
 }
