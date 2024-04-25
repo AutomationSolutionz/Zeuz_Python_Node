@@ -364,29 +364,38 @@ def If_else_action(step_data, data_set_no):
                     return
 
                 try:
-                    if eval(left[len(statement):], sr.shared_variables):
-                        if not condition_matched:
-                            condition_matched = True
-                            for i in get_data_set_nums(right):
-                                next_level_step_data.append(i)
-                            outer_skip += next_level_step_data
-                        else:
-                            outer_skip += get_data_set_nums(right)
+                    if eval(left[len(statement):], sr.shared_variables) and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(right):
+                            next_level_step_data.append(i)
+                        outer_skip += next_level_step_data
+                    else:
+                        outer_skip += get_data_set_nums(right)
                 except SyntaxError as e:
                     if CommonUtil.debug_status:
-                        m = traceback.format_exc()
-                        m = m.split('except SyntaxError as e:')[-1]
-                        m = m[m.find('\n')+1:]
-                        m = m.split('SyntaxError: invalid syntax')[0]
+                        original = data_set_for_log[row_index][0]
+                        spaces = sorted([i for i in [original.find('%|'), original.find(operator)] if i != -1][:2])
+                        wrong = f"   {original}\n   {' ' * spaces[0]}^^"
+                        if len(spaces) == 2:
+                            wrong += f"{' ' * (spaces[1] - spaces[0] - 2)}^^"
 
-                        correct = left.replace(operator, operator[1:-1]) if operator else left
+                        correct = original.replace(operator, operator[1:-1]) if operator else left
                         correct = correct.replace('%|', '').replace('|%', '')
                         correct = statement + correct[len(statement):]
 
+                        true = re.findall('==\s*True', correct)
+                        if len(true) > 0:
+                            for i in true:
+                                correct_2 = correct.replace(i, "")
+                                try:
+                                    if eval(correct[len(statement):], sr.shared_variables) == eval(correct_2[len(statement):], sr.shared_variables):
+                                        correct = correct_2
+                                except:
+                                    pass
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            m+f"Syntax error. Correct form would be >> {correct}\nPlease migrate all if_else actions to this new dataset that is exactly similar to python syntax. Previous dataset is deprecated",
-                            3,
+                            f"{wrong}\nSyntax error. Correction:\n   {correct}\nPlease migrate all if_else actions to this new dataset that is exactly similar to python syntax. Previous dataset is deprecated",
+                            2,
                         )
                 if operator == "|==|":
                     if Lvalue == Rvalue and not condition_matched:
