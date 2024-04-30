@@ -8,6 +8,23 @@ fetch("./data.json")
 
 const browserAppData = chrome || browser;
 
+var notificationCount = 0;
+function notification(command) {
+    let tempCount = String(notificationCount);
+    notificationCount++;
+
+    browserAppData.notifications.create(tempCount, {
+        "type": "basic",
+        "iconUrl": "../small_logo.png",
+        "title": "Action Recorded",
+        "message": String(command)
+    });
+
+    setTimeout(function() {
+        browserAppData.notifications.clear(tempCount);
+    }, 15000);
+}
+
 var idx = 0;
 var recorded_actions = [];
 var action_name_convert = {
@@ -27,7 +44,7 @@ async function start_recording(){
     let res = await browserAppData.storage.local.get('recorded_actions');    
     recorded_actions = res.recorded_actions;
     idx = recorded_actions.length;
-
+    notificationCount = 0;
 }
 async function stop_recording(){
     // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
@@ -43,7 +60,6 @@ async function fetchAIData(idx, command, value, url, document){
     if (command === 'go to link'){
         let go_to_link = {
             action: 'go to link',
-            data_list: [url],
             element: "",
             is_disable: false,
             name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,
@@ -122,32 +138,36 @@ async function fetchAIData(idx, command, value, url, document){
     response[0].short.value = value;
     if (command === 'text') response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     else if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
-    recorded_actions[idx] = {
+    let single_action = {
         action: response[0].short.action,
-        data_list: [response[0].short.value],
         element: response[0].short.element,
         is_disable: false,
         name: response[0].name,
         value: response[0].short.value,
         main: response[0].data_set,
         xpath: response[0].xpath,
-    };
+    }
+    recorded_actions[idx] = single_action;
     console.log(recorded_actions);
     browserAppData.storage.local.set({
         recorded_actions: recorded_actions,
     })
-    browserAppData.runtime.sendMessage({action: 'record_finish'})
+    browserAppData.runtime.sendMessage({
+        action: 'record_finish',
+        data: single_action,
+        index: idx,
+    })
 }
 
 async function record_action(command, value, url, document){
-    if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command]
+    if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
+    notification(command);
     console.log("... Action recorder start");
     idx += 1;
     // if (recorded_actions.length === 0 || 
     //     recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
     //     let go_to_link = {
     //         action: 'go to link',
-    //         data_list: [url],
     //         element: "",
     //         is_disable: false,
     //         name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,

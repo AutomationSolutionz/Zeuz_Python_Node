@@ -13,23 +13,6 @@ import $ from 'jquery';
 var selfWindowId;
 var contentWindowId;
 
-var notificationCount = 0;
-function notification(command, target, value) {
-    let tempCount = String(notificationCount);
-    notificationCount++;
-
-    browserAppData.notifications.create(tempCount, {
-        "type": "basic",
-        "iconUrl": "assets/images/small_logo.png",
-        "title": "Command Recorded",
-        "message": "command: " + String(command)
-    });
-
-    setTimeout(function() {
-        browserAppData.notifications.clear(tempCount);
-    }, 15000);
-}
-
 var CustomFunction = {
 	unsavedActionsFlag: false,
 	isRecording: false,
@@ -81,10 +64,6 @@ var CustomFunction = {
 			var disableClass = "";
 			if (single_case_value.is_disable == 1) {
 				disableClass = 'disabled-case';
-			}
-			var casedatalist = '';
-			if (single_case_value.data_list != undefined && single_case_value.data_list.length > 0) {
-				casedatalist = single_case_value.data_list.join('#');
 			}
 			let data_json = JSON.stringify(single_case_value);
 			`ToDo: Use flexbox below`
@@ -178,9 +157,6 @@ var CustomFunction = {
 				"value": action.short.value,
 				"is_disable": action.is_disable,
 				"name": action.name,
-				"data_list": [
-					action.short.value
-				],
 				"main": action.main,
 			}
 		})
@@ -192,7 +168,7 @@ $(document).ready(async function () {
 	let result = await browserAppData.storage.local.get('meta_data');
 	let meta_data = result.meta_data;
 	if (result.meta_data.testNo != "TEST-0000"){
-		CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
+		// CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
 		CustomFunction.FetchActions();
 	}
 	setTimeout(()=>{
@@ -243,7 +219,7 @@ $(document).ready(async function () {
 				},1500)
 				return;
 			}
-			await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
+			// await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
 			$('#case_data_wrap').html('');
 			await CustomFunction.FetchActions();
 			$('#fetch').text('Fetched!');
@@ -270,22 +246,22 @@ $(document).ready(async function () {
 	});
 
 	$(document).on('change', '#step_select', async function () {
-		try {
-			if(CustomFunction.unsavedActionsFlag && confirm("Recorded actions will vanish. Save changes?")){
-				$("#save_button").click();
-			}
-			if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
-			var result = await browserAppData.storage.local.get(null);
-			result.meta_data['stepNo'] = this.value;
-			await browserAppData.storage.local.set({
-				meta_data: result.meta_data,
-			})
-			$('#case_data_wrap').html('');
-			CustomFunction.FetchActions();
-			CustomFunction.unsavedActionsFlag = false;
-		} catch (error) {
-			alert(error);
-		}
+		// try {
+		// 	if(CustomFunction.unsavedActionsFlag && confirm("Recorded actions will vanish. Save changes?")){
+		// 		$("#save_button").click();
+		// 	}
+		// 	if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
+		// 	var result = await browserAppData.storage.local.get(null);
+		// 	result.meta_data['stepNo'] = this.value;
+		// 	await browserAppData.storage.local.set({
+		// 		meta_data: result.meta_data,
+		// 	})
+		// 	$('#case_data_wrap').html('');
+		// 	CustomFunction.FetchActions();
+		// 	CustomFunction.unsavedActionsFlag = false;
+		// } catch (error) {
+		// 	alert(error);
+		// }
 	})
 
 	$(document).on('hover', '.del-btn', async function (e) {
@@ -325,9 +301,7 @@ $(document).ready(async function () {
 
 		CustomFunction.isRecording = $('#record_label')[0].textContent != 'Record';
 		$('#save_wrap, #run_this_button, #run_wrap, #login_wrap').attr('disabled', true).css('opacity',0.5);
-		if (CustomFunction.isRecording) {
-			notificationCount = 0;
-			
+		if (CustomFunction.isRecording) {			
 			let tabs = await browserAppData.tabs.query({url: "<all_urls>"})
 			try {
 				for(let tab of tabs) {
@@ -641,7 +615,7 @@ browserAppData.runtime.onMessage.addListener(
         if (request.action == 'record_start') {
 
         }
-        else if (request.action == 'record_finish') {
+        else if (request.action == 'record_finish____(disabled)') {
             CustomFunction.SaveCaseDataAsJson();
         }
     }
@@ -670,10 +644,10 @@ setInterval(async ()=>{
 	if (!CustomFunction.isRecording) return;
 	browserAppData.storage.local.get(null, function (result) {
 		if (result.recorded_actions.length === 0) return;
-		console.log("Opacity =================", result.recorded_actions);
+		// console.log("Opacity =================", result.recorded_actions);
 		for(let i = 0; i < result.recorded_actions.length; i++){
 			if (result.recorded_actions[i] === 'empty'){
-				console.log("Opacity 2222 =================", result.recorded_actions);
+				// console.log("Opacity 2222 =================", result.recorded_actions);
 				$("#record_label").text("Recording...");
 				$("#record").attr('disabled', true).css('opacity',0.5);
 				return;
