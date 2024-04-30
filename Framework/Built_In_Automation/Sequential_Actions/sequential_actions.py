@@ -219,7 +219,7 @@ def get_data_set_nums(action_value, step_loop=False):
             else:
                 action_value = action_value.replace('this', str(int(CommonUtil.current_action_no)))
 
-        action_value = action_value.replace('to', '')
+        action_value = action_value.replace('to', '-')
         if "if" in action_value:
             valid, data = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', ','), ""
             for i in action_value:

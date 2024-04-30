@@ -842,6 +842,13 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
+
+            options.set_preference("browser.download.folderList", 2)
+            options.set_preference("browser.download.manager.showWhenStarting", False)
+            options.set_preference("browser.download.dir", download_dir)
+            options.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
+            options.accept_untrusted_certs = True
+            
             if(remote_host):
                 capabilities = webdriver.DesiredCapabilities().FIREFOX
                 capabilities['acceptSslCerts'] = True
