@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 // import {Helmet} from "react-helmet";
 import Action from './Action';
+import $ from 'jquery';
 
 const browserAppData = chrome;
 interface actionInterface {
@@ -27,6 +28,11 @@ function App() {
     const [selectedValue, setSelectedValue] = useState<string>('1');
     const [testId, testIdChange] = useState<string>('0000')
     const [stepNames, setStepNames] = useState<stepZsvc[]>([]);
+    const [recordState, setRecordState] = useState<string>('Record');
+    const [initRecordState, setInitRecordState] = useState<boolean>(false);
+    const [unsavedActions, setUnsavedActions] = useState<boolean>(false);
+    const [saveState, setSaveState] = useState<string>('Save');
+
 
     const handleSelectChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newValue = event.target.value;
@@ -79,6 +85,7 @@ function App() {
                 }
             }));
             setSelectedValue(step_no.toString());
+            setUnsavedActions(false)
             fetchActionData()
 
         } catch (error:any) {
@@ -106,7 +113,7 @@ function App() {
     
     useEffect(
         ()=>{
-            browserAppData.runtime.onMessage.addListener(handleMessage);
+            browserAppData.runtime.onMessage.addListener(handleRecordResponse);
             const initData = async () => {
                 let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
                 let meta_data = localStorageMetadata.meta_data;
@@ -114,12 +121,18 @@ function App() {
                 fetchTestData(meta_data.testNo.substr(5), meta_data.stepNo);
             }
             initData();
+            setTimeout( 
+                ()=>{setInitRecordState(true)}
+            ,3000)
         },[]
     )
 
     
-    const handleMessage = (request:any) => {
-        // Update the count based on the received message
+    const handleRecordResponse = (request:any) => {
+
+        if (request.action == 'recording') {
+            setRecordState('Recording...')
+        }
         if (request.action == 'record_finish') {
             const action: actionInterface = {
                 is_disable: request.data.is_disabled,
@@ -133,13 +146,151 @@ function App() {
             }
             setActions((prev_actions) => {
                 const new_actions = [...prev_actions]
-                new_actions[request.index] = action
+                if (request.index >= new_actions.length) {
+                    new_actions.push(action);
+                  }
+                else {
+                    new_actions.splice(request.index, 0, action);
+                }
                 return new_actions;
             });
+            setUnsavedActions(true)
             console.log('actions',actions);
+            setRecordState('Stop')
         }
-      };
+    };
 
+    const handleRecording = async () =>{
+        if (recordState == 'Record'){
+            let tabs:any[] = await browserAppData.tabs.query({url: "<all_urls>"})
+			try {
+				for(let tab of tabs) {
+					try {
+						browserAppData.tabs.sendMessage(tab.id, { attachRecorder: true })
+					} catch (error) {
+						if (tab.url.startsWith("http://") || tab.url.startsWith("https://")){
+							console.log('error in sendMessage from tab.url=', tab.url);
+							console.error(error);
+							let msg = (tabs.length == 1) ?
+							`Recorder Disconnected!\n  1. Close the Recorder\n  2. Refresh the page (optional)\n  3. Open Recorder again` :
+							`Recorder Disconnected!\n  1. Close the Recorder\n  2. Close all tabs except the main tab\n  3. Refresh the page (optional)\n  4. Open Recorder again` ;
+							alert(msg)
+						}
+					}
+					try {
+						if(tab.title !== 'ZeuZ AI Recorder' && tab.active){
+							browserAppData.windows.update(tab.windowId, {focused: true});
+						}
+						
+					} catch (error) {
+						console.error(error);
+					}
+				}
+			} catch (error) {
+				console.error(error);
+			}
+            browserAppData.runtime.sendMessage({
+                action: 'start_recording',
+                idx: actions.length,
+            })
+            setRecordState('Stop')
+        }
+        else if(recordState == 'Stop'){
+            let tabs:any[] = await browserAppData.tabs.query({url: "<all_urls>"})
+            for(let tab of tabs) {
+                browserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
+            }
+            setRecordState('Record');
+        }
+    }
+
+    const handleSaveActions = async () =>{
+        try{
+			let result = await browserAppData.storage.local.get(["meta_data"]);
+			var save_data = {
+				TC_Id: result.meta_data.testNo,
+				step_sequence: result.meta_data.stepNo,
+				step_data: JSON.stringify(actions.map(action => {
+					return action.main;
+				})),
+				step_id: result.meta_data.stepId,
+				dataset_name: JSON.stringify(actions.map((action, idx) => {
+					return [
+						action.name,
+						idx+1,
+						!action.is_disable,
+					]
+				}))
+			}
+
+            try {
+                setSaveState('Saving...')
+                // const response = await fetch(result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/', {
+                //   method: 'POST',
+                //   headers: {
+				// 	// "Content-Type": "application/json",
+				// 	"X-Api-Key": `${result.meta_data.apiKey}`,
+                //   },
+                //   body: JSON.stringify(save_data)
+                // });
+
+                await $.ajax({
+                    url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+                    method: 'POST',
+                    data: save_data,
+                    headers: {
+                        // "Content-Type": "application/json",
+                        "X-Api-Key": `${result.meta_data.apiKey}`,
+                    },
+                    success: function () {
+                        setSaveState('Success')
+                        setTimeout(()=>{
+                            setSaveState('Save')
+                        }, 1500)
+                        setUnsavedActions(false);
+                    },
+                    error: function (xhr, status, error) {
+                        xhr;status
+                        console.error('Error:', error);
+                        setSaveState('Error!!')
+                        setTimeout(()=>{
+                            setSaveState('Save')
+                        }, 1500)
+                        console.error(error);
+                      }
+                    }
+                )
+            
+                // if (!response.ok || !(await response.json())) {
+                //   console.error('Failed to save actions.. !response.ok');
+                //   setSaveState('Error!!')
+                //   setTimeout(()=>{
+                //       setSaveState('Save')
+                //   }, 1500)
+                //   return
+                // }
+            
+                // setSaveState('Success')
+                // setTimeout(()=>{
+                //     setSaveState('Save')
+                // }, 1500)
+                // setUnsavedActions(false);
+              } catch (error) {
+                setSaveState('Error!!')
+                setTimeout(()=>{
+                    setSaveState('Save')
+                }, 1500)
+                console.error(error);
+              }
+		}
+		catch(e){
+            setSaveState('Error!!')
+            setTimeout(()=>{
+                setSaveState('Save')
+            }, 1500)
+            console.error(e)
+		}
+    }
 
     return (
         <div className="wrapper d-flex align-items-stretch">
@@ -149,62 +300,54 @@ function App() {
                         <img className="img-fluid" id="logo_dark" src="logo_ZeuZ_dark_background.png" />
                     </div>
                     <ul className="d-flex flex-column justify-content-center">
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="record_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                id="record" style={{ opacity: 0.5 }} disabled>
-                                <span className="material-icons" id="record_icon">camera</span>
-                                <span className="material-icons-label" id="record_label">Record</span>
+                        <li className="tablink d-flex flex-wrap justify-content-center" id="record_wrap" >
+                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRecording}
+                                id="record" style={{ opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : 1}} disabled={!initRecordState || recordState == "Recording..."}>
+                                <span className="material-icons" id="record_icon">{recordState == 'Record' ? 'camera' : 'stop'}</span>
+                                <span className="material-icons-label" id="record_label">{recordState}</span>
                             </button>
                         </li>
                         <li className="tablink d-flex flex-wrap justify-content-center" id="save_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                id="save_button">
+                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleSaveActions}
+                                id="save_button" style={{ opacity: recordState == "Record" && saveState == 'Save' ? 1 : 0.5}} disabled={recordState != 'Record' || saveState != 'Save'}>
                                 <span className="material-icons">save</span>
-                                <span className="material-icons-label" id='save_label'>Save</span>
+                                <span className="material-icons-label" id='save_label'>{saveState}</span>
                             </button>
                         </li>
                         <li className="tablink d-flex flex-wrap justify-content-center" id="run_this_wrap">
                             <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                id="run_this_button">
+                                id="run_this_button" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
                                 <span className="material-icons">play_circle</span>
                                 <span className="material-icons-label" id='run_this_label'>Run this</span>
                             </button>
                         </li>
                         <li className="tablink d-flex flex-wrap justify-content-center" id="run_wrap">
                             <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                id="run_button">
+                                id="run_button" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
                                 <span className="material-icons">play_circle</span>
                                 <span className="material-icons-label" id='run_label'>Run all</span>
                             </button>
                         </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="login_wrap">
+                        <li className="d-none tablink d-flex flex-wrap justify-content-center" id="login_wrap">
                             <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                data-toggle="modal" data-target="#exampleModal">
+                                data-toggle="modal" data-target="#exampleModal" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
                                 <span className="material-icons">login</span>
                                 <span className="material-icons-label">Login</span>
                             </button>
                         </li>
                     </ul>
                 </div>
-                <ul className="d-flex flex-column justify-content-center" id="bottom_section">
-                    {/* <li className="tablink d-flex justify-content-center opensection my-2" data-section="settings">
-                        <button className="d-flex justify-content-start bg-transparent border-0 sidebar_menu" href="#">
-                            <span className="material-icons" id="settings_icon">settings</span>
-                            <span className="material-icons-label" id="settings _label">Settings</span>
-                        </button>
-                    </li> */}
-                </ul>
             </nav>
             <div className="tabcontent scrollBar" id="content" style={{ display: 'block' }}>
                 <div className="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
                     <div>
                         <div>
                             <form>
-                                <div className="input-group mb-3">
+                                <div className="input-group mb-3"  style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}}>
                                     <span className="input-group-text" id="basic-addon1">TEST-</span>
                                     <input id="test_id" value={testId} onChange={handleTestIdChange} className="form-control"
-                                        placeholder="0000" aria-label="Test case ID" />
-                                    <button id="fetch" className="btn btn-secondary" type="button" onClick={handleSearch}>
+                                        placeholder="0000" aria-label="Test case ID" disabled={recordState != 'Record'} />
+                                    <button id="fetch" className="btn btn-secondary" type="button" onClick={handleSearch} disabled={recordState != 'Record' || unsavedActions}>
                                         <span className="material-symbols-outlined" style={{ color: 'white !important' }}>
                                             search
                                         </span>
@@ -241,8 +384,7 @@ function App() {
 
                     <h5 id="test_title">{testTitle}</h5>
                 </div>
-                <select value={selectedValue} onChange={handleSelectChange} className="form-select form-select-sm m-4 w-50" id="step_select" style={{ height: '42px', padding: '8px' }}>
-                    {/* <option selected>Step-1 : Loading ...</option> */}
+                <select value={selectedValue} onChange={handleSelectChange} className="form-select form-select-sm m-4 w-50" id="step_select" style={{ height: '42px', padding: '8px', opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
                     {stepNames.map((step: stepZsvc)=>(
                         <option value={step.sequence}>Step-{step.sequence} : {step.name}</option>
                     )
@@ -253,22 +395,10 @@ function App() {
                     {actions.map((action, idx)=>(
                         <Action action={action} idx={idx}/>
                     ))}
-                    {/* <div className="second_table table-responsive" id="main_table">
-                    <div className="table table-borderless border_separate table-fixed" id="sortable">
-                        <tbody className="table_body" id="case_data_wrap" style={{minHeight: '600px'}}>
-                        </tbody>
-                    </div>
-                </div> */}
                 </div>
             </div>
-
-            {/* <script src="assets/js/windowController.js"></script>
-            <script src="assets/js/panel_recorder.js"></script>
-            <script src="assets/js/panel.js"></script> */}
-
         </div>
     )
-
 }
 
 export default App

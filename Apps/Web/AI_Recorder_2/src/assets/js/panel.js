@@ -17,44 +17,6 @@ var CustomFunction = {
 	unsavedActionsFlag: false,
 	isRecording: false,
 
-	async FetchTestData(test_id, step_no) {
-		var result = await browserAppData.storage.local.get(null);
-		try {
-			let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
-			let meta_data = localStorageMetadata.meta_data;
-			let headers = {
-				"X-Api-Key": meta_data.apiKey,
-			};
-			let r = await fetch(`${result.meta_data.url}/zsvc/tc/v1/${test_id}/json`, {
-				method: "GET",
-				headers: headers,
-			});
-			let response = await r.json();
-			if (response.error){
-				console.error("response.error", response.error)
-				await alert(response.error);
-				return Promise.reject("Invalid test-id");
-			}
-			result.meta_data['testNo'] = test_id;
-			result.meta_data['stepNo'] = step_no;
-			result.meta_data['stepId'] = response.steps.filter((step)=>{if(step.sequence==step_no) return step.id})[0].stepId;
-			await browserAppData.storage.local.set({
-				meta_data: result.meta_data,
-			})
-			$('#test_id').val(response.testCaseDetail.id.substring(5));
-			$('#test_title').text(response.testCaseDetail.name);
-			$("#step_select").empty();
-			response.steps.forEach(step => {
-				$("#step_select").append(new Option(`Step-${step.sequence} : ${step.name}`, step.sequence));
-			});
-			$(`#step_select option[value="${step_no}"]`).prop('selected', true);
-		} catch (e) {
-			console.error(e);
-			alert(e);
-			return Promise.reject("Failed to fetch");
-		}
-	},
-
 	async LoadActions(case_value) {
 		console.log('case_value',case_value);
 		let result = await browserAppData.storage.local.get(['meta_data']);
@@ -171,9 +133,6 @@ $(document).ready(async function () {
 		// CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
 		CustomFunction.FetchActions();
 	}
-	setTimeout(()=>{
-		$('#record').attr('disabled', false).css('opacity',1);
-	},3000)
 	$('#server_address').val(result.meta_data.url);
 	$('#api_key').val(result.meta_data.apiKey);
 
@@ -284,64 +243,32 @@ $(document).ready(async function () {
   	);
 
 	$(document).on('click', '#record', async function () {
-		let icon = $('#record_icon');
-		let label = $('#record_label');
+		// let icon = $('#record_icon');
+		// let label = $('#record_label');
 
-		if(label[0].textContent == 'Record'){
-			let result = await browserAppData.storage.local.get(['meta_data']);
-			result.meta_data['actionsLen'] = $('#case_data_wrap>tr').length;
-			browserAppData.storage.local.set({'meta_data': result.meta_data});
-		}
-		else{
-			browserAppData.storage.local.set({recorded_actions:[]});
-		}
+		// if(label[0].textContent == 'Record'){
+		// 	let result = await browserAppData.storage.local.get(['meta_data']);
+		// 	result.meta_data['actionsLen'] = $('#case_data_wrap>tr').length;
+		// 	browserAppData.storage.local.set({'meta_data': result.meta_data});
+		// }
+		// else{
+		// 	browserAppData.storage.local.set({recorded_actions:[]});
+		// }
 
-		label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
-		icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
+		// label[0].textContent = label[0].textContent.trim() == 'Record' ? 'Stop' : 'Record';
+		// icon.text(icon[0].textContent.trim() == 'camera' ? 'stop' : 'camera');
 
-		CustomFunction.isRecording = $('#record_label')[0].textContent != 'Record';
-		$('#save_wrap, #run_this_button, #run_wrap, #login_wrap').attr('disabled', true).css('opacity',0.5);
-		if (CustomFunction.isRecording) {			
-			let tabs = await browserAppData.tabs.query({url: "<all_urls>"})
-			try {
-				for(let tab of tabs) {
-					try {
-						await browserAppData.tabs.sendMessage(tab.id, {attachRecorder: true})
-					} catch (error) {
-						
-						if (tab.url.startsWith("http://") || tab.url.startsWith("https://")){
-							console.log('error in sendMessage from tab.url=', tab.url);
-							console.error(error);
-							let msg = (tabs.length == 1) ?
-							`Recorder Disconnected!\n  1. Close the Recorder\n  2. Refresh the page (optional)\n  3. Open Recorder again` :
-							`Recorder Disconnected!\n  1. Close the Recorder\n  2. Close all tabs except the main tab\n  3. Refresh the page (optional)\n  4. Open Recorder again` ;
-							alert(msg)
-						}
-					}
-					try {
-						if(tab.title !== 'ZeuZ AI Recorder' && tab.active){
-							browserAppData.windows.update(tab.windowId, {focused: true});
-						}
-						
-					} catch (error) {
-						console.error(error);
-					}
-				}
-			} catch (error) {
-				console.error(error);
-			}
+		// CustomFunction.isRecording = $('#record_label')[0].textContent != 'Record';
+		// $('#save_wrap, #run_this_button, #run_wrap, #login_wrap').attr('disabled', true).css('opacity',0.5);
+		// if (CustomFunction.isRecording) {			
+			
 				
-		}
-		else {
-			$('#save_wrap, #run_this_button, #run_wrap, #login_wrap').removeAttr('disabled').css('opacity',1);
-			// CustomFunction.SaveCaseDataAsJson();
-			browserAppData.tabs.query({url: "<all_urls>"})
-			.then(function(tabs) {
-				for(let tab of tabs) {
-					browserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
-				}
-			});
-		}
+		// }
+		// else {
+		// 	$('#save_wrap, #run_this_button, #run_wrap, #login_wrap').removeAttr('disabled').css('opacity',1);
+		// 	// CustomFunction.SaveCaseDataAsJson();
+
+		// }
 
 
 

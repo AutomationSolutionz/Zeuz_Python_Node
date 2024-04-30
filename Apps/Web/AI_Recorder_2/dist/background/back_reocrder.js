@@ -26,7 +26,6 @@ function notification(command) {
 }
 
 var idx = 0;
-var recorded_actions = [];
 var action_name_convert = {
     select: "click",
     type: "text",
@@ -40,22 +39,6 @@ var action_name_convert = {
     Wait_For_Element_To_Disappear: "wait disable",
 }
 
-async function start_recording(){
-    let res = await browserAppData.storage.local.get('recorded_actions');    
-    recorded_actions = res.recorded_actions;
-    idx = recorded_actions.length;
-    notificationCount = 0;
-}
-async function stop_recording(){
-    // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
-    if (recorded_actions.length > 0)
-    browserAppData.storage.local.set({
-        recorded_actions: [],
-    }).then(()=>{
-        idx = 0;
-        recorded_actions = [];
-    }); 
-}
 async function fetchAIData(idx, command, value, url, document){
     if (command === 'go to link'){
         let go_to_link = {
@@ -67,16 +50,15 @@ async function fetchAIData(idx, command, value, url, document){
             main: [['go to link', 'selenium action', url]],
             xpath: "",
         };
-        recorded_actions[idx] = go_to_link;
-        console.log(recorded_actions);
-        browserAppData.storage.local.set({
-            recorded_actions: recorded_actions,
+        browserAppData.runtime.sendMessage({
+            action: 'record_finish',
+            data: go_to_link,
+            index: idx,
         })
         return;
     }
-    recorded_actions[idx] = 'empty';
-    browserAppData.storage.local.set({
-        recorded_actions: recorded_actions,
+    browserAppData.runtime.sendMessage({
+        action: 'recording'
     })
     if (['select', 'click'].includes(command)) value = ""
     let validate_full_text_by_ai = false
@@ -147,11 +129,6 @@ async function fetchAIData(idx, command, value, url, document){
         main: response[0].data_set,
         xpath: response[0].xpath,
     }
-    recorded_actions[idx] = single_action;
-    console.log(recorded_actions);
-    browserAppData.storage.local.set({
-        recorded_actions: recorded_actions,
-    })
     browserAppData.runtime.sendMessage({
         action: 'record_finish',
         data: single_action,
@@ -164,27 +141,14 @@ async function record_action(command, value, url, document){
     notification(command);
     console.log("... Action recorder start");
     idx += 1;
-    // if (recorded_actions.length === 0 || 
-    //     recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
-    //     let go_to_link = {
-    //         action: 'go to link',
-    //         element: "",
-    //         is_disable: false,
-    //         name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,
-    //         value: url,
-    //         main: [['go to link', 'selenium action', url]],
-    //         xpath: "",
-    //     };
-    //     if (recorded_actions.length === 0) recorded_actions[0] = go_to_link;
-    //     else recorded_actions.unshift(go_to_link);
-    //     idx += 1;
-    // }
     fetchAIData(idx-1, command, value, url, document);  
 }
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.action == 'start_recording') {
-            start_recording();
+            notificationCount = 0;
+            idx = request.idx
+            console.log('idx set to',idx)
         }
         else if (request.action == 'record_action') {
             record_action(
@@ -194,9 +158,6 @@ browserAppData.runtime.onMessage.addListener(
                 request.url,
                 request.document,
             );
-        }
-        else if (request.action == 'stop_recording') {
-            stop_recording();
         }
     }
 );

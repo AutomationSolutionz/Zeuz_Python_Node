@@ -132,9 +132,6 @@ class Recorder {
     attach() {
         console.log('attach2');
         if (this.attached) return;
-        browserAppData.runtime.sendMessage({
-            action: 'start_recording',
-        })
         this.attached = true;
         this.eventListeners = {};
         var self = this;
@@ -159,9 +156,6 @@ class Recorder {
     detach() {
         console.log('detach2');
         if (!this.attached) return;
-        browserAppData.runtime.sendMessage({
-            action: 'stop_recording',
-        })
         this.attached = false;
         for (let event_key in this.eventListeners) {
             var event_info = this.parse_the_event_key(event_key);

@@ -573,9 +573,7 @@ Recorder.prototype.findClickableElement = function(e) {
 browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
     if (request.attachRecorder) {
         recorder.attach();
-        return;
     } else if (request.detachRecorder) {
         recorder.detach();
-        return;
     }
 });

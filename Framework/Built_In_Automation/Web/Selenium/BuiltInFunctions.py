@@ -743,28 +743,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 import selenium
-                from distutils.version import StrictVersion
+                service = Service()
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
 
-                required_version = StrictVersion('4.10.0')
-                installed_version = StrictVersion(selenium.__version__)
-
-                if installed_version >= required_version:
-                    service = Service()
-                    if installed_version == required_version:
-                        service.path = chrome_path
-                    selenium_driver = webdriver.Chrome(
-                        service=service,
-                        options=options,
-                    )
-                else:
-                    d = DesiredCapabilities.CHROME
-                    d["loggingPrefs"] = {"browser": "ALL"}
-                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
-                    selenium_driver = webdriver.Chrome(
-                        executable_path=chrome_path,
-                        chrome_options=options,
-                        desired_capabilities=d
-                    )
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
