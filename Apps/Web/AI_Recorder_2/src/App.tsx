@@ -9,6 +9,7 @@ interface actionInterface {
     is_disable: boolean,
     main: string[][],
     name: string,
+    typeWrite: boolean,
     short:{
         action: string,
         element: string,
@@ -107,6 +108,9 @@ function App() {
             },
         })
         const init_data: actionsInterface = (await resp.json()).step.actions;
+        for (const each of init_data) {
+            each['typeWrite'] = false;
+        }
         setActions(()=>init_data);
         console.log('init_data', init_data);
     }
@@ -138,6 +142,7 @@ function App() {
                 is_disable: request.data.is_disabled,
                 main: request.data.main,
                 name: request.data.name,
+                typeWrite: true,
                 short:{
                     action: '',
                     element: '',

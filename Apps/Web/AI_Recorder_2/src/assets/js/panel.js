@@ -131,7 +131,7 @@ $(document).ready(async function () {
 	let meta_data = result.meta_data;
 	if (result.meta_data.testNo != "TEST-0000"){
 		// CustomFunction.FetchTestData(meta_data.testNo, meta_data.stepNo);
-		CustomFunction.FetchActions();
+		// CustomFunction.FetchActions();
 	}
 	$('#server_address').val(result.meta_data.url);
 	$('#api_key').val(result.meta_data.apiKey);
@@ -180,7 +180,7 @@ $(document).ready(async function () {
 			}
 			// await CustomFunction.FetchTestData(`TEST-${$('#test_id').val()}`, 1);
 			$('#case_data_wrap').html('');
-			await CustomFunction.FetchActions();
+			// await CustomFunction.FetchActions();
 			$('#fetch').text('Fetched!');
 			setTimeout(()=>{
 				$('#fetch').text('Fetch');
