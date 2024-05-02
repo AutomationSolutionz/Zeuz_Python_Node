@@ -24,17 +24,27 @@ interface stepZsvc{
     id: number,
 }
 function App() {
+    // Contains previous and new actions
     const [actions, setActions] = useState<actionsInterface>([])
+    // Test case name
     const [testTitle, setTestTitle] = useState<string>('Loading...')
+    // The selected step number.. Used to fetch actions in that step
     const [selectedValue, setSelectedValue] = useState<string>('1');
+    // Test case id .. Used to.. Used to fetch steps in that test case
     const [testId, testIdChange] = useState<string>('0000')
+    // Step names showed in select options
     const [stepNames, setStepNames] = useState<stepZsvc[]>([]);
+    // Record button state.. Used to start and stop action recording
     const [recordState, setRecordState] = useState<string>('Record');
+    // Record button is disabled for first 3 seconds to ensure the scripts are loaded
     const [initRecordState, setInitRecordState] = useState<boolean>(false);
+    // Used to disable step selection, test case search, save, run when there are unsaved actions
     const [unsavedActions, setUnsavedActions] = useState<boolean>(false);
+    // Save button state
     const [saveState, setSaveState] = useState<string>('Save');
 
 
+    // When selected step is changed fetch new actions
     const handleSelectChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
         const newValue = event.target.value;
         let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
@@ -48,10 +58,12 @@ function App() {
         fetchActionData()
     };
 
+    // testId state change. does not fetch anything
     const handleTestIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         testIdChange(event.target.value);
     };
 
+    // Fetch Test data of the testId 
     const fetchTestData = async (test_id: string = '', step_no: number=1) => {
         try {
             test_id = (test_id == '') ? testId : test_id
@@ -94,10 +106,12 @@ function App() {
         }
     };
 
+    // Fetch test data when search button is clicked
     const handleSearch = () => {
         fetchTestData();
     }
 
+    // Fetch previous actions of a step from server
     const fetchActionData = async () =>{
         let result = await browserAppData.storage.local.get('meta_data');
         let meta_data = result.meta_data
@@ -115,6 +129,7 @@ function App() {
         console.log('init_data', init_data);
     }
     
+    // On initial mount, fetch test-data and actions from server of the testcase and step mentioned in data.json
     useEffect(
         ()=>{
             browserAppData.runtime.onMessage.addListener(handleRecordResponse);
@@ -131,9 +146,8 @@ function App() {
         },[]
     )
 
-    
+    // When new recorded actions come from background script, render new actions
     const handleRecordResponse = (request:any) => {
-
         if (request.action == 'recording') {
             setRecordState('Recording...')
         }
@@ -165,6 +179,7 @@ function App() {
         }
     };
 
+    // Hande Record button click.. Contacts with content script
     const handleRecording = async () =>{
         if (recordState == 'Record'){
             let tabs:any[] = await browserAppData.tabs.query({url: "<all_urls>"})
@@ -209,6 +224,7 @@ function App() {
         }
     }
 
+    // Saves new actions to server
     const handleSaveActions = async () =>{
         try{
 			let result = await browserAppData.storage.local.get(["meta_data"]);
