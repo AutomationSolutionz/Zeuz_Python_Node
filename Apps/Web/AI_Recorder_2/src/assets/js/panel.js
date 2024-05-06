@@ -275,66 +275,66 @@ $(document).ready(async function () {
 	})	
 	/* Save all newlly recorded actions with old actions and auto naming */
 	$(document).on('click', '#save_button', async function () {
-		try{
-			if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
-			$('#save_label').text('Saving...');
-			$("#save_button").attr('disabled', true).css('opacity',0.5);
-			let result = await browserAppData.storage.local.get(["meta_data"]);
-			let trs = $('#case_data_wrap>tr');
-			let case_value = trs.map((i) =>{
-				return JSON.parse($(trs[i]).attr('data-json'));
-			}).get();
-			console.log('case_value', case_value);
-			var save_data = {
-				TC_Id: result.meta_data.testNo,
-				step_sequence: result.meta_data.stepNo,
-				step_data: JSON.stringify(case_value.map(action => {
-					return action.main;
-				})),
-				step_id: result.meta_data.stepId,
-				dataset_name: JSON.stringify(case_value.map((action, idx) => {
-					return [
-						action.name,
-						idx+1,
-						!action.is_disable,
-					]
-				}))
-			}
-			$.ajax({
-				url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
-				method: 'POST',
-				data: save_data,
-				headers: {
-					// "Content-Type": "application/json",
-					"X-Api-Key": `${result.meta_data.apiKey}`,
-				},
-				success: function(response) {
-					console.log(response);
-					$('#save_label').text('Success!');
-					setTimeout(()=>{
-						$('#save_label').text('Save');
-						$("#save_button").removeAttr('disabled').css('opacity',1);
-					},1500)
-				},
-				error: function(jqXHR, textStatus, errorThrown) {
-					console.error(errorThrown);
-					$('#save_label').text('Error!!');
-					setTimeout(()=>{
-						$('#save_label').text('Save');
-						$("#save_button").removeAttr('disabled').css('opacity',1);
-					}, 1500)
-				}
-			})
-			CustomFunction.unsavedActionsFlag = false;
-		}
-		catch(e){
-			console.error(e);
-			$('#save_label').text('Error!!');
-			setTimeout(()=>{
-				$('#save_label').text('Save');
-				$("#save_button").removeAttr('disabled').css('opacity',1);
-			}, 1500)
-		}
+		// try{
+		// 	if($('#record_label').text() == 'Stop') return alert('First Stop the recording then Save');
+		// 	$('#save_label').text('Saving...');
+		// 	$("#save_button").attr('disabled', true).css('opacity',0.5);
+		// 	let result = await browserAppData.storage.local.get(["meta_data"]);
+		// 	let trs = $('#case_data_wrap>tr');
+		// 	let case_value = trs.map((i) =>{
+		// 		return JSON.parse($(trs[i]).attr('data-json'));
+		// 	}).get();
+		// 	console.log('case_value', case_value);
+		// 	var save_data = {
+		// 		TC_Id: result.meta_data.testNo,
+		// 		step_sequence: result.meta_data.stepNo,
+		// 		step_data: JSON.stringify(case_value.map(action => {
+		// 			return action.main;
+		// 		})),
+		// 		step_id: result.meta_data.stepId,
+		// 		dataset_name: JSON.stringify(case_value.map((action, idx) => {
+		// 			return [
+		// 				action.name,
+		// 				idx+1,
+		// 				!action.is_disable,
+		// 			]
+		// 		}))
+		// 	}
+		// 	$.ajax({
+		// 		url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+		// 		method: 'POST',
+		// 		data: save_data,
+		// 		headers: {
+		// 			// "Content-Type": "application/json",
+		// 			"X-Api-Key": `${result.meta_data.apiKey}`,
+		// 		},
+		// 		success: function(response) {
+		// 			console.log(response);
+		// 			$('#save_label').text('Success!');
+		// 			setTimeout(()=>{
+		// 				$('#save_label').text('Save');
+		// 				$("#save_button").removeAttr('disabled').css('opacity',1);
+		// 			},1500)
+		// 		},
+		// 		error: function(jqXHR, textStatus, errorThrown) {
+		// 			console.error(errorThrown);
+		// 			$('#save_label').text('Error!!');
+		// 			setTimeout(()=>{
+		// 				$('#save_label').text('Save');
+		// 				$("#save_button").removeAttr('disabled').css('opacity',1);
+		// 			}, 1500)
+		// 		}
+		// 	})
+		// 	CustomFunction.unsavedActionsFlag = false;
+		// }
+		// catch(e){
+		// 	console.error(e);
+		// 	$('#save_label').text('Error!!');
+		// 	setTimeout(()=>{
+		// 		$('#save_label').text('Save');
+		// 		$("#save_button").removeAttr('disabled').css('opacity',1);
+		// 	}, 1500)
+		// }
 		
 	});
 	

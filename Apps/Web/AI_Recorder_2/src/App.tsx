@@ -1,22 +1,11 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 // import {Helmet} from "react-helmet";
-import Action from './Action';
+import {Action, actionType} from './Action';
 import $ from 'jquery';
 
 const browserAppData = chrome;
-interface actionInterface {
-    is_disable: boolean,
-    main: string[][],
-    name: string,
-    typeWrite: boolean,
-    short:{
-        action: string,
-        element: string,
-        value: string,
-    }
-}
-type actionsInterface = actionInterface[]
+type actionsInterface = actionType[]
 
 interface stepZsvc{
     name: string,
@@ -30,7 +19,7 @@ function App() {
     const [testTitle, setTestTitle] = useState<string>('Loading...')
     // The selected step number.. Used to fetch actions in that step
     const [selectedValue, setSelectedValue] = useState<string>('1');
-    // Test case id .. Used to.. Used to fetch steps in that test case
+    // Test case id.. Used to fetch steps in that test case
     const [testId, testIdChange] = useState<string>('0000')
     // Step names showed in select options
     const [stepNames, setStepNames] = useState<stepZsvc[]>([]);
@@ -123,7 +112,9 @@ function App() {
         })
         const init_data: actionsInterface = (await resp.json()).step.actions;
         for (const each of init_data) {
-            each['typeWrite'] = false;
+            each['recorded'] = false;
+            each['animateRomove'] = false;
+            each['xpath'] = ''
         }
         setActions(()=>init_data);
         console.log('init_data', init_data);
@@ -150,18 +141,24 @@ function App() {
     const handleRecordResponse = (request:any) => {
         if (request.action == 'recording') {
             setRecordState('Recording...')
+            setTimeout(()=>{
+                // If server does not respond in 30 sec change the Recording... state
+                recordState == 'Recording...' && setSaveState('Stop')
+            }, 30000)
         }
         if (request.action == 'record_finish') {
-            const action: actionInterface = {
+            const action: actionType = {
                 is_disable: request.data.is_disabled,
                 main: request.data.main,
                 name: request.data.name,
-                typeWrite: true,
+                recorded: true,
+                animateRomove: false,
                 short:{
-                    action: '',
+                    action: request.data.action,
                     element: '',
                     value: '',
-                }
+                },
+                xpath: request.data.xpath
             }
             setActions((prev_actions) => {
                 const new_actions = [...prev_actions]
@@ -220,7 +217,11 @@ function App() {
             for(let tab of tabs) {
                 browserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
             }
-            setRecordState('Record');
+            setRecordState('Processing...');
+            PostProcess();
+            setTimeout(()=>{
+                setRecordState('Record');
+            }, 1500)
         }
     }
 
@@ -312,7 +313,52 @@ function App() {
             console.error(e)
 		}
     }
+    function PostProcess(){
+        let indices: number[] = []
+        for(let i = 0; i < actions.length; i++){
+            let action = actions[i];
 
+            if(
+                action.short.action == 'click' && 
+                i < actions.length - 1 && 
+                ['click', 'text', 'double click', 'validate full text', 'validate full text by ai'].includes(actions[i+1].short.action)  &&
+                action.xpath == actions[i+1].xpath && action.xpath != ''
+            ) 
+            indices.push(i);
+        }
+        return handeRemoveAction(indices);
+
+	}
+
+    const handeRemoveAction = (index:number[]) => {
+        // animate removal then remove after 0.5 sec
+        setActions((prev_actions) => {
+            const new_actions = [...prev_actions]
+            for (let i=0; i < prev_actions.length; i++){
+                if (index.includes(i)){
+                    new_actions[i].animateRomove = true
+                }
+            }
+            return new_actions;
+        });
+        setTimeout(
+            ()=>{
+                setActions((prev_actions) => {
+                    const new_actions = []
+                    for (let i=0; i < prev_actions.length; i++){
+                        if (index.includes(i)) continue;
+                        new_actions.push(prev_actions[i])
+                    }
+                    return new_actions;
+                });
+            }, 500
+        )
+        // setActions((prev_actions) => {
+        //     const new_actions = [...prev_actions]
+        //     new_actions.splice(index, 1);
+        //     return new_actions;
+        // });
+    }
     return (
         <div className="wrapper d-flex align-items-stretch">
             <nav id="sidebar">
@@ -414,7 +460,7 @@ function App() {
                 <div className="clearfix mx-2" id="recorder_step">
                     {actions.length === 0 && <h5>No actions</h5>}
                     {actions.map((action, idx)=>(
-                        <Action action={action} idx={idx}/>
+                        <Action action={action} idx={idx} removeAction={handeRemoveAction}/>
                     ))}
                 </div>
             </div>
