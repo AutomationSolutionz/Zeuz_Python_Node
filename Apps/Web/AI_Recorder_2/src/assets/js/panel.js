@@ -47,22 +47,22 @@ var CustomFunction = {
 		})
 	},
 	
-	PostProcess(actions){
-		let new_actions = []
-		for(let i = 0; i < actions.length; i++){
-			let action = actions[i];
-			if([null, undefined].includes(action)) continue;
-			if(
-				action.action == 'click' && 
-				i < actions.length - 1 && 
-				['click', 'text', 'double click', 'validate full text', 'validate full text by ai'].includes(actions[i+1].action)  &&
-				action.xpath == actions[i+1].xpath
-			) continue;
-			new_actions.push(action);
-		}
-		return new_actions;
-	},
-	// This Function is called when Record_stop button is pressed
+	// PostProcess(actions){
+	// 	let new_actions = []
+	// 	for(let i = 0; i < actions.length; i++){
+	// 		let action = actions[i];
+	// 		if([null, undefined].includes(action)) continue;
+	// 		if(
+	// 			action.action == 'click' && 
+	// 			i < actions.length - 1 && 
+	// 			['click', 'text', 'double click', 'validate full text', 'validate full text by ai'].includes(actions[i+1].action)  &&
+	// 			action.xpath == actions[i+1].xpath
+	// 		) continue;
+	// 		new_actions.push(action);
+	// 	}
+	// 	return new_actions;
+	// },
+	// // This Function is called when Record_stop button is pressed
 	SaveCaseDataAsJson() {
 		setTimeout(()=>{	// Setting 0.5 sec so that the last action is saved properly in storage.local
 			browserAppData.storage.local.get(null, function (result) {
@@ -78,7 +78,7 @@ var CustomFunction = {
 					// if(shift)
 					// 	result.recorded_actions.shift();
 					// result.recorded_actions.shift();
-					let recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
+					// let recorded_actions = CustomFunction.PostProcess(result.recorded_actions);
 					CustomFunction.LoadActions(recorded_actions)
 					browserAppData.storage.local.set({
 						recorded_actions: recorded_actions,
@@ -337,53 +337,7 @@ $(document).ready(async function () {
 		// }
 		
 	});
-	
-	$(document).on('click', '#authenticate', async function () {
-		try {
-			$('#authenticate').text('Authenticaing...');
-			$("#authenticate").attr('disabled', true).css('opacity',0.5);
-			var result = await browserAppData.storage.local.get(["meta_data"]);
-			var server_address = $('#server_address').val();
-			server_address = server_address.endsWith("/") ? server_address.slice(0,-1) : server_address
-			var api_key = $('#api_key').val();
-			$.ajax({
-				url: `${server_address}/api/auth/token/verify`,
-				method: 'GET',
-				data: {
-					api_key: api_key,
-				},
-				success: function(response) {
-					console.log(response);
-					result.meta_data.url = server_address;
-					result.meta_data.apiKey = api_key;
-					browserAppData.storage.local.set({
-						meta_data: result.meta_data
-					})
-					$('#authenticate').text('Success!');
-					setTimeout(()=>{
-						$('#authenticate').text('Authenticate');
-						$("#authenticate").removeAttr('disabled').css('opacity',1);
-					},1500)
-				},
-				error: function(jqXHR, textStatus, errorThrown) {
-					console.error(errorThrown);
-					$('#authenticate').text('Error!!');
-					setTimeout(()=>{
-						$('#authenticate').text('Authenticate');
-						$("#authenticate").removeAttr('disabled').css('opacity',1);
-					},1500)
-				}
-			})
-		} catch (error) {
-			console.error(error);
-			$('#authenticate').text('Error!!');
-			setTimeout(()=>{
-				$('#authenticate').text('Authenticate');
-				$("#authenticate").removeAttr('disabled').css('opacity',1);
-			},1500)
-		}
-		
-	});
+
 	$(window).off('beforeunload');
 	$(document).on('click', '#run_button', async function () {
 		try {

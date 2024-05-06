@@ -247,15 +247,6 @@ function App() {
 
             try {
                 setSaveState('Saving...')
-                // const response = await fetch(result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/', {
-                //   method: 'POST',
-                //   headers: {
-				// 	// "Content-Type": "application/json",
-				// 	"X-Api-Key": `${result.meta_data.apiKey}`,
-                //   },
-                //   body: JSON.stringify(save_data)
-                // });
-
                 await $.ajax({
                     url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
                     method: 'POST',
@@ -282,21 +273,61 @@ function App() {
                       }
                     }
                 )
-            
-                // if (!response.ok || !(await response.json())) {
-                //   console.error('Failed to save actions.. !response.ok');
-                //   setSaveState('Error!!')
-                //   setTimeout(()=>{
-                //       setSaveState('Save')
-                //   }, 1500)
-                //   return
-                // }
-            
-                // setSaveState('Success')
-                // setTimeout(()=>{
-                //     setSaveState('Save')
-                // }, 1500)
-                // setUnsavedActions(false);
+              } catch (error) {
+                setSaveState('Error!!')
+                setTimeout(()=>{
+                    setSaveState('Save')
+                }, 1500)
+                console.error(error);
+              }
+		}
+    const handleRunAll = async () =>{
+        try{
+			let result = await browserAppData.storage.local.get(["meta_data"]);
+			var save_data = {
+				TC_Id: result.meta_data.testNo,
+				step_sequence: result.meta_data.stepNo,
+				step_data: JSON.stringify(actions.map(action => {
+					return action.main;
+				})),
+				step_id: result.meta_data.stepId,
+				dataset_name: JSON.stringify(actions.map((action, idx) => {
+					return [
+						action.name,
+						idx+1,
+						!action.is_disable,
+					]
+				}))
+			}
+
+            try {
+                setSaveState('Saving...')
+                await $.ajax({
+                    url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
+                    method: 'POST',
+                    data: save_data,
+                    headers: {
+                        // "Content-Type": "application/json",
+                        "X-Api-Key": `${result.meta_data.apiKey}`,
+                    },
+                    success: function () {
+                        setSaveState('Success')
+                        setTimeout(()=>{
+                            setSaveState('Save')
+                        }, 1500)
+                        setUnsavedActions(false);
+                    },
+                    error: function (xhr, status, error) {
+                        xhr;status
+                        console.error('Error:', error);
+                        setSaveState('Error!!')
+                        setTimeout(()=>{
+                            setSaveState('Save')
+                        }, 1500)
+                        console.error(error);
+                      }
+                    }
+                )
               } catch (error) {
                 setSaveState('Error!!')
                 setTimeout(()=>{
@@ -353,12 +384,8 @@ function App() {
                 });
             }, 500
         )
-        // setActions((prev_actions) => {
-        //     const new_actions = [...prev_actions]
-        //     new_actions.splice(index, 1);
-        //     return new_actions;
-        // });
     }
+
     return (
         <div className="wrapper d-flex align-items-stretch">
             <nav id="sidebar">
