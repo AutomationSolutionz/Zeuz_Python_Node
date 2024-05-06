@@ -10,7 +10,6 @@ const browserAppData = chrome || browser;
 
 var idx = 0;
 var recorded_actions = [];
-var current_iframe = 'root';
 var action_name_convert = {
     select: "click",
     type: "text",
@@ -28,19 +27,19 @@ async function start_recording(){
     let res = await browserAppData.storage.local.get('recorded_actions');    
     recorded_actions = res.recorded_actions;
     idx = recorded_actions.length;
-    current_iframe = 'root';
+
 }
 async function stop_recording(){
     // When there are 2 iframes. it saves 3 times. this is a temporary fix. Should be fixed properly
     if (recorded_actions.length > 0)
     browserAppData.storage.local.set({
-        recorded_actions: recorded_actions,
+        recorded_actions: [],
     }).then(()=>{
         idx = 0;
         recorded_actions = [];
     }); 
 }
-async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframeDom){
+async function fetchAIData(idx, command, value, url, document){
     if (command === 'go to link'){
         let go_to_link = {
             action: 'go to link',
@@ -52,14 +51,14 @@ async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframe
             main: [['go to link', 'selenium action', url]],
             xpath: "",
         };
-        recorded_actions[Idx] = go_to_link;
+        recorded_actions[idx] = go_to_link;
         console.log(recorded_actions);
         browserAppData.storage.local.set({
             recorded_actions: recorded_actions,
         })
         return;
     }
-    recorded_actions[Idx] = 'empty';
+    recorded_actions[idx] = 'empty';
     browserAppData.storage.local.set({
         recorded_actions: recorded_actions,
     })
@@ -77,7 +76,7 @@ async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframe
         "action_value": value,
         "source": "web",
     };
-    // console.log(document);
+    console.log(document);
     var data = JSON.stringify(dataj);
 
     const url_ = `${metaData.url}/ai_record_single_action/`
@@ -89,63 +88,9 @@ async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframe
         },
         body: data,
     }
-    if (iframeLoc){
-        // write Iframe codes here
-        recorded_actions[Idx] = {
-            action: 'switch iframe',
-            data_list: [],
-            element: '',
-            is_disable: false,
-            name: `Iframe ${iframeLoc}`,
-            value: '',
-            main: [
-                ['index', 'iframe parameter', 'default content'],
-                ['switch iframe', 'selenium action', 'switch iframe']
-            ],
-            xpath: '',
-        };
-        console.log('iframe_action', recorded_actions);
-        browserAppData.storage.local.set({
-            recorded_actions: recorded_actions,
-        })
-        Idx += 1;
-    }
-    try {
-        var r = await fetch(url_, input)
-        var resp = await r.json();
-        if(!resp.ai_choices && resp.info){
-            browserAppData.runtime.sendMessage({
-                action: 'ai_engine_error',
-                text: resp.info,
-                command:command,
-            })
-            console.error(resp.info);
-            recorded_actions[Idx] = 'error';
-            console.log(recorded_actions);
-            browserAppData.storage.local.set({
-                recorded_actions: recorded_actions,
-            })
-            return;
-        }
-        var response = resp.ai_choices;
-        if (response.iframe){
-            // write Iframe codes here
-            
-        }
-    } catch (error) {
-        console.error(error.message);
-        browserAppData.runtime.sendMessage({
-            action: 'ai_engine_error',
-            text: error.message,
-            command:command,
-        })
-        recorded_actions[Idx] = 'error';
-        console.log(recorded_actions);
-        browserAppData.storage.local.set({
-            recorded_actions: recorded_actions,
-        })
-        return;
-    }
+    var r = await fetch(url_, input)
+    var resp = await r.json();
+    let response = resp.ai_choices;
 
     if (validate_full_text_by_ai){
         let text_classifier = await browserAppData.runtime.sendMessage({
@@ -177,7 +122,7 @@ async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframe
     response[0].short.value = value;
     if (command === 'text') response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     else if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
-    recorded_actions[Idx] = {
+    recorded_actions[idx] = {
         action: response[0].short.action,
         data_list: [response[0].short.value],
         element: response[0].short.element,
@@ -191,64 +136,46 @@ async function fetchAIData(Idx, command, value, url, document, iframeLoc, iframe
     browserAppData.storage.local.set({
         recorded_actions: recorded_actions,
     })
+    browserAppData.runtime.sendMessage({action: 'record_finish'})
 }
-async function iframe_required(iframeLoc, iframeDom){
-    let actions = await browserAppData.runtime.sendMessage({
-        apiName:'custom_file_actions'
-    })
-    // console.log('actions', 'actions');
-    if (iframeLoc != current_iframe){
-        current_iframe = iframeLoc;
-        return true;
-    }
-    return false;
-}
-async function record_action(command, value, url, document, iframeLoc, iframeDom){
+
+async function record_action(command, value, url, document){
     if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command]
     console.log("... Action recorder start");
     idx += 1;
-    if (recorded_actions.length === 0 || 
-        recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
-        let go_to_link = {
-            action: 'go to link',
-            data_list: [url],
-            element: "",
-            is_disable: false,
-            name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,
-            value: url,
-            main: [['go to link', 'selenium action', url]],
-            xpath: "",
-        };
-        if (recorded_actions.length === 0) recorded_actions[0] = go_to_link;
-        else recorded_actions.unshift(go_to_link);
-        idx += 1;
-    }
-    if(await iframe_required(iframeLoc, iframeDom)){
-        console.log('iframe required', iframeLoc);
-        idx += 1;
-        fetchAIData(idx-2, command, value, url, document, iframeLoc, iframeDom);  
-    }
-    else{
-        fetchAIData(idx-1, command, value, url, document);
-    }
+    // if (recorded_actions.length === 0 || 
+    //     recorded_actions.length > 0 && typeof recorded_actions[0] == 'object' && recorded_actions[0].action != 'go to link'){
+    //     let go_to_link = {
+    //         action: 'go to link',
+    //         data_list: [url],
+    //         element: "",
+    //         is_disable: false,
+    //         name: `Open ${(url.length>25) ? url.slice(0,20) + '...' : url}`,
+    //         value: url,
+    //         main: [['go to link', 'selenium action', url]],
+    //         xpath: "",
+    //     };
+    //     if (recorded_actions.length === 0) recorded_actions[0] = go_to_link;
+    //     else recorded_actions.unshift(go_to_link);
+    //     idx += 1;
+    // }
+    fetchAIData(idx-1, command, value, url, document);  
 }
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        if (request.apiName == 'start_recording') {
+        if (request.action == 'start_recording') {
             start_recording();
         }
-        else if (request.apiName == 'record_action') {
+        else if (request.action == 'record_action') {
             record_action(
                 request.command,
                 // request.target,
                 request.value,
                 request.url,
                 request.document,
-                request.iframeLoc,
-                request.iframeDom,
             );
         }
-        else if (request.apiName == 'stop_recording') {
+        else if (request.action == 'stop_recording') {
             stop_recording();
         }
     }

@@ -1,10 +1,32 @@
 # Changelog
 
 
-# Version 18
 
 ### [Current changes]
--
+
+# Version 19
+
+### [19.2.0][Apr 16, 2024]
+- **[Add]** 'next', 'this', 'next_actions' keywords implementation
+- **[Improve]** If else action conditions now requires exact python syntax
+
+### [19.1.0]
+- **[Add]** Action has been added to know element size and location
+- **[Add]** Drag and Drop by offset has been added
+- **[Add]** Custom error msg feature
+- **[Change]** Support for the new Authentication System 2.0 has been added.
+- **[Change]** Improved reconnect time of node by 10x-30x once it detects a live server.
+- **[Change]** Removed unnecessary codes + APIs.
+- **[Change]** Improved general login time because of the above change.
+- **[Add]** Rest API response to raw file.
+- **[Add]** Custom Profile Functionality
+
+### [19.0.0][Jan 16, 2024]
+- **[Add]** New server-node architecture
+
+### [18.1.0][Jan 13, 2024]
+- **[Add]** AI Test recorder extension
+- **[Add]** `%|num()|%` variable to extract number from any text
 
 ### [18.0.0][Nov 5, 2023]
 - **[Change]** AI Inspector new api integrated 

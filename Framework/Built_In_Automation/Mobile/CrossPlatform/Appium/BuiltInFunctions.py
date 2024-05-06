@@ -24,8 +24,9 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
 )
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
-from appium.webdriver.common.touch_action import TouchAction
-from appium.webdriver.common.multi_action import MultiAction
+# from appium.webdriver.common.touch_action import TouchAction
+# from appium.webdriver.common.multi_action import MultiAction
+from selenium.webdriver.common.action_chains import ActionChains
 from appium.webdriver.common.appiumby import AppiumBy
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -662,6 +663,7 @@ def start_appium_server():
         while is_port_in_use(appium_port) and tries < 20:
             appium_port += 2
             wdaLocalPort += 2
+            tries += 1
 
         if tries >= 20:
             CommonUtil.ExecLog(

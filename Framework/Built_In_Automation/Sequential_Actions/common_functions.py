@@ -821,7 +821,8 @@ def save_into_variable(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         if not (operation.replace(" ", "").replace("_", "") == "saveifnotdefined" and sr.Test_Shared_Variables(variable_name)):
-            sr.Set_Shared_Variables(variable_name, variable_value)
+            sr.Set_Shared_Variables(variable_name, variable_value, print_variable=False)
+            CommonUtil.prettify(variable_name, variable_value)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -2849,7 +2850,7 @@ def excel_read(data_set):
             # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
             from openpyxl import load_workbook
             from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
-            wb = load_workbook(filepath)
+            wb = load_workbook(filepath, data_only=True)
             sheet = wb[sheet_name]
             if key_reference is None:
                 key_reference = "row1"
@@ -4369,28 +4370,27 @@ def skip_testcases(data_set):
               skip testcases | common action | 6716-6720
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
         test_cases = None
-
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "skip testcases" in left:
                 test_cases = right.strip()
 
         run_id = sr.Get_Shared_Variables("run_id")
-        CommonUtil.skip_testcases[run_id] = True
+        if run_id not in CommonUtil.skip_testcases:
+            CommonUtil.skip_testcases[run_id] = []
         if test_cases == 'skip remaining':
-            CommonUtil.skip_testcases_list.append(test_cases)
+            CommonUtil.skip_testcases[run_id].append(test_cases)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
                 if '-' in test_case:
                     range_start, range_end = map(int, test_case.split('-'))
-                    CommonUtil.skip_testcases_list.extend(list(range(range_start, range_end + 1)))
+                    CommonUtil.skip_testcases[run_id].append(range(range_start, range_end))
                 else:
                     tc_num = int(test_case.split('-')[0])
-                    CommonUtil.skip_testcases_list.append(tc_num)
+                    CommonUtil.skip_testcases[run_id].append(tc_num)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Selected Test Case")
         return "passed"
 
@@ -4593,7 +4593,7 @@ def upload_attachment_to_testcase(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = requests.post(
+        res = RequestFormatter.request("post", 
             RequestFormatter.form_uri("test_case_file_upload/"),
             files={"file": open(var_path, 'rb')},
             data={"file_upload_tc": var_id},
@@ -4647,7 +4647,7 @@ def download_attachment_from_testcase(data_set):
         headers = RequestFormatter.add_api_key_to_headers({})
         url = RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
         local_filename = url.split('/')[-1]
-        with requests.get(url, stream=True, verify=False,**headers) as r:
+        with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
             with open(var_path+'/'+local_filename, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -4690,7 +4690,7 @@ def upload_attachment_to_step(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = requests.post(
+        res = RequestFormatter.request("post", 
             RequestFormatter.form_uri("step_file_upload/"),
             files={"file": open(var_path,'rb')},
             data={"file_upload_step": var_id, },
@@ -4744,7 +4744,7 @@ def download_attachment_from_step(data_set):
         headers = RequestFormatter.add_api_key_to_headers({})
         url = RequestFormatter.form_uri(f"static/step_folder/{var_id}/{var_name}")
         local_filename = url.split('/')[-1]
-        with requests.get(url, stream=True, verify=False,**headers) as r:
+        with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
             with open(var_path+'/'+local_filename, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -4784,7 +4784,7 @@ def upload_attachment_to_global(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = requests.post(
+        res = RequestFormatter.request("post", 
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
             verify=False,
@@ -4830,7 +4830,7 @@ def download_attachment_from_global(data_set):
         headers = RequestFormatter.add_api_key_to_headers({})
         url = RequestFormatter.form_uri(f"static/global_folder/{var_name}")
         local_filename = url.split('/')[-1]
-        with requests.get(url, stream=True, verify=False,**headers) as r:
+        with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
             with open(var_path+'/'+local_filename, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -5703,7 +5703,7 @@ def disable_step(data_set):
         if len(steps) == 0:
             CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
+            CommonUtil.ExecLog(sModuleInfo, "%s steps have been disabled" % steps, 1)
             CommonUtil.disabled_step += steps
 
         return "passed"
@@ -5889,7 +5889,7 @@ def data_store_read(data_set):
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
-        res = requests.get(
+        res = RequestFormatter.request("get", 
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
             verify=False,
@@ -6036,7 +6036,7 @@ def data_store_insert(data_set):
                 params['table_name'] = table_name
             if left.strip() == 'data':
                 l = ast.literal_eval(right.strip())
-                print(l)
+
             if mid.strip() == "action":
                 var_name = right.strip()
         data={
@@ -6047,8 +6047,69 @@ def data_store_insert(data_set):
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
 
-        res = requests.post(
+        res = RequestFormatter.request("post", 
             RequestFormatter.form_uri('data_store/data_store/data_store_list/'),
+            data=json.dumps(data),
+            verify=False,
+            **headers
+        )
+        if res.status_code==201:
+            CommonUtil.ExecLog(sModuleInfo, "data inserted successfully", 1)
+            return "passed"
+            # return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Cant insert , please check your dataset", 1)
+            return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def data_store_insert_column(data_set):
+    """
+    This function reads data from datastore
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name       | input parameter    | xyz
+                data             | element parameter  | string_content
+                row              | input parameter    | row_number
+                data store: insert| common action      | variable_name_to_save_data_to
+            ------------------------------------------------------------------------------
+    Return:
+        `201 status` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = columns = var_name = row = ""
+        params = {}
+        for left, mid, right in data_set:
+            if left.strip() == 'table name':
+                table_name = right.strip()
+                params['table_name'] = table_name
+            if left.strip() == 'row':
+                row = right.strip()
+
+            if left.strip() == 'data':
+                l = right.strip()
+            if mid.strip() == "action":
+                var_name = right.strip()
+        data={
+            'table_name':table_name,
+            'data_list':l,
+            'row':row
+
+        }
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+
+        res = requests.post(
+            RequestFormatter.form_uri('data_store/data_store/data_store_insert_column/'),
             data=json.dumps(data),
             verify=False,
             **headers

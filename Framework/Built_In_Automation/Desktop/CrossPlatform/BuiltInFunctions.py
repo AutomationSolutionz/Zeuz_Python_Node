@@ -15,11 +15,18 @@ try:
     import pyautogui as gui
 except:
     True  # https://pyautogui.readthedocs.io/en/latest/
+from fileinput import filename
 import os, os.path, sys, time, inspect, subprocess
+from turtle import right
+
+import pyautogui
 from Framework.Utilities import CommonUtil, FileUtilities as FL
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
-from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+# from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+from Framework.Built_In_Automation.Shared_Resources import (
+    BuiltInFunctionSharedResources as Shared_Resources,
+)
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -27,6 +34,9 @@ from Framework.Utilities.CommonUtil import (
 )  # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Built_In_Automation.Desktop.RecordPlayback.ChoosePlaybackModule import ChoosePlaybackModule
+from Framework.Utilities import ConfigModule
+import traceback
+import platform
 
 # Disable pyautogui failsafe when moving to top left corner
 gui.FAILSAFE = False
@@ -36,6 +46,15 @@ gui.FAILSAFE = False
 #    Global Variables   #
 #                       #
 #########################
+
+temp_config = os.path.join(
+    os.path.join(
+        os.path.abspath(__file__).split("Framework")[0],
+        os.path.join(
+            "AutomationLog", ConfigModule.get_config_value("Advanced Options", "_file")
+        ),
+    )
+)
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -554,6 +573,9 @@ def Click_Element(data_set):
                 elif row[0] in ("doubleclick", "double click"):
                     cmd = "doubleclick"
                     position = row[2]
+                elif row[0] in ("rightclick", "right click"):
+                    cmd = "rightclick"
+                    position = row[2]
             elif row[1] == "element parameter":
                 file_name = row[2]
 
@@ -611,6 +633,8 @@ def Click_Element(data_set):
             result = gui.click(x, y)  # Single click
         elif cmd == "doubleclick":
             result = gui.doubleClick(x, y)  # Double click
+        elif cmd == "rightclick":
+            result = gui.click(x, y, button="right") # Right click
 
         # CommonUtil.TakeScreenShot(
         #     sModuleInfo
@@ -638,13 +662,16 @@ def check_for_element(data_set):
     """ Tests whether or not an element is visible on screen """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    result = False
+    var_name = 'check'
     # Parse data set
     try:
         file_name = ""
         for row in data_set:
             if row[1] == "element parameter":
                 file_name = row[2]
+            elif "action" in row[1].strip().lower():
+                var_name = row[2].strip()
 
         if file_name == "":
             CommonUtil.ExecLog(
@@ -671,13 +698,65 @@ def check_for_element(data_set):
 
         if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
-            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-            return "passed"
+            result = True
+
+        Shared_Resources.Set_Shared_Variables(var_name, result)
+        return "passed"
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def get_bbox(data_set):
+    """
+    This action provides the (x, y, width, height) parameters of a bbox of an image as a list. 
+
+    Field	                Sub Field	            Value
+    image	                element parameter	    filename.png  
+    get bounding box        desktop action          **variable name that will store the parameters 
+                                                    of the bounding box e.g. cords**
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    filename = ''
+    var_name = 'cords'
+
+    try:
+        for row in data_set:
+            if row[1] == "element parameter":
+                filename = row[2].strip()
+            elif "action" in row[1].strip().lower():
+                var_name = row[2].strip()
+
+        if filename == "":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
+                3,
+            )
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+    try:
+        element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
+        if element in failed_tag_list:  # Error reason logged by Get_Element
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
+            return "zeuz_failed"
+
+        # Get parameters of the bbox
+        CommonUtil.ExecLog(
+            sModuleInfo, "Bbox paramaters on screen X:%d, Y:%d, Width:%d, Height:%d" %(element[0], element[1], element[2], element[3]), 0
+        )
+        Shared_Resources.Set_Shared_Variables(var_name, element)
+        return "passed"
+    except Exception:
+        errMsg = "Error locating the element"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
@@ -743,12 +822,12 @@ def launch_program(data_set):
         launch_status = "success"
 
         # Execute program
-        if dependency["OS"].lower() == "linux" or dependency["OS"].lower() == "mac":
+        if platform.system().lower() == "linux" or platform.system().lower() == "mac":
             launch_status = subprocess.Popen(
                 Command.split(" ")
             )  # FU.run_cmd() blocks further execution, so we'll just use subprocess here
 
-        elif dependency["OS"].lower() == "windows":
+        elif platform.system().lower() == "windows":
             # launch_status = subprocess.Popen('%s' % Command) # FU.run_cmd() blocks further execution, so we'll just use subprocess here
             # launch_status = FU.run_win_cmd(Command)
             # This is the same as double clicking on Windows
@@ -1062,4 +1141,100 @@ def playback_recorded_events(data_set):
 
     except Exception:
         errMsg = "Failed to playback recorded events from file: %s" % filepath
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+@logger
+def take_partial_screenshot(data_set):
+    """
+    This action takes a partial screenshot of the active window.
+    One has to provide the path where the screenshot will be saved. 
+    One can provide x,y coordinates, width and height to take screenshot 
+    of a specific region by using the bbox optional parameter. 
+
+    Field	                Sub Field	            Value
+    screenshot save path	element parameter	    C:\\User\\path\\image.png
+    bbox                    optional parameter      (x, y, width, height)
+    take screenshot         desktop action          
+    """
+    from pathlib import Path
+    import time
+    from PIL import Image
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    path = None
+    x_cord = None
+    y_cord = None
+    width = None
+    height = None
+
+    try:
+        for left, _, right in data_set:
+            if "path" in left.lower().strip():
+                path = right.strip()
+            elif left.lower().strip() == "bbox":
+                x_cord, y_cord, width, height = right.replace('(','').replace(')','').split(',')
+                x_cord = int(x_cord.strip())
+                y_cord = int(y_cord.strip())
+                width = int(width.strip())
+                height = int(height.strip())
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    try:
+        if path is None:
+            filename_format = "%Y_%m_%d_%H-%M-%S"
+            filename = time.strftime(filename_format) + ".png"
+            screenshot_folder = ConfigModule.get_config_value(
+                "sectionOne", "screen_capture_folder", temp_config
+            )
+            path = str(Path(screenshot_folder) / Path(filename))
+        
+        pyautogui.screenshot(path)
+    
+        if x_cord is not None and y_cord is not None and width is not None and height is not None:
+            im = Image.open(path)
+            im1 = im.crop((x_cord, y_cord, (x_cord+width), (y_cord+height)))
+            im1.save(path)
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Proper bounding box parameters are not provided", 3
+            )
+            return "zeuz_failed"
+            
+        return "passed"
+    except:
+        errMsg = "Could not take the screenshot"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+
+@logger
+def keystroke_for_element(data_set):
+    """
+    Enter sequential characters or strings, for example, Hello World 
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        chars = ""
+        delay = 0.0
+        for left, mid, right in data_set:
+            if "delay" in left.lower().strip():
+                delay = float(right.strip())
+            elif "action" in mid.lower().strip():
+                chars = right.strip()
+        if chars == "":
+            CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
+            return "zeuz_failed"
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+    try:
+        pyautogui.write(chars, interval=delay)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters with pyautogui:\n%s" % chars, 1)
+        return "passed"
+
+    except:
+        errMsg = "Could not enter characters with pyautogui"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)

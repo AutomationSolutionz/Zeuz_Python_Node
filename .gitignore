@@ -25,6 +25,8 @@ AutomationLog/
 iosSimulator/*
 node_state.json
 *.zvt
+Framework/session.bin
+session.bin
 
 # Nodejs gitignore
 # Logs
@@ -53,3 +55,4 @@ web_modules/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
+custom_profiles/

@@ -484,10 +484,7 @@ def run_all_test_steps_in_a_test_case(
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
-        # loop through the steps
         while StepSeq <= Stepscount:
-
-            # check if debug step
             CommonUtil.custom_step_duration = ""
             if debug and debug_steps:
                 if str(StepSeq) not in debug_steps:
@@ -525,14 +522,12 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.step_index += 1
                 continue
 
-            # get step info
             CommonUtil.current_step_name = current_step_name = all_step_info[StepSeq - 1]["step_name"]
             CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
             CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
 
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
-            # add config value
             ConfigModule.add_config_value(
                 "sectionOne",
                 "sTestStepExecLogId",
@@ -704,10 +699,10 @@ def run_all_test_steps_in_a_test_case(
 def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList, testcase_info):
     if "BLOCKED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
-        sTestCaseStatus = "Blocked"
+        return "Blocked"
     elif "CANCELLED" in sTestStepResultList or "Cancelled" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
-        sTestCaseStatus = "Cancelled"
+        return "Cancelled"
     elif "zeuz_failed".upper() in sTestStepResultList:
         step_index = 0
         for each in sTestStepResultList:
@@ -719,34 +714,23 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
         else:
             sTestCaseStatus = "Blocked"
         CommonUtil.ExecLog(sModuleInfo, "Test Case " + sTestCaseStatus, 3)
+        return sTestCaseStatus
 
     elif "WARNING" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
-        sTestCaseStatus = "Failed"
+        return "Failed"
     elif "NOT RUN" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
-        sTestCaseStatus = "Failed"
-    elif "SKIPPED" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
-        skipped = True
-        for each in sTestStepResultList:
-            if each != "SKIPPED":
-                skipped = False
-                break
-        if skipped:
-            sTestCaseStatus = "Skipped"
-            CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
-        else:
-            sTestCaseStatus = "Passed"
-            CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
+        return "Failed"
+    elif all([i == "SKIPPED" for i in sTestStepResultList]):
+        CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
+        return "Skipped"
     elif "PASSED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
-        sTestCaseStatus = "Passed"
+        return "Passed"
     else:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Status Unknown", 2)
-        sTestCaseStatus = "Unknown"
-
-    return sTestCaseStatus
+        return "Unknown"
 
 
 # writes the log file for a test case
@@ -847,12 +831,12 @@ def set_important_variables():
 
 def set_runid_status(item,tc=False):
     if tc:
-        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status",log=False)=="In-Progress" else "Blocked")
+        shared.Set_Shared_Variables("runid_status", "In-Progress" if item in passed_tag_list and shared.Get_Shared_Variables("runid_status",log=False)=="In-Progress" else "Blocked",print_variable=False)
     else:
         shared.Set_Shared_Variables("runid_status",
-                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id',log=False) else shared.Get_Shared_Variables("runid_status",log=False))
+                                            "In-Progress" if item != shared.Get_Shared_Variables('run_id',log=False) else shared.Get_Shared_Variables("runid_status",log=False),print_variable=False)
 
-        shared.Set_Shared_Variables("run_id", item)
+        shared.Set_Shared_Variables("run_id", item,print_variable=False)
 
 
 def send_to_bigquery(execution_log, metrics):
@@ -940,6 +924,33 @@ def send_to_bigquery(execution_log, metrics):
     send_browser_perf_metrics()
 
 
+def check_test_skip(run_id, tc_num, skip_remaining=True) -> bool:
+    if run_id not in CommonUtil.skip_testcases:
+        return False
+    if skip_remaining and 'skip remaining' in CommonUtil.skip_testcases[run_id]:
+        return True
+    if tc_num in CommonUtil.skip_testcases[run_id]:
+        return True
+    ranges = [i for i in CommonUtil.skip_testcases[run_id] if type(i) == range]
+    if len(ranges) == 0:
+        return False
+
+    target = CommonUtil.tc_nums[run_id].index(tc_num)
+    for rang in ranges:
+        start = CommonUtil.tc_nums[run_id].index(rang.start) if rang.start in CommonUtil.tc_nums[run_id] else None
+        end = CommonUtil.tc_nums[run_id].index(rang.stop) if rang.stop in CommonUtil.tc_nums[run_id] else None
+        if start is None and end is None:
+            continue
+        if start is None and target <= end:
+            continue
+        if end is None and start <= target:
+            return True
+        if start is not None and end is not None and start <= target <= end:
+            return True
+
+    return False
+
+
 def run_test_case(
     TestCaseID,
     sModuleInfo,
@@ -968,12 +979,6 @@ def run_test_case(
 
         # Added this two global variable in CommonUtil to save log information and save filepath of test case report
         CommonUtil.error_log_info = ""
-        # FIXME: Remove these lines
-        # import random
-        # CommonUtil.d_day = random.randint(1, 4)
-        # CommonUtil.d_hours = random.randint(1, 11)
-        # CommonUtil.d_minutes = random.randint(0, 39)
-        # CommonUtil.d_seconds = random.randint(0, 50)
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
@@ -981,18 +986,13 @@ def run_test_case(
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
-            shared.Set_Shared_Variables("zeuz_prettify_limit", None)
-            CommonUtil.prettify_limit = None
+            shared.Set_Shared_Variables("zeuz_prettify_limit", 500)
+            CommonUtil.prettify_limit = 500
 
-        # shared.Set_Shared_Variables("zeuz_automation_log", Path(temp_ini_file).parent.__str__())
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
 
-        # log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
-        # print("#"*(len(log_line)))
-        # CommonUtil.ExecLog("", log_line, 4, False)
-        # print("#"*(len(log_line)))
         _color = "white"
         # danger_style = Style(color=_color, blink=False, bold=True)
         table = Table(border_style=_color, box=DOUBLE, expand=False, padding=1)
@@ -1005,24 +1005,10 @@ def run_test_case(
         # get test case start time
         if performance and browserDriver:
             shared.Set_Shared_Variables("selenium_driver", browserDriver)
-        if run_id not in CommonUtil.skip_testcases:
-            CommonUtil.skip_testcases_list = []
-            sTestStepResultList = run_all_test_steps_in_a_test_case(
-                testcase_info,
-                test_case,
-                sModuleInfo,
-                run_id,
-                file_specific_steps,
-                final_dependency,
-                final_run_params,
-                temp_ini_file,
-                debug_info,
-                performance
-            )
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and 'skip remaining' in CommonUtil.skip_testcases_list:
-            sTestStepResultList = ['SKIPPED']
-        elif run_id in CommonUtil.skip_testcases and CommonUtil.skip_testcases[run_id] and tc_num in CommonUtil.skip_testcases_list:
-            sTestStepResultList = ['SKIPPED']
+
+        sTestCaseStatus = None
+        if check_test_skip(run_id, tc_num):
+            sTestStepResultList = ['SKIPPED' for i in range(len(testcase_info['steps']))]
         else:
             sTestStepResultList = run_all_test_steps_in_a_test_case(
                 testcase_info,
@@ -1036,8 +1022,9 @@ def run_test_case(
                 debug_info,
                 performance
             )
-
-        # TODO: Test case run is completed here somewhere.
+            if check_test_skip(run_id, tc_num, False):
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
+                sTestCaseStatus = 'Skipped'
 
         ConfigModule.add_config_value(
             "sectionOne",
@@ -1051,7 +1038,8 @@ def run_test_case(
         sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
 
         # Decide if Test Case Pass/Failed
-        sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+        if sTestCaseStatus is None:
+            sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
 
         #Writing error information in a text file
         if sTestCaseStatus == "Failed" or sTestCaseStatus == "Blocked":
@@ -1136,7 +1124,7 @@ def run_test_case(
 
         if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-            if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
+            if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
                 cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables(run_id)
 
@@ -1145,8 +1133,7 @@ def run_test_case(
             else:
                 runid_status = shared.Get_Shared_Variables("runid_status", log=False)
             # shared.Clean_Up_Shared_Variables()  # clean up shared variables
-            # shared.Set_Shared_Variables('runid_status',runid_status)
-            shared.Set_Shared_Variables('run_id', run_id)
+            shared.Set_Shared_Variables('run_id', run_id,print_variable=False)
             # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
@@ -1218,7 +1205,7 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
         if "local" in device_order["mobile"]:
             pass
         elif "browser_stack" in device_order["mobile"]:
-            project = f"PROJECT: {user_info_object['project']} & TEAM: {user_info_object['team']}"
+            project = f"PROJECT:{user_info_object['project_id']} & TEAM:{user_info_object['team_id']}"
             # build = f"{test_case_no} : {test_case_name}"
             build = kwargs['run_id']
             # Todo: session_name will be the run_id of the test case. So, we can reference with our zeuz better
@@ -1251,8 +1238,8 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             }
     # Todo: remove this section. Changing this for new device_info.
     # elif "browser_stack" in device_order and device_order["browser_stack"]:
-    #     project = user_info_object["project"]
-    #     team = user_info_object["team"]
+    #     project ["project"]
+    #     team ["team"]
     #
     #     project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
     #     build = test_case_no + " :: " + test_case_name
@@ -1421,21 +1408,19 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             for _ in range(5):
                 try:
                     if perf_report_html is None:
-                        res = requests.post(
+                        res = RequestFormatter.request("post", 
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report)},
-                            verify=False,
-                            **RequestFormatter.add_api_key_to_headers({}))
+                            verify=False)
                     else:
-                            res = requests.post(
+                            res = RequestFormatter.request("post", 
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report),
                                   "processed_tc_id":processed_tc_id
 
                                   },
                             files=[("file",perf_report_html)],
-                            verify=False,
-                            **RequestFormatter.add_api_key_to_headers({}))
+                            verify=False)
 
 
                     if res.status_code == 200:
@@ -1475,12 +1460,11 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     files_list = []
                     for zips in opened_zips:
                         files_list.append(("file",zips))
-                    res = requests.post(
+                    res = RequestFormatter.request("post", 
                         RequestFormatter.form_uri("save_log_and_attachment_api/"),
                         files=files_list,
                         data={"machine_name": Userid},
-                        verify=False,
-                        **RequestFormatter.add_api_key_to_headers({}))
+                        verify=False)
                     if res.status_code == 200:
                         try:
                             res_json = res.json()
@@ -1564,7 +1548,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
     file_name = url[file_name_start_pos:]
     file_path = attachment_info["download_dir"] / file_name
 
-    r = requests.get(url, stream=True)
+    r = RequestFormatter.request("get", url, stream=True)
     if r.status_code == requests.codes.ok:
         with open(file_path, 'wb') as f:
             for data in r.iter_content(chunk_size=512*1024):
@@ -1659,7 +1643,7 @@ def download_attachments(testcase_info):
 
 
 # main function
-def main(device_dict, user_info_object):
+def main(device_dict, all_run_id_info):
     try:
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1679,8 +1663,6 @@ def main(device_dict, user_info_object):
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-
         # FIXME: Need to decide what to do with the following code or how to
         # handle it differently in case there are residual folders from previous
         # test cases inside the attachments folder.
@@ -1699,9 +1681,12 @@ def main(device_dict, user_info_object):
         # TODO: Remove all_file_specific_steps at a later period. keeping this
         # only for custom driver purpose
 
-        json_path = save_path.glob("*.zeuz.json").__next__()
-        with open(json_path, "r", encoding="utf-8") as f:
-            all_run_id_info = json.loads(f.read())
+        # Ensure that the path exists
+        # save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+        # save_path.mkdir(exist_ok=True, parents=True)
+        # json_path = save_path.glob("*.zeuz.json").__next__()
+        # with open(json_path, "r", encoding="utf-8") as f:
+        #     all_run_id_info = json.loads(f.read())
 
         if len(all_run_id_info) == 0:
             CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
@@ -1741,13 +1726,12 @@ def main(device_dict, user_info_object):
                     runid_status = "In-Progress"
                 else:
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-                if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in (
-                "on", "yes", "true", "ok", "enable"):
+                if not shared.Test_Shared_Variables("zeuz_auto_teardown") or shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() not in ("off", "no", "false", "disable"):
                     cleanup_driver_instances()  # clean up drivers
-                    shared.Clean_Up_Shared_Variables(run_id) # clean up variables
+                shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
                 # shared.Clean_Up_Shared_Variables()  # clean up shared variables
-                shared.Set_Shared_Variables("runid_status", runid_status)
+                shared.Set_Shared_Variables("runid_status", runid_status,print_variable=False)
                 # shared.Clean_Up_Shared_Variables(run_id)  # clean up shared variables
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
@@ -1823,6 +1807,8 @@ def main(device_dict, user_info_object):
 
             if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+            if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
+                shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
 
             final_run_params = {}
             for param in final_run_params_from_server:
@@ -1879,15 +1865,22 @@ def main(device_dict, user_info_object):
                 CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
                 all_testcases_info = each_session["test_cases"]
+                if run_id not in CommonUtil.tc_nums:
+                    CommonUtil.tc_nums[run_id] = []
+                for i in [int(i['testcase_no'].split('-')[-1]) for i in all_testcases_info]:
+                    i not in CommonUtil.tc_nums[run_id] and CommonUtil.tc_nums[run_id].append(i)
                 # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
 
                 for testcase_info in all_testcases_info:
-                    # shared.Set_Shared_Variables("runid_status", get_status_of_runid(run_id))
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
                         performance_test_case = True
                     test_case_no = testcase_info["testcase_no"]
                     test_case_name = testcase_info["title"]
+                    user_info_object = {
+                        "project_id": run_id_info["project_id"],
+                        "team_id": str(run_id_info["team_id"]),
+                    }
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid, run_id=run_id)
                     CommonUtil.disabled_step = []
 

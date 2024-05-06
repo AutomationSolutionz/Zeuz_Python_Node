@@ -7,14 +7,13 @@ class Recorder {
         this.window = window;
         this.attached = false;
         this.locatorBuilders = new LocatorBuilders(window);
-        this.frameLocation = undefined;
-        this.iframeDom = undefined;
-        this.getFrameLocation();
-        this.getFrameDom();
-        console.log("this.frameLocation",this.frameLocation);
-        console.log("this.iframeDom",this.iframeDom);
-
-        // console.log("document", document);
+        this.frameLocation = this.getFrameLocation();
+        console.log("getFrameLocation() =",this.frameLocation);
+        console.log("document", document)
+        browserAppData.runtime.sendMessage({
+            frameLocation: this.frameLocation
+        }).catch(function(reason) {
+        });
         this.recorded_actions = [];
         this.idx = 0;
         // Convert to the zeuz defined action names
@@ -40,66 +39,22 @@ class Recorder {
         }
     }
 
+    /* get location */
     getFrameLocation() {
         let currentWindow = window;
         let currentParentWindow;
-        let frameLocation = "";
+        let frameLocation = ""
         while (currentWindow !== window.top) {
             currentParentWindow = currentWindow.parent;
-            for (let idx = 0; idx < currentParentWindow.frames.length; idx++){
+            for (let idx = 0; idx < currentParentWindow.frames.length; idx++)
                 if (currentParentWindow.frames[idx] === currentWindow) {
                     frameLocation = ":" + idx + frameLocation;
                     currentWindow = currentParentWindow;
+                    break;
                 }
-            }
         }
-        this.frameLocation = "root" + frameLocation;
+        return frameLocation = "root" + frameLocation;
     }
-    createElementFromHTML(htmlString) {
-        var div = document.createElement('div');
-        div.innerHTML = htmlString.trim();
-        // Change this to div.childNodes to support multiple top-level nodes.
-        return div.firstElementChild;
-    }
-    getFrameDom() {
-        let currentWindow = window;
-        let currentParentWindow;
-        let frameLocation = "";
-        let i_elem_list=[];
-        let temp_i_elem_list = [];
-        let add_flag_once = true;
-        while (currentWindow !== window.top) {
-            currentParentWindow = currentWindow.parent;
-            let iframe_elements = []
-            for(let i=0; i<currentParentWindow.frames.length;i++) 
-                iframe_elements.push(currentParentWindow.frames[i].frameElement);
-            while(i_elem_list.length>0) temp_i_elem_list.push(i_elem_list.shift());
-            i_elem_list = [];
-            let i_elem;
-            for (let idx = 0; idx < currentParentWindow.frames.length; idx++){
-                i_elem = this.createElementFromHTML(iframe_elements[idx].outerHTML.replace('iframe', 'zframe'));
-                if (currentParentWindow.frames[idx] === currentWindow) {
-                    frameLocation = ":" + idx + frameLocation;
-                    currentWindow = currentParentWindow;
-                    if (add_flag_once) {
-                        i_elem.setAttribute("zeuz", "iframe");
-                        add_flag_once = false;
-                    }
-                    var temp = ''
-                    while(temp_i_elem_list.length>0) temp += temp_i_elem_list.shift().outerHTML;
-                    i_elem.innerHTML = temp;
-                }
-                i_elem_list.push(i_elem);
-            }
-        }
-        let iframe_dom = document.createElement('zframes');
-        var iframes = '';
-        while(i_elem_list.length>0) iframes += i_elem_list.shift().outerHTML;
-        iframe_dom.innerHTML = iframes;
-        // if(frameLocation) this.iframeDom = iframe_dom;
-        this.iframeDom = iframe_dom;
-    }
-
 
     prepare_dom(target, command, value){
         for (let each of target) if (each[1] == 'xpath:position') {
@@ -148,20 +103,29 @@ class Recorder {
         return html.outerHTML
     }
 
-    record(command, target, value) {
+    record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
+        console.log("getFrameLocation() =",this.frameLocation);
         const dom = this.prepare_dom(target, command, value)
-        let signal = {
-            apiName: 'record_action',
+        browserAppData.runtime.sendMessage({
+            action: 'record_action',
             command: command,
             target: target,
             value: value,
             url: window.location.href,
             document: dom,
-            iframeLoc: this.frameLocation,
-            iframeDom: this.iframeDom,
+        })
+        let signal = {
+            action: 'record_start',
+            command: command,
+            target: target,
+            value: value,
+            insertBeforeLastCommand: insertBeforeLastCommand,
+            frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
         };
-        browserAppData.runtime.sendMessage(signal);
         console.log(signal);
+        browserAppData.runtime.sendMessage(signal).catch (function(reason) {
+            console.log(reason);
+        });
     }
 
     /* attach */
@@ -169,7 +133,7 @@ class Recorder {
         console.log('attach2');
         if (this.attached) return;
         browserAppData.runtime.sendMessage({
-            apiName: 'start_recording',
+            action: 'start_recording',
         })
         this.attached = true;
         this.eventListeners = {};
@@ -196,7 +160,7 @@ class Recorder {
         console.log('detach2');
         if (!this.attached) return;
         browserAppData.runtime.sendMessage({
-            apiName: 'stop_recording',
+            action: 'stop_recording',
         })
         this.attached = false;
         for (let event_key in this.eventListeners) {
@@ -229,4 +193,4 @@ function startShowElement(message, sender, sendResponse){
         return Promise.resolve({result: result});
     }
 }
-browser.runtime.onMessage.addListener(startShowElement);
+browserAppData.runtime.onMessage.addListener(startShowElement);

@@ -134,7 +134,7 @@ class GlobalAttachment:
             
             headers = RequestFormatter.add_api_key_to_headers({})
             
-            with requests.get(url, stream=True, verify=False,**headers) as r:
+            with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
                 r.raise_for_status()
                 with open(path_to_downloaded_attachment, 'wb') as f:
                     for chunk in r.iter_content(chunk_size=8192):

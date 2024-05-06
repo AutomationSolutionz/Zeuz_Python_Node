@@ -2,12 +2,12 @@
     "description": "This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.",
     "manifest_version": 3,
     "name": "ZeuZ Test Recorder",
-    "version": "4.0",
+    "version": "4.1",
     "minimum_chrome_version": "117",
     "icons": {
-        "16": "panel/assets/images/small_logo.png",
-        "48": "panel/assets/images/small_logo.png",
-        "128": "panel/assets/images/small_logo.png"
+        "16": "small_logo.png",
+        "48": "small_logo.png",
+        "128": "small_logo.png"
     },
     "commands": {
         "toggle-xpath": {
@@ -47,33 +47,13 @@
                 "https://*/*"
             ],
             "js": [
-                "common_files/poly_fill.js",
-                "content/injecter.js"
-            ],
-            "all_frames": true,
-            "match_about_blank": true,
-            "run_at": "document_start"
-        },
-        {
-            "matches": [
-                "http://*/*",
-                "https://*/*"
-            ],
-            "js": [
-                "content/detect_bowser.js",
                 "content/atoms_js.js",
                 "content/utils_js.js",
                 "content/commandhandlers.js",
                 "content/browserbot.js",
-                "common_files/escape.js",
-                "content/sel_api.js",
                 "content/loc_builders.js",
                 "content/recorder.js",
-                "content/rec_handlers.js",
-                "content/commandreceiver.js",
-                "content/target_selecter.js",
-                "content/lib/sizzle_js.js",
-                "content/content_zeuz.js"
+                "content/rec_handlers.js"
             ],
             "match_about_blank": true,
             "all_frames": true
@@ -85,7 +65,7 @@
     },
     "action": {
         "default_icon": {
-            "32":"panel/assets/images/small_logo.png"
+            "32":"small_logo.png"
         },
         "default_title": "ZeuZ Recorder"
     },

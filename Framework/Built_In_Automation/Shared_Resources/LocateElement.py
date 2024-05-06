@@ -896,7 +896,7 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
             elif css_xpath == "css":
                 all_matching_elements_visible_invisible = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
 
-            if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
+            if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, Filter)) > 0:
                 break
             if time.time() > end:
                 break
