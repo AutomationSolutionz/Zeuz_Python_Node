@@ -112,7 +112,7 @@ function App() {
         })
         const init_data: actionsInterface = (await resp.json()).step.actions;
         for (const each of init_data) {
-            each['recorded'] = false;
+            each['typeWrite'] = false;
             each['animateRomove'] = false;
             each['xpath'] = ''
         }
@@ -150,10 +150,10 @@ function App() {
         }
         if (request.action == 'record_finish') {
             const action: actionType = {
-                is_disable: request.data.is_disabled,
+                is_disable: false,
                 main: request.data.main,
                 name: request.data.name,
-                recorded: true,
+                typeWrite: true,
                 animateRomove: false,
                 short:{
                     action: request.data.action,
@@ -170,6 +170,7 @@ function App() {
                 else {
                     new_actions.splice(request.index, 0, action);
                 }
+                console.log('new_actions',new_actions)
                 return new_actions;
             });
             setUnsavedActions(true)
@@ -223,7 +224,7 @@ function App() {
             PostProcess();
             setTimeout(()=>{
                 setRecordState('Record');
-            }, 1500)
+            }, 1000)
         }
     }
 
@@ -305,11 +306,35 @@ function App() {
             ) 
             indices.push(i);
         }
-        return handeRemoveAction(indices);
+        return handeRemoveAction(indices, true);
 
 	}
 
-    const handeRemoveAction = (index:number[]) => {
+    // At the end of typeWriting Animation remove the typing-demo class
+    const handleAnimationRemove = (idx:number) => {
+        setActions((prev_actions) => {
+            const new_actions = [...prev_actions]
+            new_actions[idx].typeWrite = false;
+            return new_actions;
+        });
+    }
+
+    // Remove actions 2 ways: PostProcessing, click trash icon
+    const handeRemoveAction = (index:number[], animate:Boolean) => {
+        const remove =  ()=>{
+            setActions((prev_actions) => {
+                const new_actions = []
+                for (let i=0; i < prev_actions.length; i++){
+                    if (index.includes(i)) continue;
+                    new_actions.push(prev_actions[i])
+                }
+                return new_actions;
+            });
+        }
+        if(!animate){
+            remove();
+            return;
+        }
         // animate removal then remove after 0.5 sec
         setActions((prev_actions) => {
             const new_actions = [...prev_actions]
@@ -320,18 +345,7 @@ function App() {
             }
             return new_actions;
         });
-        setTimeout(
-            ()=>{
-                setActions((prev_actions) => {
-                    const new_actions = []
-                    for (let i=0; i < prev_actions.length; i++){
-                        if (index.includes(i)) continue;
-                        new_actions.push(prev_actions[i])
-                    }
-                    return new_actions;
-                });
-            }, 500
-        )
+        setTimeout(remove, 500)
     }
 
     return (
@@ -435,7 +449,7 @@ function App() {
                 <div className="clearfix mx-2" id="recorder_step">
                     {actions.length === 0 && <h5>No actions</h5>}
                     {actions.map((action, idx)=>(
-                        <Action action={action} idx={idx} removeAction={handeRemoveAction}/>
+                        <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
                     ))}
                 </div>
             </div>

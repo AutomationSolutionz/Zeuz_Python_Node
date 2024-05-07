@@ -3,7 +3,7 @@ export type actionType ={
     is_disable: boolean,
     main: string[][],
     name: string,
-    recorded: boolean,
+    typeWrite: boolean,
     animateRomove: boolean,
     short:{
         action: string,
@@ -15,19 +15,23 @@ export type actionType ={
 interface actionInterface{
     action: actionType
     idx: number
-    removeAction: (index:number[]) => void
+    removeAction: (index:number[], animate:Boolean) => void
+    animationRemove: (index:number) => void
 }
 
-export function Action({action, idx, removeAction}: actionInterface) {
+export function Action({action, idx, removeAction, animationRemove}: actionInterface) {
     const handeOnRemove = ()=>{
-        removeAction([idx])
+        removeAction([idx], false)
+    }
+    const handeAnimationEnd = ()=>{
+        animationRemove(idx)
     }
     return (
         <>
             <div className={"action py-2 pl-3 mb-1 d-flex align-item-center bd-highlight " + (action.animateRomove? 'animExit' : '')}>
                 <div><img className="d-inline-block zeuz-icon" src="../small_logo.png" alt=""/></div>
                 <div className="d-inline-block pl-2 pr-4">{idx+1}</div>
-                <div className={action.recorded ? "typing-demo" : ""}>{(action==undefined) ? 'Loading...' : action.name}</div>
+                <div className={action.typeWrite ? "typing-demo" : ""} onAnimationEnd={handeAnimationEnd} >{(action==undefined) ? 'Loading...' : action.name}</div>
                 <button type="button" className="btn btn-outline-danger btn-sm py-0 px-1 ml-auto mr-2 bd-highlight" onClick={handeOnRemove}>
                     <img src="trash.svg" alt="" height={14} width={14} className="trash-icon"/>
                     <span className="visually-hidden">Button</span>
