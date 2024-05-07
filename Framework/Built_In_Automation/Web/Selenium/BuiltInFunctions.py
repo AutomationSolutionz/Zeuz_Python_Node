@@ -78,6 +78,7 @@ temp_config = os.path.join(
 temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
 aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
 ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"dist")
+ai_recorder_public_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"public")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -466,17 +467,20 @@ def set_extension_variables():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 
     try:
+        metaData = {
+            "testNo": CommonUtil.current_tc_no,
+            "testName": CommonUtil.current_tc_name,
+            "stepNo": CommonUtil.current_step_sequence,
+            "stepName": CommonUtil.current_step_name,
+            "url": url,
+            "apiKey": apiKey,
+            "jwtKey": jwtKey,
+        }
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
-            metaData = {
-                "testNo": CommonUtil.current_tc_no,
-                "testName": CommonUtil.current_tc_name,
-                "stepNo": CommonUtil.current_step_sequence,
-                "stepName": CommonUtil.current_step_name,
-                "url": url,
-                "apiKey": apiKey,
-                "jwtKey": jwtKey,
-            }
             json.dump(metaData, file, indent=4)
+        with open(Path(ai_recorder_public_path) / "background" / "data.json", "w") as file:
+            json.dump(metaData, file, indent=4)
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load recorder extension")
 
