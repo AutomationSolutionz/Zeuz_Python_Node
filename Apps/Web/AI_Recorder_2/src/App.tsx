@@ -143,7 +143,9 @@ function App() {
             setRecordState('Recording...')
             setTimeout(()=>{
                 // If server does not respond in 30 sec change the Recording... state
-                recordState == 'Recording...' && setSaveState('Stop')
+                console.log('recordState',recordState)
+                if(recordState == 'Record')
+                    setRecordState('Stop')
             }, 30000)
         }
         if (request.action == 'record_finish') {
@@ -281,61 +283,6 @@ function App() {
                 console.error(error);
               }
 		}
-    const handleRunAll = async () =>{
-        try{
-			let result = await browserAppData.storage.local.get(["meta_data"]);
-			var save_data = {
-				TC_Id: result.meta_data.testNo,
-				step_sequence: result.meta_data.stepNo,
-				step_data: JSON.stringify(actions.map(action => {
-					return action.main;
-				})),
-				step_id: result.meta_data.stepId,
-				dataset_name: JSON.stringify(actions.map((action, idx) => {
-					return [
-						action.name,
-						idx+1,
-						!action.is_disable,
-					]
-				}))
-			}
-
-            try {
-                setSaveState('Saving...')
-                await $.ajax({
-                    url: result.meta_data.url + '/Home/nothing/update_specific_test_case_step_data_only/',
-                    method: 'POST',
-                    data: save_data,
-                    headers: {
-                        // "Content-Type": "application/json",
-                        "X-Api-Key": `${result.meta_data.apiKey}`,
-                    },
-                    success: function () {
-                        setSaveState('Success')
-                        setTimeout(()=>{
-                            setSaveState('Save')
-                        }, 1500)
-                        setUnsavedActions(false);
-                    },
-                    error: function (xhr, status, error) {
-                        xhr;status
-                        console.error('Error:', error);
-                        setSaveState('Error!!')
-                        setTimeout(()=>{
-                            setSaveState('Save')
-                        }, 1500)
-                        console.error(error);
-                      }
-                    }
-                )
-              } catch (error) {
-                setSaveState('Error!!')
-                setTimeout(()=>{
-                    setSaveState('Save')
-                }, 1500)
-                console.error(error);
-              }
-		}
 		catch(e){
             setSaveState('Error!!')
             setTimeout(()=>{
@@ -344,6 +291,7 @@ function App() {
             console.error(e)
 		}
     }
+    
     function PostProcess(){
         let indices: number[] = []
         for(let i = 0; i < actions.length; i++){
