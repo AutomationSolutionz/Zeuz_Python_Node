@@ -164,6 +164,20 @@ class Recorder {
     }
 
 
-} // end the recorder class 
+}
 
+var recorder = new Recorder(window);
+
+browserAppData.runtime.sendMessage({
+    attachRequest: true
+})
+
+browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
+    console.log('request',request)
+    if (request.attachRecorder) {
+        recorder.attach();
+    } else if (request.detachRecorder) {
+        recorder.detach();
+    }
+});
 

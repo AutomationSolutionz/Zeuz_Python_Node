@@ -135,10 +135,21 @@ function App() {
         console.log('init_data', init_data);
     }
     
+    function attachRecorder(request: {attachRequest: Boolean}, sender:chrome.runtime.MessageSender) {
+        sender
+        if (request.attachRequest)
+            print('attachRequest got')
+            setRecordState((prevRecordState)=>{
+                if (prevRecordState != 'Record')
+                    browserAppData.tabs.sendMessage(sender.tab?.id || 0,{ attachRecorder: true })
+                return prevRecordState
+            })
+    }
     // On initial mount, fetch test-data and actions from server of the testcase and step mentioned in data.json
     useEffect(
         ()=>{
             browserAppData.runtime.onMessage.addListener(handleRecordResponse);
+            browserAppData.runtime.onMessage.addListener(attachRecorder);
             const initData = async () => {
                 let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
                 let meta_data = localStorageMetadata.meta_data;

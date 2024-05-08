@@ -25,14 +25,6 @@ Recorder.addEventHandler = function(handlerName, event_name, handler, options) {
     this.eventHandlers[key].push(handler);
 }
 
-var recorder = new Recorder(window);
-function startShowElement(message, sender, sendResponse){
-    if (message.showElement) {
-        result = selenium["doShowElement"](message.targetValue);
-        return Promise.resolve({result: result});
-    }
-}
-browserAppData.runtime.onMessage.addListener(startShowElement);
 /* Set recorder input type */
 Recorder.inputTypes = ["text", "password", "datetime", "time", "datetime-local", "date", "month", "week", "file", "number", "range", "email", "url", "search", "tel", "color"];
 
@@ -570,10 +562,3 @@ Recorder.prototype.findClickableElement = function(e) {
         }
     }
 };
-browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
-    if (request.attachRecorder) {
-        recorder.attach();
-    } else if (request.detachRecorder) {
-        recorder.detach();
-    }
-});
