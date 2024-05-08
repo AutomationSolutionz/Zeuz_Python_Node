@@ -25,7 +25,6 @@ function notification(command) {
     }, 15000);
 }
 
-var idx = 0;
 var action_name_convert = {
     select: "click",
     type: "text",
@@ -39,9 +38,10 @@ var action_name_convert = {
     Wait_For_Element_To_Disappear: "wait disable",
 }
 
-async function fetchAIData(idx, command, value, url, document){
+async function fetchAIData(id, command, value, url, document){
     if (command === 'go to link'){
         let go_to_link = {
+            id: id,
             action: 'go to link',
             element: "",
             is_disable: false,
@@ -51,14 +51,16 @@ async function fetchAIData(idx, command, value, url, document){
             xpath: "",
         };
         browserAppData.runtime.sendMessage({
-            action: 'record_finish',
+            action: 'record-finish',
             data: go_to_link,
-            index: idx,
         })
         return;
     }
     browserAppData.runtime.sendMessage({
-        action: 'recording'
+        action: 'record-start',
+        data: {
+            id:id
+        },
     })
     if (['select', 'click'].includes(command)) value = ""
     let validate_full_text_by_ai = false
@@ -74,7 +76,6 @@ async function fetchAIData(idx, command, value, url, document){
         "action_value": value,
         "source": "web",
     };
-    console.log(document);
     var data = JSON.stringify(dataj);
 
     const url_ = `${metaData.url}/ai_record_single_action/`
@@ -121,6 +122,7 @@ async function fetchAIData(idx, command, value, url, document){
     if (command === 'text') response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     else if (value) response[0].data_set[response[0].data_set.length-1][response[0].data_set[0].length-1] = value;
     let single_action = {
+        id: id,
         action: response[0].short.action,
         element: response[0].short.element,
         is_disable: false,
@@ -130,28 +132,24 @@ async function fetchAIData(idx, command, value, url, document){
         xpath: response[0].xpath,
     }
     browserAppData.runtime.sendMessage({
-        action: 'record_finish',
+        action: 'record-finish',
         data: single_action,
-        index: idx,
     })
 }
 
-async function record_action(command, value, url, document){
+async function record_action(id, command, value, url, document){
     if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
     notification(command);
-    console.log("... Action recorder start");
-    idx += 1;
-    fetchAIData(idx-1, command, value, url, document);  
+    fetchAIData(id, command, value, url, document);  
 }
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.action == 'start_recording') {
             notificationCount = 0;
-            idx = request.idx
-            console.log('idx set to',idx)
         }
         else if (request.action == 'record_action') {
             record_action(
+                request.id,
                 request.command,
                 // request.target,
                 request.value,

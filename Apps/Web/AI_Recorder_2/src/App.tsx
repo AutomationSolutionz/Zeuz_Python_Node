@@ -5,12 +5,25 @@ import {Action, actionType} from './Action';
 import $ from 'jquery';
 
 const browserAppData = chrome;
+const print = console.log
+print
 type actionsInterface = actionType[]
 
 interface stepZsvc{
     name: string,
     sequence: number,
     id: number,
+}
+interface RequestType {
+    action: string;
+    data: {
+        id: string,
+        main: string[][];
+        name: string;
+        action: string;
+        xpath: string;
+    };
+    index: number;
 }
 function App() {
     // Contains previous and new actions
@@ -112,6 +125,8 @@ function App() {
         })
         const init_data: actionsInterface = (await resp.json()).step.actions;
         for (const each of init_data) {
+            each['id'] = ''
+            each['stillRecording'] = false
             each['typeWrite'] = false;
             each['animateRomove'] = false;
             each['xpath'] = ''
@@ -136,47 +151,79 @@ function App() {
             ,3000)
         },[]
     )
-
     // When new recorded actions come from background script, render new actions
-    const handleRecordResponse = (request:any) => {
-        if (request.action == 'recording') {
-            setRecordState('Recording...')
-            setTimeout(()=>{
-                // If server does not respond in 30 sec change the Recording... state
-                console.log('recordState',recordState)
-                if(recordState == 'Record')
-                    setRecordState('Stop')
-            }, 30000)
-        }
-        if (request.action == 'record_finish') {
-            const action: actionType = {
-                is_disable: false,
-                main: request.data.main,
-                name: request.data.name,
-                typeWrite: true,
-                animateRomove: false,
-                short:{
-                    action: request.data.action,
-                    element: '',
-                    value: '',
-                },
-                xpath: request.data.xpath
-            }
-            setActions((prev_actions) => {
-                const new_actions = [...prev_actions]
-                if (request.index >= new_actions.length) {
-                    new_actions.push(action);
-                  }
-                else {
-                    new_actions.splice(request.index, 0, action);
+    const handleRecordResponse = (request:RequestType) => {
+        setRecordState((prevRecordState)=>{
+            if (prevRecordState == 'Record')
+                return prevRecordState;
+            if (request.action == 'record-start') {
+                setTimeout(()=>{
+                    // If server does not respond in 30 sec change the Recording... state
+                    setRecordState((prevRecordState)=>{
+                        print('prevRecordState =',prevRecordState)
+                        if(prevRecordState == 'Recording...')
+                            return 'Stop'
+                        return prevRecordState
+                    })
+                }, 10000)
+    
+                const action: actionType = {
+                    id: request.data.id,
+                    stillRecording:true,
+                    is_disable: false,
+                    main: [['']],
+                    name: '',
+                    typeWrite: true,
+                    animateRomove: false,
+                    short:{
+                        action: '',
+                        element: '',
+                        value: '',
+                    },
+                    xpath: ''
                 }
-                console.log('new_actions',new_actions)
-                return new_actions;
-            });
-            setUnsavedActions(true)
-            console.log('actions',actions);
-            setRecordState('Stop')
-        }
+                setActions((prev_actions) => {
+                    const new_actions = [...prev_actions]
+                    new_actions.push(action);
+                    return new_actions;
+                });
+                return 'Recording...'
+            }
+            if (request.action == 'record-finish') {
+                // Reserve a place with unique hash before api-request to maintain sequence
+                const action: actionType = {
+                    id: request.data.id,
+                    stillRecording: false,
+                    is_disable: false,
+                    main: request.data.main,
+                    name: request.data.name,
+                    typeWrite: true,
+                    animateRomove: false,
+                    short:{
+                        action: request.data.action,
+                        element: '',
+                        value: '',
+                    },
+                    xpath: request.data.xpath
+                }
+                setActions((prev_actions) => {
+                    const new_actions = [...prev_actions]
+                    for (let i=0; i < new_actions.length; i++) {
+                        if (new_actions[i].id == request.data.id && new_actions[i].stillRecording){
+                            new_actions[i] = action;
+                            break
+                        }
+                    }
+                    console.log('new_actions',new_actions)
+                    return new_actions;
+                });
+                setUnsavedActions(true)
+                console.log('actions',actions);
+                return 'Stop'
+            }
+            return prevRecordState;
+        })
+        
     };
 
     // Hande Record button click.. Contacts with content script
@@ -247,7 +294,7 @@ function App() {
 					]
 				}))
 			}
-
+            console.log('save_data',save_data)
             try {
                 setSaveState('Saving...')
                 await $.ajax({
@@ -293,12 +340,13 @@ function App() {
 		}
     }
     
+    // Remove redundant actions and still-recording actions
     function PostProcess(){
         let indices: number[] = []
         for(let i = 0; i < actions.length; i++){
             let action = actions[i];
-
             if(
+                action.stillRecording ||
                 action.short.action == 'click' && 
                 i < actions.length - 1 && 
                 ['click', 'text', 'double click', 'validate full text', 'validate full text by ai'].includes(actions[i+1].short.action)  &&
@@ -307,7 +355,6 @@ function App() {
             indices.push(i);
         }
         return handeRemoveAction(indices, true);
-
 	}
 
     // At the end of typeWriting Animation remove the typing-demo class

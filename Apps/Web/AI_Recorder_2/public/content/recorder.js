@@ -1,5 +1,13 @@
 /* ZeuZ Start the recording function */
 browserAppData = chrome || browser;
+function generateId(){
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let id = '';
+    for (let i = 0; i < 8; i++) {
+      id += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return id;
+  }
 class Recorder {
 
     /* exq initial time */
@@ -107,6 +115,7 @@ class Recorder {
         console.log("getFrameLocation() =",this.frameLocation);
         const dom = this.prepare_dom(target, command, value)
         browserAppData.runtime.sendMessage({
+            id: generateId(),
             action: 'record_action',
             command: command,
             target: target,
@@ -114,18 +123,6 @@ class Recorder {
             url: window.location.href,
             document: dom,
         })
-        let signal = {
-            action: 'record_start',
-            command: command,
-            target: target,
-            value: value,
-            insertBeforeLastCommand: insertBeforeLastCommand,
-            frameLocation: (actualFrameLocation != undefined ) ? actualFrameLocation : this.frameLocation,
-        };
-        console.log(signal);
-        browserAppData.runtime.sendMessage(signal).catch (function(reason) {
-            console.log(reason);
-        });
     }
 
     /* attach */

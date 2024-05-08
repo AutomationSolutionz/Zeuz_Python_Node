@@ -1,5 +1,7 @@
 // import {Helmet} from "react-helmet";
 export type actionType ={
+    id: string,
+    stillRecording: Boolean,
     is_disable: boolean,
     main: string[][],
     name: string,
@@ -27,6 +29,7 @@ export function Action({action, idx, removeAction, animationRemove}: actionInter
         animationRemove(idx)
     }
     return (
+        action.stillRecording ? <></> : (
         <>
             <div className={"action py-2 pl-3 mb-1 d-flex align-item-center bd-highlight " + (action.animateRomove? 'animExit' : '')}>
                 <div><img className="d-inline-block zeuz-icon" src="../small_logo.png" alt=""/></div>
@@ -37,7 +40,7 @@ export function Action({action, idx, removeAction, animationRemove}: actionInter
                     <span className="visually-hidden">Button</span>
                 </button>
             </div>
-        </>
+        </>)
     )
 }
 
