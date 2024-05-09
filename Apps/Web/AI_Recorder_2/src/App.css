@@ -13168,7 +13168,7 @@ body
 
 .animExit {
   background-color: #faa0b8;
-  animation: exit 500ms;
+  animation: exit 1000ms;
   animation-iteration-count: 1;
 }
 

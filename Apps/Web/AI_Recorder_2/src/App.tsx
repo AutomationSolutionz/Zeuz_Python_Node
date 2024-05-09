@@ -44,6 +44,8 @@ function App() {
     const [unsavedActions, setUnsavedActions] = useState<boolean>(false);
     // Save button state
     const [saveState, setSaveState] = useState<string>('Save');
+    const [runThis, setRunThis] = useState<string>('Run this');
+    const [runAll, setRunAll] = useState<string>('Run all');
 
 
     // When selected step is changed fetch new actions
@@ -317,7 +319,7 @@ function App() {
                         "X-Api-Key": `${result.meta_data.apiKey}`,
                     },
                     success: function () {
-                        setSaveState('Success')
+                        setSaveState('Success!')
                         setTimeout(()=>{
                             setSaveState('Save')
                         }, 1500)
@@ -403,7 +405,93 @@ function App() {
             }
             return new_actions;
         });
-        setTimeout(remove, 500)
+        setTimeout(remove, 1000)
+    }
+
+    function handleRunThis(){
+        debugTC(true)
+    }
+    function handleRunAll(){
+        debugTC(false)
+    }
+    async function debugTC(run_this=true) {
+        const stateChangeFunc = run_this ? setRunThis : setRunAll
+        const stateText = run_this ? 'Run this' : 'Run all'
+
+        try {
+            stateChangeFunc("Running...")
+			var result = await browserAppData.storage.local.get(["meta_data"]);
+			const input = {
+				method: "POST",
+				headers: {
+					// "Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				}
+			}
+			var r = await fetch(result.meta_data.url + '/run_config_ai_recorder/', input)
+			var response = await r.json();					
+			console.log("response_1", response);
+
+			const machine = response["machine"];
+			const project_id = response["project_id"];
+			const team_id = response["team_id"];
+			const user_id = response["user_id"];
+
+            let browser = ''
+			if (navigator.userAgent.indexOf("Edg") != -1)
+				browser = 'Microsoft Edge Chromium'
+			else if (navigator.userAgent.indexOf("Chrome") != -1) 
+				browser = 'Chrome'
+			let dependency = {"Browser": browser, "Mobile": "Android"}
+
+			const run_data = {
+				"test_case_list": JSON.stringify([result.meta_data.testNo]),
+				"dependency_list": JSON.stringify(dependency),
+				"all_machine": JSON.stringify([machine]),
+				"debug": 'yes',
+				"debug_clean": run_this ? "no" : "yes",
+				"debug_steps": JSON.stringify(run_this ? [result.meta_data.stepNo.toString()] : []),
+				"RunTestQuery": JSON.stringify([result.meta_data.testNo, machine]),
+				"dataAttr": JSON.stringify(["Test Case"]),
+				"project_id": project_id,
+				"team_id": team_id,
+				"user_id": user_id,
+                "filterArray": JSON.stringify(["AND"])
+			}
+            print('run_data', run_data)
+			var url = `${result.meta_data.url}/Home/nothing/Run_Test/`;
+
+			$.ajax({
+				url: url,
+				method: 'GET',
+				data: run_data,
+				headers: {
+					"Content-Type": "application/json",
+					"X-Api-Key": result.meta_data.apiKey,
+				},
+				success: function(response) {
+                    print('respinse_2', response);
+                    stateChangeFunc('Queued!')
+                    setTimeout(()=>{
+                        stateChangeFunc(stateText)
+                    }, 1500)
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+                    jqXHR;textStatus;
+					console.error(errorThrown);
+                    stateChangeFunc('Error!!')
+                    setTimeout(()=>{
+                        stateChangeFunc(stateText)
+                    }, 1500)
+				}
+			})
+		} catch (error) {
+			console.error(error);
+            stateChangeFunc('Error!!')
+            setTimeout(()=>{
+                stateChangeFunc(stateText)
+            }, 1500)
+		}
     }
 
     return (
@@ -429,17 +517,17 @@ function App() {
                             </button>
                         </li>
                         <li className="tablink d-flex flex-wrap justify-content-center" id="run_this_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                id="run_this_button" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
+                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRunThis}
+                                id="run_this_button" style={{ opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions || runThis != "Run this"}>
                                 <span className="material-icons">play_circle</span>
-                                <span className="material-icons-label" id='run_this_label'>Run this</span>
+                                <span className="material-icons-label" id='run_this_label'>{runThis}</span>
                             </button>
                         </li>
                         <li className="tablink d-flex flex-wrap justify-content-center" id="run_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                id="run_button" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
+                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRunAll}
+                                id="run_button" style={{ opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions || runAll != "Run all"}>
                                 <span className="material-icons">play_circle</span>
-                                <span className="material-icons-label" id='run_label'>Run all</span>
+                                <span className="material-icons-label" id='run_label'>{runAll}</span>
                             </button>
                         </li>
                         <li className="d-none tablink d-flex flex-wrap justify-content-center" id="login_wrap">
