@@ -8,7 +8,6 @@ fetch("./data.json")
 
 const browserAppData = chrome || browser;
 
-import './back_zeuz.js';
 import './sentiment_analyzer.js';
 import './back_reocrder.js';
 // import '../common_files/poly_fill.js';

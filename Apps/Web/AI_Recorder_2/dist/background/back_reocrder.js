@@ -39,6 +39,12 @@ var action_name_convert = {
 }
 
 async function fetchAIData(id, command, value, url, document){
+    browserAppData.runtime.sendMessage({
+        action: 'record-start',
+        data: {
+            id:id
+        },
+    })
     if (command === 'go to link'){
         let go_to_link = {
             id: id,
@@ -56,12 +62,6 @@ async function fetchAIData(id, command, value, url, document){
         })
         return;
     }
-    browserAppData.runtime.sendMessage({
-        action: 'record-start',
-        data: {
-            id:id
-        },
-    })
     if (['select', 'click'].includes(command)) value = ""
     let validate_full_text_by_ai = false
     if (command === 'validate full text by ai'){
