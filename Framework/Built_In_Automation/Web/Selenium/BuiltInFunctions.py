@@ -77,7 +77,8 @@ temp_config = os.path.join(
 )
 temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
 aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
-ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder")
+ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"dist")
+ai_recorder_public_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"public")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -466,17 +467,20 @@ def set_extension_variables():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 
     try:
+        metaData = {
+            "testNo": CommonUtil.current_tc_no,
+            "testName": CommonUtil.current_tc_name,
+            "stepNo": CommonUtil.current_step_sequence,
+            "stepName": CommonUtil.current_step_name,
+            "url": url,
+            "apiKey": apiKey,
+            "jwtKey": jwtKey,
+        }
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
-            metaData = {
-                "testNo": CommonUtil.current_tc_no,
-                "testName": CommonUtil.current_tc_name,
-                "stepNo": CommonUtil.current_step_sequence,
-                "stepName": CommonUtil.current_step_name,
-                "url": url,
-                "apiKey": apiKey,
-                "jwtKey": jwtKey,
-            }
             json.dump(metaData, file, indent=4)
+        with open(Path(ai_recorder_public_path) / "background" / "data.json", "w") as file:
+            json.dump(metaData, file, indent=4)
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load recorder extension")
 
@@ -715,7 +719,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                     set_extension_variables()
                     options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
-                    # options.add_argument(f"load-extension={ai_recorder_path}")
 
             if "chromeheadless" in browser:
                 def chromeheadless():
@@ -744,28 +747,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 import selenium
-                from distutils.version import StrictVersion
+                service = Service()
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
 
-                required_version = StrictVersion('4.10.0')
-                installed_version = StrictVersion(selenium.__version__)
-
-                if installed_version >= required_version:
-                    service = Service()
-                    if installed_version == required_version:
-                        service.path = chrome_path
-                    selenium_driver = webdriver.Chrome(
-                        service=service,
-                        options=options,
-                    )
-                else:
-                    d = DesiredCapabilities.CHROME
-                    d["loggingPrefs"] = {"browser": "ALL"}
-                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
-                    selenium_driver = webdriver.Chrome(
-                        executable_path=chrome_path,
-                        chrome_options=options,
-                        desired_capabilities=d
-                    )
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
@@ -1086,46 +1073,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         # time.sleep(3)
 
     except SessionNotCreatedException as exc:
-        if "This version" in exc.msg and "only supports" in exc.msg and not installed_version >= required_version:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
-                2
-            )
-            if browser in ("android", "chrome", "chromeheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
-            elif browser in ("firefox", "firefoxheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
-            elif browser == "opera":
-                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
-            elif browser == "ie":
-                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
-            Open_Browser(dependency, window_size_X, window_size_Y)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     except WebDriverException as exc:
-        if "needs to be in PATH" in exc.msg and not installed_version >= required_version:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdriver",
-                2
-            )
-            if browser in ("chrome", "chromeheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
-            elif browser in ("firefox", "firefoxheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
-            elif browser == "opera":
-                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
-            elif browser == "ie":
-                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
-            Open_Browser(dependency, window_size_X, window_size_Y)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
         CommonUtil.teardown = False
