@@ -4615,10 +4615,8 @@ def download_attachment_from_testcase(data_set):
         id                  | input parameter | TEST-0151
         attachment name     | input parameter | name
         path to save        | optional parameter | path
-        download_attachment_from_testcase | common action | result
+        download_attachment_from_testcase | common action | download_attachment_from_testcase
 
-    return : return True/False
-    note: id will be the testcase id , attachment name will be the name of that attachment ,result will be the variable name to store
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -4627,11 +4625,11 @@ def download_attachment_from_testcase(data_set):
         var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
-            if "id" == left:
+            if "test id" == left:
                var_id = right.strip()
             if "attachment name" == left:
                var_name = right.strip()
-            if "path to save" == left:
+            if "download folder" == left:
                var_path = CommonUtil.path_parser(right)
 
         if var_id is None:
@@ -4645,15 +4643,18 @@ def download_attachment_from_testcase(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
+        if not var_id.startswith("TEST-"):
+            var_id = "TEST-" + var_id
         url = RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
         local_filename = url.split('/')[-1]
+        file_path = Path(var_path)/local_filename
         with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
-            with open(var_path+'/'+local_filename, 'wb') as f:
+            with open(file_path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from TEST-%s" % (var_name, var_id), 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Attachment '{var_name}' was downloaded from {var_id} locally as '{file_path}'", 1)
         return "passed"
 
     except Exception as e:
@@ -4728,7 +4729,7 @@ def download_attachment_from_step(data_set):
                var_id = right.strip()
             if "attachment name" == left:
                var_name = right.strip()
-            if "path to save" == left:
+            if "download folder" == left:
                var_path = CommonUtil.path_parser(right)
 
         if var_id is None:
