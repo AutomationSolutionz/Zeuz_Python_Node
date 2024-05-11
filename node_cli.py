@@ -82,9 +82,11 @@ try:
     pidNumber = int("".join(pidNumber.split()))
     print("Process ID", pidNumber)
     p = psutil.Process(pidNumber)
+    print("process found")
     p.terminate()
-except:
-    pass
+    print("process terminated")
+except Exception as e:
+    print(e)
 
 try:
     f = open(pidfile, "w")
