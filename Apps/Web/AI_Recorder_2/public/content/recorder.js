@@ -127,8 +127,8 @@ class Recorder {
 
     /* attach */
     attach() {
-        console.log('attach2');
         if (this.attached) return;
+        console.log('attach2');
         this.attached = true;
         this.eventListeners = {};
         var self = this;
