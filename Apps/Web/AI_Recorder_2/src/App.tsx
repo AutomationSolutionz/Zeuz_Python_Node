@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 // import {Helmet} from "react-helmet";
 import {Action, actionType} from './Action';
@@ -46,6 +46,9 @@ function App() {
     const [saveState, setSaveState] = useState<string>('Save');
     const [runThis, setRunThis] = useState<string>('Run this');
     const [runAll, setRunAll] = useState<string>('Run all');
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const actionRef = useRef<HTMLDivElement>(null);
 
 
     // When selected step is changed fetch new actions
@@ -163,6 +166,13 @@ function App() {
                 ()=>{setInitRecordState(true)}
             ,3000)
         },[]
+    )
+    useEffect(
+        ()=>{
+            if (actionRef.current && containerRef.current) {
+                actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+              }
+        },[actionRef.current]
     )
     // When new recorded actions come from background script, render new actions
     const handleRecordResponse = (request:RequestType) => {
@@ -592,10 +602,12 @@ function App() {
                     )
                     )}
                 </select>
-                <div className="clearfix mx-2" id="recorder_step">
+                <div className="clearfix mx-2" id="recorder_step" ref={containerRef}>
                     {actions.length === 0 && <h5>No actions</h5>}
                     {actions.map((action, idx)=>(
-                        <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
+                        <div ref={actionRef}>
+                            <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
+                        </div>
                     ))}
                 </div>
             </div>
