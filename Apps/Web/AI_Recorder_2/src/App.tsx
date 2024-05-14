@@ -167,13 +167,13 @@ function App() {
             ,3000)
         },[]
     )
-    useEffect(
-        ()=>{
-            if (actionRef.current && containerRef.current) {
-                actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-              }
-        },[actionRef.current]
-    )
+    // useEffect(
+    //     ()=>{
+    //         if (actionRef.current && containerRef.current) {
+    //             actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    //           }
+    //     },[actions]
+    // )
     // When new recorded actions come from background script, render new actions
     const handleRecordResponse = (request:RequestType) => {
         setRecordState((prevRecordState)=>{
@@ -189,6 +189,10 @@ function App() {
                         return prevRecordState
                     })
                 }, 10000)
+
+                if (actionRef.current && containerRef.current) {
+                    actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
     
                 const action: actionType = {
                     id: request.data.id,
@@ -507,6 +511,7 @@ function App() {
     const buttonClass = 'tablink d-flex flex-column align-items-center p-0 bg-transparent border-0 my-2 sidebar_menu"'
     const iconClass = 'material-icons d-flex justify-content-center'
     const labelClass = 'material-icons-label d-flex justify-content-center'
+    const ops = 1
     return (
         <div className="wrapper d-flex align-items-stretch">
             <nav id="sidebar">
@@ -519,28 +524,28 @@ function App() {
                             [
                                 {
                                     eventHandler: handleRecording,
-                                    style: {opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : 1},
+                                    style: {opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : ops},
                                     disabled: !initRecordState || recordState == "Recording...",
                                     icon: recordState == 'Record' ? 'camera' : 'stop',
                                     label: recordState
                                 },
                                 {
                                     eventHandler: handleSaveActions,
-                                    style: {opacity: recordState == "Record" && saveState == 'Save' ? 1 : 0.5},
+                                    style: {opacity: recordState == "Record" && saveState == 'Save' ? ops : 0.5},
                                     disabled: recordState != 'Record' || saveState != 'Save',
                                     icon: 'save',
                                     label: saveState,
                                 },
                                 {
                                     eventHandler: handleRunThis,
-                                    style: {opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? 1 : 0.5},
+                                    style: {opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? ops : 0.5},
                                     disabled: recordState != 'Record' || unsavedActions || runThis != "Run this",
                                     icon: 'play_circle',
                                     label: runThis
                                 },
                                 {
                                     eventHandler: handleRunAll,
-                                    style: {opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? 1 : 0.5},
+                                    style: {opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? ops : 0.5},
                                     disabled: recordState != 'Record' || unsavedActions || runAll != "Run all",
                                     icon: 'play_circle',
                                     label: runAll
@@ -574,31 +579,6 @@ function App() {
                             </form>
                         </div>
                     </div>
-                    <div className="modal fade" id="exampleModal" tabIndex={-1} role="dialog"
-                        aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div className="modal-dialog" role="document">
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title" id="exampleModalLabel">Login to ZeuZ server</h5>
-                                    <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div className="modal-body">
-                                    <label htmlFor="server_address" className="col-form-label">Server Address:</label>
-                                    <input type="text" className="form-control border border-1" id="server_address"
-                                        placeholder="https://apollo.zeuz.ai" />
-                                    <label htmlFor="api_key" className="col-form-label">API-key:</label>
-                                    <input type="text" className="form-control border border-1" id="api_key"
-                                        placeholder="32 digit api-key" />
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="button" className="btn btn-primary" id="authenticate">Authenticate</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <h5 id="test_title">{testTitle}</h5>
                 </div>
@@ -611,10 +591,10 @@ function App() {
                 <div className="clearfix mx-2" id="recorder_step" ref={containerRef}>
                     {actions.length === 0 && <h5>No actions</h5>}
                     {actions.map((action, idx)=>(
-                        <div ref={actionRef}>
-                            <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
-                        </div>
+                        <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
+                            
                     ))}
+                    <div ref={actionRef} className='py-5'> </div>
                 </div>
             </div>
         </div>

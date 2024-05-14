@@ -11872,6 +11872,12 @@ h5,
   flex-direction: column;
   justify-content: space-between;
 }
+/* .sidebar_menu{
+  opacity: 0.85;
+}
+.sidebar_menu:hover{
+  opacity: 1;
+} */
 #root{
   width: 100%;
 }
@@ -12727,24 +12733,6 @@ body
 {
   flex-direction: column;
 }
-/* .sidebar_menu
-{
-  width: 170px;
-}
-.sidebar_menu img
-{
-  margin-left: 41px
-}
-.hover-image, .sidebar_menu:hover .normal-image 
-{
-  display: none;
-}
-
-.sidebar_menu:hover .hover-image 
-{
-  display: inline;
-} */
-
 
 .hover-image, .action-icons:hover .normal-image 
 {
