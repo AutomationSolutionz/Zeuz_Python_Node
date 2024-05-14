@@ -11796,7 +11796,7 @@ h5,
   font-family: "Material Icons";
   font-weight: normal;
   font-style: normal;
-  font-size: 32px;
+  font-size: 30px;
   /* Preferred icon size */
   display: inline-block;
   line-height: 1;
@@ -11847,15 +11847,12 @@ h5,
 }
 
 .material-icons-label {
-  font-size: 19px;
+  font-size: 12px;
   color: white;
-  padding-left: 7px;
 }
 
 #sidebar {
-  width: 30%;
-  min-width: 200px;
-  max-width: 300px;
+  width: 100px;
   background: #333;
   /* background: #32373d; */
   /* background-image: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff); */
@@ -12422,7 +12419,8 @@ body
 }
 
 #logo_dark {
-  width: 150px;
+  width: 70px;
+  height: 70px;
 }
 .stop_button
 {
@@ -12729,7 +12727,7 @@ body
 {
   flex-direction: column;
 }
-.sidebar_menu
+/* .sidebar_menu
 {
   width: 170px;
 }
@@ -12745,7 +12743,7 @@ body
 .sidebar_menu:hover .hover-image 
 {
   display: inline;
-}
+} */
 
 
 .hover-image, .action-icons:hover .normal-image 

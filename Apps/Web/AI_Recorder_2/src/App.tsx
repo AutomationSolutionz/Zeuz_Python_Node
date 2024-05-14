@@ -504,50 +504,56 @@ function App() {
 		}
     }
 
+    const buttonClass = 'tablink d-flex flex-column align-items-center p-0 bg-transparent border-0 my-2 sidebar_menu"'
+    const iconClass = 'material-icons d-flex justify-content-center'
+    const labelClass = 'material-icons-label d-flex justify-content-center'
     return (
         <div className="wrapper d-flex align-items-stretch">
             <nav id="sidebar">
                 <div className="nav_upper">
-                    <div className="img bg-wrap text-center py-4" data-section="welcome_page" id="defaultOpen">
-                        <img className="img-fluid" id="logo_dark" src="logo_ZeuZ_dark_background.png" />
+                    <div className="img bg-wrap text-center pt-4 pb-5" data-section="welcome_page" id="defaultOpen">
+                        <img className="img-fluid" id="logo_dark" src="logo_ZeuZ.png" />
                     </div>
-                    <ul className="d-flex flex-column justify-content-center">
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="record_wrap" >
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRecording}
-                                id="record" style={{ opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : 1}} disabled={!initRecordState || recordState == "Recording..."}>
-                                <span className="material-icons" id="record_icon">{recordState == 'Record' ? 'camera' : 'stop'}</span>
-                                <span className="material-icons-label" id="record_label">{recordState}</span>
-                            </button>
-                        </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="save_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleSaveActions}
-                                id="save_button" style={{ opacity: recordState == "Record" && saveState == 'Save' ? 1 : 0.5}} disabled={recordState != 'Record' || saveState != 'Save'}>
-                                <span className="material-icons">save</span>
-                                <span className="material-icons-label" id='save_label'>{saveState}</span>
-                            </button>
-                        </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="run_this_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRunThis}
-                                id="run_this_button" style={{ opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions || runThis != "Run this"}>
-                                <span className="material-icons">play_circle</span>
-                                <span className="material-icons-label" id='run_this_label'>{runThis}</span>
-                            </button>
-                        </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="run_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRunAll}
-                                id="run_button" style={{ opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions || runAll != "Run all"}>
-                                <span className="material-icons">play_circle</span>
-                                <span className="material-icons-label" id='run_label'>{runAll}</span>
-                            </button>
-                        </li>
-                        <li className="d-none tablink d-flex flex-wrap justify-content-center" id="login_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                data-toggle="modal" data-target="#exampleModal" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
-                                <span className="material-icons">login</span>
-                                <span className="material-icons-label">Login</span>
-                            </button>
-                        </li>
-                    </ul>
+                    <div className="d-flex flex-column justify-content-center">
+                        {
+                            [
+                                {
+                                    eventHandler: handleRecording,
+                                    style: {opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : 1},
+                                    disabled: !initRecordState || recordState == "Recording...",
+                                    icon: recordState == 'Record' ? 'camera' : 'stop',
+                                    label: recordState
+                                },
+                                {
+                                    eventHandler: handleSaveActions,
+                                    style: {opacity: recordState == "Record" && saveState == 'Save' ? 1 : 0.5},
+                                    disabled: recordState != 'Record' || saveState != 'Save',
+                                    icon: 'save',
+                                    label: saveState,
+                                },
+                                {
+                                    eventHandler: handleRunThis,
+                                    style: {opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? 1 : 0.5},
+                                    disabled: recordState != 'Record' || unsavedActions || runThis != "Run this",
+                                    icon: 'play_circle',
+                                    label: runThis
+                                },
+                                {
+                                    eventHandler: handleRunAll,
+                                    style: {opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? 1 : 0.5},
+                                    disabled: recordState != 'Record' || unsavedActions || runAll != "Run all",
+                                    icon: 'play_circle',
+                                    label: runAll
+                                },
+
+                            ].map((item,_)=>(
+                                <button className={buttonClass} onClick={item.eventHandler} style={item.style}>
+                                    <div className={iconClass}>{item.icon}</div>
+                                    <div className={labelClass}>{item.label}</div>
+                                </button>
+                            ))
+                        }
+                    </div>
                 </div>
             </nav>
             <div className="tabcontent scrollBar" id="content" style={{ display: 'block' }}>
