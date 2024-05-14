@@ -694,7 +694,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     if left in ("addargument", "addarguments"):
                         options.add_argument(right.strip())
                         print(left, right)
-
+                    if "pageloadstrategy" in left:
+                        options.page_load_strategy = right.strip()
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
                     elif left in ("addexperimentaloption"):
@@ -756,7 +757,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -867,7 +867,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -945,7 +944,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -976,7 +974,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -999,7 +996,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Ie(executable_path=ie_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1034,7 +1030,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1052,7 +1047,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 desired_capabilities=remote_desired_cap)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1184,6 +1178,82 @@ def Open_Empty_Browser(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 @logger
+def Go_To_Link_V2(step_data):
+    from selenium.webdriver.chrome.options import Options
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    global dependency
+    global selenium_driver
+    global selenium_details
+    global current_driver_id
+    
+    url = None
+    driver_tag = "default"
+    page_load_timeout_sec = 120
+    options = Options()
+    page_load_strategy = "normal"
+
+    for left, _, right in step_data:
+        if "add argument" in left.lower():
+            options.add_argument(right.strip())
+            CommonUtil.ExecLog(sModuleInfo, "Added argument: " + right.strip(), 1)
+        elif 'add experimental option' in left.lower():
+            options.add_experimental_option(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
+            CommonUtil.ExecLog(sModuleInfo, "Added experimental option: " + right.strip(), 1)
+        elif "set capability" in left.lower():
+            options.set_capability(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
+            CommonUtil.ExecLog(sModuleInfo, "Added capability: " + right.strip(), 1)
+        elif "go to link v2" in left.lower():
+            url = right.strip() if right.strip() != "" else None
+        elif "driver tag" in left.lower():
+            driver_tag = right.strip()
+        elif "wait for element" in left.lower():
+            Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
+        elif "page load timeout" in left.lower():
+            page_load_timeout_sec = float(right.strip())
+        elif "page load strategy" in left.lower():
+            page_load_strategy = right.strip()
+            options.page_load_strategy = page_load_strategy
+
+
+    if driver_tag in selenium_details.keys():
+        selenium_driver = selenium_details[driver_tag]["driver"]
+    else:
+        if Shared_Resources.Test_Shared_Variables("dependency"):
+            dependency = Shared_Resources.Get_Shared_Variables("dependency")
+        else:
+            raise ValueError("No dependency set - Cannot run")
+        
+        dependency_browser = dependency["Browser"].lower()
+        if 'headless' in dependency_browser:
+            options.add_argument("--headless")
+            CommonUtil.ExecLog(sModuleInfo, "Added headless argument", 1)
+
+        if "chrome" in dependency_browser:
+            selenium_driver = webdriver.Chrome(options=options)
+        elif "firefox" in dependency_browser:
+            selenium_driver = webdriver.Firefox(options=options)
+        
+        selenium_driver.set_page_load_timeout(page_load_timeout_sec)
+        selenium_details[driver_tag] = dict()
+        selenium_details[driver_tag]["driver"] = selenium_driver
+        current_driver_id = selenium_driver
+        Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        
+        # Handle headless mode window maximize
+        if '--headless' in options.arguments and '--start-maximized' in options.arguments:
+            selenium_driver.set_window_size(default_x, default_y)
+
+    if url:
+        selenium_driver.get(url)
+
+    selenium_driver.maximize_window()
+        
+    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+    return "passed"
+    
+@logger
 def Go_To_Link(step_data, page_title=False):
     # this function needs work with validating page title.  We need to check if user entered any title.
     # if not then we don't do the validation
@@ -1209,6 +1279,7 @@ def Go_To_Link(step_data, page_title=False):
         raise ValueError("No dependency set - Cannot run")
 
     page_load_timeout_sec = 120
+    page_load_strategy = "normal"
 
     try:
         driver_id = ""
@@ -3872,7 +3943,6 @@ def Tear_Down_Selenium(step_data=[]):
         if not driver_id:
             if not CommonUtil.teardown:
                 CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
-                return "passed"
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:

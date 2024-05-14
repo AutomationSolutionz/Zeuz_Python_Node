@@ -779,12 +779,11 @@ def zip_and_delete_tc_folder(
 
 def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
     try:  # if error happens. we don't care, main driver should not stop, pass in exception
-
-        if CommonUtil.teardown and shared.Test_Shared_Variables("selenium_driver"):
-            import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
-            driver = shared.Remove_From_Shared_Variables("selenium_driver")
-            if driver not in failed_tag_list:
-                Selenium.Tear_Down_Selenium()
+        import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
+        try:
+            Selenium.Tear_Down_Selenium()
+        except:
+            pass
         if shared.Test_Shared_Variables("appium_details"):
             import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
             driver = shared.Remove_From_Shared_Variables("appium_details")
