@@ -16,8 +16,8 @@ class Recorder {
         this.attached = false;
         this.locatorBuilders = new LocatorBuilders(window);
         this.frameLocation = this.getFrameLocation();
-        console.log("getFrameLocation() =",this.frameLocation);
-        console.log("document", document)
+        // console.log("getFrameLocation() =",this.frameLocation);
+        // console.log("document", document)
         browserAppData.runtime.sendMessage({
             frameLocation: this.frameLocation
         }).catch(function(reason) {
@@ -83,7 +83,7 @@ class Recorder {
         }
         
         main_elem.setAttribute('zeuz', 'aiplugin');
-        console.log(main_elem.hasAttribute('zeuz'), main_elem);
+        // console.log(main_elem.hasAttribute('zeuz'), main_elem);
 
         // Recorder already changed the value which should not be sent to ai-engine
         if (command === 'text')
@@ -112,7 +112,7 @@ class Recorder {
     }
 
     record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
-        console.log("getFrameLocation() =",this.frameLocation);
+        // console.log("getFrameLocation() =",this.frameLocation);
         const dom = this.prepare_dom(target, command, value)
         browserAppData.runtime.sendMessage({
             id: generateId(),
@@ -173,7 +173,6 @@ browserAppData.runtime.sendMessage({
 })
 
 browserAppData.runtime.onMessage.addListener(function (request, sender, sendResponse, type) {
-    console.log('request',request)
     if (request.attachRecorder) {
         recorder.attach();
     } else if (request.detachRecorder) {

@@ -14,8 +14,15 @@ var enterTarget = null;
 var enterValue = null;
 var tabCheck = null;
 
+function print_event(event) {
+    var print = true;
+    let ignore = ['mouseover', 'mouseout', 'focus', 'focusout', 'blur', 'DOMNodeInserted', 'scroll']
+    if (print && !ignore.includes(event.type))
+        console.log(event.type, 'event', event)
+}
+
 Recorder.eventHandlers = {};
-Recorder.addEventHandler = function(handlerName, event_name, handler, options) {
+Recorder.addEventHandler = function (handlerName, event_name, handler, options) {
     handler.handlerName = handlerName;
     if (!options) options = false;
     let key = options ? ('C_' + event_name) : event_name;
@@ -29,54 +36,55 @@ Recorder.addEventHandler = function(handlerName, event_name, handler, options) {
 Recorder.inputTypes = ["text", "password", "datetime", "time", "datetime-local", "date", "month", "week", "file", "number", "range", "email", "url", "search", "tel", "color"];
 
 
-Recorder.addEventHandler('type', 'input', function(event) {
+Recorder.addEventHandler('type', 'input', function (event) {
+    print_event(event)
     typeTarget = event.target;
 });
 
 /* Recorder on change event */
-Recorder.addEventHandler('type', 'change', function(event) {
+Recorder.addEventHandler('type', 'change', function (event) {
+    print_event(event)
     if (event.target.tagName && !preventType && typeLock == 0 && (typeLock = 1)) {
-            var tagName = event.target.tagName.toLowerCase();
-            var type = event.target.type;
-            if ('input' == tagName && Recorder.inputTypes.indexOf(type) >= 0) {
-                if (event.target.value.length > 0) {
-                    this.record("type", this.locatorBuilders.buildAll(event.target), event.target.value);
-                    if (enterTarget != null) {
-                        var tempTarget = event.target.parentElement;
-                        var formChk = tempTarget.tagName.toLowerCase();
-                        while (formChk != 'form' && formChk != 'body') {
-                            tempTarget = tempTarget.parentElement;
-                            formChk = tempTarget.tagName.toLowerCase();
-                        }
-                        if (formChk == 'form' && (tempTarget.hasAttribute("id") || tempTarget.hasAttribute("name")) && (!tempTarget.hasAttribute("onsubmit"))) {
-                            if (tempTarget.hasAttribute("id"))
-                                this.record("submit", [
-                                    ["id=" + tempTarget.id, "id"]
-                                ], "");
-                            else if (tempTarget.hasAttribute("name"))
-                                this.record("submit", [
-                                    ["name=" + tempTarget.name, "name"]
-                                ], "");
-                        } else
-                            this.record("sendKeys", this.locatorBuilders.buildAll(enterTarget), "${KEY_ENTER}");
-                        enterTarget = null;
+        var tagName = event.target.tagName.toLowerCase();
+        var type = event.target.type;
+        if ('input' == tagName && Recorder.inputTypes.indexOf(type) >= 0) {
+            if (event.target.value.length > 0) {
+                this.record("type", this.locatorBuilders.buildAll(event.target), event.target.value);
+                if (enterTarget != null) {
+                    var tempTarget = event.target.parentElement;
+                    var formChk = tempTarget.tagName.toLowerCase();
+                    while (formChk != 'form' && formChk != 'body') {
+                        tempTarget = tempTarget.parentElement;
+                        formChk = tempTarget.tagName.toLowerCase();
                     }
-                } else {
-                    this.record("type", this.locatorBuilders.buildAll(event.target), event.target.value);
+                    if (formChk == 'form' && (tempTarget.hasAttribute("id") || tempTarget.hasAttribute("name")) && (!tempTarget.hasAttribute("onsubmit"))) {
+                        if (tempTarget.hasAttribute("id"))
+                            this.record("submit", [
+                                ["id=" + tempTarget.id, "id"]
+                            ], "");
+                        else if (tempTarget.hasAttribute("name"))
+                            this.record("submit", [
+                                ["name=" + tempTarget.name, "name"]
+                            ], "");
+                    } else
+                        this.record("sendKeys", this.locatorBuilders.buildAll(enterTarget), "${KEY_ENTER}");
+                    enterTarget = null;
                 }
-            } else if ('textarea' == tagName) {
+            } else {
                 this.record("type", this.locatorBuilders.buildAll(event.target), event.target.value);
             }
+        } else if ('textarea' == tagName) {
+            this.record("type", this.locatorBuilders.buildAll(event.target), event.target.value);
         }
-        typeLock = 0;
+    }
+    typeLock = 0;
 });
 
 /* Recorder Click event */
 var preventClickTwice = false;
 var select_xpath
-Recorder.addEventHandler('clickAt', 'click', function(event) {
-    // console.log('click event', event);
-    // console.log("event.target", event.target);
+Recorder.addEventHandler('clickAt', 'click', function (event) {
+    print_event(event)
     var xpaths = this.locatorBuilders.buildAll(event.target);
     if ('select' == event.target.nodeName.toLowerCase()) select_xpath = xpaths
     // console.log("xpaths", xpaths);
@@ -93,12 +101,13 @@ Recorder.addEventHandler('clickAt', 'click', function(event) {
             this.record("click", xpaths, '');
             preventClickTwice = true;
         }
-        setTimeout(function() { preventClickTwice = false; }, 30);
+        setTimeout(function () { preventClickTwice = false; }, 30);
     }
 }, true);
 
 /* Recorder Double click event */
-Recorder.addEventHandler('doubleClickAt', 'dblclick', function(event) {
+Recorder.addEventHandler('doubleClickAt', 'dblclick', function (event) {
+    print_event(event)
     var top = event.pageY,
         left = event.pageX;
     var element = event.target;
@@ -114,13 +123,13 @@ Recorder.addEventHandler('doubleClickAt', 'dblclick', function(event) {
 var inp = document.getElementsByTagName("input");
 for (var i = 0; i < inp.length; i++) {
     if (Recorder.inputTypes.indexOf(inp[i].type) >= 0) {
-        inp[i].addEventListener("focus", function(event) {
+        inp[i].addEventListener("focus", function (event) {
             focusTarget = event.target;
             focusValue = focusTarget.value;
             tempValue = focusValue;
             preventType = false;
         });
-        inp[i].addEventListener("blur", function(event) {
+        inp[i].addEventListener("blur", function (event) {
             focusTarget = null;
             focusValue = null;
             tempValue = null;
@@ -129,7 +138,8 @@ for (var i = 0; i < inp.length; i++) {
 }
 
 /* Recorder key down event */
-Recorder.addEventHandler('sendKeys', 'keydown', function(event) {
+Recorder.addEventHandler('sendKeys', 'keydown', function (event) {
+    print_event(event)
     if (event.target.tagName) {
         var key = event.keyCode;
         var tagName = event.target.tagName.toLowerCase();
@@ -159,43 +169,43 @@ Recorder.addEventHandler('sendKeys', 'keydown', function(event) {
                     enterTarget = null;
                 }
                 if (typeTarget.tagName && !preventType && (typeLock = 1)) {
-                        var tagName = typeTarget.tagName.toLowerCase();
-                        var type = typeTarget.type;
-                        if ('input' == tagName && Recorder.inputTypes.indexOf(type) >= 0) {
-                            if (typeTarget.value.length > 0) {
-                                this.record("type", this.locatorBuilders.buildAll(typeTarget), typeTarget.value);
-                                if (enterTarget != null) {
-                                    var tempTarget = typeTarget.parentElement;
-                                    var formChk = tempTarget.tagName.toLowerCase();
-                                    while (formChk != 'form' && formChk != 'body') {
-                                        tempTarget = tempTarget.parentElement;
-                                        formChk = tempTarget.tagName.toLowerCase();
-                                    }
-                                    if (formChk == 'form' && (tempTarget.hasAttribute("id") || tempTarget.hasAttribute("name")) && (!tempTarget.hasAttribute("onsubmit"))) {
-                                        if (tempTarget.hasAttribute("id"))
-                                            this.record("submit", [
-                                                ["id=" + tempTarget.id, "id"]
-                                            ], "");
-                                        else if (tempTarget.hasAttribute("name"))
-                                            this.record("submit", [
-                                                ["name=" + tempTarget.name, "name"]
-                                            ], "");
-                                    } else
-                                        this.record("sendKeys", this.locatorBuilders.buildAll(enterTarget), "${KEY_ENTER}");
-                                    enterTarget = null;
+                    var tagName = typeTarget.tagName.toLowerCase();
+                    var type = typeTarget.type;
+                    if ('input' == tagName && Recorder.inputTypes.indexOf(type) >= 0) {
+                        if (typeTarget.value.length > 0) {
+                            this.record("type", this.locatorBuilders.buildAll(typeTarget), typeTarget.value);
+                            if (enterTarget != null) {
+                                var tempTarget = typeTarget.parentElement;
+                                var formChk = tempTarget.tagName.toLowerCase();
+                                while (formChk != 'form' && formChk != 'body') {
+                                    tempTarget = tempTarget.parentElement;
+                                    formChk = tempTarget.tagName.toLowerCase();
                                 }
-                            } else {
-                                this.record("type", this.locatorBuilders.buildAll(typeTarget), typeTarget.value);
+                                if (formChk == 'form' && (tempTarget.hasAttribute("id") || tempTarget.hasAttribute("name")) && (!tempTarget.hasAttribute("onsubmit"))) {
+                                    if (tempTarget.hasAttribute("id"))
+                                        this.record("submit", [
+                                            ["id=" + tempTarget.id, "id"]
+                                        ], "");
+                                    else if (tempTarget.hasAttribute("name"))
+                                        this.record("submit", [
+                                            ["name=" + tempTarget.name, "name"]
+                                        ], "");
+                                } else
+                                    this.record("sendKeys", this.locatorBuilders.buildAll(enterTarget), "${KEY_ENTER}");
+                                enterTarget = null;
                             }
-                        } else if ('textarea' == tagName) {
+                        } else {
                             this.record("type", this.locatorBuilders.buildAll(typeTarget), typeTarget.value);
                         }
+                    } else if ('textarea' == tagName) {
+                        this.record("type", this.locatorBuilders.buildAll(typeTarget), typeTarget.value);
                     }
+                }
                 preventClick = true;
-                setTimeout(function() {
+                setTimeout(function () {
                     preventClick = false;
                 }, 500);
-                setTimeout(function() {
+                setTimeout(function () {
                     if (enterValue != event.target.value) enterTarget = null;
                 }, 50);
             }
@@ -210,7 +220,7 @@ Recorder.addEventHandler('sendKeys', 'keydown', function(event) {
                     this.record("type", this.locatorBuilders.buildAll(event.target), tempValue);
                 }
 
-                setTimeout(function() {
+                setTimeout(function () {
                     tempValue = focusTarget.value;
                 }, 250);
 
@@ -229,7 +239,8 @@ Recorder.addEventHandler('sendKeys', 'keydown', function(event) {
 }, true);
 
 /* Recorder mouse up event */
-Recorder.addEventHandler('dragAndDrop', 'mouseup', function(event) {
+Recorder.addEventHandler('dragAndDrop', 'mouseup', function (event) {
+    print_event(event)
     clearTimeout(this.selectMouseup);
     if (this.selectMousedown) {
         var x = event.clientX - this.selectMousedown.clientX;
@@ -260,7 +271,7 @@ Recorder.addEventHandler('dragAndDrop', 'mouseup', function(event) {
             }
         }
     } else {
-        if(this.mousedown){
+        if (this.mousedown) {
             delete this.clickLocator;
             delete this.mouseup;
             var x = event.clientX - this.mousedown.clientX;
@@ -279,15 +290,16 @@ Recorder.addEventHandler('dragAndDrop', 'mouseup', function(event) {
 }, true);
 
 /* Recorder mouse down event */
-Recorder.addEventHandler('dragAndDrop', 'mousedown', function(event) {
+Recorder.addEventHandler('dragAndDrop', 'mousedown', function (event) {
+    print_event(event)
     var self = this;
     if (event.clientX < window.document.documentElement.clientWidth && event.clientY < window.document.documentElement.clientHeight) {
         this.mousedown = event;
-        this.mouseup = setTimeout(function() {
+        this.mouseup = setTimeout(function () {
             delete self.mousedown;
         }.bind(this), 200);
 
-        this.selectMouseup = setTimeout(function() {
+        this.selectMouseup = setTimeout(function () {
             self.selectMousedown = event;
         }.bind(this), 200);
     }
@@ -308,15 +320,16 @@ Recorder.addEventHandler('dragAndDrop', 'mousedown', function(event) {
 }, true);
 
 /* Recorder Drag start event */
-Recorder.addEventHandler('dragAndDropToObject', 'dragstart', function(event) {
+Recorder.addEventHandler('dragAndDropToObject', 'dragstart', function (event) {
+    print_event(event)
     var self = this;
-    this.dropLocator = setTimeout(function() {
+    this.dropLocator = setTimeout(function () {
         self.dragstartLocator = event;
     }.bind(this), 200);
 }, true);
 
 /* Recorder Drop event */
-Recorder.addEventHandler('dragAndDropToObject', 'drop', function(event) {
+Recorder.addEventHandler('dragAndDropToObject', 'drop', function (event) {
     clearTimeout(this.dropLocator);
     if (this.dragstartLocator && event.button == 0 && this.dragstartLocator.target !== event.target) {
         this.record("dragAndDropToObject", this.locatorBuilders.buildAll(this.dragstartLocator.target), this.locatorBuilders.build(event.target));
@@ -327,19 +340,21 @@ Recorder.addEventHandler('dragAndDropToObject', 'drop', function(event) {
 
 /* Recorder Scroll event */
 var prevTimeOut = null;
-Recorder.addEventHandler('runScript', 'scroll', function(event) {
+Recorder.addEventHandler('runScript', 'scroll', function (event) {
+    print_event(event)
     if (pageLoaded === true) {
         var self = this;
         this.scrollDetector = event.target;
         clearTimeout(prevTimeOut);
-        prevTimeOut = setTimeout(function() {
+        prevTimeOut = setTimeout(function () {
             delete self.scrollDetector;
         }.bind(self), 500);
     }
 }, true);
 
 /* Recorder mouse out event */
-Recorder.addEventHandler('mouseOut', 'mouseout', function(event) {
+Recorder.addEventHandler('mouseOut', 'mouseout', function (event) {
+    print_event(event)
     if (this.mouseoutLocator !== null && event.target === this.mouseoutLocator) {
     }
     delete this.mouseoutLocator;
@@ -348,7 +363,8 @@ Recorder.addEventHandler('mouseOut', 'mouseout', function(event) {
 
 /* Recorder Mouse over event */
 var nowNode = 0;
-Recorder.addEventHandler('mouseOver', 'mouseover', function(event) {
+Recorder.addEventHandler('mouseOver', 'mouseover', function (event) {
+    print_event(event)
     if (window.document.documentElement)
         nowNode = window.document.documentElement.getElementsByTagName('*').length;
     var self = this;
@@ -356,17 +372,16 @@ Recorder.addEventHandler('mouseOver', 'mouseover', function(event) {
         var clickable = this.findClickableElement(event.target);
         if (clickable) {
             this.nodeInsertedLocator = event.target;
-            setTimeout(function() {
+            setTimeout(function () {
                 delete self.nodeInsertedLocator;
             }.bind(self), 500);
 
             this.nodeAttrChange = this.locatorBuilders.buildAll(event.target);
-            this.nodeAttrChangeTimeout = setTimeout(function() {
+            this.nodeAttrChangeTimeout = setTimeout(function () {
                 delete self.nodeAttrChange;
             }.bind(self), 10);
         }
-        if (this.mouseoverQ)
-        {
+        if (this.mouseoverQ) {
             if (this.mouseoverQ.length >= 3)
                 this.mouseoverQ.shift();
             this.mouseoverQ.push(event);
@@ -374,12 +389,13 @@ Recorder.addEventHandler('mouseOver', 'mouseover', function(event) {
     }
 }, true);
 
-Recorder.addEventHandler('mouseOver', 'DOMNodeInserted', function(event) {
+Recorder.addEventHandler('mouseOver', 'DOMNodeInserted', function (event) {
+    print_event(event)
     if (pageLoaded === true && window.document.documentElement.getElementsByTagName('*').length > nowNode) {
         var self = this;
         if (this.scrollDetector) {
             pageLoaded = false;
-            setTimeout(function() {
+            setTimeout(function () {
                 pageLoaded = true;
             }.bind(self), 550);
             delete this.scrollDetector;
@@ -395,20 +411,22 @@ Recorder.addEventHandler('mouseOver', 'DOMNodeInserted', function(event) {
 
 var readyTimeOut = null;
 var pageLoaded = true;
-Recorder.addEventHandler('checkPageLoaded', 'readystatechange', function(event) {
+Recorder.addEventHandler('checkPageLoaded', 'readystatechange', function (event) {
+    print_event(event)
     var self = this;
     if (window.document.readyState === 'loading') {
         pageLoaded = false;
     } else {
         pageLoaded = false;
         clearTimeout(readyTimeOut);
-        readyTimeOut = setTimeout(function() {
+        readyTimeOut = setTimeout(function () {
             pageLoaded = true;
         }.bind(self), 1500);
     }
 }, true);
 
-Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
+Recorder.addEventHandler('contextMenu', 'contextmenu', function (event) {
+    print_event(event)
     var myPort = browserAppData.runtime.connect();
     var tmpText = this.locatorBuilders.buildAll(event.target);
     var tmpVal = getText(event.target);
@@ -422,7 +440,7 @@ Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
         } else if (m.cmd.includes("Value")) {
             self.record(m.cmd, tmpText, getInputValue(event.target));
         }
-        else{
+        else {
             self.record(m.cmd, tmpText, tmpVal);
         }
         myPort.onMessage.removeListener(portListener);
@@ -432,7 +450,8 @@ Recorder.addEventHandler('contextMenu', 'contextmenu', function(event) {
 /* Recorder focus event */
 var getEle;
 var checkFocus = 0;
-Recorder.addEventHandler('editContent', 'focus', function(event) {
+Recorder.addEventHandler('editContent', 'focus', function (event) {
+    print_event(event)
     var editable = event.target.contentEditable;
     if (editable == 'true') {
         getEle = event.target;
@@ -442,7 +461,8 @@ Recorder.addEventHandler('editContent', 'focus', function(event) {
 }, true);
 
 /* Recorder blur event */
-Recorder.addEventHandler('editContent', 'blur', function(event) {
+Recorder.addEventHandler('editContent', 'blur', function (event) {
+    print_event(event)
     if (checkFocus == 1) {
         if (event.target == getEle) {
             if (getEle.innerHTML != contentTest) {
@@ -455,11 +475,12 @@ Recorder.addEventHandler('editContent', 'blur', function(event) {
 
 browserAppData.runtime.sendMessage({
     attachRecorderRequest: true
-}).catch(function(reason){
+}).catch(function (reason) {
 });
 
 /* on focus */
-Recorder.addEventHandler('select', 'focus', function(event) {
+Recorder.addEventHandler('select', 'focus', function (event) {
+    print_event(event)
     if (event.target.nodeName) {
         var tagName = event.target.nodeName.toLowerCase();
         if ('select' == tagName && event.target.multiple) {
@@ -475,10 +496,11 @@ Recorder.addEventHandler('select', 'focus', function(event) {
 
 /* on focusout */
 var change_event_invoked = false;
-Recorder.addEventHandler('select_focusout', 'focusout', function(event) {
+Recorder.addEventHandler('select_focusout', 'focusout', function (event) {
+    print_event(event)
     // if (event.target.tagName.toLowerCase() == 'select') console.log('select focusout', event);
     if (event.target.tagName.toLowerCase() !== 'select') return;
-    setTimeout(()=>{
+    setTimeout(() => {
         if (change_event_invoked) return;
         var option = event.target.options[event.target.selectedIndex];
         // console.log("event.target", event.target);
@@ -492,7 +514,8 @@ Recorder.addEventHandler('select_focusout', 'focusout', function(event) {
 }, true);
 
 /* change */
-Recorder.addEventHandler('select_change', 'change', function(event) {
+Recorder.addEventHandler('select_change', 'change', function (event) {
+    print_event(event)
     if (event.target.tagName) {
         var tagName = event.target.tagName.toLowerCase();
         if ('select' == tagName) {
@@ -501,13 +524,13 @@ Recorder.addEventHandler('select_change', 'change', function(event) {
                 var option = event.target.options[event.target.selectedIndex];
                 this.record("select", this.locatorBuilders.buildAll(event.target), this.getOptionLocator(option));
                 change_event_invoked = true;
-                setTimeout(()=>{
+                setTimeout(() => {
                     change_event_invoked = false;
-                },500)
+                }, 500)
             } else {
                 var options = event.target.options;
                 for (var i = 0; i < options.length; i++) {
-                    if (options[i]._wasSelected == null) {}
+                    if (options[i]._wasSelected == null) { }
                     if (options[i]._wasSelected != options[i].selected) {
                         var value = this.getOptionLocator(options[i]);
                         if (options[i].selected) {
@@ -524,13 +547,13 @@ Recorder.addEventHandler('select_change', 'change', function(event) {
 });
 
 /* Recorder prototopy start */
-Recorder.prototype.getOptionLocator = function(option) {
+Recorder.prototype.getOptionLocator = function (option) {
     var label = option.text.replace(/^ *(.*?) *$/, "$1");
     if (label.match(/\xA0/)) {
-        return "label=regexp:" + label.replace(/[\(\)\[\]\\\^\$\*\+\?\.\|\{\}]/g, function(str) {
-                return '\\' + str
-            })
-            .replace(/\s+/g, function(str) {
+        return "label=regexp:" + label.replace(/[\(\)\[\]\\\^\$\*\+\?\.\|\{\}]/g, function (str) {
+            return '\\' + str
+        })
+            .replace(/\s+/g, function (str) {
                 if (str.match(/\xA0/)) {
                     if (str.length > 1) {
                         return "\\s+";
@@ -546,7 +569,7 @@ Recorder.prototype.getOptionLocator = function(option) {
     }
 };
 
-Recorder.prototype.findClickableElement = function(e) {
+Recorder.prototype.findClickableElement = function (e) {
     if (!e.tagName) return null;
     var tagName = e.tagName.toLowerCase();
     var type = e.type;
