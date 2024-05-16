@@ -1679,6 +1679,10 @@ def Keystroke_For_Element(data_set):
         if stype == "keys":
             # Requires: python-selenium v3.1+, geckodriver v0.15.0+
             keystroke_value = keystroke_value.upper().replace("CTRL", "CONTROL")
+            if keystroke_value.startswith("ARROW"):
+                keystroke_value = keystroke_value[5:]
+                if keystroke_value.startswith("_"):
+                    keystroke_value = keystroke_value[1:]
             if "+" in keystroke_value:
                 hotkey_list = keystroke_value.split("+")
                 for i in range(len(hotkey_list)):
