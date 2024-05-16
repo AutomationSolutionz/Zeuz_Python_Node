@@ -594,7 +594,8 @@ function App() {
                         <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
                             
                     ))}
-                    <div ref={actionRef} className='py-5'> </div>
+                    <div className='py-5'></div>
+                    <div ref={actionRef} className='py-1'></div>
                 </div>
             </div>
         </div>

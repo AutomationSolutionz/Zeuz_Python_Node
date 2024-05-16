@@ -1,4 +1,5 @@
-/* ZeuZ Start the recording function */
+// First recording file
+print = console.log
 browserAppData = chrome || browser;
 function generateId(){
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -37,7 +38,11 @@ class Recorder {
             Wait_For_Element_To_Disappear: "wait disable",
         }
     }
-
+    getXpath(target){
+        for (let each of this.locatorBuilders.buildAll(target)) 
+            if (each[1] == 'xpath:position')
+                return each[0];
+    }
     /* Parse the key */
     parse_the_event_key(event_key) {
         if (event_key.match(/^C_/)) {
@@ -64,12 +69,7 @@ class Recorder {
         return frameLocation = "root" + frameLocation;
     }
 
-    prepare_dom(target, command, value){
-        for (let each of target) if (each[1] == 'xpath:position') {
-            var xpath = each[0];
-            break;
-        }
-
+    prepare_dom(xpath, command, value){
         var html = document.createElement('html');
         html.innerHTML = document.documentElement.outerHTML;
 
@@ -111,56 +111,66 @@ class Recorder {
         return html.outerHTML
     }
 
-    record(command, target, value, insertBeforeLastCommand, actualFrameLocation) {
+    record({name, xpath, value, tagName, stack={do:false}}) {
         // console.log("getFrameLocation() =",this.frameLocation);
-        const dom = this.prepare_dom(target, command, value)
+        const dom = this.prepare_dom(xpath, name, value)
         browserAppData.runtime.sendMessage({
             id: generateId(),
             action: 'record_action',
-            command: command,
-            target: target,
+            command: name,
+            xpath: xpath,
             value: value,
             url: window.location.href,
+            tagName: tagName,
             document: dom,
+            stack: stack,
         })
     }
 
     /* attach */
     attach() {
         if (this.attached) return;
-        console.log('attach2');
+        console.log('attach2', this.newEventListeners);
         this.attached = true;
-        this.eventListeners = {};
-        var self = this;
-        for (let event_key in Recorder.eventHandlers) {
-            var event_info = this.parse_the_event_key(event_key);
-            var event_name = event_info.event_name;
-            var capture = event_info.capture;
-            function register() {
-                var handlers = Recorder.eventHandlers[event_key];
-                var listener = function(event) {
-                    for (var i = 0; i < handlers.length; i++) {
-                        handlers[i].call(self, event);
-                    }
-                }
-                this.window.document.addEventListener(event_name, listener, capture);
-                this.eventListeners[event_key] = listener;
-            }
-            register.call(this);
+        for (let each of this.newEventListeners) {
+            print('each', each)
+            this.window.document.addEventListener(each.name, each.handler)
         }
+
+        // this.eventListeners = {};
+        // var self = this;
+        // for (let event_key in Recorder.eventHandlers) {
+        //     var event_info = this.parse_the_event_key(event_key);
+        //     var event_name = event_info.event_name;
+        //     var capture = event_info.capture;
+        //     function register() {
+        //         var handlers = Recorder.eventHandlers[event_key];
+        //         var listener = function(event) {
+        //             for (var i = 0; i < handlers.length; i++) {
+        //                 handlers[i].call(self, event);
+        //             }
+        //         }
+        //         this.window.document.addEventListener(event_name, listener, capture);
+        //         this.eventListeners[event_key] = listener;
+        //     }
+        //     register.call(this);
+        // }
     }
     /*detach */
     detach() {
         console.log('detach2');
         if (!this.attached) return;
         this.attached = false;
-        for (let event_key in this.eventListeners) {
-            var event_info = this.parse_the_event_key(event_key);
-            var event_name = event_info.event_name;
-            var capture = event_info.capture;
-            this.window.document.removeEventListener(event_name, this.eventListeners[event_key], capture);
+        for (let each of this.newEventListeners) {
+            this.window.document.removeEventListener(each.name, each.handler)
         }
-        delete this.eventListeners;
+        // for (let event_key in this.eventListeners) {
+        //     var event_info = this.parse_the_event_key(event_key);
+        //     var event_name = event_info.event_name;
+        //     var capture = event_info.capture;
+        //     this.window.document.removeEventListener(event_name, this.eventListeners[event_key], capture);
+        // }
+        // delete this.eventListeners;
     }
 
 

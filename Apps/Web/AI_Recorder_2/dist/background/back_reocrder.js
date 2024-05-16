@@ -137,11 +137,58 @@ async function fetchAIData(id, command, value, url, document){
     })
 }
 
-async function record_action(id, command, value, url, document){
+var Stack = []
+async function record_action(id, command, xpath, value, url, tagName, document, stack){
+    if (stack.do){
+        if (Stack.length === 0){
+            Stack.push({
+                id: id,
+                command: command,
+                xpath: xpath,
+                value: value,
+                url: url,
+                tagName: tagName,
+                document: document
+            })
+        }
+        else if(
+            Stack[-1].command == command &&
+            Stack[-1].xpath == xpath &&
+            Stack[-1].url == url
+        ){
+            Stack.push({
+                id: id,
+                command: command,
+                xpath: xpath,
+                value: value,
+                url: url,
+                tagName: tagName,
+                document: document
+            })
+        }
+        else{
+            let _id = Stack[-1].id
+            let _command = Stack[-1].command
+            let _value = Stack[-1].value
+            let _url = Stack[-1].url
+            let _document = Stack[-1].document
+            if (Object.keys(action_name_convert).includes(_command)) 
+                _command = action_name_convert[_command];
+            notification(_command);
+            fetchAIData(_id, _command, _value, _url, _document);
+            setTimeout(()=>{
+                if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
+                notification(command);
+                fetchAIData(id, command, value, url, document);  
+            }, 200)
+        }
+        return;
+    }
     if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
     notification(command);
     fetchAIData(id, command, value, url, document);  
 }
+
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.action == 'start_recording') {
@@ -151,10 +198,12 @@ browserAppData.runtime.onMessage.addListener(
             record_action(
                 request.id,
                 request.command,
-                // request.target,
+                request.xpath,
                 request.value,
                 request.url,
+                request.tagName,
                 request.document,
+                request.stack,
             );
         }
     }
