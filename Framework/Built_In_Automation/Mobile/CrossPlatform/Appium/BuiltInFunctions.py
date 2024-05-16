@@ -4058,15 +4058,16 @@ def save_attribute_values_appium(step_data):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], [], [], []])
-                    temp = right.strip(",").split(",")
+                    temp = right.strip(",").split('",\n')
                     data = []
+                    temp[-1] = temp[-1][:-1]
                     for each in temp:
-                        data.append(each.strip().split("="))
+                        data.append(each.strip().split("=",1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = data[i][j][1:]  # do not add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":

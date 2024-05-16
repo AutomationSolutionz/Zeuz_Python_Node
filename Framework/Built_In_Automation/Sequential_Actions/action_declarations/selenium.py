@@ -23,6 +23,7 @@ declarations = (
     { "name": "open browser",                  "function": "Open_Empty_Browser",            "screenshot": "web" },
     { "name": "open electron app",             "function": "Open_Electron_App",             "screenshot": "web" },
     { "name": "go to link",                    "function": "Go_To_Link",                    "screenshot": "web" },
+    { "name": "go to link v2",                 "function": "Go_To_Link_V2",                 "screenshot": "web" },
     { "name": "tear down browser",             "function": "Tear_Down_Selenium",            "screenshot": "none"},
     { "name": "switch browser",                "function": "Switch_Browser",                "screenshot": "none"},
     { "name": "get current url",               "function": "Get_Current_URL",               "screenshot": "none"},
