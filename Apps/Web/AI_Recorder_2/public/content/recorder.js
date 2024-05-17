@@ -134,7 +134,7 @@ class Recorder {
         this.attached = true;
         for (let each of this.newEventListeners) {
             print('each', each)
-            this.window.document.addEventListener(each.name, each.handler)
+            this.window.document.addEventListener(each.name, each.handler, each.capture)
         }
 
         // this.eventListeners = {};
@@ -162,7 +162,7 @@ class Recorder {
         if (!this.attached) return;
         this.attached = false;
         for (let each of this.newEventListeners) {
-            this.window.document.removeEventListener(each.name, each.handler)
+            this.window.document.removeEventListener(each.name, each.handler, each.capture)
         }
         // for (let event_key in this.eventListeners) {
         //     var event_info = this.parse_the_event_key(event_key);

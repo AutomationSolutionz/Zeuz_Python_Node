@@ -642,6 +642,7 @@ const _shouldGenerateKeyPressFor = function(event) {
 dbl_click = false
 const onClick = function(event) {
     print_event(event)
+    print_event(event)
     const target = event.target
     if (isRangeInput(target))
         return;
@@ -685,6 +686,7 @@ const onClick = function(event) {
 }
 
 const onInput = function(event) {
+    print_event(event)
     const target = event.target;
     if (target.nodeName === 'INPUT' && target.type.toLowerCase() === 'file') {
         recorder.record({
@@ -729,6 +731,7 @@ const onInput = function(event) {
 }
 
 const onKeyDown = function(event) {
+    print_event(event)
     if (!_shouldGenerateKeyPressFor(event))
         return;
     // Similarly to click, trigger checkbox on key event, not input.
@@ -757,7 +760,7 @@ const onKeyDown = function(event) {
 }
 
 Recorder.prototype.newEventListeners = [
-    {name: 'click', handler: onClick},
-    {name: 'input', handler: onInput},
-    {name: 'keydown', handler: onKeyDown},
+    {name: 'click', handler: onClick, capture: true},
+    {name: 'input', handler: onInput, capture: true},
+    {name: 'keydown', handler: onKeyDown, capture: true},
 ]
