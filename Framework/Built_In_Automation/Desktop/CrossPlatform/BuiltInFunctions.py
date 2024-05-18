@@ -1396,7 +1396,7 @@ def ocr_click(data_set):
 @logger
 def ocr_get_value_with_coordinates(data_set):
     """
-    This action lets you a crop a portion of the image of the screen and extract the text shown in that 
+    This action lets you crop a portion of the image of the screen and extract the text shown in that 
     particular portion of the image
     Field	                        Sub Field	                    Value
     coordinates	                    element parameter	            top, left, bottom, right coordinates. ex: 50, 120, 90, 320
@@ -1501,11 +1501,11 @@ def compare_ocr_coordinates(results, image_coords_updated,  direction, gap):
 @logger
 def ocr_get_value_with_image(data_set):
     """
-    This action lets you extract a text based on the position of the image you provide. The image has to be attcahed
+    This action lets you extract a text based on the position of the text with respect to the image you provide. The image has to be attached
     in the attachment section.
     Field	                    Sub Field	                Value
     image	                    element parameter	        enter the image that is closer to the text you want to extract
-    direction                   element parameter           direction of the image corresponding to the text you want to extract
+    direction                   element parameter           direction of the text to be extracted regarding the given image
     ocr get value with image    desktop action              variable name that will hold the value
     """
 
@@ -1515,6 +1515,7 @@ def ocr_get_value_with_image(data_set):
     image_direction = None
     var_name = None
     image_coords_updated = [0, 0, 0, 0]
+    text_gap = 0
     global reader
 
     # parse the data
@@ -1524,6 +1525,8 @@ def ocr_get_value_with_image(data_set):
                 image_name = right.strip()
             elif left.strip().lower() == "direction":
                 image_direction = right.strip()
+            elif "gap" in left.strip().lower():
+                text_gap = int(right.strip())
             elif "action" in mid.strip().lower():
                 var_name = right.strip()
     except:
@@ -1555,7 +1558,7 @@ def ocr_get_value_with_image(data_set):
     
     results = reader.readtext(path)
 
-    text_diff = list(map(compare_ocr_coordinates, results, repeat(image_coords_updated), repeat(image_direction)))
+    text_diff = list(map(compare_ocr_coordinates, results, repeat(image_coords_updated), repeat(image_direction), repeat(text_gap)))
     min_diff = min(text_diff)
     if min_diff == 9999:
         CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {image_direction} to the image", 3)
@@ -1658,7 +1661,7 @@ def ocr_get_value_with_text(data_set):
     text_diff = list(map(compare_ocr_coordinates, results, repeat(given_text_coordinates), repeat(text_direction), repeat(text_gap)))
     min_diff = min(text_diff)
     if min_diff == 9999:
-        CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {text_direction} to the image", 3)
+        CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {text_direction} to the text", 3)
         return "zeuz_failed"
 
     idx = text_diff.index(min_diff)
