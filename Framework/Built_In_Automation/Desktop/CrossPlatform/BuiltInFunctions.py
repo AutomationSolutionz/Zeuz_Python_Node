@@ -19,7 +19,6 @@ from fileinput import filename
 import os, os.path, sys, time, inspect, subprocess
 from turtle import right
 
-import pyautogui
 from Framework.Utilities import CommonUtil, FileUtilities as FL
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
@@ -37,6 +36,12 @@ from Framework.Built_In_Automation.Desktop.RecordPlayback.ChoosePlaybackModule i
 from Framework.Utilities import ConfigModule
 import traceback
 import platform
+import easyocr
+from thefuzz import fuzz
+import threading
+from pathlib import Path
+from itertools import repeat
+
 
 # Disable pyautogui failsafe when moving to top left corner
 gui.FAILSAFE = False
@@ -754,7 +759,7 @@ def get_bbox(data_set):
             sModuleInfo, "Bbox paramaters on screen X:%d, Y:%d, Width:%d, Height:%d" %(element[0], element[1], element[2], element[3]), 0
         )
         Shared_Resources.Set_Shared_Variables(var_name, element)
-        return "passed"
+        return element
     except Exception:
         errMsg = "Error locating the element"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -1143,6 +1148,7 @@ def playback_recorded_events(data_set):
         errMsg = "Failed to playback recorded events from file: %s" % filepath
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+partial_ss_path = None
 @logger
 def take_partial_screenshot(data_set):
     """
@@ -1156,7 +1162,6 @@ def take_partial_screenshot(data_set):
     bbox                    optional parameter      (x, y, width, height)
     take screenshot         desktop action          
     """
-    from pathlib import Path
     import time
     from PIL import Image
 
@@ -1167,6 +1172,7 @@ def take_partial_screenshot(data_set):
     y_cord = None
     width = None
     height = None
+    global partial_ss_path
 
     try:
         for left, _, right in data_set:
@@ -1191,7 +1197,8 @@ def take_partial_screenshot(data_set):
             )
             path = str(Path(screenshot_folder) / Path(filename))
         
-        pyautogui.screenshot(path)
+        partial_ss_path = path
+        gui.screenshot(path)
     
         if x_cord is not None and y_cord is not None and width is not None and height is not None:
             im = Image.open(path)
@@ -1231,10 +1238,434 @@ def keystroke_for_element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
     
     try:
-        pyautogui.write(chars, interval=delay)
+        gui.write(chars, interval=delay)
         CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters with pyautogui:\n%s" % chars, 1)
         return "passed"
 
     except:
         errMsg = "Could not enter characters with pyautogui"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+
+#########################
+#                       #
+#   OCR Functions       #
+#                       #
+#########################
+
+reader = None
+
+# initialize the OCR
+def get_easyocr_reader():
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global reader
+    if not reader:
+        CommonUtil.ExecLog(sModuleInfo, "Initializing EasyOCR reader...", 1)
+        reader = easyocr.Reader(['en'])
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "EasyOCR reader already initialized.", 1)
+        return reader
+    
+# create a list of texts
+def get_only_text(data:tuple):
+    return data[1]
+
+# get the index of the matching text
+def get_fuzzy_score(text1, text2, method):
+    if "partial" in method:
+        score = fuzz.partial_ratio(text1, text2)
+    elif "loose" in method:
+        score = fuzz.partial_token_sort_ratio(text1,text2)
+    else:
+        score = fuzz.ratio(text1,text2)
+    return score
+
+# take a screenshot of the screen
+def ocr_screenshot():
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    # take screenshot of the current screen
+    CommonUtil.ExecLog(sModuleInfo, "Taking full screenshot\n", 1)
+    local_time = time.localtime()
+    local_time_str = time.strftime("%H%M%S_%d%m%Y", local_time)
+    filename = f"{local_time_str}.png"
+    screenshot_folder = ConfigModule.get_config_value(
+        "sectionOne", "screen_capture_folder", temp_config
+    )
+    path = str(Path(screenshot_folder) / Path(filename))
+    gui.screenshot(path)
+
+    return path
+
+
+@logger
+def ocr_click(data_set):
+    """
+    This action lets you find a text through OCR and click on it. It also lets you do right click and double click.
+
+    Field	                    Sub Field	                Value
+    text	                    element parameter	        String you want to click on. ex: 'Advanced Settings'
+    method                      optional parameter          “match”/ “partial match”/ “loose match”
+    threshold                   optional parameter          Threshold of the match. ex: 90
+    ocr click                   desktop action              click/double click/right click
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    text = None
+    method = "match"
+    threshold = 70
+    did_fuzzy = False
+    click_type = 'click'
+    global reader
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "text":
+                text = right.strip()
+            elif left.strip().lower() == "method":
+                method = right.strip().lower()
+            elif left.strip().lower() == "threshold":
+                threshold = int(right.strip())
+            elif "action" in mid.strip().lower():
+                click_type = right.strip().lower()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+
+    if text == None:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Text field cannot be empty", 3
+            )
+        return "zeuz_failed"
+    
+    if reader is None:
+        ocr_thread = threading.Thread(target=get_easyocr_reader)
+        ocr_thread.start()
+        path = ocr_screenshot()
+        # wait for the OCR thread to finish
+        ocr_thread.join()
+    else:
+        path = ocr_screenshot()
+    result = reader.readtext(path) 
+
+    texts = list(map(get_only_text, result))
+
+    if text in texts:
+        idx = texts.index(text)
+    else:
+        # text_list = [text for _ in range(len(texts))]
+        fuzzy_text_scores = list(map(get_fuzzy_score, texts, repeat(text), repeat(method)))
+        idx = fuzzy_text_scores.index(max(fuzzy_text_scores))
+        did_fuzzy = True
+
+    # get the scores
+    if did_fuzzy:
+        text_score = fuzzy_text_scores[idx]
+        if text_score < threshold:
+            CommonUtil.ExecLog(sModuleInfo, f"After fuzzy match, score {text_score} falls below the threshold {threshold}", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"The closest  match is '{texts[idx]}'", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, f"If you want to interact with this word then either use differenet method or lower the threshold", 3
+            )
+            return "zeuz_failed"
+        CommonUtil.ExecLog(
+            sModuleInfo, f"Similar text after fuzzy {method} is '{texts[idx]}' with a score of {fuzzy_text_scores[idx]}", 1
+        )
+    else:
+        text_score = int(result[idx][2]*100)
+        if text_score < threshold: 
+            CommonUtil.ExecLog(sModuleInfo, f"Score {text_score} below the threshodl {threshold}", 3)
+            return "zeuz_failed"
+        
+    coordinates = result[idx][0]
+    coord_x = (coordinates[1][0] + coordinates[0][0])//2
+    coord_y = (coordinates[2][1] + coordinates[1][1])//2
+    if click_type == "click":
+        gui.click(x=coord_x, y=coord_y)
+    elif click_type == "right click":
+        gui.click(x=coord_x, y=coord_y, button="right")
+    elif click_type == "double click":
+        gui.doubleClick(x=coord_x, y=coord_y)
+    return "passed"
+
+
+@logger
+def ocr_get_value_with_coordinates(data_set):
+    """
+    This action lets you crop a portion of the image of the screen and extract the text shown in that 
+    particular portion of the image
+    Field	                        Sub Field	                    Value
+    coordinates	                    element parameter	            top, left, bottom, right coordinates. ex: 50, 120, 90, 320
+    ocr get value with coordinate   desktop action                  variable name that will hold the value
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    topcord = None
+    leftcord = None
+    bottomcord = None
+    rightcord = None
+    var_name = None
+    global partial_ss_path
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "coordinates":
+                coords = right.strip().split(",")
+                topcord = int(coords[0])
+                leftcord = int(coords[1])
+                bottomcord = int(coords[2])
+                rightcord = int(coords[3])
+            elif "action" in mid.strip().lower():
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    if (topcord >  bottomcord or leftcord > rightcord):
+        CommonUtil.ExecLog(
+                sModuleInfo, "Please insert correct coordinates", 3
+            )
+        return "zeuz_failed"
+    
+    if var_name is None:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Please provide a variable name to store the extracted value", 3
+            )
+        return "zeuz_failed"
+
+    data = (
+        ("bbox", "optional parameter", f"({leftcord}, {topcord}, {rightcord-leftcord}, {bottomcord-topcord})"),
+        ("take screenshot ", "desktop action", None)
+    )
+    
+    take_partial_screenshot(data)
+    get_easyocr_reader()
+    result = reader.readtext(partial_ss_path)
+
+    if not result:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not read any text", 3
+            )
+        return "zeuz_failed"
+    
+    text = result[0][1]
+    
+    CommonUtil.ExecLog(sModuleInfo, f"The extracted text is {text}", 1)
+    Shared_Resources.Set_Shared_Variables(var_name, text)
+    return "passed"
+
+
+def compare_ocr_coordinates(results, image_coords_updated,  direction, gap):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    res_coords = [0, 0, 0, 0]
+    diff = 9999
+    if gap != 0:
+        tslr = gap
+        tstb = gap
+    else:
+        tslr = 25
+        tstb = 100
+    
+    # extract top, left, bottom, right from the results and assign them to res_cords
+    res_coords[0] = results[0][0][1]
+    res_coords[1] = results[0][0][0]
+    res_coords[2] = results[0][2][1]
+    res_coords[3] = results[0][1][0]
+
+    if direction == "left" or direction == "right":
+        # check the difference between the top and bottom value of the image and OCR extracted text
+        if abs(res_coords[0]-image_coords_updated[0]) <= tslr and abs(res_coords[2]-image_coords_updated[2]) <= tslr:
+            if direction == "right":
+                diff = res_coords[1]-image_coords_updated[3] if res_coords[1]-image_coords_updated[3] > 0 else 9999
+            elif direction == "left":
+                diff = image_coords_updated[1]-res_coords[3] if image_coords_updated[1]-res_coords[3] > 0 else 9999
+    elif direction == "top" or direction == "bottom":
+        # check the difference between the left and right value of the image and OCR extracted text
+        if abs(res_coords[1]-image_coords_updated[1]) <= tstb and abs(res_coords[3]-image_coords_updated[3]) <= tstb:
+            if direction == "bottom":
+                diff = res_coords[0]-image_coords_updated[2] if res_coords[0]-image_coords_updated[2] > 0 else 9999
+            elif direction == "top":
+                diff = image_coords_updated[0]-res_coords[2] if image_coords_updated[0]-res_coords[2] > 0 else 9999
+    return diff
+
+
+@logger
+def ocr_get_value_with_image(data_set):
+    """
+    This action lets you extract a text based on the position of the text with respect to the image you provide. The image has to be attached
+    in the attachment section.
+    Field	                    Sub Field	                Value
+    image	                    element parameter	        enter the image that is closer to the text you want to extract
+    direction                   element parameter           direction of the text to be extracted regarding the given image
+    ocr get value with image    desktop action              variable name that will hold the value
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    image_name = None
+    image_direction = None
+    var_name = None
+    image_coords_updated = [0, 0, 0, 0]
+    text_gap = 0
+    global reader
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "image":
+                image_name = right.strip()
+            elif left.strip().lower() == "direction":
+                image_direction = right.strip()
+            elif "gap" in left.strip().lower():
+                text_gap = int(right.strip())
+            elif "action" in mid.strip().lower():
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    get_bbox_dataset = (
+        ("image", "element parameter", f"{image_name}"),
+        ("get bounding box", "desktop action", "coords")
+    )
+
+    # update the image_coords_updated to hold the coordinates like top, left, bottom, right
+    image_coords = get_bbox(get_bbox_dataset)
+    image_coords_updated[0] = image_coords[1]
+    image_coords_updated[1] = image_coords[0]
+    image_coords_updated[2] = image_coords[1]+image_coords[3]
+    image_coords_updated[3] = image_coords[0]+image_coords[2]
+
+    if reader is None:
+        ocr_thread = threading.Thread(target=get_easyocr_reader)
+        ocr_thread.start()
+        path = ocr_screenshot()
+        # wait for the OCR thread to finish
+        ocr_thread.join()
+    else:
+        path = ocr_screenshot()
+    
+    results = reader.readtext(path)
+
+    text_diff = list(map(compare_ocr_coordinates, results, repeat(image_coords_updated), repeat(image_direction), repeat(text_gap)))
+    min_diff = min(text_diff)
+    if min_diff == 9999:
+        CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {image_direction} to the image", 3)
+        return "zeuz_failed"
+
+    idx = text_diff.index(min_diff)
+    text = results[idx][1]
+
+    Shared_Resources.Set_Shared_Variables(var_name, text)
+    return "passed"
+
+
+@logger
+def ocr_get_value_with_text(data_set):
+    """
+    This action lets you extract a text based on the position of the text you provide.
+    Field	                    Sub Field	                Value
+    text	                    element parameter	        enter the text that is closer to the text you want to extract
+    direction                   element parameter           direction of the text to be extracted regarding the given tex
+    ocr get value with text     desktop action              variable name that will hold the value
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    given_text = None
+    text_direction = None
+    var_name = None
+    given_text_coordinates = [0, 0, 0, 0]
+    threshold = 70
+    method = "match"
+    did_fuzzy = False
+    text_gap = 0
+    global reader
+
+    # parse the data
+    try:
+        for left, mid, right in data_set:
+            if left.strip().lower() == "text":
+                given_text = right.strip()
+            elif left.strip().lower() == "direction":
+                text_direction = right.strip()
+            elif left.strip().lower() == "threshold":
+                threshold = int(right.strip())
+            elif "gap" in left.strip().lower():
+                text_gap = int(right.strip())
+            elif "action" in mid.strip().lower():
+                var_name = right.strip()
+    except:
+        CommonUtil.ExecLog(
+                sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    if reader is None:
+        ocr_thread = threading.Thread(target=get_easyocr_reader)
+        ocr_thread.start()
+        path = ocr_screenshot()
+        # wait for the OCR thread to finish
+        ocr_thread.join()
+    else:
+        path = ocr_screenshot()
+    
+    results = reader.readtext(path)
+
+    text_list = list(map(get_only_text, results))
+
+    if given_text in text_list:
+        idx = text_list.index(given_text)
+    else:
+        fuzzy_text_scores = list(map(get_fuzzy_score, text_list, repeat(given_text), repeat(method)))
+        idx = fuzzy_text_scores.index(max(fuzzy_text_scores))
+        did_fuzzy = True
+
+    # get the scores
+    if did_fuzzy:
+        text_score = fuzzy_text_scores[idx]
+        if text_score < threshold:
+            CommonUtil.ExecLog(sModuleInfo, f"After fuzzy match, score {text_score} falls below the threshold {threshold}", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"The closest  match is '{text_list[idx]}'", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, f"If you want to use this word as reference then either use differenet method or lower the threshold", 3
+            )
+            return "zeuz_failed"
+        CommonUtil.ExecLog(
+            sModuleInfo, f"Similar text after fuzzy {method} is '{text_list[idx]}' with a score of {fuzzy_text_scores[idx]}", 1
+        )
+    else:
+        text_score = int(results[idx][2]*100)
+        if text_score < threshold: 
+            CommonUtil.ExecLog(sModuleInfo, f"Score {text_score} below the threshodl {threshold}", 3)
+            return "zeuz_failed"
+
+    
+    result = results[idx][0]
+    given_text_coordinates[0] = result[0][1]
+    given_text_coordinates[1] = result[0][0]
+    given_text_coordinates[2] = result[2][1]
+    given_text_coordinates[3] = result[1][0]
+
+    text_diff = list(map(compare_ocr_coordinates, results, repeat(given_text_coordinates), repeat(text_direction), repeat(text_gap)))
+    min_diff = min(text_diff)
+    if min_diff == 9999:
+        CommonUtil.ExecLog(sModuleInfo, f"Could not find any element {text_direction} to the text", 3)
+        return "zeuz_failed"
+
+    idx = text_diff.index(min_diff)
+    text = results[idx][1]
+
+    Shared_Resources.Set_Shared_Variables(var_name, text)
+    return "passed"
