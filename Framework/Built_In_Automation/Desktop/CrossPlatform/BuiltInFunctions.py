@@ -1301,13 +1301,13 @@ def ocr_screenshot():
 @logger
 def ocr_click(data_set):
     """
-    This action lets you find a text through OCR and click on it.
+    This action lets you find a text through OCR and click on it. It also lets you do right click and double click.
 
     Field	                    Sub Field	                Value
     text	                    element parameter	        String you want to click on. ex: 'Advanced Settings'
     method                      optional parameter          “match”/ “partial match”/ “loose match”
     threshold                   optional parameter          Threshold of the match. ex: 90
-    ocr click                   desktop action              ocr click
+    ocr click                   desktop action              click/double click/right click
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
