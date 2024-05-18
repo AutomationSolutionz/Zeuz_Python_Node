@@ -425,27 +425,27 @@ Recorder.addEventHandler('checkPageLoaded', 'readystatechange', function (event)
     }
 }, true);
 
-Recorder.addEventHandler('contextMenu', 'contextmenu', function (event) {
-    print_event(event)
-    var myPort = browserAppData.runtime.connect();
-    var tmpText = this.locatorBuilders.buildAll(event.target);
-    var tmpVal = getText(event.target);
-    var tmpTitle = normalizeSpaces(event.target.ownerDocument.title);
-    var self = this;
-    myPort.onMessage.addListener(function portListener(m) {
-        if (m.cmd.includes("Text")) {
-            self.record(m.cmd, tmpText, tmpVal);
-        } else if (m.cmd.includes("Title")) {
-            self.record(m.cmd, [[tmpTitle]], '');
-        } else if (m.cmd.includes("Value")) {
-            self.record(m.cmd, tmpText, getInputValue(event.target));
-        }
-        else {
-            self.record(m.cmd, tmpText, tmpVal);
-        }
-        myPort.onMessage.removeListener(portListener);
-    });
-}, true);
+// Recorder.addEventHandler('contextMenu', 'contextmenu', function (event) {
+//     print_event(event)
+//     var myPort = browserAppData.runtime.connect();
+//     var tmpText = this.locatorBuilders.buildAll(event.target);
+//     var tmpVal = getText(event.target);
+//     var tmpTitle = normalizeSpaces(event.target.ownerDocument.title);
+//     var self = this;
+//     myPort.onMessage.addListener(function portListener(m) {
+//         if (m.cmd.includes("Text")) {
+//             self.record(m.cmd, tmpText, tmpVal);
+//         } else if (m.cmd.includes("Title")) {
+//             self.record(m.cmd, [[tmpTitle]], '');
+//         } else if (m.cmd.includes("Value")) {
+//             self.record(m.cmd, tmpText, getInputValue(event.target));
+//         }
+//         else {
+//             self.record(m.cmd, tmpText, tmpVal);
+//         }
+//         myPort.onMessage.removeListener(portListener);
+//     });
+// }, true);
 
 /* Recorder focus event */
 var getEle;
@@ -732,6 +732,7 @@ const onInput = function(event) {
 
 const onKeyDown = function(event) {
     print_event(event)
+    const target = event.target;
     if (!_shouldGenerateKeyPressFor(event))
         return;
     // Similarly to click, trigger checkbox on key event, not input.
@@ -759,8 +760,25 @@ const onKeyDown = function(event) {
     });
 }
 
+var myPort = browserAppData.runtime.connect();
+const onContextMenu = function (event){
+    print_event(event)
+    const target = event.target;
+    var tmpVal = getText(event.target);
+    myPort.onMessage.addListener(function portListener(m) {
+        recorder.record({
+            name: m.cmd,
+            xpath: recorder.getXpath(target),
+            value: tmpVal,
+        });
+        myPort.onMessage.removeListener(portListener);
+    });
+
+}
+
 Recorder.prototype.newEventListeners = [
     {name: 'click', handler: onClick, capture: true},
     {name: 'input', handler: onInput, capture: true},
     {name: 'keydown', handler: onKeyDown, capture: true},
+    {name: 'contextmenu', handler: onContextMenu, capture: true},
 ]

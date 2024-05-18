@@ -152,9 +152,9 @@ async function record_action(id, command, xpath, value, url, tagName, document, 
             })
         }
         else if(
-            Stack[-1].command == command &&
-            Stack[-1].xpath == xpath &&
-            Stack[-1].url == url
+            Stack[Stack.length-1].command == command &&
+            Stack[Stack.length-1].xpath == xpath &&
+            Stack[Stack.length-1].url == url
         ){
             Stack.push({
                 id: id,
@@ -167,11 +167,12 @@ async function record_action(id, command, xpath, value, url, tagName, document, 
             })
         }
         else{
-            let _id = Stack[-1].id
-            let _command = Stack[-1].command
-            let _value = Stack[-1].value
-            let _url = Stack[-1].url
-            let _document = Stack[-1].document
+            let _id = Stack[Stack.length-1].id
+            let _command = Stack[Stack.length-1].command
+            let _value = Stack[Stack.length-1].value
+            let _url = Stack[Stack.length-1].url
+            let _document = Stack[Stack.length-1].document
+            Stack = []
             if (Object.keys(action_name_convert).includes(_command)) 
                 _command = action_name_convert[_command];
             notification(_command);

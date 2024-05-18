@@ -257,6 +257,7 @@ browserAppData.windows.onRemoved.addListener(function(windowId) {
 
 var port;
 browserAppData.contextMenus.onClicked.addListener(function(info, tab) {
+    console.log('context-menu', info.menuItemId)
     port.postMessage({ cmd: info.menuItemId });
 });
 
