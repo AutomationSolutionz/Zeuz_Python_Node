@@ -167,28 +167,45 @@ function App() {
             ,3000)
         },[]
     )
-    // useEffect(
-    //     ()=>{
-    //         if (actionRef.current && containerRef.current) {
-    //             actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    //           }
-    //     },[actions]
-    // )
+    let timeOuts: number[] = []
+    useEffect(
+        ()=>{
+            setRecordState((prevRecordState)=>{
+                if (prevRecordState == 'Record')
+                    return prevRecordState
+                else if(actions.map((item)=>{if(!item.stillRecording) return item}).includes(undefined)){
+                    while(timeOuts.length>0){
+                        clearTimeout(timeOuts.shift())
+                    }
+                    const timeOut = setTimeout(()=>{
+                        setRecordState((prevRecordState)=>{
+                            return prevRecordState == 'Recording...' ? 'Stop' : prevRecordState
+                        })
+                    }, 30000)
+                    timeOuts.push(timeOut)
+                    return 'Recording...'
+                }
+
+                else
+                    return 'Stop'
+            })
+        },[actions]
+    )
     // When new recorded actions come from background script, render new actions
     const handleRecordResponse = (request:RequestType) => {
         setRecordState((prevRecordState)=>{
             if (prevRecordState == 'Record')
                 return prevRecordState;
             if (request.action == 'record-start') {
-                setTimeout(()=>{
-                    // If server does not respond in 30 sec change the Recording... state
-                    setRecordState((prevRecordState)=>{
-                        print('prevRecordState =',prevRecordState)
-                        if(prevRecordState == 'Recording...')
-                            return 'Stop'
-                        return prevRecordState
-                    })
-                }, 10000)
+                // setTimeout(()=>{
+                //     // If server does not respond in 30 sec change the Recording... state
+                //     setRecordState((prevRecordState)=>{
+                //         print('prevRecordState =',prevRecordState)
+                //         if(prevRecordState == 'Recording...')
+                //             return 'Stop'
+                //         return prevRecordState
+                //     })
+                // }, 10000)
 
                 if (actionRef.current && containerRef.current) {
                     actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -552,7 +569,7 @@ function App() {
                                 },
 
                             ].map((item,_)=>(
-                                <button className={buttonClass} onClick={item.eventHandler} style={item.style}>
+                                <button className={buttonClass} onClick={item.eventHandler} style={item.style} disabled={item.disabled}>
                                     <div className={iconClass}>{item.icon}</div>
                                     <div className={labelClass}>{item.label}</div>
                                 </button>
