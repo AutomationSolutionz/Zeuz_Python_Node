@@ -639,10 +639,8 @@ const _shouldGenerateKeyPressFor = function(event) {
     return true;
 }
 
-dbl_click = false
 const onClick = function(event) {
-    print_event(event)
-    print_event(event)
+    // print_event(event)
     const target = event.target
     if (isRangeInput(target))
         return;
@@ -661,10 +659,6 @@ const onClick = function(event) {
     }
 
     if (event.detail === 2){
-        dbl_click = true
-        setTimeout(()=>{
-            dbl_click = false
-        },800)
         recorder.record({
             name: 'double click',
             xpath: recorder.getXpath(target),
@@ -673,15 +667,20 @@ const onClick = function(event) {
     }
 
     else if (event.detail === 1){
-        setTimeout(()=>{
-        if (!dbl_click){
-            recorder.record({
-                name: 'click',
-                xpath: recorder.getXpath(target),
-                value: '',
-            });
-        }
-        },600)
+        recorder.record({
+            name: 'click',
+            xpath: recorder.getXpath(target),
+            value: '',
+        });
+        // setTimeout(()=>{
+        // if (!dbl_click){
+        //     recorder.record({
+        //         name: 'click',
+        //         xpath: recorder.getXpath(target),
+        //         value: '',
+        //     });
+        // }
+        // },600)
     }
 }
 
@@ -716,7 +715,7 @@ const onInput = function(event) {
             xpath: recorder.getXpath(target),
             value: target.isContentEditable ? target.innerText : target.value,
             tagName: target.tagName,
-            stack: {do:true},
+            stack: true,
         });
     }
 
@@ -748,10 +747,11 @@ const onKeyDown = function(event) {
         }
     }
 
-    let keystrokeVal = event.metaKey ? 'META+' : ''
-    keystrokeVal += event.ctrlKey ? 'CONTROL+' : ''
-    keystrokeVal += event.altKey ? 'ALT+' : ''
-    keystrokeVal += event.key.toUpperCase()
+    let keystrokeVal = event.metaKey ? 'Meta+' : ''
+    keystrokeVal += event.ctrlKey ? 'Control+' : ''
+    keystrokeVal += event.altKey ? 'Alt+' : ''
+    keystrokeVal += event.shiftKey ? 'Shift+' : ''
+    keystrokeVal += event.key.toLowerCase()
 
     recorder.record({
         name: 'keystroke keys',
@@ -763,6 +763,7 @@ const onKeyDown = function(event) {
 var myPort = browserAppData.runtime.connect();
 const onContextMenu = function (event){
     print_event(event)
+    myPort = browserAppData.runtime.connect();
     const target = event.target;
     var tmpVal = getText(event.target);
     myPort.onMessage.addListener(function portListener(m) {
@@ -776,9 +777,50 @@ const onContextMenu = function (event){
 
 }
 
+function consumeEvent(e) {
+    // It stops the functionality of the element
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  }
+
+const onMouseDown = function(event) {
+    print_event(event)
+    if (_shouldIgnoreMouseEvent(event))
+        return;
+}
+
+const onMouseUp = function(event) {
+    print_event(event)
+    /* select-2 jquery elements only dispath mousedown-up event and not click event.
+    Codegen record it by event.stopPropagation() then record then continue propagation somehow
+    We are not able to do it right now. So, we are simply recording click on mouseup */
+    onClick(event)      
+    if (_shouldIgnoreMouseEvent(event))
+        return;
+}
+
 Recorder.prototype.newEventListeners = [
-    {name: 'click', handler: onClick, capture: true},
+    {name: 'mouseup', handler: onMouseUp, capture: true},
+    {name: 'mousedown', handler: onMouseDown, capture: true},
+    // {name: 'click', handler: onClick, capture: true},
+    {name: 'auxclick', handler: onClick, capture: true},
     {name: 'input', handler: onInput, capture: true},
     {name: 'keydown', handler: onKeyDown, capture: true},
     {name: 'contextmenu', handler: onContextMenu, capture: true},
 ]
+
+// const observer = new MutationObserver((mutations) => {
+//     mutations.forEach((mutation) => {
+//         mutation.addedNodes.forEach((node) => {
+//             // Check if the added node is what you're interested in
+//             if (node.matches && node.matches('.select2-chosen')) {
+//                 node.addEventListener('click', () => {
+//                     console.log('Clicked on dynamically added content');
+//                 }, true);
+//             }
+//         });
+//     });
+// });
+
+// observer.observe(document.body, { childList: true, subtree: true });

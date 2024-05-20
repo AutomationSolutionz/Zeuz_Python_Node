@@ -1,18 +1,12 @@
 // First recording file
 print = console.log
 browserAppData = chrome || browser;
-function generateId(){
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let id = '';
-    for (let i = 0; i < 8; i++) {
-      id += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return id;
-  }
+
 class Recorder {
 
     /* exq initial time */
     constructor(window) {
+        this.promises = []
         this.window = window;
         this.attached = false;
         this.locatorBuilders = new LocatorBuilders(window);
@@ -111,11 +105,13 @@ class Recorder {
         return html.outerHTML
     }
 
-    record({name, xpath, value, tagName, stack={do:false}}) {
+    async record({name, xpath, value, tagName, stack=false}) {
         // console.log("getFrameLocation() =",this.frameLocation);
         const dom = this.prepare_dom(xpath, name, value)
-        browserAppData.runtime.sendMessage({
-            id: generateId(),
+        while(this.promises.length > 0)
+            await this.promises.shift()
+
+        let prom = browserAppData.runtime.sendMessage({
             action: 'record_action',
             command: name,
             xpath: xpath,
@@ -125,6 +121,7 @@ class Recorder {
             document: dom,
             stack: stack,
         })
+        this.promises.push(prom);
     }
 
     /* attach */

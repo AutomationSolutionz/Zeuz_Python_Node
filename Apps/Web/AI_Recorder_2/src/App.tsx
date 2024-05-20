@@ -236,7 +236,7 @@ function App() {
                 setActions((prev_actions) => {
                     const new_actions = [...prev_actions]
                     for (let i=0; i < new_actions.length; i++) {
-                        if (new_actions[i].id == request.data.id && new_actions[i].stillRecording){
+                        if (new_actions[i].id == request.data.id /* && new_actions[i].stillRecording */){
                             new_actions[i] = action;
                             break
                         }
