@@ -1429,15 +1429,16 @@ def ocr_get_value_with_coordinates(data_set):
             )
         return "zeuz_failed"
     
-    if (topcord >  bottomcord or leftcord > rightcord):
+    # check if the variable name is provided or not
+    if var_name == "":
         CommonUtil.ExecLog(
-                sModuleInfo, "Please insert correct coordinates", 3
+                sModuleInfo, "Please provide a variable name to store the extracted value", 3
             )
         return "zeuz_failed"
     
-    if var_name is None:
+    if (topcord >  bottomcord or leftcord > rightcord):
         CommonUtil.ExecLog(
-                sModuleInfo, "Please provide a variable name to store the extracted value", 3
+                sModuleInfo, "Please insert correct coordinates", 3
             )
         return "zeuz_failed"
 
@@ -1535,6 +1536,13 @@ def ocr_get_value_with_image(data_set):
             )
         return "zeuz_failed"
     
+    # check if the variable name is provided or not
+    if var_name == "":
+        CommonUtil.ExecLog(
+                sModuleInfo, "Please provide a variable name to store the extracted value", 3
+            )
+        return "zeuz_failed"
+    
     get_bbox_dataset = (
         ("image", "element parameter", f"{image_name}"),
         ("get bounding box", "desktop action", "coords")
@@ -1609,6 +1617,13 @@ def ocr_get_value_with_text(data_set):
     except:
         CommonUtil.ExecLog(
                 sModuleInfo, "Could not parse the data", 3
+            )
+        return "zeuz_failed"
+    
+    # check if the variable name is provided or not
+    if var_name == "":
+        CommonUtil.ExecLog(
+                sModuleInfo, "Please provide a variable name to store the extracted value", 3
             )
         return "zeuz_failed"
     
