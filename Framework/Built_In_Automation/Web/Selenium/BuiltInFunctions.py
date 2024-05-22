@@ -2730,16 +2730,15 @@ def save_attribute_values_in_list(step_data):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], [], [], []])
-                    temp = right.strip(",").split('",\n')
+                    temp = right.strip(",").split(',\n')
                     data = []
-                    temp[-1] = temp[-1][:-1]
                     for each in temp:
-                        data.append(each.strip().split("=",1))
+                        data.append(each.strip().split("=", 1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j][1:]   # dont add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = CommonUtil.strip1(data[i][j], '"')   # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -3160,6 +3159,7 @@ def Scroll(step_data):
         Element = None
         get_element = False
         scroll_direction = ""
+        offset = ""
         pixel = 750
         for left, mid, right in step_data:
             mid = mid.strip().lower()

@@ -344,6 +344,14 @@ def Add_File_To_Current_Test_Case_Log(src):
         return Exception_Handler(sys.exc_info())
 
 
+def strip1(original_value: str, remove: str) -> str:
+    if original_value.startswith(remove):
+        original_value = original_value[len(remove):]
+    if original_value.endswith(remove):
+        original_value = original_value[:-len(remove)]
+    return original_value
+
+
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
         # console.print_exception(show_locals=True, max_frames=1)
