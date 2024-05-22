@@ -3156,83 +3156,36 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    selenium_driver.switch_to.default_content()
     try:
-        scroll_inside_element = False
-        scroll_window_name = "window"
-        scroll_window = ""
-        action_row = None
+        Element = None
+        get_element = False
+        scroll_direction = ""
+        pixel = 750
+        for left, mid, right in step_data:
+            mid = mid.strip().lower()
+            if "action" in mid:
+                scroll_direction = right.strip().lower()
+            elif mid == "element parameter":
+                get_element = True
+            elif left.strip().lower() == "pixels":
+                pixel = int(right.strip().lower())
 
-        for row in step_data:
-            if str(row[1]) == "action":
-                action_row = row
-                break
+        if get_element:
+            Element = LocateElement.Get_Element(step_data, selenium_driver)
 
-        if not action_row:
-            CommonUtil.ExecLog(sModuleInfo, "No action row defined", 3)
-            return "zeuz_failed"
-
-        if (
-                len(step_data) > 1
-        ):  # element given scroll inside element, not on full window
-            scroll_inside_element = True
-            scroll_window_name = "arguments[0]"
-
-        if scroll_inside_element:
-            scroll_window = LocateElement.Get_Element(step_data, selenium_driver)
-            if scroll_window in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Element through which instructed to scroll not found",
-                    3,
-                )
-                return "zeuz_failed"
-
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Element inside which instructed to scroll has been found. Scrolling thorugh it",
-                1,
-            )
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling through main window", 1)
-
-        scroll_direction = str(action_row[2]).strip().lower()
         if scroll_direction == "down":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling down", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(0,750)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"0,{pixel}"
         elif scroll_direction == "up":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(0,-750)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"0,-{pixel}"
         elif scroll_direction == "left":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling left", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(-750,0)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"-{pixel},0"
         elif scroll_direction == "right":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling right", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(750,0)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Value invalid. Only 'up', 'down', 'right' and 'left' allowed",
-                3,
-            )
-            result = "zeuz_failed"
-            return result
+            offset = f"{pixel},0"
+
+        CommonUtil.ExecLog(sModuleInfo, f"Scrolling {scroll_direction}", 1)
+        selenium_driver.execute_script(f"{'arguments[0]' if Element is not None else 'window'}.scrollBy({offset})")
+        time.sleep(2)
+        return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
