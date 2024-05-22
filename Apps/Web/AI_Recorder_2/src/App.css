@@ -12425,8 +12425,8 @@ body
 }
 
 #logo_dark {
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
 }
 .stop_button
 {
@@ -13090,7 +13090,10 @@ body
   top: 8px;
 }
 
-
+.del-icon-holder{
+  height: 20px;
+  width: 20px;
+}
 
 .typing-demo {
   width: 100%;
