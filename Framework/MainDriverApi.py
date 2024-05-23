@@ -525,6 +525,7 @@ def run_all_test_steps_in_a_test_case(
             CommonUtil.current_step_name = current_step_name = all_step_info[StepSeq - 1]["step_name"]
             CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
             CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+            shared.Set_Shared_Variables("zeuz_current_step_name", current_step_name, print_variable=False, pretty=False)
             shared.Set_Shared_Variables("zeuz_current_step_sequence", current_step_sequence, print_variable=False, pretty=False)
             shared.Set_Shared_Variables("zeuz_total_step_count", len(all_step_info), print_variable=False, pretty=False)
 
