@@ -525,59 +525,55 @@ function App() {
 		}
     }
 
-    const buttonClass = 'tablink d-flex flex-column align-items-center p-0 bg-transparent border-0 my-2 sidebar_menu"'
-    const iconClass = 'material-icons d-flex justify-content-center'
-    const labelClass = 'material-icons-label d-flex justify-content-center'
+    const buttonClass = 'd-flex flex-column align-items-center p-0 bg-transparent my-2"'
+    const iconClass = 'material-icons'
+    const labelClass = 'material-icons-label'
     const ops = 1
     return (
-        <div className="wrapper d-flex align-items-stretch">
-            <nav id="sidebar">
-                <div className="nav_upper">
-                    <div className="img bg-wrap text-center pt-4 pb-5" data-section="welcome_page" id="defaultOpen">
-                        <img className="img-fluid" id="logo_dark" src="logo_ZeuZ.png" />
-                    </div>
-                    <div className="d-flex flex-column justify-content-center">
-                        {
-                            [
-                                {
-                                    eventHandler: handleRecording,
-                                    style: {opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : ops},
-                                    disabled: !initRecordState || recordState == "Recording...",
-                                    icon: recordState == 'Record' ? 'camera' : 'stop',
-                                    label: recordState
-                                },
-                                {
-                                    eventHandler: handleSaveActions,
-                                    style: {opacity: recordState == "Record" && saveState == 'Save' ? ops : 0.5},
-                                    disabled: recordState != 'Record' || saveState != 'Save',
-                                    icon: 'save',
-                                    label: saveState,
-                                },
-                                {
-                                    eventHandler: handleRunThis,
-                                    style: {opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? ops : 0.5},
-                                    disabled: recordState != 'Record' || unsavedActions || runThis != "Run this",
-                                    icon: 'play_circle',
-                                    label: runThis
-                                },
-                                {
-                                    eventHandler: handleRunAll,
-                                    style: {opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? ops : 0.5},
-                                    disabled: recordState != 'Record' || unsavedActions || runAll != "Run all",
-                                    icon: 'play_circle',
-                                    label: runAll
-                                },
-
-                            ].map((item,_)=>(
-                                <button className={buttonClass} onClick={item.eventHandler} style={item.style} disabled={item.disabled}>
-                                    <div className={iconClass}>{item.icon}</div>
-                                    <div className={labelClass}>{item.label}</div>
-                                </button>
-                            ))
-                        }
-                    </div>
+        <div className="d-flex flex-column-reverse">
+            <div className="bottomnav rounded-top-4 shadow-lg fixed-bottom d-flex flex-column justify-content-center">
+                <div className="d-flex flex-row justify-content-around">
+                    {/* <div className="d-inline pl-2">
+                    </div> */}
+                    {
+                        [
+                            {
+                                eventHandler: handleRecording,
+                                style: {opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : ops},
+                                disabled: !initRecordState || recordState == "Recording...",
+                                icon: recordState == 'Record' ? 'camera' : 'stop',
+                                label: recordState
+                            },
+                            {
+                                eventHandler: handleSaveActions,
+                                style: {opacity: recordState == "Record" && saveState == 'Save' ? ops : 0.5},
+                                disabled: recordState != 'Record' || saveState != 'Save',
+                                icon: 'save',
+                                label: saveState,
+                            },
+                            {
+                                eventHandler: handleRunThis,
+                                style: {opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? ops : 0.5},
+                                disabled: recordState != 'Record' || unsavedActions || runThis != "Run this",
+                                icon: 'play_circle',
+                                label: runThis
+                            },
+                            {
+                                eventHandler: handleRunAll,
+                                style: {opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? ops : 0.5},
+                                disabled: recordState != 'Record' || unsavedActions || runAll != "Run all",
+                                icon: 'play_circle',
+                                label: runAll
+                            },
+                        ].map((item,_)=>(
+                            <button className={buttonClass} onClick={item.eventHandler} style={item.style} disabled={item.disabled}>
+                                <div className={iconClass}>{item.icon}</div>
+                                <div className={labelClass}>{item.label}</div>
+                            </button>
+                        ))
+                    }
                 </div>
-            </nav>
+            </div>
             <div className="tabcontent scrollBar" id="content" style={{ display: 'block' }}>
                 <div className="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
                     <div>
