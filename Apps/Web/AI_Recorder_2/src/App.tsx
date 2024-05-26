@@ -3,6 +3,7 @@ import './App.css'
 // import {Helmet} from "react-helmet";
 import {Action, actionType} from './Action';
 import $ from 'jquery';
+import Typewriter from 'typewriter-effect/dist/core'
 
 const browserAppData = chrome;
 const print = console.log
@@ -159,14 +160,21 @@ function App() {
                 let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
                 let meta_data = localStorageMetadata.meta_data;
                 testIdChange(meta_data.testNo.substr(5));
-                fetchTestData(meta_data.testNo.substr(5), meta_data.stepNo);
+                await fetchTestData(meta_data.testNo.substr(5), meta_data.stepNo);
+                setInitRecordState(true)
             }
             initData();
-            setTimeout( 
-                ()=>{setInitRecordState(true)}
-            ,3000)
+            // setTimeout( 
+            //     ()=>{setInitRecordState(true)}
+            // ,3000)
         },[]
     )
+    const typewriter = new Typewriter(document.getElementById('recorderTitle'), {
+        cursor: '',
+    })
+    typewriter
+        .typeString('<h2>Zeuz AI Recorder...</h2>')
+        .start();
     let timeOuts: number[] = []
     useEffect(
         ()=>{
@@ -524,14 +532,59 @@ function App() {
             }, 1500)
 		}
     }
+    
 
-    const buttonClass = 'd-flex flex-column align-items-center p-0 bg-transparent my-2"'
+
+
+    const buttonClass = 'control-button d-flex flex-column align-items-center p-0 bg-transparent my-2"'
     const iconClass = 'material-icons'
     const labelClass = 'material-icons-label'
     const ops = 1
     return (
-        <div className="d-flex flex-column-reverse">
-            <div className="bottomnav rounded-top-4 shadow-lg fixed-bottom d-flex flex-column justify-content-center">
+        <div className="d-flex flex-column">
+            <div className="upper-nav rounded-bottom-2 d-flex align-items-center">
+                <img className="mx-2" src="logo_ZeuZ.png" alt="" id="logo_dark"/>
+                <div className="mx-2" id="recorderTitle"></div>
+                {/* <h1 className="typing-title">ZeuZ AI Recorder...</h1> */}
+            </div>
+            <div className="tabcontent scrollBar" id="content" style={{ display: 'block' }}>
+                <div className="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
+                    <div>
+                        <div>
+                            <form>
+                                <div className="input-group mb-3"  style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}}>
+                                    <span className="input-group-text" id="basic-addon1">TEST-</span>
+                                    <input id="test_id" value={testId} onChange={handleTestIdChange} className="form-control"
+                                        placeholder="0000" aria-label="Test case ID" disabled={recordState != 'Record'} />
+                                    <button id="fetch" className="btn btn-secondary" type="button" onClick={handleSearch} disabled={recordState != 'Record' || unsavedActions}>
+                                        <span className="material-symbols-outlined" style={{ color: 'white !important' }}>
+                                            search
+                                        </span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <h5 id="test_title">{testTitle}</h5>
+                </div>
+                <select value={selectedValue} onChange={handleSelectChange} className="form-select form-select-sm m-4 w-50" id="step_select" style={{ height: '42px', padding: '8px', opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
+                    {stepNames.map((step: stepZsvc)=>(
+                        <option value={step.sequence}>Step-{step.sequence} : {step.name}</option>
+                    )
+                    )}
+                </select>
+                <div className="clearfix mx-2" id="recorder_step" ref={containerRef}>
+                    {actions.length === 0 && <h5>No actions</h5>}
+                    {actions.map((action, idx)=>(
+                        <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
+                            
+                    ))}
+                    <div className='py-5'></div>
+                    <div ref={actionRef} className='py-1'></div>
+                </div>
+            </div>
+            <div className="bottom-nav rounded-top-4 fixed-bottom d-flex flex-column justify-content-center">
                 <div className="d-flex flex-row justify-content-around">
                     {/* <div className="d-inline pl-2">
                     </div> */}
@@ -572,43 +625,6 @@ function App() {
                             </button>
                         ))
                     }
-                </div>
-            </div>
-            <div className="tabcontent scrollBar" id="content" style={{ display: 'block' }}>
-                <div className="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
-                    <div>
-                        <div>
-                            <form>
-                                <div className="input-group mb-3"  style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}}>
-                                    <span className="input-group-text" id="basic-addon1">TEST-</span>
-                                    <input id="test_id" value={testId} onChange={handleTestIdChange} className="form-control"
-                                        placeholder="0000" aria-label="Test case ID" disabled={recordState != 'Record'} />
-                                    <button id="fetch" className="btn btn-secondary" type="button" onClick={handleSearch} disabled={recordState != 'Record' || unsavedActions}>
-                                        <span className="material-symbols-outlined" style={{ color: 'white !important' }}>
-                                            search
-                                        </span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <h5 id="test_title">{testTitle}</h5>
-                </div>
-                <select value={selectedValue} onChange={handleSelectChange} className="form-select form-select-sm m-4 w-50" id="step_select" style={{ height: '42px', padding: '8px', opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
-                    {stepNames.map((step: stepZsvc)=>(
-                        <option value={step.sequence}>Step-{step.sequence} : {step.name}</option>
-                    )
-                    )}
-                </select>
-                <div className="clearfix mx-2" id="recorder_step" ref={containerRef}>
-                    {actions.length === 0 && <h5>No actions</h5>}
-                    {actions.map((action, idx)=>(
-                        <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
-                            
-                    ))}
-                    <div className='py-5'></div>
-                    <div ref={actionRef} className='py-1'></div>
                 </div>
             </div>
         </div>
