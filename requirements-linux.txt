@@ -55,6 +55,5 @@ configobj
 jinja2
 pandas
 pyperclip
-easyocr
 thefuzz
 backports-datetime-fromisoformat; python_version < '3.11'
