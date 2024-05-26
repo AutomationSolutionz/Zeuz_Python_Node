@@ -1255,16 +1255,56 @@ def keystroke_for_element(data_set):
 
 reader = None
 
+def install_easyocr():
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # get the OS
+    pltform = platform.system()
+
+    #check easyocr installment in Windows
+    if pltform == "Windows":
+        pip_command = ['pip', 'list']
+        easyocr_search_command = ['findstr', 'easyocr']
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process = subprocess.Popen(easyocr_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE,text=True)
+
+        is_easyocr, _ = search_process.communicate()
+
+        if is_easyocr:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Easyocr is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Easyocr",
+                5,
+            )
+            # os.system('echo y | pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytesseract')
+            try:
+                result = subprocess.run(
+                    ['pip', 'install', '--trusted-host', 'pypi.org', '--trusted-host', 'files.pythonhosted.org', 'easyocr'],
+                    check=True,
+                    text=True,
+                    capture_output=True
+                )
+                CommonUtil.ExecLog(sModuleInfo,f"{result.stdout}",5)
+            except subprocess.CalledProcessError as e:
+                print(f"Error occurred: {e.stderr}")
+
+
 # initialize the OCR
 def get_easyocr_reader():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    install_easyocr()
     global reader
     if not reader:
         CommonUtil.ExecLog(sModuleInfo, "Initializing EasyOCR reader...", 1)
         reader = easyocr.Reader(['en'])
     else:
         CommonUtil.ExecLog(sModuleInfo, "EasyOCR reader already initialized.", 1)
-        return reader
     
 # create a list of texts
 def get_only_text(data:tuple):
