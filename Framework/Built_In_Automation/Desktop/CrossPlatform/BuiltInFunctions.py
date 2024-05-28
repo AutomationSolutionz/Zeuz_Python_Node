@@ -17,7 +17,6 @@ except:
     True  # https://pyautogui.readthedocs.io/en/latest/
 from fileinput import filename
 import os, os.path, sys, time, inspect, subprocess
-from turtle import right
 
 from Framework.Utilities import CommonUtil, FileUtilities as FL
 from Framework.Utilities.decorators import logger
@@ -36,7 +35,6 @@ from Framework.Built_In_Automation.Desktop.RecordPlayback.ChoosePlaybackModule i
 from Framework.Utilities import ConfigModule
 import traceback
 import platform
-import easyocr
 from thefuzz import fuzz
 import threading
 from pathlib import Path
@@ -1255,16 +1253,87 @@ def keystroke_for_element(data_set):
 
 reader = None
 
+def install_easyocr():
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # get the OS
+    pltform = platform.system()
+
+    #check easyocr installment in Windows
+    if pltform == "Windows":
+        pip_command = ['pip', 'list']
+        easyocr_search_command = ['findstr', 'easyocr']
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process = subprocess.Popen(easyocr_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE,text=True)
+
+        is_easyocr, _ = search_process.communicate()
+
+        if is_easyocr:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Easyocr is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Easyocr",
+                5,
+            )
+            try:
+                result = subprocess.run(
+                    ['pip', 'install', '--trusted-host', 'pypi.org', '--trusted-host', 'files.pythonhosted.org', 'easyocr'],
+                    check=True,
+                    text=True,
+                    capture_output=True
+                )
+                CommonUtil.ExecLog(sModuleInfo,f"{result.stdout}",5)
+            except subprocess.CalledProcessError as e:
+                print(f"Error occurred: {e.stderr}")
+    else:
+        pip_command = ['pip3', 'list']
+        easyocr_search_command = ['grep', 'easyocr']
+        pip_process = subprocess.Popen(pip_command, stdout=subprocess.PIPE)
+        search_process = subprocess.Popen(easyocr_search_command, stdin=pip_process.stdout, stdout=subprocess.PIPE,text=True)
+
+        is_easyocr, _ = search_process.communicate()
+
+        if is_easyocr:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Easyocr is already installed",
+                5,
+            )
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Installing Easyocr",
+                5,
+            )
+            try:
+                result = subprocess.run(
+                    ['pip3', 'install', '--trusted-host', 'pypi.org', '--trusted-host', 'files.pythonhosted.org', 'easyocr'],
+                    check=True,
+                    text=True,
+                    capture_output=True
+                )
+                CommonUtil.ExecLog(sModuleInfo,f"{result.stdout}",5)
+            except subprocess.CalledProcessError as e:
+                print(f"Error occurred: {e.stderr}")
+
+
+
 # initialize the OCR
 def get_easyocr_reader():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    install_easyocr()
+    import easyocr
     global reader
     if not reader:
         CommonUtil.ExecLog(sModuleInfo, "Initializing EasyOCR reader...", 1)
         reader = easyocr.Reader(['en'])
     else:
         CommonUtil.ExecLog(sModuleInfo, "EasyOCR reader already initialized.", 1)
-        return reader
     
 # create a list of texts
 def get_only_text(data:tuple):
