@@ -1748,8 +1748,16 @@ def Keystroke_For_Element(data_set):
     # Insert keystroke
     try:
         if stype == "keys":
-            # Requires: python-selenium v3.1+, geckodriver v0.15.0+
-            keystroke_value = keystroke_value.upper().replace("CTRL", "CONTROL")
+            keystroke_value = keystroke_value.upper()
+            convert = {
+                "CTRL": "CONTROL",
+                "PLUS": "ADD",
+                "MINUS": "SUBTRACT",
+                "DASH": "SUBTRACT",
+                "CMD": "COMMAND",
+            }
+            for key in convert:
+                keystroke_value = keystroke_value.replace(key, convert[key])
             if "+" in keystroke_value:
                 hotkey_list = keystroke_value.split("+")
                 for i in range(len(hotkey_list)):
@@ -3197,11 +3205,15 @@ def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     use_js = False
+    additional_scroll = 0.1
     try:
-        for row in step_data:
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "1")
+            elif "additional scroll" == left:
+                additional_scroll = float(right.strip())
 
-            if "use js" in row[0].lower():
-                use_js = row[2].strip().lower() in ("true", "yes", "1")
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
         if scroll_element in failed_tag_list:
             CommonUtil.ExecLog(
@@ -3217,10 +3229,10 @@ def scroll_to_element(step_data):
         if use_js:
             selenium_driver.execute_script("arguments[0].scrollIntoView(true);", scroll_element)
         else:
-            actions = ActionChains(selenium_driver)
-            
-            actions.move_to_element(scroll_element)
-            actions.perform()
+            ActionChains(selenium_driver).move_to_element(scroll_element).perform()
+
+        if additional_scroll > 0:
+            selenium_driver.execute_script(f"window.scrollBy(0,{round(selenium_driver.get_window_size()['height']*additional_scroll)})")
         return "passed"
 
     except Exception:
