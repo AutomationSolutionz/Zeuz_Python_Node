@@ -37,6 +37,7 @@ export interface metaDataInterface {
     testNo: string,
     testName: string,
     stepNo : number,
+    stepId: number,
     stepName: string,
     url: string,
     apiKey: string,

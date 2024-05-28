@@ -15,20 +15,16 @@ const dropdown = ({ stepNames, setActions }: stepNamesInterface) => {
         browserAppData.storage.local.get('meta_data', (localStorageMetadata)=>{
             let meta_data: metaDataInterface = localStorageMetadata.meta_data
             stepNames.map((step) => {
-                console.log(step.sequence.toString(), meta_data['stepNo'].toString(), step.sequence.toString() === meta_data['stepNo'].toString())
                 if (step.sequence.toString() === meta_data['stepNo'].toString()) {
                     setSelectedValue(`Step ${(meta_data['stepNo']).toString()}: ${step.name || ''}`)
                 }
             })
-            console.log('Fetch Action call from dropdown init')
             fetchActionData(setActions)
         });
     },[stepNames])
 
     const handleMenuClick: MenuProps['onClick'] = async (e) => {
-        console.log('select-event', e);
         const Step = stepNames.filter((step) => {
-            console.log(step.sequence.toString(), e.key, step.sequence.toString() === e.key)
             if (step.sequence.toString() === e.key) {
                 return step
             }
@@ -36,14 +32,12 @@ const dropdown = ({ stepNames, setActions }: stepNamesInterface) => {
 
         let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
         let meta_data: metaDataInterface = localStorageMetadata.meta_data
-        meta_data['stepNo'] = Step?.sequence || 1
+        meta_data['stepNo'] = Step.sequence 
+        meta_data['stepId'] = Step.id
         await browserAppData.storage.local.set({
             meta_data: meta_data,
         })
-        console.log(`Step ${(Step?.sequence || 1).toString()}: ${Step?.name || ''}`)
-        console.log('step', Step)
         setSelectedValue(`Step ${(Step?.sequence || 1).toString()}: ${Step?.name || ''}`)
-        console.log('Fetch Action call from dropdown click-handle')
         fetchActionData(setActions)
     };
 

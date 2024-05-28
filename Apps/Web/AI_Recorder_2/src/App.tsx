@@ -12,7 +12,6 @@ import { Input, InputRef } from 'antd'
 const { Search } = Input;
 
 const print = console.log
-print
 function App() {
     // Contains previous and new actions
     const [actions, setActions] = useState<actionsInterface>([])
@@ -53,7 +52,7 @@ function App() {
     const fetchTestData = async (test_id: string = '', step_no: number=1) => {
         try {
             let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
-            let meta_data = localStorageMetadata.meta_data;
+            let meta_data: metaDataInterface = localStorageMetadata.meta_data;
             let headers = {
                 "X-Api-Key": meta_data.apiKey,
             };
@@ -302,15 +301,22 @@ function App() {
                         // "Content-Type": "application/json",
                         "X-Api-Key": `${result.meta_data.apiKey}`,
                     },
-                    success: function () {
-                        setSaveState('Success!')
+                    success: function (resp) {
+                        print('resp', resp)
+                        if(resp){
+                            setSaveState('Success!')
+                            setTimeout(()=>{
+                                setSaveState('Save')
+                            }, 1500)
+                            setUnsavedActions(false);
+                            return
+                        }
+                        setSaveState('Error!!')
                         setTimeout(()=>{
                             setSaveState('Save')
                         }, 1500)
-                        setUnsavedActions(false);
                     },
                     error: function (xhr, status, error) {
-                        xhr;status
                         console.error('Error:', error);
                         setSaveState('Error!!')
                         setTimeout(()=>{
