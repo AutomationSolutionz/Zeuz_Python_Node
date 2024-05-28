@@ -2341,15 +2341,15 @@ def save_attribute_values_in_list(data_set):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], "", [], []])
-                    temp = right.strip(",").split(",")
+                    temp = right.strip(",").split(',\n')
                     data = []
                     for each in temp:
-                        data.append(each.strip().split("="))
+                        data.append(each.strip().split("=", 1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = CommonUtil.strip1(data[i][j], '"')  # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":

@@ -77,7 +77,8 @@ temp_config = os.path.join(
 )
 temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
 aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
-ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder")
+ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"dist")
+ai_recorder_public_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"public")
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -466,17 +467,20 @@ def set_extension_variables():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
 
     try:
+        metaData = {
+            "testNo": CommonUtil.current_tc_no,
+            "testName": CommonUtil.current_tc_name,
+            "stepNo": CommonUtil.current_step_sequence,
+            "stepName": CommonUtil.current_step_name,
+            "url": url,
+            "apiKey": apiKey,
+            "jwtKey": jwtKey,
+        }
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
-            metaData = {
-                "testNo": CommonUtil.current_tc_no,
-                "testName": CommonUtil.current_tc_name,
-                "stepNo": CommonUtil.current_step_sequence,
-                "stepName": CommonUtil.current_step_name,
-                "url": url,
-                "apiKey": apiKey,
-                "jwtKey": jwtKey,
-            }
             json.dump(metaData, file, indent=4)
+        with open(Path(ai_recorder_public_path) / "background" / "data.json", "w") as file:
+            json.dump(metaData, file, indent=4)
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load recorder extension")
 
@@ -690,7 +694,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     if left in ("addargument", "addarguments"):
                         options.add_argument(right.strip())
                         print(left, right)
-
+                    if "pageloadstrategy" in left:
+                        options.page_load_strategy = right.strip()
                     elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
                     elif left in ("addexperimentaloption"):
@@ -715,7 +720,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
                     set_extension_variables()
                     options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
-                    # options.add_argument(f"load-extension={ai_recorder_path}")
 
             if "chromeheadless" in browser:
                 def chromeheadless():
@@ -744,32 +748,15 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 )
             else:
                 import selenium
-                from distutils.version import StrictVersion
+                service = Service()
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
 
-                required_version = StrictVersion('4.10.0')
-                installed_version = StrictVersion(selenium.__version__)
-
-                if installed_version >= required_version:
-                    service = Service()
-                    if installed_version == required_version:
-                        service.path = chrome_path
-                    selenium_driver = webdriver.Chrome(
-                        service=service,
-                        options=options,
-                    )
-                else:
-                    d = DesiredCapabilities.CHROME
-                    d["loggingPrefs"] = {"browser": "ALL"}
-                    d['goog:loggingPrefs'] = {'performance': 'ALL'}
-                    selenium_driver = webdriver.Chrome(
-                        executable_path=chrome_path,
-                        chrome_options=options,
-                        desired_capabilities=d
-                    )
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -843,6 +830,13 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
+
+            options.set_preference("browser.download.folderList", 2)
+            options.set_preference("browser.download.manager.showWhenStarting", False)
+            options.set_preference("browser.download.dir", download_dir)
+            options.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
+            options.accept_untrusted_certs = True
+            
             if(remote_host):
                 capabilities = webdriver.DesiredCapabilities().FIREFOX
                 capabilities['acceptSslCerts'] = True
@@ -873,7 +867,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -951,7 +944,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -982,7 +974,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1005,7 +996,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Ie(executable_path=ie_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1040,7 +1030,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1058,7 +1047,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 desired_capabilities=remote_desired_cap)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
-                selenium_driver.set_window_size(default_x, default_y)
                 selenium_driver.maximize_window()
             else:
                 if not window_size_X:
@@ -1079,46 +1067,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         # time.sleep(3)
 
     except SessionNotCreatedException as exc:
-        if "This version" in exc.msg and "only supports" in exc.msg and not installed_version >= required_version:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
-                2
-            )
-            if browser in ("android", "chrome", "chromeheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
-            elif browser in ("firefox", "firefoxheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
-            elif browser == "opera":
-                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
-            elif browser == "ie":
-                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
-            Open_Browser(dependency, window_size_X, window_size_Y)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     except WebDriverException as exc:
-        if "needs to be in PATH" in exc.msg and not installed_version >= required_version:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdriver",
-                2
-            )
-            if browser in ("chrome", "chromeheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
-            elif browser in ("firefox", "firefoxheadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
-                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
-            elif browser == "opera":
-                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
-            elif browser == "ie":
-                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
-            Open_Browser(dependency, window_size_X, window_size_Y)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
         CommonUtil.teardown = False
@@ -1226,6 +1178,82 @@ def Open_Empty_Browser(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 @logger
+def Go_To_Link_V2(step_data):
+    from selenium.webdriver.chrome.options import Options
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    global dependency
+    global selenium_driver
+    global selenium_details
+    global current_driver_id
+    
+    url = None
+    driver_tag = "default"
+    page_load_timeout_sec = 120
+    options = Options()
+    page_load_strategy = "normal"
+
+    for left, _, right in step_data:
+        if "add argument" in left.lower():
+            options.add_argument(right.strip())
+            CommonUtil.ExecLog(sModuleInfo, "Added argument: " + right.strip(), 1)
+        elif 'add experimental option' in left.lower():
+            options.add_experimental_option(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
+            CommonUtil.ExecLog(sModuleInfo, "Added experimental option: " + right.strip(), 1)
+        elif "set capability" in left.lower():
+            options.set_capability(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
+            CommonUtil.ExecLog(sModuleInfo, "Added capability: " + right.strip(), 1)
+        elif "go to link v2" in left.lower():
+            url = right.strip() if right.strip() != "" else None
+        elif "driver tag" in left.lower():
+            driver_tag = right.strip()
+        elif "wait for element" in left.lower():
+            Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
+        elif "page load timeout" in left.lower():
+            page_load_timeout_sec = float(right.strip())
+        elif "page load strategy" in left.lower():
+            page_load_strategy = right.strip()
+            options.page_load_strategy = page_load_strategy
+
+
+    if driver_tag in selenium_details.keys():
+        selenium_driver = selenium_details[driver_tag]["driver"]
+    else:
+        if Shared_Resources.Test_Shared_Variables("dependency"):
+            dependency = Shared_Resources.Get_Shared_Variables("dependency")
+        else:
+            raise ValueError("No dependency set - Cannot run")
+        
+        dependency_browser = dependency["Browser"].lower()
+        if 'headless' in dependency_browser:
+            options.add_argument("--headless")
+            CommonUtil.ExecLog(sModuleInfo, "Added headless argument", 1)
+
+        if "chrome" in dependency_browser:
+            selenium_driver = webdriver.Chrome(options=options)
+        elif "firefox" in dependency_browser:
+            selenium_driver = webdriver.Firefox(options=options)
+        
+        selenium_driver.set_page_load_timeout(page_load_timeout_sec)
+        selenium_details[driver_tag] = dict()
+        selenium_details[driver_tag]["driver"] = selenium_driver
+        current_driver_id = selenium_driver
+        Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        
+        # Handle headless mode window maximize
+        if '--headless' in options.arguments and '--start-maximized' in options.arguments:
+            selenium_driver.set_window_size(default_x, default_y)
+
+    if url:
+        selenium_driver.get(url)
+
+    selenium_driver.maximize_window()
+        
+    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+    return "passed"
+    
+@logger
 def Go_To_Link(step_data, page_title=False):
     # this function needs work with validating page title.  We need to check if user entered any title.
     # if not then we don't do the validation
@@ -1251,6 +1279,7 @@ def Go_To_Link(step_data, page_title=False):
         raise ValueError("No dependency set - Cannot run")
 
     page_load_timeout_sec = 120
+    page_load_strategy = "normal"
 
     try:
         driver_id = ""
@@ -1929,25 +1958,11 @@ def Click_Element(data_set, retry=0):
     # Click using location
     else:
         try:
-            location = location.replace(" ", "")
-            location = location.split(",")
-            x = float(location[0])
-            y = float(location[1])
-
-            height_width = Element.size
-
-            ele_width = int((height_width)["width"])
-            ele_height = int((height_width)["height"])
-
-            total_x_offset = int((ele_width // 2) * (x / 100))
-            total_y_offset = int((ele_height // 2) * (y / 100))
-
-            # Click coordinates
+            total_x_offset, total_y_offset = get_offsets(location, Element)
             actions = ActionChains(selenium_driver)  # Create actions object
             actions.move_to_element_with_offset(Element, total_x_offset, total_y_offset)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
-
             CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
             return "passed"
         except Exception:
@@ -2715,15 +2730,15 @@ def save_attribute_values_in_list(step_data):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], [], [], []])
-                    temp = right.strip(",").split(",")
+                    temp = right.strip(",").split(',\n')
                     data = []
                     for each in temp:
-                        data.append(each.strip().split("="))
+                        data.append(each.strip().split("=", 1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = CommonUtil.strip1(data[i][j], '"')   # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -3140,83 +3155,37 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    selenium_driver.switch_to.default_content()
     try:
-        scroll_inside_element = False
-        scroll_window_name = "window"
-        scroll_window = ""
-        action_row = None
+        Element = None
+        get_element = False
+        scroll_direction = ""
+        offset = ""
+        pixel = 750
+        for left, mid, right in step_data:
+            mid = mid.strip().lower()
+            if "action" in mid:
+                scroll_direction = right.strip().lower()
+            elif mid == "element parameter":
+                get_element = True
+            elif left.strip().lower() == "pixels":
+                pixel = int(right.strip().lower())
 
-        for row in step_data:
-            if str(row[1]) == "action":
-                action_row = row
-                break
+        if get_element:
+            Element = LocateElement.Get_Element(step_data, selenium_driver)
 
-        if not action_row:
-            CommonUtil.ExecLog(sModuleInfo, "No action row defined", 3)
-            return "zeuz_failed"
-
-        if (
-                len(step_data) > 1
-        ):  # element given scroll inside element, not on full window
-            scroll_inside_element = True
-            scroll_window_name = "arguments[0]"
-
-        if scroll_inside_element:
-            scroll_window = LocateElement.Get_Element(step_data, selenium_driver)
-            if scroll_window in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Element through which instructed to scroll not found",
-                    3,
-                )
-                return "zeuz_failed"
-
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Element inside which instructed to scroll has been found. Scrolling thorugh it",
-                1,
-            )
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling through main window", 1)
-
-        scroll_direction = str(action_row[2]).strip().lower()
         if scroll_direction == "down":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling down", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(0,750)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"0,{pixel}"
         elif scroll_direction == "up":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(0,-750)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"0,-{pixel}"
         elif scroll_direction == "left":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling left", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(-750,0)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"-{pixel},0"
         elif scroll_direction == "right":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling right", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(750,0)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Value invalid. Only 'up', 'down', 'right' and 'left' allowed",
-                3,
-            )
-            result = "zeuz_failed"
-            return result
+            offset = f"{pixel},0"
+
+        CommonUtil.ExecLog(sModuleInfo, f"Scrolling {scroll_direction}", 1)
+        selenium_driver.execute_script(f"{'arguments[0]' if Element is not None else 'window'}.scrollBy({offset})")
+        time.sleep(2)
+        return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -3928,7 +3897,6 @@ def Tear_Down_Selenium(step_data=[]):
         if not driver_id:
             if not CommonUtil.teardown:
                 CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
-                return "passed"
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:
@@ -4240,40 +4208,19 @@ def switch_window_or_tab(step_data):
 
     Example 1:
     Field	                    Sub Field	        Value
-    *window title               element parameter	googl
-    switch window or frame      selenium action 	switch window or frame
+    *window title               input parameter	    googl
+    switch window/tab           selenium action 	switch window or frame
 
 
     Example 2:
     Field	                    Sub Field	        Value
-    window title                element parameter	google
-    switch window or frame      selenium action 	switch window or frame
+    window title                input parameter	    google
+    switch window/tab           selenium action 	switch window or frame
 
     Example 3:
     Field	                    Sub Field	        Value
-    window index                element parameter	9
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 4:
-    Field	                    Sub Field	        Value
-    frame index                 element parameter	1
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 5:
-    Field	                    Sub Field	        Value
-    frame title                 element parameter	iFrame1
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 6:
-    Field	                    Sub Field	        Value
-    frame index                 element parameter	default content
-    switch window or frame      selenium action 	switch window or frame
-
-    Example 7:
-    Field	                    Sub Field	        Value
-    frame title                 element parameter	iFrame1
-    frame index                 element parameter	1
-    switch window or frame      selenium action 	switch window or frame
+    window index                input parameter	    9
+    switch window/tab           selenium action 	switch window or frame
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4281,30 +4228,20 @@ def switch_window_or_tab(step_data):
     try:
         window_title_condition = False
         window_index_condition = False
-        frame_condition = False
         partial_match = False
-        frame_title_index = []
         for left, mid, right in step_data:
             left = left.lower().strip()
-            if left == "window title":
+            if left in ("window title", "tab title"):
                 switch_by_title = right
                 window_title_condition = True
-            elif left == "*window title":
+            elif left in ("*window title", "*tab title"):
                 switch_by_title = right
                 partial_match = True
                 window_title_condition = True
-            elif left == "window index":
+            elif left in ("window index", "tab index"):
                 switch_by_index = right.strip()
                 window_index_condition = True
                 window_title_condition = False
-                # break  # Index priority is highest so break the loop
-            elif left == "frame title":
-                frame_title_index += [right]
-                frame_condition = True
-            elif left == "frame index":
-                frame_title_index += [-1000] if "default" in right.lower() else [int(right.strip())]
-                # Using -1000 as a flag of default content
-                frame_condition = True
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
@@ -4313,15 +4250,16 @@ def switch_window_or_tab(step_data):
     try:
         if window_title_condition:
             all_windows = selenium_driver.window_handles
+            current_window = selenium_driver.current_window_handle
             window_handles_found = False
             Tries = 3
             for Try in range(Tries):
                 for each in all_windows:
                     selenium_driver.switch_to.window(each)
-                    if (partial_match and switch_by_title in (selenium_driver.title)) or (
-                            not partial_match and switch_by_title == (selenium_driver.title)):
+                    if (partial_match and switch_by_title.lower() in selenium_driver.title.lower()) or (
+                            not partial_match and switch_by_title.lower() == selenium_driver.title.lower()):
                         window_handles_found = True
-                        CommonUtil.ExecLog(sModuleInfo, "Window switched to '%s'" % selenium_driver.title, 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Tab switched to '%s'" % selenium_driver.title, 1)
                         break
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Couldn't find the title. Trying again after 1 second delay", 2)
@@ -4330,55 +4268,96 @@ def switch_window_or_tab(step_data):
                 break  # only executed if the inner loop did break
 
             if not window_handles_found:
+                selenium_driver.switch_to.window(current_window)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "unable to find the title among the windows. If you want to match partially please use '*windows title'",
+                    "unable to find the title among the tabs. If you want to match partially please use '*tab title'",
                     3)
                 return "zeuz_failed"
-            # else:
-            #     return True
 
         elif window_index_condition:
             window_index = int(switch_by_index)
             window_to_switch = selenium_driver.window_handles[window_index]
             selenium_driver.switch_to.window(window_to_switch)
-            CommonUtil.ExecLog(sModuleInfo, "Window switched to index %s" % switch_by_index, 1)
-            # return True
+            CommonUtil.ExecLog(sModuleInfo, f"Tab switched to index {switch_by_index} title {selenium_driver.title}", 1)
 
-        elif not frame_condition:
-            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title, window index, frame title or frame index", 3)
-            return "zeuz_failed"
-
+        return "passed"
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your window", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def close_tab(step_data):
+    """
+    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
+
+    Example 1:
+    Field	                    Sub Field	        Value
+    close tab                   selenium action 	close tab
+
+    Example 2:
+    Field	                    Sub Field	        Value
+    tab title                   input parameter	    ['Zeuz', 'Google']
+    close tab                   selenium action 	close tab
+
+    Example 3:
+    Field	                    Sub Field	        Value
+    tab index                   input parameter	    [0,1,-1]
+    close tab                   selenium action 	close tab
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
     try:
-        if frame_condition:
-            selenium_driver.switch_to.default_content()
-            CommonUtil.ExecLog(sModuleInfo, "Frame switched to default content", 1)
-            for i in frame_title_index:
-                if isinstance(i, int) and i != -1000:
-                    selenium_driver.switch_to.frame(i)
-                    CommonUtil.ExecLog(sModuleInfo, "Frame switched to index %s" % str(i), 1)
-                elif isinstance(i, str):
-                    if "default" in i:
-                        try:
-                            selenium_driver.switch_to.frame(i)
-                            CommonUtil.ExecLog(sModuleInfo, "Frame switched to '%s'" % i, 1)
-                        except NoSuchFrameException:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "No such frame named '%s'. Switching to default content exiting from all frames." % i,
-                                2)
-                            selenium_driver.switch_to.default_content()
-                    else:
-                        selenium_driver.switch_to.frame(i)
-                        CommonUtil.ExecLog(sModuleInfo, "Frame switched to '%s'" % i, 1)
-        return "passed"
+        close_tabs = []
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left in ("tabs"):
+                close_tabs = [i.strip().lower() if type(i) == str else i for i in CommonUtil.parse_value_into_object(right)]
 
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch frame", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
+        return "zeuz_failed"
+
+    try:
+        window_handles_found = False
+        if len(close_tabs) > 1 and type(close_tabs[0]) == str:
+            current_window = selenium_driver.current_window_handle
+            for each in selenium_driver.window_handles:
+                selenium_driver.switch_to.window(each)
+                if selenium_driver.title.strip().lower() in close_tabs:
+                    title = selenium_driver.title
+                    selenium_driver.close()
+                    window_handles_found = True
+                    CommonUtil.ExecLog(sModuleInfo, "Tab closed '%s'" % title, 1)
+            if window_handles_found:
+                if current_window in selenium_driver.window_handles:
+                    selenium_driver.switch_to.window(current_window)
+                else:
+                    selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        elif len(close_tabs) > 1:
+            current_window = selenium_driver.current_window_handle
+            for each in [selenium_driver.window_handles[i] for i in close_tabs]:
+                selenium_driver.switch_to.window(each)
+                title = selenium_driver.title
+                selenium_driver.close()
+                CommonUtil.ExecLog(sModuleInfo, f"Tab closed '{title}'", 1)
+            if current_window in selenium_driver.window_handles:
+                selenium_driver.switch_to.window(current_window)
+            else:
+                selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        else:
+            title = selenium_driver.title
+            selenium_driver.close()
+            CommonUtil.ExecLog(sModuleInfo, f"Current tab closed '{title}'", 1)
+            selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+
+        return "passed"
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -4771,6 +4750,23 @@ def upload_file_through_window(step_data):
 
 
 # Method to upload file
+def get_offsets(location: str, Element: WebElement) -> tuple[int]:
+    location = location.replace(" ", "")
+    location = location.split(",")
+    x = float(location[0])
+    y = float(location[1])
+
+    height_width = Element.size
+
+    ele_width = int((height_width)["width"])
+    ele_height = int((height_width)["height"])
+
+    total_x_offset = int((ele_width // 2) * (x / 100))
+    total_y_offset = int((ele_height // 2) * (y / 100))
+
+    return total_x_offset, total_y_offset
+
+
 @logger
 def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -4778,7 +4774,7 @@ def drag_and_drop(dataset):
     try:
         source = []
         destination = []
-        offset = None
+        destination_offset = None
         param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
@@ -4794,18 +4790,17 @@ def drag_and_drop(dataset):
             elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
-            elif left.strip().lower().startswith('offset'):
-                x,y = right.split(',')
-                offset = (x.strip(),y.strip())
-        
-        if offset == None and destination == []:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide either destination element or offset. Example:\n'+
-               "(id, dst element parameter, file) or (offse | element parameter | 25,75)", 3)
-            return "zeuz_failed"
+            elif left.strip().lower() == "destination offset" and mid.strip().lower() == 'optional parameter':
+                destination_offset = right
 
         if not source:
             CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
                "(id, src element parameter, file)", 3)
+            return "zeuz_failed"
+
+        if not destination:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
+               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
         source_element = LocateElement.Get_Element(source, selenium_driver)
@@ -4813,19 +4808,19 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
             return "zeuz_failed"
 
-        if destination:
-            destination_element = LocateElement.Get_Element(destination, selenium_driver)
-            if destination_element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
-                return "zeuz_failed"
+        destination_element = LocateElement.Get_Element(destination, selenium_driver)
+        if destination_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+            return "zeuz_failed"
 
-        if destination:
+        if destination_offset:
+            x, y = get_offsets(destination_offset, destination_element)
+            ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).release().perform()
+        else:
             ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        elif offset:
-            ActionChains(selenium_driver).drag_and_drop_by_offset(source_element,offset[0],offset[1]).perform()
-        # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
-        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+            # ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
 
+        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

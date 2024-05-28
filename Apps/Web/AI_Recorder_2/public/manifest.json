@@ -1,0 +1,84 @@
+{
+    "description": "This ZeuZ Chrome extension allow you to record a test case, use ZeuZ AI to get an acurate page element, and play back the test case right in your browser.",
+    "manifest_version": 3,
+    "name": "ZeuZ AI Recorder",
+    "version": "4.1",
+    "minimum_chrome_version": "117",
+    "icons": {
+        "16": "small_logo.png",
+        "48": "small_logo.png",
+        "128": "small_logo.png"
+    },
+    "commands": {
+        "toggle-xpath": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+U",
+                "mac": "Command+Shift+U"
+            },
+            "description": "Toggle plugin"
+        }
+    },
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "webRequest",
+        "contextMenus",
+        "downloads",
+        "webNavigation",
+        "notifications",
+        "storage",
+        "unlimitedStorage",
+        "debugger",
+        "clipboardRead",
+        "clipboardWrite"
+    ],
+    "host_permissions": [
+        "http://*/",
+        "https://*/"
+    ],
+    "homepage_url": "https://www.zeuz.ai/",
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "content/atoms_js.js",
+                "content/utils_js.js",
+                "content/commandhandlers.js",
+                "content/browserbot.js",
+                "content/loc_builders.js",
+                "content/recorder.js",
+                "content/rec_handlers.js"
+            ],
+            "match_about_blank": true,
+            "all_frames": true
+        }
+    ],
+    "background": {
+        "service_worker": "background/back.js",
+        "type": "module"
+    },
+    "action": {
+        "default_icon": {
+            "32":"small_logo.png"
+        },
+        "default_title": "ZeuZ AI Recorder"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "page/prompt.js",
+                "page/runScript.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "offline_enabled": true
+}

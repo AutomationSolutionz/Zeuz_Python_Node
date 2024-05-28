@@ -4370,28 +4370,27 @@ def skip_testcases(data_set):
               skip testcases | common action | 6716-6720
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
         test_cases = None
-
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "skip testcases" in left:
                 test_cases = right.strip()
 
         run_id = sr.Get_Shared_Variables("run_id")
-        CommonUtil.skip_testcases[run_id] = True
+        if run_id not in CommonUtil.skip_testcases:
+            CommonUtil.skip_testcases[run_id] = []
         if test_cases == 'skip remaining':
-            CommonUtil.skip_testcases_list.append(test_cases)
+            CommonUtil.skip_testcases[run_id].append(test_cases)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Remaining All Test Cases")
         else:
             for test_case in test_cases.split(","):
                 if '-' in test_case:
                     range_start, range_end = map(int, test_case.split('-'))
-                    CommonUtil.skip_testcases_list.extend(list(range(range_start, range_end + 1)))
+                    CommonUtil.skip_testcases[run_id].append(range(range_start, range_end))
                 else:
                     tc_num = int(test_case.split('-')[0])
-                    CommonUtil.skip_testcases_list.append(tc_num)
+                    CommonUtil.skip_testcases[run_id].append(tc_num)
             CommonUtil.ExecLog(sModuleInfo, "Skipped Running Selected Test Case")
         return "passed"
 
@@ -4616,10 +4615,8 @@ def download_attachment_from_testcase(data_set):
         id                  | input parameter | TEST-0151
         attachment name     | input parameter | name
         path to save        | optional parameter | path
-        download_attachment_from_testcase | common action | result
+        download_attachment_from_testcase | common action | download_attachment_from_testcase
 
-    return : return True/False
-    note: id will be the testcase id , attachment name will be the name of that attachment ,result will be the variable name to store
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -4628,11 +4625,11 @@ def download_attachment_from_testcase(data_set):
         var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
-            if "id" == left:
+            if "test id" == left:
                var_id = right.strip()
             if "attachment name" == left:
                var_name = right.strip()
-            if "path to save" == left:
+            if "download folder" == left:
                var_path = CommonUtil.path_parser(right)
 
         if var_id is None:
@@ -4646,15 +4643,18 @@ def download_attachment_from_testcase(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
+        if not var_id.startswith("TEST-"):
+            var_id = "TEST-" + var_id
         url = RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
         local_filename = url.split('/')[-1]
+        file_path = Path(var_path)/local_filename
         with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
-            with open(var_path+'/'+local_filename, 'wb') as f:
+            with open(file_path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from TEST-%s" % (var_name, var_id), 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Attachment '{var_name}' was downloaded from {var_id} locally as '{file_path}'", 1)
         return "passed"
 
     except Exception as e:
@@ -4729,7 +4729,7 @@ def download_attachment_from_step(data_set):
                var_id = right.strip()
             if "attachment name" == left:
                var_name = right.strip()
-            if "path to save" == left:
+            if "download folder" == left:
                var_path = CommonUtil.path_parser(right)
 
         if var_id is None:
@@ -5704,7 +5704,7 @@ def disable_step(data_set):
         if len(steps) == 0:
             CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
+            CommonUtil.ExecLog(sModuleInfo, "%s steps have been disabled" % steps, 1)
             CommonUtil.disabled_step += steps
 
         return "passed"

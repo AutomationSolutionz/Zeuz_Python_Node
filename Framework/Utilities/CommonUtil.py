@@ -182,8 +182,8 @@ api_performance_data: List[PerformanceDataPoint] = []
 
 processed_performance_data = {}
 
+tc_nums = {}
 skip_testcases = {}
-skip_testcases_list = []
 global_var = {}
 global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
 zeuz_disable_var_print = {}
@@ -342,6 +342,14 @@ def Add_File_To_Current_Test_Case_Log(src):
 
     except Exception as e:
         return Exception_Handler(sys.exc_info())
+
+
+def strip1(original_value: str, remove: str) -> str:
+    if original_value.startswith(remove):
+        original_value = original_value[len(remove):]
+    if original_value.endswith(remove):
+        original_value = original_value[:-len(remove)]
+    return original_value
 
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
