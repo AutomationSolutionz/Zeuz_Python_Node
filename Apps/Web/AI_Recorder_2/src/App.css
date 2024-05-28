@@ -11747,7 +11747,7 @@ button {
   transition: .3s all ease;
 }
 
-button:hover,
+button:hover
 button:focus {
   text-decoration: none !important;
   outline: none !important;
@@ -11836,29 +11836,6 @@ h5,
   color: #444;
 }
 
-.bottomnav{
-  height: 70px;
-  background: #eee;
-  /* background: #32373d; */
-  /* background-image: linear-gradient(to bottom, #726dff, #7f70ff, #8b74ff, #9677ff, #a07bff); */
-  /* background-image: linear-gradient(109.6deg, rgb(20, 30, 48) 11.2%, rgb(36, 59, 85) 91.1%); */
-  /* background: linear-gradient(to left, #434343 0%, black 100%); */
-  /* background: radial-gradient(circle at 10% 20%, rgb(0, 0, 0) 0%, rgb(64, 64, 64) 90.2%); */
-  /* border-style: solid;
-  border-width: 5px;
-  border-color: black; */
-  /* border-radius: 20px; */
-  color: #000;
-
-  /* -webkit-transition: all 0.3s;
-  -o-transition: all 0.3s;
-  transition: all 0.3s; */
-
-  /* position: relative; */
-  /* display: flex;
-  flex-direction: column;
-  justify-content: space-between; */
-}
 #root{
   width: 100%;
 }
@@ -12220,6 +12197,9 @@ body
   width: 40px;
   height: 40px;
 }
+#recorderTitle{
+  padding-top: 30px;
+}
 .stop_button
 {
   background: url(images/stop.png);
@@ -12474,6 +12454,17 @@ body
   /* font-family: monospace; */
   /* font-size: 2em; */
 }
+.typing-title {
+  width: 100%;
+  animation: typing 4s steps(22), blink .5s step-end infinite alternate;
+  white-space: nowrap;
+  overflow: hidden;
+  /* position: relative; */
+  /* z-index: 1; */
+  /* border-right: 3px solid; */
+  /* font-family: monospace; */
+  /* font-size: 2em; */
+}
 
 @keyframes typing {
   from {
@@ -12494,8 +12485,8 @@ body
 }
 .action{
   background-color:white;
-  cursor: grab;
-  border-radius: 15px;
+  border-radius: 8px;
+  border-bottom: 1px solid #b7b7b7;
   font-size: 14px;
   position: relative;
   overflow-x:hidden;
@@ -12504,23 +12495,20 @@ body
   width: 100%;
 }
 
-.delete-button{
-  height: 14px;
-  width: 14px;
-  padding: 0px;
-}
-
-.trash-icon{
-  fill: #721c24;
-}
-
-
-.action .btn {
+.action .del-button {
   display: none;
 }
 
-.action:hover .btn {
+.action:hover .del-button {
   display: inline-block;
+  /* opacity: 0.5; */
+}
+.del-button:hover {
+  display: inline-block;
+  /* opacity: 1; */
+  transform: scale(1.25);
+  transition: 300ms;
+  cursor: pointer
 }
 
 .animExit {
@@ -12578,4 +12566,25 @@ body
     border-width: 0;
     overflow: hidden;
   }
+}
+
+.bottom-nav{
+  height: 60px;
+  background: #eee;
+}
+.upper-nav{
+  height: 60px;
+  background: #eee;
+}
+
+.control-button {
+  width: 80px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+.control-button:not([disabled]):hover {
+  /* border-color: #646cff; */
+  /* background-color: #787878 !important; */
+  transform: scale(1.1);
+  transition: 300ms;
 }

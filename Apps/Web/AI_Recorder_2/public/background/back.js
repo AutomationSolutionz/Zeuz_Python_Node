@@ -184,7 +184,7 @@ async function open_panel_2(tab) {
     result = await browserAppData.storage.local.get('window');
     var win = await chrome.windows.getCurrent();
     var height = Math.max(Math.round(win.height*1), 700) ;
-    var width = Math.max(Math.round(win.width*0.20), 500);
+    var width = Math.max(Math.round(win.width*0.20), 400);
     if (result) {
         try {
             result = result.window;
