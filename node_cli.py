@@ -83,7 +83,7 @@ try:
     print("Process ID", pidNumber)
     p = psutil.Process(pidNumber)
     print("process found")
-    p.terminate()
+    p.kill()
     print("process terminated")
 except Exception as e:
     print(e)
