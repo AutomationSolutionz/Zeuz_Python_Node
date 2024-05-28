@@ -1,37 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 // import {Helmet} from "react-helmet";
-import {Action, actionType} from './Action';
+import {Action} from './Action'
+import type {actionType} from './common'
+import Dropdown from './dropdown'
 import $ from 'jquery';
+import Typewriter from 'typewriter-effect/dist/core'
+import { actionsInterface, stepZsvc, RequestType, browserAppData, fetchActionData, metaDataInterface } from './common';
 
-const browserAppData = chrome;
+import { Input, InputRef } from 'antd'
+const { Search } = Input;
+
 const print = console.log
-print
-type actionsInterface = actionType[]
-
-interface stepZsvc{
-    name: string,
-    sequence: number,
-    id: number,
-}
-interface RequestType {
-    action: string;
-    data: {
-        id: string,
-        main: string[][];
-        name: string;
-        action: string;
-        xpath: string;
-    };
-    index: number;
-}
 function App() {
     // Contains previous and new actions
     const [actions, setActions] = useState<actionsInterface>([])
     // Test case name
     const [testTitle, setTestTitle] = useState<string>('Loading...')
-    // The selected step number.. Used to fetch actions in that step
-    const [selectedValue, setSelectedValue] = useState<string>('1');
     // Test case id.. Used to fetch steps in that test case
     const [testId, testIdChange] = useState<string>('0000')
     // Step names showed in select options
@@ -47,32 +32,27 @@ function App() {
     const [runThis, setRunThis] = useState<string>('Run this');
     const [runAll, setRunAll] = useState<string>('Run all');
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    const actionRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<InputRef>(null);
 
-    // When selected step is changed fetch new actions
-    const handleSelectChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const newValue = event.target.value;
-        let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
-        let meta_data = localStorageMetadata.meta_data;
-        meta_data['stepNo'] = parseInt(newValue) ;
-        meta_data['stepId'] = stepNames.filter((step: stepZsvc)=>{if(step.sequence==parseInt(newValue)) return step.id})[0].id
-        await browserAppData.storage.local.set({
-            meta_data: meta_data,
-        })
-        setSelectedValue(newValue);
-        fetchActionData()
-    };
+    // Fetch test data when search button is clicked
+    const handleSearch = () => {
+        if(inputRef.current){
+            fetchTestData(testId);
+        }
+    }
 
-    // testId state change. does not fetch anything
-    const handleTestIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Set the value of testId onChange event
+    const handleTestIdChange = (event:React.ChangeEvent<HTMLInputElement>) => {
         testIdChange(event.target.value);
-    };
+    }
 
     // Fetch Test data of the testId 
     const fetchTestData = async (test_id: string = '', step_no: number=1) => {
         try {
-            test_id = (test_id == '') ? testId : test_id
             let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
-            let meta_data = localStorageMetadata.meta_data;
+            let meta_data: metaDataInterface = localStorageMetadata.meta_data;
             let headers = {
                 "X-Api-Key": meta_data.apiKey,
             };
@@ -88,7 +68,9 @@ function App() {
             }
             meta_data['testNo'] = 'TEST-'+test_id;
             meta_data['stepNo'] = step_no
-            meta_data['stepId'] = response.steps.filter((step: stepZsvc)=>{if(step.sequence==step_no) return step.id})[0].stepId;
+            print('response.steps', response.steps)
+            print('response filter', response.steps.filter((step: stepZsvc)=>{if(step.sequence==step_no) return step}))
+            meta_data['stepId'] = response.steps.filter((step: stepZsvc)=>{if(step.sequence==step_no) return step})[0].stepId;
             await browserAppData.storage.local.set({
                 meta_data: meta_data,
             })
@@ -98,44 +80,15 @@ function App() {
                 return {
                     name: step.name,
                     sequence: step.sequence,
-                    id: step.id,
+                    stepId: step.stepId,
                 }
             }));
-            setSelectedValue(step_no.toString());
             setUnsavedActions(false)
-            fetchActionData()
 
         } catch (error:any) {
             alert(error.message);
         }
     };
-
-    // Fetch test data when search button is clicked
-    const handleSearch = () => {
-        fetchTestData();
-    }
-
-    // Fetch previous actions of a step from server
-    const fetchActionData = async () =>{
-        let result = await browserAppData.storage.local.get('meta_data');
-        let meta_data = result.meta_data
-        const resp = await fetch(`${meta_data.url}/ai_recorder_init?test_id=${meta_data.testNo}&step_seq=${meta_data.stepNo}`, {
-            headers: {
-                // "Content-Type": "application/json",
-                "X-Api-Key": `${meta_data.apiKey}`,
-            },
-        })
-        const init_data: actionsInterface = (await resp.json()).step.actions;
-        for (const each of init_data) {
-            each['id'] = ''
-            each['stillRecording'] = false
-            each['typeWrite'] = false;
-            each['animateRomove'] = false;
-            each['xpath'] = ''
-        }
-        setActions(()=>init_data);
-        console.log('init_data', init_data);
-    }
     
     function attachRecorder(request: {attachRequest: Boolean}, sender:chrome.runtime.MessageSender) {
         sender
@@ -156,13 +109,51 @@ function App() {
                 let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
                 let meta_data = localStorageMetadata.meta_data;
                 testIdChange(meta_data.testNo.substr(5));
-                fetchTestData(meta_data.testNo.substr(5), meta_data.stepNo);
+                let prom = fetchTestData(meta_data.testNo.substr(5), meta_data.stepNo);
+                const typewriter = new Typewriter(document.getElementById('recorderTitle'), {
+                    cursor: '',
+                })
+                if(recordState == 'Record'){
+                    let tabs:any[] = await browserAppData.tabs.query({url: "<all_urls>"})
+                    for(let tab of tabs) {
+                        browserAppData.tabs.sendMessage(tab.id, {detachRecorder: true});
+                    }
+                }
+                typewriter
+                    .changeDelay(70)
+                    .typeString('<h2>Zeuz AI Recorder</h2>')
+                    .start()
+                    .callFunction(async()=>{
+                        await prom
+                        setInitRecordState(true)
+                    });
             }
             initData();
-            setTimeout( 
-                ()=>{setInitRecordState(true)}
-            ,3000)
         },[]
+    )
+    let timeOuts: number[] = []
+    useEffect(
+        ()=>{
+            setRecordState((prevRecordState)=>{
+                if (prevRecordState == 'Record')
+                    return prevRecordState
+                else if(actions.map((item)=>{if(!item.stillRecording) return item}).includes(undefined)){
+                    while(timeOuts.length>0){
+                        clearTimeout(timeOuts.shift())
+                    }
+                    const timeOut = setTimeout(()=>{
+                        setRecordState((prevRecordState)=>{
+                            return prevRecordState == 'Recording...' ? 'Stop' : prevRecordState
+                        })
+                    }, 30000)
+                    timeOuts.push(timeOut)
+                    return 'Recording...'
+                }
+
+                else
+                    return 'Stop'
+            })
+        },[actions]
     )
     // When new recorded actions come from background script, render new actions
     const handleRecordResponse = (request:RequestType) => {
@@ -170,15 +161,9 @@ function App() {
             if (prevRecordState == 'Record')
                 return prevRecordState;
             if (request.action == 'record-start') {
-                setTimeout(()=>{
-                    // If server does not respond in 30 sec change the Recording... state
-                    setRecordState((prevRecordState)=>{
-                        print('prevRecordState =',prevRecordState)
-                        if(prevRecordState == 'Recording...')
-                            return 'Stop'
-                        return prevRecordState
-                    })
-                }, 10000)
+                if (actionRef.current && containerRef.current) {
+                    actionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
     
                 const action: actionType = {
                     id: request.data.id,
@@ -222,7 +207,7 @@ function App() {
                 setActions((prev_actions) => {
                     const new_actions = [...prev_actions]
                     for (let i=0; i < new_actions.length; i++) {
-                        if (new_actions[i].id == request.data.id && new_actions[i].stillRecording){
+                        if (new_actions[i].id == request.data.id /* && new_actions[i].stillRecording */){
                             new_actions[i] = action;
                             break
                         }
@@ -318,15 +303,22 @@ function App() {
                         // "Content-Type": "application/json",
                         "X-Api-Key": `${result.meta_data.apiKey}`,
                     },
-                    success: function () {
-                        setSaveState('Success!')
+                    success: function (resp) {
+                        print('resp', resp)
+                        if(resp){
+                            setSaveState('Success!')
+                            setTimeout(()=>{
+                                setSaveState('Save')
+                            }, 1500)
+                            setUnsavedActions(false);
+                            return
+                        }
+                        setSaveState('Error!!')
                         setTimeout(()=>{
                             setSaveState('Save')
                         }, 1500)
-                        setUnsavedActions(false);
                     },
                     error: function (xhr, status, error) {
-                        xhr;status
                         console.error('Error:', error);
                         setSaveState('Error!!')
                         setTimeout(()=>{
@@ -493,110 +485,99 @@ function App() {
             }, 1500)
 		}
     }
+    
 
+    const buttonClass = 'control-button d-flex flex-column align-items-center p-0 bg-transparent my-2"'
+    const iconClass = 'material-icons'
+    const labelClass = 'material-icons-label'
+    const ops = 1
     return (
-        <div className="wrapper d-flex align-items-stretch">
-            <nav id="sidebar">
-                <div className="nav_upper">
-                    <div className="img bg-wrap text-center py-4" data-section="welcome_page" id="defaultOpen">
-                        <img className="img-fluid" id="logo_dark" src="logo_ZeuZ_dark_background.png" />
-                    </div>
-                    <ul className="d-flex flex-column justify-content-center">
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="record_wrap" >
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRecording}
-                                id="record" style={{ opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : 1}} disabled={!initRecordState || recordState == "Recording..."}>
-                                <span className="material-icons" id="record_icon">{recordState == 'Record' ? 'camera' : 'stop'}</span>
-                                <span className="material-icons-label" id="record_label">{recordState}</span>
-                            </button>
-                        </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="save_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleSaveActions}
-                                id="save_button" style={{ opacity: recordState == "Record" && saveState == 'Save' ? 1 : 0.5}} disabled={recordState != 'Record' || saveState != 'Save'}>
-                                <span className="material-icons">save</span>
-                                <span className="material-icons-label" id='save_label'>{saveState}</span>
-                            </button>
-                        </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="run_this_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRunThis}
-                                id="run_this_button" style={{ opacity: recordState == "Record" && !unsavedActions && runThis == "Run this" ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions || runThis != "Run this"}>
-                                <span className="material-icons">play_circle</span>
-                                <span className="material-icons-label" id='run_this_label'>{runThis}</span>
-                            </button>
-                        </li>
-                        <li className="tablink d-flex flex-wrap justify-content-center" id="run_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu" onClick={handleRunAll}
-                                id="run_button" style={{ opacity: recordState == "Record" && !unsavedActions && runAll == "Run all" ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions || runAll != "Run all"}>
-                                <span className="material-icons">play_circle</span>
-                                <span className="material-icons-label" id='run_label'>{runAll}</span>
-                            </button>
-                        </li>
-                        <li className="d-none tablink d-flex flex-wrap justify-content-center" id="login_wrap">
-                            <button className="d-flex justify-content-start bg-transparent border-0 my-2 sidebar_menu"
-                                data-toggle="modal" data-target="#exampleModal" style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
-                                <span className="material-icons">login</span>
-                                <span className="material-icons-label">Login</span>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+        <div className="d-flex flex-column">
+            <div className="upper-nav rounded-bottom-2 d-flex align-items-center">
+                <img className="mx-2" src="logo_ZeuZ.png" alt="" id="logo_dark"/>
+                <div className="mx-2" id="recorderTitle"></div>
+                {/* <h1 className="typing-title">ZeuZ AI Recorder...</h1> */}
+            </div>
             <div className="tabcontent scrollBar" id="content" style={{ display: 'block' }}>
-                <div className="m-4 fs-6 font-weight-bold font-weight-bold text-dark">
-                    <div>
-                        <div>
-                            <form>
-                                <div className="input-group mb-3"  style={{ opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}}>
-                                    <span className="input-group-text" id="basic-addon1">TEST-</span>
-                                    <input id="test_id" value={testId} onChange={handleTestIdChange} className="form-control"
-                                        placeholder="0000" aria-label="Test case ID" disabled={recordState != 'Record'} />
-                                    <button id="fetch" className="btn btn-secondary" type="button" onClick={handleSearch} disabled={recordState != 'Record' || unsavedActions}>
-                                        <span className="material-symbols-outlined" style={{ color: 'white !important' }}>
-                                            search
-                                        </span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div className="modal fade" id="exampleModal" tabIndex={-1} role="dialog"
-                        aria-labelledby="exampleModalLabel" aria-hidden="true">
-                        <div className="modal-dialog" role="document">
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title" id="exampleModalLabel">Login to ZeuZ server</h5>
-                                    <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div className="modal-body">
-                                    <label htmlFor="server_address" className="col-form-label">Server Address:</label>
-                                    <input type="text" className="form-control border border-1" id="server_address"
-                                        placeholder="https://apollo.zeuz.ai" />
-                                    <label htmlFor="api_key" className="col-form-label">API-key:</label>
-                                    <input type="text" className="form-control border border-1" id="api_key"
-                                        placeholder="32 digit api-key" />
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="button" className="btn btn-primary" id="authenticate">Authenticate</button>
-                                </div>
-                            </div>
-                        </div>
+                <div className="m-3">
+                    <div className="my-3"> 
+                        <Search
+                            ref={inputRef}
+                            addonBefore="TEST"
+                            placeholder="0000"
+                            allowClear={false}
+                            onSearch={handleSearch}
+                            onPressEnter={handleSearch}
+                            onChange={handleTestIdChange}
+                            style={{ width: 170 }}
+                            // defaultValue={testId}
+                            maxLength={5}
+                            type='number'
+                            value={testId}
+                            // enterButton = {<ArrowRightOutlined />}
+                            // addonAfter={<ArrowRightOutlined />}
+                            // suffix={<ArrowRightOutlined />}
+                        />
                     </div>
 
-                    <h5 id="test_title">{testTitle}</h5>
+                    <div className="my-3">
+                        <div className="fs-5" id="test_title">{testTitle}</div>
+                    </div>
+                    <div className="mt-5">
+                        <Dropdown stepNames={stepNames} setActions={setActions}/>
+                    </div>
                 </div>
-                <select value={selectedValue} onChange={handleSelectChange} className="form-select form-select-sm m-4 w-50" id="step_select" style={{ height: '42px', padding: '8px', opacity: recordState == "Record" && !unsavedActions ? 1 : 0.5}} disabled={recordState != 'Record' || unsavedActions}>
-                    {stepNames.map((step: stepZsvc)=>(
-                        <option value={step.sequence}>Step-{step.sequence} : {step.name}</option>
-                    )
-                    )}
-                </select>
-                <div className="clearfix mx-2" id="recorder_step">
-                    {actions.length === 0 && <h5>No actions</h5>}
+                <div className="clearfix mx-2" id="recorder_step" ref={containerRef}>
+                    {actions.length === 0 && <h5 className="ml-2">No actions</h5>}
                     {actions.map((action, idx)=>(
                         <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove}/>
+                            
                     ))}
+                    <div className='my-5 py-5'></div>
+                    <div ref={actionRef} className='py-1'></div>
+                </div>
+            </div>
+            <div className="bottom-nav rounded-top-4 fixed-bottom d-flex flex-column justify-content-center">
+                <div className="d-flex flex-row justify-content-around">
+                    {/* <div className="d-inline pl-2">
+                    </div> */}
+                    {
+                        [
+                            {
+                                eventHandler: handleRecording,
+                                style: {opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : ops},
+                                disabled: !initRecordState || recordState == "Recording...",
+                                icon: recordState == 'Record' ? 'camera' : 'stop',
+                                label: recordState
+                            },
+                            {
+                                eventHandler: handleSaveActions,
+                                style: {opacity: initRecordState && recordState == "Record" && saveState == 'Save' ? ops : 0.5},
+                                disabled: !initRecordState || recordState != 'Record' || saveState != 'Save',
+                                icon: 'save',
+                                label: saveState,
+                            },
+                            {
+                                eventHandler: handleRunThis,
+                                style: {opacity: initRecordState && recordState == "Record" && !unsavedActions && runThis == "Run this" ? ops : 0.5},
+                                disabled: !initRecordState || recordState != 'Record' || unsavedActions || runThis != "Run this",
+                                icon: 'play_circle',
+                                label: runThis
+                            },
+                            {
+                                eventHandler: handleRunAll,
+                                style: {opacity: initRecordState && recordState == "Record" && !unsavedActions && runAll == "Run all" ? ops : 0.5},
+                                disabled: !initRecordState || recordState != 'Record' || unsavedActions || runAll != "Run all",
+                                icon: 'play_circle',
+                                label: runAll
+                            },
+                        ].map((item,_)=>(
+                            <button className={buttonClass} onClick={item.eventHandler} style={item.style} disabled={item.disabled}>
+                                <div className={iconClass}>{item.icon}</div>
+                                <div className={labelClass}>{item.label}</div>
+                            </button>
+                        ))
+                    }
                 </div>
             </div>
         </div>

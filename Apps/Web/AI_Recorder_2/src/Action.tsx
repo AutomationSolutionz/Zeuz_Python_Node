@@ -1,19 +1,6 @@
 // import {Helmet} from "react-helmet";
-export type actionType ={
-    id: string,
-    stillRecording: Boolean,
-    is_disable: boolean,
-    main: string[][],
-    name: string,
-    typeWrite: boolean,
-    animateRomove: boolean,
-    short:{
-        action: string,
-        element: string,
-        value: string,
-    },
-    xpath: string
-}
+import {DeleteOutlined} from '@ant-design/icons'
+import type {actionType} from './common'
 interface actionInterface{
     action: actionType
     idx: number
@@ -31,14 +18,15 @@ export function Action({action, idx, removeAction, animationRemove}: actionInter
     return (
         action.stillRecording ? <></> : (
         <>
-            <div className={"action py-2 pl-3 mb-1 d-flex align-item-center bd-highlight " + (action.animateRomove? 'animExit' : '')}>
-                <div><img className="d-inline-block zeuz-icon" src="../small_logo.png" alt=""/></div>
+            <div className={"action py-3 pl-3 mb-1 d-flex align-item-center" + (action.animateRomove? ' animExit' : '')}>
+                {/* <div><img className="d-inline-block zeuz-icon" src="../small_logo.png" alt=""/></div> */}
                 <div className="d-inline-block pl-2 pr-4">{idx+1}</div>
                 <div className={"action-text "+ (action.typeWrite ? "typing-demo" : "")} onAnimationEnd={handeAnimationEnd} >{(action==undefined) ? 'Loading...' : action.name}</div>
-                <button type="button" className="btn btn-outline-danger btn-sm py-0 px-1 ml-auto mr-2 bd-highlight" onClick={handeOnRemove}>
-                    <img src="trash.svg" alt="" height={14} width={14} className="trash-icon"/>
-                    <span className="visually-hidden">Button</span>
-                </button>
+                <div className="del-button py-0 ml-auto mr-3" onClick={handeOnRemove}>
+                    {/* <img src="trash.svg" alt="" height={14} width={14} className="trash-icon"/>
+                    <span className="visually-hidden">Button</span> */}
+                    <DeleteOutlined />
+                </div>
             </div>
         </>)
     )

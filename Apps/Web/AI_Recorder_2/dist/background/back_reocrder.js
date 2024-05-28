@@ -8,6 +8,21 @@ fetch("./data.json")
 
 const browserAppData = chrome || browser;
 
+function generateId({stack, command, url, xpath}){
+    if (stack){
+        for (const item of Object.keys(Stack)) {
+            if(Stack[item] && Stack[item][0].command === command && Stack[item][0].url === url && Stack[item][0].xpath === xpath)
+                return item
+        }
+    }
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let id = '';
+    for (let i = 0; i < 8; i++) {
+      id += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return id;
+}
+
 var notificationCount = 0;
 function notification(command) {
     let tempCount = String(notificationCount);
@@ -39,12 +54,23 @@ var action_name_convert = {
 }
 
 async function fetchAIData(id, command, value, url, document){
-    browserAppData.runtime.sendMessage({
-        action: 'record-start',
-        data: {
-            id:id
-        },
-    })
+    if (command === 'keystroke keys'){
+        let keystroke = {
+            id: id,
+            action: 'keystroke keys',
+            element: "",
+            is_disable: false,
+            name: `keystroke: ${value}`,
+            value: url,
+            main: [['keystroke keys', 'selenium action', value]],
+            xpath: "",
+        };
+        browserAppData.runtime.sendMessage({
+            action: 'record-finish',
+            data: keystroke,
+        })
+        return;
+    }
     if (command === 'go to link'){
         let go_to_link = {
             id: id,
@@ -137,24 +163,95 @@ async function fetchAIData(id, command, value, url, document){
     })
 }
 
-async function record_action(id, command, value, url, document){
-    if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
-    notification(command);
-    fetchAIData(id, command, value, url, document);  
+var Stack = {}
+async function record_action(id, command, xpath, value, url, tagName, document, stack){
+    let stacked_id = ''
+    if (stack){
+        if (!(id in Stack)){
+            Stack[id] = [{
+                id: id,
+                command: command,
+                xpath: xpath,
+                value: value,
+                url: url,
+                tagName: tagName,
+                document: document
+            }]
+            browserAppData.runtime.sendMessage({
+                action: 'record-start',
+                data: {
+                    id:id
+                },
+            })
+        }
+        else if(
+            Stack[id][0].command == command &&
+            Stack[id][0].xpath == xpath &&
+            Stack[id][0].url == url
+        ){
+            Stack[id].push({
+                id: id,
+                command: command,
+                xpath: xpath,
+                value: value,
+                url: url,
+                tagName: tagName,
+                document: document
+            })
+        }
+        stacked_id = id
+    }
+    for (const item of Object.keys(Stack)) {
+        if (item === stacked_id) 
+            continue
+        let _id = Stack[item][Stack[item].length-1].id
+        let _command = Stack[item][Stack[item].length-1].command
+        let _value = Stack[item][Stack[item].length-1].value
+        let _url = Stack[item][Stack[item].length-1].url
+        let _document = Stack[item][Stack[item].length-1].document
+        if (Object.keys(action_name_convert).includes(_command)) 
+            _command = action_name_convert[_command];
+        notification(_command);
+        fetchAIData(_id, _command, _value, _url, _document);
+        delete Stack[item]        
+    }
+
+    if(!stack){
+        browserAppData.runtime.sendMessage({
+            action: 'record-start',
+            data: {
+                id:id
+            },
+        })
+        if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
+        notification(command);
+        fetchAIData(id, command, value, url, document); 
+    } 
 }
+
 browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.action == 'start_recording') {
+            Stack = {}
             notificationCount = 0;
         }
         else if (request.action == 'record_action') {
+            let id = generateId({
+                stack: request.stack,
+                command: request.command,
+                url: request.url,
+                xpath: request.xpath,
+            })
+            console.log('action_name =',request.command)
             record_action(
-                request.id,
+                id,
                 request.command,
-                // request.target,
+                request.xpath,
                 request.value,
                 request.url,
+                request.tagName,
                 request.document,
+                request.stack,
             );
         }
     }

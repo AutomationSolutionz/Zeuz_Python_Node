@@ -183,8 +183,8 @@ async function open_panel_2(tab) {
 
     result = await browserAppData.storage.local.get('window');
     var win = await chrome.windows.getCurrent();
-    var height = Math.max(Math.round(win.height*0.9), 700) ;
-    var width = Math.max(Math.round(win.width*0.35), 600);
+    var height = Math.max(Math.round(win.height*1), 700) ;
+    var width = Math.max(Math.round(win.width*0.20), 400);
     if (result) {
         try {
             result = result.window;
@@ -257,6 +257,7 @@ browserAppData.windows.onRemoved.addListener(function(windowId) {
 
 var port;
 browserAppData.contextMenus.onClicked.addListener(function(info, tab) {
+    console.log('context-menu', info.menuItemId)
     port.postMessage({ cmd: info.menuItemId });
 });
 
