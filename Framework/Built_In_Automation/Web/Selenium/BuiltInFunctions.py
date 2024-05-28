@@ -1748,12 +1748,16 @@ def Keystroke_For_Element(data_set):
     # Insert keystroke
     try:
         if stype == "keys":
-            # Requires: python-selenium v3.1+, geckodriver v0.15.0+
-            keystroke_value = keystroke_value.upper().replace("CTRL", "CONTROL")
-            if keystroke_value.startswith("ARROW"):
-                keystroke_value = keystroke_value[5:]
-                if keystroke_value.startswith("_"):
-                    keystroke_value = keystroke_value[1:]
+            keystroke_value = keystroke_value.upper()
+            convert = {
+                "CTRL": "CONTROL",
+                "PLUS": "ADD",
+                "MINUS": "SUBTRACT",
+                "DASH": "SUBTRACT",
+                "CMD": "COMMAND",
+            }
+            for key in convert:
+                keystroke_value = keystroke_value.replace(key, convert[key])
             if "+" in keystroke_value:
                 hotkey_list = keystroke_value.split("+")
                 for i in range(len(hotkey_list)):
@@ -2734,16 +2738,15 @@ def save_attribute_values_in_list(step_data):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], [], [], []])
-                    temp = right.strip(",").split('",\n')
+                    temp = right.strip(",").split(',\n')
                     data = []
-                    temp[-1] = temp[-1][:-1]
                     for each in temp:
-                        data.append(each.strip().split("=",1))
+                        data.append(each.strip().split("=", 1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j][1:]   # dont add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = CommonUtil.strip1(data[i][j], '"')   # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -3160,83 +3163,37 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    selenium_driver.switch_to.default_content()
     try:
-        scroll_inside_element = False
-        scroll_window_name = "window"
-        scroll_window = ""
-        action_row = None
+        Element = None
+        get_element = False
+        scroll_direction = ""
+        offset = ""
+        pixel = 750
+        for left, mid, right in step_data:
+            mid = mid.strip().lower()
+            if "action" in mid:
+                scroll_direction = right.strip().lower()
+            elif mid == "element parameter":
+                get_element = True
+            elif left.strip().lower() == "pixels":
+                pixel = int(right.strip().lower())
 
-        for row in step_data:
-            if str(row[1]) == "action":
-                action_row = row
-                break
+        if get_element:
+            Element = LocateElement.Get_Element(step_data, selenium_driver)
 
-        if not action_row:
-            CommonUtil.ExecLog(sModuleInfo, "No action row defined", 3)
-            return "zeuz_failed"
-
-        if (
-                len(step_data) > 1
-        ):  # element given scroll inside element, not on full window
-            scroll_inside_element = True
-            scroll_window_name = "arguments[0]"
-
-        if scroll_inside_element:
-            scroll_window = LocateElement.Get_Element(step_data, selenium_driver)
-            if scroll_window in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Element through which instructed to scroll not found",
-                    3,
-                )
-                return "zeuz_failed"
-
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Element inside which instructed to scroll has been found. Scrolling thorugh it",
-                1,
-            )
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling through main window", 1)
-
-        scroll_direction = str(action_row[2]).strip().lower()
         if scroll_direction == "down":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling down", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(0,750)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"0,{pixel}"
         elif scroll_direction == "up":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(0,-750)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"0,-{pixel}"
         elif scroll_direction == "left":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling left", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(-750,0)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
+            offset = f"-{pixel},0"
         elif scroll_direction == "right":
-            CommonUtil.ExecLog(sModuleInfo, "Scrolling right", 1)
-            result = selenium_driver.execute_script(
-                "%s.scrollBy(750,0)" % scroll_window_name, scroll_window
-            )
-            time.sleep(2)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Value invalid. Only 'up', 'down', 'right' and 'left' allowed",
-                3,
-            )
-            result = "zeuz_failed"
-            return result
+            offset = f"{pixel},0"
+
+        CommonUtil.ExecLog(sModuleInfo, f"Scrolling {scroll_direction}", 1)
+        selenium_driver.execute_script(f"{'arguments[0]' if Element is not None else 'window'}.scrollBy({offset})")
+        time.sleep(2)
+        return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -3248,11 +3205,15 @@ def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     use_js = False
+    additional_scroll = 0.1
     try:
-        for row in step_data:
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "1")
+            elif "additional scroll" == left:
+                additional_scroll = float(right.strip())
 
-            if "use js" in row[0].lower():
-                use_js = row[2].strip().lower() in ("true", "yes", "1")
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
         if scroll_element in failed_tag_list:
             CommonUtil.ExecLog(
@@ -3268,10 +3229,10 @@ def scroll_to_element(step_data):
         if use_js:
             selenium_driver.execute_script("arguments[0].scrollIntoView(true);", scroll_element)
         else:
-            actions = ActionChains(selenium_driver)
-            
-            actions.move_to_element(scroll_element)
-            actions.perform()
+            ActionChains(selenium_driver).move_to_element(scroll_element).perform()
+
+        if additional_scroll > 0:
+            selenium_driver.execute_script(f"window.scrollBy(0,{round(selenium_driver.get_window_size()['height']*additional_scroll)})")
         return "passed"
 
     except Exception:

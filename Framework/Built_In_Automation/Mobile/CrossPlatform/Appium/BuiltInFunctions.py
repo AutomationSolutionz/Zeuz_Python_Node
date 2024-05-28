@@ -869,17 +869,21 @@ def start_appium_driver(
                         # saving simulator path for future use
                         Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
-                    app = os.path.join(app, ios)
-                    encoding = "utf-8"
-                    bundle_id = str(
-                        subprocess.check_output(
-                            ["osascript", "-e", 'id of app "%s"' % str(app)]
-                        ),
-                        encoding=encoding,
-                    ).strip()
+                    ios_part = ios.split('.')[0]
+                    if ios_part == 'com':
+                        desired_caps["bundleId"] = ios
+                    else:               
+                        app = os.path.join(app, ios)
+                        encoding = "utf-8"
+                        bundle_id = str(
+                            subprocess.check_output(
+                                ["osascript", "-e", 'id of app "%s"' % str(app)]
+                            ),
+                            encoding=encoding,
+                        ).strip()
 
-                    desired_caps["app"] = app  # Use set_value() for writing to element
-                    desired_caps["bundleId"] = bundle_id.replace("\\n", "")
+                        desired_caps["app"] = app  # Use set_value() for writing to element
+                        desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
                 desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
                 desired_caps["platformVersion"] = platform_version
@@ -4058,16 +4062,15 @@ def save_attribute_values_appium(step_data):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], [], [], []])
-                    temp = right.strip(",").split('",\n')
+                    temp = right.strip(",").split(',\n')
                     data = []
-                    temp[-1] = temp[-1][:-1]
                     for each in temp:
-                        data.append(each.strip().split("=",1))
+                        data.append(each.strip().split("=", 1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j][1:]  # do not add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = CommonUtil.strip1(data[i][j], '"')  # do not add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
