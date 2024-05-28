@@ -19,7 +19,7 @@ export type actionsInterface = actionType[]
 export interface stepZsvc{
     name: string,
     sequence: number,
-    id: number,
+    stepId: number,
 }
 export interface RequestType {
     action: string;

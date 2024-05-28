@@ -68,7 +68,9 @@ function App() {
             }
             meta_data['testNo'] = 'TEST-'+test_id;
             meta_data['stepNo'] = step_no
-            meta_data['stepId'] = response.steps.filter((step: stepZsvc)=>{if(step.sequence==step_no) return step.id})[0].stepId;
+            print('response.steps', response.steps)
+            print('response filter', response.steps.filter((step: stepZsvc)=>{if(step.sequence==step_no) return step}))
+            meta_data['stepId'] = response.steps.filter((step: stepZsvc)=>{if(step.sequence==step_no) return step})[0].stepId;
             await browserAppData.storage.local.set({
                 meta_data: meta_data,
             })
@@ -78,7 +80,7 @@ function App() {
                 return {
                     name: step.name,
                     sequence: step.sequence,
-                    id: step.id,
+                    stepId: step.stepId,
                 }
             }));
             setUnsavedActions(false)

@@ -33,7 +33,7 @@ const dropdown = ({ stepNames, setActions }: stepNamesInterface) => {
         let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
         let meta_data: metaDataInterface = localStorageMetadata.meta_data
         meta_data['stepNo'] = Step.sequence 
-        meta_data['stepId'] = Step.id
+        meta_data['stepId'] = Step.stepId
         await browserAppData.storage.local.set({
             meta_data: meta_data,
         })
