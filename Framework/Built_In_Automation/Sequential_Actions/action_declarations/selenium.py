@@ -47,7 +47,7 @@ declarations = (
     { "name": "if element exists",             "function": "if_element_exists",             "screenshot": "web" },
     { "name": "click and enter text",          "function": "Click_and_Text",                "screenshot": "web" },
     { "name": "validate url",                  "function": "Validate_Url",                  "screenshot": "web" },
-    { "name": "scroll element to top",         "function": "scroll_element_to_top",         "screenshot": "web" },
+    { "name": "scroll to top",                 "function": "scroll_to_top",         "screenshot": "web" },
     { "name": "switch window",                 "function": "switch_window",                 "screenshot": "web" },
     { "name": "switch window or frame",        "function": "switch_window_or_tab",          "screenshot": "web" },
     { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },
