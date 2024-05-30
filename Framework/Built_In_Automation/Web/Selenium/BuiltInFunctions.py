@@ -3158,6 +3158,18 @@ def Sleep(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def generate_scroll_offset(direction: str, pixel: int) -> str:
+    if direction == "down":
+        return f"0,{pixel}"
+    elif direction == "up":
+        return f"0,-{pixel}"
+    elif direction == "left":
+        return f"-{pixel},0"
+    elif direction == "right":
+        return f"{pixel},0"
+    else:
+        return "0,0"
+
 # Method to scroll down a page
 @logger
 def Scroll(step_data):
@@ -3181,14 +3193,7 @@ def Scroll(step_data):
         if get_element:
             Element = LocateElement.Get_Element(step_data, selenium_driver)
 
-        if scroll_direction == "down":
-            offset = f"0,{pixel}"
-        elif scroll_direction == "up":
-            offset = f"0,-{pixel}"
-        elif scroll_direction == "left":
-            offset = f"-{pixel},0"
-        elif scroll_direction == "right":
-            offset = f"{pixel},0"
+        offset = generate_scroll_offset(scroll_direction, pixel)
 
         CommonUtil.ExecLog(sModuleInfo, f"Scrolling {scroll_direction}", 1)
         selenium_driver.execute_script(f"{'arguments[0]' if Element is not None else 'window'}.scrollBy({offset})")
@@ -3203,16 +3208,41 @@ def Scroll(step_data):
 @logger
 def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    use_js = False
+    retur_ntop_left_script = '''
+        var Top = window.pageYOffset || document.documentElement.scrollTop;
+        var Left = window.pageXOffset || document.documentElement.scrollLeft;
+        return [Top, Left]'''
+    method = "js"
     additional_scroll = 0.1
+    direction = ""
+    top, left = None, None
+    alignToTop = 'true'
+    '''
+    The alignToTop parameter is a boolean value that can be either true or false. Here's what each value does:
+
+    true: If alignToTop  is set to  true, the browser will scroll the element so that it is positioned at the
+    top of the visible area of the window. In other words, the top of the element will be aligned with the top of the viewport.
+    
+    false (or omitted): If alignToTop is set to false or omitted, the browser will scroll the element into the
+    visible area of the window, but it will try to align the bottom of the element with the bottom of the viewport.
+    This means that the element will be positioned at the bottom of the visible area.
+    '''
+
     try:
         for left, mid, right in step_data:
             left = left.lower().strip()
+            right = right.strip().lower()
             if "use js" == left:
-                use_js = right.strip().lower() in ("true", "yes", "1")
-            elif "additional scroll" == left:
-                additional_scroll = float(right.strip())
+                method = "js" if right in ("true", "yes", "1") else "action chain"
+            elif "align to top" == left:
+                alignToTop = "true" if right in ("true", "yes", "1") else "false"
+            elif "method" == left:
+                method = right
+            elif "additional scroll" in left:
+                additional_scroll = float(right)
+                d = right.lstrip("additional scroll").strip()
+                if d in ("up", "down", "left", "right"):
+                    direction = d
 
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
         if scroll_element in failed_tag_list:
@@ -3221,18 +3251,56 @@ def scroll_to_element(step_data):
             )
             return "zeuz_failed"
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Element to which instructed to scroll has been found. Scrolling to view it",
-            1,
-        )
-        if use_js:
-            selenium_driver.execute_script("arguments[0].scrollIntoView(true);", scroll_element)
+        if not direction and additional_scroll > 0:
+            try:
+                top, left = selenium_driver.execute_script(retur_ntop_left_script)
+            except:
+                top, left = None, None
+
+        if method == "js":
+            selenium_driver.execute_script(f"arguments[0].scrollIntoView({alignToTop});", scroll_element)
+        elif method == "webdriver":
+            scroll_element.location_once_scrolled_into_view
         else:
             ActionChains(selenium_driver).move_to_element(scroll_element).perform()
 
-        if additional_scroll > 0:
-            selenium_driver.execute_script(f"window.scrollBy(0,{round(selenium_driver.get_window_size()['height']*additional_scroll)})")
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            f"Scrolled to view with method = {method}",
+            1,
+        )
+
+        if not direction and additional_scroll > 0 and top is not None and left is not None:
+            try:
+                newTop, newLeft = selenium_driver.execute_script(retur_ntop_left_script)
+                if newTop > top:
+                    direction = "down"
+                elif newTop < top:
+                    direction = "up"
+                elif newLeft > left:
+                    direction = "right"
+                elif newLeft < left:
+                    direction = "left"
+                else:
+                    direction = ""
+            except:
+                direction = ""
+
+            if (method in["js", "webdriver"]) and \
+                (alignToTop == "true" and direction in ["down", "right"]) or \
+                (alignToTop == "false" and direction in ["up", "left"]):
+                # No need of default additional scroll
+                direction = ""
+
+        if direction and additional_scroll > 0:
+            time.sleep(1)
+            offset = generate_scroll_offset(direction, round(selenium_driver.get_window_size()["height" if direction in ("up", "down") else "width"] * additional_scroll))
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Doing additional scroll in {direction} direction, {additional_scroll * 100}% of {'height' if direction in ('up', 'down') else 'width'} of html body, ({offset}) pixels",
+                1,
+            )
+            selenium_driver.execute_script(f"window.scrollBy({offset})")
         return "passed"
 
     except Exception:
@@ -3241,22 +3309,15 @@ def scroll_to_element(step_data):
 
 # Method to scroll to view an element
 @logger
-def scroll_element_to_top(step_data):
+def scroll_to_top(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
     try:
-        scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
-        if scroll_element in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Element to which instructed to scroll not found", 3
-            )
-            return "zeuz_failed"
+        selenium_driver.execute_script(f"window.scroll(0,0)")
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Element to which instructed to scroll to top of the page has been found. Scrolling to view it at the top",
+            "Scrolled to top of the html",
             1,
         )
-        scroll_element.location_once_scrolled_into_view
         return "passed"
 
     except Exception:
