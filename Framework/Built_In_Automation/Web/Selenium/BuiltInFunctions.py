@@ -3307,16 +3307,20 @@ def scroll_to_element(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+scroll_to_top_code = ''' var pre_x = window.pageXOffset;
+var pre_y = window.pageYOffset;
+window.scrollTo(window.pageXOffset,0); return [pre_x, pre_y, window.pageXOffset, window.pageYOffset]
+'''
 # Method to scroll to view an element
 @logger
 def scroll_to_top(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        selenium_driver.execute_script(f"window.scroll(0,0)")
+        pre_x, pre_y, x, y = selenium_driver.execute_script(scroll_to_top_code)
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Scrolled to top of the html",
-            1,
+            f"Scrolled to top of the html.\npre_x, pre_y, x, y = [{pre_x}, {pre_y}, {x}, {y}]",
+            1 if (x,y) == (0,0) else 2,
         )
         return "passed"
 
