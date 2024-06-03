@@ -294,8 +294,11 @@ def prettify(key, val):
     except:
         val_output = str(val)
 
-    if len(val_output) > prettify_limit:
-        val_output = f"{val_output[:prettify_limit]}\n...(truncated {len(val_output)-prettify_limit} chars)"
+    if isinstance(prettify_limit, int):
+        if len(val_output) > prettify_limit:
+            val_output = f"{val_output[:prettify_limit]}\n...(truncated {len(val_output)-prettify_limit} chars)"
+    else:
+        val_output = str(val)
 
     color = Fore.MAGENTA
     print(color + f"{key} = ", end="")
