@@ -64,7 +64,7 @@ section {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: "Open Sans", sans-serif !important;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
@@ -11777,8 +11777,8 @@ h5,
   background-position: center center;
 }
 
-.material-icons {
-  font-family: "Material Icons";
+.material-icons-outlined {
+  font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
   font-size: 30px;
@@ -11804,36 +11804,24 @@ h5,
   font-feature-settings: "liga";
 }
 
-.material-icons-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  /* Preferred icon size */
-  display: inline-block;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
+.material-icons-label {
+  position: absolute;
+  top: -20px;
+  left: 40%;
+  background-color: #fffaeb;
+  color: #444;
+  padding: 2px 4px;
+  border-radius: 15px;
+  font-size: 12px;
   white-space: nowrap;
-  direction: ltr;
-  color: #ef0000;
-
-  /* Support for all WebKit browsers. */
-  -webkit-font-smoothing: antialiased;
-  /* Support for Safari and Chrome. */
-  text-rendering: optimizeLegibility;
-
-  /* Support for Firefox. */
-  -moz-osx-font-smoothing: grayscale;
-
-  /* Support for IE. */
-  font-feature-settings: "liga";
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
 }
 
-.material-icons-label {
-  font-size: 12px;
-  color: #444;
+.control-button:hover .material-icons-label {
+  opacity: 1;
+  visibility: visible;
 }
 
 #root{
@@ -11973,10 +11961,6 @@ body
   min-width: 20%;
   max-width: 60%;
   text-align: center;
-}
-.scrollBar
-{
-  overflow-y: auto;
 }
 .table_body td
 {
@@ -12197,9 +12181,7 @@ body
   width: 40px;
   height: 40px;
 }
-#recorderTitle{
-  padding-top: 30px;
-}
+
 .stop_button
 {
   background: url(images/stop.png);
@@ -12451,7 +12433,6 @@ body
   /* position: relative; */
   /* z-index: 1; */
   /* border-right: 3px solid; */
-  /* font-family: monospace; */
   /* font-size: 2em; */
 }
 .typing-title {
@@ -12462,7 +12443,6 @@ body
   /* position: relative; */
   /* z-index: 1; */
   /* border-right: 3px solid; */
-  /* font-family: monospace; */
   /* font-size: 2em; */
 }
 
@@ -12485,13 +12465,13 @@ body
 }
 .action{
   background-color:white;
-  border-radius: 8px;
-  border-bottom: 1px solid #b7b7b7;
+  /* border-radius: 8px;
+  border-bottom: 1px solid #b7b7b7; */
   font-size: 14px;
   position: relative;
   overflow-x:hidden;
   overflow-y:hidden;
-  /* height: auto; */
+  color: #595959;
   width: 100%;
 }
 
@@ -12499,16 +12479,24 @@ body
   display: none;
 }
 
+.action .del-button-container {
+  width: 25px;
+}
+
 .action:hover .del-button {
   display: inline-block;
   /* opacity: 0.5; */
+}
+.action-no{
+  width: 35px;
 }
 .del-button:hover {
   display: inline-block;
   /* opacity: 1; */
   transform: scale(1.25);
   transition: 300ms;
-  cursor: pointer
+  cursor: pointer;
+  color: #bd2130;
 }
 
 .animExit {
@@ -12569,12 +12557,13 @@ body
 }
 
 .bottom-nav{
-  height: 60px;
-  background: #eee;
+  /* height: 60px; */
+  background: #fff;
+  box-shadow: 0px -2px 4px #0003
 }
 .upper-nav{
   height: 60px;
-  background: #eee;
+  background: #fff;
 }
 
 .control-button {
@@ -12587,4 +12576,23 @@ body
   /* background-color: #787878 !important; */
   transform: scale(1.1);
   transition: 300ms;
+}
+
+#recorderTitle{
+  padding-top: 30px;
+  font-size: 20px;
+  color: #555;
+}
+#original_title{
+  font-size: 18px;
+}
+.zeuz-step{
+  font-style: italic;
+  color: #337AB7 !important;
+}
+#logs{
+  font-size: 14px;
+  height: 15px;
+  color: #595959;
+  text-align: center;
 }

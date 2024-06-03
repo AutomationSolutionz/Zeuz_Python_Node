@@ -1,7 +1,6 @@
-import React from 'react';
 import { useState, useEffect } from 'react';
 import type { MenuProps } from 'antd';
-import { Button, Dropdown, message, Space, Tooltip } from 'antd';
+import { Dropdown } from 'antd';
 import { stepZsvc, fetchActionData, browserAppData, actionsInterface, metaDataInterface } from './common';
 interface stepNamesInterface {
     stepNames: stepZsvc[],
@@ -45,11 +44,13 @@ const dropdown = ({ stepNames, setActions }: stepNamesInterface) => {
         return {
             label: step.name,
             key: step.sequence.toString(),
+            className: 'zeuz-step'
         };
     })
 
     return (
         <Dropdown
+        className='zeuz-step'
             menu={{
                 items,
                 onClick: handleMenuClick,
