@@ -43,7 +43,7 @@
 }
 
 html {
-  font-family: sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   line-height: 1.15;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
@@ -64,7 +64,7 @@ section {
 
 body {
   margin: 0;
-  font-family: "Open Sans", sans-serif !important;
+  font-family: Arial, Helvetica, sans-serif !important;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
@@ -12474,7 +12474,9 @@ body
   color: #595959;
   width: 100%;
 }
-
+.action-no{
+  width: 35px;
+}
 .action .del-button {
   display: none;
 }
@@ -12487,9 +12489,7 @@ body
   display: inline-block;
   /* opacity: 0.5; */
 }
-.action-no{
-  width: 35px;
-}
+
 .del-button:hover {
   display: inline-block;
   /* opacity: 1; */
@@ -12577,6 +12577,9 @@ body
   transform: scale(1.1);
   transition: 300ms;
 }
+.control-button:not([disabled]):hover .material-icons-outlined {
+  color: #337AB7;
+}
 
 #recorderTitle{
   padding-top: 30px;
@@ -12587,12 +12590,73 @@ body
   font-size: 18px;
 }
 .zeuz-step{
+  color: #444 !important;
+}
+.zeuz-step-item{
+  font-style: italic;
+  color: #444 !important;
+}
+.zeuz-step-item:hover {
   font-style: italic;
   color: #337AB7 !important;
 }
 #logs{
-  font-size: 14px;
-  height: 15px;
+  font-size: 16px;
+  height: 16px;
   color: #595959;
   text-align: center;
+}
+.root{
+  transition: filter 0.3s ease;
+}
+.blurred{
+  filter: blur(12px);
+}
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+.overlay-content{
+  width: 100%;
+}
+.overlay-uppernav{
+  width: 100%;
+}
+.overlay-title{
+  font-size: 20px;
+  color: #555;
+}
+.overlay-close {
+  width: 15px;
+  margin-bottom: 4px;
+}
+
+/* .overlay-uppernav .overlay-close-container {
+  width: 25px;
+} */
+
+.overlay-close:hover {
+  /* display: inline-block; */
+  /* transform: scale(1.25); */
+  transition: 300ms;
+  cursor: pointer;
+  color: #bd2130;
+}
+
+.overlay-gif {
+  height: 80px;
+  width: 80px;
+}
+.overlay-text{
+  color: #595959;
+}
+.overlay-icon-loading{
+  color: #595959;
+}
+.overlay-icon-check{
+  color: green;
 }

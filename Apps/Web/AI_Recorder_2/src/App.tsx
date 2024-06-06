@@ -4,6 +4,7 @@ import './App.css'
 import { Action } from './Action'
 import type { actionType } from './common'
 import Dropdown from './dropdown'
+import Overlay from './overlay'
 import $ from 'jquery';
 import Typewriter from 'typewriter-effect/dist/core'
 import { actionsInterface, stepZsvc, RequestType, browserAppData, metaDataInterface, Processing_texts } from './common';
@@ -28,6 +29,7 @@ function App() {
     const [initRecordState, setInitRecordState] = useState<boolean>(false);
     // Used to disable step selection, test case search, save, run when there are unsaved actions
     const [unsavedActions, setUnsavedActions] = useState<boolean>(false);
+    const [showOverlay, setShowOverlay] = useState<boolean>(false);
     // Save button state
     const [saveState, setSaveState] = useState<string>('Save');
     const [runThis, setRunThis] = useState<string>('Run this');
@@ -51,6 +53,8 @@ function App() {
     // }
 
     // Fetch Test data of the testId 
+
+    const saveDisableCondition = !initRecordState || recordState != 'Record' || saveState != 'Save'
     const fetchTestData = async (test_id: string = '', step_no: number = 1) => {
         try {
             let localStorageMetadata = await browserAppData.storage.local.get('meta_data');
@@ -157,6 +161,7 @@ function App() {
             })
         }, [actions]
     )
+    let logTimeOuts: number[] = []
     // When new recorded actions come from background script, render new actions
     const handleRecordResponse = (request: RequestType) => {
         setRecordState((prevRecordState) => {
@@ -186,16 +191,30 @@ function App() {
                     new_actions.push(action);
                     return new_actions;
                 });
-                let time = 0
-                for(let i = 0; i < Math.floor(Math.random() * 3) + 2; i++){
-                    time += Math.random()*1500 + 1500
-                    setTimeout(()=>{
-                        if (recordState == 'Record') 
-                            return;
-                        setLogText(Processing_texts[Math.floor(Math.random() * Processing_texts.length)])
-                    }, time)
+                while (logTimeOuts.length > 0) {
+                    clearTimeout(logTimeOuts.shift())
                 }
-                return 'Recording...'
+                let time = 0
+                if (!['keystroke keys', 'go to link'].includes(request.data.action)) {
+                    const logsChosen = Processing_texts.sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random() * 3) + 2)
+                    logsChosen.push('')
+                    for (let i = 0; i < logsChosen.length; i++) {
+                        logTimeOuts.push(setTimeout(() => {
+                            setRecordState((prev_rec) => {
+                                if (prev_rec == 'Record')
+                                    return prev_rec
+                                else {
+                                    setLogText((prevLog) => {
+                                        return logsChosen[i]
+                                    })
+                                }
+                                return prev_rec
+                            })
+                        }, time))
+                        time += Math.random() * 1500 + 1500
+                    }
+                    return 'Recording...'
+                }
             }
             if (request.action == 'record-finish') {
                 // Reserve a place with unique hash before api-request to maintain sequence
@@ -237,6 +256,7 @@ function App() {
     // Hande Record button click.. Contacts with content script
     const handleRecording = async () => {
         if (recordState == 'Record') {
+            setLogText('Record started')
             let tabs: any[] = await browserAppData.tabs.query({ url: "<all_urls>" })
             try {
                 for (let tab of tabs) {
@@ -275,16 +295,19 @@ function App() {
             for (let tab of tabs) {
                 browserAppData.tabs.sendMessage(tab.id, { detachRecorder: true });
             }
-            setRecordState('Processing...');
+            setRecordState('Record');
+            setLogText('Removing redundant actions...')
             PostProcess();
             setTimeout(() => {
-                setRecordState('Record');
-            }, 1000)
+                setLogText('');
+            }, 2000)
         }
     }
 
     // Saves new actions to server
-    const handleSaveActions = async () => {
+    const handleSaveActions = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        unsavedActions && 
+        setShowOverlay(true)
         try {
             let result = await browserAppData.storage.local.get(["meta_data"]);
             var save_data = {
@@ -427,6 +450,7 @@ function App() {
 
         try {
             stateChangeFunc("Running...")
+            setLogText("Running...")
             var result = await browserAppData.storage.local.get(["meta_data"]);
             const input = {
                 method: "POST",
@@ -479,24 +503,30 @@ function App() {
                 success: function (response) {
                     print('respinse_2', response);
                     stateChangeFunc('Queued!')
+                    setLogText('Queued!')
                     setTimeout(() => {
                         stateChangeFunc(stateText)
+                        setLogText('')
                     }, 1500)
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     jqXHR; textStatus;
                     console.error(errorThrown);
                     stateChangeFunc('Error!!')
+                    setLogText('Error playing!!')
                     setTimeout(() => {
                         stateChangeFunc(stateText)
+                        setLogText('')
                     }, 1500)
                 }
             })
         } catch (error) {
             console.error(error);
             stateChangeFunc('Error!!')
+            setLogText('Error playing!!')
             setTimeout(() => {
                 stateChangeFunc(stateText)
+                setLogText('')
             }, 1500)
         }
     }
@@ -507,72 +537,76 @@ function App() {
     const labelClass = 'material-icons-label'
     const ops = 1
     return (
-        <div className="d-flex flex-column">
-            <div className="upper-nav rounded-bottom-4 d-flex align-items-center">
-                <img className="mx-2" src="logo_ZeuZ.png" alt="" id="logo_dark" />
-                <div className="mx-2" id="recorderTitle"></div>
-            </div>
-            <div id="content" style={{ display: 'block' }}>
-                <div className="m-3">
-                    <div id="original_title">
-                        <div><span id="test_case_id" style={{ "opacity": 0.6 }}>TEST-{testId}</span> : <span id="test_case_title" className="tc_title_rename">{testTitle}</span>&nbsp;&nbsp;&nbsp;<a className="tc_title_rename hint--left hint--bounce hint--rounded" data-hint="Rename test case title"><i className="fa fa-edit"></i></a></div>
+        <>
+            <div className={"d-flex flex-column root" + (showOverlay ? ' blurred' : '')}>
+                <div className="upper-nav d-flex align-items-center">
+                    <img className="mx-2" src="logo_ZeuZ.png" alt="" id="logo_dark" />
+                    <div className="mx-2 title" id="recorderTitle"></div>
+                </div>
+                <div id="content" style={{ display: 'block' }}>
+                    <div className="m-3">
+                        <div id="original_title">
+                            <div><span id="test_case_id" style={{ "opacity": 0.6 }}>TEST-{testId}</span> : <span id="test_case_title" className="tc_title_rename">{testTitle}</span>&nbsp;&nbsp;&nbsp;<a className="tc_title_rename hint--left hint--bounce hint--rounded" data-hint="Rename test case title"><i className="fa fa-edit"></i></a></div>
+                        </div>
+                        <div className="mt-5">
+                            <Dropdown stepNames={stepNames} setActions={setActions} />
+                        </div>
                     </div>
-                    <div className="mt-5">
-                        <Dropdown stepNames={stepNames} setActions={setActions} />
+                    <div className="clearfix" id="recorder_step" ref={containerRef}>
+                        {actions.length === 0 && <h5 className="ml-2">No actions</h5>}
+                        {actions.map((action, idx) => (
+                            <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove} />
+                        ))}
+                        <div className='my-5 py-5'></div>
+                        <div ref={actionRef} className='py-1'></div>
                     </div>
                 </div>
-                <div className="clearfix" id="recorder_step" ref={containerRef}>
-                    {actions.length === 0 && <h5 className="ml-2">No actions</h5>}
-                    {actions.map((action, idx) => (
-                        <Action action={action} idx={idx} removeAction={handeRemoveAction} animationRemove={handleAnimationRemove} />
-                    ))}
-                    <div className='my-5 py-5'></div>
-                    <div ref={actionRef} className='py-1'></div>
+                <div className="bottom-nav fixed-bottom py-1">
+                    <div className="d-flex flex-row justify-content-around mt-1">
+                        {
+                            [
+                                {
+                                    eventHandler: handleRecording,
+                                    style: { opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : ops },
+                                    disabled: !initRecordState || recordState == "Recording...",
+                                    icon: recordState == 'Record' ? 'camera' : 'stop',
+                                    label: recordState
+                                },
+                                {
+                                    eventHandler: handleSaveActions,
+                                    style: { opacity: initRecordState && recordState == "Record" && saveState == 'Save' ? ops : 0.5 },
+                                    disabled: saveDisableCondition,
+                                    icon: 'save',
+                                    label: saveState,
+                                },
+                                {
+                                    eventHandler: handleRunThis,
+                                    style: { opacity: initRecordState && recordState == "Record" && !unsavedActions && runThis == "Run this" ? ops : 0.5 },
+                                    disabled: !initRecordState || recordState != 'Record' || unsavedActions || runThis != "Run this",
+                                    icon: 'play_circle',
+                                    label: runThis
+                                },
+                                {
+                                    eventHandler: handleRunAll,
+                                    style: { opacity: initRecordState && recordState == "Record" && !unsavedActions && runAll == "Run all" ? ops : 0.5 },
+                                    disabled: !initRecordState || recordState != 'Record' || unsavedActions || runAll != "Run all",
+                                    icon: 'play_circle',
+                                    label: runAll
+                                },
+                            ].map((item) => (
+                                <button className={buttonClass} onClick={item.eventHandler} disabled={item.disabled}>
+                                    <div className={iconClass} style={item.style}>{item.icon}</div>
+                                    <div className={labelClass}>{item.label}</div>
+                                </button>
+                            ))
+                        }
+                    </div>
+                    <div className="mb-2" id="logs">{logText}</div>
                 </div>
             </div>
-            <div className="bottom-nav rounded-top-4 fixed-bottom py-1">
-                <div className="d-flex flex-row justify-content-around mt-1">
-                    {
-                        [
-                            {
-                                eventHandler: handleRecording,
-                                style: { opacity: (!initRecordState || recordState == "Recording...") ? 0.5 : ops },
-                                disabled: !initRecordState || recordState == "Recording...",
-                                icon: recordState == 'Record' ? 'camera' : 'stop',
-                                label: recordState
-                            },
-                            {
-                                eventHandler: handleSaveActions,
-                                style: { opacity: initRecordState && recordState == "Record" && saveState == 'Save' ? ops : 0.5 },
-                                disabled: !initRecordState || recordState != 'Record' || saveState != 'Save',
-                                icon: 'save',
-                                label: saveState,
-                            },
-                            {
-                                eventHandler: handleRunThis,
-                                style: { opacity: initRecordState && recordState == "Record" && !unsavedActions && runThis == "Run this" ? ops : 0.5 },
-                                disabled: !initRecordState || recordState != 'Record' || unsavedActions || runThis != "Run this",
-                                icon: 'play_circle',
-                                label: runThis
-                            },
-                            {
-                                eventHandler: handleRunAll,
-                                style: { opacity: initRecordState && recordState == "Record" && !unsavedActions && runAll == "Run all" ? ops : 0.5 },
-                                disabled: !initRecordState || recordState != 'Record' || unsavedActions || runAll != "Run all",
-                                icon: 'play_circle',
-                                label: runAll
-                            },
-                        ].map((item) => (
-                            <button className={buttonClass} onClick={item.eventHandler} disabled={item.disabled}>
-                                <div className={iconClass} style={item.style}>{item.icon}</div>
-                                <div className={labelClass}>{item.label}</div>
-                            </button>
-                        ))
-                    }
-                </div>
-                <div className="mb-2" id="logs">{logText}</div>
-            </div>
-        </div>
+
+            {showOverlay && <Overlay setShowOverlay={setShowOverlay}/>}
+        </>
     )
 }
 

@@ -44,7 +44,7 @@ const dropdown = ({ stepNames, setActions }: stepNamesInterface) => {
         return {
             label: step.name,
             key: step.sequence.toString(),
-            className: 'zeuz-step'
+            className: 'zeuz-step-item'
         };
     })
 
