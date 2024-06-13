@@ -5910,6 +5910,86 @@ def data_store_read(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def data_store_get_data(data_set):
+    try:
+        table_name = None
+        columns = None
+        variable_name = None
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        for left, mid, right in data_set:
+            if left.lower().strip() == 'table name':
+                table_name = right.strip()
+            if left.lower().strip() == 'columns':
+                columns = right.strip()
+            if 'get data' in left.lower().strip():
+                variable_name = right.strip()
+        
+        if table_name == None or variable_name == None:
+            CommonUtil.ExecLog(sModuleInfo, f"Table name and Variable Name both needs to be provided", 3)
+            return "zeuz failed"
+        
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        params = dict()
+        params['table'] = table_name
+        if columns:
+            params['columns'] = columns
+        res = RequestFormatter.request("get", 
+            RequestFormatter.form_uri('data_store/get_datastore/'),
+            params=params,
+            verify=False,
+            **headers
+        )
+
+        if res.status_code==200:
+            sr.Set_Shared_Variables(variable_name, json.loads(res.text).get('data'),pretty=True)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Unable to get datastore data", 3)
+            return "zeuz_failed"
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return "zeuz_failed"
+
+def data_store_get_stats(data_set):
+    try:
+        table_name = None
+        variable_name = None
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        for left, mid, right in data_set:
+            if left.lower().strip() == 'table name':
+                table_name = right.strip()
+            if 'stats' in left.lower().strip():
+                variable_name = right.strip()
+        
+        if table_name == None or variable_name == None:
+            CommonUtil.ExecLog(sModuleInfo, f"Table name and Variable Name both needs to be provided", 3)
+            return "zeuz_failed"
+        
+        headers = RequestFormatter.add_api_key_to_headers({})
+        headers['headers']['content-type'] = 'application/json'
+        headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        params = dict()
+        params['table'] = table_name
+        res = RequestFormatter.request("get", 
+            RequestFormatter.form_uri('data_store/get_datastore_stats/'),
+            params=params,
+            verify=False,
+            **headers
+        )
+
+        if res.status_code==200:
+            sr.Set_Shared_Variables(variable_name, json.loads(res.text).get('data'),pretty=True)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Unable to get datastore data", 3)
+            return "zeuz_failed"
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return "zeuz_failed"
+
+
 def data_store_write(data_set):
     """
     This function reads data from datastore
