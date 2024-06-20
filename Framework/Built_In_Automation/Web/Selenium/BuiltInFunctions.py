@@ -1657,6 +1657,11 @@ def Enter_Text_In_Text_Box(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
             # Fill up the value.
             selenium_driver.execute_script(f"arguments[0].value = `{text_value}`;", Element)
+            # Trigger change events
+            # - input: Fired when the value of the text field changes (after each keystroke, paste, etc.).
+            # - change: Fired when the value of the text field changes and the element loses focus.
+            selenium_driver.execute_script("arguments[0].dispatchEvent(new Event('input', {'bubbles': true}))", Element)
+            selenium_driver.execute_script("arguments[0].dispatchEvent(new Event('change', {'bubbles': true}))", Element)
             # Sometimes text field becomes unclickable after entering text?
             selenium_driver.execute_script("arguments[0].click();", Element)
         else:
