@@ -280,12 +280,9 @@ def call_driver_function_of_test_step(
     StepSeq,
     step_time,
     current_step_name,
-    final_dependency,
-    final_run_params,
     test_steps_data,
     test_action_info,
-    file_specific_steps,
-    debug_actions=None,
+    debug_actions=None
 ):
     try:
         q = queue.Queue()  # define queue
@@ -416,9 +413,6 @@ def run_all_test_steps_in_a_test_case(
     test_case,
     sModuleInfo,
     run_id,
-    file_specific_steps,
-    final_dependency,
-    final_run_params,
     temp_ini_file,
     debug_info,
     performance=False
@@ -611,11 +605,8 @@ def run_all_test_steps_in_a_test_case(
                     StepSeq,
                     step_time,
                     current_step_name,
-                    final_dependency,
-                    final_run_params,
                     test_steps_data,
                     test_action_info,
-                    file_specific_steps,
                     debug_actions,
                 )
 
@@ -957,12 +948,9 @@ def run_test_case(
     TestCaseID,
     sModuleInfo,
     run_id,
-    final_dependency,
-    final_run_params,
     temp_ini_file,
     testcase_info,
     debug_info,
-    all_file_specific_steps,
     rerun_on_fail,
     server_version,
     send_log_file_only_for_fail=True,
@@ -984,7 +972,6 @@ def run_test_case(
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
-        file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         if not CommonUtil.debug_status or not shared.Test_Shared_Variables("zeuz_prettify_limit"):
@@ -1017,9 +1004,6 @@ def run_test_case(
                 test_case,
                 sModuleInfo,
                 run_id,
-                file_specific_steps,
-                final_dependency,
-                final_run_params,
                 temp_ini_file,
                 debug_info,
                 performance
@@ -1665,31 +1649,6 @@ def main(device_dict, all_run_id_info):
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-        # FIXME: Need to decide what to do with the following code or how to
-        # handle it differently in case there are residual folders from previous
-        # test cases inside the attachments folder.
-        get_json, all_file_specific_steps = True, {}
-        cnt = 0
-        # for i in os.walk(save_path):
-        #     if get_json:
-        #         get_json = False
-        #         folder_list = i[1]
-        #         for j in folder_list:
-        #             all_file_specific_steps[j] = {}
-        #     else:
-        #         for j in i[2]:
-        #             all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
-        #         cnt += 1
-        # TODO: Remove all_file_specific_steps at a later period. keeping this
-        # only for custom driver purpose
-
-        # Ensure that the path exists
-        # save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-        # save_path.mkdir(exist_ok=True, parents=True)
-        # json_path = save_path.glob("*.zeuz.json").__next__()
-        # with open(json_path, "r", encoding="utf-8") as f:
-        #     all_run_id_info = json.loads(f.read())
-
         if len(all_run_id_info) == 0:
             CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
             return False
@@ -1712,7 +1671,7 @@ def main(device_dict, all_run_id_info):
             CommonUtil.clear_all_logs()
 
             CommonUtil.run_cancelled = False
-            # FIXME: Remove the unnecessary threading. This won't be needed anymore.
+            # Todo: This thread is required to cancel in step level when run-cancel is pressed. Remove comment when needed
             # thr = executor.submit(check_run_cancel, run_id)
             # CommonUtil.SaveThread("run_cancel", thr)
 
@@ -1728,7 +1687,9 @@ def main(device_dict, all_run_id_info):
                     runid_status = "In-Progress"
                 else:
                     runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-                if not shared.Test_Shared_Variables("zeuz_auto_teardown") or shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() not in ("off", "no", "false", "disable"):
+                if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
+                    shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+                if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() not in ("off", "no", "false", "disable"):
                     cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables(run_id) # clean up variables
 
@@ -1804,22 +1765,12 @@ def main(device_dict, all_run_id_info):
                     shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
 
-            final_dependency = run_id_info["dependency_list"]
-            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
-
-            if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
-                shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
             if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
                 shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
 
             final_run_params = {}
             for param in final_run_params_from_server:
-                # TODO: This needs to be changed to use the new key/value format
-                # to be sent from server.
                 final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
-                # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
-                # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
-                # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
 
             if final_run_params != {}:
                 shared.Set_Shared_Variables("run_time_params", final_run_params, protected=True)
@@ -1974,12 +1925,9 @@ def main(device_dict, all_run_id_info):
                                 test_case_no,
                                 sModuleInfo,
                                 run_id,
-                                final_dependency,
-                                final_run_params,
                                 temp_ini_file,
                                 testcase_info,
                                 debug_info,
-                                all_file_specific_steps,
                                 rerun_on_fail,
                                 server_version,
                                 send_log_file_only_for_fail,
@@ -1996,12 +1944,9 @@ def main(device_dict, all_run_id_info):
                             test_case_no,
                             sModuleInfo,
                             run_id,
-                            final_dependency,
-                            final_run_params,
                             temp_ini_file,
                             testcase_info,
                             debug_info,
-                            all_file_specific_steps,
                             rerun_on_fail,
                             server_version,
                             send_log_file_only_for_fail,
