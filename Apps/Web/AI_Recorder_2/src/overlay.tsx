@@ -121,6 +121,8 @@ const AnimatedIcon: React.FC = () => {
         longRunningFunction();
     }, []);
 
+    const off0_color = '#43cea2; #980045; #185a9d; #43cea2; '
+    const off100_color = '#185a9d; #43cea2; #980045; #185a9d; '
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -135,10 +137,10 @@ const AnimatedIcon: React.FC = () => {
             <defs>
                 <linearGradient id="animatedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="rgb(255, 255, 255)">
-                        <animate attributeName="stop-color" values="#43cea2; #980045; #185a9d; #43cea2" dur="5s" repeatCount="indefinite" />
+                        <animate attributeName="stop-color" values={off0_color + off0_color + off0_color} dur="5s" repeatCount="indefinite" />
                     </stop>
                     <stop offset="100%" stop-color="rgb(255, 255, 255)">
-                        <animate attributeName="stop-color" values="#185a9d; #43cea2; #980045; #185a9d" dur="5s" repeatCount="indefinite" />
+                        <animate attributeName="stop-color" values={off100_color + off100_color + off100_color} dur="5s" repeatCount="indefinite" />
                     </stop>
                 </linearGradient>
                 <linearGradient id="fixedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
