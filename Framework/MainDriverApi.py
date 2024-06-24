@@ -1087,12 +1087,16 @@ def run_test_case(
         test_results = {} if not shared.Test_Shared_Variables("zeuz_session_test_results") or type(shared.Get_Shared_Variables("zeuz_session_test_results")) != dict else shared.Get_Shared_Variables("zeuz_session_test_results")
         if run_id not in test_results:  # Cleanup previous run_id results
             test_results = {
-                run_id: {}
+                run_id: [{
+                    "tc_id": TestCaseID,
+                    "result": sTestCaseStatus,
+                }]
             }
-        if TestCaseID not in test_results[run_id]:
-            test_results[run_id][TestCaseID] = {}
-        if "result" not in test_results[run_id][TestCaseID]:
-            test_results[run_id][TestCaseID]["result"] = sTestCaseStatus
+        else:
+            test_results[run_id].append({
+                "tc_id": TestCaseID,
+                "result": sTestCaseStatus,
+            })
         shared.Set_Shared_Variables("zeuz_session_test_results", test_results, protected=True, print_variable=False)
 
         after_execution_dict["metrics"] = metrics
