@@ -29,7 +29,7 @@ function App() {
     const [initRecordState, setInitRecordState] = useState<boolean>(false);
     // Used to disable step selection, test case search, save, run when there are unsaved actions
     const [unsavedActions, setUnsavedActions] = useState<boolean>(false);
-    const [showOverlay, setShowOverlay] = useState<boolean>(true);
+    const [showOverlay, setShowOverlay] = useState<boolean>(false);
     // Save button state
     const [saveState, setSaveState] = useState<string>('Save');
     const [runThis, setRunThis] = useState<string>('Run this');
