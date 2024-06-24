@@ -69,3 +69,35 @@ export const fetchActionData = async (setActions:(f:()=>actionsInterface)=>void)
     console.log('init_data', init_data);
 }
 
+export const Processing_texts = [
+    'Traversing the DOM tree...',
+    'Evaluating element attributes...',
+    'Analyzing text content...',
+    'Filtering out non-alphanumeric characters...',
+    'Identifying meaningful word patterns...',
+    'Checking for unique element identifiers...',
+    'Examining surrounding context...',
+    // 'Validating XPath against target element...',
+    // 'Optimizing XPath for performance...',
+    'Parsing HTML structure...',
+    'Extracting relevant data...',
+    'Normalizing text values...',
+    'Detecting element relationships...',
+    'Generating unique locators...',
+    // 'Cross-checking with existing XPaths...',
+    // 'Refining XPath accuracy...',
+    'Handling dynamic content...',
+    // 'Ensuring XPath robustness...',
+    'Inspecting element structure... ',
+    'Traversing parent nodes...',
+    'Evaluating sibling elements...',
+    'Extracting word patterns...',
+    'Identifying meaningful text fragments...',
+    'Checking for meaningful text in element attributes...',
+    'Extracting partial meaningful text from element content...',
+    'Verifying spelling of text content for reliability...',
+    'Examining surrounding elements for additional context...',
+    'Comparing similar elements to ensure accuracy...',
+    'Filtering out random characters from text content...',
+    'Constructing optimized XPath expression...'
+]

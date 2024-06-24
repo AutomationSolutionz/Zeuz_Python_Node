@@ -360,6 +360,7 @@ def Login(cli=False, run_once=False, log_dir=None):
                 table.add_column("Authenticated")
                 table.add_column("[green]:heavy_check_mark:")
 
+                table.add_row("url", server_name)
                 table.add_row("Username", user_data.username)
                 table.add_row("Email", user_data.email)
                 table.add_row("Team ID", str(user_data.team_id))

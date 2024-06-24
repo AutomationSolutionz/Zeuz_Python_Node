@@ -581,6 +581,15 @@ def for_loop_action(step_data, data_set_no):
                 CommonUtil.ExecLog(sModuleInfo, "This dataset of for loop action is deprecated. Download the latest dataset and use", 2)
                 deprecation_log = False
             if row[1].strip().lower() == "for loop action":
+                if CommonUtil.debug_status and "next" not in row[2].lower():
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Instead of setting hardcoded action, you can use 'next' keyword in for loop, if else and conditional actions. For example\n" +
+                        "next+1,next+4\n" +
+                        "next to next+4\n" +
+                        f"next {'steps' if step_loop else 'action'}",
+                        2
+                    )
                 values = get_data_set_nums(sr.get_previous_response_variables_in_strings(row[2].strip()), step_loop)
                 if step_loop:
                     loop_steps = [list(range(len(CommonUtil.all_step_dataset[i]))) if i in values else [] for i in list(range(len(CommonUtil.all_step_dataset)))]

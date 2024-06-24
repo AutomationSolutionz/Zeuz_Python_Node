@@ -220,7 +220,8 @@ async function record_action(id, command, xpath, value, url, tagName, document, 
         browserAppData.runtime.sendMessage({
             action: 'record-start',
             data: {
-                id:id
+                id: id,
+                action: action_name_convert[command]
             },
         })
         if (Object.keys(action_name_convert).includes(command)) command = action_name_convert[command];
