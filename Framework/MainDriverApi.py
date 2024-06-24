@@ -822,13 +822,6 @@ def set_important_variables():
         raise Exception
 
 
-def set_runid_status(run_id, tc=False):
-    if tc:
-        shared.Set_Shared_Variables("runid_status", "In-Progress" if run_id in passed_tag_list and shared.Get_Shared_Variables("runid_status",log=False)=="In-Progress" else "Blocked",print_variable=False)
-    else:
-        shared.Set_Shared_Variables("runid_status", "In-Progress" if run_id != shared.Get_Shared_Variables('run_id',log=False) else shared.Get_Shared_Variables("runid_status",log=False),print_variable=False)
-
-
 def send_to_bigquery(execution_log, metrics):
     # Skip sending to gcp if credentials not available in environment.
     if "GCP_BIGQUERY_ACTIONS_TABLE_ID" not in os.environ:
@@ -1057,7 +1050,6 @@ def run_test_case(
             "status": sTestCaseStatus,
             "failreason": ""
         }
-        set_runid_status(sTestCaseStatus,tc=True)
         CommonUtil.test_case_perf.append({
             "run_id": run_id,
             "tc_id": TestCaseID,
@@ -1111,10 +1103,6 @@ def run_test_case(
                 cleanup_driver_instances()
             shared.Clean_Up_Shared_Variables(run_id)
 
-            if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
-                runid_status = "In-Progress"
-            else:
-                runid_status = shared.Get_Shared_Variables("runid_status", log=False)
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
                 if float(server_version.split(".")[0]) < 7:
@@ -1651,8 +1639,6 @@ def main(device_dict, all_run_id_info):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
-            set_runid_status(run_id)
-
             server_version = run_id_info["server_version"]
 
             CommonUtil.ExecLog(
@@ -1678,12 +1664,6 @@ def main(device_dict, all_run_id_info):
             else:
                 CommonUtil.debug_status = False
                 shared.Clean_Up_Shared_Variables(run_id)
-
-                if shared.Get_Shared_Variables("runid_status", log=False) == "zeuz_failed":
-                    runid_status = "In-Progress"
-                else:
-                    runid_status = shared.Get_Shared_Variables("runid_status", log=False)
-                shared.Set_Shared_Variables("runid_status", runid_status, print_variable=False)
 
             # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
