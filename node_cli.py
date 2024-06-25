@@ -94,19 +94,13 @@ except:
     pass
 
 
-
-if not os.path.exists(
-    os.path.join(
-        os.path.abspath(__file__).split("node_cli.py")[0],
-        os.path.join("AutomationLog"),
-    )
-):
-    os.mkdir(
-        os.path.join(
-            os.path.abspath(__file__).split("node_cli.py")[0],
-            os.path.join("AutomationLog"),
-        )
-    )
+automationLogPath = os.path.join(
+    os.path.abspath(__file__).split("node_cli.py")[0],
+    os.path.join("AutomationLog"),
+)
+if not os.path.exists(automationLogPath):
+    os.mkdir(automationLogPath)
+    print(f"Folder created: {automationLogPath}")
 
 # Tells node whether it should run a test set/deployment only once and quit.
 RUN_ONCE = False
@@ -454,7 +448,8 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             nonlocal node_json
             nonlocal save_path
             save_path.mkdir(exist_ok=True, parents=True)
-
+            if not save_path.exists():
+                print(f"Folder created: {save_path}")
             try:
                 with open(save_path / "deploy-response.txt", "w", encoding="utf-8") as f:
                     f.write(response)
@@ -858,7 +853,8 @@ def command_line_args() -> Path:
         if all_arguments.log_dir:
             log_dir = Path(all_arguments.log_dir.strip())
             log_dir.mkdir(parents=True, exist_ok=True)
-
+            if not log_dir.exists():
+                print(f"Folder created: {log_dir}")
             # Try creating a temporary file to see if we have enough permissions
             # to write in the specified log directory.
             touch_file = log_dir / "touch"
