@@ -194,6 +194,7 @@ def check_if_other_machines_failed_in_linked_run():
 
 # downloads attachments for a test case
 def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         log_file_path = ConfigModule.get_config_value(
             "sectionOne", "temp_run_file_path", temp_ini_file
@@ -208,21 +209,25 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
     ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
+    CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {test_case_folder}", 5)
     FL.CreateFolder(test_case_folder)
 
     # create log_folder for browser console error logs
     log_folder = test_case_folder + os.sep + "Log"
     ConfigModule.add_config_value("sectionOne", "log_folder", log_folder, temp_ini_file)
+    CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {log_folder}", 5)
     FL.CreateFolder(log_folder)
 
     # create screenshot_folder
     screenshot_folder = test_case_folder + os.sep + "screenshots"
     ConfigModule.add_config_value("sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file)
+    CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {screenshot_folder}", 5)
     FL.CreateFolder(screenshot_folder)
 
     # performance report folder
     performance_report = test_case_folder + os.sep + "performance_report"
     ConfigModule.add_config_value("sectionOne", "performance_report", performance_report, temp_ini_file)
+    CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {performance_report}", 5)
     FL.CreateFolder(performance_report)
 
     # TODO: we'll be breaking internal server compatibility anyway
@@ -231,14 +236,17 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
         # json report folder
         json_report = test_case_folder + os.sep + "json_report"
         ConfigModule.add_config_value("sectionOne", "json_report", json_report, temp_ini_file)
+        CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {json_report}", 5)
         FL.CreateFolder(json_report)
 
     # create where attachments from selenium browser will be
     # downloaded
     # ? Why are we keeping two separate download folders?
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
+    CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {zeuz_download_folder}", 5)
     FL.CreateFolder(zeuz_download_folder)
     initial_download_folder = run_id_folder + os.sep + "initial_download_folder"
+    CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {initial_download_folder}", 5)
     FL.CreateFolder(initial_download_folder)
     ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
     shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
@@ -290,13 +298,10 @@ def call_driver_function_of_test_step(
         # get step driver
         current_driver = all_step_info[StepSeq-1]["step_driver_type"]
         # current_driver = "Built_In_Driver"
-        print(f"DRIVER: {current_driver}")
-
         try:
             current_driver = "Drivers." + current_driver
             # if CommonUtil.step_module_name is None:
             module_name = importlib.import_module(current_driver)  # get module
-            print("STEP DATA and VARIABLES")
             # get step name
             if all_step_info[StepSeq-1]["step_function"]:
                 step_name = all_step_info[StepSeq-1]["step_function"].strip()
@@ -397,7 +402,6 @@ def call_driver_function_of_test_step(
                 sStepResult = "zeuz_failed"
             q.put(sStepResult)
         except Exception as e:
-            print("### Exception : {}".format(e))
             CommonUtil.Exception_Handler(sys.exc_info())
             sStepResult = "zeuz_failed"
 
@@ -734,14 +738,16 @@ def zip_and_delete_tc_folder_old(
     send_log_file_only_for_fail=True,
 ):
     # if settings checked, then send log file or screenshots, otherwise don't send
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
             FL.ZipFolder(
                 ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file),
                 ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file) + ".zip",
             )
-    # Delete the folder
-    FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file))
+    path = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
+    CommonUtil.ExecLog(sModuleInfo, f"Deleting folder: {path}", 5)
+    FL.DeleteFolder(path)
 
 
 # writes the log file for a test case
@@ -754,6 +760,7 @@ def zip_and_delete_tc_folder(
 
 ):
     # if settings checked, then send log file or screenshots, otherwise don't send
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
             all_steps = CommonUtil.all_logs_json[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]["steps"]
@@ -768,7 +775,9 @@ def zip_and_delete_tc_folder(
                 str(Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)).parent/zip_name),
             )
     # Delete the folder
-    FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file))
+    path = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
+    CommonUtil.ExecLog(sModuleInfo, f"Deleting folder: {path}", 5)
+    FL.DeleteFolder(path)
 
 
 def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
@@ -1184,7 +1193,7 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
 
     # Todo: check the device_order if it is mobile or web (reimagine after deploy v3)
     elif "web" in device_order:
-        print("found web from new device_info")
+        CommonUtil.ExecLog("set_device_info_according_to_user_order", "found web from new device_info", 1)
     elif "mobile" in device_order:
         if "local" in device_order["mobile"]:
             pass
@@ -1359,6 +1368,7 @@ def check_run_cancel(run_id):
 def upload_reports_and_zips(Userid, temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status: return
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1384,7 +1394,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 file_name = CommonUtil.processed_performance_data["tc_id"].replace(":", "-") + ".html"
                 with open(zip_dir / file_name, "w", encoding="utf-8") as file:
                     file.write(html)
-                    print("Preformance report template generated successfully!")
+                    CommonUtil.ExecLog(sModuleInfo, "Preformance report template generated successfully!", 1)
                 CommonUtil.processed_performance_data.clear()
                 perf_report_html = open(zip_dir / file_name, 'rb')
 
@@ -1408,18 +1418,17 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
 
 
                     if res.status_code == 200:
-                        print(f"Successfully uploaded the execution report of run_id {run_id}")
+                        CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {run_id}", 1)
+
                         break
                     else:
-                        print(f"Failed to upload the execution report of run_id {run_id}")
-                        print(f"Status: {res.status_code}")
-                        print("Retrying...")
+                        CommonUtil.ExecLog(sModuleInfo, f"Failed to upload the execution report of run_id {run_id}\nStatus: {res.status_code}\nRetrying...", 3)
                     time.sleep(4)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
                     time.sleep(4)
             else:
-                print("Could not Upload the report to server of run_id '%s'" % run_id)
+                CommonUtil.ExecLog(sModuleInfo, "Could not Upload the report to server of run_id '%s'" % run_id, 3)
 
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
             opened_zips = []
@@ -1437,7 +1446,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 size = str(round(size/1024, 3)) + " MB"
             else:
                 size = str(round(size, 3)) + " KB"
-            print("Uploading %s logs-screenshots of %s testcases of %s from:\n%s" % (CommonUtil.current_session_name, len(zip_files), size, str(zip_dir)))
+            CommonUtil.ExecLog(sModuleInfo, "Uploading %s logs-screenshots of %s testcases of %s from:\n%s" % (CommonUtil.current_session_name, len(zip_files), size, str(zip_dir)), 5)
 
             for _ in range(5):
                 try:
@@ -1453,22 +1462,18 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         try:
                             res_json = res.json()
                         except:
-                            # print("Could not Upload logs-screenshots to server")
-                            # print("\nResponse Text = " + res.text + "\n")
-                            # break
                             continue
                         if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                            print("Successfully Uploaded logs-screenshots to server of run_id '%s'" % run_id)
+                            CommonUtil.ExecLog(sModuleInfo, "Successfully Uploaded logs-screenshots to server of run_id '%s'" % run_id, 1)
                         else:
-                            print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
-                            print("\nResponse Text = " + res.text + "\n")
+                            CommonUtil.ExecLog(sModuleInfo, f"Could not Upload logs-screenshots to server of run_id '{run_id}'\n\nResponse Text = {res.text}", 3)
                         break
                 except:
                     pass
 
                 time.sleep(4)
             else:
-                print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
+                CommonUtil.ExecLog(sModuleInfo, "Could not Upload logs-screenshots to server of run_id '%s'" % run_id, 3)
 
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
@@ -1495,7 +1500,6 @@ def split_testcases(run_id_info, max_tc_in_single_session):
         len_list.append(ceil(len(testcases)/session_num))
     for _ in range(lower_num):
         len_list.append(floor(len(testcases)/session_num))
-    # print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
     all_sessions = []
     start = 0
     for i in range(session_num):
@@ -1547,6 +1551,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
 
 def download_attachments(testcase_info):
     """Download test case and step attachments for the given test case."""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     temp_ini_file = os.path.join(
         os.path.join(
@@ -1580,6 +1585,9 @@ def download_attachments(testcase_info):
         elif "global_folder" in attachment["path"]:
             download_dir = attachment_path / "global"
 
+        if not download_dir.exists():
+            CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {download_dir}", 5)
+
         download_dir.mkdir(parents=True, exist_ok=True)
 
         entry = db.exists(attachment["hash"])
@@ -1610,7 +1618,7 @@ def download_attachments(testcase_info):
 
     results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
-        print("Downloaded: %s" % r)
+        CommonUtil.ExecLog(sModuleInfo, f"Downloaded: {r}", 5)
 
         # Copy into the attachments db.
         attachment_path_in_db = attachment_db_path / r["path"].name
@@ -1673,6 +1681,7 @@ def main(device_dict, all_run_id_info):
 
             # Write testcase json
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
+            CommonUtil.ExecLog(sModuleInfo, f"Creating folder: {path}", 5)
             FL.CreateFolder(path)
 
             if run_id.lower().startswith("debug"):
@@ -1712,11 +1721,6 @@ def main(device_dict, all_run_id_info):
                     }
                     device_order = formated_device_order
 
-            final_dependency = run_id_info["dependency_list"]
-            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
-            # is_linked = run_id_info["is_linked"]
-            final_run_params_from_server = run_id_info["run_time"]
-
             runtime_settings = run_id_info["runtime_settings"]
             if not CommonUtil.debug_status:
                 rem_config = {
@@ -1749,6 +1753,10 @@ def main(device_dict, all_run_id_info):
                     shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
 
+            final_dependency = run_id_info["dependency_list"]
+            shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
+
+            final_run_params_from_server = run_id_info["run_time"]
             final_run_params = {}
             for param in final_run_params_from_server:
                 final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
@@ -1783,7 +1791,6 @@ def main(device_dict, all_run_id_info):
             while i < len(all_testcases_info):
                 if all_testcases_info[i]["automatability"] != "Automated" and all_testcases_info[i]["automatability"] != "Performance":
                     CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
-                    # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
                     del all_testcases_info[i]
                     i -= 1
                 i += 1
@@ -1814,7 +1821,6 @@ def main(device_dict, all_run_id_info):
                     CommonUtil.tc_nums[run_id] = []
                 for i in [int(i['testcase_no'].split('-')[-1]) for i in all_testcases_info]:
                     i not in CommonUtil.tc_nums[run_id] and CommonUtil.tc_nums[run_id].append(i)
-                # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
 
                 for testcase_info in all_testcases_info:
                     performance_test_case = False
@@ -1900,7 +1906,6 @@ def main(device_dict, all_run_id_info):
                                 finally:
                                     my_timer.cancel()  # cancel timer
                             except Exception as e:
-                                print("exception")
                                 pass
                             # add log
                             CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
@@ -1912,7 +1917,7 @@ def main(device_dict, all_run_id_info):
                                 sModuleInfo, "Performance Test Results Uploaded Successfully", 1
                             )
                         except Exception as e:
-                            print(e)
+                            CommonUtil.ExecLog(sModuleInfo, e, 3)
                             run_test_case(
                                 test_case_no,
                                 sModuleInfo,
@@ -1927,7 +1932,6 @@ def main(device_dict, all_run_id_info):
                             CommonUtil.clear_all_logs()  # clear logs
                             if CommonUtil.run_cancel == CANCELLED_TAG:
                                 break
-                            # print("Executed %s test cases" % cnt)
                             cnt += 1
 
 
@@ -1946,7 +1950,6 @@ def main(device_dict, all_run_id_info):
                         CommonUtil.clear_all_logs()  # clear logs
                         if CommonUtil.run_cancel == CANCELLED_TAG:
                             break
-                        # print("Executed %s test cases" % cnt)
 
                         cnt += 1
                     CommonUtil.tc_index += 1
@@ -1972,15 +1975,12 @@ def main(device_dict, all_run_id_info):
                 upload_reports_and_zips(Userid, temp_ini_file, run_id)
 
                 session_cnt += 1
-
-            print("Execution time = %s sec" % round(TimeDiff, 3))
-            # print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
-            # print("Test Set Completed")
+                CommonUtil.ExecLog(sModuleInfo, "Execution time = %s sec" % round(TimeDiff, 3), 5)
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 
             if CommonUtil.run_cancel == CANCELLED_TAG:
-                print("Test Set Cancelled by the User")
+                CommonUtil.ExecLog(sModuleInfo,"Test Set Cancelled by the User", 5)
             elif not CommonUtil.debug_status:
 
                 from shutil import copytree
@@ -2009,8 +2009,6 @@ def main(device_dict, all_run_id_info):
 
             # Close websocket connection.
             elif CommonUtil.debug_status:
-                # ws.close()
-                # print("[LIVE LOG] Disconnected from Live Log service")
                 pass
             CommonUtil.runid_index += 1
 

@@ -3,7 +3,6 @@
 
 import os, subprocess, shutil
 
-
 def get_home_folder():
     """
 
@@ -26,9 +25,10 @@ def CreateFolder(folderPath, forced=True):
                 return True
             DeleteFolder(folderPath)
         os.makedirs(folderPath)
+        print(f"Folder created: {folderPath}")
         return True
     except Exception as e:
-        return "Error: %s" % e
+         print("Error from FileUtilities CreateFolder: %s" % e)
 
 
 def DeleteFolder(sFolderPath):

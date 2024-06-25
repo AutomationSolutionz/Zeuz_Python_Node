@@ -485,6 +485,8 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                     run_id_info["execution_detail"] = setInfo
                     return
                 all_testcases_info = run_id_info["test_cases"]
+                if tc_index >= len(all_testcases_info): # For the logs that is printed after all tc finishes in maindriver
+                    return
                 testcase_info = all_testcases_info[tc_index]
                 if TCInfo:
                     testcase_info["execution_detail"] = TCInfo
@@ -1287,7 +1289,7 @@ def generate_time_based_performance_report(session) -> None:
     Generate the time based performance report
     :param session:
     """
-    print("Generating Performance Report")
+    # print("Generating Performance Report")
 
     if "execution_detail" not in session["test_cases"][0]:
         return

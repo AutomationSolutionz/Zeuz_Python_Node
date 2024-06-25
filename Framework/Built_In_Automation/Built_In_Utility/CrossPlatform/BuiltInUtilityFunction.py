@@ -92,7 +92,7 @@ def CreateFolder(folderPath, forced=True):
         # if the folder exists in correct position then return passed
         # if the folder doesn't exist in correct position then return failed
         if os.path.isdir(folderPath):
-            CommonUtil.ExecLog(sModuleInfo, "Folder created successfully", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Folder created: {folderPath}", 1)
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Could not create folder", 3)
