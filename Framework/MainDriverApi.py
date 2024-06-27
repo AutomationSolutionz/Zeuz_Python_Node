@@ -1769,7 +1769,7 @@ def main(device_dict, all_run_id_info):
             if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
 
-            if not CommonUtil.debug_status and shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() not in ("off", "no", "false", "disable"):
+            if not CommonUtil.debug_status and str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
                 cleanup_driver_instances()
 
             if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
