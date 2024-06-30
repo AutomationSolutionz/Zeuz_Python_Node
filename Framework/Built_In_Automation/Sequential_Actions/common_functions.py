@@ -6056,7 +6056,7 @@ def data_store_write(data_set):
                 temp = [right.strip()]
                 print(temp)
                 for t in temp:
-                    tt=t.split('=')
+                    tt = t.split('=', 1)
                     print(tt)
                     data[tt[0].strip()]=tt[1].strip()
                     print(data[tt[0].strip()])
@@ -6077,7 +6077,7 @@ def data_store_write(data_set):
         #
 
         # print(res.text)
-        if res.status_code==200:
+        if res.status_code == 200:
             # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
 
             return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
@@ -6112,14 +6112,12 @@ def data_store_insert(data_set):
         table_name = columns = var_name = ""
         params = {}
         for left, mid, right in data_set:
-            if left.strip() == 'table name':
+            if left.strip().lower() == 'table name':
                 table_name = right.strip()
                 params['table_name'] = table_name
-            if left.strip() == 'data':
+            if left.strip().lower() == 'data':
                 l = ast.literal_eval(right.strip())
 
-            if mid.strip() == "action":
-                var_name = right.strip()
         data={
             'table_name':table_name,
             'data_list':l
@@ -6134,7 +6132,7 @@ def data_store_insert(data_set):
             verify=False,
             **headers
         )
-        if res.status_code==201:
+        if res.status_code == 201:
             CommonUtil.ExecLog(sModuleInfo, "data inserted successfully", 1)
             return "passed"
             # return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
