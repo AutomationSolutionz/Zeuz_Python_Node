@@ -6116,7 +6116,7 @@ def data_store_insert(data_set):
                 table_name = right.strip()
                 params['table_name'] = table_name
             if left.strip().lower() == 'data':
-                l = ast.literal_eval(right.strip())
+                l = CommonUtil.parse_value_into_object(right.strip())
 
         data={
             'table_name':table_name,
