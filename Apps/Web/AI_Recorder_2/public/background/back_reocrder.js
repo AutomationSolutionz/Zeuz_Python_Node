@@ -95,6 +95,8 @@ async function fetchAIData(id, command, value, url, document){
         validate_full_text_by_ai = true;
     }
 
+    document = document.replace(/[^\x00-\x7F]/g, '');
+    document = document.replace(/[\x00-\x1F\x7F]/g, ''); // Optionally remove control characters (0-31 and 127 in ASCII)
     var dataj = {
         "page_src": document,
         "action_name": command,
@@ -115,6 +117,10 @@ async function fetchAIData(id, command, value, url, document){
     }
     var r = await fetch(url_, input)
     var resp = await r.json();
+    if (resp.info !== 'success'){
+        console.error('resp', resp.info)
+        return
+    }
     let response = resp.ai_choices;
 
     if (validate_full_text_by_ai){

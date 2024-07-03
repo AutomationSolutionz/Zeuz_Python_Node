@@ -143,6 +143,8 @@ class Inspector {
 
 								// send data to zeuz server directly
 
+								refinedHtml = refinedHtml.replace(/[^\x00-\x7F]/g, '');
+								refinedHtml = refinedHtml.replace(/[\x00-\x1F\x7F]/g, '');
 								var data = JSON.stringify({
 									"page_src": refinedHtml,
 									"action_type": "selenium"
@@ -212,6 +214,8 @@ class Inspector {
 
 						// send data to zeuz server directly
 
+						refinedHtml = refinedHtml.replace(/[^\x00-\x7F]/g, '');
+						refinedHtml = refinedHtml.replace(/[\x00-\x1F\x7F]/g, '');
 						var data = JSON.stringify({
 							"page_src": refinedHtml,
 							"action_type": "selenium"
