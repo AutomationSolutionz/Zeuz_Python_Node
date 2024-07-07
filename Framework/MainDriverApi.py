@@ -7,6 +7,7 @@ import os
 import time
 import sys
 from typing import Any, Dict
+from urllib.parse import urlparse
 import urllib.request, urllib.error, urllib.parse
 import queue
 import shutil
@@ -823,7 +824,8 @@ def set_important_variables():
         shared.shared_variables.update({
             "clipboard_paste": pyperclip.paste,
             "clipboard_set": pyperclip.copy,
-            "num": advanced_float
+            "num": advanced_float,
+            "urlparse": urlparse,
         })
 
     except:
