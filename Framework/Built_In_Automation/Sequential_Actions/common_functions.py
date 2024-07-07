@@ -6089,6 +6089,56 @@ def data_store_write(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def data_store_overwrite(data_set):
+    """
+    This function overwrites on existing data. So be careful.
+    Just provide raw list of list of strings.
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+                table name              | input parameter   | table_name
+                data                    | input parameter   | [[str, str, ...] , [...], .... ]
+                data store: overwrite   | common action     | response_var
+            ------------------------------------------------------------------------------
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_id = var_name = data = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if left == "table id":
+                table_id = right.strip()
+            if left == "data":
+                data = CommonUtil.parse_value_into_object(right.strip())
+            if left == "data store: overwrite":
+                var_name = right.strip()
+
+        if None in (table_id, data, var_name):
+            CommonUtil.ExecLog(sModuleInfo, "table id, data and var_name is required", 3)
+            return "zeuz_failed"
+
+        data_adjusted = [[[str(row_i), str(col_i), cell] for col_i, cell in enumerate(row)] for row_i, row in enumerate(data)]
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri(f"data_store/update_datastore/{table_id}"),
+            data={
+                'data': json.dumps(data_adjusted)
+            },
+            verify=False,
+            **headers
+        )
+        if res.status_code == 200:
+            return sr.Set_Shared_Variables(var_name, res.json())
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "No data found to update , please check your dataset", 1)
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 
 def data_store_insert(data_set):
     """

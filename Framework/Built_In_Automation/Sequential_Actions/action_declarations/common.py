@@ -90,12 +90,13 @@ declarations = (
     {"name":"download attachment from global",               "function": "download_attachment_from_global",       "screenshot": "none" },
 
     # data-store actions
-    {"name": "data store: read",            "function": "data_store_read",              "screenshot": "none"},
-    {"name": "data store: get data",        "function": "data_store_get_data",          "screenshot": "none"},
-    {"name": "data store: stats",           "function": "data_store_get_stats",         "screenshot": "none"},
-    {"name": "data store: write",           "function": "data_store_write",             "screenshot": "none"},
-    {"name": "data store: insert",          "function": "data_store_insert",            "screenshot": "none"},
-    {"name": "data store: insert column",   "function": "data_store_insert_column",     "screenshot": "none"},
+    {"name": "data store: read",                            "function": "data_store_read",              "screenshot": "none"},
+    {"name": "data store: get data",                        "function": "data_store_get_data",          "screenshot": "none"},
+    {"name": "data store: stats",                           "function": "data_store_get_stats",         "screenshot": "none"},
+    {"name": "data store: write",                           "function": "data_store_write",             "screenshot": "none"},
+    {"name": "data store: overwrite",                       "function": "data_store_overwrite",         "screenshot": "none"},
+    {"name": "data store: insert",                          "function": "data_store_insert",            "screenshot": "none"},
+    {"name": "data store: insert column",                   "function": "data_store_insert_column",     "screenshot": "none"},
 
 
     # Client specific actions
