@@ -361,6 +361,10 @@ def Login(cli=False, run_once=False, log_dir=None):
                 table.add_row("Project ID", user_data.project_id)
 
                 console.print(table)
+            elif status_code == 502:
+                print(Fore.YELLOW + "Server offline. Retrying after 60s")
+                time.sleep(60)
+                continue
             else:
                 line_color = Fore.RED
                 print(line_color + "Incorrect credentials, please try again.")
