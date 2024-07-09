@@ -557,6 +557,7 @@ def PreProcess(log_dir=None):
         str(log_dir),
         current_path_file,
     )
+    print(f"Save temp_run_file_path = '{str(log_dir)}'")
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
 
 
