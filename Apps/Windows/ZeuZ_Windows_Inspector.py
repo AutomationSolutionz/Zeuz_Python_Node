@@ -131,8 +131,10 @@ def Upload(auth_thread, window_name):
 
         r = requests.request("POST", url, headers=headers, data=content, verify=False)
         response = r.json()
-        del response["content"]
-        r.ok and print("Content successfully sent to AI Engine\n")
+        if response["info"] == "success":
+            r.ok and print("Content successfully sent to AI Engine\n")
+        else:
+            ExecLog("", response["info"], 3)
     except:
         Exception_Handler(sys.exc_info())
         ExecLog("", "Could not upload Element identifiers xml", 3)

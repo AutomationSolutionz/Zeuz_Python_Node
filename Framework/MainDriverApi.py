@@ -7,6 +7,7 @@ import os
 import time
 import sys
 from typing import Any, Dict
+from urllib.parse import urlparse
 import urllib.request, urllib.error, urllib.parse
 import queue
 import shutil
@@ -599,7 +600,7 @@ def run_all_test_steps_in_a_test_case(
             sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
-            if StepSeq in CommonUtil.disabled_step:
+            if StepSeq in CommonUtil.disabled_step or not all_step_info[StepSeq - 1]['step_enable']:
                 CommonUtil.ExecLog(sModuleInfo, "STEP-%s is disabled" % StepSeq, 2)
                 sStepResult = "skipped"
             else:
@@ -823,7 +824,8 @@ def set_important_variables():
         shared.shared_variables.update({
             "clipboard_paste": pyperclip.paste,
             "clipboard_set": pyperclip.copy,
-            "num": advanced_float
+            "num": advanced_float,
+            "urlparse": urlparse,
         })
 
     except:

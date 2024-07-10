@@ -422,10 +422,6 @@ def update_machine_info(node_id, should_print=True):
 
 def RunProcess(node_id, run_once=False, log_dir=None):
     try:
-        PreProcess(log_dir=log_dir)
-
-        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))
-
         # --- START websocket service connections --- #
 
         server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
@@ -450,10 +446,15 @@ def RunProcess(node_id, run_once=False, log_dir=None):
         node_json = None
         def response_callback(response: str):
             nonlocal node_json
-            nonlocal save_path
-            save_path.mkdir(exist_ok=True, parents=True)
+            nonlocal log_dir
+            if log_dir is None:
+                log_dir = temp_ini_file.parent
+            save_path = Path(log_dir)
             if not save_path.exists():
                 print(f"Folder created: {save_path}")
+            save_path.mkdir(exist_ok=True, parents=True)
+            PreProcess(log_dir=log_dir)
+
             try:
                 with open(save_path / "deploy-response.txt", "w", encoding="utf-8") as f:
                     f.write(response)
@@ -561,6 +562,7 @@ def PreProcess(log_dir=None):
         str(log_dir),
         current_path_file,
     )
+    print(f"Save temp_run_file_path = '{str(log_dir)}'")
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
 
 

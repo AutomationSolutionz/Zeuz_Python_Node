@@ -50,6 +50,7 @@ def read_steps(steps_pb) -> List[Dict]:
                 "automatablity": step["stepInfo"]["stepType"],
                 "always_run": step["stepInfo"]["alwaysRun"],
                 "run_on_fail": step["stepInfo"]["runOnFail"],
+                "step_enable": step["stepInfo"]["stepEnable"],
                 "step_function": "Sequential Actions",
                 "step_driver": step["stepInfo"]["driver"],
                 "type": step["type"],
