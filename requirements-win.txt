@@ -71,3 +71,4 @@ pandas
 pyperclip
 backports-datetime-fromisoformat; python_version < '3.11'
 thefuzz
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
