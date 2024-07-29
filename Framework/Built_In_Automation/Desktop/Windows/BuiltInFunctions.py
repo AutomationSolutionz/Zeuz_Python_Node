@@ -2598,3 +2598,56 @@ def Service_status(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+# Method to click on element; step data passed on by the user
+@logger
+def Element_Screenshot(data_set):
+    """ Take screenshot of an element, first locate element, get the bounding box, take the screenshot of the bounding box"""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    path = None
+    try:
+        for left, _, right in data_set:
+            if "location" in left.lower().strip():
+                path = right.strip()
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+    Element = Get_Element(data_set)
+    if type(Element) == str and Element == "zeuz_failed":
+        return "zeuz_failed"
+
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Element was located.  Taking screenshot ", 1)
+        top = Element.Current.BoundingRectangle.Top
+        left = Element.Current.BoundingRectangle.Left
+        width = Element.Current.BoundingRectangle.Width
+        height = Element.Current.BoundingRectangle.Height
+
+        if path is None:
+            filename_format = "%Y_%m_%d_%H-%M-%S"
+            filename = time.strftime(filename_format) + ".png"
+            screenshot_folder = ConfigModule.get_config_value(
+                "sectionOne", "screen_capture_folder", temp_config
+            )
+            path = str(Path(screenshot_folder) / Path(filename))
+        
+        partial_ss_path = path
+        gui.screenshot(path)
+    
+        if top is not None and left is not None and width is not None and height is not None:
+            im = Image.open(path)
+            im1 = im.crop((left, top, (left+width), (top+height)))
+            im1.save(path)
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Proper bounding box parameters are not provided", 3
+            )
+            return "zeuz_failed"
+        return "passed"
+    except Exception:
+        errMsg = "Could not take screenshot of the element."
+        CommonUtil.ExecLog(sModuleInfo, errMsg, 3)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)

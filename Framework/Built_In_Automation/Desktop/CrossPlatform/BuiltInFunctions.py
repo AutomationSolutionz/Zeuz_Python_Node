@@ -1339,7 +1339,7 @@ def get_easyocr_reader():
 def get_only_text(data:tuple):
     return data[1]
 
-# get the index of the matching text
+# get the score between two texts using the thefuzz library
 def get_fuzzy_score(text1, text2, method):
     if "partial" in method:
         score = fuzz.partial_ratio(text1, text2)
