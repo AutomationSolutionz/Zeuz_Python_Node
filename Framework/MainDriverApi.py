@@ -36,14 +36,15 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from settings import PROJECT_ROOT
 from reporting import junit_report
 
+from jinja2 import Environment, FileSystemLoader
+from genson import SchemaBuilder
+import selenium
+
 from rich.style import Style
 from rich.table import Table
 from rich.console import Console
 from rich.box import ASCII_DOUBLE_HEAD, DOUBLE
 from rich.padding import Padding
-from jinja2 import Environment, FileSystemLoader
-from genson import SchemaBuilder
-
 rich_print = Console().print
 
 top_path = os.path.dirname(os.getcwd())
@@ -1202,7 +1203,7 @@ def send_dom_variables():
                     "description": "",
                 })
         except (json.decoder.JSONDecodeError, TypeError):
-            CommonUtil.Exception_Handler(sys.exc_info())
+            # CommonUtil.Exception_Handler(sys.exc_info())
             variables.append({
                 "type": f"non_json: {str(type(var_value))}",
                 "variable_name": var_name,
@@ -1237,10 +1238,10 @@ def send_dom_variables():
                     elements[0].parentNode.removeChild(elements[0])
 
                 return html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');""")
-        except:
+        except selenium.common.exceptions.JavascriptException:
             CommonUtil.Exception_Handler(sys.exc_info())
-            dom = ""
-            print()
+        except:
+            dom = None
     else:
         dom = None
 
