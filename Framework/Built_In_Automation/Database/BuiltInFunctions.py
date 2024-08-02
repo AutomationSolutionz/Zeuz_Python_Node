@@ -451,7 +451,7 @@ def select_from_db(data_set):
             if "table" in left.lower():
                 # Get the and query, and remove any whitespaces
                 table_name= right.strip()
-            if left.lower()=="where":
+            if left.strip().lower()=="where":
                 where=right.strip()
             if "action" in mid.lower():
                 variable_name = right.strip()
