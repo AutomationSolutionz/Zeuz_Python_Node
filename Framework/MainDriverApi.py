@@ -799,7 +799,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         pass
 
 
-def advanced_float(text):
+def advanced_float(text:str) -> float:
     try:
         return float(text)
     except:
@@ -1181,76 +1181,88 @@ def run_test_case(
 
 
 def send_dom_variables():
-    variables = []
-    max_threshold = 30000
-    for var_name in shared.shared_variables:
-        var_value = shared.shared_variables[var_name]
-        try:
-            if len(json.dumps(var_value)) > max_threshold:
-                builder = SchemaBuilder()
-                builder.add_object(var_value)
+    try:
+        variables = []
+        max_threshold = 30000
+        for var_name in shared.shared_variables:
+            var_value = shared.shared_variables[var_name]
+            try:
+                if len(json.dumps(var_value)) > max_threshold:
+                    builder = SchemaBuilder()
+                    builder.add_object(var_value)
+                    variables.append({
+                        "type": "json_schema",
+                        "variable_name": var_name,
+                        "variable_value": builder.to_schema(),
+                        "description": "",
+                    })
+                else:
+                    variables.append({
+                        "type": "json_object",
+                        "variable_name": var_name,
+                        "variable_value": var_value,
+                        "description": "",
+                    })
+            except (json.decoder.JSONDecodeError, TypeError):
+                # CommonUtil.Exception_Handler(sys.exc_info())
                 variables.append({
-                    "type": "json_schema",
+                    "type": f"non_json: {str(type(var_value))}",
                     "variable_name": var_name,
-                    "variable_value": builder.to_schema(),
+                    "variable_value": "",
                     "description": "",
                 })
-            else:
-                variables.append({
-                    "type": "json_object",
-                    "variable_name": var_name,
-                    "variable_value": var_value,
-                    "description": "",
-                })
-        except (json.decoder.JSONDecodeError, TypeError):
-            # CommonUtil.Exception_Handler(sys.exc_info())
-            variables.append({
-                "type": f"non_json: {str(type(var_value))}",
-                "variable_name": var_name,
-                "variable_value": "",
-                "description": "",
-            })
-        except Exception:
-            CommonUtil.Exception_Handler(sys.exc_info())
+            except Exception:
+                CommonUtil.Exception_Handler(sys.exc_info())
 
-    if shared.Test_Shared_Variables('selenium_driver'):
-        try:
-            selenium_driver = shared.Get_Shared_Variables("selenium_driver")
-            dom = selenium_driver.execute_script("""
-                var html = document.createElement('html');
-                var myString = document.documentElement.outerHTML;
-                html.innerHTML = myString;
-                
-                var elements = html.getElementsByTagName('head');
-                while (elements[0])
-                    elements[0].parentNode.removeChild(elements[0])
-
-                var elements = html.getElementsByTagName('link');
-                while (elements[0])
-                    elements[0].parentNode.removeChild(elements[0])
-
-                var elements = html.getElementsByTagName('script');
-                while (elements[0])
-                    elements[0].parentNode.removeChild(elements[0])
-
-                var elements = html.getElementsByTagName('style');
-                while (elements[0])
-                    elements[0].parentNode.removeChild(elements[0])
-
-                return html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');""")
-        except selenium.common.exceptions.JavascriptException:
-            CommonUtil.Exception_Handler(sys.exc_info())
-        except:
+        if shared.Test_Shared_Variables('selenium_driver'):
+            try:
+                selenium_driver = shared.Get_Shared_Variables("selenium_driver")
+                dom = selenium_driver.execute_script("""
+                    var html = document.createElement('html');
+                    html.setAttribute('zeuz','aiplugin');
+                    var myString = document.documentElement.outerHTML;
+                    html.innerHTML = myString;
+                    
+                    var elements = html.getElementsByTagName('head');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    var elements = html.getElementsByTagName('link');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    var elements = html.getElementsByTagName('script');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    var elements = html.getElementsByTagName('style');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    return html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');""")
+            except selenium.common.exceptions.JavascriptException:
+                CommonUtil.Exception_Handler(sys.exc_info())
+                dom = ""
+            except:
+                dom = None
+        else:
             dom = None
-    else:
-        dom = None
 
-    data = {
-        "dom": dom,
-        "variables": variables,
-    }
-
-    return data
+        data = {
+            "variables": variables,
+            "dom": {"web": dom},
+            "tester_id": shared.Get_Shared_Variables('node_id')
+        }
+        res = RequestFormatter.request("post",
+            RequestFormatter.form_uri("node_ai_contents/"),
+            data=json.dumps(data),
+            verify=False
+        )
+        if res.status_code != 200:
+            CommonUtil.ExecLog(res.json()["info"], 3)
+        return
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
