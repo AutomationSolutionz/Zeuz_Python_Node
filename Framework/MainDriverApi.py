@@ -1258,8 +1258,10 @@ def send_dom_variables():
             data=json.dumps(data),
             verify=False
         )
-        if res.status_code != 200:
+        if res.status_code == 500:
             CommonUtil.ExecLog(sModuleInfo, res.json()["info"], 3)
+        elif res.status_code == 404:
+            CommonUtil.ExecLog(sModuleInfo, 'The chatbot API does not exist, server upgrade needed', 2)
         return
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
