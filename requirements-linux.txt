@@ -57,3 +57,4 @@ pandas
 pyperclip
 thefuzz
 backports-datetime-fromisoformat; python_version < '3.11'
+django>=4.2.15 # not directly required, pinned by Snyk to avoid a vulnerability
