@@ -5,18 +5,18 @@ const activeIcon = 'active-64.png';
 const defaultIcon = 'small_logo.png';
 var zeuz_url;
 var zeuz_key;
+var zeuz_node_id;
 
 fetch("data.json")
     .then(Response => Response.json())
     .then(data => {
-        zeuz_url = data.zeuz_url;
-        zeuz_key = data.zeuz_key;
-        console.log(data);
-        console.log(zeuz_url);
-        console.log(zeuz_key);
+        zeuz_url = data.url;
+        zeuz_key = data.apiKey;
+        zeuz_node_id = data.nodeId;
         browserAppData.storage.local.set({
             url: zeuz_url,
             key: zeuz_key,
+            nodeId: zeuz_node_id,
         },
         function() {
             console.log("Logged in successfully!");
@@ -137,7 +137,6 @@ browserAppData.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
       if (request.apiName == 'ai_record_single_action') {
         var url = `${zeuz_url}/ai_record_single_action/`
-        console.log("zeuz_key", zeuz_key)
         fetch(url, {
             method: "POST",
             headers: {
@@ -145,6 +144,21 @@ browserAppData.runtime.onMessage.addListener(
                 "X-Api-Key": zeuz_key,
             },
             body: request.data,
+        })
+        .then(response => response.json())
+        .then(text => {console.log(text);sendResponse(text);})
+
+        var url = `${zeuz_url}/node_ai_contents/`
+        fetch(url, {
+            method: "POST",
+            headers: {
+                // "Content-Type": "application/json",
+                "X-Api-Key": zeuz_key,
+            },
+            body: JSON.stringify({
+                "dom_web": {"dom": request.html},
+                "tester_id": zeuz_node_id
+            }),
         })
         .then(response => response.json())
         .then(text => {console.log(text);sendResponse(text);})
