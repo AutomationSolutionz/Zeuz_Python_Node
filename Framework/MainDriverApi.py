@@ -962,7 +962,6 @@ def run_test_case(
 ):
     try:
         TestCaseStartTime = time.time()
-        shared.Set_Shared_Variables("run_id", run_id)
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.current_tc_name = testcase_info['title']
@@ -1868,6 +1867,7 @@ def main(device_dict, all_run_id_info):
                 shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
 
             shared.Set_Shared_Variables("run_id", run_id)
+            shared.Set_Shared_Variables("node_id", CommonUtil.MachineInfo().getLocalUser())
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
