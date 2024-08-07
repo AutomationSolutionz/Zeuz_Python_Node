@@ -1182,6 +1182,7 @@ def run_test_case(
 
 def send_dom_variables():
     try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         variables = []
         max_threshold = 30000
         for var_name in shared.shared_variables:
@@ -1259,7 +1260,7 @@ def send_dom_variables():
             verify=False
         )
         if res.status_code != 200:
-            CommonUtil.ExecLog(res.json()["info"], 3)
+            CommonUtil.ExecLog(sModuleInfo, res.json()["info"], 3)
         return
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
