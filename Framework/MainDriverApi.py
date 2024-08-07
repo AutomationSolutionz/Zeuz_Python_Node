@@ -1250,8 +1250,8 @@ def send_dom_variables():
 
         data = {
             "variables": variables,
-            "dom": {"web": dom},
-            "tester_id": shared.Get_Shared_Variables('node_id')
+            "dom_web": {"dom": dom},
+            "node_id": shared.Get_Shared_Variables('node_id')
         }
         res = RequestFormatter.request("post",
             RequestFormatter.form_uri("node_ai_contents/"),

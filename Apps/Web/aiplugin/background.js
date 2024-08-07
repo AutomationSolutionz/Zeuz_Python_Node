@@ -157,7 +157,7 @@ browserAppData.runtime.onMessage.addListener(
             },
             body: JSON.stringify({
                 "dom_web": {"dom": request.html},
-                "tester_id": zeuz_node_id
+                "node_id": zeuz_node_id
             }),
         })
         .then(response => response.json())
