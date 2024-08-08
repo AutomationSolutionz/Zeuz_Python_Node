@@ -57,3 +57,4 @@ pandas
 pyperclip
 thefuzz
 backports-datetime-fromisoformat; python_version < '3.11'
+google-cloud-storage

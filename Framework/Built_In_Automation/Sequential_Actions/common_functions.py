@@ -6506,6 +6506,70 @@ def execute_bigquery_query(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
+def connect_to_google_service_account(data_set):
+    """
+    data_set:
+          credentials path                      | input parameter   | path to credentails json file
+          connect to google service client      | common action     | client variable name
+    """
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Actions involving the Google service account may not function correctly without a virtual environment.", 2)
+    cred_path = None
+    client_var_name = None
+    for left, _, right in data_set:
+        if left.strip().lower() == 'credentials path':
+            cred_path = right.strip()
+        if left.strip().lower() == 'connect to google service client':
+            client_var_name = right.strip()
+
+    try:    
+        from google.cloud import storage
+        client = storage.Client.from_service_account_json(json_credentials_path=cred_path)
+        sr.Set_Shared_Variables(client_var_name, client)
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect Credentails", 3)
+        return "zeuz_failed"
+
+@logger
+def upload_to_google_storage_bucket(data_set):
+    """
+    data_set:
+        filepath                            | input parameter   | filepath
+        bucket                              | input parameter   | bucket name 
+        upload to google storage bucket     | common action     | client variable name
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Actions involving the Google service account may not function correctly without a virtual environment.", 2)
+    filepath = None
+    client_var_name = None
+    bucket = None
+
+    for left, _, right in data_set:
+        if left.strip().lower() == 'filepath':
+            filepath = right.strip()
+        if left.strip().lower() == 'upload to google storage bucket':
+            client_var_name = right.strip()
+        if left.strip().lower() == 'bucket':
+            bucket = right.strip()
+    
+    if None in (filepath,client_var_name,bucket):
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect Dataset", 3)
+        return "zeuz_failed"
+
+    try:
+        client = sr.Get_Shared_Variables(client_var_name)
+        bucket = client.get_bucket(bucket)
+        blob = bucket.blob(os.path.basename(filepath))
+        blob.upload_from_filename(filepath)
+        CommonUtil.ExecLog(sModuleInfo, f'File {filepath} uploaded to {bucket}.')
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
+@logger
 def text_to_speech(data_set):
     """
         Convert text to speech using google gTTS library
