@@ -47,6 +47,10 @@ def main(name, path=None):
         parser.add_argument("--path", type=str, help="The path to folder where the image will be saved. Example E:\Automations Solutionz\GeoSoftware\image1.png. Default is the Download folder")
 
         print("The program has started...")
+        print("Click the Right mouse button on the top-left point of the screen which will be the starting point of the screenshot")
+        print("Click the Right mouse button on the bottom-right point of the screen which will be the end point of the screenshot")
+        print("If no --path parameter is provided the image will be saved in the Download folder")
+
         mouse_listener = mouse.Listener(on_click=on_click)
         mouse_listener.start()
         while mouse_click_counter < 2:
