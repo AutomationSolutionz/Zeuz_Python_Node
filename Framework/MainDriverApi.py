@@ -829,6 +829,7 @@ def set_important_variables():
             "num": advanced_float,
             "urlparse": urlparse,
         })
+        shared.Set_Shared_Variables("zeuz_window_auto_switch", "on")
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
