@@ -4049,7 +4049,8 @@ def modify_datetime(data_set):
 
         data = None
         var_name = None
-        date_format = None
+        current_format = None
+        target_format = None
 
         fields = ["years", "months", "days", "hours", "minutes", "seconds"]
 
@@ -4095,12 +4096,17 @@ def modify_datetime(data_set):
             return t
 
         for left,mid,right in data_set:
-            if "format" in left:
-                date_format = right
+            if "current format" == left.lower():
+                current_format = right
+            if "target format" == left.lower():
+                target_format = right
                 
-        if date_format:
+        if current_format:
             if os.name == "nt":
-                date_format = date_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+                current_format = current_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "current format parameter is not provided",3)
+            return CommonUtil.Exception_Handler(sys.exc_info())
         
         for left, mid, right in data_set:
             left = left.strip().lower()
@@ -4110,9 +4116,9 @@ def modify_datetime(data_set):
                 elif right.strip().lower() in ("monday","tuesday","wednesday","thursday","friday","saturday","sunday"):
                     data = parser.parse(right.strip())
                 else:
-                    if date_format:
-                        _date_format = date_format.replace("%-","%").replace("%#","%")
-                        data = datetime.strptime(right.strip(),_date_format)
+                    if current_format:
+                        _current_format = current_format.replace("%-","%").replace("%#","%")
+                        data = datetime.strptime(right.strip(),_current_format)
                     else:
                         data = parser.parse(right.strip())
                 continue
@@ -4124,10 +4130,11 @@ def modify_datetime(data_set):
             if left in fields:
                 data = perform_mod(left, right, data)
 
-        if date_format:
-            data = data.strftime(date_format)
+        if target_format:
+            # Convert the datetime object to a new format string
+            data = data.strftime(target_format)
         else:
-            data = str(data)
+            data = data.strftime(_current_format)
 
         CommonUtil.ExecLog(sModuleInfo, "Modified datetime. New value: %s" % data, 1)
         return sr.Set_Shared_Variables(var_name, data)
