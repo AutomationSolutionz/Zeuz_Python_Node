@@ -457,16 +457,6 @@ def set_extension_variables():
         url = ConfigModule.get_config_value("Authentication", "server_address").strip()
         apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
         jwtKey = CommonUtil.jwt_token.strip()
-        with open(Path(aiplugin_path) / "data.json", "w") as file:
-            json.dump({
-              "zeuz_url": url,
-              "zeuz_key": apiKey
-            }, file, indent=4)
-
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
-
-    try:
         metaData = {
             "testNo": CommonUtil.current_tc_no,
             "testName": CommonUtil.current_tc_name,
@@ -475,7 +465,15 @@ def set_extension_variables():
             "url": url,
             "apiKey": apiKey,
             "jwtKey": jwtKey,
+            "nodeId": Shared_Resources.Get_Shared_Variables('node_id'),
         }
+        with open(Path(aiplugin_path) / "data.json", "w") as file:
+            json.dump(metaData, file, indent=4)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
+
+    try:
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
             json.dump(metaData, file, indent=4)
         with open(Path(ai_recorder_public_path) / "background" / "data.json", "w") as file:

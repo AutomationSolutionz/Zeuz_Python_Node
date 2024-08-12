@@ -314,7 +314,9 @@ function App() {
                 TC_Id: result.meta_data.testNo,
                 step_sequence: result.meta_data.stepNo,
                 step_data: JSON.stringify(actions.map(action => {
-                    return action.main;
+                    return action.main.map((row, rowIndex) => {
+                        return [...row, rowIndex + 1];
+                    });
                 })),
                 step_id: result.meta_data.stepId,
                 dataset_name: JSON.stringify(actions.map((action, idx) => {

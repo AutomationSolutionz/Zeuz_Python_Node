@@ -83,13 +83,6 @@ thread_pool = None
 step_exit_fail_called = False
 step_exit_pass_called = False
 
-# Get node ID and set as a Shared Variable
-machineInfo = CommonUtil.MachineInfo()  # Create instance
-node_id = machineInfo.getLocalUser()  # Get Username+Node ID
-sr.Set_Shared_Variables(
-    "node_id", node_id, protected=True
-)  # Save as protected shared variable
-
 from pathlib import Path
 if os.path.exists(Path(__file__).parent.parent.parent.parent / "bypass.json"):
     bypass_exist = True
