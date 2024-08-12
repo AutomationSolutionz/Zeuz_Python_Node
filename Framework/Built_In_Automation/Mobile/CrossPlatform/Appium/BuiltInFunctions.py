@@ -2,7 +2,7 @@
 # -*- coding: cp1252 -*-
 
 """ Name: Built In Functions - Appium
-    Description: Contains all Sequential Actions related to automating Android and IOS using Appium
+    Description: Contains all Sequential Actions related to automating Android, IOS and MacOS using Appium
 """
 
 #########################
@@ -14,6 +14,7 @@
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
 from appium.options.ios import XCUITestOptions
+from appium.options.mac import Mac2Options
 import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
@@ -341,7 +342,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
 
 @logger
 def unlock_android_device(data_set):
-    """ Unlocks an androi device with adb commands"""
+    """ Unlocks an android device with adb commands"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -460,10 +461,6 @@ def launch_application(data_set):
 
     # Parse data set
     try:
-        desiredcaps = {}
-        desiredcaps['unicodeKeyboard'] = False
-        desiredcaps['resetKeyboard'] = False
-
         browserstack_run = False
         aws_run = False
 
@@ -494,6 +491,7 @@ def launch_application(data_set):
             platform_version = ""
             device_name = ""
             ios = ""
+            macos = ""
             no_reset = False
             work_profile = False
 
@@ -506,6 +504,8 @@ def launch_application(data_set):
                     activity_name = right
                 elif left in ("ios", "ios simulator") and mid == "element parameter":
                     ios = right
+                elif "macos" in left.lower().strip():
+                    macos = right.strip()
                 elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
                 elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
@@ -521,9 +521,12 @@ def launch_application(data_set):
             desiredcaps['unicodeKeyboard'] = False
             desiredcaps['resetKeyboard'] = False
             # Set the global variable for the preferred connected device
-            if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
+            if find_correct_device_on_first_run(serial, device_info) in failed_tag_list and macos == "":
                 return "zeuz_failed"
-
+            elif macos != "":
+                device_id = "device 1"
+                appium_details[device_id] = {"driver":None, "server":None, "serial":"", "type":"macos", "iemi":"", "platform_version":"", "device_name":""}
+                
             device_type = appium_details[device_id]["type"].lower().strip()
 
             for left, mid, right in data_set:
@@ -593,6 +596,7 @@ def launch_application(data_set):
                 platform_version=platform_version,
                 device_name=device_name,
                 ios=ios,
+                macos = macos,
                 no_reset=no_reset,
                 work_profile=work_profile,
                 desiredcaps=desiredcaps,
@@ -600,7 +604,7 @@ def launch_application(data_set):
             if result == "zeuz_failed":
                 return "zeuz_failed"
 
-            if launch_app:  # if ios simulator then no need to launch app again
+            if launch_app and macos == "":  # if ios simulator then no need to launch app again
                 appium_driver.activate_app(package_name)  # Launch program configured in the Appium capabilities
             CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
@@ -761,6 +765,7 @@ def start_appium_driver(
     platform_version="",
     device_name="",
     ios="",
+    macos="",
     no_reset=False,
     work_profile=False,
     desiredcaps=None,
@@ -916,6 +921,13 @@ def start_appium_driver(
                 desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
                 desired_caps["bundleId"] = ios
                 desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
+        elif str(appium_details[device_id]["type"]).lower() == "macos":
+            CommonUtil.ExecLog(sModuleInfo, "Setting up with MacOS", 1)
+            desired_caps["platformName"] = "mac"
+            desired_caps["automationName"] = "mac2"
+            desired_caps["wdaLocalPort"] = wdaLocalPort
+            desired_caps["bundleId"] = macos
+            desired_caps["newCommandTimeout"] = 6000
         else:
             CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
             return "zeuz_failed", launch_app
@@ -942,6 +954,8 @@ def start_appium_driver(
 
             if appium_driver:  # Make sure we get the instance
                 appium_details[device_id]["driver"] = appium_driver
+                if appium_details[device_id]["type"] == "macos":
+                    Shared_Resources.Set_Shared_Variables("screen_capture", "desktop")
                 Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
                 CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
                 CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
