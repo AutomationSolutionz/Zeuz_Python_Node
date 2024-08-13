@@ -4096,7 +4096,7 @@ def modify_datetime(data_set):
             return t
 
         for left,mid,right in data_set:
-            if "current format" == left.lower():
+            if "current format" == left.lower() or "format" == left.lower():
                 current_format = right
             if "target format" == left.lower():
                 target_format = right
@@ -4113,6 +4113,7 @@ def modify_datetime(data_set):
             if "data" in left:
                 if right.strip().lower() == "today":
                     data = datetime.today()
+                    _current_format = current_format
                 elif right.strip().lower() in ("monday","tuesday","wednesday","thursday","friday","saturday","sunday"):
                     data = parser.parse(right.strip())
                 else:
