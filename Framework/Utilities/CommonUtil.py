@@ -123,7 +123,7 @@ rerunning_on_fail = False
 upload_on_fail = True
 rerun_on_fail = True
 passed_after_rerun = False
-Affirmative_words = ("yes", "true", "ok", "enable")
+Affirmative_words = ("yes", "true", "ok", "enable", "on")
 
 runid_index = 0
 tc_index = 0
