@@ -6,6 +6,7 @@ import time
 import random
 import requests
 from colorama import Fore
+import threading
 
 from Framework.Utilities import RequestFormatter
 
@@ -72,6 +73,10 @@ class DeployHandler:
                     time.sleep(random.randint(1, 3))
 
             self.on_connect_callback(reconnect)
+
+            from Framework.MainDriverApi import retry_failed_report_upload
+            report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+            report_thread.start()
 
             try:
                 reconnect = True
