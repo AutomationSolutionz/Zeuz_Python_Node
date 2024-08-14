@@ -13,7 +13,7 @@ from datetime import date
 from datetime import datetime as dt
 
 import time
-
+import threading
 
 # Disable WebdriverManager SSL verification.
 os.environ['WDM_SSL_VERIFY'] = '0'
@@ -926,39 +926,30 @@ def command_line_args() -> Path:
 
     folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog'
     log_delete_interval = ConfigModule.get_config_value("Advanced Options", "log_delete_interval")
-    if log_delete_interval:
-        auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
-        auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini']]
 
-        if auto_log_subfolders:
+    # By default set the automation log delete interval to 7 days
+    if not isinstance(log_delete_interval,int):
+        log_delete_interval = 7
+    else:
+        if log_delete_interval <= 0:
+            log_delete_interval = 7
+
+    def delete_old_automationlog_folders():
+        while True:
+            auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
+            auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini','failed_reports']]
+
             for subfolder in auto_log_subfolders:
                 shutil.rmtree(subfolder)
-            print(f'automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days')
+            if auto_log_subfolders:
+                print(f'automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days')
+            
+            # Check every 5 hours for old automation logs
+            time.sleep(60*60*5)
 
-    folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework",
-                                                                     os.sep + '') + os.sep + 'AutomationLog'
-    log_date_str = config.get('Advanced Options', {}).get('last_log_delete_date', '')
-    log_delete_interval = config.get('Advanced Options', {}).get('log_delete_interval', '')
-    if log_date_str:
-        log_config_date = date.fromisoformat(log_date_str)
-        current_date = datetime.date.today()
-        time_difference = (current_date - log_config_date).days
-        if time_difference > int(log_delete_interval):
-            print("Cleaning Up AutomationLog Folder...")
-            for root, dirs, files in os.walk(folder_path, topdown=False):
-                for dir_name in dirs:
-                    folder = os.path.join(root, dir_name)
-                    shutil.rmtree(folder)
-            config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
-            config.write()
-        else:
-            pass
-            # remaining_time = 7 - time_difference
-            # print(f"AutomationLog Folder will be deleted after {remaining_time+1} Days")
-    else:
-        config.setdefault('Advanced Options', {})['last_log_delete_date'] = str(date.today())
-        config.write()
-        # print("AutomationLog Folder Not Found")
+    # Create a background thread for deleting automation log
+    thread = threading.Thread(target=delete_old_automationlog_folders, daemon=True)
+    thread.start()
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
