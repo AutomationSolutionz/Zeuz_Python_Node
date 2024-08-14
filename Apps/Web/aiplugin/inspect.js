@@ -50,10 +50,11 @@ class Inspector {
 
 			}
 
-			async function send_data(server_url, api_key, data, modal_id) {
+			async function send_data(server_url, api_key, data, modal_id, refinedHtml) {
 				browserAppData.runtime.sendMessage({
 					apiName: 'ai_record_single_action',
 					data: data,
+					html: refinedHtml,
 				},
 				response => {
 					insert_modal_text(response, modal_id);
@@ -150,7 +151,7 @@ class Inspector {
 									"action_type": "selenium"
 								});
 
-								send_data(server_url, api_key, data, this.modalNode);
+								send_data(server_url, api_key, data, this.modalNode, refinedHtml);
 
 							});
 							// remove zeuz attribute
@@ -216,12 +217,13 @@ class Inspector {
 
 						refinedHtml = refinedHtml.replace(/[^\x00-\x7F]/g, '');
 						refinedHtml = refinedHtml.replace(/[\x00-\x1F\x7F]/g, '');
+						refinedHtml = refinedHtml.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
 						var data = JSON.stringify({
 							"page_src": refinedHtml,
 							"action_type": "selenium"
 						});
 
-						send_data(server_url, api_key, data, this.modalNode);
+						send_data(server_url, api_key, data, this.modalNode, refinedHtml);
 
 					});
 					// remove zeuz attribute

@@ -36,6 +36,10 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from settings import PROJECT_ROOT
 from reporting import junit_report
 
+from jinja2 import Environment, FileSystemLoader
+from genson import SchemaBuilder
+import selenium
+
 from rich.style import Style
 from rich.table import Table
 from rich.console import Console
@@ -798,7 +802,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         pass
 
 
-def advanced_float(text):
+def advanced_float(text:str) -> float:
     try:
         return float(text)
     except:
@@ -828,6 +832,7 @@ def set_important_variables():
             "num": advanced_float,
             "urlparse": urlparse,
         })
+        shared.Set_Shared_Variables("zeuz_window_auto_switch", "on")
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -961,7 +966,6 @@ def run_test_case(
 ):
     try:
         TestCaseStartTime = time.time()
-        shared.Set_Shared_Variables("run_id", run_id)
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.current_tc_name = testcase_info['title']
@@ -1125,7 +1129,9 @@ def run_test_case(
         except:
             pass
 
-        if not CommonUtil.debug_status:
+        if CommonUtil.debug_status:
+            send_dom_variables()
+        else:
             CommonUtil.Join_Thread_and_Return_Result("screenshot")
             if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
                 cleanup_driver_instances()
@@ -1175,6 +1181,94 @@ def run_test_case(
         after_execution_dict["logid"] = TCLogFile
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         return "passed"
+
+
+def send_dom_variables():
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        variables = []
+        max_threshold = 30000
+        for var_name in shared.shared_variables:
+            var_value = shared.shared_variables[var_name]
+            try:
+                if len(json.dumps(var_value)) > max_threshold:
+                    builder = SchemaBuilder()
+                    builder.add_object(var_value)
+                    variables.append({
+                        "type": "json_schema",
+                        "variable_name": var_name,
+                        "variable_value": builder.to_schema(),
+                        "description": "",
+                    })
+                else:
+                    variables.append({
+                        "type": "json_object",
+                        "variable_name": var_name,
+                        "variable_value": var_value,
+                        "description": "",
+                    })
+            except (json.decoder.JSONDecodeError, TypeError):
+                # CommonUtil.Exception_Handler(sys.exc_info())
+                variables.append({
+                    "type": f"non_json: {str(type(var_value))}",
+                    "variable_name": var_name,
+                    "variable_value": "",
+                    "description": "",
+                })
+            except Exception:
+                CommonUtil.Exception_Handler(sys.exc_info())
+
+        if shared.Test_Shared_Variables('selenium_driver'):
+            try:
+                selenium_driver = shared.Get_Shared_Variables("selenium_driver")
+                dom = selenium_driver.execute_script("""
+                    var html = document.createElement('html');
+                    html.setAttribute('zeuz','aiplugin');
+                    var myString = document.documentElement.outerHTML;
+                    html.innerHTML = myString;
+                    
+                    var elements = html.getElementsByTagName('head');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    var elements = html.getElementsByTagName('link');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    var elements = html.getElementsByTagName('script');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    var elements = html.getElementsByTagName('style');
+                    while (elements[0])
+                        elements[0].parentNode.removeChild(elements[0])
+    
+                    return html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');""")
+            except selenium.common.exceptions.JavascriptException:
+                CommonUtil.Exception_Handler(sys.exc_info())
+                dom = ""
+            except:
+                dom = None
+        else:
+            dom = None
+
+        data = {
+            "variables": variables,
+            "dom_web": {"dom": dom},
+            "node_id": shared.Get_Shared_Variables('node_id')
+        }
+        res = RequestFormatter.request("post",
+            RequestFormatter.form_uri("node_ai_contents/"),
+            data=json.dumps(data),
+            verify=False
+        )
+        if res.status_code == 500:
+            CommonUtil.ExecLog(sModuleInfo, res.json()["info"], 3)
+        elif res.status_code == 404:
+            CommonUtil.ExecLog(sModuleInfo, 'The chatbot API does not exist, server upgrade needed', 2)
+        return
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
@@ -1851,6 +1945,7 @@ def main(device_dict, all_run_id_info):
                 shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
 
             shared.Set_Shared_Variables("run_id", run_id)
+            shared.Set_Shared_Variables("node_id", CommonUtil.MachineInfo().getLocalUser())
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True

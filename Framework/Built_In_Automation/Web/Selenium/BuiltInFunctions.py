@@ -457,16 +457,6 @@ def set_extension_variables():
         url = ConfigModule.get_config_value("Authentication", "server_address").strip()
         apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
         jwtKey = CommonUtil.jwt_token.strip()
-        with open(Path(aiplugin_path) / "data.json", "w") as file:
-            json.dump({
-              "zeuz_url": url,
-              "zeuz_key": apiKey
-            }, file, indent=4)
-
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
-
-    try:
         metaData = {
             "testNo": CommonUtil.current_tc_no,
             "testName": CommonUtil.current_tc_name,
@@ -475,7 +465,15 @@ def set_extension_variables():
             "url": url,
             "apiKey": apiKey,
             "jwtKey": jwtKey,
+            "nodeId": Shared_Resources.Get_Shared_Variables('node_id'),
         }
+        with open(Path(aiplugin_path) / "data.json", "w") as file:
+            json.dump(metaData, file, indent=4)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
+
+    try:
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
             json.dump(metaData, file, indent=4)
         with open(Path(ai_recorder_public_path) / "background" / "data.json", "w") as file:
@@ -740,6 +738,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             for key in _prefs:
                 prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
+            
+            options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
 
             if remote_host:
                 selenium_driver = webdriver.Remote(
@@ -1625,6 +1625,39 @@ def Change_Attribute_Value(step_data):
         errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+@logger
+def capture_network_log(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        global selenium_driver
+
+        def process_browser_log_entry(entry):
+            response = json.loads(entry["message"])["message"]
+            return response
+
+        variable_name = None
+        mode = None
+        for left, _, right in step_data:
+            if left.lower().strip() == "capture network log":
+                mode = right.lower().strip()
+            if left.lower().strip() == "save":
+                variable_name = right.lower().strip()
+        if not mode or ( mode == 'stop' and variable_name == None):
+            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided.", 3)
+            return "zeuz_failed"
+
+        if mode == 'start':
+            selenium_driver.get_log("performance")
+            CommonUtil.ExecLog(sModuleInfo, "Started collecting network logs", 1    )
+        if mode == 'stop':
+            browser_log = selenium_driver.get_log("performance")
+            events = [process_browser_log_entry(entry) for entry in browser_log]
+            Shared_Resources.Set_Shared_Variables(variable_name, events)
+            return "passed"
+    except Exception:
+        errMsg = "Could not collect network logs. Make sure logging is enabled at browser startup"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
 # Method to enter texts in a text box; step data passed on by the user
 @logger
 def Enter_Text_In_Text_Box(step_data):
