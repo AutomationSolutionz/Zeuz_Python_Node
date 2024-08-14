@@ -44,6 +44,19 @@ def get_req_list():
                 req_list.append(i.strip())
     return req_list
 
+def check_min_python_version(min_python_version):
+    version, subversion = list(map(int, min_python_version.split('.')))
+    # Minimum required version
+    required_version = (version, subversion)
+
+    # Get the current Python version
+    current_version = sys.version_info[:3]
+
+    # Check if the current version is less than the required version
+    if current_version < required_version:
+        sys.stderr.write(f"Python {required_version[0]}.{required_version[1]} or higher is required.\n")
+        sys.exit(1)
+
 def install_missing_modules(req_list=None):
     """
     Purpose: This function will check all the installed modules, compare with what is in requirements-win.txt file

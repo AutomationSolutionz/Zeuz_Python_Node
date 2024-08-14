@@ -27,7 +27,9 @@ with open(version_path, "r"):
     print(version_path.read_text().strip())
     print("[Python version]")
     print("Python " + platform.python_version() + "(" + platform.architecture()[0] + ")\n")
-from Framework.module_installer import install_missing_modules,update_outdated_modules
+from Framework.module_installer import check_min_python_version, install_missing_modules,update_outdated_modules
+
+check_min_python_version("3.11")
 install_missing_modules()
 
 # Conditionally monkey-patch datetime module to include the `fromisoformat` method.
