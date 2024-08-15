@@ -1525,36 +1525,39 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     CommonUtil.Exception_Handler(sys.exc_info())
                     time.sleep(4)
             else:
-                ## Create a folder in failed_upload directory with run_id
-                failed_upload_dir = os.path.join(os.path.dirname(temp_ini_file),'failed_uploads')
-                os.makedirs(failed_upload_dir, exist_ok=True)
+                try:
+                    ## Create a folder in failed_upload directory with run_id
+                    failed_upload_dir = os.path.join(os.path.dirname(temp_ini_file),'failed_uploads')
+                    os.makedirs(failed_upload_dir, exist_ok=True)
 
-                failed_run_id_dir = os.path.join(failed_upload_dir,run_id)
-                os.makedirs(failed_run_id_dir, exist_ok=True)
+                    failed_run_id_dir = os.path.join(failed_upload_dir,run_id)
+                    os.makedirs(failed_run_id_dir, exist_ok=True)
 
-                ## Create a files subfolder files in the run_id folder
-                if perf_report_html:
-                    failed_files_dir = os.path.join(failed_run_id_dir,"files")
-                    os.makedirs(failed_files_dir, exist_ok=True)
+                    ## Create a files subfolder files in the run_id folder
+                    if perf_report_html:
+                        failed_files_dir = os.path.join(failed_run_id_dir,"files")
+                        os.makedirs(failed_files_dir, exist_ok=True)
 
-                    ## Move the perf_report_html.name to that
-                    failed_upload_filename = os.path.basename(perf_report_html.name)
-                    shutil.copy(perf_report_html.name, os.path.join(failed_files_dir,failed_upload_filename))
-                else:
-                    failed_upload_filename = None
+                        ## Move the perf_report_html.name to that
+                        failed_upload_filename = os.path.basename(perf_report_html.name)
+                        shutil.copy(perf_report_html.name, os.path.join(failed_files_dir,failed_upload_filename))
+                    else:
+                        failed_upload_filename = None
 
-                failed_report_json = {
-                    "run_id": run_id,
-                    "method": "POST",
-                    "URL": "create_report_log_api",
-                    "execution_report": json.dumps(tc_report),
-                    "processed_tc_id": processed_tc_id,
-                    "perf_filepath" : failed_upload_filename
-                }
+                    failed_report_json = {
+                        "run_id": run_id,
+                        "method": "POST",
+                        "URL": "create_report_log_api",
+                        "execution_report": json.dumps(tc_report),
+                        "processed_tc_id": processed_tc_id,
+                        "perf_filepath" : failed_upload_filename
+                    }
 
-                failed_report_json_path = os.path.join(failed_run_id_dir,"report.json")
-                with open(failed_report_json_path, 'w') as file:
-                    file.write(json.dumps(failed_report_json))
+                    failed_report_json_path = os.path.join(failed_run_id_dir,"report.json")
+                    with open(failed_report_json_path, 'w') as file:
+                        file.write(json.dumps(failed_report_json))
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not save the report to retry later of run_id '%s'" % run_id, 3)
                 CommonUtil.ExecLog(sModuleInfo, "Could not Upload the report to server of run_id '%s'" % run_id, 3)
 
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
