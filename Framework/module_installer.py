@@ -44,7 +44,8 @@ def get_req_list():
                 req_list.append(i.strip())
     return req_list
 
-def check_min_python_version(min_python_version):
+def check_min_python_version(min_python_version,show_warning):
+    import warnings
     version, subversion = list(map(int, min_python_version.split('.')))
     # Minimum required version
     required_version = (version, subversion)
@@ -54,8 +55,16 @@ def check_min_python_version(min_python_version):
 
     # Check if the current version is less than the required version
     if current_version < required_version:
-        sys.stderr.write(f"Python {required_version[0]}.{required_version[1]} or higher is required.\n")
-        sys.exit(1)
+        if not show_warning:
+            sys.stderr.write(f"Python {required_version[0]}.{required_version[1]} or higher is required.\n")
+            sys.exit(1)
+        else:
+            warning_message = (
+                f"Warning: You are using Python {current_version[0]}.{current_version[1]}. "
+                f"Python {required_version[0]}.{required_version[1]} or higher is recommended. Please update your Python version by 28-02-2025."
+            )
+            # Show warning in yellow
+            warnings.warn(f"\033[93m{warning_message}\033[0m")
 
 def install_missing_modules(req_list=None):
     """
