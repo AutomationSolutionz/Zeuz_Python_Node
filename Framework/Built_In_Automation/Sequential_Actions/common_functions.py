@@ -6617,3 +6617,165 @@ def text_to_speech(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+    
+
+import inspect
+import traceback
+
+@logger
+def binary_search(data_set):
+    """Perform binary search on a sorted list.
+
+    Args:
+        data_set:
+          data               | element parameter  | sorted list (in JSON format)
+          target             | element parameter  | value to search for
+          save into variable | common action      | variable_name
+
+    Returns:
+        "passed" if the target is found, with the index saved in the variable.
+        "not found" if the target is not in the list.
+        "zeuz_failed" otherwise.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name
+
+    try:
+        variable_name = None
+        search_data = None
+        target = None
+
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if "data" in left:
+                    search_data = CommonUtil.parse_value_into_object(right)
+                elif "target" in left:
+                    target = CommonUtil.parse_value_into_object(right)
+                elif "action" in mid:
+                    variable_name = right.strip()
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data_set.", 3)
+            traceback.print_exc()
+            return "zeuz_failed"
+
+        if not isinstance(search_data, list):
+            CommonUtil.ExecLog(sModuleInfo, "Data must be a list.", 3)
+            return "zeuz_failed"
+
+        # Convert all elements in the list and target to strings for comparison
+        search_data = [str(item) for item in search_data]
+        target = str(target)
+
+        # Ensure the list is sorted before binary search
+        search_data.sort()
+
+        left, right = 0, len(search_data) - 1
+
+        try:
+            while left <= right:
+                mid = (left + right) // 2
+                mid_value = search_data[mid]
+
+                if mid_value == target:
+                    CommonUtil.ExecLog(sModuleInfo, f"Target found at index {mid}.", 1)
+                    sr.Set_Shared_Variables(variable_name, mid, print_variable=False)
+                    return "passed"
+                elif mid_value > target:
+                    right = mid - 1
+                else:
+                    left = mid + 1
+
+            CommonUtil.ExecLog(sModuleInfo, "Target not found.", 2)
+            sr.Set_Shared_Variables(variable_name, "not found", print_variable=False)
+            return "not found"
+        
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Exception during search: {str(e)}", 3)
+            traceback.print_exc()
+            return "zeuz_failed"
+    
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Error occurred: {str(e)}", 3)
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+    
+
+
+@logger
+def math_calculation(data_set):
+    """Perform a mathematical calculation based on provided values and operation.
+
+    Args:
+        data_set:
+          first value           | element parameter  | int / double / float
+          second value          | element parameter  | int / double / float
+          operation             | element parameter  | plus / minus / multiply / div
+          math operation        | common action      | result
+
+    Returns:
+        "passed" if the calculation is successful, with the result saved in the variable.
+        "zeuz_failed" otherwise.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name
+
+    try:
+        first_value = None
+        second_value = None
+        operation = None
+        result_variable = None
+
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if "first value" in left:
+                    first_value = CommonUtil.parse_value_into_object(right)
+                elif "second value" in left:
+                    second_value = CommonUtil.parse_value_into_object(right)
+                elif "operation" in left:
+                    operation = right.strip().lower()
+                elif "math operation" in mid:
+                    result_variable = right.strip()
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data_set.", 3)
+            traceback.print_exc()
+            return "zeuz_failed"
+
+        # Check that values are numbers
+        if not (isinstance(first_value, (int, float)) and isinstance(second_value, (int, float))):
+            CommonUtil.ExecLog(sModuleInfo, "Both values must be int or float.", 3)
+            return "zeuz_failed"
+
+        # Perform the specified operation
+        try:
+            if operation == "plus":
+                result = first_value + second_value
+            elif operation == "minus":
+                result = first_value - second_value
+            elif operation == "multiply":
+                result = first_value * second_value
+            elif operation == "div":
+                if second_value == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Division by zero error.", 3)
+                    return "zeuz_failed"
+                result = first_value / second_value
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Invalid operation: {operation}.", 3)
+                return "zeuz_failed"
+
+            # Save the result into the variable
+            sr.Set_Shared_Variables(result_variable, result, print_variable=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Calculation result: {result}.", 1)
+            return "passed"
+        
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Exception during calculation: {str(e)}", 3)
+            traceback.print_exc()
+            return "zeuz_failed"
+    
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Error occurred: {str(e)}", 3)
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
