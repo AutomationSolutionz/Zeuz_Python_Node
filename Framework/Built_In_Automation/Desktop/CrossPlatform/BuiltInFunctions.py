@@ -895,6 +895,7 @@ def Drag_Element(data_set):
         src_file_name = ""
         position = "centre"
         Drag_Element_to_a_coordinate = False
+        confidence = 85
 
         for row in data_set:
             if row[1] == "action":
@@ -910,6 +911,8 @@ def Drag_Element(data_set):
                     file_name = row[2]
             elif row[1] == "source parameter":
                 src_file_name = row[2]
+            elif row[0].lower() == "confidence":
+                confidence = row[2]
 
         if cmd == "":
             CommonUtil.ExecLog(
@@ -946,7 +949,10 @@ def Drag_Element(data_set):
         for filename in (file_name, src_file_name):
             if Drag_Element_to_a_coordinate and filename == file_name:
                 continue
-            tmp_data_set = [("image", "element parameter", filename)]
+            tmp_data_set = [
+                ("image", "element parameter", filename),
+                ("confidence", "element parameter", confidence)
+                ]
             # Find image coordinates for destination element
             CommonUtil.ExecLog(
                 sModuleInfo, "Performing %s action on file %s" % (cmd, filename), 0
