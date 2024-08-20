@@ -702,8 +702,8 @@ def run_all_test_steps_in_a_test_case(
 # from the returned step results, it finds out the test case result
 def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList, testcase_info):
     if CommonUtil.testcase_exit:
-        sTestCaseStatus = CommonUtil.testcase_exit
         CommonUtil.ExecLog(sModuleInfo, f"Test Case {CommonUtil.testcase_exit}", 1)
+        return CommonUtil.testcase_exit
     elif "BLOCKED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
         return "Blocked"
