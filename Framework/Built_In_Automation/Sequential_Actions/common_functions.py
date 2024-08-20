@@ -545,19 +545,26 @@ def step_exit(data_set):
 
     try:
         action_value = ""
+        msg = ""
         for row in data_set:
             if row[0] == "step exit" and row[1] == "action":
                 action_value = row[2]
+            elif row[0].strip().lower() == "message":
+                msg = row[2]
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
     if (
         action_value in failed_tag_list
     ):  # Convert user specified pass/fail into standard result
+        if msg:
+            CommonUtil.ExecLog(sModuleInfo, f'{msg}', 3)
         return "zeuz_failed"
     elif action_value in skipped_tag_list:
         return "skipped"
     elif action_value in passed_tag_list:
+        if msg:
+            CommonUtil.ExecLog(sModuleInfo, f'{msg}', 1)
         return "passed"
     else:
         CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
