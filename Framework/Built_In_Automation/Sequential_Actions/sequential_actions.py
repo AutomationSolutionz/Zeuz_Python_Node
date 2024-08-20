@@ -1120,7 +1120,7 @@ def Run_Sequential_Actions(
                 table.add_column("Field", justify="left", max_width=20)
                 table.add_column("Sub-field", justify="left", max_width=15)
                 table.add_column("Value", justify="left", max_width=35)
-                
+
                 data_set_to_print = sr.Hide_Secretive_Text(text_value=data_set)
                 for row in data_set_to_print:
                     table.add_row(*row, style=_color)
@@ -1329,9 +1329,9 @@ def Run_Sequential_Actions(
                 # If middle column = action, call action handler
                 elif "action" in action_name:  # Must be last, since it's a single word that also exists in other action types
                     result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
-                    if row[0].lower().strip() == "step exit":
+                    if row[0].lower().strip() in ("step exit", "testcase exit"):
                         global step_exit_fail_called, step_exit_pass_called
-                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        CommonUtil.ExecLog(sModuleInfo, f"{row[0].lower().strip()} Exit called. Stopping Test Step.", 1)
                         if result == "zeuz_failed":
                             step_exit_fail_called = True
                         else:
@@ -2319,7 +2319,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 + python_location \
                 +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe"\
                 +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
-                +"\n5.Relaunch zeuz node_cli.py" 
+                +"\n5.Relaunch zeuz node_cli.py"
             CommonUtil.ExecLog(sModuleInfo, error_msg, 3)
             return "zeuz_failed" 
 

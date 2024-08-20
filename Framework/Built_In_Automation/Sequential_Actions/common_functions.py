@@ -546,26 +546,56 @@ def step_exit(data_set):
     try:
         action_value = ""
         msg = ""
-        for row in data_set:
-            if row[0] == "step exit" and row[1] == "action":
-                action_value = row[2]
-            elif row[0].strip().lower() == "message":
-                msg = row[2]
+        for left, mid, right in data_set:
+            if left.lower().strip() == "step exit":
+                action_value = right.strip().lower()
+            elif left.strip().lower() == "message":
+                msg = right
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-    if (
-        action_value in failed_tag_list
-    ):  # Convert user specified pass/fail into standard result
-        if msg:
-            CommonUtil.ExecLog(sModuleInfo, f'{msg}', 3)
+    if msg:
+        CommonUtil.ExecLog(sModuleInfo, msg, 3 if "fail" in action_value else 1)
+    if "fail" in action_value:
         return "zeuz_failed"
-    elif action_value in skipped_tag_list:
-        return "skipped"
-    elif action_value in passed_tag_list:
-        if msg:
-            CommonUtil.ExecLog(sModuleInfo, f'{msg}', 1)
+    elif "pass" in action_value:
         return "passed"
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
+        return "zeuz_failed"
+
+
+def testcase_exit(data_set):
+    """ Exits a Test Step wtih passed/failed in the standard format, when the user specifies it in the step data """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        action_value = ""
+        for left, mid, right in data_set:
+            if left.lower().strip() == "testcase exit":
+                action_value = right.strip().lower()
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+    if "skip" in action_value:
+        CommonUtil.testcase_exit = "Skipped"
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Skipped", 2)
+        return "passed"
+    elif "fail" in action_value:
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Failed", 2)
+        CommonUtil.testcase_exit = "Failed"
+        return "zeuz_failed"
+    elif "pass" in action_value:
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Passed", 2)
+        CommonUtil.testcase_exit = "Passed"
+        return "passed"
+    elif "block" in action_value:
+        CommonUtil.ExecLog(sModuleInfo, "The testcase will be force Blocked", 2)
+        CommonUtil.testcase_exit = "Blocked"
+        return "zeuz_failed"
     else:
         CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
         return "zeuz_failed"
@@ -4608,7 +4638,7 @@ def upload_attachment_to_testcase(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = RequestFormatter.request("post", 
+        res = RequestFormatter.request("post",
             RequestFormatter.form_uri("test_case_file_upload/"),
             files={"file": open(var_path, 'rb')},
             data={"file_upload_tc": var_id},
@@ -4706,7 +4736,7 @@ def upload_attachment_to_step(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = RequestFormatter.request("post", 
+        res = RequestFormatter.request("post",
             RequestFormatter.form_uri("step_file_upload/"),
             files={"file": open(var_path,'rb')},
             data={"file_upload_step": var_id, },
@@ -4800,7 +4830,7 @@ def upload_attachment_to_global(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = RequestFormatter.request("post", 
+        res = RequestFormatter.request("post",
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
             verify=False,
@@ -5905,7 +5935,7 @@ def data_store_read(data_set):
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
-        res = RequestFormatter.request("get", 
+        res = RequestFormatter.request("get",
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
             verify=False,
@@ -5938,11 +5968,11 @@ def data_store_get_data(data_set):
                 columns = right.strip()
             if 'get data' in left.lower().strip():
                 variable_name = right.strip()
-        
+
         if table_name == None or variable_name == None:
             CommonUtil.ExecLog(sModuleInfo, f"Table name and Variable Name both needs to be provided", 3)
             return "zeuz failed"
-        
+
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
@@ -5950,7 +5980,7 @@ def data_store_get_data(data_set):
         params['table'] = table_name
         if columns:
             params['columns'] = columns
-        res = RequestFormatter.request("get", 
+        res = RequestFormatter.request("get",
             RequestFormatter.form_uri('data_store/get_datastore/'),
             params=params,
             verify=False,
@@ -5977,17 +6007,17 @@ def data_store_get_stats(data_set):
                 table_name = right.strip()
             if 'stats' in left.lower().strip():
                 variable_name = right.strip()
-        
+
         if table_name == None or variable_name == None:
             CommonUtil.ExecLog(sModuleInfo, f"Table name and Variable Name both needs to be provided", 3)
             return "zeuz_failed"
-        
+
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
         params = dict()
         params['table'] = table_name
-        res = RequestFormatter.request("get", 
+        res = RequestFormatter.request("get",
             RequestFormatter.form_uri('data_store/get_datastore_stats/'),
             params=params,
             verify=False,
@@ -6191,7 +6221,7 @@ def data_store_insert(data_set):
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
 
-        res = RequestFormatter.request("post", 
+        res = RequestFormatter.request("post",
             RequestFormatter.form_uri('data_store/data_store/data_store_list/'),
             data=json.dumps(data),
             verify=False,
@@ -6289,7 +6319,7 @@ def xml_to_json(data_set):
                 filepath = Path(CommonUtil.path_parser(filepath))
             if "xml to json" in left:
                 json_var_name = right.strip()
-        
+
         if None in (filepath,json_var_name):
             CommonUtil.ExecLog(sModuleInfo, "Please specify both filename and json variable name", 3)
 
@@ -6297,17 +6327,17 @@ def xml_to_json(data_set):
             try:
                 with open(filepath) as xml_file:
                     data_dict = xmltodict.parse(xml_file.read())
-                result = sr.Set_Shared_Variables(json_var_name, data_dict)  
+                result = sr.Set_Shared_Variables(json_var_name, data_dict)
                 return result
             except:
                 CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
                 return "zeuz_failed"
-                
 
-            
+
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "Specified file couldn't be found or downloaded from attachment", 3)
-            return "zeuz_failed" 
+            return "zeuz_failed"
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -6384,7 +6414,7 @@ def connect_to_S3(data_set):
                 credentials_source = right.strip()
             if "file path" in left:
                 cred_file_path = right.strip()
-        
+
         if credentials_source == "default":
             try:
                 s3_client = boto3.client('s3')
@@ -6438,7 +6468,7 @@ def upload_to_S3(data_set):
             if "s3 resource variable":
                 s3_resource_var = right.strip()
 
-        
+
         if None in (bucket_name, file_name):
             CommonUtil.ExecLog(sModuleInfo, "Bucket, file and key names should be provided", 3)
 
@@ -6470,7 +6500,7 @@ def connect_to_bigquery_client(data_set):
         if left.strip().lower() == 'connect to bigquery client':
             client_var_name = right.strip()
 
-    
+
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_path
 
     try:
@@ -6489,7 +6519,7 @@ def execute_bigquery_query(data_set):
         output variable         | input parameter   | output variable name
         execute bigquery query  | common action     | client variable name
     """
-        
+
     from google.cloud import bigquery
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -6505,7 +6535,7 @@ def execute_bigquery_query(data_set):
             client_var_name = right.strip()
         if left.strip().lower() == 'output variable':
             output_var_name = right.strip()
-    
+
     if None in (query,client_var_name,output_var_name):
         CommonUtil.ExecLog(sModuleInfo, "Incorrect Dataset", 3)
         return "zeuz_failed"
@@ -6527,7 +6557,7 @@ def connect_to_google_service_account(data_set):
           credentials path                      | input parameter   | path to credentails json file
           connect to google service client      | common action     | client variable name
     """
-    
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Actions involving the Google service account may not function correctly without a virtual environment.", 2)
     cred_path = None
@@ -6538,7 +6568,7 @@ def connect_to_google_service_account(data_set):
         if left.strip().lower() == 'connect to google service client':
             client_var_name = right.strip()
 
-    try:    
+    try:
         from google.cloud import storage
         client = storage.Client.from_service_account_json(json_credentials_path=cred_path)
         sr.Set_Shared_Variables(client_var_name, client)
@@ -6552,7 +6582,7 @@ def upload_to_google_storage_bucket(data_set):
     """
     data_set:
         filepath                            | input parameter   | filepath
-        bucket                              | input parameter   | bucket name 
+        bucket                              | input parameter   | bucket name
         upload to google storage bucket     | common action     | client variable name
     """
 
@@ -6569,7 +6599,7 @@ def upload_to_google_storage_bucket(data_set):
             client_var_name = right.strip()
         if left.strip().lower() == 'bucket':
             bucket = right.strip()
-    
+
     if None in (filepath,client_var_name,bucket):
         CommonUtil.ExecLog(sModuleInfo, "Incorrect Dataset", 3)
         return "zeuz_failed"
@@ -6583,7 +6613,7 @@ def upload_to_google_storage_bucket(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
 @logger
 def text_to_speech(data_set):
     """
@@ -6611,7 +6641,7 @@ def text_to_speech(data_set):
                 language = right.strip()
             if "accent" in left:
                 top_level_domain = right.strip()
-                
+
         if None in (dialogue_data, speaker, output_filename):
             CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
             return "zeuz_failed"
