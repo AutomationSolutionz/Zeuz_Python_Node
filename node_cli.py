@@ -391,6 +391,10 @@ def Login(cli=False, run_once=False, log_dir=None):
             }
         )
         node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+        from Framework.MainDriverApi import retry_failed_report_upload
+        report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+        report_thread.start()
+        
         RunProcess(node_id, run_once=run_once, log_dir=log_dir)
 
     if run_once:
