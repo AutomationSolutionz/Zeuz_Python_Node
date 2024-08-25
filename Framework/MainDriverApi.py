@@ -1527,15 +1527,15 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             else:
                 try:
                     ## Create a folder in failed_upload directory with run_id
-                    failed_upload_dir = os.path.join(os.path.dirname(temp_ini_file),'failed_uploads')
+                    failed_upload_dir = Path(temp_ini_file).parent / 'failed_uploads'
                     os.makedirs(failed_upload_dir, exist_ok=True)
 
-                    failed_run_id_dir = os.path.join(failed_upload_dir,run_id)
+                    failed_run_id_dir = failed_upload_dir / run_id
                     os.makedirs(failed_run_id_dir, exist_ok=True)
 
                     ## Create a files subfolder files in the run_id folder
                     if perf_report_html:
-                        failed_files_dir = os.path.join(failed_run_id_dir,"files")
+                        failed_files_dir = failed_run_id_dir / "files"
                         os.makedirs(failed_files_dir, exist_ok=True)
 
                         ## Move the perf_report_html.name to that
@@ -1553,7 +1553,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         "perf_filepath" : failed_upload_filename
                     }
 
-                    failed_report_json_path = os.path.join(failed_run_id_dir,"report.json")
+                    failed_report_json_path = failed_run_id_dir / "report.json"
                     with open(failed_report_json_path, 'w') as file:
                         file.write(json.dumps(failed_report_json))
                 except:
@@ -1655,7 +1655,7 @@ def retry_failed_report_upload():
             CommonUtil.ExecLog(sModuleInfo, str(e), 3)
             pass
         
-        sleep(10)
+        sleep(120)
 
 
 
