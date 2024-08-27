@@ -4886,11 +4886,13 @@ def get_offsets(location: str, Element: WebElement) -> tuple[int]:
 def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    from time import sleep
     try:
         source = []
         destination = []
         destination_offset = None
-        param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
+        delay = None
+        param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter","optionalparameter": "optional parameter"}
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
                 mid = mid.replace("src", "").replace(" ", "").replace("source", "")
@@ -4907,6 +4909,8 @@ def drag_and_drop(dataset):
                 destination.append((left, mid, right))
             elif left.strip().lower() == "destination offset" and mid.strip().lower() == 'optional parameter':
                 destination_offset = right
+            elif left.strip().lower() == "delay":
+                delay = int(right.strip())
 
         if not source:
             CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
@@ -4928,7 +4932,54 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
-        if destination_offset:
+        if delay:
+            if destination_offset:
+                destination_x, destination_y = get_offsets(destination_offset, destination_element)
+            else:
+                destination_x = destination_element.location['x']
+                destination_y = destination_element.location['y']
+            distance_x = destination_x - source_element.location['x']
+            distance_y = destination_y - source_element.location['y']
+            total_time = delay
+            total_distance = (distance_x**2 + distance_y**2)**0.5
+
+            pixels_per_step = 5
+            steps = int(total_distance / pixels_per_step)
+
+            # Calculate the ideal time per step to fit within the total time
+            ideal_time_per_step = total_time / steps
+
+            # Start the high-resolution timer
+            start_time = time.perf_counter()
+
+            # Create an ActionChains object
+            actions = ActionChains(selenium_driver)
+
+            # Click and hold the source element
+            actions.click_and_hold(source_element).perform()
+
+            # Manually move the mouse to the target element in small increments
+            for i in range(steps):
+                # Calculate the movement for this step
+                move_x = distance_x / steps
+                move_y = distance_y / steps
+
+                # Move the mouse by the calculated offset
+                actions.move_by_offset(move_x, move_y).perform()
+
+                # Calculate elapsed time and adjust the sleep time
+                elapsed_time = time.perf_counter() - start_time
+                remaining_time = total_time - elapsed_time
+                time_per_step = remaining_time / (steps - i)
+
+                if time_per_step > 0:
+                    time.sleep(time_per_step)
+
+            # Release the mouse button to drop the element
+            actions.release().perform()
+            sleep(2)
+            
+        elif destination_offset:
             x, y = get_offsets(destination_offset, destination_element)
             ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).release().perform()
         else:
