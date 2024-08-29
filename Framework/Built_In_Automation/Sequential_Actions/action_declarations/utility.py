@@ -22,6 +22,7 @@ declarations = (
     { "name": "log 3",                 "function": "Add_Log",                     "screenshot": "none" },
     { "name": "log 1",                 "function": "Add_Log",                     "screenshot": "none" },
     { "name": "show log",              "function": "Show_Log",                    "screenshot": "none" },
+    { "name": "custom comment",        "function": "custom_comment",              "screenshot": "none" },
     { "name": "download and unzip",    "function": "Download_File_and_Unzip",     "screenshot": "none" },
     { "name": "take screen shot",      "function": "TakeScreenShot",              "screenshot": "none" },
     { "name": "change ini value",      "function": "Change_Value_ini",            "screenshot": "none" },

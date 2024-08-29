@@ -1522,6 +1522,27 @@ def Add_Log(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def custom_comment(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    operation = "append"
+    custom_comment = None
+    for left,mid,right in step_data:
+        left = left.lower().strip()
+        mid = mid.lower().strip()
+        if left == "operation":
+            operation = right.lower().strip()
+        if left == "custom comment":
+            custom_comment = right.strip()
+
+    if custom_comment == None:
+        CommonUtil.ExecLog(sModuleInfo, "Custom comment needs to be provided", 3)
+        return "zeuz_failed"
+    
+    CommonUtil.zeuz_tc_run_comment.append({"op":operation, "comment": custom_comment})
+    return "passed"
+    
 @logger
 def Show_Log(step_data):
     try:

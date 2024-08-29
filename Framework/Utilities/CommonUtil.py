@@ -97,6 +97,7 @@ skipped_tag_list = ["skip", "SKIP", "Skip", "skipped", "SKIPPED", "Skipped"]
 
 all_logs = {}
 all_logs_json, json_log_cond = [], False
+zeuz_tc_run_comment = []
 tc_error_logs = []
 all_logs_count = 0
 all_logs_list = []
@@ -460,6 +461,23 @@ node_manager_json(
 )
 report_json_time = 0.0
 
+def construct_commment_string(original_log, operations):
+    result = []
+    final_comment = ""
+    for op_dict in operations:
+        op = op_dict['op']
+        comment = op_dict['comment']
+        
+        if op == 'overwrite':
+            result = [comment]  # Clear the list and add the new comment
+        elif op == 'append':
+            result.append(comment)  # Append the comment
+        elif op == 'prepend':
+            result.insert(0, comment)  # Prepend the comment
+    
+    final_comment =  '\n'.join(result) + '\n\n' + original_log
+    return final_comment.strip()
+
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
     try:
@@ -469,7 +487,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
             return
         elif upload_on_fail and rerun_on_fail and not rerunning_on_fail and logs:
             return
-        global all_logs_json, report_json_time, tc_error_logs, passed_after_rerun
+        global all_logs_json, report_json_time, tc_error_logs, passed_after_rerun, zeuz_tc_run_comment
         start = time.perf_counter()
         if logs or stepInfo or TCInfo or setInfo:
             log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
@@ -502,8 +520,12 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                     elif passed_after_rerun:
                         fail_reason_str = "** Test case Failed on first run but Passed when Rerun **"
                         passed_after_rerun = False
-                    testcase_info["execution_detail"]["failreason"] = fail_reason_str
+                    
+                    # Add custom comment with fail_reason_str
+                    fail_reason_comment = construct_commment_string(fail_reason_str, zeuz_tc_run_comment) 
+                    testcase_info["execution_detail"]["failreason"] = fail_reason_comment
                     tc_error_logs = []
+                    zeuz_tc_run_comment = []
                     return
                 if step_id == "none":
                     return
