@@ -1245,8 +1245,11 @@ def send_dom_variables():
                     var elements = html.getElementsByTagName('style');
                     while (elements[0])
                         elements[0].parentNode.removeChild(elements[0])
-    
-                    return html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');""")
+                    
+                    // AI model works better on indented dom, so not removing indentation.
+                    // var result = html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
+                    var result = html.outerHTML;
+                    return result;""")
             except selenium.common.exceptions.JavascriptException:
                 CommonUtil.Exception_Handler(sys.exc_info())
                 dom = ""

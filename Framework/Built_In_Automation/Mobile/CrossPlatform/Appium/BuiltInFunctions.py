@@ -2058,9 +2058,9 @@ def Click_Element_Appium(data_set):
         for left, mid, right in data_set:
             left = left.lower().strip()
             mid = mid.lower().strip()
-            if mid in ("option", "optional parameter") and "x_offset:y_offset" in left:
+            if mid in ("option", "optional parameter") and "offset" in left:
                 offset = True
-                x_offset, y_offset = [i.strip() for i in (right.strip()).split(":")]
+                x_offset, y_offset = [i.strip() for i in (right.strip()).split(",")]
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
 

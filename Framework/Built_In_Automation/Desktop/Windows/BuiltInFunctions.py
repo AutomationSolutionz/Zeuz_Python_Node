@@ -111,19 +111,35 @@ def go_to_desktop(data_set=[]):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
-def get_coords(Element):
-    x = int(
-        Element.Current.BoundingRectangle.Left
-        + Element.Current.BoundingRectangle.Width / 2
-    )
-    y = int(
-        Element.Current.BoundingRectangle.Top
-        + Element.Current.BoundingRectangle.Height / 2
-    )
-    return x, y
+def get_coords(Element, offset: str | None = None):
+    if not offset:
+        x = int(
+            Element.Current.BoundingRectangle.Left
+            + Element.Current.BoundingRectangle.Width / 2
+        )
+        y = int(
+            Element.Current.BoundingRectangle.Top
+            + Element.Current.BoundingRectangle.Height / 2
+        )
+        return x, y
+
+    location = offset.replace(" ", "")
+    location = location.split(",")
+    x = float(location[0])
+    y = float(location[1])
+
+    ele_width = int(Element.Current.BoundingRectangle.Width)
+    ele_height = int(Element.Current.BoundingRectangle.Height)
+
+    total_x_offset = round((ele_width // 2) * (x / 100))
+    total_y_offset = round((ele_height // 2) * (y / 100))
+
+    total_x = round(Element.Current.BoundingRectangle.Left + ele_width/2 + total_x_offset)
+    total_y = round(Element.Current.BoundingRectangle.Top + ele_height/2 + total_y_offset)
+
+    return total_x, total_y
 
 
-# Method to click on element; step data passed on by the user
 @logger
 def Click_Element(data_set):
     """ Click using element, first get the element then click"""
@@ -131,6 +147,7 @@ def Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     expand = True
     Gui = False
+    offset = None
 
     # parse dataset and read data
     try:
@@ -142,6 +159,9 @@ def Click_Element(data_set):
                     expand = False
                 elif right == "gui":
                     Gui = True
+            if left == "offset":
+                offset = right
+                Gui = True
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "You have provided an invalid Click data.  Please refer to help", 3)
         CommonUtil.Exception_Handler(sys.exc_info(), None, "You have provided an invalid Click data.  Please refer to help")
@@ -156,7 +176,7 @@ def Click_Element(data_set):
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Element was located.  Performing action provided ", 1)
-        result = Click_Element_None_Mouse(Element, expand, Gui)
+        result = Click_Element_None_Mouse(Element, expand, Gui, offset)
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
             return "zeuz_failed"
@@ -170,7 +190,7 @@ def Click_Element(data_set):
 
 
 @logger
-def Click_Element_None_Mouse(Element, Expand=True, Gui=False):
+def Click_Element_None_Mouse(Element, Expand=True, Gui=False, offset: str | None = ""):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         patter_list = Element.GetSupportedPatterns()
@@ -178,7 +198,7 @@ def Click_Element_None_Mouse(Element, Expand=True, Gui=False):
             # x = int (Element.Current.BoundingRectangle.X)
             # y = int (Element.Current.BoundingRectangle.Y)
             CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
-            x, y = get_coords(Element)
+            x, y = get_coords(Element, offset)
             win32api.SetCursorPos((x, y))
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
             time.sleep(0.1)
@@ -312,12 +332,17 @@ def Check_uncheck(data_set):
 def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
+        offset = None
+        for left, mid, right in data_set:
+            right = right.strip().lower()
+            left = left.strip().lower()
+            if left == "offset":
+                offset = right
         Element = Get_Element(data_set)
-        # if Element == "zeuz_failed":
         if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
 
-        x, y = get_coords(Element)
+        x, y = get_coords(Element, offset)
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0)
         time.sleep(0.1)
@@ -1685,10 +1710,14 @@ def Double_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Gui = False
+        offset = None
         for left, mid, right in data_set:
             right = right.strip().lower()
             left = left.strip().lower()
             if left == "method" and right == "gui":
+                Gui = True
+            elif left == "offset":
+                offset = right
                 Gui = True
 
         Element = Get_Element(data_set)
@@ -1708,7 +1737,7 @@ def Double_Click_Element(data_set):
                     Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
                     return "passed"
 
-        x, y = get_coords(Element)
+        x, y = get_coords(Element, offset)
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
         time.sleep(0.1)
@@ -1725,14 +1754,21 @@ def Double_Click_Element(data_set):
 def Hover_Over_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
+        offset = None
+        for left, mid, right in data_set:
+            right = right.strip().lower()
+            left = left.strip().lower()
+            if left == "offset":
+                offset = right
+
         Element = Get_Element(data_set)
         # if Element == "zeuz_failed":
         if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
-        x, y = get_coords(Element)
+        x, y = get_coords(Element, offset)
         win32api.SetCursorPos((x, y))
 
-        autoit.mouse_move(x, y, speed=20)
+        # autoit.mouse_move(x, y, speed=20)
         time.sleep(unnecessary_sleep)
         return "passed"
     except Exception:
@@ -1868,12 +1904,16 @@ def Enter_Text_In_Text_Box(data_set):
     try:
         text = ""
         keystroke = False
+        offset = None
 
         for left, mid, right in data_set:
             if left.lower().strip() == "text":
                 text = right
             elif left.lower().strip() == "method" and right.lower().strip() in ("gui", "keystroke"):
                 keystroke = True
+            elif "offset" == left.lower().strip():
+                keystroke = True
+                offset = right
 
         Element = Get_Element(data_set)
         # if Element == "zeuz_failed":
@@ -1881,7 +1921,7 @@ def Enter_Text_In_Text_Box(data_set):
             return "zeuz_failed"
 
         if keystroke:
-            x, y = get_coords(Element)
+            x, y = get_coords(Element, offset)
             win32api.SetCursorPos((x, y))
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
             time.sleep(0.1)
@@ -1915,6 +1955,7 @@ def Swipe(data_set):
         scroll_count = 1
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(data_set)
+        offset = None
         # if Element == "zeuz_failed":
         if type(Element) == str and Element == "zeuz_failed":
             return "zeuz_failed"
@@ -1923,7 +1964,9 @@ def Swipe(data_set):
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.replace("%", "").replace(" ", "").lower()
-                if "scroll parameter" in mid:
+                if "offset" == left:
+                    offset = right
+                elif "scroll parameter" in mid:
                     if left == "direction":
                         if right in ("up", "down","right","left"):
                             direction = right
@@ -1932,7 +1975,7 @@ def Swipe(data_set):
         except:
             CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
             return "zeuz_failed"
-        x, y = get_coords(Element)
+        x, y = get_coords(Element, offset)
         win32api.SetCursorPos((x, y))
         if direction == "right":
             pyautogui.keyDown('shift')
