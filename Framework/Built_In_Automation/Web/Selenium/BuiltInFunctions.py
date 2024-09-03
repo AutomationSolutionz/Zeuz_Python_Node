@@ -127,7 +127,9 @@ if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is a
 else:
     raise ValueError("No dependency set - Cannot run")
 
-
+@logger
+def get_driver():
+    return selenium_driver
 @logger
 def find_exe_in_path(exe):
     """ Search the path for an executable """
