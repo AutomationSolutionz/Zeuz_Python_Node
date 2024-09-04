@@ -163,7 +163,7 @@ def db_get_connection(session_name):
         db_con = None
 
         # Get the values
-        db_type = db_params.get(DB_TYPE)
+        db_type = db_params.get(DB_TYPE).lower()
         db_name = db_params.get(DB_NAME)
         db_user_id = db_params.get(DB_USER_ID)
         db_password = db_params.get(DB_PASSWORD)
@@ -368,6 +368,7 @@ def db_select(data_set):
         query = None
         session_name = 'default'
         variable_name = None
+        return_type = None
         for left, mid, right in data_set:
             if left == "query":
                 # Get the and query, and remove any whitespaces
@@ -375,7 +376,10 @@ def db_select(data_set):
             if "action" in mid:
                 variable_name = right.strip()
             if 'session' in left.lower():
-                session_name = right.strip() 
+                session_name = right.strip()
+            if 'return' in left.lower():
+                return_type = "records"
+
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -403,6 +407,10 @@ def db_select(data_set):
                     db_rows.append(list(db_row))
 
                 # Set the rows as a shared variable
+                if return_type == 'records':
+                    column_headers = [i[0] for i in db_cursor.description]
+                    db_rows = [dict(zip(column_headers, row)) for row in db_rows]
+
                 sr.Set_Shared_Variables(variable_name, db_rows)
 
         db_con.close()
