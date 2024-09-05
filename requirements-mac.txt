@@ -63,3 +63,4 @@ backports-datetime-fromisoformat; python_version < '3.11'
 thefuzz
 genson
 google-cloud-storage
+django>=4.2.16 # not directly required, pinned by Snyk to avoid a vulnerability
