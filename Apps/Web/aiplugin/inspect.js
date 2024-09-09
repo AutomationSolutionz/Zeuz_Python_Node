@@ -141,11 +141,9 @@ class Inspector {
 								var server_url = result.url;
 								var api_key = result.key;
 
-
-								// send data to zeuz server directly
-
-								refinedHtml = refinedHtml.replace(/[^\x00-\x7F]/g, '');
-								refinedHtml = refinedHtml.replace(/[\x00-\x1F\x7F]/g, '');
+								//The following code removes non-unicode characters (except \x09 and \x0A that are \t and \n), that causes issue in lxml tree
+								// Optionally remove control characters (0-31 and 127 in ASCII) except 9,10 \t and \n
+								refinedHtml = refinedHtml.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
 								var data = JSON.stringify({
 									"page_src": refinedHtml,
 									"action_type": "selenium"
