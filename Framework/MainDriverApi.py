@@ -1248,7 +1248,9 @@ def send_dom_variables():
                     
                     // AI model works better on indented dom, so not removing indentation.
                     // var result = html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
-                    var result = html.outerHTML;
+
+                    //The following code removes non-unicode characters except newline and tab
+                    var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
                     return result;""")
             except selenium.common.exceptions.JavascriptException:
                 CommonUtil.Exception_Handler(sys.exc_info())

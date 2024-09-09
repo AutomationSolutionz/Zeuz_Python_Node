@@ -4,6 +4,7 @@ fetch("./data.json")
     .then(Response => Response.json())
     .then(data => {
         metaData = data;
+        console.log('metaData', metaData)
     });
 
 const browserAppData = chrome || browser;
@@ -95,8 +96,11 @@ async function fetchAIData(id, command, value, url, document){
         validate_full_text_by_ai = true;
     }
 
-    document = document.replace(/[^\x00-\x7F]/g, '');
-    document = document.replace(/[\x00-\x1F\x7F]/g, ''); // Optionally remove control characters (0-31 and 127 in ASCII)
+    //The following code removes non-unicode characters (except \x09 and \x0A that are \t and \n), that causes issue in lxml tree
+    // Optionally remove control characters (0-31 and 127 in ASCII) except 9,10 \t and \n
+    document = document.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, ''); 
+    // console.log('document', document)
+
     var dataj = {
         "page_src": document,
         "action_name": command,
