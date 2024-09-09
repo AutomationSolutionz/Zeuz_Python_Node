@@ -25,8 +25,8 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
 )
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
-from appium.webdriver.common.touch_action import TouchAction
-from appium.webdriver.common.multi_action import MultiAction
+# from appium.webdriver.common.touch_action import TouchAction
+# from appium.webdriver.common.multi_action import MultiAction
 from appium.webdriver.common.appiumby import AppiumBy
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -39,6 +39,7 @@ from Framework.Utilities.CommonUtil import (
 )
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 import psutil
+import pyautogui
 
 temp_config = os.path.join(
     os.path.join(
@@ -2053,6 +2054,7 @@ def Click_Element_Appium(data_set):
         x_offset = False
         y_offset = False
         offset = False
+        action = ''
 
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -2060,6 +2062,12 @@ def Click_Element_Appium(data_set):
             if mid in ("option", "optional parameter") and "x_offset:y_offset" in left:
                 offset = True
                 x_offset, y_offset = [i.strip() for i in (right.strip()).split(":")]
+            if 'action' in mid:
+                action = right.lower().strip()
+
+        if action == '':
+            CommonUtil.ExecLog(sModuleInfo, "Haven't specified what type of click you want.", 3)
+            return "zeuz_failed"
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
 
@@ -2122,14 +2130,42 @@ def Click_Element_Appium(data_set):
 
             else:
                 try:
-                    Element.click()
-                    # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
-                    if context_switched == True:
-                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
-                        context_result = auto_switch_context_and_try("native")
-                    return "passed"
+                    if action == 'click':
+                        Element.click()
+                        # CommonUtil.TakeScreenShot(sModuleInfo)
+                        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
+                        if context_switched == True:
+                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
+                            context_result = auto_switch_context_and_try("native")
+                        return "passed"
+                    else:
+                        location = Element.location
+                        size = Element.size
+                        # Coordinates of the top-left corner
+                        x = location['x']
+                        y = location['y']
 
+                        # Size of the element
+                        width = size['width']
+                        height = size['height']
+
+                        # Calculate the center of the element
+                        center_x = x + width / 2
+                        center_y = y + height / 2
+                        if action == 'double click':
+                            pyautogui.doubleClick(center_x, center_y)
+                            CommonUtil.ExecLog(sModuleInfo, "Successfully double clicked the element with given parameters and values", 1)
+                            if context_switched == True:
+                                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
+                                context_result = auto_switch_context_and_try("native")
+                            return "passed"
+                        elif action == 'right click':
+                            pyautogui.click(center_x, center_y, button='right')
+                            CommonUtil.ExecLog(sModuleInfo, "Successfully right clicked the element with given parameters and values", 1)
+                            if context_switched == True:
+                                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
+                                context_result = auto_switch_context_and_try("native")
+                            return "passed"
                 except Exception:
                     errMsg = "Could not select/click your element."
 
@@ -2517,7 +2553,7 @@ def Enter_Text_Appium(data_set):
         # actual reference may change. So in this case, we will need to search for element again once w
         # click on the element.
         try:
-            CommonUtil.ExecLog(sModuleInfo, "Clicking and clearing the text field", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Clicking the text field", 1)
             Element.click()  # Set focus to textbox
             # Element = LocateElement.Get_Element(data_set, appium_driver)
             # if Element == "zeuz_failed":
@@ -2561,19 +2597,21 @@ def Enter_Text_Appium(data_set):
             #         CommonUtil.ExecLog(
             #             sModuleInfo, "Found your element with different context", 1
             #         )
-            Element.clear()  # Remove any text already existing
+            # Element.clear()  # Remove any text already existing
         except:
             # just in case we run into any error, we will still try to proceed
             CommonUtil.ExecLog(
-                sModuleInfo, "Unable to click and clear the text field", 2
+                sModuleInfo, "Unable to click the text field", 2
             )
-            True
-
         try:
+            # check if the platform is Mac or not
+            if appium_driver.caps['platformName'] == 'mac':
+                pyautogui.write(text_value)
             # Trying to send text using send keys method
-            Element.send_keys(
-                text_value
-            )  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            else:
+                Element.send_keys(
+                    text_value
+                )  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Successfully set the value of to text to: %s" % text_value,

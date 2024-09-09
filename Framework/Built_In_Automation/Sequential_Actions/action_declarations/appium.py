@@ -52,6 +52,9 @@ declarations = (
     { "name": "seek progress bar",        "function": "Seek_Progress_Bar",           "screenshot": "mobile"},
     { "name": "zoom",                     "function": "zoom_action",                 "screenshot": "mobile"},
     { "name": "pan",                      "function": "pan_action",                  "screenshot": "mobile"},
+    { "name": "double tap",               "function": "Double_Tap_Appium",           "screenshot": "mobile"},
+    { "name": "double click",             "function": "Click_Element_Appium",        "screenshot": "mobile"},
+    { "name": "right click",              "function": "Click_Element_Appium",        "screenshot": "mobile"},
 ) # yapf: disable
 
 module_name = "appium"
