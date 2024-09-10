@@ -1385,17 +1385,15 @@ def Find_File_Or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         # take a look at the use of inline commented variable
-        file_or_folder_path_splited_for_os_support = (
-            str(step_data[0][2]).strip().split("/")
-        )
-        file_or_folder_path = get_home_folder()
-
-        for path_part in file_or_folder_path_splited_for_os_support:
-            file_or_folder_path = os.path.join(file_or_folder_path, path_part)
-
-        file_or_folder = str(step_data[1][2]).strip()
-
-        if file_or_folder.lower() == "file":
+        file_or_folder = None
+        file_or_folder_path = None
+        for left,_,right in step_data:
+            if left.strip().lower() == "find":
+                file_or_folder = right.strip().lower()
+            if left.strip().lower() == "file_name":
+                file_or_folder_path = right.strip()
+                
+        if file_or_folder == "file":
             # find file "path"
             result = find_file(file_or_folder_path)
             if result in failed_tag_list:
@@ -1522,6 +1520,27 @@ def Add_Log(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def custom_comment(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    operation = "append"
+    custom_comment = None
+    for left,mid,right in step_data:
+        left = left.lower().strip()
+        mid = mid.lower().strip()
+        if left == "operation":
+            operation = right.lower().strip()
+        if left == "custom comment":
+            custom_comment = right.strip()
+
+    if custom_comment == None:
+        CommonUtil.ExecLog(sModuleInfo, "Custom comment needs to be provided", 3)
+        return "zeuz_failed"
+    
+    CommonUtil.zeuz_tc_run_comment.append({"op":operation, "comment": custom_comment})
+    return "passed"
+    
 @logger
 def Show_Log(step_data):
     try:
