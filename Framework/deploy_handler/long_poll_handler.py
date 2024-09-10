@@ -6,6 +6,7 @@ import time
 import random
 import requests
 from colorama import Fore
+import threading
 
 from Framework.Utilities import RequestFormatter
 
@@ -72,6 +73,7 @@ class DeployHandler:
                     time.sleep(random.randint(1, 3))
 
             self.on_connect_callback(reconnect)
+
 
             try:
                 reconnect = True

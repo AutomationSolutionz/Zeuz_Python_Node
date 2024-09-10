@@ -45,6 +45,9 @@ from rich.table import Table
 from rich.console import Console
 from rich.box import ASCII_DOUBLE_HEAD, DOUBLE
 from rich.padding import Padding
+from jinja2 import Environment, FileSystemLoader
+from time import sleep
+
 rich_print = Console().print
 
 top_path = os.path.dirname(os.getcwd())
@@ -1533,6 +1536,39 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     CommonUtil.Exception_Handler(sys.exc_info())
                     time.sleep(4)
             else:
+                try:
+                    ## Create a folder in failed_upload directory with run_id
+                    failed_upload_dir = Path(temp_ini_file).parent / 'failed_uploads'
+                    os.makedirs(failed_upload_dir, exist_ok=True)
+
+                    failed_run_id_dir = failed_upload_dir / run_id
+                    os.makedirs(failed_run_id_dir, exist_ok=True)
+
+                    ## Create a files subfolder files in the run_id folder
+                    if perf_report_html:
+                        failed_files_dir = failed_run_id_dir / "files"
+                        os.makedirs(failed_files_dir, exist_ok=True)
+
+                        ## Move the perf_report_html.name to that
+                        failed_upload_filename = os.path.basename(perf_report_html.name)
+                        shutil.copy(perf_report_html.name, os.path.join(failed_files_dir,failed_upload_filename))
+                    else:
+                        failed_upload_filename = None
+
+                    failed_report_json = {
+                        "run_id": run_id,
+                        "method": "POST",
+                        "URL": "create_report_log_api",
+                        "execution_report": json.dumps(tc_report),
+                        "processed_tc_id": processed_tc_id,
+                        "perf_filepath" : failed_upload_filename
+                    }
+
+                    failed_report_json_path = failed_run_id_dir / "report.json"
+                    with open(failed_report_json_path, 'w') as file:
+                        file.write(json.dumps(failed_report_json))
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not save the report to retry later of run_id '%s'" % run_id, 3)
                 CommonUtil.ExecLog(sModuleInfo, "Could not Upload the report to server of run_id '%s'" % run_id, 3)
 
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
@@ -1591,6 +1627,48 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
         return zip_dir
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
+
+def retry_failed_report_upload():
+    while True:
+        try:
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            failed_report_dir = PROJECT_ROOT / 'AutomationLog' / 'failed_uploads'
+            os.makedirs(failed_report_dir, exist_ok=True)
+            folders = [entry.name for entry in failed_report_dir.iterdir() if entry.is_dir()]
+
+            if folders == []:
+                return
+            else:
+                for folder in folders:
+                    report_json_path = failed_report_dir / folder / 'report.json'
+                    report_json = json.load(open(report_json_path))
+                    if not report_json.get('perf_filepath'):
+                        res = RequestFormatter.request("post", 
+                            RequestFormatter.form_uri("create_report_log_api/"),
+                            data={"execution_report": report_json.get('execution_report')},
+                            verify=False)
+                    else:
+                        res = RequestFormatter.request("post", 
+                                    RequestFormatter.form_uri("create_report_log_api/"),
+                                    data={"execution_report": report_json.get('execution_report'),
+                                        "processed_tc_id":report_json.get('processed_tc_id')
+
+                                        },
+                                    files=[("file",open(failed_report_dir / folder / 'files' /report_json.get('perf_filepath'),'rb'))],
+                                    verify=False)
+                        
+                        if res.status_code == 200:
+                            CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {report_json.get('run_id')}", 1)
+                            shutil.rmtree(failed_report_dir / folder)
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, f"Unabel to upload the execution report of run_id {report_json.get('run_id')}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, str(e), 3)
+            pass
+        
+        sleep(120)
+
+
 
 
 def split_testcases(run_id_info, max_tc_in_single_session):
