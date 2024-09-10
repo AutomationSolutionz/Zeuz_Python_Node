@@ -49,7 +49,7 @@ import json
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
-
+import subprocess
 months = [
     "Unknown",
     "January",
@@ -6654,3 +6654,90 @@ def text_to_speech(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def start_ssh_tunnel(data_set):
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    host_ip = None
+    ssh_user = None
+    private_key_path = None
+    remote_bind_host = "127.0.0.1"
+    local_bind_host = "127.0.0.1"
+    local_port = None
+    remote_port = None
+    tunnel_var = None
+
+    for left, mid, right in data_set:
+        if left == 'host ip':
+            host_ip = right.strip()
+        elif left == 'ssh user':
+            ssh_user = right.strip()
+        elif left == 'private key path':
+            private_key_path = right.strip()
+        elif left == 'remote_bind_host':
+            remote_bind_host = right.strip()
+        elif left == 'local_bind_host':
+            local_bind_host = right.strip()
+        elif left == 'local port':
+            local_port = int(right.strip())
+        elif left == 'remote port':
+            remote_port = int(right.strip())
+        elif left == 'start ssh tunnel':
+            tunnel_var = right.strip()
+    
+    missing = [x for x in [host_ip,ssh_user,private_key_path,local_port, remote_port, tunnel_var] if x == None]
+    if missing:
+        CommonUtil.ExecLog(sModuleInfo, f"{', '.join(missing)} needs to be provided", 3)
+        return "zeuz_failed"
+
+    tunneling_script_path = Path(os.getcwd()) / 'Utilities' / 'ssh_tunnel.py'
+
+    command = [
+        "python",
+        str(tunneling_script_path),
+        "--host_ip", host_ip,
+        "--ssh_user", ssh_user,
+        "--private_key_path", private_key_path,
+        "--remote_bind_host", "127.0.0.1",
+        "--local_bind_host", "127.0.0.1",
+        "--local_port", str(local_port),
+        "--remote_port", str(remote_port)
+    ]
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    from time import sleep
+    import socket
+    sleep(5)
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(5)
+        try:
+            s.connect((local_bind_host, local_port))
+        except (socket.timeout, socket.error):
+            CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel can not be established", 3)
+            return "zeuz_failed"
+        
+        sr.Set_Shared_Variables(tunnel_var, process.pid)
+        CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel is established", 1)
+        return "passed"
+
+
+    
+@logger
+def stop_ssh_tunnel(data_set):
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    tunnel_pid = None
+    for left, mid, right in data_set:
+        if left == 'stop ssh tunnel':
+            tunnel_pid = int(right.strip())
+    
+    subprocess.run(['kill', str(tunnel_pid)], check=True)
+    CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel is closed", 1)
+
+    return "passed"
+    
