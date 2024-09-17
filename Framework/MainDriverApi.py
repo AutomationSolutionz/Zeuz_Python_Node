@@ -1221,8 +1221,8 @@ def send_dom_variables():
                     "variable_value": "",
                     "description": "",
                 })
-            except Exception:
-                CommonUtil.Exception_Handler(sys.exc_info())
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
 
         if shared.Test_Shared_Variables('selenium_driver'):
             try:
@@ -1255,10 +1255,11 @@ def send_dom_variables():
                     //The following code removes non-unicode characters except newline and tab
                     var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
                     return result;""")
-            except selenium.common.exceptions.JavascriptException:
-                CommonUtil.Exception_Handler(sys.exc_info())
+            except selenium.common.exceptions.JavascriptException as e:
+                CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
                 dom = ""
-            except:
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
                 dom = None
         else:
             dom = None
@@ -1278,8 +1279,8 @@ def send_dom_variables():
         elif res.status_code == 404:
             CommonUtil.ExecLog(sModuleInfo, 'The chatbot API does not exist, server upgrade needed', 2)
         return
-    except:
-        CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
 
 
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
