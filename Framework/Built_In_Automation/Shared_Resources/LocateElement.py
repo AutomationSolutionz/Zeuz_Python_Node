@@ -7,6 +7,7 @@ Created on Jun 21, 2017
 import sys, time, re
 import inspect
 import traceback
+from typing import Literal
 from pathlib import Path
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
@@ -26,13 +27,119 @@ generic_driver = None
 global driver_type
 driver_type = None
 
-
 MODULE_NAME = inspect.getmodulename(__file__)
 
+def build_css_selector_query(dataset:list[list[str]]) -> str:
+    """ Builds css selector query from dataset """
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        query = ""
+        element_parameter_list = []
+        parent_parameter_list = []
+        for left, mid, right in dataset:
+            mid_ = mid.replace(" ", "").lower()
+            if "elementparameter" == mid_:
+                element_parameter_list.append((left, right))
+                if left == "css selector":
+                    return right
+            elif "parent" in mid_ and "parameter" in mid_:
+                parent_parameter_list.append([left, right])
+            elif "sibling" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Sibling parameter is not supported in css selector", 2)
+            elif "child" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Child parameter is not supported in css selector", 2)
+            elif "preceding" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Preceding parameter is not supported in css selector", 2)
+            elif "following" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Following parameter is not supported in css selector", 2)
 
-def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=False, element_wait=None):
+        for left, right in parent_parameter_list:
+            if left == "tag":
+                query = right + query
+                break
+        else:
+            if len(parent_parameter_list) > 0:
+                query = "*" + query
+
+        for left, right in parent_parameter_list:
+            if left == "tag":
+                pass
+            elif left == "text":
+                CommonUtil.ExecLog(sModuleInfo, "Text parameter is not supported in css selector", 2)
+            elif left == "xpath":
+                CommonUtil.ExecLog(sModuleInfo, "xpath parameter is not supported in css selector", 2)
+            elif left != "index":
+                quote = "'" if '"' in right else '"'
+                query += f"[{left}={quote}{right}{quote}]"
+
+        if len(parent_parameter_list) > 0:
+            query += " "
+
+        for left, right in element_parameter_list:
+            if left == "tag":
+                query += right
+                break
+        else:
+            query += "*"
+
+        for left, right in element_parameter_list:
+            if left == "tag":
+                pass
+            elif left == "text":
+                CommonUtil.ExecLog(sModuleInfo, "Text parameter is not supported in css selector", 2)
+            elif left == "xpath":
+                CommonUtil.ExecLog(sModuleInfo, "xpath parameter is not supported in css selector", 2)
+            elif left != "index":
+                quote = "'" if '"' in right else '"'
+                query += f"[{left}={quote}{right}{quote}]"
+
+        return query
+
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return ""
+
+get_element_return_type = list[selenium.webdriver.remote.webelement.WebElement] | Literal["zeuz_failed"] | selenium.webdriver.remote.webelement.WebElement
+def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[str]], Filter: str, element_wait: float, return_all_elements: bool) -> get_element_return_type:
+    """ Finds the shadow root container and the element inside there, both in css-selector method"""
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        child_shadow_root_ds = []
+        for left, mid, right in shadow_root_ds:
+            mid = mid.strip().lower()
+            if mid.startswith("sr"):
+                child_shadow_root_ds.append((left, mid, right))
+        if len(child_shadow_root_ds) > 0:
+            # handle nested roots later
+            CommonUtil.ExecLog(sModuleInfo, "Nested shadow root is not supported yet", 2)
+            return "zeuz_failed"
+        else:
+            element_query = build_css_selector_query(shadow_root_ds)
+            index = _locate_index_number(shadow_root_ds)
+            index = 0 if index is None else index
+            elements = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
+            filtered_elements = filter_elements(elements, Filter)
+            shadow_container_element = filtered_elements[index]
+            shadow_root_element = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_container_element)
+
+            element_query = build_css_selector_query(element_ds)
+            index = _locate_index_number(element_ds)
+            index = 0 if index is None else index
+            elements = shadow_root_element.find_elements(By.CSS_SELECTOR, element_query)
+            filtered_elements = filter_elements(elements, Filter)
+            if return_all_elements:
+                return filtered_elements
+            elif len(filtered_elements) == 0:
+                return []
+            else:
+                return filtered_elements[index]
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=False, element_wait=None) -> get_element_return_type:
     """
-    This funciton will return "zeuz_failed" if something went wrong, else it will always return a single element
+    This function will return "zeuz_failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
     good when you are just trying to see how your step data would be converted to a query for testing local runs
     """
@@ -62,19 +169,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         # We need to switch to default content just in case previous action switched to something else
         try:
             if driver_type == "selenium":
-                pass #generic_driver.switch_to.default_content()
-                # we need to see if there are more than one handles.  Since we cannot know if we had switch
-                # windows before, we are going to assume that we can always safely switch to default handle 0
-                """
-                try:
-                    all_windows = generic_driver.window_handles
-                    generic_driver.switch_to.window(all_windows[0])
-                    True
-                except:
-                    True
-                """
+                pass
             elif driver_type == "appium":
-
                 # If we find a '|' character in the left column, then try to check the platform
                 # and filter the appropriate data for the left column by removing '|'
                 device_platform = (
@@ -128,6 +224,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         get_parameter = ""
         Filter = ""
         text_filter_cond = False
+        shadow_root_ds = []
+        element_ds = []
         for row in step_data_set:
             if row[1] == "save parameter":
                 if row[2] != "ignore":
@@ -147,7 +245,13 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     element_wait = float(right)
                 elif left == "text filter":
                     text_filter_cond = right in ("yes", "true", "ok", "enable")
+            elif row[1].strip().lower().startswith("sr"):
+                shadow_root_ds.append([row[0], row[1][2:].strip(), row[2]])
+            else:
+                element_ds.append([row[0], row[1], row[2]])
 
+        if len(shadow_root_ds) > 0:
+            return shadow_root_elements(shadow_root_ds, element_ds, Filter, element_wait, return_all_elements)
 
         if get_parameter != "":
 
@@ -238,9 +342,9 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
     """
     suppose dom has <div>Hello &nbsp;World</div>
     the text will be converted to "<something unknown>Hello  world<something unknown>"
-    Thats why (text, element parameter, Hello  world) does not work
+    That's why (text, element parameter, Hello  world) does not work
     But (*text, element parameter, Hello  world) works!
-    So for now we don't need this python script for now as we have an existing solution
+    So for now we don't need this python script as we have an existing solution
     """
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1084,7 +1188,8 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
             return all_matching_elements
         else:
             return all_matching_elements_visible_invisible
-    except:
+    except Exception as e:
+        CommonUtil.Exception_Handler(sys.exc_info())
         all_matching_elements = []
         return all_matching_elements
 
