@@ -92,21 +92,10 @@ action_support = (
     "fail message",
 )
 patterns = [
-    "^parent \d parameter$",
-    "^sibling \d parameter$",
-    "^child \d parameter$",
-    "^following \d parameter$",
-    "^next \d parameter$",
-    "^preceding \d parameter$",
-    "^previous \d parameter$",
-
-    "^src parent \d parameter$", "^src sibling \d parameter$", "^src child \d parameter$", "^src following \d parameter$", "^src next \d parameter$", "^src preceding \d parameter$", "^src previous \d parameter$",
-    "^dst parent \d parameter$", "^dst sibling \d parameter$", "^dst child \d parameter$", "^dst following \d parameter$", "^dst next \d parameter$", "^dst preceding \d parameter$", "^dst previous \d parameter$",
-    "^source parent \d parameter$", "^source sibling \d parameter$", "^source child \d parameter$", "^source following \d parameter$", "^source next \d parameter$", "^source preceding \d parameter$", "^source prevoius \d parameter$",
-    "^destination parent \d parameter$", "^destination sibling \d parameter$", "^destination child \d parameter$", "^destination following \d parameter$", "^destination next \d parameter$", "^destination preceding \d parameter$","^destination previous \d parameter$",
-    "^desired parent \d parameter$", "^desired sibling \d parameter$", "^desired child \d parameter$", "^desired following \d parameter$", "^desired next \d parameter$", "^desired preceding \d parameter$", "^desired previous \d parameter$",
-
+    r'^sr *(src |source |dst |destination |desired )?(parent|sibling|child|next|following|previous|preceding) (\d )*parameter$',
+    r'^sr *(src |source |dst |destination |desired )?element parameter$',
 ]
+
 # List of supported mobile platforms - must be lower case
 supported_platforms = ("android", "ios")
 
