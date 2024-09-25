@@ -490,6 +490,7 @@ def run_all_test_steps_in_a_test_case(
 
         while StepSeq <= Stepscount:
             CommonUtil.custom_step_duration = ""
+            this_step = all_step_info[StepSeq - 1]
             if debug and debug_steps:
                 if str(StepSeq) not in debug_steps:
                     StepSeq += 1
@@ -498,14 +499,14 @@ def run_all_test_steps_in_a_test_case(
 
             # check if already failed
             if already_failed:
-                if all_step_info[StepSeq - 1]["always_run"]:
+                if this_step["always_run"]:
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
                         2,
                     )
                 # TODO: Revisit the todo on the right
-                elif "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 1st condition when all servers are updated
+                elif "run_on_fail" in this_step and this_step["run_on_fail"]:     # Todo: Remove the 1st condition when all servers are updated
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Step-%s is set as 'Run on fail' and the test case has already failed so executing this step" % (CommonUtil.step_index + 1),
@@ -516,7 +517,7 @@ def run_all_test_steps_in_a_test_case(
                     CommonUtil.step_index += 1
                     continue
 
-            elif not already_failed and "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 2nd condition when all servers are updated
+            elif not already_failed and "run_on_fail" in this_step and this_step["run_on_fail"]:     # Todo: Remove the 2nd condition when all servers are updated
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Step-%s is set as 'Run on fail' and the test case has not failed yet so skipping this step" % (CommonUtil.step_index + 1),
@@ -526,14 +527,14 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.step_index += 1
                 continue
 
-            CommonUtil.current_step_name = current_step_name = all_step_info[StepSeq - 1]["step_name"]
-            CommonUtil.current_step_id = current_step_id = all_step_info[StepSeq - 1]["step_id"]
-            CommonUtil.current_step_sequence = current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+            CommonUtil.current_step_name = current_step_name = this_step["step_name"]
+            CommonUtil.current_step_id = current_step_id = this_step["step_id"]
+            CommonUtil.current_step_sequence = current_step_sequence = this_step["step_sequence"]
             shared.Set_Shared_Variables("zeuz_current_step_name", current_step_name, print_variable=False, pretty=False)
             shared.Set_Shared_Variables("zeuz_current_step_sequence", current_step_sequence, print_variable=False, pretty=False)
             shared.Set_Shared_Variables("zeuz_total_step_count", len(all_step_info), print_variable=False, pretty=False)
 
-            shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
+            shared.Set_Shared_Variables("zeuz_current_step", this_step, print_variable=False, pretty=False)
 
             ConfigModule.add_config_value(
                 "sectionOne",
@@ -571,10 +572,10 @@ def run_all_test_steps_in_a_test_case(
                 max_width=6,
             )
             table.add_row(
-                f"{all_step_info[StepSeq - 1]['step_id']}",
+                f"{this_step['step_id']}",
                 f"{current_step_name}",
-                f"{all_step_info[StepSeq - 1]['always_run']}",
-                "global" if all_step_info[StepSeq - 1]['type'] == "linked" else "local",
+                f"{this_step['always_run']}",
+                "global" if this_step['type'] == "linked" else "local",
                 style=_color,
             )
             # width_pad = CommonUtil.max_char // 2 - (max(len(current_step_name), 6) + 4) // 2
@@ -590,8 +591,8 @@ def run_all_test_steps_in_a_test_case(
             # exception, both values will be set to a default value. So it has
             # the possibility to ignore one of the other correct values.
             try:
-                test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
-                step_time = all_step_info[StepSeq - 1]["step_time"]
+                test_case_continue = this_step["continue_on_fail"]
+                step_time = this_step["step_time"]
                 if str(step_time) != "" and step_time is not None:
                     step_time = int(step_time)
                 else:
@@ -605,7 +606,7 @@ def run_all_test_steps_in_a_test_case(
             sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
-            if StepSeq in CommonUtil.disabled_step or not all_step_info[StepSeq - 1]['step_enable']:
+            if StepSeq in CommonUtil.disabled_step or not this_step['step_enable']:
                 CommonUtil.ExecLog(sModuleInfo, "STEP-%s is disabled" % StepSeq, 2)
                 sStepResult = "skipped"
             elif CommonUtil.testcase_exit:
@@ -686,6 +687,7 @@ def run_all_test_steps_in_a_test_case(
                     )
 
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+            upload_step_report(run_id, test_case, this_step["step_sequence"], this_step["step_id"], after_execution_dict)
             StepSeq += 1
             CommonUtil.step_index += 1
 
@@ -1002,6 +1004,9 @@ def run_test_case(
         # width_pad = CommonUtil.max_char//2 - (max(len(TestCaseName), len(test_case)) + 4)//2
         # table = Padding(table, (0, width_pad))
         rich_print(table)
+
+        sTestCaseStartTime = datetime.fromtimestamp(TestCaseStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
+
         tc_num = int(TestCaseID.split('-')[1])
         # get test case start time
         if performance and browserDriver:
@@ -1066,7 +1071,7 @@ def run_test_case(
         TimeInSec = int(TimeDiff)
         TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
         after_execution_dict = {
-            "teststarttime": datetime.fromtimestamp(TestCaseStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
+            "teststarttime": sTestCaseStartTime,
             "testendtime": sTestCaseEndTime,
             "duration": TestCaseDuration,
             "status": sTestCaseStatus,
@@ -1473,9 +1478,35 @@ def check_run_cancel(run_id):
         time.sleep(3)
     # CommonUtil.run_cancelled = False
 
-
-def upload_reports_and_zips(Userid, temp_ini_file, run_id):
+def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, execution_detail: dict):
     try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        res = RequestFormatter.request(
+            "post",
+            RequestFormatter.form_uri("create_step_report/"),
+            data={
+                "execution_report": json.dumps({
+                    "run_id": run_id,
+                    "tc_id": tc_id,
+                    "step_sequence": step_seq,
+                    "step_id": step_id,
+                    "execution_detail": execution_detail,
+                })
+            },
+            verify=False
+        )
+        duration = round(res.elapsed.total_seconds(), 2)
+        if res.status_code == 200:
+            CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the step report [{duration} sec]", 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to upload step report  [{duration} sec]\n{res.json()}", 3)
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def upload_reports_and_zips(temp_ini_file, run_id):
+    try:
+        Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
         if CommonUtil.debug_status: return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
@@ -1503,35 +1534,34 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                 file_name = CommonUtil.processed_performance_data["tc_id"].replace(":", "-") + ".html"
                 with open(zip_dir / file_name, "w", encoding="utf-8") as file:
                     file.write(html)
-                    CommonUtil.ExecLog(sModuleInfo, "Preformance report template generated successfully!", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Performance report template generated successfully!", 1)
                 CommonUtil.processed_performance_data.clear()
                 perf_report_html = open(zip_dir / file_name, 'rb')
-
 
             for _ in range(5):
                 try:
                     if perf_report_html is None:
-                        res = RequestFormatter.request("post", 
+                        res = RequestFormatter.request(
+                            "post",
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report)},
-                            verify=False)
+                            verify=False
+                        )
                     else:
-                            res = RequestFormatter.request("post", 
-                            RequestFormatter.form_uri("create_report_log_api/"),
-                            data={"execution_report": json.dumps(tc_report),
-                                  "processed_tc_id":processed_tc_id
-
-                                  },
-                            files=[("file",perf_report_html)],
-                            verify=False)
-
+                        res = RequestFormatter.request("post",
+                        RequestFormatter.form_uri("create_report_log_api/"),
+                        data={
+                            "execution_report": json.dumps(tc_report),
+                            "processed_tc_id":processed_tc_id
+                        },
+                        files=[("file",perf_report_html)],
+                        verify=False)
 
                     if res.status_code == 200:
                         CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {run_id}", 1)
-
                         break
                     else:
-                        CommonUtil.ExecLog(sModuleInfo, f"Failed to upload the execution report of run_id {run_id}\nStatus: {res.status_code}\nRetrying...", 3)
+                        CommonUtil.ExecLog(sModuleInfo, f"Failed to upload the execution report of run_id {run_id}\nStatus: {res.json()}\nRetrying...", 3)
                     time.sleep(4)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
@@ -1575,11 +1605,6 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
             opened_zips = []
             size = 0
-                # opened_zips.append(open(str(zip_dir / file_name), "rb"))
-                # size += round(os.stat(str(zip_dir / file_name)).st_size / 1024, 2)
-
-
-
             for zip_file in zip_files:
                 opened_zips.append(open(str(zip_file), "rb"))
                 size += round(os.stat(str(zip_file)).st_size / 1024, 2)
@@ -1619,7 +1644,6 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
 
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
-
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
@@ -2158,7 +2182,7 @@ def main(device_dict, all_run_id_info):
                 CommonUtil.generate_time_based_performance_report(each_session)
 
                 # if float(server_version.split(".")[0]) < 7:
-                upload_reports_and_zips(Userid, temp_ini_file, run_id)
+                upload_reports_and_zips(temp_ini_file, run_id)
 
                 session_cnt += 1
                 CommonUtil.ExecLog(sModuleInfo, "Execution time = %s sec" % round(TimeDiff, 3), 5)
