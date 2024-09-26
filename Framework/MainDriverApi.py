@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
+import concurrent.futures
 import copy
 import json
 import inspect
@@ -687,7 +688,10 @@ def run_all_test_steps_in_a_test_case(
                     )
 
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-            upload_step_report(run_id, test_case, this_step["step_sequence"], this_step["step_id"], after_execution_dict)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                thr = executor.submit(upload_step_report, run_id, test_case, this_step["step_sequence"], this_step["step_id"], after_execution_dict)
+                CommonUtil.SaveThread("step_report", thr)
+
             StepSeq += 1
             CommonUtil.step_index += 1
 
@@ -1480,6 +1484,8 @@ def check_run_cancel(run_id):
 
 def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, execution_detail: dict):
     try:
+        if CommonUtil.debug_status:
+            return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         res = RequestFormatter.request(
             "post",
@@ -1506,8 +1512,9 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
 
 def upload_reports_and_zips(temp_ini_file, run_id):
     try:
+        if CommonUtil.debug_status:
+            return
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
-        if CommonUtil.debug_status: return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
 
@@ -2181,7 +2188,11 @@ def main(device_dict, all_run_id_info):
 
                 CommonUtil.generate_time_based_performance_report(each_session)
 
-                # if float(server_version.split(".")[0]) < 7:
+                # Complete all step_reports and then send tc report
+                if "step_report" in CommonUtil.all_threads:
+                    for t in CommonUtil.all_threads["step_report"]:
+                        t.result()
+                    del CommonUtil.all_threads["step_report"]
                 upload_reports_and_zips(temp_ini_file, run_id)
 
                 session_cnt += 1
