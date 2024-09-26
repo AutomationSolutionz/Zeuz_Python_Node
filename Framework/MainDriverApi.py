@@ -1502,9 +1502,9 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
             verify=False
         )
         duration = round(res.elapsed.total_seconds(), 2)
-        if res.status_code == 200:
-            CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the step report [{duration} sec]", 1)
-        else:
+        # if res.status_code == 200:
+        #     CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the step report [{duration} sec]", 1)
+        if res.status_code == 500:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to upload step report  [{duration} sec]\n{res.json()}", 3)
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
