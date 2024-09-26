@@ -609,7 +609,6 @@ def Sleep(data_set):
 
     try:
         seconds = float(data_set[0][2])
-        print(f"Sleeping for {seconds} seconds")
         CommonUtil.ExecLog(sModuleInfo, f"Sleeping for {seconds} seconds", 1)
         time.sleep(seconds)
         return "passed"
