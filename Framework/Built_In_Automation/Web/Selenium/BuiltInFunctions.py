@@ -1251,7 +1251,7 @@ def Go_To_Link_V2(step_data):
         selenium_driver.get(url)
 
     selenium_driver.maximize_window()
-        
+    Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
     CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
     return "passed"
     
