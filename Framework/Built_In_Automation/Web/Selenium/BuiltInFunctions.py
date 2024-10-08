@@ -713,8 +713,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
                 options.add_experimental_option("mobileEmulation", mobile_emulation)
-            else:
-                options.add_experimental_option("useAutomationExtension", False)
 
                 # On Debug run open inspector with credentials
                 if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
