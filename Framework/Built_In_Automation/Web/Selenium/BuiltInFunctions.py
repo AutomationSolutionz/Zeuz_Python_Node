@@ -384,7 +384,6 @@ def Open_Electron_App(data_set):
                 selenium_driver.implicitly_wait(WebDriver_Wait)
                 CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
                 Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-                CommonUtil.teardown = True
                 CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             except:
                 CommonUtil.ExecLog(sModuleInfo, "To start an Electron app, you need to download a ChromeDriver with the version that your Electron app supports.\n" +
@@ -567,7 +566,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                         sModuleInfo, "Unable to parse browserstack config. Running the browser locally", 3
                     )
 
-        CommonUtil.teardown = True
         browser = browser.lower().strip() 
         import selenium
         selenium_version = selenium.__version__
@@ -1063,7 +1061,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
         return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
-        CommonUtil.teardown = False
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -3031,8 +3028,6 @@ def Tear_Down_Selenium(step_data=[]):
                 driver_id = right.strip()
 
         if not driver_id:
-            if not CommonUtil.teardown:
-                CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 2)
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:
@@ -3063,7 +3058,6 @@ def Tear_Down_Selenium(step_data=[]):
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
             selenium_details = {}
             selenium_driver = None
-            CommonUtil.teardown = False
 
         elif driver_id not in selenium_details:
             CommonUtil.ExecLog(sModuleInfo, "Driver_id='%s' not found. So could not tear down" % driver_id, 2)
