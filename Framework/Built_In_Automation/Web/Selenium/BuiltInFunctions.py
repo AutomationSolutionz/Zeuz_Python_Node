@@ -503,72 +503,70 @@ initial_download_folder = None
 @logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None, profile_options=None):
     """ Launch browser and create instance """
-
-    global selenium_driver
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
-        browser = dependency["Browser"]
-    except Exception:
-        ErrorMessage = (
-            "Dependency not set for browser. Please set the Apply Filter value to YES."
-        )
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-
-    remote_host = None
-    remote_browser_version = None
-
-    if browser_options is None:
-        browser_options = []
-    for i in range(len(browser_options)):
-        if '--user-data-dir' in browser_options[i][1]:
-            custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
-            custom_profile_path = os.path.join(custom_profile_folder_path,browser_options[i][1].split('=')[-1].strip())
-
-            os.makedirs(custom_profile_folder_path, exist_ok=True)
-            browser_options[i][1] = f'--user-data-dir={custom_profile_path}'
-    
-    if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
-        run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
-        remote_config = run_time_params.get("remote_config")
-        if(remote_config):
-            remote_host = remote_config.get('host')
-            remote_browser_version = remote_config.get('browser_version')
-            if(remote_host):
-                try:
-                    if requests.get(remote_host).status_code != 200:
-                        remote_host = None
-                except requests.exceptions.RequestException as e:
-                    remote_host = None
-                if remote_host == None:
-                    CommonUtil.ExecLog(
-                    sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
-                )
-    
-    is_browserstack = 'browserstack' in browser
-    if is_browserstack:
+        global selenium_driver
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         try:
-            browerstack_config = json.loads(browser)
-            browser = 'browserstack'
-            remote_host = browerstack_config['remote_host']
-            desired_cap = browerstack_config['desired_cap']
-            remote_desired_cap = {
-                'bstack:options' : {
-                "os" : desired_cap["os"],
-                "osVersion" : desired_cap['os_version'],
-                "browserVersion" : desired_cap['browser_version'],
-                "local" : "false",
-                "seleniumVersion" : "4.8.0",
-                },
-                "browserName" : desired_cap['browser'],
-                }
-        except ValueError as e:
-            is_browserstack = False
-            CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to parse browserstack config. Running the browser locally", 3
-                )
+            browser = dependency["Browser"]
+        except Exception:
+            ErrorMessage = (
+                "Dependency not set for browser. Please set the Apply Filter value to YES."
+            )
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    try:
+        remote_host = None
+        remote_browser_version = None
+
+        if browser_options is None:
+            browser_options = []
+        for i in range(len(browser_options)):
+            if '--user-data-dir' in browser_options[i][1]:
+                custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
+                custom_profile_path = os.path.join(custom_profile_folder_path,browser_options[i][1].split('=')[-1].strip())
+
+                os.makedirs(custom_profile_folder_path, exist_ok=True)
+                browser_options[i][1] = f'--user-data-dir={custom_profile_path}'
+
+        if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
+            run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
+            remote_config = run_time_params.get("remote_config")
+            if(remote_config):
+                remote_host = remote_config.get('host')
+                remote_browser_version = remote_config.get('browser_version')
+                if(remote_host):
+                    try:
+                        if requests.get(remote_host).status_code != 200:
+                            remote_host = None
+                    except requests.exceptions.RequestException as e:
+                        remote_host = None
+                    if remote_host == None:
+                        CommonUtil.ExecLog(
+                        sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
+                    )
+
+        is_browserstack = 'browserstack' in browser
+        if is_browserstack:
+            try:
+                browerstack_config = json.loads(browser)
+                browser = 'browserstack'
+                remote_host = browerstack_config['remote_host']
+                desired_cap = browerstack_config['desired_cap']
+                remote_desired_cap = {
+                    'bstack:options' : {
+                    "os" : desired_cap["os"],
+                    "osVersion" : desired_cap['os_version'],
+                    "browserVersion" : desired_cap['browser_version'],
+                    "local" : "false",
+                    "seleniumVersion" : "4.8.0",
+                    },
+                    "browserName" : desired_cap['browser'],
+                    }
+            except ValueError as e:
+                is_browserstack = False
+                CommonUtil.ExecLog(
+                        sModuleInfo, "Unable to parse browserstack config. Running the browser locally", 3
+                    )
+
         CommonUtil.teardown = True
         browser = browser.lower().strip() 
         import selenium
@@ -634,11 +632,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     "platformName": "Android",
                     "automationName": "UIAutomator2",
                     "browserName": "Chrome"
-
-                    # Platform specific details may later be fetched from the device
-                    # list sent by zeuz server.
-                    # "platformVersion": "9.0",
-                    # "deviceName": "Android Emulator",
                 }
             elif browser == "ios":
                 capabilities = {
@@ -672,10 +665,15 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             # capability
             if capability:
                 for key, value in capability.items():
-                    # options.set_capability('unhandledPromptBehavior', 'ignore')
                     options.set_capability(key, value)
+            options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
 
-            # argument
+            # arguments
+            # On Debug run open inspector with credentials
+            if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
+                set_extension_variables()
+                options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
+
             if not browser_options:
                 # options.add_argument("--no-sandbox")
                 # options.add_argument("--disable-extensions")
@@ -714,11 +712,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
                 options.add_experimental_option("mobileEmulation", mobile_emulation)
 
-                # On Debug run open inspector with credentials
-                if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
-                    set_extension_variables()
-                    options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
-
             if "chromeheadless" in browser:
                 def chromeheadless():
                     options.add_argument(
@@ -738,8 +731,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             for key in _prefs:
                 prefs[key] = _prefs[key]
             options.add_experimental_option('prefs', prefs)
-            
-            options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
 
             if remote_host:
                 selenium_driver = webdriver.Remote(
@@ -753,7 +744,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     service=service,
                     options=options,
                 )
-
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
@@ -1284,8 +1274,6 @@ def Go_To_Link(step_data, page_title=False):
         raise ValueError("No dependency set - Cannot run")
 
     page_load_timeout_sec = 120
-    page_load_strategy = "normal"
-
     try:
         driver_id = ""
         for left, mid, right in step_data:
@@ -1294,7 +1282,7 @@ def Go_To_Link(step_data, page_title=False):
                 web_link = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
-            elif left == "waittimetoappearelement":
+            elif left in ("waittimetoappearelement", "waitforelement"):
                 Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
             elif left == "waittimetopageload":
                 page_load_timeout_sec = int(right.strip())
@@ -3044,7 +3032,7 @@ def Tear_Down_Selenium(step_data=[]):
 
         if not driver_id:
             if not CommonUtil.teardown:
-                CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
+                CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 2)
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:
