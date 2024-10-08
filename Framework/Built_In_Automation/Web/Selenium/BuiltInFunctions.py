@@ -1197,24 +1197,29 @@ def Go_To_Link_V2(step_data):
     page_load_strategy = "normal"
 
     for left, _, right in step_data:
-        if "add argument" in left.lower():
+        left = left.strip().lower()
+        if "add argument" == left:
             options.add_argument(right.strip())
             CommonUtil.ExecLog(sModuleInfo, "Added argument: " + right.strip(), 1)
-        elif 'add experimental option' in left.lower():
+        elif "add extension" == left:
+            filepath = CommonUtil.path_parser(right.strip())
+            options.add_extension(filepath)
+            CommonUtil.ExecLog(sModuleInfo, "Added extension: " + filepath, 1)
+        elif 'add experimental option' in left:
             options.add_experimental_option(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
             CommonUtil.ExecLog(sModuleInfo, "Added experimental option: " + right.strip(), 1)
-        elif "set capability" in left.lower():
+        elif "set capability" in left:
             options.set_capability(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
             CommonUtil.ExecLog(sModuleInfo, "Added capability: " + right.strip(), 1)
-        elif "go to link v2" in left.lower():
+        elif "go to link v2" == left:
             url = right.strip() if right.strip() != "" else None
-        elif "driver tag" in left.lower():
+        elif "driver tag" == left:
             driver_tag = right.strip()
-        elif "wait for element" in left.lower():
+        elif "wait for element" == left:
             Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
-        elif "page load timeout" in left.lower():
+        elif "page load timeout" == left:
             page_load_timeout_sec = float(right.strip())
-        elif "page load strategy" in left.lower():
+        elif "page load strategy" == left:
             page_load_strategy = right.strip()
             options.page_load_strategy = page_load_strategy
 
