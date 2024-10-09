@@ -6762,39 +6762,28 @@ def proxy_server(data_set):
 
     if action == 'start':        
         CommonUtil.ExecLog(sModuleInfo, f"{action.capitalize()}ing proxy server on port {port}", 1)
-        from pathlib import PurePosixPath
 
-        proxy_log_dir = PurePosixPath(sr.Get_Shared_Variables("zeuz_download_folder")).parent / 'proxy_log'
+        proxy_log_dir = Path(sr.Get_Shared_Variables("zeuz_download_folder")).parent / 'proxy_log'
         os.makedirs(proxy_log_dir, exist_ok=True)
-
-        # Paths for mitm_proxy and output files
-        mitm_proxy_path = PurePosixPath(__file__).parent / "mitm_proxy.py"
+        mitm_proxy_path = Path(__file__).parent / "mitm_proxy.py"
         output_file_path = proxy_log_dir / 'mitm.log'  # Output file to save the logs
-
-        # Logging the output paths
         CommonUtil.ExecLog(sModuleInfo, f"Proxy Log file: {output_file_path}", 1)
 
         captured_network_file_path = proxy_log_dir / 'captured_network_data.csv'
-        CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {captured_network_file_path}", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {output_file_path}", 1)
         # Open the output file in append mode
-        def start_mitm_proxy(mitm_proxy_path, captured_network_file_path, output_file_path):
-            # Open the log file in append mode
-            with open(output_file_path, 'a') as output_file:
-                # Fork the process
-                pid = os.fork()
-                
-                if pid == 0:  # In the child process
-                    # Replace the child process with the mitmdump command
-                    os.execvp('mitmdump', ['mitmdump', '-s', str(mitm_proxy_path), str(captured_network_file_path)])
-                else:
-                    # In the parent process, log the PID
-                    CommonUtil.ExecLog(sModuleInfo, f"Started mitmdump process with PID: {pid}", 1)
-                    CommonUtil.mitm_proxy_pids.append(pid)
+        command = f'mitmdump -s {mitm_proxy_path} {captured_network_file_path} -p {port} >> {output_file_path} 2>&1 &'
+        os.system(command)
 
-        # Call the function
-        start_mitm_proxy(mitm_proxy_path, captured_network_file_path, output_file_path)
+        # Retrieve the PID of the process running on the specified port
+        pid_command = f"lsof -t -i:{port}"
+        pid = subprocess.check_output(pid_command, shell=True).decode().strip()
 
-        sr.Set_Shared_Variables(proxy_var, {"pid":CommonUtil.mitm_proxy_pids[0],"captured_network_file_path":captured_network_file_path,"log_file":output_file_path})
+        # Append the PID to the list and log
+        CommonUtil.mitm_proxy_pids.append(int(pid))
+        CommonUtil.ExecLog(sModuleInfo, f"Started process with PID: {pid}", 1)
+
+        sr.Set_Shared_Variables(proxy_var, {"pid":pid,"captured_network_file_path":captured_network_file_path,"log_file":output_file_path})
         return "passed"
     else:
         import signal
