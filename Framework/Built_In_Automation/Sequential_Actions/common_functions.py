@@ -6777,19 +6777,24 @@ def proxy_server(data_set):
         captured_network_file_path = proxy_log_dir / 'captured_network_data.csv'
         CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {captured_network_file_path}", 1)
         # Open the output file in append mode
-        with open(output_file_path, 'a') as output_file:
-            # Start the subprocess
-            process = subprocess.Popen(
-                ['mitmdump', '-s', str(mitm_proxy_path), str(captured_network_file_path)],
-                stdout=output_file,  # Redirect stdout to the file
-                stderr=output_file   # Redirect stderr to the file
-            )
-            
-        pid = process.pid
-        CommonUtil.mitm_proxy_pids.append(pid)
-        CommonUtil.ExecLog(sModuleInfo, f"Started process with PID: {pid}", 1)
+        def start_mitm_proxy(mitm_proxy_path, captured_network_file_path, output_file_path):
+            # Open the log file in append mode
+            with open(output_file_path, 'a') as output_file:
+                # Fork the process
+                pid = os.fork()
+                
+                if pid == 0:  # In the child process
+                    # Replace the child process with the mitmdump command
+                    os.execvp('mitmdump', ['mitmdump', '-s', str(mitm_proxy_path), str(captured_network_file_path)])
+                else:
+                    # In the parent process, log the PID
+                    CommonUtil.ExecLog(sModuleInfo, f"Started mitmdump process with PID: {pid}", 1)
+                    CommonUtil.mitm_proxy_pids.append(pid)
 
-        sr.Set_Shared_Variables(proxy_var, {"pid":pid,"captured_network_file_path":captured_network_file_path,"log_file":output_file_path})
+        # Call the function
+        start_mitm_proxy(mitm_proxy_path, captured_network_file_path, output_file_path)
+
+        sr.Set_Shared_Variables(proxy_var, {"pid":CommonUtil.mitm_proxy_pids[0],"captured_network_file_path":captured_network_file_path,"log_file":output_file_path})
         return "passed"
     else:
         import signal
