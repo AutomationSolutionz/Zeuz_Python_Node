@@ -6780,7 +6780,7 @@ def proxy_server(data_set):
         with open(output_file_path, 'a') as output_file:
             # Start the subprocess
             process = subprocess.Popen(
-                ['mitmdump', '-s', mitm_proxy_path, captured_network_file_path],
+                ['mitmdump', '-s', str(mitm_proxy_path), str(captured_network_file_path)],
                 stdout=output_file,  # Redirect stdout to the file
                 stderr=output_file   # Redirect stderr to the file
             )
