@@ -6762,15 +6762,20 @@ def proxy_server(data_set):
 
     if action == 'start':        
         CommonUtil.ExecLog(sModuleInfo, f"{action.capitalize()}ing proxy server on port {port}", 1)
+        from pathlib import PurePosixPath
 
-        proxy_log_dir = Path(sr.Get_Shared_Variables("zeuz_download_folder")).parent / 'proxy_log'
+        proxy_log_dir = PurePosixPath(sr.Get_Shared_Variables("zeuz_download_folder")).parent / 'proxy_log'
         os.makedirs(proxy_log_dir, exist_ok=True)
-        mitm_proxy_path = Path(__file__).parent / "mitm_proxy.py"
+
+        # Paths for mitm_proxy and output files
+        mitm_proxy_path = PurePosixPath(__file__).parent / "mitm_proxy.py"
         output_file_path = proxy_log_dir / 'mitm.log'  # Output file to save the logs
+
+        # Logging the output paths
         CommonUtil.ExecLog(sModuleInfo, f"Proxy Log file: {output_file_path}", 1)
 
         captured_network_file_path = proxy_log_dir / 'captured_network_data.csv'
-        CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {output_file_path}", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {captured_network_file_path}", 1)
         # Open the output file in append mode
         with open(output_file_path, 'a') as output_file:
             # Start the subprocess
