@@ -6760,6 +6760,7 @@ def proxy_server(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
         return "zeuz_failed"
 
+
     if action == 'start':        
         CommonUtil.ExecLog(sModuleInfo, f"{action.capitalize()}ing proxy server on port {port}", 1)
 
@@ -6772,15 +6773,16 @@ def proxy_server(data_set):
         captured_network_file_path = proxy_log_dir / 'captured_network_data.csv'
         CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {output_file_path}", 1)
         # Open the output file in append mode
-        command = f'mitmdump -s {mitm_proxy_path} {captured_network_file_path} -p {port} >> {output_file_path} 2>&1 &'
-        os.system(command)
-
-        # Retrieve the PID of the process running on the specified port
-        pid_command = f"lsof -t -i:{port}"
-        pid = subprocess.check_output(pid_command, shell=True).decode().strip()
-
-        # Append the PID to the list and log
-        CommonUtil.mitm_proxy_pids.append(int(pid))
+        with open(output_file_path, 'a') as output_file:
+            # Start the subprocess
+            process = subprocess.Popen(
+            ['mitmdump', '-s', str(mitm_proxy_path), '-w', str(captured_network_file_path), '-p', str(port)],
+            stdout=output_file,  # Redirect stdout to the file
+            stderr=output_file   # Redirect stderr to the file
+        )
+            
+        pid = process.pid
+        CommonUtil.mitm_proxy_pids.append(pid)
         CommonUtil.ExecLog(sModuleInfo, f"Started process with PID: {pid}", 1)
 
         sr.Set_Shared_Variables(proxy_var, {"pid":pid,"captured_network_file_path":captured_network_file_path,"log_file":output_file_path})
