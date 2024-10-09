@@ -111,7 +111,6 @@ performance_testing = False
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
-teardown = True
 print_execlog = True
 show_log = True
 prettify_limit = 500
@@ -123,7 +122,7 @@ rerunning_on_fail = False
 upload_on_fail = True
 rerun_on_fail = True
 passed_after_rerun = False
-Affirmative_words = ("yes", "true", "on", "ok", "accept", "enable")
+affirmative_words = ("yes", "true", "on", "ok", "accept", "enable")
 negative_words = ("no", "false", "off", "dismiss", "decline", "disable")
 
 runid_index = 0
@@ -360,6 +359,8 @@ def strip1(original_value: str, remove: str) -> str:
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
         # console.print_exception(show_locals=True, max_frames=1)
+        # import traceback
+        # traceback.print_exc()
         if performance_testing:
             return
         sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
