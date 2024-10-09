@@ -6773,13 +6773,13 @@ def proxy_server(data_set):
         captured_network_file_path = proxy_log_dir / 'captured_network_data.csv'
         CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {output_file_path}", 1)
         # Open the output file in append mode
-        with open(output_file_path, 'a') as output_file:
+        with open(r'{}'.format(output_file_path), 'a') as output_file:
             # Start the subprocess
             process = subprocess.Popen(
-            ['mitmdump', '-s', str(mitm_proxy_path), '-w', str(captured_network_file_path), '-p', str(port)],
-            stdout=output_file,  # Redirect stdout to the file
-            stderr=output_file   # Redirect stderr to the file
-        )
+                ['mitmdump', '-s', r'{}'.format(str(mitm_proxy_path)), '-w', r'{}'.format(str(captured_network_file_path)), '-p', str(port)],
+                stdout=output_file,  # Redirect stdout to the file
+                stderr=output_file   # Redirect stderr to the file
+            )
             
         pid = process.pid
         CommonUtil.mitm_proxy_pids.append(pid)
