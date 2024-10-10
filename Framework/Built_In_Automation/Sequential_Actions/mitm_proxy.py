@@ -1,21 +1,16 @@
-from mitmproxy import http
+from mitmproxy import http, ctx
 import time
-import sys
 import csv
 import os
 
 # Initialize a list to track request details
 requests_data = []
 
-# Get the output file path from command-line arguments
-output_file_path = sys.argv[3] if len(sys.argv) > 3 else 'default_output.csv'
-print(f"OUTPUT: {output_file_path}")
 
-# Create a CSV file and write headers if the file does not exist
-if not os.path.exists(output_file_path):
-    with open(output_file_path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["url", "status_code", "duration in seconds", "content_length in bytes", "timestamp"])  # Write CSV header
+def load(l):
+    # Define the custom option `output_file_path`
+    ctx.options.add_option("output_file_path", str, "", "Path to output CSV file")
+
 
 def request(flow: http.HTTPFlow) -> None:
     # Capture request data when it's made
@@ -30,6 +25,12 @@ def request(flow: http.HTTPFlow) -> None:
     })
 
 def response(flow: http.HTTPFlow) -> None:
+    output_file_path = ctx.options.output_file_path
+    create_file_if_not_exists(output_file_path)
+
+    # print("Flow", flow)
+    # print("Response", flow.response)
+
     res = flow.response
     end_time = time.time()
 
@@ -58,3 +59,23 @@ def response(flow: http.HTTPFlow) -> None:
 
     # Optionally print captured details for console output
     print(f"Captured: {captured_details}")
+
+def create_file_if_not_exists(filepath):
+    """
+    Check if the output CSV file exists.
+    If it does not exist, create the file and add csv headers.
+    """
+
+    if not os.path.exists(filepath):
+        with open(filepath, "w", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(
+                [
+                    "url",
+                    "status_code",
+                    "duration_in_seconds",
+                    "content_length_in_bytes",
+                    "timestamp",
+                ]
+            )
+        print(f"Created output file: {filepath}")
