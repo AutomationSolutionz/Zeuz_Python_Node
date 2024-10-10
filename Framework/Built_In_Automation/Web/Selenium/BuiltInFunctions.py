@@ -91,6 +91,15 @@ vdisplay = None
 initial_download_folder = None
 
 browser_map = {
+    "Microsoft Edge Chromium": 'microsoftedge',
+    "Chrome": "chrome",
+    "FireFox": "firefox",
+    "Opera": "opera",
+    "ChromeHeadless": "chrome",
+    "FirefoxHeadless": "firefox",
+    "EdgeChromiumHeadless": "microsoftedge",
+}
+options_map = {
     "Microsoft Edge Chromium": 'msedge',
     "Chrome": "chrome",
     "FireFox": "firefox",
@@ -476,19 +485,20 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             options.add_experimental_option("mobileEmulation", mobile_emulation)
         for argument in browser_options[b]["add_argument"]:
             options.add_argument(argument)
-        for argument in browser_options[b]["add_extension"]:
-            options.add_extension(argument)
-        for argument in browser_options[b]["add_encoded_extension"]:
-            options.add_encoded_extension(argument)
+        for key, val in browser_options[b]["add_experimental_option"].items():
+            options.add_experimental_option(key, val)
+        for extension in browser_options[b]["add_extension"]:
+            options.add_extension(extension)
+        for extension in browser_options[b]["add_encoded_extension"]:
+            options.add_encoded_extension(extension)
         if "page_load_strategy" in browser_options[b]:
             options.page_load_strategy = browser_options[b]["page_load_strategy"]
 
     if "headless" in browser:
-        def chromeheadless():
-            options.add_argument(
-                "--headless=new"
-            )
-        use_xvfb_or_headless(chromeheadless)
+        def headless():
+            arg = "--headless=new" if "chrome" in browser else "--headless"
+            options.add_argument(arg)
+        use_xvfb_or_headless(headless)
 
     for key, value in browser_options["capabilities"].items():
         options.set_capability(key, value)
@@ -532,15 +542,16 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             return "passed"
 
         options = generate_options(browser, browser_options)
+        msg = (
+            f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n"
+            f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
+            f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
+            f"Extensions: {json.dumps(options.extensions, indent=2)}"
+        )
+        CommonUtil.ExecLog(sModuleInfo, msg, 5)
+
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
-            if "chromeheadless" in browser:
-                def chromeheadless():
-                    options.add_argument(
-                        "--headless=new"
-                    )
-                use_xvfb_or_headless(chromeheadless)
-
             service = Service()
             selenium_driver = webdriver.Chrome(
                 service=service,
@@ -559,52 +570,11 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
             from selenium.webdriver.firefox.service import Service
             from selenium.webdriver import FirefoxOptions
-
-            if not firefox_path:
-                firefox_path = GeckoDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", firefox_path)
-            from sys import platform as _platform
-            options = FirefoxOptions()
-
-            if profile_options:
-                for left, right in profile_options:
-                    if left in ("addargument", "addarguments"):
-                        options.add_argument(right.strip())
-                        print(left, right)
-
-            if remote_browser_version:
-                options.set_capability("browserVersion",remote_browser_version)
+            from selenium.webdriver.firefox.options import Options
 
             if "headless" in browser:
                 #firefox headless mode needs add_argument
                 options.add_argument("-headless")
-                # options.headless = True
-
-                '''
-                # commenting out as this is not working.  Make sure 
-                # whoever implemented this it is tested with latest firefox version
-                def firefoxheadless():
-                    options.headless = True
-                use_xvfb_or_headless(firefoxheadless)
-                '''
-
-            if _platform == "win32":
-                try:
-                    import winreg
-                except ImportError:
-                    import _winreg as winreg
-                handle = winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe",
-                )
-                num_values = winreg.QueryInfoKey(handle)[1]
-                path = False
-                for i in range(num_values):
-                    path = winreg.EnumValue(handle, i)
-                    if path != False:
-                        Firefox_path = path[1]
-                        binary = FirefoxBinary(Firefox_path)
-                        break
 
             profile = webdriver.FirefoxProfile()
             initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
@@ -870,7 +840,7 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
             raise ValueError("No dependency set - Cannot run")
 
         page_load_timeout_sec = 120
-        browser = dependency["Browser"].lower()
+        browser = options_map[dependency["Browser"]]
         driver_id = ""
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
@@ -892,10 +862,10 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
                 browser_options["capabilities"] = CommonUtil.parse_value_into_object(right)
             # Options are browser specific.
             elif (
-                mid.strip().lower() in ("chrome option", "msedge option", "opera option") and
+                mid.strip().lower() in ("chrome option", "msedge option") and
                 browser == mid.split(" ")[0].strip().lower() or
                 mid.strip().lower() == "chromium option" and
-                browser in ("chrome", "msedge", "opera")
+                browser in ("chrome", "msedge")
             ):
                 if left == "addargument":
                     browser_options[browser]["add_argument"] = CommonUtil.parse_value_into_object(right)
@@ -907,8 +877,6 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
                     browser_options[browser]["add_encoded_extension"] = CommonUtil.parse_value_into_object(right)
                 elif left == "pageloadstrategy":
                     browser_options[browser]["page_load_strategy"] = right.strip()
-
-        CommonUtil.ExecLog(sModuleInfo, f"browser_options\n{json.dumps(browser_options, indent=2)}", 1)
 
         if not driver_id:
             if len(selenium_details.keys()) == 0:
