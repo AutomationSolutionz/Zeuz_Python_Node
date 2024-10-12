@@ -83,7 +83,7 @@ action_support = (
     "attribute constrain",
     "optional option",
     "graphql",
-    "shared capability", "chrome option", "edge option", "chromium option",
+    "shared capability", "chrome option", "edge option", "chromium option", "firefox option", "safari option",
     "pre sleep", "post sleep", "pre post sleep", "post pre sleep",
     "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter",
     "profile option", "profile options",

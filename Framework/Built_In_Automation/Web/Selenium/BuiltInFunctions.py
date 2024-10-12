@@ -98,6 +98,7 @@ browser_map = {
     "ChromeHeadless": "chrome",
     "FirefoxHeadless": "firefox",
     "EdgeChromiumHeadless": "microsoftedge",
+    "Safari": "safari"
 }
 options_map = {
     "Microsoft Edge Chromium": "edge",
@@ -107,6 +108,7 @@ options_map = {
     "ChromeHeadless": "chrome",
     "FirefoxHeadless": "firefox",
     "EdgeChromiumHeadless": "edge",
+    "Safari": "safari"
 }
 
 from typing import Literal, TypedDict, Any, Union, NotRequired
@@ -115,14 +117,14 @@ ReturnType = Literal["passed", "zeuz_failed"]
 
 class DefaultChromiumArguments(TypedDict):
     add_argument: list[str]
-    add_experimental_option: dict[str, dict[str, Any]]
+    add_experimental_option: dict[str, Any]
     add_extension: list[str]
     add_encoded_extension: list[str]
     page_load_strategy: NotRequired[Literal["normal", "eager", "none"]]
 
 class FirefoxArguments(TypedDict):
     add_argument: list[str]
-    set_preference: dict[str, dict[str, Any]]
+    set_preference: dict[str, Any]
 
 class SafariArguments(TypedDict):
     add_argument: list[str]
@@ -517,16 +519,20 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             options.add_argument(argument)
         for key, val in browser_options["firefox"]["set_preference"].items():
             options.set_preference(key, val)
+        if "page_load_strategy" in browser_options["firefox"]:
+            options.page_load_strategy = browser_options["firefox"]["page_load_strategy"]
         msg += (
             f"Preferences: {json.dumps(options.preferences, indent=2)}\n"
         )
     elif "safari" in browser:
-        from selenium.webdriver.safari.options import Options
-        options = Options()
+        from selenium.webdriver.safari.options import Options as SafariOptions
+        options = SafariOptions()
         for argument in browser_options["safari"]["add_argument"]:
             options.add_argument(argument)
+        if "page_load_strategy" in browser_options["safari"]:
+            options.page_load_strategy = browser_options["safari"]["page_load_strategy"]
     else:
-        return None
+        raise Exception
 
     if "headless" in browser:
         def headless():
@@ -773,6 +779,29 @@ def Go_To_Link_V2(step_data):
     CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
     return "passed"
     
+
+def parse_and_verify_datatype(left:str, right:str):
+    val = CommonUtil.parse_value_into_object(right)
+    if left == "addargument":
+        if isinstance(val, list) and all(isinstance(item, str) for item in val):
+            return val
+        raise ValueError("Argument must be list of strings. Example: ['--ignore-ssl-errors', '--no-sandbox']")
+    
+    if left == "addextension":
+        if isinstance(val, list) and all(isinstance(item, str) for item in val):
+            return val
+        raise ValueError("Extensions must be list of strings. Example: ['path/to/ex1.crx', 'path/to/ex2.crx']")
+    
+    if left == "addencodedextension":
+        if isinstance(val, list) and all(isinstance(item, str) for item in val):
+            return val
+        raise ValueError("Encoded_extenions must be list of strings. Example: ['ex1_encoded_str', 'ex2_encoded_str']")
+    
+    elif left == "addexperimentaloption":
+        if isinstance(val, dict):
+            return val
+        raise ValueError('Experimental_option must be dictionary. Example: {"mobileEmulation":{"deviceName": "Pixel 2 XL"}}')
+    
 @logger
 def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
     try:
@@ -860,19 +889,20 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
                 browser_options["capabilities"] = CommonUtil.parse_value_into_object(right)
             # Options are browser specific.
             elif (
-                mid.strip().lower() in ("chrome option", "edge option") and
-                browser == mid.split(" ")[0].strip().lower() or
                 mid.strip().lower() == "chromium option" and
-                browser in ("chrome", "edge")
+                browser in ("chrome", "edge") or 
+                browser == mid.split(" ")[0].strip().lower()
             ):
                 if left == "addargument":
-                    browser_options[browser]["add_argument"] = CommonUtil.parse_value_into_object(right)
+                    browser_options[browser]["add_argument"] = parse_and_verify_datatype(left, right)
                 elif left == "addexperimentaloption":
-                    browser_options[browser]["add_experimental_option"] = CommonUtil.parse_value_into_object(right)
+                    browser_options[browser]["add_experimental_option"] = parse_and_verify_datatype(left, right)
                 elif left == "addextension":
-                    browser_options[browser]["add_extension"] = CommonUtil.parse_value_into_object(right)
+                    browser_options[browser]["add_extension"] = parse_and_verify_datatype(left, right)
                 elif left == "addencodedextension":
-                    browser_options[browser]["add_encoded_extension"] = CommonUtil.parse_value_into_object(right)
+                    browser_options[browser]["add_encoded_extension"] = parse_and_verify_datatype(left, right)
+                elif left == "setpreference":
+                    browser_options[browser]["set_preference"] = parse_and_verify_datatype(left, right)
                 elif left == "pageloadstrategy":
                     browser_options[browser]["page_load_strategy"] = right.strip()
 
