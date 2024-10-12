@@ -43,6 +43,7 @@ except:
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
+import traceback
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
@@ -358,27 +359,15 @@ def strip1(original_value: str, remove: str) -> str:
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
-        # console.print_exception(show_locals=True, max_frames=1)
-        # import traceback
-        # traceback.print_exc()
         if performance_testing:
             return
+
         sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         exc_type, exc_obj, exc_tb = exec_info
-        Error_Type = (
-            (str(exc_type).replace("type ", ""))
-            .replace("<", "")
-            .replace(">", "")
-            .replace(";", ":")
-        )
-        Error_Message = str(exc_obj)
         File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
-        Line_Number = str(exc_tb.tb_lineno)
-        Error_Detail = (
-            "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
-            % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
-        )
+        if debug_status:
+            Error_Detail = traceback.format_exc()
         sModuleInfo = Function_Name + ":" + File_Name
         ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
         # TakeScreenShot(Function_Name + "~" + File_Name)

@@ -100,13 +100,13 @@ browser_map = {
     "EdgeChromiumHeadless": "microsoftedge",
 }
 options_map = {
-    "Microsoft Edge Chromium": 'msedge',
+    "Microsoft Edge Chromium": "edge",
     "Chrome": "chrome",
     "FireFox": "firefox",
     "Opera": "opera",
     "ChromeHeadless": "chrome",
     "FirefoxHeadless": "firefox",
-    "EdgeChromiumHeadless": "msedge",
+    "EdgeChromiumHeadless": "edge",
 }
 
 from typing import Literal, TypedDict, Any, Union, NotRequired
@@ -120,11 +120,19 @@ class DefaultChromiumArguments(TypedDict):
     add_encoded_extension: list[str]
     page_load_strategy: NotRequired[Literal["normal", "eager", "none"]]
 
+class FirefoxArguments(TypedDict):
+    add_argument: list[str]
+    set_preference: dict[str, dict[str, Any]]
+
+class SafariArguments(TypedDict):
+    add_argument: list[str]
+
 class BrowserOptions(TypedDict):
     capabilities: dict[str,Any]
     chrome: DefaultChromiumArguments
-    msedge: DefaultChromiumArguments
-    firefox: Any
+    edge: DefaultChromiumArguments
+    firefox: FirefoxArguments
+    safari: SafariArguments
 
 from selenium.webdriver.common.options import ArgOptions
 
@@ -475,11 +483,15 @@ def set_extension_variables():
 
 def generate_options(browser: str, browser_options:BrowserOptions):
     """ Adds capabilities and options for Browser/WebDriver """
-    if browser in ("android", "chrome", "chromeheadless", "microsoft edge chromium", "edgechromiumheadless"):
-        b = "msedge" if "edge" in browser else "chrome"
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    chromium_condition = browser in ("android", "chrome", "chromeheadless", "microsoft edge chromium", "edgechromiumheadless")
+    if chromium_condition:
+        b = "edge" if "edge" in browser else "chrome"
         from selenium.webdriver.chrome.options import Options as ChromeOptions
         from selenium.webdriver.edge.options import Options as EdgeOptions
         options = ChromeOptions() if b == "chrome" else EdgeOptions()
+        # from selenium.webdriver.chromium.options import ChromiumOptions
+        # options = ChromiumOptions()
         if browser == "android":
             mobile_emulation = {"deviceName": "Pixel 2 XL"}
             options.add_experimental_option("mobileEmulation", mobile_emulation)
@@ -493,6 +505,22 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             options.add_encoded_extension(extension)
         if "page_load_strategy" in browser_options[b]:
             options.page_load_strategy = browser_options[b]["page_load_strategy"]
+
+    elif browser in ("firefox", "firefoxheadless"):
+        from selenium.webdriver.firefox.options import Options as FirefoxOptions
+        options = FirefoxOptions()
+        for argument in browser_options["firefox"]["add_argument"]:
+            options.add_argument(argument)
+        for key, val in browser_options["firefox"]["set_preference"].items():
+            options.set_preference(key, val)
+
+    elif "safari" in browser:
+        from selenium.webdriver.safari.options import Options
+        options = Options()
+        for argument in browser_options["safari"]["add_argument"]:
+            options.add_argument(argument)
+    else:
+        return None
 
     if "headless" in browser:
         def headless():
@@ -513,6 +541,13 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
         # This is for running extension on a http server to call a https request
         options.add_argument("--allow-running-insecure-content")
+
+    msg = f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n" + \
+        f"Arguments: {json.dumps(options.arguments, indent=2)}\n" + \
+        f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n" if chromium_condition else "" + \
+        f"Extensions: {json.dumps(options.extensions, indent=2)}\n" if chromium_condition else "" + \
+        f"Preferences: {json.dumps(options.preferences, indent=2)}" if "firefox" in browser else ""
+    CommonUtil.ExecLog(sModuleInfo, msg, 5)
     return options
 
 @logger
@@ -542,14 +577,6 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             return "passed"
 
         options = generate_options(browser, browser_options)
-        msg = (
-            f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n"
-            f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
-            f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
-            f"Extensions: {json.dumps(options.extensions, indent=2)}"
-        )
-        CommonUtil.ExecLog(sModuleInfo, msg, 5)
-
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
             service = Service()
@@ -567,68 +594,20 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             )
 
         elif browser in ("firefox", "firefoxheadless"):
-            firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
             from selenium.webdriver.firefox.service import Service
-            from selenium.webdriver import FirefoxOptions
-            from selenium.webdriver.firefox.options import Options
-
-            if "headless" in browser:
-                #firefox headless mode needs add_argument
-                options.add_argument("-headless")
-
-            profile = webdriver.FirefoxProfile()
-            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            profile.set_preference("browser.download.folderList", 2)
-            profile.set_preference("browser.download.manager.showWhenStarting", False)
-            profile.set_preference("browser.download.dir", download_dir)
-            #text/plain;charset=UTF-8
-            # Allowing txt, pdf, xlsx, xml, csv, zip files to be directly downloaded without save prompt
-            apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
-            profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
-            profile.accept_untrusted_certs = True
-
-            options.set_preference("browser.download.folderList", 2)
-            options.set_preference("browser.download.manager.showWhenStarting", False)
-            options.set_preference("browser.download.dir", download_dir)
-            options.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
-            options.accept_untrusted_certs = True
-
-            if remote_host:
-                capabilities = webdriver.DesiredCapabilities().FIREFOX
-                capabilities['acceptSslCerts'] = True
-                selenium_driver = webdriver.Remote(
-                    command_executor= remote_host + "wd/hub",
-                    options=options,
-                )
-            else:
-                service = Service()
-                selenium_driver = webdriver.Firefox(
-                    service=service,
-                    options=options,
-                )
-
+            service = Service()
+            selenium_driver = webdriver.Firefox(
+                service=service,
+                options=options,
+            )
 
         elif "safari" in browser:
-            CommonUtil.ExecLog(sModuleInfo, "Restart computer after following ... https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari ", 1)
-            '''
-            os.environ["SELENIUM_SERVER_JAR"] = (
-                    os.sys.prefix
-                    + os.sep
-                    + "Scripts"
-                    + os.sep
-                    + "selenium-server-standalone-2.45.0.jar"
-            )'''
-
-            desired_capabilities = DesiredCapabilities.SAFARI
-
-            if "ios" in browser:
-                desired_capabilities["platformName"] = "ios"
-
-                if "simulator" in browser:
-                    desired_capabilities["safari:useSimulator"] = True
-
-            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
-
+            from selenium.webdriver.safari.service import Service
+            service = Service()
+            selenium_driver = webdriver.Safari(
+                service=service,
+                options=options,
+            )
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "You did not select a valid browser: %s" % browser, 3
@@ -798,6 +777,7 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
 
         global initial_download_folder
         initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+        apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
         default_chromium_arguments = {
             "add_argument": [
                 "--ignore-certificate-errors",
@@ -825,10 +805,23 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
                 # "goog:loggingPrefs": {"performance": "ALL"},
             },
             "chrome": default_chromium_arguments,
-            "msedge": default_chromium_arguments,
-            "firefox": {},
+            "edge": default_chromium_arguments,
+            "firefox": {
+                "add_argument": [],
+                "set_preference": {
+                    "browser.download.folderList": 2,
+                    "browser.download.manager.showWhenStarting": False,
+                    "browser.download.dir": download_dir,
+                    "browser.helperApps.neverAsk.saveToDisk": apps,
+                    "browser.download.useDownloadDir": True,
+                    "browser.download.manager.closeWhenDone": True,
+                    "security.mixed_content.block_active_content": False,
+                }
+            },
+            "safari": {
+                "add_argument": [],
+            }
         }
-
         # Open browser and create driver if user has not already done so
         global dependency
         global selenium_driver
@@ -862,10 +855,10 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
                 browser_options["capabilities"] = CommonUtil.parse_value_into_object(right)
             # Options are browser specific.
             elif (
-                mid.strip().lower() in ("chrome option", "msedge option") and
+                mid.strip().lower() in ("chrome option", "edge option") and
                 browser == mid.split(" ")[0].strip().lower() or
                 mid.strip().lower() == "chromium option" and
-                browser in ("chrome", "msedge")
+                browser in ("chrome", "edge")
             ):
                 if left == "addargument":
                     browser_options[browser]["add_argument"] = CommonUtil.parse_value_into_object(right)
@@ -924,7 +917,7 @@ def Go_To_Link(dataset: Dataset, page_title=False) -> ReturnType:
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
     except WebDriverException as e:
         browser = selenium_driver.capabilities["browserName"].strip().lower()
-        if (browser in ("chrome", "msedge", "opera") and e.msg.lower().startswith("chrome not reachable")) or (browser == "firefox" and e.msg.lower().startswith("tried to run command without establishing a connection")):
+        if (browser in ("chrome", "edge") and e.msg.lower().startswith("chrome not reachable")) or (browser == "firefox" and e.msg.lower().startswith("tried to run command without establishing a connection")):
             CommonUtil.ExecLog(sModuleInfo, "Browser not found. trying to restart the browser", 2)
             # If the browser is closed but selenium instance is on, relaunch selenium_driver
             if Shared_Resources.Test_Shared_Variables("dependency"):
@@ -1503,7 +1496,7 @@ def Click_and_Download(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
-    if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge", "firefox"):
+    if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "microsoftedge", "firefox"):
         CommonUtil.ExecLog(sModuleInfo, "This action was made for Chrome, MS Edge and Firefox. Other browsers won't download files in Zeuz_Download_Folder", 2)
 
     #Todo:
@@ -1591,7 +1584,7 @@ def Click_and_Download(data_set):
                 pyautogui.hotkey("down")
                 pyautogui.hotkey("enter")
 
-        if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge", "firefox"):
+        if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "microsoftedge", "firefox"):
             CommonUtil.ExecLog(sModuleInfo, "Download started. Will wait max %s seconds..." % wait_download, 1)
             s = time.perf_counter()
             if selenium_driver.capabilities["browserName"].strip().lower() == "firefox":
@@ -3006,7 +2999,6 @@ def upload_file_through_window(step_data):
     global selenium_driver
     all_file_path = []
     pid = ""
-    send_keys_flag = False
     import pyautogui
     if "headless" in dependency:
         CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
@@ -3021,8 +3013,6 @@ def upload_file_through_window(step_data):
                     all_file_path.append(path)
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
-            if "keys" in l:
-                send_keys_flag = True
 
         if len(all_file_path) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Could not find any valid filepath or directory", 3)
@@ -3033,23 +3023,8 @@ def upload_file_through_window(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
 
     try:
-
-
         if platform.system() == "Darwin":
-            # Will require pid when we will atomate with atomacos module. Fetching PID is only tested on Chrome for now
-            if selenium_driver.capabilities["browserName"].lower() == "chrome":
-                for process in psutil.process_iter():
-                    try:
-                        if process.name() == 'Google Chrome' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                            pid = str(process.pid)
-                            break
-                    except Exception as e:
-                        # print(e)
-                        pass
-
             path_name = path_name[1:-1]
-
-            import pyautogui
             time.sleep(3)
             pyautogui.hotkey("/")
             time.sleep(5)
@@ -3060,14 +3035,6 @@ def upload_file_through_window(step_data):
             pyautogui.hotkey("enter")
             time.sleep(2)
             pyautogui.hotkey("enter")
-
-        elif send_keys_flag is True:
-
-            file_input = selenium_driver.find_element(By.XPATH, "//input[@type='file']")
-
-            file_path = path_name[1:-1]
-            file_input.send_keys(file_path)
-
 
         # window_ds = ("*window", "element parameter", selenium_driver.title)
         elif platform.system() == "Windows":
@@ -3081,7 +3048,7 @@ def upload_file_through_window(step_data):
                 for process in psutil.process_iter():
                     if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
                         pid = str(process.pid)
-            elif selenium_driver.capabilities["browserName"].lower() == "msedge":
+            elif selenium_driver.capabilities["browserName"].lower() == "microsoftedge":
                 for process in psutil.process_iter():
                     if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
                         pid = str(process.pid)
@@ -3110,7 +3077,7 @@ def upload_file_through_window(step_data):
             #     else:
             #         pid = str(win_pids[0])
 
-            if selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera", "msedge"):
+            if selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera", "microsoftedge"):
                 win_pids = get_pids_from_title(selenium_driver.title)
                 if len(win_pids) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
@@ -3271,65 +3238,17 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
-        """ The following code does not work with mentioned delay time. delay=2 takes 25 seconds for a dnd """
-        # if delay:
-            # if destination_offset:
-            #     destination_x, destination_y = get_offsets(destination_offset, destination_element)
-            # else:
-            #     destination_x = destination_element.location['x']
-            #     destination_y = destination_element.location['y']
-            # distance_x = destination_x - source_element.location['x']
-            # distance_y = destination_y - source_element.location['y']
-            # total_time = delay
-            # total_distance = (distance_x**2 + distance_y**2)**0.5
-            #
-            # pixels_per_step = 5
-            # steps = int(total_distance / pixels_per_step)
-            #
-            # # Calculate the ideal time per step to fit within the total time
-            # ideal_time_per_step = total_time / steps
-            #
-            # # Start the high-resolution timer
-            # start_time = time.perf_counter()
-            #
-            # # Create an ActionChains object
-            # actions = ActionChains(selenium_driver)
-            #
-            # # Click and hold the source element
-            # actions.click_and_hold(source_element).perform()
-            #
-            # # Manually move the mouse to the target element in small increments
-            # for i in range(steps):
-            #     # Calculate the movement for this step
-            #     move_x = distance_x / steps
-            #     move_y = distance_y / steps
-            #
-            #     # Move the mouse by the calculated offset
-            #     actions.move_by_offset(move_x, move_y).perform()
-            #
-            #     # Calculate elapsed time and adjust the sleep time
-            #     elapsed_time = time.perf_counter() - start_time
-            #     remaining_time = total_time - elapsed_time
-            #     time_per_step = remaining_time / (steps - i)
-            #
-            #     if time_per_step > 0:
-            #         time.sleep(time_per_step)
-            #
-            # # Release the mouse button to drop the element
-            # actions.release().perform()
-            # sleep(2)
-            
         if destination_offset:
             x, y = get_offsets(destination_offset, destination_element)
-            if delay:
+            if delay is not None:
                 """ This line of code was not tested, just keeping here"""
-                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).pause(0.5).release().perform()
+                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).pause(delay).release().perform()
             else:
                 ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).release().perform()
 
         else:
-            if delay:
-                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+            if delay is not None:
+                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(delay).release(destination_element).perform()
             else:
                 ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
 
