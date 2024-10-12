@@ -17,7 +17,7 @@ declarations = (
     { "name": "deselect by value",             "function": "Select_Deselect",               "screenshot": "web" },
     { "name": "select by index",               "function": "Select_Deselect",               "screenshot": "web" },
     { "name": "deselect by index",             "function": "Select_Deselect",               "screenshot": "web" },
-    { "name": "open browser",                  "function": "Open_Empty_Browser",            "screenshot": "web" },
+    { "name": "open browser",                  "function": "Go_To_Link",                    "screenshot": "web" },
     { "name": "open electron app",             "function": "Open_Electron_App",             "screenshot": "web" },
     { "name": "go to link",                    "function": "Go_To_Link",                    "screenshot": "web" },
     { "name": "go to link v2",                 "function": "Go_To_Link_V2",                 "screenshot": "web" },
