@@ -485,6 +485,7 @@ def generate_options(browser: str, browser_options:BrowserOptions):
     """ Adds capabilities and options for Browser/WebDriver """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     chromium_condition = browser in ("android", "chrome", "chromeheadless", "microsoft edge chromium", "edgechromiumheadless")
+    msg = ""
     if chromium_condition:
         b = "edge" if "edge" in browser else "chrome"
         from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -505,7 +506,10 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             options.add_encoded_extension(extension)
         if "page_load_strategy" in browser_options[b]:
             options.page_load_strategy = browser_options[b]["page_load_strategy"]
-
+        msg += (
+            f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
+            f"Extensions: {json.dumps(options.extensions, indent=2)}\n"
+        )
     elif browser in ("firefox", "firefoxheadless"):
         from selenium.webdriver.firefox.options import Options as FirefoxOptions
         options = FirefoxOptions()
@@ -513,7 +517,9 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             options.add_argument(argument)
         for key, val in browser_options["firefox"]["set_preference"].items():
             options.set_preference(key, val)
-
+        msg += (
+            f"Preferences: {json.dumps(options.preferences, indent=2)}\n"
+        )
     elif "safari" in browser:
         from selenium.webdriver.safari.options import Options
         options = Options()
@@ -542,11 +548,10 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         # This is for running extension on a http server to call a https request
         options.add_argument("--allow-running-insecure-content")
 
-    msg = f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n" + \
-        f"Arguments: {json.dumps(options.arguments, indent=2)}\n" + \
-        f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n" if chromium_condition else "" + \
-        f"Extensions: {json.dumps(options.extensions, indent=2)}\n" if chromium_condition else "" + \
-        f"Preferences: {json.dumps(options.preferences, indent=2)}" if "firefox" in browser else ""
+    msg += (
+        f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n" +
+        f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
+    )
     CommonUtil.ExecLog(sModuleInfo, msg, 5)
     return options
 
