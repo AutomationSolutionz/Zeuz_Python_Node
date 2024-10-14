@@ -509,7 +509,10 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         if "page_load_strategy" in browser_options[b]:
             options.page_load_strategy = browser_options[b]["page_load_strategy"]
         if "debugger_address" in browser_options[b]:
+            # When debugger_address is mentioned, the Service() object should be ignored by default
+            # Users need to remove experimental options by setting it to {}
             options.debugger_address = browser_options[b]["debugger_address"]
+            msg += f"Debugger address: {options.debugger_address}\n"
         msg += (
             f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
             f"Extensions: {json.dumps(options.extensions, indent=2)}\n"
@@ -559,14 +562,15 @@ def generate_options(browser: str, browser_options:BrowserOptions):
 
     msg += (
         f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n" +
-        f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
+        f"Arguments: {json.dumps(options.arguments, indent=2)}\n" +
+        f"Page load strategy: {options.page_load_strategy}\n"
     )
     CommonUtil.ExecLog(sModuleInfo, msg, 5)
     return options
 
 @logger
 def Open_Browser(browser, browser_options: BrowserOptions):
-    """ Launch browser and create instance """
+    """ Launch browser from options and service object """
     try:
         global selenium_driver
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -740,7 +744,12 @@ def parse_and_verify_datatype(left:str, right:str):
         if isinstance(val, dict):
             return val
         raise ValueError('Experimental_option must be dictionary. Example: {"mobileEmulation":{"deviceName": "Pixel 2 XL"}}')
-    
+
+    elif left == "setpreference":
+        if isinstance(val, dict):
+            return val
+        raise ValueError('Preference must be dictionary. Example: {"security.mixed_content.block_active_content": False}')
+
 @logger
 def Go_To_Link(dataset: Dataset) -> ReturnType:
     try:
@@ -850,7 +859,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                     browser_options[browser]["set_preference"] = parse_and_verify_datatype(left, right)
                 elif left == "pageloadstrategy":
                     browser_options[browser]["page_load_strategy"] = right.strip()
-                elif left == "debugger_address":
+                elif left == "debuggeraddress":
                     browser_options[browser]["debugger_address"] = right.strip()
 
         if not driver_id:
