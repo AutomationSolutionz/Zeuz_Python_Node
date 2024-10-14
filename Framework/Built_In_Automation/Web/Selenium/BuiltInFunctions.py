@@ -508,6 +508,8 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             options.add_encoded_extension(extension)
         if "page_load_strategy" in browser_options[b]:
             options.page_load_strategy = browser_options[b]["page_load_strategy"]
+        if "debugger_address" in browser_options[b]:
+            options.debugger_address = browser_options[b]["debugger_address"]
         msg += (
             f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
             f"Extensions: {json.dumps(options.extensions, indent=2)}\n"
@@ -532,7 +534,8 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         if "page_load_strategy" in browser_options["safari"]:
             options.page_load_strategy = browser_options["safari"]["page_load_strategy"]
     else:
-        raise Exception
+        from selenium.webdriver.common.options import ArgOptions
+        return ArgOptions()
 
     if "headless" in browser:
         def headless():
@@ -847,6 +850,8 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                     browser_options[browser]["set_preference"] = parse_and_verify_datatype(left, right)
                 elif left == "pageloadstrategy":
                     browser_options[browser]["page_load_strategy"] = right.strip()
+                elif left == "debugger_address":
+                    browser_options[browser]["debugger_address"] = right.strip()
 
         if not driver_id:
             if len(selenium_details.keys()) == 0:
@@ -860,15 +865,14 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
             if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
                 Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
-            result = Open_Browser(dependency["Browser"], browser_options)
+            
+            if Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
+                return "zeuz_failed"
 
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
-
-            if result == "zeuz_failed":
-                return "zeuz_failed"
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
 
