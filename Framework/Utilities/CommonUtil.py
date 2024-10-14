@@ -190,6 +190,8 @@ global_var = {}
 global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
 zeuz_disable_var_print = {}
 
+mitm_proxy_pids = []
+
 def clear_performance_metrics():
     """reset everything to initial value"""
     global browser_perf, action_perf, step_perf, test_case_perf, perf_test_perf, api_performance_data, load_testing, processed_performance_data
