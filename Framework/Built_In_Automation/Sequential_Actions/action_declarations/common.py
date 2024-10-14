@@ -131,6 +131,8 @@ declarations = (
 
     {"name": "connect to google service client",            "function": "connect_to_google_service_account",     "screenshot": "none" },
     {"name": "upload to google storage bucket",             "function": "upload_to_google_storage_bucket",       "screenshot": "none" },
+
+    {"name": "proxy server",                                "function": "proxy_server",                         "screenshot": "none"}
     
 ) # yapf: disable
 
