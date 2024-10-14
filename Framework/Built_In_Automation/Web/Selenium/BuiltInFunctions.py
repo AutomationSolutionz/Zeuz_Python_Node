@@ -804,7 +804,10 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
 
         page_load_timeout_sec = 120
         web_link = None     # None is for Open_Empty_Browser
-        browser = options_map[dependency["Browser"]]
+        if dependency["Browser"] in options_map:
+            browser = options_map[dependency["Browser"]]
+        else:
+            browser = None
         driver_id = ""
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
@@ -826,9 +829,11 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 browser_options["capabilities"] = CommonUtil.parse_value_into_object(right)
             # Options are browser specific.
             elif (
-                mid.strip().lower() == "chromium option" and
-                browser in ("chrome", "edge") or 
-                browser == mid.split(" ")[0].strip().lower()
+                browser is not None and (
+                    mid.strip().lower() == "chromium option" and
+                    browser in ("chrome", "edge") or 
+                    browser == mid.split(" ")[0].strip().lower()
+                )
             ):
                 if left == "addargument":
                     browser_options[browser]["add_argument"] = parse_and_verify_datatype(left, right)
