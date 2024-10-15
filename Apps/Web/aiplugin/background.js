@@ -165,6 +165,7 @@ browserAppData.runtime.onMessage.addListener(
 
             return true;  // Will respond asynchronously.
         } else if (request.apiName == 'node_ai_contents'){
+            var url = `${zeuz_url}/node_ai_contents/`;
             fetch(url, {
                 method: "POST",
                 headers: {
