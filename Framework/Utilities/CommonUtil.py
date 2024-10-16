@@ -43,6 +43,7 @@ except:
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
+import traceback
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
@@ -111,7 +112,6 @@ performance_testing = False
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
-teardown = True
 print_execlog = True
 show_log = True
 prettify_limit = 500
@@ -123,7 +123,8 @@ rerunning_on_fail = False
 upload_on_fail = True
 rerun_on_fail = True
 passed_after_rerun = False
-Affirmative_words = ("yes", "true", "ok", "enable", "on")
+affirmative_words = ("yes", "true", "on", "ok", "accept", "enable")
+negative_words = ("no", "false", "off", "dismiss", "decline", "disable")
 
 runid_index = 0
 tc_index = 0
@@ -360,25 +361,15 @@ def strip1(original_value: str, remove: str) -> str:
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
-        # console.print_exception(show_locals=True, max_frames=1)
         if performance_testing:
             return
+
         sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         exc_type, exc_obj, exc_tb = exec_info
-        Error_Type = (
-            (str(exc_type).replace("type ", ""))
-            .replace("<", "")
-            .replace(">", "")
-            .replace(";", ":")
-        )
-        Error_Message = str(exc_obj)
         File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
-        Line_Number = str(exc_tb.tb_lineno)
-        Error_Detail = (
-            "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
-            % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
-        )
+        if debug_status:
+            Error_Detail = traceback.format_exc()
         sModuleInfo = Function_Name + ":" + File_Name
         ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
         # TakeScreenShot(Function_Name + "~" + File_Name)

@@ -851,7 +851,7 @@ def _child_search_by_path(
                 if found:
                     if switch_window:
                         CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameE, 1)
-                        if Shared_Resources.Get_Shared_Variables("zeuz_window_auto_switch").strip().lower() in CommonUtil.Affirmative_words:
+                        if Shared_Resources.Get_Shared_Variables("zeuz_window_auto_switch").strip().lower() in CommonUtil.affirmative_words:
                             autoit.win_activate(NameE)
                     all_elements.append(each_child)
                 if 0 <= element_index == len(all_elements) - 1: break
@@ -1653,7 +1653,7 @@ def _get_main_window(WindowName):
                         if MainWindowElement.Current.ProcessId in current_pid_list:
                             CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
                             CommonUtil.ExecLog(sModuleInfo, f"pid matched: {MainWindowElement.Current.ProcessId}", 5)
-                            if Shared_Resources.Get_Shared_Variables("zeuz_window_auto_switch").strip().lower() in CommonUtil.Affirmative_words:
+                            if Shared_Resources.Get_Shared_Variables("zeuz_window_auto_switch").strip().lower() in CommonUtil.affirmative_words:
                                 autoit.win_activate(NameS)
                             return MainWindowElement
                         else:
@@ -1662,7 +1662,7 @@ def _get_main_window(WindowName):
                 pass
         if len(found_windows) > 0:
             CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % found_windows[0].Current.Name, 1)
-            if Shared_Resources.Get_Shared_Variables("zeuz_window_auto_switch").strip().lower() in CommonUtil.Affirmative_words:
+            if Shared_Resources.Get_Shared_Variables("zeuz_window_auto_switch").strip().lower() in CommonUtil.affirmative_words:
                 autoit.win_activate(found_windows[0].Current.Name)
             return found_windows[0]
         return None
