@@ -368,17 +368,13 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
         exc_type, exc_obj, exc_tb = exec_info
         File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
-        if debug_status:
-            Error_Detail = traceback.format_exc()
+        Error_Detail = traceback.format_exc()
         sModuleInfo = Function_Name + ":" + File_Name
         ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
-        # TakeScreenShot(Function_Name + "~" + File_Name)
-        if UserMessage != None:
+        if UserMessage is not None:
             ExecLog(
                 sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
             )
-        # if temp_q != None:
-        #     temp_q.put("zeuz_failed")
 
         return "zeuz_failed"
 
