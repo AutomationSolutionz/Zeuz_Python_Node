@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "appium-python-client>=4.2.1",
-    "appscript>=1.3.0",
     "appscript>=1.3.0 ; sys_platform == 'darwin'",
     "attrs>=25.1.0",
     "beautifulsoup4>=4.13.3",
@@ -39,7 +38,7 @@ dependencies = [
     "pip>=25.0.1",
     "plyer>=2.1.0",
     "premailer>=3.10.0",
-    "psutil==5.9.0",
+    "psutil>=7.0.0",
     "pyautocad>=0.2.0",
     "pyautogui>=0.9.54",
     "pyautoit>=0.6.5 ; sys_platform == 'win32'",
