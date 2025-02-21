@@ -436,21 +436,6 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
         return Exception_Handler(sys.exc_info())
 
 
-def node_manager_json(data):
-    """ Generates a json file to communicate with node_manager"""
-    json_path = Path(os.path.abspath(__file__)).parent.parent.parent / "node_state.json"
-    with open(json_path, "w") as f:
-        json.dump(data, f)
-
-node_manager_json(
-    {
-        "state": "starting",
-        "report": {
-            "zip": None,
-            "directory": None,
-        }
-    }
-)
 report_json_time = 0.0
 
 
@@ -1037,22 +1022,6 @@ def TimeStamp(format):
         TimeStamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     return TimeStamp
-
-
-def set_exit_mode(emode):
-    """ Sets a value in the temp config file to tell sequential actions to exit, if set to true """
-    # Set by the user via the GUI
-    ConfigModule.add_config_value("sectionOne", "exit_script", str(emode), temp_config)
-
-
-def check_offline():
-    """ Checks the value set in the temp config file to tell sequential actions to exit, if set to true """
-    # Set by the user via the GUI
-    value = ConfigModule.get_config_value("sectionOne", "exit_script", temp_config)
-    if value == "True":
-        return True
-    else:
-        return False
 
 
 def Delete_from_list(List, to_del):
