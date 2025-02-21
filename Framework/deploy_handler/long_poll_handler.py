@@ -6,7 +6,6 @@ import time
 import random
 import requests
 from colorama import Fore
-import threading
 
 from Framework.Utilities import RequestFormatter
 
@@ -91,8 +90,10 @@ class DeployHandler:
                 if not resp.ok:
                     server_online = False
                     print("[deploy] facing difficulty communicating with the server, status code:", resp.status_code, " | reconnecting")
-                    try: print(Fore.YELLOW + str(resp.content))
-                    except: pass
+                    try:
+                        print(Fore.YELLOW + str(resp.content))
+                    except Exception:
+                        pass
 
                     # Encountered a server error, retry.
                     time.sleep(random.randint(1, 3))
@@ -101,6 +102,6 @@ class DeployHandler:
                 self.on_message(resp.content)
                 reconnect = False
                 server_online = True
-            except:
+            except Exception:
                 traceback.print_exc()
                 print("[deploy] RETRYING...")

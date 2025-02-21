@@ -1839,7 +1839,7 @@ def main(device_dict, all_run_id_info):
                 CommonUtil.debug_status = False
                 shared.Clean_Up_Shared_Variables(run_id)
 
-            # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
+            # TODO: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
             device_order = run_id_info["device_info"]
             # or
@@ -2150,22 +2150,6 @@ def main(device_dict, all_run_id_info):
 
                     copytree(str(zeuz_log_dir), str(log_dir))
 
-                # Telling the node_manager that a run_id is finished
-                CommonUtil.node_manager_json(
-                    {
-                        "state": "complete",
-                        "report": {
-                            "zip": "Will do later" + ".zip",
-                            "directory": "Will do later",
-                        }
-                    }
-                )
-
-                # executor.submit(upload_json_report)
-
-            # Close websocket connection.
-            elif CommonUtil.debug_status:
-                pass
             CommonUtil.runid_index += 1
 
             # Terminating all run_cancel threads after finishing a run_id

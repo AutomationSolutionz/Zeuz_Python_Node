@@ -341,15 +341,6 @@ def Login(cli=False, run_once=False, log_dir=None):
             time.sleep(30)
             continue
 
-        CommonUtil.node_manager_json(
-            {
-                "state": "idle",
-                "report": {
-                    "zip": None,
-                    "directory": None,
-                },
-            }
-        )
         node_id = CommonUtil.MachineInfo().getLocalUser().lower()
         from Framework.MainDriverApi import retry_failed_report_upload
 
@@ -455,7 +446,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                     save_path / "deploy-response.txt", "w", encoding="utf-8"
                 ) as f:
                     f.write(response)
-            except:
+            except Exception:
                 pass
 
             # 1. Adapt the proto response to appropriate json format
@@ -1097,18 +1088,6 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C to disconnect and quit.")
 
-    CommonUtil.node_manager_json(
-        {
-            "state": "idle",
-            "report": {
-                "zip": None,
-                "directory": None,
-            },
-        }
-    )
-
-    """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
-    # if (len(sys.argv)) > 1:
     try:
         log_dir = command_line_args()
     except Exception as e:
