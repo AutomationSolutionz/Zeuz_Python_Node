@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# -*- coding: cp1252 -*-
 import os, sys
 import shutil
 from pathlib import Path
@@ -23,9 +21,7 @@ with open(version_path, "r"):
     text = version_path.read_text()
     text = text[text.find("=")+1:].split("\n")[0].strip()
     if os.name == "nt":
-        os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
-    # ToDo: Uncomment when we start node versioning properly
-    # print(version_path.read_text().strip())
+        os.system(f"title ZeuZ Node {text} | Python {platform.python_version()}({platform.architecture()[0]})")
 
 print("[Python version]")
 print("Python " + platform.python_version() + "(" + platform.architecture()[0] + ")\n")
@@ -34,10 +30,11 @@ print(sys.executable)
 
 from Framework.module_installer import check_min_python_version, install_missing_modules,update_outdated_modules
 
-check_min_python_version(min_python_version="3.11",show_warning=True)
+check_min_python_version(min_python_version="3.11", show_warning=True)
 install_missing_modules()
 
 # Conditionally monkey-patch datetime module to include the `fromisoformat` method.
+# TODO: remove this when we upgrade to Python 3.11
 def monkeypatch_fromisoformat():
     try:
         import sys
@@ -185,54 +182,6 @@ def detect_admin():
         except:
             return False
     return True
-
-
-# Have user install tzlocal if this fails - we try to do it for them first
-try:
-    from tzlocal import get_localzone
-except:
-    import subprocess as s
-
-    print(
-        "Module 'tzlocal' is not installed. This is required to start the graphical interface. Please enter the root password to install."
-    )
-
-    if sys.platform == "win32":
-        try:
-            # Elevate permissions
-            if not detect_admin():
-                os.system(
-                    "powershell -command Start-Process \"python '..\\%s'\" -Verb runAs"
-                    % sys.argv[0].split(os.sep)[-1]
-                )  # Re-run this program with elevated permissions to admin
-                sys.exit(
-                    1
-                )  # exit this instance and let the elevated instance take over
-
-            # Install
-            print(s.check_output("pip install tzlocal"))
-        except Exception as e:
-            print("Failed to install. Please run: pip install tzlocal: ", e)
-            input("Press ENTER to exit")
-            sys.exit(1)
-    elif sys.platform == "linux2":
-        print(
-            s.Popen(
-                "sudo -S pip install tzlocal".split(" "), stdout=s.PIPE, stderr=s.STDOUT
-            ).communicate()[0]
-        )
-    else:
-        print("Could not automatically install required modules")
-        input("Press ENTER to exit")
-        quit()
-
-    try:
-        from tzlocal import get_localzone
-    except:
-        input(
-            "Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator"
-        )
-        quit()
 
 
 """Constants"""
@@ -417,6 +366,8 @@ def disconnect_from_server():
 
 
 def update_machine_info(node_id, should_print=True):
+    from tzlocal import get_localzone
+
     update_machine(
         False,
         should_print,
