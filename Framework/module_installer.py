@@ -44,7 +44,7 @@ def get_req_list():
                 req_list.append(i.strip())
     return req_list
 
-def check_min_python_version(min_python_version,show_warning):
+def check_min_python_version(min_python_version, show_warning):
     import warnings
     version, subversion = list(map(int, min_python_version.split('.')))
     # Minimum required version

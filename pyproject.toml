@@ -88,10 +88,22 @@ dependencies = [
     "xvfbwrapper>=0.2.9 ; sys_platform == 'linux'",
 ]
 
-[tool.uv.sources]
-pygetwindow = { url = "https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip" }
-
 [dependency-groups]
 dev = [
     "ruff>=0.9.7",
 ]
+
+[tool.uv.sources]
+pygetwindow = { url = "https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip" }
+
+[tool.uv]
+index-strategy = "unsafe-best-match"
+allow-insecure-host = [
+    "pypi.org",
+    "pypi.python.org",
+    "files.pythonhosted.org",
+]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
