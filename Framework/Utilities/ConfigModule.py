@@ -70,14 +70,14 @@ def remove_config_value(section, value, location=False):
         return ""
 
 
-def add_config_value(section, key, value, location=False):
+def add_config_value(section, key, value, location: os.PathLike | None = None):
     try:
         config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
-            _file_name = location
+            _file_name = str(location)
 
         if os.path.exists(_file_name):
             try:
