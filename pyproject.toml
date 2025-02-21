@@ -76,6 +76,7 @@ dependencies = [
     "tzlocal>=5.3",
     "uiautomator>=1.0.2",
     "urllib3>=2.3.0",
+    "uv>=0.6.2",
     "wapiti3>=3.1.2",
     "webcolors>=24.11.1",
     "webdriver-manager>=4.0.2",
