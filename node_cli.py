@@ -372,9 +372,8 @@ def update_machine_info(node_id, should_print=True):
     RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
-def notify_complete():
+def notify_complete(message = "Run completed"):
     title = "ZeuZ Node"
-    message = "Run completed"
     icon = "zeuz.ico"
     try:
         if sys.platform == "darwin":
@@ -488,7 +487,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
             print("[deploy] Run complete.")
             if CommonUtil.debug_status:
-                notify_complete()
+                notify_complete("Run completed")
             return False
 
         def cancel_callback():
@@ -497,7 +496,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
             print("[deploy] Run cancelled.")
             if CommonUtil.debug_status:
-                notify_complete()
+                notify_complete("Run cancelled")
             CommonUtil.run_cancelled = True
 
         deploy_handler = long_poll_handler.DeployHandler(
