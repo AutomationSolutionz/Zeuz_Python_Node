@@ -12,8 +12,6 @@ if ! command -v uv &> /dev/null; then
     if ! pip show uv &> /dev/null; then
         pip install uv
     fi
-else
-    echo "uv is already installed"
 fi
 
 # Activate the virtual environment
