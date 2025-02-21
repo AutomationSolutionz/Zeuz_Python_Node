@@ -9,7 +9,7 @@ if (-not (Test-Path ".venv")) {
 
 # Check if uv is installed
 try {
-    $uvCheck = uv
+    $uvCheck = uv --version
     Write-Host "uv is already installed"
 } catch {
     Write-Host "uv not found, installing uv..."
