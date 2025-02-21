@@ -1,2 +1,2 @@
 cd $( dirname -- "$0"; )
-sh run.sh
+sh run-unix.sh
