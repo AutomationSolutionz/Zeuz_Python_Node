@@ -28,7 +28,6 @@ idna
 pyrsistent
 attrs
 pytest==6.1.2
-yapf
 websocket-client==1.3.3
 tqdm
 pyscreenshot

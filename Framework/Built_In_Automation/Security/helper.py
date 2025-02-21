@@ -1,9 +1,8 @@
 import subprocess
-import shutil
-import sys
 from urllib.parse import urlparse
-from tabulate import tabulate
 from pathlib import Path
+from rich.console import Console
+from rich.table import Table
 
 
 def extract_target(url: str) -> str:
@@ -34,7 +33,17 @@ def display_table(data: list, headers: list, title: str = "Report") -> None:
     Display a formatted table in the terminal.
     """
     print(f"\n{title.center(60, '-')}\n")
-    print(tabulate(data, headers=headers, tablefmt="fancy_grid"))
+    console = Console()
+
+    table = Table(title=title)
+
+    for header in headers:
+        table.add_column(header)
+
+    for row in data:
+        table.add_row(*map(str, row))
+
+    console.print(table)
 
 
 def save_report_to_file(output: str, directory: Path, filename: str) -> None:
