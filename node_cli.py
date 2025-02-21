@@ -165,7 +165,6 @@ TMP_INI_FILE = (
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
     print("Disconnecting from server...")
-    disconnect_from_server()
     sys.exit(0)
 
 
@@ -200,11 +199,6 @@ PASSWORD_TAG = "password"
 PROJECT_TAG = "project"
 TEAM_TAG = "team"
 device_dict: dict[str, Any] = {}
-
-processing_test_case = (
-    False  # Used by Zeuz Node GUI to check if we are in the middle of a run
-)
-exit_script = False  # Used by Zeuz Node GUI to exit script
 
 
 def destroy_session():
@@ -266,11 +260,6 @@ def Login(cli=False, run_once=False, log_dir=None):
             )
             if api and server_name:
                 break
-
-    global exit_script
-    global processing_test_case
-
-    exit_script = False  # Reset exit variable
 
     # Login to ZeuZ server.
     user_data = UserData(
@@ -352,9 +341,6 @@ def Login(cli=False, run_once=False, log_dir=None):
             time.sleep(30)
             continue
 
-        if exit_script:
-            break
-
         CommonUtil.node_manager_json(
             {
                 "state": "idle",
@@ -372,24 +358,12 @@ def Login(cli=False, run_once=False, log_dir=None):
 
         RunProcess(node_id, run_once=run_once, log_dir=log_dir)
 
-    if run_once:
-        print(
-            "[OFFLINE]",
-            "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
-        )
-    else:
-        CommonUtil.ExecLog(
-            "[OFFLINE]", "Zeuz Node Offline", 3
-        )  # GUI relies on this exact text. GUI must be updated if this is changed
-
-    processing_test_case = False
-
-
-def disconnect_from_server():
-    """Exits script - Used by Zeuz Node GUI"""
-    global exit_script
-    exit_script = True
-    CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
+        if run_once:
+            print(
+                "[OFFLINE]",
+                "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
+            )
+            break
 
 
 def update_machine_info(node_id, should_print=True):
@@ -411,34 +385,30 @@ def update_machine_info(node_id, should_print=True):
     RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
-current_platform = sys.platform.lower()
-if current_platform.startswith("darwin"):
-    # macOS
-    from notifypy import Notify
-else:
-    # Linux and Windows
-    from plyer import notification
-
-
 def notify_complete():
+    title = "ZeuZ Node"
+    message = "Run completed"
+    icon = "zeuz.ico"
     try:
-        if current_platform.startswith("darwin"):
+        if sys.platform == "darwin":
             # macOS - Use notifypy
-            notification1 = Notify(
-                default_notification_title="Zeuz Test Case Run",
-                default_notification_icon="zeuz.ico",
+            from notifypy import Notify
+            notification = Notify(
+                default_notification_title=title,
+                default_notification_icon=icon,
             )
-            notification1.message = "Your run has completed."
-            notification1.send()
+            notification.message = message
+            notification.send()
         else:
             # Linux and Windows - Use plyer
+            from plyer import notification
             notification.notify(
-                title="Zeuz Test Case Run",
-                message="Your run has completed.",
-                app_icon="zeuz.ico",
+                title=title,
+                message=message,
+                app_icon=icon,
                 timeout=7,
             )
-    except:
+    except Exception:
         print("Failed to send notification")
 
 
