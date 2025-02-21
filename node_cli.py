@@ -97,6 +97,39 @@ def monkeypatch_fromisoformat():
         print("WARN: failed to monkeypatch fromisoformat")
 
 
+def set_window_title(window_title_string, wait_for_change=False):
+    import win32gui
+
+    os.system("title " + window_title_string)
+    if wait_for_change:
+        matched_window = 0
+        while matched_window == 0:
+            matched_window = win32gui.FindWindow(None, window_title_string)
+            time.sleep(0.025)  # To not flood it too much...
+
+    return window_title_string
+
+
+def set_window_icon(window_title, image_path):
+    import win32gui
+
+    hwnd = win32gui.FindWindow(None, window_title)
+    icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+    hicon = win32gui.LoadImage(None, image_path, win32con.IMAGE_ICON, 0, 0, icon_flags)
+
+    win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
+    win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
+
+
+def set_title_and_icon(window_title, icon_path):
+    import win32gui
+
+    """Set the window title, wait for it to apply, then adjust the icon."""
+    window_title = set_window_title(window_title, wait_for_change=True)
+    set_window_icon(window_title, image_path)
+    return window_title
+
+
 def main():
     print(
         f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
@@ -127,7 +160,7 @@ def main():
     text = text[text.find("=") + 1 :].split("\n")[0].strip()
     if os.name == "nt":
         os.system(
-            f"title ZeuZ Node {text} | Python {platform.python_version()}({platform.architecture()[0]})"
+            f"title Node {text} - 🐍 {platform.python_version()} {platform.architecture()[0]}"
         )
 
 
@@ -142,7 +175,6 @@ from Framework.Utilities import (  # noqa: E402
     RequestFormatter,
     CommonUtil,
     All_Device_Info,
-    self_updater,
 )
 from Framework import MainDriverApi  # noqa: E402
 
@@ -160,34 +192,8 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-def password_hash(encrypt, key, pw):
-    """Encrypt, decrypt password and encode in plaintext"""
-    # This is just an obfuscation technique, so the password is not immediately seen by users
-    # Zeuz_Node.py has a similar function that will need to be updated if this is changed
-
-    try:
-
-        def pass_encode(key, clear):
-            enc = []
-            for i in range(len(clear)):
-                key_c = key[i % len(key)]
-                enc_c = (ord(clear[i]) + ord(key_c)) % 256
-                enc.append(enc_c)
-            return base64.urlsafe_b64encode(bytes(enc))
-
-        result = pass_encode(key, pw)
-
-        return result
-    except Exception as e:
-        print("Exception in password {}".format(e))
-        print("Error decrypting password. Enter a new password {}".format(e))
-        return ""
-
-
 """Constants"""
 AUTHENTICATION_TAG = "Authentication"
-USERNAME_TAG = "username"
-PASSWORD_TAG = "password"
 PROJECT_TAG = "project"
 TEAM_TAG = "team"
 device_dict: dict[str, Any] = {}
@@ -203,7 +209,7 @@ def destroy_session():
     if session_bin_path.exists():
         try:
             session_bin_path.unlink()
-        except:
+        except Exception:
             print("[ERROR] failed to remove session file")
 
 
@@ -234,8 +240,6 @@ class UserData:
 
 
 def Login(cli=False, run_once=False, log_dir=None):
-    # username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
-    # password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
     api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
 
@@ -475,6 +479,8 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             further."""
 
             if run_once:
+                print("[deploy] Run complete. Quitting since `--once` flag is specified.")
+                os._exit(0)
                 return True
 
             if not node_json:
@@ -641,58 +647,6 @@ def pass_decode(key, enc):
     return "".join(dec)
 
 
-def check_for_updates():
-    """Checks for update. If any update is not found the code will continue to login prompts, otherwise it will
-    download the newest version of Zeuz Node, install it and restart/quit the terminal.
-    """
-    try:
-        # Just check for updates, and schedule testing to see if updates checking is complete
-
-        print("Checking for software updates")
-        self_updater.check_for_updates()
-
-        # No update, do nothing, and thus stop checking
-        if self_updater.check_complete in ("check", "noupdate"):
-            print("No software updates available")
-
-        # Update check complete, we have an update, start install
-        elif self_updater.check_complete[0:6] == "update":
-            # Print update notes
-            try:
-                print("\nUpdate notes:")
-                for note in str(self_updater.check_complete[7:]).split(";"):
-                    print(note)
-                print("*** A new update is available. Automatically installing.")
-
-                update_path = os.path.dirname(os.path.abspath(__file__)).replace(
-                    os.sep + "Framework", ""
-                )
-                self_updater.main(update_path)
-            except:
-                print("Couldn't install updates")
-
-            try:
-                print("*** Update installed. Automatically restarting. ***")
-                time.sleep(2)  # Wait a bit, so they can see the message
-                subprocess.Popen(
-                    'python "%s"'
-                    % os.path.abspath(sys.argv[0]).replace(os.sep + "Framework", ""),
-                    shell=True,
-                )  # Restart zeuz node
-                quit()  # Exit this process
-            except:
-                print("Exception in Restart. Please restart manually")
-                time.sleep(2)
-                quit()
-
-        # Some error occurred during updating
-        elif "error" in self_updater.check_complete:
-            print("An error occurred during update")
-
-    except Exception as e:
-        print("Exception in CheckUpdates")
-
-
 def Local_run(log_dir=None):
     try:
         PreProcess(log_dir=log_dir)
@@ -740,58 +694,44 @@ def get_folder_creation_time(folder_path):
     return dt.fromtimestamp(creation_time).date()
 
 
-def command_line_args() -> Path:
+def command_line_args() -> Path | None:
     """
-    This function handles command line scripts with given arguments.
+    This function handles command line arguments for configuring and running Zeuz Node.
 
     Returns:
-      `log_dir` - the custom log directory if specified, otherwise `None`.
+      `log_dir` - Path object for custom log directory if specified, otherwise None
 
-    Example 1:
-    1. python node_cli.py
-    2. node_cli.py
-    These 2 scripts will skip all kind of actions in this function because they dont have any arguments and will execute
-    Login(CLI=true) from __main__
+    Example 1 - Basic usage:
+    python node_cli.py
 
-    Example 2:
-    1. python node_cli.py --logout
-    2. node_cli.py --logout
-    3. node_cli.py -l
+    Example 2 - Authentication:
+    python node_cli.py -s https://zeuz.zeuz.ai -k YOUR_API_KEY
 
-    These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ then
-    you have to provide server, username, password one by one in the terminal to login
+    Example 3 - Custom node ID:
+    python node_cli.py -n custom_node_name
 
-    Example 3:
-    1. python node_cli.py --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
-    2. node_cli.py --logout --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
-    3. node_cli.py -u USER_NAME -p PASS_XYZ -s https://zeuz.zeuz.ai
-    4. python node_cli.py -k YOUR_API_KEY --server https://zeuz.zeuz.ai
+    Example 4 - Run once and exit:
+    python node_cli.py -o
 
-    These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ but you
-    don't need to provide server, username, password again. It will execute the login process automatically for you
+    Example 5 - Custom log directory:
+    python node_cli.py -d /path/to/logs
 
-    Example 3:
-    1. python node_cli.py --help
-    2. node_cli.py --help
-    3. node_cli.py -h
+    Example 6 - Local run:
+    python node_cli.py -r
 
-    These 3 scripts will show the documentation for every arguments and will execute sys.exit()
+    Example 7 - Logout:
+    python node_cli.py -l
 
-    Example 4:
-    1. python node_cli.py --ussssername USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
-    2. node_cli.py --u USER_NAME -p PASS_XYZ -s
-    3. node_cli.py --logout https://zeuz.zeuz.ai
+    Example 8 - GitHub integration:
+    python node_cli.py -gh YOUR_GITHUB_TOKEN
 
-    Above are some invalid arguments which will show some log/documentation and will execute sys.exit()
+    Example 9 - Advanced options:
+    python node_cli.py -spu -sbl -slg
+
+    Use -h or --help to see full documentation of all available arguments.
     """
     # try:
     parser_object = argparse.ArgumentParser("node_cli parser")
-    parser_object.add_argument(
-        "-u", "--username", action="store", help="Enter your username", metavar=""
-    )
-    parser_object.add_argument(
-        "-p", "--password", action="store", help="Enter your password", metavar=""
-    )
     parser_object.add_argument(
         "-s", "--server", action="store", help="Enter server address", metavar=""
     )
@@ -810,9 +750,6 @@ def command_line_args() -> Path:
     )
     parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
-    )
-    parser_object.add_argument(
-        "-a", "--auto_update", action="store_true", help="Updates your Zeuz Node"
     )
     parser_object.add_argument(
         "-r", "--local_run", action="store_true", help="Performs a local run"
@@ -861,14 +798,11 @@ def command_line_args() -> Path:
 
     all_arguments = parser_object.parse_args()
 
-    username = all_arguments.username
-    password = all_arguments.password
     server = all_arguments.server
     api = all_arguments.api_key
     node_id = all_arguments.node_id
     max_run_history = all_arguments.max_run_history
     logout = all_arguments.logout
-    auto_update = all_arguments.auto_update
     gh_token = all_arguments.gh_token
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
     show_browser_log = all_arguments.show_browser_log
@@ -890,7 +824,7 @@ def command_line_args() -> Path:
         raise Exception(
             f"ERR: Zeuz Node does not have enough permissions to write to the specified log directory: {log_dir}"
         )
-    except:
+    except Exception:
         raise Exception(
             f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}"
         )
@@ -934,9 +868,11 @@ def command_line_args() -> Path:
                 config_date
             )
             config.write()
-            print("module_updater: Module Updated..")
+            # print("module_updater: Module Updated..")
         else:
-            print("module_updater: All modules are already up to date.")
+            # TODO: remove these print statements
+            # print("module_updater: All modules are already up to date.")
+            pass
     else:
         # Assign the current date
         config_date = date.today()
@@ -1022,21 +958,12 @@ def command_line_args() -> Path:
     if server and server[-1] == "/":
         server = server[:-1]
 
-    if auto_update:
-        check_for_updates()
-    if username or password or server or logout or api:
+    if server or logout or api:
         destroy_session()
         if api and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
-        elif username and password and server:
-            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
-            ConfigModule.add_config_value(
-                AUTHENTICATION_TAG, "password", password_hash(False, "zeuz", password)
-            )
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
@@ -1044,13 +971,15 @@ def command_line_args() -> Path:
         else:
             CommonUtil.ExecLog(
                 "AUTHENTICATION FAILED",
-                "Enter the command line arguments in correct format.  Type -h for help.",
+                "Enter the command line arguments in correct format. Type -h for help.",
                 3,
             )
             sys.exit()  # exit and let the user try again from command line
     if node_id:
         CommonUtil.MachineInfo().setLocalUser(node_id)
     if max_run_history:
+        # TODO: implement max run history feature which will ensure that we do
+        # not have more than X number of run IDs.
         pass
     if gh_token:
         os.environ["GH_TOKEN"] = gh_token
