@@ -8,46 +8,54 @@ from urllib.parse import urlparse
 import platform
 import datetime
 from dataclasses import dataclass
-
-from datetime import date
-from datetime import datetime as dt
-
-import time
-import threading
-
-from configobj import ConfigObj
-from dotenv import load_dotenv
-
-from colorama import init as colorama_init
-from colorama import Fore
-
-from rich.table import Table
-from rich.console import Console
-
-
 import os.path
 import base64
 import signal
 import argparse
-import requests
 import subprocess
 import json
-
-from urllib3.exceptions import InsecureRequestWarning
-
-from rich import traceback
-
-from Framework.deploy_handler import long_poll_handler
-from Framework.deploy_handler import adapter
-
-from Framework.Utilities import ConfigModule
-from Framework.Utilities import live_log_service
+import time
+import threading
+from datetime import date
+from datetime import datetime as dt
 
 from Framework.module_installer import (
     check_min_python_version,
     install_missing_modules,
     update_outdated_modules,
 )
+
+print(
+    f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+)
+
+try:
+    from configobj import ConfigObj
+    from dotenv import load_dotenv
+
+    from colorama import init as colorama_init
+    from colorama import Fore
+
+    from rich.table import Table
+    from rich.console import Console
+
+    import requests
+
+    from urllib3.exceptions import InsecureRequestWarning
+
+    from rich import traceback
+
+    from Framework.deploy_handler import long_poll_handler
+    from Framework.deploy_handler import adapter
+
+    from Framework.Utilities import ConfigModule
+    from Framework.Utilities import live_log_service
+except ImportError:
+    pass
+    # print(f"[INFO] first time running, installing required modules")
+    # Install missing modules and restart the script.
+    # update_outdated_modules()
+    # os.execv(Path.cwd, ["python"] + sys.argv)
 
 
 def adjust_python_path():
@@ -133,10 +141,6 @@ def main():
         os.system(
             f"title ZeuZ Node {text} | Python {platform.python_version()}({platform.architecture()[0]})"
         )
-
-    print(
-        f"Python {platform.python_version()}({platform.architecture()[0]}) @ {sys.executable}"
-    )
 
 
 main()
