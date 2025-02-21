@@ -16,7 +16,6 @@ lxml
 tzlocal
 xlwings
 image
-tzlocal
 pyautocad
 PyPDF2
 pyshortcuts
