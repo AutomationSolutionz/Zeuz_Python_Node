@@ -90,7 +90,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.15.0",
     "ruff>=0.9.7",
+    "types-colorama>=0.4.15.20240311",
+    "types-psutil>=7.0.0.20250218",
+    "types-pytz>=2025.1.0.20250204",
+    "types-requests>=2.32.0.20241016",
 ]
 
 [tool.uv.sources]

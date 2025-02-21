@@ -25,38 +25,22 @@ from Framework.module_installer import (
     update_outdated_modules,
 )
 
-print(
-    f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+import requests
+from configobj import ConfigObj
+from dotenv import load_dotenv
+from colorama import init as colorama_init
+from colorama import Fore
+from rich.table import Table
+from rich.console import Console
+from rich import traceback
+from urllib3.exceptions import InsecureRequestWarning
+
+from Framework.deploy_handler import (
+    long_poll_handler,
+    adapter,
 )
-
-try:
-    from configobj import ConfigObj
-    from dotenv import load_dotenv
-
-    from colorama import init as colorama_init
-    from colorama import Fore
-
-    from rich.table import Table
-    from rich.console import Console
-
-    import requests
-
-    from urllib3.exceptions import InsecureRequestWarning
-
-    from rich import traceback
-
-    from Framework.deploy_handler import long_poll_handler
-    from Framework.deploy_handler import adapter
-
-    from Framework.Utilities import ConfigModule
-    from Framework.Utilities import live_log_service
-except ImportError:
-    pass
-    # print(f"[INFO] first time running, installing required modules")
-    # Install missing modules and restart the script.
-    # update_outdated_modules()
-    # os.execv(Path.cwd, ["python"] + sys.argv)
-
+from Framework.Utilities import ConfigModule
+from Framework.Utilities import live_log_service
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -114,6 +98,10 @@ def monkeypatch_fromisoformat():
 
 
 def main():
+    print(
+        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+    )
+
     # Load environment variables from .env file
     load_dotenv()
 
@@ -168,7 +156,7 @@ TMP_INI_FILE = (
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
-    print("SIGINT received, quitting.")
+    print("\n--- SIGINT received, quitting ---\n")
     os._exit(0)
 
 
@@ -1090,7 +1078,7 @@ def Bypass():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
-    print("Press Ctrl-C to disconnect and quit.")
+    print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
     try:
         log_dir = command_line_args()
