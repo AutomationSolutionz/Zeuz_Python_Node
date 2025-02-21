@@ -164,8 +164,8 @@ TMP_INI_FILE = (
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
-    print("Disconnecting from server...")
-    sys.exit(0)
+    print("SIGINT received, quitting.")
+    os._exit(0)
 
 
 def password_hash(encrypt, key, pw):
