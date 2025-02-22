@@ -44,12 +44,15 @@ from Framework.Utilities import live_log_service
 from Framework.node_server_state import STATE
 from server import main as node_server
 
+
 def start_server():
     def run():
         # TODO: the port must be selected dynamically from a range of ports - max 50 ports maybe?
-        uvicorn.run(node_server.main(), host="127.0.0.1", port=18000, log_level="info")
+        uvicorn.run(node_server.main(), host="127.0.0.1", port=18000, log_level="warning")
+
     t = threading.Thread(target=run, daemon=True)
     t.start()
+
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -338,13 +341,14 @@ def update_machine_info(node_id, should_print=True):
     RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
-def notify_complete(message = "Run completed"):
+def notify_complete(message="Run completed"):
     title = "ZeuZ Node"
     icon = "zeuz.ico"
     try:
         if sys.platform == "darwin":
             # macOS - Use notifypy
             from notifypy import Notify
+
             notification = Notify(
                 default_notification_title=title,
                 default_notification_icon=icon,
@@ -354,6 +358,7 @@ def notify_complete(message = "Run completed"):
         else:
             # Linux and Windows - Use plyer
             from plyer import notification
+
             notification.notify(
                 title=title,
                 message=message,
@@ -383,9 +388,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             server_url = urlparse(
                 ConfigModule.get_config_value("Authentication", "server_address")
             )
-            return (
-                f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
-            )
+            return f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
 
         # Connect to the live log service.
         live_log_service.connect(live_log_service_addr())
@@ -397,6 +400,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
         node_json = None
 
         from Framework import node_server_state
+
         def response_callback(response: str):
             node_server_state.STATE.state = "in_progress"
             nonlocal node_json
@@ -445,12 +449,10 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             update_machine_info(node_id, should_print=not reconnected)
             return
 
-        def done_callback():
-            """Returns True if we do not want to connect to the service
-            further."""
-
-            if run_once:
-                return True
+        def done_callback() -> bool:
+            """
+            Returns True if we do not want to connect to the service further.
+            """
 
             if not node_json:
                 return False
@@ -458,6 +460,10 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             print("[deploy] Run complete.")
             if CommonUtil.debug_status:
                 notify_complete("Run completed")
+
+            if run_once:
+                return True
+
             return False
 
         def cancel_callback():
@@ -583,7 +589,7 @@ def update_machine(dependency, should_print=True):
                 rich_print = console.print
                 # rich_print(":green_circle: Zeuz Node is online: ", end="")
                 rich_print(":green_circle: " + data["name"], style="bold cyan", end="")
-                print(" is Online\n")
+                print(" is online\n")
                 CommonUtil.ExecLog(
                     "",
                     "Zeuz Node is online: %s" % (data["name"]),
@@ -985,6 +991,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
+    console = Console()
+
     try:
         log_dir = command_line_args()
     except Exception as e:
@@ -992,7 +1000,7 @@ if __name__ == "__main__":
 
         print(Fore.RED + str(e))
         print("Exiting...")
-        sys.exit(1)
+        os._exit(1)
 
     if local_run:
         Local_run(log_dir=log_dir)
@@ -1012,15 +1020,17 @@ if __name__ == "__main__":
             server_name = ConfigModule.get_config_value(
                 AUTHENTICATION_TAG, "server_address"
             ).strip()
-            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key") \
-                .strip('"') \
+            api = (
+                ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+                .strip('"')
                 .strip()
+            )
 
             if len(server_name) == 0 and len(api) == 0:
                 if print_login_information:
-                    print(
-                        "[INFO] Zeuz Node is not authenticated. Please log in to ZeuZ server and connect."
-                    )
+                    console.print("\n" + ":red_circle: " + "Zeuz Node is disconnected.", style="bold red")
+                    console.print("Please log in to ZeuZ server and connect.")
+
                     print_login_information = False
                 # If server_name and api are not set, then wait for the user to
                 # connect via the ZeuZ server.
@@ -1034,9 +1044,10 @@ if __name__ == "__main__":
             )
 
             if RUN_ONCE:
-                print(
-                    "[OFFLINE]",
+                console.print(
+                    ":yellow_circle: " +
                     "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
+                    style="bold cyan",
                 )
                 os._exit(0)
 
