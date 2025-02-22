@@ -1024,7 +1024,7 @@ if __name__ == "__main__":
                     print_login_information = False
                 # If server_name and api are not set, then wait for the user to
                 # connect via the ZeuZ server.
-                time.sleep(0.5)
+                time.sleep(1)
                 continue
 
             Login(
@@ -1041,4 +1041,4 @@ if __name__ == "__main__":
                 os._exit(0)
 
             print_login_information = True
-            time.sleep(0.5)
+            time.sleep(1)
