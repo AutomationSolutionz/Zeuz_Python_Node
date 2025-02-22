@@ -10,6 +10,11 @@ from colorama import Fore
 from Framework.Utilities import RequestFormatter
 
 
+# Control variable to stop the next iteration of the deplopy service connection
+# loop.
+STOP_NEXT_ITERATION = False
+
+
 class DeployHandler:
     """
     DeployHandler is responsible for maintaining the connection with deploy
@@ -62,9 +67,14 @@ class DeployHandler:
 
 
     def run(self, host: str) -> None:
+        STOP_NEXT_ITERATION = False
         reconnect = False
         server_online = False
         while True:
+            if STOP_NEXT_ITERATION:
+                STOP_NEXT_ITERATION = False
+                break
+
             if reconnect:
                 if server_online:
                     time.sleep(0.1)

@@ -164,8 +164,9 @@ TMP_INI_FILE = (
 
 
 def signal_handler(sig, frame):
-    CommonUtil.run_cancelled = True
     print("\n--- SIGINT received, quitting ---\n")
+    CommonUtil.run_cancelled = True
+    CommonUtil.ShutdownExecutor()
     os._exit(0)
 
 
@@ -216,24 +217,12 @@ class UserData:
     project_id: str
 
 
-def Login(cli=False, run_once=False, log_dir=None):
+def Login(
+    server_name: str,
+    run_once: bool = False,
+    log_dir: os.PathLike | None = None,
+):
     console = Console()
-    server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-    api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
-
-    # If login information is not present in the settings file, take input from user.
-    if not api or not server_name:
-        zeuz_authentication_prompts_for_cli()
-        for _ in range(30):  # it takes time to save in the file. so lets wait 15 sec
-            time.sleep(0.5)
-            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip(
-                '"'
-            )
-            server_name = ConfigModule.get_config_value(
-                AUTHENTICATION_TAG, "server_address"
-            )
-            if api and server_name:
-                break
 
     # Login to ZeuZ server.
     user_data = UserData(
@@ -246,89 +235,89 @@ def Login(cli=False, run_once=False, log_dir=None):
     # Load session from disk if available.
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     load_from_session = session_bin_path.exists()
-    if load_from_session:
-        RequestFormatter.load_cookies(session_bin_path)
 
-    if not ((load_from_session or len(api) > 0) and len(server_name) > 0):
+    if not load_from_session:
         return
 
+    RequestFormatter.load_cookies(session_bin_path)
+
     token_renew_failed = False
-    while True:
-        try:
-            if load_from_session:
-                data, status_code = RequestFormatter.renew_token()
-                if status_code != 200:
-                    token_renew_failed = True
-            else:
-                data, status_code = RequestFormatter.login()
+    try:
+        if load_from_session:
+            data, status_code = RequestFormatter.renew_token()
+            if status_code != 200:
+                token_renew_failed = True
+        else:
+            data, status_code = RequestFormatter.login()
 
-            if token_renew_failed:
-                data, status_code = RequestFormatter.login()
-                token_renew_failed = False
+        if token_renew_failed:
+            data, status_code = RequestFormatter.login()
+            token_renew_failed = False
 
-            # # Upon successful login, replace the api key in the settings
-            # # file with a dummy value since we don't need it anymore.
-            # TODO: Implement api key encryption.
-            # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
+        # # Upon successful login, replace the api key in the settings
+        # # file with a dummy value since we don't need it anymore.
+        # TODO: Implement api key encryption.
+        # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
 
-            if status_code == 200:
-                user_data = UserData(
-                    username=data["user"]["username"],
-                    email=data["user"]["email"],
-                    project_id=data["user"]["project_id"],
-                    team_id=data["user"]["team_id"],
-                )
-
-                ConfigModule.add_config_value(
-                    AUTHENTICATION_TAG, "username", user_data.username
-                )
-                ConfigModule.add_config_value(
-                    "sectionOne", PROJECT_TAG, user_data.project_id, TMP_INI_FILE
-                )  # type: ignore
-                ConfigModule.add_config_value(
-                    "sectionOne", TEAM_TAG, str(user_data.team_id), TMP_INI_FILE
-                )  # type: ignore
-
-                table = Table()
-                table.add_column("Authenticated")
-                table.add_column("[green]:heavy_check_mark:")
-
-                table.add_row("url", server_name)
-                table.add_row("Username", user_data.username)
-                table.add_row("Email", user_data.email)
-                table.add_row("Team ID", str(user_data.team_id))
-                table.add_row("Project ID", user_data.project_id)
-
-                console.print(table)
-            elif status_code == 502:
-                print(Fore.YELLOW + "Server offline. Retrying after 60s")
-                time.sleep(60)
-                continue
-            else:
-                line_color = Fore.RED
-                print(line_color + "Incorrect credentials, please try again.")
-                server_name, api = zeuz_authentication_prompts_for_cli()
-                api = api.strip('"')
-                continue
-        except ConnectionError:
-            print("Failed to connect to the server, retrying after 30s")
-            time.sleep(30)
-            continue
-
-        node_id = CommonUtil.MachineInfo().getLocalUser().lower()
-        from Framework.MainDriverApi import retry_failed_report_upload
-
-        report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
-        report_thread.start()
-
-        RunProcess(node_id, run_once=run_once, log_dir=log_dir)
-
-        if run_once:
-            print(
-                "[OFFLINE]",
-                "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
+        if status_code == 200:
+            user_data = UserData(
+                username=data["user"]["username"],
+                email=data["user"]["email"],
+                project_id=data["user"]["project_id"],
+                team_id=data["user"]["team_id"],
             )
-            break
+
+            ConfigModule.add_config_value(
+                AUTHENTICATION_TAG, "username", user_data.username
+            )
+            ConfigModule.add_config_value(
+                "sectionOne", PROJECT_TAG, user_data.project_id, TMP_INI_FILE
+            )  # type: ignore
+            ConfigModule.add_config_value(
+                "sectionOne", TEAM_TAG, str(user_data.team_id), TMP_INI_FILE
+            )  # type: ignore
+
+            table = Table()
+            table.add_column("Authenticated")
+            table.add_column("[green]:heavy_check_mark:")
+
+            table.add_row("ZeuZ Server", server_name)
+            table.add_row("Username", user_data.username)
+            table.add_row("Email", user_data.email)
+            table.add_row("Team ID", str(user_data.team_id))
+            table.add_row("Project ID", user_data.project_id)
+
+            console.print(table)
+        elif status_code == 502:
+            print(Fore.YELLOW + "Server offline. Retrying after 60s")
+            time.sleep(60)
+            return
+        else:
+            line_color = Fore.RED
+            print(line_color + "Incorrect credentials, please try again.")
+            # server_name, api = zeuz_authentication_prompts_for_cli()
+            # api = api.strip('"')
+
+            # Reset the credentials.
+            set_new_credentials(server="", api_key="")
+            return
+    except ConnectionError:
+        print("Failed to connect to the server, retrying after 30s")
+        time.sleep(30)
+        return
+
+    node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+    from Framework.MainDriverApi import retry_failed_report_upload
+
+    # TODO: this needs to be launched separately - outside of this login
+    # function because it is not being killed. So everytime we re-log in it
+    # creates a new thread and keeps an infinite while loop - which is dangerous
+    # for the server, since it'll be bombarded with requests from multiple
+    # threads.
+    report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+    report_thread.start()
+
+    RunProcess(node_id, run_once=run_once, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
@@ -380,23 +369,27 @@ def RunProcess(node_id, run_once=False, log_dir=None):
     try:
         # --- START websocket service connections --- #
 
-        server_url = urlparse(
-            ConfigModule.get_config_value("Authentication", "server_address")
-        )
-        if server_url.scheme == "https":
-            protocol = "wss"
-        else:
-            protocol = "ws"
+        def live_log_service_addr():
+            server_url = urlparse(
+                ConfigModule.get_config_value("Authentication", "server_address")
+            )
+            if server_url.scheme == "https":
+                protocol = "wss"
+            else:
+                protocol = "ws"
+            server_addr = f"{protocol}://{server_url.netloc}"
+            return f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
 
-        server_addr = f"{protocol}://{server_url.netloc}"
-        live_log_service_addr = f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
-
-        deploy_srv_addr = (
-            f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
-        )
+        def deploy_srv_addr():
+            server_url = urlparse(
+                ConfigModule.get_config_value("Authentication", "server_address")
+            )
+            return (
+                f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
+            )
 
         # Connect to the live log service.
-        live_log_service.connect(live_log_service_addr)
+        live_log_service.connect(live_log_service_addr())
 
         # WARNING: For local development only.
         # if "localhost" in host:
@@ -485,7 +478,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        deploy_handler.run(deploy_srv_addr)
+        deploy_handler.run(deploy_srv_addr())
         return False
 
     except Exception:
@@ -545,7 +538,11 @@ def PreProcess(log_dir=None):
 
 
 def update_machine(dependency, should_print=True):
+    from Framework.deploy_handler import long_poll_handler
     try:
+        if long_poll_handler.STOP_NEXT_ITERATION:
+            return
+
         console = Console()
         # Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
@@ -939,15 +936,13 @@ def command_line_args() -> Path | None:
         server = server[:-1]
 
     if server or logout or api:
-        destroy_session()
+        # destroy_session()
         if api and server:
-            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)
-            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
+            set_new_credentials(server=server, api_key=api)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            zeuz_authentication_prompts_for_cli()
+            set_new_credentials(server="", api_key="")
+            # zeuz_authentication_prompts_for_cli()
         else:
             CommonUtil.ExecLog(
                 "AUTHENTICATION FAILED",
@@ -977,6 +972,14 @@ def command_line_args() -> Path | None:
     return log_dir
 
 
+def set_new_credentials(server, api_key):
+    """Store new credentials in the settings file."""
+    ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
+    ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api_key)
+    ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+    ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
+
+
 def Bypass():
     while True:
         oLocalInfo = CommonUtil.MachineInfo()
@@ -1002,7 +1005,40 @@ if __name__ == "__main__":
         Local_run(log_dir=log_dir)
     else:
         # Bypass()
-        Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
 
-    CommonUtil.run_cancelled = True
-    CommonUtil.ShutdownExecutor()
+        print_login_information = True
+        while True:
+            destroy_session()
+            server_name = ConfigModule.get_config_value(
+                AUTHENTICATION_TAG, "server_address"
+            ).strip()
+            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key") \
+                .strip('"') \
+                .strip()
+
+            if len(server_name) == 0 and len(api) == 0:
+                if print_login_information:
+                    print(
+                        "[INFO] Zeuz Node is not authenticated. Please log in to ZeuZ server and connect."
+                    )
+                    print_login_information = False
+                # If server_name and api are not set, then wait for the user to
+                # connect via the ZeuZ server.
+                time.sleep(0.5)
+                continue
+
+            Login(
+                server_name="",
+                run_once=RUN_ONCE,
+                log_dir=log_dir,
+            )
+
+            if RUN_ONCE:
+                print(
+                    "[OFFLINE]",
+                    "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
+                )
+                break
+
+            print_login_information = True
+            time.sleep(0.5)
