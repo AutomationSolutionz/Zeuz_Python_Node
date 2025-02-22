@@ -41,12 +41,12 @@ from Framework.deploy_handler import (
 )
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import live_log_service
-from server.main import main as node_server
+from server import main as node_server
 
 def start_server():
     def run():
         # TODO: the port must be selected dynamically from a range of ports - max 50 ports maybe?
-        uvicorn.run(node_server(), host="127.0.0.1", port=18000, log_level="info")
+        uvicorn.run(node_server.main(), host="127.0.0.1", port=18000, log_level="info")
     t = threading.Thread(target=run, daemon=True)
     t.start()
 
@@ -144,7 +144,6 @@ def main():
 
 main()
 
-console = Console()
 # Tells node whether it should run a test set/deployment only once and quit.
 RUN_ONCE = False
 local_run = False
@@ -218,6 +217,7 @@ class UserData:
 
 
 def Login(cli=False, run_once=False, log_dir=None):
+    console = Console()
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
     api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
 
@@ -394,7 +394,6 @@ def RunProcess(node_id, run_once=False, log_dir=None):
         deploy_srv_addr = (
             f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
         )
-        # deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
 
         # Connect to the live log service.
         live_log_service.connect(live_log_service_addr)
@@ -405,7 +404,9 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
         node_json = None
 
+        from Framework import node_server_state
         def response_callback(response: str):
+            node_server_state.STATE.state = "in_progress"
             nonlocal node_json
             nonlocal log_dir
             if log_dir is None:
@@ -432,7 +433,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                     save_path / f"deploy-tc.zeuz.json", "w", encoding="utf-8"
                 ) as f:
                     f.write(json.dumps(node_json))
-            except:
+            except Exception:
                 print(Fore.RED + "ERROR failed to save test case json into file")
                 print(Fore.YELLOW + "JSON CONTENT:")
                 print(node_json)
@@ -448,6 +449,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             )
 
         def on_connect_callback(reconnected: bool):
+            node_server_state.STATE.state = "idle"
             update_machine_info(node_id, should_print=not reconnected)
             return
 
@@ -544,6 +546,7 @@ def PreProcess(log_dir=None):
 
 def update_machine(dependency, should_print=True):
     try:
+        console = Console()
         # Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
 

@@ -2,6 +2,8 @@ from typing import Literal
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from Framework.node_server_state import STATE
+
 router = APIRouter(prefix="/status", tags=["status"])
 
 
@@ -31,4 +33,4 @@ class StatusResponse(BaseModel):
 
 @router.get("")
 def status():
-    return StatusResponse(state="idle")
+    return StatusResponse(state=STATE.state)

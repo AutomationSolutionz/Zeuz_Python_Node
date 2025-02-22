@@ -1,6 +1,3 @@
-import os
-from contextlib import asynccontextmanager
-
 from fastapi import APIRouter, FastAPI
 
 from server.status import router as status_router
@@ -20,17 +17,7 @@ def main() -> FastAPI:
     v1router.include_router(operator_router)
     v1router.include_router(evaluator_router)
 
-
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        yield
-        print("Shutting down")
-        os._exit(0)
-
-
-    app = FastAPI(
-        lifespan=lifespan,
-    )
+    app = FastAPI()
     app.include_router(v1router)
 
     return app

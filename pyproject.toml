@@ -43,6 +43,7 @@ dependencies = [
     "pyautocad>=0.2.0",
     "pyautogui>=0.9.54",
     "pyautoit>=0.6.5 ; sys_platform == 'win32'",
+    "pydantic>=2.10.6",
     "pygetwindow",
     "pyodbc>=5.2.0 ; sys_platform == 'win32'",
     "pypdf2>=3.0.1",
