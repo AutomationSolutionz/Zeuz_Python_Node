@@ -9,6 +9,7 @@ from colorama import Fore
 
 from Framework.Utilities import RequestFormatter
 from Framework.node_server_state import STATE
+from concurrent.futures import ThreadPoolExecutor
 
 
 class DeployHandler:
@@ -20,7 +21,6 @@ class DeployHandler:
     COMMAND_DONE = b"DONE"
     COMMAND_CANCEL = b"CANCEL"
     ERROR_PREFIX = b"error"
-
 
     def __init__(
         self,
@@ -39,7 +39,6 @@ class DeployHandler:
 
         self.backoff_time = 0
 
-
     def on_message(self, message) -> bool:
         """Returns True if the handler should quit, False otherwise."""
 
@@ -55,13 +54,11 @@ class DeployHandler:
         self.response_callback(message)
         return False
 
-
     def on_error(self, error) -> None:
         print("[deploy] Error communicating with the deploy service.")
         print(error)
         if self.backoff_time < 6:
             self.backoff_time += 1
-
 
     def run(self, host: str) -> None:
         reconnect = False
@@ -80,20 +77,26 @@ class DeployHandler:
 
             try:
                 reconnect = True
-                resp = RequestFormatter.request("get", host, verify=False)
+                resp = self.fetch(host)
+                if resp is None:
+                    break
 
                 if resp.content.startswith(self.ERROR_PREFIX):
                     server_online = False
                     self.on_error(resp.content)
                     continue
 
-                if resp.status_code == requests.codes['no_content']:
+                if resp.status_code == requests.codes["no_content"]:
                     server_online = False
                     continue
 
                 if not resp.ok:
                     server_online = False
-                    print("[deploy] facing difficulty communicating with the server, status code:", resp.status_code, " | reconnecting")
+                    print(
+                        "[deploy] facing difficulty communicating with the server, status code:",
+                        resp.status_code,
+                        " | reconnecting",
+                    )
                     try:
                         print(Fore.YELLOW + str(resp.content))
                     except Exception:
@@ -114,3 +117,21 @@ class DeployHandler:
             except Exception:
                 traceback.print_exc()
                 print("[deploy] RETRYING...")
+
+    def fetch(self, host) -> requests.Response | None:
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(
+            lambda: RequestFormatter.request("get", host, verify=False)
+        )
+
+        while not future.done():
+            if STATE.reconnect_with_credentials is not None:
+                future.cancel()
+                executor.shutdown(wait=False, cancel_futures=True)
+                return None
+            time.sleep(1)
+
+        resp = None
+        if not future.cancelled():
+            resp = future.result()
+        return resp
