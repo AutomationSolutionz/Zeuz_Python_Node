@@ -8,11 +8,7 @@ import requests
 from colorama import Fore
 
 from Framework.Utilities import RequestFormatter
-
-
-# Control variable to stop the next iteration of the deplopy service connection
-# loop.
-STOP_NEXT_ITERATION = False
+from Framework.node_server_state import STATE
 
 
 class DeployHandler:
@@ -33,7 +29,6 @@ class DeployHandler:
         cancel_callback: Callable[[], None],
         done_callback: Callable[[], bool],
     ) -> None:
-        self.quit = False
         self.on_connect_callback = on_connect_callback
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
@@ -45,18 +40,20 @@ class DeployHandler:
         self.backoff_time = 0
 
 
-    def on_message(self, message) -> None:
+    def on_message(self, message) -> bool:
+        """Returns True if the handler should quit, False otherwise."""
+
         if message == self.COMMAND_DONE:
             # We're done for this run session.
-            self.quit = self.done_callback()
-            return
+            return self.done_callback()
 
         elif message == self.COMMAND_CANCEL:
             # Run cancelled by the user/service.
             self.cancel_callback()
-            return
+            return False
 
         self.response_callback(message)
+        return False
 
 
     def on_error(self, error) -> None:
@@ -67,12 +64,10 @@ class DeployHandler:
 
 
     def run(self, host: str) -> None:
-        STOP_NEXT_ITERATION = False
         reconnect = False
         server_online = False
         while True:
-            if STOP_NEXT_ITERATION:
-                STOP_NEXT_ITERATION = False
+            if STATE.reconnect_with_credentials is not None:
                 break
 
             if reconnect:
@@ -82,7 +77,6 @@ class DeployHandler:
                     time.sleep(random.randint(1, 3))
 
             self.on_connect_callback(reconnect)
-
 
             try:
                 reconnect = True
@@ -109,9 +103,14 @@ class DeployHandler:
                     time.sleep(random.randint(1, 3))
                     return
 
-                self.on_message(resp.content)
+                should_quit = self.on_message(resp.content)
+                if should_quit:
+                    break
+
                 reconnect = False
                 server_online = True
+            except requests.exceptions.ReadTimeout:
+                pass
             except Exception:
                 traceback.print_exc()
                 print("[deploy] RETRYING...")

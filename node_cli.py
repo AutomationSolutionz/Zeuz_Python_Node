@@ -41,6 +41,7 @@ from Framework.deploy_handler import (
 )
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import live_log_service
+from Framework.node_server_state import STATE
 from server import main as node_server
 
 def start_server():
@@ -236,9 +237,6 @@ def Login(
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     load_from_session = session_bin_path.exists()
 
-    if not load_from_session:
-        return
-
     RequestFormatter.load_cookies(session_bin_path)
 
     token_renew_failed = False
@@ -251,8 +249,9 @@ def Login(
             data, status_code = RequestFormatter.login()
 
         if token_renew_failed:
-            data, status_code = RequestFormatter.login()
-            token_renew_failed = False
+            return
+            # data, status_code = RequestFormatter.login()
+            # token_renew_failed = False
 
         # # Upon successful login, replace the api key in the settings
         # # file with a dummy value since we don't need it anymore.
@@ -451,8 +450,6 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             further."""
 
             if run_once:
-                print("[deploy] Run complete. Quitting since `--once` flag is specified.")
-                os._exit(0)
                 return True
 
             if not node_json:
@@ -538,11 +535,7 @@ def PreProcess(log_dir=None):
 
 
 def update_machine(dependency, should_print=True):
-    from Framework.deploy_handler import long_poll_handler
     try:
-        if long_poll_handler.STOP_NEXT_ITERATION:
-            return
-
         console = Console()
         # Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
@@ -1008,7 +1001,14 @@ if __name__ == "__main__":
 
         print_login_information = True
         while True:
-            destroy_session()
+            if STATE.reconnect_with_credentials is not None:
+                destroy_session()
+                server_name = STATE.reconnect_with_credentials.server
+                api_key = STATE.reconnect_with_credentials.api_key
+                set_new_credentials(server=server_name, api_key=api_key)
+
+                STATE.reconnect_with_credentials = None
+
             server_name = ConfigModule.get_config_value(
                 AUTHENTICATION_TAG, "server_address"
             ).strip()
@@ -1028,7 +1028,7 @@ if __name__ == "__main__":
                 continue
 
             Login(
-                server_name="",
+                server_name=server_name,
                 run_once=RUN_ONCE,
                 log_dir=log_dir,
             )
@@ -1038,7 +1038,7 @@ if __name__ == "__main__":
                     "[OFFLINE]",
                     "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
                 )
-                break
+                os._exit(0)
 
             print_login_information = True
             time.sleep(0.5)
