@@ -12,7 +12,6 @@ import os.path
 import base64
 import signal
 import argparse
-import subprocess
 import json
 import time
 import threading
@@ -34,6 +33,7 @@ from rich.table import Table
 from rich.console import Console
 from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
+import uvicorn
 
 from Framework.deploy_handler import (
     long_poll_handler,
@@ -41,10 +41,20 @@ from Framework.deploy_handler import (
 )
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import live_log_service
+from server.main import main as node_server
+
+def start_server():
+    def run():
+        # TODO: the port must be selected dynamically from a range of ports - max 50 ports maybe?
+        uvicorn.run(node_server(), host="127.0.0.1", port=18000, log_level="info")
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
     ROOT_DIR = Path.cwd()
+    if ROOT_DIR.name == "Framework":
+        ROOT_DIR = ROOT_DIR.parent
     FRAMEWORK_DIR = ROOT_DIR / "Framework"
 
     automation_log_path = ROOT_DIR / "AutomationLog"
@@ -97,39 +107,6 @@ def monkeypatch_fromisoformat():
         print("WARN: failed to monkeypatch fromisoformat")
 
 
-def set_window_title(window_title_string, wait_for_change=False):
-    import win32gui
-
-    os.system("title " + window_title_string)
-    if wait_for_change:
-        matched_window = 0
-        while matched_window == 0:
-            matched_window = win32gui.FindWindow(None, window_title_string)
-            time.sleep(0.025)  # To not flood it too much...
-
-    return window_title_string
-
-
-def set_window_icon(window_title, image_path):
-    import win32gui
-
-    hwnd = win32gui.FindWindow(None, window_title)
-    icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-    hicon = win32gui.LoadImage(None, image_path, win32con.IMAGE_ICON, 0, 0, icon_flags)
-
-    win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-    win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
-
-
-def set_title_and_icon(window_title, icon_path):
-    import win32gui
-
-    """Set the window title, wait for it to apply, then adjust the icon."""
-    window_title = set_window_title(window_title, wait_for_change=True)
-    set_window_icon(window_title, image_path)
-    return window_title
-
-
 def main():
     print(
         f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
@@ -153,6 +130,7 @@ def main():
     check_min_python_version(min_python_version="3.11", show_warning=True)
     install_missing_modules()
     monkeypatch_fromisoformat()
+    start_server()
 
     # Set the console title to include the version number.
     version_path = Path("Version.txt")
