@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from server.status import router as status_router
 from server.connect import router as connect_router
@@ -37,6 +38,18 @@ def main() -> FastAPI:
 
     app = FastAPI()
     app.include_router(v1router)
+
+    origins = [
+        "*",
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["get", "post"],
+        allow_headers=["*"],
+    )
 
     return app
 
