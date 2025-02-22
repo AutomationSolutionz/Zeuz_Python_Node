@@ -47,7 +47,7 @@ def main() -> FastAPI:
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=["get", "post"],
+        allow_methods=["*"],
         allow_headers=["*"],
     )
 
