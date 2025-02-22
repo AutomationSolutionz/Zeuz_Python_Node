@@ -1079,7 +1079,7 @@ class MachineInfo:
             ErrorMessage = "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
             return Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    def getLocalUser(self):
+    def getLocalUser(self) -> str:
         """
         :return: returns the local pc name
         """
@@ -1133,7 +1133,7 @@ class MachineInfo:
 
         except Exception:
             ErrorMessage = "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
-            return Exception_Handler(sys.exc_info(), None, ErrorMessage)
+            return str(Exception_Handler(sys.exc_info(), None, ErrorMessage))
 
     def getUniqueId(self):
         """

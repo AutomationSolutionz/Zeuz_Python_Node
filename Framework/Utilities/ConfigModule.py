@@ -16,7 +16,7 @@ remote_config = {
 }
 
 
-def get_config_value(section, key, location=False):
+def get_config_value(section, key, location: os.PathLike | None = None):
     """
     :param section: name of section
     :param key: name of key
@@ -35,7 +35,7 @@ def get_config_value(section, key, location=False):
             _file_name = location
         try:
             config.read(_file_name)  # Read current configuration, if the file exists
-        except:
+        except Exception:
             FL.DeleteFile(location)
             config.read(_file_name)
         return config.get(section, key)
@@ -110,7 +110,7 @@ def add_config_value(section, key, value, location: os.PathLike | None = None):
         return ""
 
 
-def get_all_option(section_name, location=False):
+def get_all_option(section_name, location: os.PathLike | None = None):
     """
     :param section_name: given section name
     :return: list of all option on that section
@@ -136,7 +136,7 @@ def get_all_option(section_name, location=False):
         return []
 
 
-def add_section(section_name, location=False):
+def add_section(section_name, location: os.PathLike | None = None):
     """
     :param section_name: name of the section to add
     :return: true or false
@@ -166,7 +166,7 @@ def add_section(section_name, location=False):
         return []
 
 
-def clean_config_file(location=False):
+def clean_config_file(location: os.PathLike | None = None):
     try:
         config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
@@ -186,7 +186,7 @@ def clean_config_file(location=False):
         return False
 
 
-def get_all_sections(location=False):
+def get_all_sections(location: os.PathLike | None = None):
     try:
         config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
@@ -207,7 +207,7 @@ def get_all_sections(location=False):
         print("found no options")
         return []
 
-def has_section(section_name, location=False):
+def has_section(section_name, location: os.PathLike | None = None):
     try:
         config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)

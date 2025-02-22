@@ -2,6 +2,7 @@ from typing import Literal
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from Framework.Utilities import CommonUtil
 from Framework.node_server_state import STATE
 
 router = APIRouter(prefix="/status", tags=["status"])
@@ -29,8 +30,13 @@ class StatusResponse(BaseModel):
     """Returns the current state of the Node."""
 
     state: Literal["idle", "in_progress"]
+    node_id: str | None = None
 
 
 @router.get("")
 def status():
-    return StatusResponse(state=STATE.state)
+    try:
+        node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+    except Exception:
+        node_id = "unknown"
+    return StatusResponse(state=STATE.state, node_id=node_id)
