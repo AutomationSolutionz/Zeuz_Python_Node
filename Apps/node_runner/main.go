@@ -97,6 +97,7 @@ func installUV() error {
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 	return cmd.Run()
 }
 
@@ -108,24 +109,6 @@ func getEnvPaths() (string, string) {
 	return ".venv/bin/activate", ".venv/bin/python"
 }
 
-// setupVirtualEnv creates and activates a Python virtual environment
-func setupVirtualEnv() error {
-	// Check if venv exists
-	if _, err := os.Stat(".venv"); os.IsNotExist(err) {
-		fmt.Println("Creating virtual environment...")
-		cmd := exec.Command("python", "-m", "venv", ".venv")
-		if runtime.GOOS != "windows" {
-			cmd = exec.Command("python3", "-m", "venv", ".venv")
-		}
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to create virtual environment: %v", err)
-		}
-	}
-	return nil
-}
-
 // updatePath adds UV binary location to PATH
 func updatePath() error {
 	home, err := os.UserHomeDir()
@@ -133,11 +116,10 @@ func updatePath() error {
 		return fmt.Errorf("failed to get home directory: %v", err)
 	}
 
-	var uvPath string
-	if runtime.GOOS == "windows" {
-		uvPath = filepath.Join(home, ".uv", "bin")
-	} else {
-		uvPath = filepath.Join(home, ".local", "bin")
+	var uvPath string = filepath.Join(home, ".local", "bin")
+	// Create .local/bin directory if it doesn't exist
+	if err := os.MkdirAll(uvPath, 0755); err != nil {
+		return fmt.Errorf("failed to create UV path directory: %v", err)
 	}
 
 	currentPath := os.Getenv("PATH")
@@ -150,16 +132,12 @@ func updatePath() error {
 
 // runUVCommands executes UV sync and run commands
 func runUVCommands() error {
-	// Update PATH to ensure UV is available
-	if err := updatePath(); err != nil {
-		return err
-	}
-
 	// Run UV sync
 	fmt.Println("Running uv sync...")
-	syncCmd := exec.Command("uv", "sync")
+	syncCmd := exec.Command("uv", "sync", "--link-mode=symlink")
 	syncCmd.Stdout = os.Stdout
 	syncCmd.Stderr = os.Stderr
+	syncCmd.Stdin = os.Stdin
 	if err := syncCmd.Run(); err != nil {
 		return fmt.Errorf("failed to run uv sync: %v", err)
 	}
@@ -169,21 +147,26 @@ func runUVCommands() error {
 	runCmd := exec.Command("uv", "run", "node_cli.py")
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
+	runCmd.Stdin = os.Stdin
 	return runCmd.Run()
 }
 
 func main() {
+	// Update PATH before checking if UV is installed.
+	if err := updatePath(); err != nil {
+		fmt.Printf("Error updating path: %v\n", err)
+	}
+
 	// Install UV if needed
 	if err := installUV(); err != nil {
 		fmt.Printf("Error installing UV: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Setup virtual environment
-	// if err := setupVirtualEnv(); err != nil {
-	// 	fmt.Printf("Error setting up virtual environment: %v\n", err)
-	// 	os.Exit(1)
-	// }
+	// Update PATH to ensure UV is available after installation.
+	if err := updatePath(); err != nil {
+		fmt.Printf("Error updating path: %v\n", err)
+	}
 
 	// Run UV commands
 	if err := runUVCommands(); err != nil {
