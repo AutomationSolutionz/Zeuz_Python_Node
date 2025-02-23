@@ -48,5 +48,13 @@
             "args": ["--gh", "TOKEN_HERE"],
             "console": "integratedTerminal",
         },
+        {
+            "name": "Go: node_runner",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/Apps/node_runner/main.go"
+        }
     ]
 }
