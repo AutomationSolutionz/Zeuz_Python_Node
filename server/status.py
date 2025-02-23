@@ -37,6 +37,9 @@ class StatusResponse(BaseModel):
 def status():
     try:
         node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+        username, id = node_id.split("_")
+        if len(username) == 0:
+            node_id = id
     except Exception:
         node_id = "unknown"
     return StatusResponse(state=STATE.state, node_id=node_id)
