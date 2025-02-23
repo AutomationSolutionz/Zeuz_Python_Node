@@ -57,7 +57,6 @@ from Framework.Utilities.CommonUtil import (
     skipped_tag_list,
 )
 from Framework.AI.NLP import binary_classification
-from settings import temp_ini_file
 
 #########################
 #                       #
