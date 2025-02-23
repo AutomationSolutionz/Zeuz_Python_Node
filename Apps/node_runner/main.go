@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	zeuzURL = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/uv-and-cli-cleanup.zip"
+	zeuzURL = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
 	zeuzDir = "ZeuZ Node"
 )
 
