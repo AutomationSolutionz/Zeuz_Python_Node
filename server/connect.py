@@ -26,4 +26,5 @@ def connect(new_conn_info: ConnectRequest):
     # Request for the server to connect to another server by stopping the
     # connection loop with the deploy service.
 
+    print(f"[Node server] Connect request received from {new_conn_info.server}. Connecting...")
     set_new_credentials(new_conn_info.server, new_conn_info.api_key)
