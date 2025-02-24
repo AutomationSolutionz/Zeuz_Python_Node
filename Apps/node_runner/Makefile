@@ -13,6 +13,7 @@ windows:
 
 mac:
 	GOOS=darwin GOARCH=arm64 go build -o '$(BUILD_DIR)/$(APPNAME)_macos' main.go
+	GOOS=darwin GOARCH=amd64 go build -o '$(BUILD_DIR)/$(APPNAME)_macos_amd64' main.go
 
 linux:
 	GOOS=linux GOARCH=amd64 go build -o '$(BUILD_DIR)/$(APPNAME)_linux' main.go
