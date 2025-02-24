@@ -48,7 +48,10 @@ from server import main as node_server
 def start_server():
     def run():
         # TODO: the port must be selected dynamically from a range of ports - max 50 ports maybe?
-        uvicorn.run(node_server.main(), host="127.0.0.1", port=18100, log_level="warning")
+        try:
+            uvicorn.run(node_server.main(), host="127.0.0.1", port=18100, log_level="warning")
+        except Exception:
+            pass
 
     t = threading.Thread(target=run, daemon=True)
     t.start()
