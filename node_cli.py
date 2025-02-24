@@ -242,19 +242,14 @@ def Login(
 
     RequestFormatter.load_cookies(session_bin_path)
 
-    token_renew_failed = False
     try:
         if load_from_session:
             data, status_code = RequestFormatter.renew_token()
             if status_code != 200:
-                token_renew_failed = True
+                data, status_code = RequestFormatter.login()
+                return
         else:
             data, status_code = RequestFormatter.login()
-
-        if token_renew_failed:
-            return
-            # data, status_code = RequestFormatter.login()
-            # token_renew_failed = False
 
         # # Upon successful login, replace the api key in the settings
         # # file with a dummy value since we don't need it anymore.
