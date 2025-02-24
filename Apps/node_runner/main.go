@@ -233,7 +233,7 @@ func updatePath() error {
 }
 
 // runUVCommands executes UV sync and run commands
-func runUVCommands() error {
+func runUVCommands(args []string) error {
 	// Run UV sync
 	syncCmd := exec.Command("uv", "sync", "--link-mode=symlink")
 	syncCmd.Stdout = os.Stdout
@@ -243,8 +243,12 @@ func runUVCommands() error {
 		return fmt.Errorf("failed to run uv sync: %v", err)
 	}
 
-	// Run node_cli.py
-	runCmd := exec.Command("uv", "run", "node_cli.py")
+	// Create the command slice starting with "uv" and "run"
+	cmdArgs := []string{"run", "node_cli.py"}
+	// Append any additional arguments
+	cmdArgs = append(cmdArgs, args...)
+
+	runCmd := exec.Command("uv", cmdArgs...)
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
 	runCmd.Stdin = os.Stdin
@@ -280,8 +284,11 @@ func main() {
 		fmt.Printf("Error updating path: %v\n", err)
 	}
 
-	// Run UV commands
-	if err := runUVCommands(); err != nil {
+	// Get command line arguments, excluding the program name
+	args := os.Args[1:]
+
+	// Run UV commands with arguments
+	if err := runUVCommands(args); err != nil {
 		fmt.Printf("Error running UV commands: %v\n", err)
 		os.Exit(1)
 	}
