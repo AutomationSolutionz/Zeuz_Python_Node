@@ -1,0 +1,75 @@
+GET http://localhost:5000/soap?wsdl
+Content-Type: application/xml
+
+
+POST http://localhost:5000/soap
+Content-Type: application/xml
+
+<se:Envelope xmlns:se="http://schemas.xmlsoap.org/soap/envelope/" xmlns="zeuz.ai.soap">
+    <se:Header/>
+    <se:Body>
+        <add>
+            <num1>20</num1>
+            <num2>10</num2>
+        </add>
+    </se:Body>
+</se:Envelope>
+
+
+POST http://localhost:5000/soap
+Content-Type: application/xml
+
+<se:Envelope xmlns:se="http://schemas.xmlsoap.org/soap/envelope/" xmlns="zeuz.ai.soap">
+    <se:Header/>
+    <se:Body>
+        <process_order>
+            <order>
+                <order_id>ORD-1234</order_id>
+                <customer_name>Shadow Purr</customer_name>
+                <items>
+                    <Item>
+                        <item_id>001</item_id>
+                        <quantity>1</quantity>
+                        <price>5.0</price>
+                    </Item>
+                    <Item>
+                        <item_id>002</item_id>
+                        <quantity>2</quantity>
+                        <price>10.0</price>
+                    </Item>
+                    <Item>
+                        <item_id>003</item_id>
+                        <quantity>3</quantity>
+                        <price>15.0</price>
+                    </Item>
+                </items>
+                <shipping_address>123 Main St, Cattie Residential area, Earth</shipping_address>
+            </order>
+        </process_order>
+    </se:Body>
+</se:Envelope>
+
+
+POST http://localhost:5000/soap
+Content-Type: application/xml
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cvs="zeuz.ai.soap" xmlns:cvs1="zeuz.ai.soap1">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <cvs:getCardInformation>
+            <cvs:RimNumber>23232312312</cvs:RimNumber>
+            <cvs:GetCardsFlag>A</cvs:GetCardsFlag>
+            <cvs:PciFlag>Y</cvs:PciFlag>
+            <cvs:Channel>104000</cvs:Channel>
+            <cvs:User>TEST_USER</cvs:User>
+            <cvs:Password>TEST_PASS</cvs:Password>
+            <cvs:arrayOfCardDataTypeUser_7>
+                <!--Zero or more repetitions:-->
+                <cvs1:CardDataTypeUser>
+                <cvs1:cardtype>?</cvs1:cardtype>
+                <cvs1:monthlymailtranmin>?</cvs1:monthlymailtranmin>
+                </cvs1:CardDataTypeUser>
+            </cvs:arrayOfCardDataTypeUser_7>
+        </cvs:getCardInformation>
+    </soapenv:Body>
+</soapenv:Envelope>
