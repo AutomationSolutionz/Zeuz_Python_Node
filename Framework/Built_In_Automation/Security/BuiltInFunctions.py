@@ -3,17 +3,14 @@ import subprocess
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
-from tabulate import tabulate
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from arachni_download import check_and_install_arachni
 from nikto_download import check_and_download_nikto
 from arachni_run import run_arachni_scan, generate_report_from_afr
 from helper import extract_target, check_perl_installed, display_table, save_report_to_file
-from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
-from Framework.Utilities import CommonUtil, ConfigModule
+from Framework.Utilities import ConfigModule
 
 temp_config = os.path.join(
     os.path.join(

@@ -1,252 +1,184 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# -*- coding: cp1252 -*-
-import os, sys
+import os
+import sys
 import shutil
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 import platform
 import datetime
 from dataclasses import dataclass
-
+import os.path
+import base64
+import signal
+import argparse
+import json
+import time
+import threading
 from datetime import date
 from datetime import datetime as dt
 
-import time
-import threading
+from Framework.module_installer import (
+    check_min_python_version,
+    install_missing_modules,
+    update_outdated_modules,
+)
 
-# Disable WebdriverManager SSL verification.
-os.environ['WDM_SSL_VERIFY'] = '0'
+import requests
+from configobj import ConfigObj
+from dotenv import load_dotenv
+from colorama import init as colorama_init
+from colorama import Fore
+from rich.table import Table
+from rich.console import Console
+from rich import traceback
+from urllib3.exceptions import InsecureRequestWarning
+import uvicorn
 
-version_path = Path(os.getcwd())/"Framework"/"Version.txt"
-with open(version_path, "r"):
-    text = version_path.read_text()
-    text = text[text.find("=")+1:].split("\n")[0].strip()
-    if os.name == "nt":
-        os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
-    # ToDo: Uncomment when we start node versioning properly
-    # print(version_path.read_text().strip())
+from Framework.deploy_handler import (
+    long_poll_handler,
+    adapter,
+)
+from Framework.Utilities import ConfigModule
+from Framework.Utilities import live_log_service
+from Framework.node_server_state import STATE
+from server import main as node_server
 
-print("[Python version]")
-print("Python " + platform.python_version() + "(" + platform.architecture()[0] + ")\n")
-print("[Python Executable]")
-print(sys.executable)
 
-from Framework.module_installer import check_min_python_version, install_missing_modules,update_outdated_modules
+def start_server():
+    def run():
+        # TODO: the port must be selected dynamically from a range of ports - max 50 ports maybe?
+        uvicorn.run(node_server.main(), host="127.0.0.1", port=18100, log_level="warning")
 
-check_min_python_version(min_python_version="3.11",show_warning=True)
-install_missing_modules()
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+
+
+def adjust_python_path():
+    """Adjusts the Python path to include the Framework directory."""
+    ROOT_DIR = Path.cwd()
+    if ROOT_DIR.name == "Framework":
+        ROOT_DIR = ROOT_DIR.parent
+    FRAMEWORK_DIR = ROOT_DIR / "Framework"
+
+    automation_log_path = ROOT_DIR / "AutomationLog"
+    automation_log_path.mkdir(exist_ok=True)
+
+    # Append correct paths so that it can find the configuration files and other modules
+    sys.path.append(str(FRAMEWORK_DIR))
+
+    # Move to Framework directory and add parent to path for module imports
+    os.chdir(FRAMEWORK_DIR)
+
+
+def kill_old_process():
+    """kill any process that is running  from the same node folder."""
+    import psutil
+
+    pidfile = Path.cwd() / "pid.txt"
+
+    try:
+        with open(pidfile, "r") as f:
+            pid_number = int(f.read().strip())
+            process = psutil.Process(pid_number)
+            process.terminate()
+            process.wait(
+                timeout=10
+            )  # Wait for the process to terminate, with a timeout
+            print(f"Process with PID {pid_number} terminated.")
+    except Exception:
+        pass
+
+    try:
+        with open(pidfile, "w") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
 
 # Conditionally monkey-patch datetime module to include the `fromisoformat` method.
+# TODO: remove this when we upgrade to Python 3.11
 def monkeypatch_fromisoformat():
     try:
         import sys
+
         target_version = (3, 11)
         if sys.version_info < target_version:
-            from backports.datetime_fromisoformat import MonkeyPatch
+            from backports.datetime_fromisoformat import MonkeyPatch  # type: ignore
+
             MonkeyPatch.patch_fromisoformat()
-    except:
+    except Exception:
         print("WARN: failed to monkeypatch fromisoformat")
 
-monkeypatch_fromisoformat()
 
-from configobj import ConfigObj
-from dotenv import load_dotenv
-# Load environment variables from .env file
-load_dotenv()
+def main():
+    print(
+        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+    )
 
-from colorama import init as colorama_init
-from colorama import Fore
-colorama_init(autoreset=True)
+    # Load environment variables from .env file
+    load_dotenv()
 
-from rich.table import Table
-from rich.console import Console
-console = Console()
+    traceback.install(show_locals=True, max_frames=1)
 
-import sys, os.path, base64, signal, argparse, requests
-from getpass import getpass
-from urllib3.exceptions import InsecureRequestWarning
+    # Suppress the InsecureRequestWarning since we use verify=False parameter.
+    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
 
-# Suppress the InsecureRequestWarning since we use verify=False parameter.
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+    # Disable WebdriverManager SSL verification.
+    os.environ["WDM_SSL_VERIFY"] = "0"
 
-from Framework.Utilities import ConfigModule
-from Framework.Utilities import live_log_service
+    colorama_init(autoreset=True)
 
-PROJECT_ROOT = os.path.abspath(os.curdir)
-# Append correct paths so that it can find the configuration files and other modules
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
+    kill_old_process()
+    adjust_python_path()
+    check_min_python_version(min_python_version="3.11", show_warning=True)
+    install_missing_modules()
+    monkeypatch_fromisoformat()
+    start_server()
 
-# kill any process that is running  from the same node folder
-pid = os.getpid()
-
-pidfile = os.path.abspath(__file__).split("node_cli.py")[0] + 'pid.txt'
-
-try:
-    import psutil
-    pidfile_read = open(pidfile)
-    pidNumber = pidfile_read.read()
-    pidNumber = int("".join(pidNumber.split()))
-    print("Process ID", pidNumber)
-    p = psutil.Process(pidNumber)
-    p.terminate()
-except:
-    pass
-
-try:
-    f = open(pidfile, "w")
-    f.write(str(os.getpid()))
-    f.close()
-except:
-    pass
+    # Set the console title to include the version number.
+    version_path = Path("Version.txt")
+    text = version_path.read_text()
+    text = text[text.find("=") + 1 :].split("\n")[0].strip()
+    if os.name == "nt":
+        os.system(
+            f"title Node {text} - 🐍 {platform.python_version()} {platform.architecture()[0]}"
+        )
 
 
-automationLogPath = os.path.join(
-    os.path.abspath(__file__).split("node_cli.py")[0],
-    os.path.join("AutomationLog"),
-)
-if not os.path.exists(automationLogPath):
-    os.mkdir(automationLogPath)
+main()
 
 # Tells node whether it should run a test set/deployment only once and quit.
 RUN_ONCE = False
 local_run = False
 
-# Move to Framework directory, so all modules can be seen
-os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
-sys.path.append("..")
-
-from Framework.Utilities import (
+from Framework.Utilities import (  # noqa: E402
     RequestFormatter,
     CommonUtil,
-    FileUtilities as FL,
     All_Device_Info,
-    self_updater
 )
-from Framework import MainDriverApi
+from Framework import MainDriverApi  # noqa: E402
 
 
-temp_ini_file = (
-    Path(PROJECT_ROOT)
+TMP_INI_FILE = (
+    Path.cwd().parent
     / "AutomationLog"
     / ConfigModule.get_config_value("Advanced Options", "_file")
 )
 
-import subprocess
-import json
-
-from rich import traceback
-traceback.install(show_locals=True, max_frames=1)
-
-from Framework.deploy_handler import long_poll_handler
-from Framework.deploy_handler import adapter
 
 def signal_handler(sig, frame):
+    print("\n--- SIGINT received, quitting ---\n")
     CommonUtil.run_cancelled = True
-    print("Disconnecting from server...")
-    disconnect_from_server()
-    sys.exit(0)
-
-
-def password_hash(encrypt, key, pw):
-    """ Encrypt, decrypt password and encode in plaintext """
-    # This is just an obfuscation technique, so the password is not immediately seen by users
-    # Zeuz_Node.py has a similar function that will need to be updated if this is changed
-
-    try:
-        def pass_encode(key, clear):
-            enc = []
-            for i in range(len(clear)):
-                key_c = key[i % len(key)]
-                enc_c = (ord(clear[i]) + ord(key_c)) % 256
-                enc.append(enc_c)
-            return base64.urlsafe_b64encode(bytes(enc))
-
-        result = pass_encode(key, pw)
-
-        return result
-    except Exception as e:
-        print("Exception in password {}".format(e))
-        print("Error decrypting password. Enter a new password {}".format(e))
-        return ""
-
-
-def detect_admin():
-    # Windows only - Return True if program run as admin
-
-    import subprocess as s
-
-    if sys.platform == "win32":
-        command = "net session >nul 2>&1"  # This command can only be run by admin
-        try:
-            output = s.check_output(
-                command, shell=True
-            )  # Causes an exception if we can't run
-        except:
-            return False
-    return True
-
-
-# Have user install tzlocal if this fails - we try to do it for them first
-try:
-    from tzlocal import get_localzone
-except:
-    import subprocess as s
-
-    print(
-        "Module 'tzlocal' is not installed. This is required to start the graphical interface. Please enter the root password to install."
-    )
-
-    if sys.platform == "win32":
-        try:
-            # Elevate permissions
-            if not detect_admin():
-                os.system(
-                    "powershell -command Start-Process \"python '..\\%s'\" -Verb runAs"
-                    % sys.argv[0].split(os.sep)[-1]
-                )  # Re-run this program with elevated permissions to admin
-                sys.exit(
-                    1
-                )  # exit this instance and let the elevated instance take over
-
-            # Install
-            print(s.check_output("pip install tzlocal"))
-        except Exception as e:
-            print("Failed to install. Please run: pip install tzlocal: ", e)
-            input("Press ENTER to exit")
-            sys.exit(1)
-    elif sys.platform == "linux2":
-        print(
-            s.Popen(
-                "sudo -S pip install tzlocal".split(" "), stdout=s.PIPE, stderr=s.STDOUT
-            ).communicate()[0]
-        )
-    else:
-        print("Could not automatically install required modules")
-        input("Press ENTER to exit")
-        quit()
-
-    try:
-        from tzlocal import get_localzone
-    except:
-        input(
-            "Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator"
-        )
-        quit()
+    CommonUtil.ShutdownExecutor()
+    os._exit(0)
 
 
 """Constants"""
 AUTHENTICATION_TAG = "Authentication"
-USERNAME_TAG = "username"
-PASSWORD_TAG = "password"
 PROJECT_TAG = "project"
 TEAM_TAG = "team"
-device_dict = {}
-
-processing_test_case = (
-    False  # Used by Zeuz Node GUI to check if we are in the middle of a run
-)
-exit_script = False  # Used by Zeuz Node GUI to exit script
+device_dict: dict[str, Any] = {}
 
 
 def destroy_session():
@@ -257,8 +189,10 @@ def destroy_session():
     # Remove session file if prompted for new authentication
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     if session_bin_path.exists():
-        try: session_bin_path.unlink()
-        except: print("[ERROR] failed to remove session file")
+        try:
+            session_bin_path.unlink()
+        except Exception:
+            print("[ERROR] failed to remove session file")
 
 
 def zeuz_authentication_prompts_for_cli():
@@ -287,26 +221,12 @@ class UserData:
     project_id: str
 
 
-def Login(cli=False, run_once=False, log_dir=None):
-    # username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
-    # password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
-    server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-    api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
-
-    # If login information is not present in the settings file, take input from user.
-    if not api or not server_name:
-        zeuz_authentication_prompts_for_cli()
-        for _ in range(30):     # it takes time to save in the file. so lets wait 15 sec
-            time.sleep(0.5)
-            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"')
-            server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-            if api and server_name:
-                break
-
-    global exit_script
-    global processing_test_case
-
-    exit_script = False  # Reset exit variable
+def Login(
+    server_name: str,
+    run_once: bool = False,
+    log_dir: os.PathLike | None = None,
+):
+    console = Console()
 
     # Login to ZeuZ server.
     user_data = UserData(
@@ -319,145 +239,133 @@ def Login(cli=False, run_once=False, log_dir=None):
     # Load session from disk if available.
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     load_from_session = session_bin_path.exists()
-    if load_from_session:
-        RequestFormatter.load_cookies(session_bin_path)
 
-    if not ((load_from_session or len(api) > 0) and len(server_name) > 0):
-        return
+    RequestFormatter.load_cookies(session_bin_path)
 
     token_renew_failed = False
-    while True:
-        try:
-            if load_from_session:
-                data, status_code = RequestFormatter.renew_token()
-                if status_code != 200:
-                    token_renew_failed = True
-            else:
-                data, status_code = RequestFormatter.login()
+    try:
+        if load_from_session:
+            data, status_code = RequestFormatter.renew_token()
+            if status_code != 200:
+                token_renew_failed = True
+        else:
+            data, status_code = RequestFormatter.login()
 
-            if token_renew_failed:
-                data, status_code = RequestFormatter.login()
-                token_renew_failed = False
+        if token_renew_failed:
+            return
+            # data, status_code = RequestFormatter.login()
+            # token_renew_failed = False
 
-            # # Upon successful login, replace the api key in the settings
-            # # file with a dummy value since we don't need it anymore.
-            # TODO: Implement api key encryption.
-            # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
+        # # Upon successful login, replace the api key in the settings
+        # # file with a dummy value since we don't need it anymore.
+        # TODO: Implement api key encryption.
+        # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
 
-            if status_code == 200:
-                user_data = UserData(
-                    username=data["user"]["username"],
-                    email=data["user"]["email"],
-                    project_id=data["user"]["project_id"],
-                    team_id=data["user"]["team_id"],
-                )
+        if status_code == 200:
+            user_data = UserData(
+                username=data["user"]["username"],
+                email=data["user"]["email"],
+                project_id=data["user"]["project_id"],
+                team_id=data["user"]["team_id"],
+            )
 
-                ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", user_data.username)
-                ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_data.project_id, temp_ini_file) # type: ignore
-                ConfigModule.add_config_value("sectionOne", TEAM_TAG, str(user_data.team_id), temp_ini_file) # type: ignore
+            ConfigModule.add_config_value(
+                AUTHENTICATION_TAG, "username", user_data.username
+            )
+            ConfigModule.add_config_value(
+                "sectionOne", PROJECT_TAG, user_data.project_id, TMP_INI_FILE
+            )  # type: ignore
+            ConfigModule.add_config_value(
+                "sectionOne", TEAM_TAG, str(user_data.team_id), TMP_INI_FILE
+            )  # type: ignore
 
-                table = Table()
-                table.add_column("Authenticated")
-                table.add_column("[green]:heavy_check_mark:")
+            table = Table()
+            table.add_column("Authenticated")
+            table.add_column("[green]:heavy_check_mark:")
 
-                table.add_row("url", server_name)
-                table.add_row("Username", user_data.username)
-                table.add_row("Email", user_data.email)
-                table.add_row("Team ID", str(user_data.team_id))
-                table.add_row("Project ID", user_data.project_id)
+            table.add_row("ZeuZ Server", server_name)
+            table.add_row("Username", user_data.username)
+            table.add_row("Email", user_data.email)
+            table.add_row("Team ID", str(user_data.team_id))
+            table.add_row("Project ID", user_data.project_id)
 
-                console.print(table)
-            elif status_code == 502:
-                print(Fore.YELLOW + "Server offline. Retrying after 60s")
-                time.sleep(60)
-                continue
-            else:
-                line_color = Fore.RED
-                print(line_color + "Incorrect credentials, please try again.")
-                server_name, api = zeuz_authentication_prompts_for_cli()
-                api = api.strip('"')
-                continue
-        except ConnectionError:
-            print("Failed to connect to the server, retrying after 30s")
-            time.sleep(30)
-            continue
+            console.print(table)
+        elif status_code == 502:
+            print(Fore.YELLOW + "Server offline. Retrying after 60s")
+            time.sleep(60)
+            return
+        else:
+            line_color = Fore.RED
+            print(line_color + "Incorrect credentials, please try again.")
+            # server_name, api = zeuz_authentication_prompts_for_cli()
+            # api = api.strip('"')
 
-        if exit_script:
-            break
+            # Reset the credentials.
+            set_new_credentials(server="", api_key="")
+            return
+    except ConnectionError:
+        print("Failed to connect to the server, retrying after 30s")
+        time.sleep(30)
+        return
 
-        CommonUtil.node_manager_json(
-            {
-                "state": "idle",
-                "report": {
-                    "zip": None,
-                    "directory": None,
-                }
-            }
-        )
-        node_id = CommonUtil.MachineInfo().getLocalUser().lower()
-        from Framework.MainDriverApi import retry_failed_report_upload
-        report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
-        report_thread.start()
+    node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+    from Framework.MainDriverApi import retry_failed_report_upload
 
-        RunProcess(node_id, run_once=run_once, log_dir=log_dir)
+    # TODO: this needs to be launched separately - outside of this login
+    # function because it is not being killed. So everytime we re-log in it
+    # creates a new thread and keeps an infinite while loop - which is dangerous
+    # for the server, since it'll be bombarded with requests from multiple
+    # threads.
+    report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+    report_thread.start()
 
-    if run_once:
-        print("[OFFLINE]", "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.")
-    else:
-        CommonUtil.ExecLog("[OFFLINE]", "Zeuz Node Offline", 3)  # GUI relies on this exact text. GUI must be updated if this is changed
-
-    processing_test_case = False
-
-
-def disconnect_from_server():
-    """ Exits script - Used by Zeuz Node GUI """
-    global exit_script
-    exit_script = True
-    CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
+    RunProcess(node_id, run_once=run_once, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
+    from tzlocal import get_localzone
+
     update_machine(
         False,
         should_print,
     )
 
     local_tz = str(get_localzone())
-    RequestFormatter.Get("send_machine_time_zone_api", {
-        "time_zone": local_tz,
-        "machine": node_id,
-    })
+    RequestFormatter.Get(
+        "send_machine_time_zone_api",
+        {
+            "time_zone": local_tz,
+            "machine": node_id,
+        },
+    )
     RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
-
-current_platform = sys.platform.lower()
-if current_platform.startswith('darwin'):
-    # macOS
-    from notifypy import Notify
-else:
-    # Linux and Windows
-    from plyer import notification
-
-def notify_complete() :
+def notify_complete(message="Run completed"):
+    title = "ZeuZ Node"
+    icon = "zeuz.ico"
     try:
-        if current_platform.startswith('darwin'):
+        if sys.platform == "darwin":
             # macOS - Use notifypy
-            notification1 = Notify(
-                default_notification_title="Zeuz Test Case Run",
-                default_notification_icon="zeuz.ico",
+            from notifypy import Notify
+
+            notification = Notify(
+                default_notification_title=title,
+                default_notification_icon=icon,
             )
-            notification1.message = "Your run has completed."
-            notification1.send()
+            notification.message = message
+            notification.send()
         else:
             # Linux and Windows - Use plyer
+            from plyer import notification
+
             notification.notify(
-                title="Zeuz Test Case Run",
-                message="Your run has completed.",
-                app_icon="zeuz.ico",
-                timeout=7
+                title=title,
+                message=message,
+                app_icon=icon,
+                timeout=7,
             )
-    except:
+    except Exception:
         print("Failed to send notification")
 
 
@@ -465,39 +373,50 @@ def RunProcess(node_id, run_once=False, log_dir=None):
     try:
         # --- START websocket service connections --- #
 
-        server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
-        if server_url.scheme == "https":
-            protocol = "wss"
-        else:
-            protocol = "ws"
+        def live_log_service_addr():
+            server_url = urlparse(
+                ConfigModule.get_config_value("Authentication", "server_address")
+            )
+            if server_url.scheme == "https":
+                protocol = "wss"
+            else:
+                protocol = "ws"
+            server_addr = f"{protocol}://{server_url.netloc}"
+            return f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
 
-        server_addr = f"{protocol}://{server_url.netloc}"
-        live_log_service_addr = f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
-
-        deploy_srv_addr = f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
-        # deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
+        def deploy_srv_addr():
+            server_url = urlparse(
+                ConfigModule.get_config_value("Authentication", "server_address")
+            )
+            return f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
 
         # Connect to the live log service.
-        live_log_service.connect(live_log_service_addr)
+        live_log_service.connect(live_log_service_addr())
 
         # WARNING: For local development only.
         # if "localhost" in host:
         #     deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
 
         node_json = None
+
+        from Framework import node_server_state
+
         def response_callback(response: str):
+            node_server_state.STATE.state = "in_progress"
             nonlocal node_json
             nonlocal log_dir
             if log_dir is None:
-                log_dir = temp_ini_file.parent
+                log_dir = TMP_INI_FILE.parent
             save_path = Path(log_dir)
             save_path.mkdir(exist_ok=True, parents=True)
             PreProcess(log_dir=log_dir)
 
             try:
-                with open(save_path / "deploy-response.txt", "w", encoding="utf-8") as f:
+                with open(
+                    save_path / "deploy-response.txt", "w", encoding="utf-8"
+                ) as f:
                     f.write(response)
-            except:
+            except Exception:
                 pass
 
             # 1. Adapt the proto response to appropriate json format
@@ -506,13 +425,16 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             # 2. Save the json for MainDriver to find
             # Ensure that the parent dirs actually exist before writing to the json file.
             try:
-                with open(save_path / f"deploy-tc.zeuz.json", "w", encoding="utf-8") as f:
+                with open(
+                    save_path / f"deploy-tc.zeuz.json", "w", encoding="utf-8"
+                ) as f:
                     f.write(json.dumps(node_json))
-            except:
+            except Exception:
                 print(Fore.RED + "ERROR failed to save test case json into file")
                 print(Fore.YELLOW + "JSON CONTENT:")
                 print(node_json)
                 import traceback as tb
+
                 tb.print_exc()
 
             # 3. Call MainDriver
@@ -523,21 +445,25 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             )
 
         def on_connect_callback(reconnected: bool):
+            node_server_state.STATE.state = "idle"
             update_machine_info(node_id, should_print=not reconnected)
             return
 
-        def done_callback():
-            """Returns True if we do not want to connect to the service
-            further."""
-
-            if run_once:
-                return True
+        def done_callback() -> bool:
+            """
+            Returns True if we do not want to connect to the service further.
+            """
 
             if not node_json:
                 return False
 
             print("[deploy] Run complete.")
-            if CommonUtil.debug_status: notify_complete()
+            if CommonUtil.debug_status:
+                notify_complete("Run completed")
+
+            if run_once:
+                return True
+
             return False
 
         def cancel_callback():
@@ -545,7 +471,8 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                 return
 
             print("[deploy] Run cancelled.")
-            if CommonUtil.debug_status: notify_complete()
+            if CommonUtil.debug_status:
+                notify_complete("Run cancelled")
             CommonUtil.run_cancelled = True
 
         deploy_handler = long_poll_handler.DeployHandler(
@@ -554,7 +481,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        deploy_handler.run(deploy_srv_addr)
+        deploy_handler.run(deploy_srv_addr())
         return False
 
     except Exception:
@@ -578,7 +505,7 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
 
 def PreProcess(log_dir=None):
-    current_path_file = temp_ini_file
+    current_path_file = TMP_INI_FILE
     ConfigModule.clean_config_file(current_path_file)
     ConfigModule.add_section("sectionOne", current_path_file)
 
@@ -589,13 +516,17 @@ def PreProcess(log_dir=None):
         ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", "")
         ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", "")
         ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", "")
-    if not ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path"):
-        ConfigModule.add_config_value("Selenium_driver_paths", "electron_chrome_path", "")
+    if not ConfigModule.get_config_value(
+        "Selenium_driver_paths", "electron_chrome_path"
+    ):
+        ConfigModule.add_config_value(
+            "Selenium_driver_paths", "electron_chrome_path", ""
+        )
 
     # If `log_dir` is not specified, then store all logs inside Zeuz Node's
     # "AutomationLog" folder
     if log_dir is None:
-        log_dir = temp_ini_file.parent
+        log_dir = TMP_INI_FILE.parent
 
     ConfigModule.add_config_value(
         "sectionOne",
@@ -604,11 +535,14 @@ def PreProcess(log_dir=None):
         current_path_file,
     )
     print(f"Save temp_run_file_path = '{str(log_dir)}'")
-    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
+    ConfigModule.add_config_value(
+        "sectionOne", "sTestStepExecLogId", "node_cli", TMP_INI_FILE
+    )
 
 
 def update_machine(dependency, should_print=True):
     try:
+        console = Console()
         # Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
 
@@ -646,8 +580,8 @@ def update_machine(dependency, should_print=True):
         resp = RequestFormatter.request("post", url, json=update_object)
 
         if resp.status_code != 200:
-                CommonUtil.ExecLog("", "Machine is not registered as online", 4)
-                return
+            CommonUtil.ExecLog("", "Machine is not registered as online", 4)
+            return
 
         data = resp.json()
         if data["registered"]:
@@ -655,26 +589,27 @@ def update_machine(dependency, should_print=True):
                 rich_print = console.print
                 # rich_print(":green_circle: Zeuz Node is online: ", end="")
                 rich_print(":green_circle: " + data["name"], style="bold cyan", end="")
-                print(" is Online\n")
-                CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (data["name"]), 4, print_Execlog=False)
+                print(" is online\n")
+                CommonUtil.ExecLog(
+                    "",
+                    "Zeuz Node is online: %s" % (data["name"]),
+                    4,
+                    print_Execlog=False,
+                )
         else:
             if data["license"]:
                 CommonUtil.ExecLog("", "Machine is not registered as online", 4)
             else:
                 if "message" in data:
                     CommonUtil.ExecLog("", data["message"], 4)
-                    CommonUtil.ExecLog(
-                        "", "Machine is not registered as online", 4
-                    )
+                    CommonUtil.ExecLog("", "Machine is not registered as online", 4)
                 else:
-                    CommonUtil.ExecLog(
-                        "", "Machine is not registered as online", 4
-                    )
+                    CommonUtil.ExecLog("", "Machine is not registered as online", 4)
         return data
     except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = f'{str(exc_type).replace("type ", "Error Type: ")}; Message: {exc_obj}; File: {fname}; Line: {exc_tb.tb_lineno}'
+        Error_Detail = f"{str(exc_type).replace('type ', 'Error Type: ')}; Message: {exc_obj}; File: {fname}; Line: {exc_tb.tb_lineno}"
         CommonUtil.ExecLog("", Error_Detail, 4)
 
 
@@ -688,64 +623,16 @@ def pass_decode(key, enc):
     return "".join(dec)
 
 
-def check_for_updates():
-    """Checks for update. If any update is not found the code will continue to login prompts, otherwise it will
-    download the newest version of Zeuz Node, install it and restart/quit the terminal.
-    """
-    try:
-        # Just check for updates, and schedule testing to see if updates checking is complete
-
-        print("Checking for software updates")
-        self_updater.check_for_updates()
-
-        # No update, do nothing, and thus stop checking
-        if self_updater.check_complete in ("check", "noupdate"):
-            print("No software updates available")
-
-        # Update check complete, we have an update, start install
-        elif self_updater.check_complete[0:6] == "update":
-            # Print update notes
-            try:
-                print("\nUpdate notes:")
-                for note in str(self_updater.check_complete[7:]).split(";"):
-                    print(note)
-                print("*** A new update is available. Automatically installing.")
-
-                update_path = os.path.dirname(
-                    os.path.abspath(__file__)
-                ).replace(os.sep + "Framework", "")
-                self_updater.main(update_path)
-            except:
-                print("Couldn't install updates")
-
-            try:
-                print("*** Update installed. Automatically restarting. ***")
-                time.sleep(2)  # Wait a bit, so they can see the message
-                subprocess.Popen(
-                    'python "%s"'
-                    % os.path.abspath(sys.argv[0]).replace(os.sep + "Framework", ""),
-                    shell=True,
-                )  # Restart zeuz node
-                quit()  # Exit this process
-            except:
-                print("Exception in Restart. Please restart manually")
-                time.sleep(2)
-                quit()
-
-        # Some error occurred during updating
-        elif "error" in self_updater.check_complete:
-            print("An error occurred during update")
-
-    except Exception as e:
-        print("Exception in CheckUpdates")
-
-
 def Local_run(log_dir=None):
     try:
         PreProcess(log_dir=log_dir)
         user_info_object = {}
-        user_info_object['project'] = ConfigModule.get_config_value("sectionOne", PROJECT_TAG, temp_ini_file)
-        user_info_object['team'] = ConfigModule.get_config_value("sectionOne", TEAM_TAG, temp_ini_file)
+        user_info_object["project"] = ConfigModule.get_config_value(
+            "sectionOne", PROJECT_TAG, TMP_INI_FILE
+        )
+        user_info_object["team"] = ConfigModule.get_config_value(
+            "sectionOne", TEAM_TAG, TMP_INI_FILE
+        )
         device_dict = All_Device_Info.get_all_connected_device_info()
         rem_config = {"local_run": True}
         ConfigModule.remote_config = rem_config
@@ -769,11 +656,11 @@ def Local_run(log_dir=None):
 
 
 def get_folder_creation_time(folder_path):
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         creation_time = os.path.getctime(folder_path)
     else:
         stat = os.stat(folder_path)
-        if hasattr(stat, 'st_birthtime'):
+        if hasattr(stat, "st_birthtime"):
             # Use st_birthtime if available (Mac)
             creation_time = stat.st_birthtime
         else:
@@ -783,58 +670,44 @@ def get_folder_creation_time(folder_path):
     return dt.fromtimestamp(creation_time).date()
 
 
-def command_line_args() -> Path:
+def command_line_args() -> Path | None:
     """
-    This function handles command line scripts with given arguments.
+    This function handles command line arguments for configuring and running Zeuz Node.
 
     Returns:
-      `log_dir` - the custom log directory if specified, otherwise `None`.
+      `log_dir` - Path object for custom log directory if specified, otherwise None
 
-    Example 1:
-    1. python node_cli.py
-    2. node_cli.py
-    These 2 scripts will skip all kind of actions in this function because they dont have any arguments and will execute
-    Login(CLI=true) from __main__
+    Example 1 - Basic usage:
+    python node_cli.py
 
-    Example 2:
-    1. python node_cli.py --logout
-    2. node_cli.py --logout
-    3. node_cli.py -l
+    Example 2 - Authentication:
+    python node_cli.py -s https://zeuz.zeuz.ai -k YOUR_API_KEY
 
-    These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ then
-    you have to provide server, username, password one by one in the terminal to login
+    Example 3 - Custom node ID:
+    python node_cli.py -n custom_node_name
 
-    Example 3:
-    1. python node_cli.py --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
-    2. node_cli.py --logout --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
-    3. node_cli.py -u USER_NAME -p PASS_XYZ -s https://zeuz.zeuz.ai
-    4. python node_cli.py -k YOUR_API_KEY --server https://zeuz.zeuz.ai
+    Example 4 - Run once and exit:
+    python node_cli.py -o
 
-    These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ but you
-    don't need to provide server, username, password again. It will execute the login process automatically for you
+    Example 5 - Custom log directory:
+    python node_cli.py -d /path/to/logs
 
-    Example 3:
-    1. python node_cli.py --help
-    2. node_cli.py --help
-    3. node_cli.py -h
+    Example 6 - Local run:
+    python node_cli.py -r
 
-    These 3 scripts will show the documentation for every arguments and will execute sys.exit()
+    Example 7 - Logout:
+    python node_cli.py -l
 
-    Example 4:
-    1. python node_cli.py --ussssername USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
-    2. node_cli.py --u USER_NAME -p PASS_XYZ -s
-    3. node_cli.py --logout https://zeuz.zeuz.ai
+    Example 8 - GitHub integration:
+    python node_cli.py -gh YOUR_GITHUB_TOKEN
 
-    Above are some invalid arguments which will show some log/documentation and will execute sys.exit()
+    Example 9 - Advanced options:
+    python node_cli.py -spu -sbl -slg
+
+    Use -h or --help to see full documentation of all available arguments.
     """
     # try:
     parser_object = argparse.ArgumentParser("node_cli parser")
-    parser_object.add_argument(
-        "-u", "--username", action="store", help="Enter your username", metavar=""
-    )
-    parser_object.add_argument(
-        "-p", "--password", action="store", help="Enter your password", metavar=""
-    )
     parser_object.add_argument(
         "-s", "--server", action="store", help="Enter server address", metavar=""
     )
@@ -845,49 +718,67 @@ def command_line_args() -> Path:
         "-n", "--node_id", action="store", help="Enter custom node_id", metavar=""
     )
     parser_object.add_argument(
-        "-m", "--max_run_history", action="store", help="How many latest histories do you want to keep", metavar=""
+        "-m",
+        "--max_run_history",
+        action="store",
+        help="How many latest histories do you want to keep",
+        metavar="",
     )
     parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
     )
     parser_object.add_argument(
-        "-a", "--auto_update", action="store_true", help="Updates your Zeuz Node"
-    )
-    parser_object.add_argument(
         "-r", "--local_run", action="store_true", help="Performs a local run"
     )
     parser_object.add_argument(
-        "-o", "--once", action="store_true", help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately"
+        "-o",
+        "--once",
+        action="store_true",
+        help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately",
     )
     parser_object.add_argument(
-        "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs.", metavar=""
-    )
-
-    parser_object.add_argument(
-        "-gh", "--gh_token", action="store", help="Enter GitHub personal access token (https://github.com/settings/tokens)", metavar=""
-    )
-
-    parser_object.add_argument(
-        "-spu", "--stop_pip_auto_update", action="store_true", help="Auto python modules from auto updating"
-    )
-    parser_object.add_argument(
-        "-sbl", "--show_browser_log", action="store_true", help="Show browserlog in the console"
+        "-d",
+        "--log_dir",
+        action="store",
+        help="Specify a custom directory for storing Run IDs and logs.",
+        metavar="",
     )
 
     parser_object.add_argument(
-        "-slg", "--stop_live_log", action="store_true", help="Disables log in live server"
+        "-gh",
+        "--gh_token",
+        action="store",
+        help="Enter GitHub personal access token (https://github.com/settings/tokens)",
+        metavar="",
+    )
+
+    parser_object.add_argument(
+        "-spu",
+        "--stop_pip_auto_update",
+        action="store_true",
+        help="Auto python modules from auto updating",
+    )
+    parser_object.add_argument(
+        "-sbl",
+        "--show_browser_log",
+        action="store_true",
+        help="Show browserlog in the console",
+    )
+
+    parser_object.add_argument(
+        "-slg",
+        "--stop_live_log",
+        action="store_true",
+        help="Disables log in live server",
     )
 
     all_arguments = parser_object.parse_args()
 
-    username = all_arguments.username
-    password = all_arguments.password
     server = all_arguments.server
     api = all_arguments.api_key
     node_id = all_arguments.node_id
     max_run_history = all_arguments.max_run_history
     logout = all_arguments.logout
-    auto_update = all_arguments.auto_update
     gh_token = all_arguments.gh_token
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
     show_browser_log = all_arguments.show_browser_log
@@ -906,9 +797,13 @@ def command_line_args() -> Path:
             touch_file.touch()
             touch_file.unlink()
     except PermissionError:
-        raise Exception(f"ERR: Zeuz Node does not have enough permissions to write to the specified log directory: {log_dir}")
-    except:
-        raise Exception(f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}")
+        raise Exception(
+            f"ERR: Zeuz Node does not have enough permissions to write to the specified log directory: {log_dir}"
+        )
+    except Exception:
+        raise Exception(
+            f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}"
+        )
 
     global local_run
     local_run = all_arguments.local_run
@@ -916,10 +811,20 @@ def command_line_args() -> Path:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    settings_conf_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'Framework' + os.sep + 'settings.conf'
+    settings_conf_path = (
+        os.path.dirname(os.path.abspath(__file__)).replace(
+            os.sep + "Framework", os.sep + ""
+        )
+        + os.sep
+        + "Framework"
+        + os.sep
+        + "settings.conf"
+    )
     config = ConfigObj(settings_conf_path)
-    date_str = config.get('Advanced Options', {}).get('last_module_update_date', '')
-    module_update_interval = config.get('Advanced Options', {}).get('module_update_interval', '')
+    date_str = config.get("Advanced Options", {}).get("last_module_update_date", "")
+    module_update_interval = config.get("Advanced Options", {}).get(
+        "module_update_interval", ""
+    )
     if date_str:
         # Parse the date from the configuration file
         config_date = date.fromisoformat(date_str)
@@ -928,18 +833,28 @@ def command_line_args() -> Path:
         CommonUtil.ai_module_update_flag = stop_pip_auto_update
         CommonUtil.ai_module_update_time_difference = time_difference
         # Check if the time difference is greater than one month
-        if not stop_pip_auto_update and CommonUtil.ws_ss_log and time_difference > int(module_update_interval):
+        if (
+            not stop_pip_auto_update
+            and CommonUtil.ws_ss_log
+            and time_difference > int(module_update_interval)
+        ):
             update_outdated_modules()
             config_date = date.today()
-            config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
+            config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
+                config_date
+            )
             config.write()
-            print("module_updater: Module Updated..")
+            # print("module_updater: Module Updated..")
         else:
-            print("module_updater: All modules are already up to date.")
+            # TODO: remove these print statements
+            # print("module_updater: All modules are already up to date.")
+            pass
     else:
         # Assign the current date
         config_date = date.today()
-        config.setdefault('Advanced Options', {})['last_module_update_date'] = str(config_date)
+        config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
+            config_date
+        )
         # Save the updated configuration file
         config.write()
         if not stop_pip_auto_update and CommonUtil.ws_ss_log:
@@ -963,11 +878,19 @@ def command_line_args() -> Path:
 
         return subfolder_paths
 
-    folder_path = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + '') + os.sep + 'AutomationLog'
-    log_delete_interval = ConfigModule.get_config_value("Advanced Options", "log_delete_interval")
+    folder_path = (
+        os.path.dirname(os.path.abspath(__file__)).replace(
+            os.sep + "Framework", os.sep + ""
+        )
+        + os.sep
+        + "AutomationLog"
+    )
+    log_delete_interval = ConfigModule.get_config_value(
+        "Advanced Options", "log_delete_interval"
+    )
 
     # By default set the automation log delete interval to 7 days
-    if not isinstance(log_delete_interval,int):
+    if not isinstance(log_delete_interval, int):
         log_delete_interval = 7
     else:
         if log_delete_interval <= 0:
@@ -975,16 +898,31 @@ def command_line_args() -> Path:
 
     def delete_old_automationlog_folders():
         while True:
-            auto_log_subfolders = get_subfolders_created_before_n_days(folder_path,int(log_delete_interval))
-            auto_log_subfolders = [subfolder for subfolder in auto_log_subfolders if subfolder not in ['attachments','attachments_db','outdated_modules.json','temp_config.ini','failed_reports']]
+            auto_log_subfolders = get_subfolders_created_before_n_days(
+                folder_path, int(log_delete_interval)
+            )
+            auto_log_subfolders = [
+                subfolder
+                for subfolder in auto_log_subfolders
+                if subfolder
+                not in [
+                    "attachments",
+                    "attachments_db",
+                    "outdated_modules.json",
+                    "temp_config.ini",
+                    "failed_reports",
+                ]
+            ]
 
             for subfolder in auto_log_subfolders:
                 shutil.rmtree(subfolder)
             if auto_log_subfolders:
-                print(f'automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days')
+                print(
+                    f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
+                )
 
             # Check every 5 hours for old automation logs
-            time.sleep(60*60*5)
+            time.sleep(60 * 60 * 5)
 
     # Create a background thread for deleting automation log
     thread = threading.Thread(target=delete_old_automationlog_folders, daemon=True)
@@ -996,40 +934,33 @@ def command_line_args() -> Path:
     if server and server[-1] == "/":
         server = server[:-1]
 
-    if auto_update:
-        check_for_updates()
-    if username or password or server or logout or api:
-        destroy_session()
+    if server or logout or api:
+        # destroy_session()
         if api and server:
-            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)
-            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
-        elif username and password and server:
-            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
-            ConfigModule.add_config_value(
-                AUTHENTICATION_TAG, "password", password_hash(False, "zeuz", password)
-            )
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
+            set_new_credentials(server=server, api_key=api)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            zeuz_authentication_prompts_for_cli()
+            set_new_credentials(server="", api_key="")
+            # zeuz_authentication_prompts_for_cli()
         else:
             CommonUtil.ExecLog(
                 "AUTHENTICATION FAILED",
-                "Enter the command line arguments in correct format.  Type -h for help.",
+                "Enter the command line arguments in correct format. Type -h for help.",
                 3,
             )
             sys.exit()  # exit and let the user try again from command line
     if node_id:
         CommonUtil.MachineInfo().setLocalUser(node_id)
     if max_run_history:
+        # TODO: implement max run history feature which will ensure that we do
+        # not have more than X number of run IDs.
         pass
     if gh_token:
         os.environ["GH_TOKEN"] = gh_token
 
-    ConfigModule.add_config_value("Advanced Options", "stop_live_log", str(stop_live_log))
+    ConfigModule.add_config_value(
+        "Advanced Options", "stop_live_log", str(stop_live_log)
+    )
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""
@@ -1038,6 +969,14 @@ def command_line_args() -> Path:
     #     sys.exit()
 
     return log_dir
+
+
+def set_new_credentials(server, api_key):
+    """Store new credentials in the settings file."""
+    ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
+    ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api_key)
+    ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+    ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
 
 def Bypass():
@@ -1050,34 +989,67 @@ def Bypass():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
-    print("Press Ctrl-C to disconnect and quit.")
+    print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
-    CommonUtil.node_manager_json(
-        {
-            "state": "idle",
-            "report": {
-                "zip": None,
-                "directory": None,
-            }
-        }
-    )
+    console = Console()
 
-    """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
-    # if (len(sys.argv)) > 1:
     try:
         log_dir = command_line_args()
     except Exception as e:
         from colorama import Fore
+
         print(Fore.RED + str(e))
         print("Exiting...")
-        sys.exit(1)
+        os._exit(1)
 
     if local_run:
         Local_run(log_dir=log_dir)
     else:
         # Bypass()
-        Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
 
-    CommonUtil.run_cancelled = True
-    CommonUtil.ShutdownExecutor()
+        print_login_information = True
+        while True:
+            if STATE.reconnect_with_credentials is not None:
+                destroy_session()
+                server_name = STATE.reconnect_with_credentials.server
+                api_key = STATE.reconnect_with_credentials.api_key
+                set_new_credentials(server=server_name, api_key=api_key)
 
+                STATE.reconnect_with_credentials = None
+
+            server_name = ConfigModule.get_config_value(
+                AUTHENTICATION_TAG, "server_address"
+            ).strip()
+            api = (
+                ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+                .strip('"')
+                .strip()
+            )
+
+            if len(server_name) == 0 and len(api) == 0:
+                if print_login_information:
+                    console.print("\n" + ":red_circle: " + "Zeuz Node is disconnected.", style="bold red")
+                    console.print("Please log in to ZeuZ server and connect.")
+
+                    print_login_information = False
+                # If server_name and api are not set, then wait for the user to
+                # connect via the ZeuZ server.
+                time.sleep(1)
+                continue
+
+            Login(
+                server_name=server_name,
+                run_once=RUN_ONCE,
+                log_dir=log_dir,
+            )
+
+            if RUN_ONCE:
+                console.print(
+                    ":yellow_circle: " +
+                    "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
+                    style="bold cyan",
+                )
+                os._exit(0)
+
+            print_login_information = True
+            time.sleep(1)

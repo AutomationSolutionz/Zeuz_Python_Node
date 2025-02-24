@@ -2,6 +2,7 @@
 # -- coding: cp1252 --
 
 from . import ConfigModule
+import os
 import requests
 import json
 import pickle
@@ -31,17 +32,18 @@ def save_cookies(session: requests.Session, filename: str):
     try:
         with open(filename, 'wb') as f:
             pickle.dump(session.cookies, f)
-    except:
+    except Exception:
         print("[RequestFormatter] ERROR saving cookies to disk.")
 
 
-import os
 def load_cookies(filename: os.PathLike):
     global session
     try:
         with open(filename, 'rb') as f:
             session.cookies.update(pickle.load(f))
-    except:
+    except FileNotFoundError:
+        print("[RequestFormatter] No cookies found on disk.")
+    except Exception:
         print("[RequestFormatter] ERROR loading cookies from disk.")
 
 
@@ -54,7 +56,7 @@ def set_access_token_expiration(date_string: str):
 def datestring_to_obj(date_string: str) -> datetime:
     try:
         date_obj = datetime.fromisoformat(date_string)
-    except:
+    except Exception:
         date_string = date_string[:date_string.index(".")]
         date_obj = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
         date_obj.replace(tzinfo=timezone.utc)

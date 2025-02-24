@@ -6,9 +6,10 @@ import time
 import random
 import requests
 from colorama import Fore
-import threading
 
 from Framework.Utilities import RequestFormatter
+from Framework.node_server_state import STATE
+from concurrent.futures import ThreadPoolExecutor
 
 
 class DeployHandler:
@@ -21,7 +22,6 @@ class DeployHandler:
     COMMAND_CANCEL = b"CANCEL"
     ERROR_PREFIX = b"error"
 
-
     def __init__(
         self,
         on_connect_callback: Callable[[bool], None],
@@ -29,7 +29,6 @@ class DeployHandler:
         cancel_callback: Callable[[], None],
         done_callback: Callable[[], bool],
     ) -> None:
-        self.quit = False
         self.on_connect_callback = on_connect_callback
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
@@ -40,20 +39,20 @@ class DeployHandler:
 
         self.backoff_time = 0
 
+    def on_message(self, message) -> bool:
+        """Returns True if the handler should quit, False otherwise."""
 
-    def on_message(self, message) -> None:
         if message == self.COMMAND_DONE:
             # We're done for this run session.
-            self.quit = self.done_callback()
-            return
+            return self.done_callback()
 
         elif message == self.COMMAND_CANCEL:
             # Run cancelled by the user/service.
             self.cancel_callback()
-            return
+            return False
 
         self.response_callback(message)
-
+        return False
 
     def on_error(self, error) -> None:
         print("[deploy] Error communicating with the deploy service.")
@@ -61,11 +60,13 @@ class DeployHandler:
         if self.backoff_time < 6:
             self.backoff_time += 1
 
-
     def run(self, host: str) -> None:
         reconnect = False
         server_online = False
         while True:
+            if STATE.reconnect_with_credentials is not None:
+                break
+
             if reconnect:
                 if server_online:
                     time.sleep(0.1)
@@ -74,33 +75,63 @@ class DeployHandler:
 
             self.on_connect_callback(reconnect)
 
-
             try:
                 reconnect = True
-                resp = RequestFormatter.request("get", host, verify=False)
+                resp = self.fetch(host)
+                if resp is None:
+                    break
 
                 if resp.content.startswith(self.ERROR_PREFIX):
                     server_online = False
                     self.on_error(resp.content)
                     continue
 
-                if resp.status_code == requests.codes['no_content']:
+                if resp.status_code == requests.codes["no_content"]:
                     server_online = False
                     continue
 
                 if not resp.ok:
                     server_online = False
-                    print("[deploy] facing difficulty communicating with the server, status code:", resp.status_code, " | reconnecting")
-                    try: print(Fore.YELLOW + str(resp.content))
-                    except: pass
+                    print(
+                        "[deploy] facing difficulty communicating with the server, status code:",
+                        resp.status_code,
+                        " | reconnecting",
+                    )
+                    try:
+                        print(Fore.YELLOW + str(resp.content))
+                    except Exception:
+                        pass
 
                     # Encountered a server error, retry.
                     time.sleep(random.randint(1, 3))
                     return
 
-                self.on_message(resp.content)
+                should_quit = self.on_message(resp.content)
+                if should_quit:
+                    break
+
                 reconnect = False
                 server_online = True
-            except:
+            except requests.exceptions.ReadTimeout:
+                pass
+            except Exception:
                 traceback.print_exc()
                 print("[deploy] RETRYING...")
+
+    def fetch(self, host) -> requests.Response | None:
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(
+            lambda: RequestFormatter.request("get", host, verify=False)
+        )
+
+        while not future.done():
+            if STATE.reconnect_with_credentials is not None:
+                future.cancel()
+                executor.shutdown(wait=False, cancel_futures=True)
+                return None
+            time.sleep(1)
+
+        resp = None
+        if not future.cancelled():
+            resp = future.result()
+        return resp

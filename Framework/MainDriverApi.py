@@ -1190,23 +1190,23 @@ def send_dom_variables():
                     html.setAttribute('zeuz','aiplugin');
                     var myString = document.documentElement.outerHTML;
                     html.innerHTML = myString;
-                    
+
                     var elements = html.getElementsByTagName('head');
                     while (elements[0])
                         elements[0].parentNode.removeChild(elements[0])
-    
+
                     var elements = html.getElementsByTagName('link');
                     while (elements[0])
                         elements[0].parentNode.removeChild(elements[0])
-    
+
                     var elements = html.getElementsByTagName('script');
                     while (elements[0])
                         elements[0].parentNode.removeChild(elements[0])
-    
+
                     var elements = html.getElementsByTagName('style');
                     while (elements[0])
                         elements[0].parentNode.removeChild(elements[0])
-                    
+
                     // AI model works better on indented dom, so not removing indentation.
                     // var result = html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
 
@@ -1564,7 +1564,7 @@ def upload_reports_and_zips(temp_ini_file, run_id):
                     files_list = []
                     for zips in opened_zips:
                         files_list.append(("file",zips))
-                    res = RequestFormatter.request("post", 
+                    res = RequestFormatter.request("post",
                         RequestFormatter.form_uri("save_log_and_attachment_api/"),
                         files=files_list,
                         data={"machine_name": Userid},
@@ -1612,12 +1612,12 @@ def retry_failed_report_upload():
                     report_json_path = failed_report_dir / folder / 'report.json'
                     report_json = json.load(open(report_json_path))
                     if not report_json.get('perf_filepath'):
-                        res = RequestFormatter.request("post", 
+                        res = RequestFormatter.request("post",
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": report_json.get('execution_report')},
                             verify=False)
                     else:
-                        res = RequestFormatter.request("post", 
+                        res = RequestFormatter.request("post",
                                     RequestFormatter.form_uri("create_report_log_api/"),
                                     data={"execution_report": report_json.get('execution_report'),
                                         "processed_tc_id":report_json.get('processed_tc_id')
@@ -1625,7 +1625,7 @@ def retry_failed_report_upload():
                                         },
                                     files=[("file",open(failed_report_dir / folder / 'files' /report_json.get('perf_filepath'),'rb'))],
                                     verify=False)
-                        
+
                         if res.status_code == 200:
                             CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {report_json.get('run_id')}", 1)
                             shutil.rmtree(failed_report_dir / folder)
@@ -1634,7 +1634,7 @@ def retry_failed_report_upload():
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, str(e), 3)
             pass
-        
+
         sleep(120)
 
 
@@ -1839,7 +1839,7 @@ def main(device_dict, all_run_id_info):
                 CommonUtil.debug_status = False
                 shared.Clean_Up_Shared_Variables(run_id)
 
-            # Todo: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
+            # TODO: set the device_order for all the device from run_id_info["device_info"] or "temp/device_info.json" file
             # string_device_order = run_id_info["device_info"]
             device_order = run_id_info["device_info"]
             # or
@@ -2150,22 +2150,6 @@ def main(device_dict, all_run_id_info):
 
                     copytree(str(zeuz_log_dir), str(log_dir))
 
-                # Telling the node_manager that a run_id is finished
-                CommonUtil.node_manager_json(
-                    {
-                        "state": "complete",
-                        "report": {
-                            "zip": "Will do later" + ".zip",
-                            "directory": "Will do later",
-                        }
-                    }
-                )
-
-                # executor.submit(upload_json_report)
-
-            # Close websocket connection.
-            elif CommonUtil.debug_status:
-                pass
             CommonUtil.runid_index += 1
 
             # Terminating all run_cancel threads after finishing a run_id
