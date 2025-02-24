@@ -808,6 +808,7 @@ def handle_rest_call(
                             method=method,
                             url=url,
                             json=body,
+                            data=payload,
                             headers=headers,
                             verify=False,
                             timeout=timeout,
