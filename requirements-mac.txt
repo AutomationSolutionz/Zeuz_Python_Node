@@ -67,3 +67,6 @@ wapiti3
 tabulate
 plyer
 notify_py
+
+jinja2
+spyne

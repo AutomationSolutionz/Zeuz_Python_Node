@@ -12,7 +12,7 @@ declarations = (
     { "name": "delete shared variables",                     "function": "delete_all_shared_variables",           "screenshot": "none" },
     { "name": "settings",                                    "function": "sequential_actions_settings",           "screenshot": "none" },
     { "name": "step exit",                                   "function": "step_exit",                             "screenshot": "none" },
-    { "name": "testcase exit",                               "function": "testcase_exit",                             "screenshot": "none" },
+    { "name": "testcase exit",                               "function": "testcase_exit",                         "screenshot": "none" },
     { "name": "save time",                                   "function": "Save_Current_Time",                     "screenshot": "none" },
     { "name": "create or append list into list",             "function": "insert_list_into_another_list",         "screenshot": "none" },
     { "name": "validate order",                              "function": "validate_list_order",                   "screenshot": "none" },
@@ -60,8 +60,8 @@ declarations = (
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
     { "name": "check latest mail",                           "function": "check_latest_mail",                     "screenshot": "none" },
-    {"name": "delete mail",                                  "function": "delete_mail_action",                    "screenshot": "none"},
-    {"name": "save mail",                                    "function": "save_mail_action",                      "screenshot": "none"},
+    { "name": "delete mail",                                  "function": "delete_mail_action",                   "screenshot": "none" },
+    { "name": "save mail",                                    "function": "save_mail_action",                     "screenshot": "none" },
 
     # Global Variable Actions
     { "name": "get global list variable",                    "function": "get_global_list_variable",              "screenshot": "none" },
@@ -117,24 +117,26 @@ declarations = (
     # Authenticator code generator action
     {"name": "authenticator code generator",                 "function": "authenticator_code_generator",          "screenshot": "none" },
 
-    {"name": "xml to json",                                  "function": "xml_to_json",                           "screenshot": "none" },
+    {"name": "xml to dict",                                  "function": "xml_to_dict",                           "screenshot": "none" },
 
     # AI actions
     {"name": "classifier ai",                                "function": "classifier_AI",                         "screenshot": "none" },
 
     {"name": "connect to S3",                                "function": "connect_to_S3",                         "screenshot": "none" },
     {"name": "upload to S3",                                 "function": "upload_to_S3",                          "screenshot": "none" },
-    
+
     {"name": "text to speech",                               "function": "text_to_speech",                        "screenshot": "none" },
 
     {"name": "connect to bigquery client",                   "function": "connect_to_bigquery_client",            "screenshot": "none" },
     {"name": "execute bigquery query",                       "function": "execute_bigquery_query",                "screenshot": "none" },
 
-    {"name": "connect to google service client",            "function": "connect_to_google_service_account",     "screenshot": "none" },
-    {"name": "upload to google storage bucket",             "function": "upload_to_google_storage_bucket",       "screenshot": "none" },
-   
-    {"name": "proxy server",                                "function": "proxy_server",                         "screenshot": "none"}
-    
+    {"name": "connect to google service client",            "function": "connect_to_google_service_account",      "screenshot": "none" },
+    {"name": "upload to google storage bucket",             "function": "upload_to_google_storage_bucket",        "screenshot": "none" },
+
+    {"name": "proxy server",                                "function": "proxy_server",                           "screenshot": "none" },
+
+    {"name": "render jinja template",                       "function": "render_jinja_template",                  "screenshot": "none" },
+
 ) # yapf: disable
 
 module_name = "common"

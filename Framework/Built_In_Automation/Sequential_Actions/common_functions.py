@@ -25,7 +25,7 @@ from html_diff import diff
 
 from imap_tools import MailBox
 import re
-from typing import List
+from typing import List, Any
 import socket
 import signal
 import os
@@ -2900,12 +2900,12 @@ def excel_read(data_set):
                 cell_range_split = cell_range.split(":")
 
                 #converted the Cell_range index value into numerical index value
-                xy1 = coordinate_from_string(cell_range_split[0])  
-                column1 = column_index_from_string(xy1[0])  
+                xy1 = coordinate_from_string(cell_range_split[0])
+                column1 = column_index_from_string(xy1[0])
                 row1 = xy1[1]
 
-                xy2 = coordinate_from_string(cell_range_split[1])  
-                column2 = column_index_from_string(xy2[0])  
+                xy2 = coordinate_from_string(cell_range_split[1])
+                column2 = column_index_from_string(xy2[0])
                 row2 = xy2[1]
 
                 #sorted the row and column according to cell_range
@@ -2915,7 +2915,7 @@ def excel_read(data_set):
                 else:
                     row = row2
                     last_row = row1
-                
+
                 if column1<column2:
                     column = column1
                     last_column = column2
@@ -2938,10 +2938,10 @@ def excel_read(data_set):
                     for i in range(row, last_row+1):
                         cell_data.append([cell.value for cell in sheet[i][column-1:last_column+1]])
             else:
-                xy = coordinate_from_string(cell_range) 
-                column = column_index_from_string(xy[0])  
+                xy = coordinate_from_string(cell_range)
+                column = column_index_from_string(xy[0])
                 row = xy[1]
-    
+
                 if expand:
                     if expand == "table":
                         for i in range(row, sheet.max_row+1):
@@ -2995,7 +2995,7 @@ def excel_comparison(data_set):
       data source.
 
     Args:
-        data_set: List[List[str]]
+        data_set: list[List[str]]
 
     Returns:
         "passed" if successful.
@@ -3131,7 +3131,7 @@ def split_string(data_set):
     Store the result (index 0 or 1) of the split in "variableName".
 
     Args:
-        data_set: List[List[str]]
+        data_set: list[List[str]]
 
           index                     input parameter         0 or 1
           split expression          input parameter         abc
@@ -4076,7 +4076,7 @@ def text_write(data_set):
 @logger
 def modify_datetime(data_set):
     """
-    This action allows you to modify the date and time of a given datetime 
+    This action allows you to modify the date and time of a given datetime
     object or today's date.
     """
     try:
@@ -4138,14 +4138,14 @@ def modify_datetime(data_set):
                 current_format = right
             if "target format" == left.lower():
                 target_format = right
-                
+
         if current_format:
             if os.name == "nt":
                 current_format = current_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
         else:
             CommonUtil.ExecLog(sModuleInfo, "current format parameter is not provided",3)
             return CommonUtil.Exception_Handler(sys.exc_info())
-        
+
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "data" in left:
@@ -4502,11 +4502,11 @@ def random_email_generator(data_set):
         if var_email_creds == {}:
             CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
             return "zeuz_failed"
-            
+
         CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
         sr.Set_Shared_Variables("random_email_factory", mail_fac)
         return sr.Set_Shared_Variables(var_variable, var_email_creds) #saved in shared variable inside variable key
-        
+
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -6302,7 +6302,7 @@ def data_store_insert_column(data_set):
 
 
 @logger
-def xml_to_json(data_set):
+def xml_to_dict(data_set):
     """
     """
     import xmltodict
@@ -6311,36 +6311,42 @@ def xml_to_json(data_set):
 
     try:
         filepath = None
-        json_var_name = None
+        var_name = None
+        xml_data = None
 
         for left, mid, right in data_set:
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
                 filepath = Path(CommonUtil.path_parser(filepath))
-            if "xml to json" in left:
-                json_var_name = right.strip()
+            if "xml to dict" in left:
+                var_name = right.strip()
+            if "xml data" in left:
+                xml_data = right
 
-        if None in (filepath,json_var_name):
-            CommonUtil.ExecLog(sModuleInfo, "Please specify both filename and json variable name", 3)
-
-        if filepath != None and filepath.is_file():
-            try:
-                with open(filepath) as xml_file:
-                    data_dict = xmltodict.parse(xml_file.read())
-                result = sr.Set_Shared_Variables(json_var_name, data_dict)
-                return result
-            except:
-                CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
+        if filepath is not None:
+            if filepath.is_file():
+                try:
+                    with open(filepath) as xml_file:
+                        data_dict = xmltodict.parse(xml_file.read())
+                    result = sr.Set_Shared_Variables(var_name, data_dict)
+                    return result
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
+                    return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid file path - the given path does not represent a readable file", 3)
                 return "zeuz_failed"
-
-
-
+        elif xml_data is not None:
+            data_dict = xmltodict.parse(xml_data)
+            result = sr.Set_Shared_Variables(var_name, data_dict)
+            return result
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Specified file couldn't be found or downloaded from attachment", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Please specify either the 'xml data' or 'file path' parameters", 3)
             return "zeuz_failed"
 
     except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to parse XML into dictionary.", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -6687,7 +6693,7 @@ def start_ssh_tunnel(data_set):
             remote_port = int(right.strip())
         elif left == 'start ssh tunnel':
             tunnel_var = right.strip()
-    
+
     missing = [x for x in [host_ip,ssh_user,private_key_path,local_port, remote_port, tunnel_var] if x == None]
     if missing:
         CommonUtil.ExecLog(sModuleInfo, f"{', '.join(missing)} needs to be provided", 3)
@@ -6720,13 +6726,13 @@ def start_ssh_tunnel(data_set):
         except (socket.timeout, socket.error):
             CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel can not be established", 3)
             return "zeuz_failed"
-        
+
         sr.Set_Shared_Variables(tunnel_var, process.pid)
         CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel is established", 1)
         return "passed"
 
 
-    
+
 @logger
 def stop_ssh_tunnel(data_set):
 
@@ -6736,12 +6742,11 @@ def stop_ssh_tunnel(data_set):
     for left, mid, right in data_set:
         if left == 'stop ssh tunnel':
             tunnel_pid = int(right.strip())
-    
+
     subprocess.run(['kill', str(tunnel_pid)], check=True)
     CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel is closed", 1)
 
     return "passed"
-
 
 @logger
 def proxy_server(data_set):
@@ -6757,7 +6762,7 @@ def proxy_server(data_set):
             port = int(right.strip())
         if left.lower().strip() == 'proxy server':
             proxy_var = right.strip()
-    
+
     if action is None:
         CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
         return "zeuz_failed"
@@ -6766,7 +6771,7 @@ def proxy_server(data_set):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             return sock.connect_ex(('localhost', port)) == 0
 
-    if action == 'start':        
+    if action == 'start':
         # Check if the port is already in use
         if is_port_in_use(port):
             CommonUtil.ExecLog(sModuleInfo, f"Port {port} is already in use.", 3)
@@ -6799,7 +6804,7 @@ def proxy_server(data_set):
                 stdout=output_file,  # Redirect stdout to the file
                 stderr=output_file,  # Redirect stderr to the file
             )
-            
+
         pid = process.pid
         CommonUtil.mitm_proxy_pids.append(pid)
         CommonUtil.ExecLog(sModuleInfo, f"Started process with PID: {pid}", 1)
@@ -6952,3 +6957,78 @@ def do_json_to_csv(data, csv_file):
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
+
+
+@logger
+def render_jinja_template(data_set):
+    """
+    Renders a Jinja template using user-provided data.
+    data_set:
+          template text         | input parameter    | Hello, {{ name }}!
+          data input            | input parameter    | {"name": "Mini"}
+          settings              | optional parameter | {"undefined": "lenient"} <-- what to do with undefined values in the template
+          render jinja template | common action      | output_variable_name
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME  # type: ignore
+
+    try:
+        # Initialize variables
+        template_text: str | None = None
+        data_input: dict[str, Any] = {}
+        settings: dict[str, Any] = {}
+        variable_name: str | None = None
+        print_output: bool = True
+
+        # Parse inputs from data_set
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+
+            if "action" in mid:
+                variable_name = right.strip()
+            elif "template text" in left:
+                template_text = right
+            elif "data input" in left:
+                try:
+                    data_input = CommonUtil.parse_value_into_object(right.strip())
+                except:  # noqa: E722
+                    data_input = {}
+            elif "settings" in left:
+                try:
+                    settings = CommonUtil.parse_value_into_object(right.strip())
+                except:  # noqa: E722
+                    settings = {}
+            elif "print output" in left:
+                print_output = CommonUtil.parse_value_into_object(right.strip()) is True
+
+        # Validate required inputs
+        if not template_text:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Template text is missing", 3
+            )
+            return "zeuz_failed"
+        if variable_name is None or len(variable_name) == 0:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Output variable name is missing", 3
+            )
+            return "zeuz_failed"
+
+        # Import Jinja2 and set up environment
+        from jinja2 import Environment
+        env = Environment(**settings)
+
+        # Render the template
+        template = env.from_string(template_text)
+        rendered_output: str = template.render(data_input)
+
+        sr.Set_Shared_Variables(variable_name, rendered_output)
+
+        # Log the rendered template
+        if print_output:
+            CommonUtil.ExecLog(
+                sModuleInfo, f"Rendered Output:\n{rendered_output}", 5
+            )
+        return "passed"
+
+    except Exception:
+        # Handle exceptions
+        return CommonUtil.Exception_Handler(sys.exc_info())
