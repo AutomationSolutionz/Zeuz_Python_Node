@@ -32,6 +32,7 @@ dependencies = [
     "mitmproxy>=0.14.0",
     "mouse>=0.7.1",
     "notify-py>=0.3.43",
+    "opencv-python>=4.11.0.86",
     "openpyxl>=3.1.5 ; sys_platform == 'win32'",
     "pandas>=2.2.3",
     "pdf2image>=1.17.0 ; sys_platform == 'win32'",
