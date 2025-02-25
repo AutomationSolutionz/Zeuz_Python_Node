@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import socket
 import sys
 import shutil
 from pathlib import Path
@@ -46,12 +47,25 @@ from server import main as node_server
 
 
 def start_server():
+    def is_port_in_use(port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(("127.0.0.1", port)) == 0
+
     def run():
-        # TODO: the port must be selected dynamically from a range of ports - max 50 ports maybe?
         try:
-            uvicorn.run(node_server.main(), host="127.0.0.1", port=18100, log_level="warning")
+            node_server_port = 18100
+            tries = 0
+            while is_port_in_use(node_server_port) and tries < 99:
+                node_server_port += 1
+                tries += 1
+            uvicorn.run(
+                node_server.main(),
+                host="127.0.0.1",
+                port=node_server_port,
+                log_level="warning",
+            )
         except Exception:
-            pass
+            print("[WARN] Failed to launch node-server. Seamless connect feature is disabled.")
 
     t = threading.Thread(target=run, daemon=True)
     t.start()
