@@ -23,3 +23,8 @@ def kill():
 @router.post("/restart", status_code=501)
 def restart():
     return OperatorResponse(status="error", error="Not implemented")
+
+
+@router.post("/rename_node", status_code=501)
+def rename_node():
+    return OperatorResponse(status="error", error="Not implemented")

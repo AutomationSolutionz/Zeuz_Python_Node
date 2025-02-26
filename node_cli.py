@@ -19,12 +19,6 @@ import threading
 from datetime import date
 from datetime import datetime as dt
 
-from Framework.module_installer import (
-    check_min_python_version,
-    install_missing_modules,
-    update_outdated_modules,
-)
-
 import requests
 from configobj import ConfigObj
 from dotenv import load_dotenv
@@ -36,14 +30,37 @@ from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 
-from Framework.deploy_handler import (
+
+def adjust_python_path():
+    """Adjusts the Python path to include the Framework directory."""
+    root_dir = Path.cwd()
+    framework_dir = root_dir / "Framework"
+
+    automation_log_dir = root_dir / "AutomationLog"
+    automation_log_dir.mkdir(exist_ok=True)
+
+    # Append correct paths so that it can find the configuration files and other modules
+    sys.path.append(str(framework_dir))
+
+    # Move to Framework directory and add parent to path for module imports
+    os.chdir(framework_dir)
+
+adjust_python_path()
+
+from Framework.module_installer import (  # noqa: E402
+    check_min_python_version,
+    install_missing_modules,
+    update_outdated_modules,
+)
+
+from Framework.deploy_handler import (  # noqa: E402
     long_poll_handler,
     adapter,
 )
-from Framework.Utilities import ConfigModule
-from Framework.Utilities import live_log_service
-from Framework.node_server_state import STATE
-from server import main as node_server
+from Framework.Utilities import ConfigModule  # noqa: E402
+from Framework.Utilities import live_log_service  # noqa: E402
+from Framework.node_server_state import STATE  # noqa: E402
+from server import main as node_server  # noqa: E402
 
 
 def start_server():
@@ -71,31 +88,12 @@ def start_server():
     t.start()
 
 
-def adjust_python_path():
-    """Adjusts the Python path to include the Framework directory."""
-    ROOT_DIR = Path.cwd()
-    if ROOT_DIR.name == "Framework":
-        ROOT_DIR = ROOT_DIR.parent
-    FRAMEWORK_DIR = ROOT_DIR / "Framework"
-
-    automation_log_path = ROOT_DIR / "AutomationLog"
-    automation_log_path.mkdir(exist_ok=True)
-
-    # Append correct paths so that it can find the configuration files and other modules
-    sys.path.append(str(FRAMEWORK_DIR))
-
-    # Move to Framework directory and add parent to path for module imports
-    os.chdir(FRAMEWORK_DIR)
-
-
-def kill_old_process():
+def kill_old_process(pid_file_path: os.PathLike):
     """kill any process that is running  from the same node folder."""
     import psutil
 
-    pidfile = Path.cwd() / "pid.txt"
-
     try:
-        with open(pidfile, "r") as f:
+        with open(pid_file_path, "r") as f:
             pid_number = int(f.read().strip())
             process = psutil.Process(pid_number)
             process.terminate()
@@ -107,7 +105,7 @@ def kill_old_process():
         pass
 
     try:
-        with open(pidfile, "w") as f:
+        with open(pid_file_path, "w") as f:
             f.write(str(os.getpid()))
     except Exception:
         pass
@@ -146,8 +144,7 @@ def main():
 
     colorama_init(autoreset=True)
 
-    kill_old_process()
-    adjust_python_path()
+    kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
     install_missing_modules()
     monkeypatch_fromisoformat()
