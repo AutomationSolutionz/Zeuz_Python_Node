@@ -19,6 +19,7 @@ import threading
 from datetime import date
 from datetime import datetime as dt
 
+import psutil
 import requests
 from configobj import ConfigObj
 from dotenv import load_dotenv
@@ -181,10 +182,24 @@ TMP_INI_FILE = (
 )
 
 
+def kill_child_processes():
+    try:
+        parent = psutil.Process()
+        children = parent.children(recursive=True)
+        for child in children:
+            try:
+                child.kill()
+            except psutil.NoSuchProcess:
+                pass
+    except Exception:
+        pass
+
+
 def signal_handler(sig, frame):
     print("\n--- SIGINT received, quitting ---\n")
     CommonUtil.run_cancelled = True
     CommonUtil.ShutdownExecutor()
+    kill_child_processes()
     os._exit(0)
 
 
