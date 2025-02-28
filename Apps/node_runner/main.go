@@ -14,7 +14,7 @@ import (
 
 const (
 	zeuzURL = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
-	zeuzDir = "ZeuZ Node"
+	zeuzDir = "ZeuZ_Node"
 )
 
 // downloadFile downloads a file from URL to a local path
