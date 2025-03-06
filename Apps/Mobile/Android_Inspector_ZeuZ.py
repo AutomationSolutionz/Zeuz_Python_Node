@@ -1,4 +1,4 @@
-import os
+import os, requests
 import re
 import json
 import subprocess
@@ -110,7 +110,6 @@ def parse_ui_xml(xml_file):
     return [extract_elements(root)]
 
 
-
 def generate_zeuz_action(element_xml, action_type, action_value="Sample Text"):
     """
     Generate a Zeuz action in the required format.
@@ -207,6 +206,95 @@ def toggle_view():
         tree_frame.pack(fill="both", expand=True)  # Show tree view
         view_mode.set("tree")
     update_screenshot(None)
+
+def find_matching_element(root, selected_element) -> bool:
+    """Find an element in `root` that matches `selected_element` by tag, attributes, and text."""
+    tag = selected_element.tag
+    attribs = selected_element.attrib
+    text = (selected_element.text or "").strip()
+
+    # Iterate through all elements with the same tag in root
+    for elem in root.iter(tag):
+        if elem.attrib == attribs and (elem.text or "").strip() == text:
+            elem.set("zeuz", "ai")
+            return True
+
+    return False
+
+
+def read_settings_conf():
+    """Read settings from the Framework/settings.conf file."""
+    try:
+        import configparser
+        import os
+        
+        # Get the current file's directory and navigate to Framework/settings.conf
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        settings_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'Framework', 'settings.conf')
+        
+        config = configparser.ConfigParser()
+        config.read(settings_path)
+        api_key = config.get('Authentication', 'api-key').strip()
+        server_address = config.get('Authentication', 'server_address').strip()
+        url = server_address + "/" if server_address[-1] != "/" else server_address
+        return {
+            'api_key': api_key,
+            'url': url
+        }
+    except Exception as e:
+        print(f"Error reading settings.conf: {str(e)}")
+        return {'api_key': '', 'url': ''}
+
+def send_to_zeuz():
+    """Send the inspected Element and UI hierarchy to Zeuz."""
+    selected_item = tree.selection() if view_mode.get() == "tree" else flat_tree.selection()
+    if not selected_item:
+        messagebox.showwarning("No Selection", "Please select an element first.")
+        return
+
+    try:
+        # Read settings
+        settings = read_settings_conf()
+        if not settings['api_key'] or not settings['url']:
+            messagebox.showerror("Configuration Error", "API key or server address not found in settings.conf")
+            return
+
+        # Read the original UI XML file
+        tree_xml = ET.parse(UI_XML_PATH)
+        root = tree_xml.getroot()
+        
+        # Get the XML string of the selected element
+        selected_xml = tree.item(selected_item, "tags")[0] if view_mode.get() == "tree" else flat_tree.item(selected_item, "tags")[0]
+        
+        # Create an ElementTree from the selected XML string
+        selected_element = ET.fromstring(selected_xml)
+        find_matching_element(root, selected_element)
+        
+        # Convert the modified XML tree to string
+        modified_xml_string = ET.tostring(root, encoding='unicode')
+        
+        # Send the request to Zeuz server
+        headers = {
+            "X-Api-Key": settings['api_key'],
+        }
+        content = json.dumps({
+            'page_src': modified_xml_string,
+            "action_type": "appium",
+        })
+        response = requests.post(
+            f"{settings['url']}ai_record_single_action/",
+            headers=headers,
+            data=content,
+            verify=False
+        )
+        
+        if response.status_code == 200:
+            messagebox.showinfo("Success", "Successfully sent to Zeuz!")
+        else:
+            messagebox.showerror("Error", f"Failed to send data: {response.text}")
+        
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to process UI hierarchy: {str(e)}")
 
 
 def update_screenshot(event=None):
@@ -333,6 +421,9 @@ btn_tap = ttk.Button(button_frame, text="Tap Element", command=tap_element)
 btn_tap.pack(side="left", padx=5)
 
 btn_toggle_view = ttk.Button(button_frame, text="Toggle View", command=toggle_view)
+btn_toggle_view.pack(side="left", padx=5)
+
+btn_toggle_view = ttk.Button(button_frame, text="Send to Zeuz", command=send_to_zeuz)
 btn_toggle_view.pack(side="left", padx=5)
 
 # View mode (Tree or Flat)

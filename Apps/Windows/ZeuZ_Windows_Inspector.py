@@ -102,9 +102,9 @@ def Authenticate():
     global server, api_key
     config = configparser.ConfigParser()
     config.read("..\..\Framework\settings.conf")
-    try: api_key = config.get("Authentication", "api-key")
+    try: api_key = config.get("Authentication", "api-key").strip()
     except: api_key = ""
-    try: server = config.get("Authentication", "server_address")
+    try: server = config.get("Authentication", "server_address").strip()
     except: server = ""
     while not server or not api_key:
         server = input("Provide Server Address: ")
