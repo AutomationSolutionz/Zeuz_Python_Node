@@ -216,7 +216,7 @@ def find_matching_element(root, selected_element) -> bool:
     # Iterate through all elements with the same tag in root
     for elem in root.iter(tag):
         if elem.attrib == attribs and (elem.text or "").strip() == text:
-            elem.set("zeuz", "ai")
+            elem.set("zeuz", "aiplugin")
             return True
 
     return False
@@ -273,13 +273,16 @@ def send_to_zeuz():
         # Convert the modified XML tree to string
         modified_xml_string = ET.tostring(root, encoding='unicode')
         
+        print("\n\n------------- Modified XML -------------------")
+        print(modified_xml_string)
+        print("---------------------------------------------\n\n")
         # Send the request to Zeuz server
         headers = {
             "X-Api-Key": settings['api_key'],
         }
         content = json.dumps({
             'page_src': modified_xml_string,
-            "action_type": "appium",
+            "action_type": "android",
         })
         response = requests.post(
             f"{settings['url']}ai_record_single_action/",
