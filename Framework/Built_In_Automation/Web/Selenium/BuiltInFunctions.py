@@ -514,7 +514,7 @@ def generate_options(browser: str, browser_options:BrowserOptions):
             msg += f"Debugger address: {options.debugger_address}\n"
         msg += (
             f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
-            f"Extensions: {json.dumps(options.extensions, indent=2)}\n"
+            f"Extensions: {len(options.extensions)} added\n"
         )
     elif browser in ("firefox", "firefoxheadless"):
         from selenium.webdriver.firefox.options import Options as FirefoxOptions
