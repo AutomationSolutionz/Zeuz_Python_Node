@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from arachni_download import check_and_install_arachni
 from nikto_download import check_and_download_nikto
 from arachni_run import run_arachni_scan, generate_report_from_afr
+from nmap_scan import nmap_scan_run
 from helper import extract_target, check_perl_installed, display_table, save_report_to_file
 
 from Framework.Utilities import ConfigModule
@@ -36,23 +37,17 @@ def port_scaning_nmap(data_set: list) -> str:
     target_url = next(item[2] for item in data_set if item[0] == "target")
     nmap_action = next(item[2] for item in data_set if item[0] == "nmap")
     target = extract_target(target_url)
-    command = ["nmap", nmap_action, target]
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
         security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report'
-        output_file_name = "nmap_scan_report.txt"
-        save_report_to_file(result.stdout, security_report_dir, output_file_name)
-
-        success_data = [
-            ["Command", " ".join(command)],
-            ["Output", result.stdout.strip()],
-        ]
-        display_table(success_data, headers=["Description", "Details"], title="Nmap Scan Result")
+        saved_files = nmap_scan_run(target, security_report_dir)
+        xml_path = saved_files["xml"]
+        txt_path = saved_files["txt"]
+        html_path = saved_files["html"]
         return "passed"
     except subprocess.CalledProcessError as e:
         error_data = [
-            ["Command", " ".join(command)],
+            ["Target URL", " ".join(target)],
             ["Error", e.stderr.strip()],
         ]
         display_table(error_data, headers=["Description", "Details"], title="Nmap Error")
