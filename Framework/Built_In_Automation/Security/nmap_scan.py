@@ -749,10 +749,8 @@ def generate_html(vulnerabilities, scan_info, target_ip, output_dir=None):
 
 def nmap_scan_run(url, security_report_dir=None):
     ip_address = url
-    
-    os.makedirs(security_report_dir, exist_ok=True)
+    security_report_dir.mkdir(parents=True, exist_ok=True)
     print(f"Saving all reports directly to: {security_report_dir}")
-
     print("Running Nmap scan. It may take a while...")
     xml_result, text_result = run_nmap(ip_address, security_report_dir)
     print(f"Scan complete! Results saved to:")

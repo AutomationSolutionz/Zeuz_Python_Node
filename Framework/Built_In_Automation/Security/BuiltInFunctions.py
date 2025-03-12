@@ -35,9 +35,8 @@ def port_scaning_nmap(data_set: list) -> str:
         return "zeuz_failed"
 
     target_url = next(item[2] for item in data_set if item[0] == "target")
-    nmap_action = next(item[2] for item in data_set if item[0] == "nmap")
     target = extract_target(target_url)
-
+    
     try:
         security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report'
         saved_files = nmap_scan_run(target, security_report_dir)
