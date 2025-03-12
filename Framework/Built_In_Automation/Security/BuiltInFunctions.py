@@ -34,9 +34,9 @@ def port_scaning_nmap(data_set: list) -> str:
         display_table(error_data, headers=["Message", "Details"], title="Nmap Error")
         return "zeuz_failed"
 
-    target_url = next(item[2] for item in data_set if item[0] == "target")
+    target_url = next(item[2] for item in data_set if item[0] == "nmap")
     target = extract_target(target_url)
-    
+
     try:
         security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report'
         saved_files = nmap_scan_run(target, security_report_dir)
@@ -54,11 +54,11 @@ def port_scaning_nmap(data_set: list) -> str:
 
 
 def server_scaning_wapiti(data_set: list) -> str:
-    target = next(item[2] for item in data_set if item[0] == 'target')
-    wapiti_action = next(item[2] for item in data_set if item[0] == 'wapiti')
+    target = next(item[2] for item in data_set if item[0] == 'wapiti')
+    wapiti_action = next(item[2] for item in data_set if item[0] == 'verbosity')
     if not target.startswith(("http://", "https://")):
         target = "http://" + target
-    command = ["wapiti", wapiti_action, "-u", target]
+    command = ["wapiti", f"-v={wapiti_action}", "-u", target]
 
     try:
         print(command)
