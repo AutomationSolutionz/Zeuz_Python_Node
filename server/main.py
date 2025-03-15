@@ -7,7 +7,7 @@ from server.status import router as status_router
 from server.connect import router as connect_router
 from server.evaluator import router as evaluator_router
 from server.node_operator import router as operator_router
-
+from server.inspector import router as inspector_router
 
 class EndpointFilter(logging.Filter):
     def __init__(
@@ -35,7 +35,7 @@ def main() -> FastAPI:
     v1router.include_router(connect_router)
     v1router.include_router(operator_router)
     v1router.include_router(evaluator_router)
-
+    v1router.include_router(inspector_router)
     app = FastAPI()
     app.include_router(v1router)
 
