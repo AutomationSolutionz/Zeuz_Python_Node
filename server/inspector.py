@@ -54,8 +54,8 @@ def get_devices():
     except Exception as e:
         return []
 
-@router.get("/inspector")
-def inspector():
+@router.get("/inspect")
+def inspect():
     """Get the Mobile DOM and screenshot."""
     try:
         # Capture UI and screenshot
