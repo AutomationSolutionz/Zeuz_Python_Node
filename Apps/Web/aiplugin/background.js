@@ -1,8 +1,8 @@
 const browserAppData = chrome || browser;
 const tabs = {};
 const inspectFile = 'inspect.js';
-const activeIcon = 'active-64.png';
-const defaultIcon = 'small_logo.png';
+const activeIcon = 'zeuz-active.png';
+const defaultIcon = 'zeuz.png';
 var zeuz_url;
 var zeuz_key;
 var zeuz_node_id;
@@ -51,7 +51,7 @@ const inspect = {
         browserAppData.action.setIcon({
             tabId: id,
             path: {
-                19: 'icons/' + icon
+                19: icon
             }
         });
     }

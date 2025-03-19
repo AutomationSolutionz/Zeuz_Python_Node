@@ -542,7 +542,7 @@ function App() {
         <>
             <div className={"d-flex flex-column root" + (showOverlay ? ' blurred' : '')}>
                 <div className="upper-nav d-flex align-items-center">
-                    <img className="mx-2" src="logo_ZeuZ.png" alt="" id="logo_dark" />
+                    <img className="mx-2" src="zeuz.png" alt="" id="logo_dark" />
                     <div className="mx-2 title" id="recorderTitle"></div>
                 </div>
                 <div id="content" style={{ display: 'block' }}>

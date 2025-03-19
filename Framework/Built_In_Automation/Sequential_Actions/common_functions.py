@@ -7029,3 +7029,84 @@ def render_jinja_template(data_set):
     except Exception:
         # Handle exceptions
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_chrome_extension(data_set):
+    """
+    This function downloads a Chrome extension CRX file using the extension ID
+    
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            extension id                  | input parameter | jhbgaabkbcfjgjldjeddmofchgpjlhnj
+            download directory            | input parameter | C:/Downloads
+            download chrome extension     | common action   | result
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    try:
+        extension_id = None
+        download_dir = None
+        
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "extension id" == left:
+                extension_id = right.strip()
+            if "download directory" == left:
+                download_dir = CommonUtil.path_parser(right.strip())
+        
+        if extension_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the extension ID", 3)
+            return "zeuz_failed"
+        
+        if download_dir is None:
+            download_dir = sr.Get_Shared_Variables("zeuz_download_folder")
+            CommonUtil.ExecLog(sModuleInfo, f"Using default download directory: {download_dir}", 1)
+        
+        # Make sure the download directory exists
+        os.makedirs(download_dir, exist_ok=True)
+        
+        # Get the CRX download link
+        url = "https://www.crx4chrome.com/crx-url.php"
+        headers = {
+            "Referer": f"https://www.crx4chrome.com/crx-downloader/{extension_id}",
+        }
+        data = {"id": extension_id}
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Requesting download link for extension ID: {extension_id}", 1)
+        response = requests.post(url, headers=headers, data=data, verify=False)
+        
+        if response.status_code != 200:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to get download link. Status code: {response.status_code}", 3)
+            return "zeuz_failed"
+
+        match = re.search(r'href="(https://clients2\.googleusercontent\.com/crx/blobs/[^\"]+\.crx)"', response.text)
+        if not match or not match.group(1).startswith("http"):
+            CommonUtil.ExecLog(sModuleInfo, f"Invalid download link received: {match.group(1)}", 3)
+            return "zeuz_failed"
+        
+        download_link = match.group(1)
+        
+        # Download the CRX file
+        CommonUtil.ExecLog(sModuleInfo, f"Downloading extension from: {download_link}", 1)
+        crx_filename = f"{extension_id}.crx"
+        crx_path = os.path.join(download_dir, crx_filename)
+        
+        with requests.get(download_link, stream=True, verify=False) as r:
+            r.raise_for_status()
+            with open(crx_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Extension downloaded successfully to: {crx_path}", 1)
+        return "passed"
+    
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
