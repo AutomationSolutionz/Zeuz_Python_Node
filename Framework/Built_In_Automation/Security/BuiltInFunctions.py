@@ -56,13 +56,19 @@ def port_scaning_nmap(data_set: list) -> str:
 def server_scaning_wapiti(data_set: list) -> str:
     target = next(item[2] for item in data_set if item[0] == 'wapiti')
     wapiti_action = next(item[2] for item in data_set if item[0] == 'verbosity')
+
     if not target.startswith(("http://", "https://")):
         target = "http://" + target
+
     command = ["wapiti", f"-v={wapiti_action}", "-u", target]
+
+    # Set UTF-8 encoding
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
 
     try:
         print(command)
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(command, capture_output=True, text=True, check=True, env=env)
         print("Command Output:", result.stdout)
 
         for line in result.stdout.splitlines():
@@ -76,7 +82,7 @@ def server_scaning_wapiti(data_set: list) -> str:
         security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report' / 'wapiti'
         os.makedirs(security_report_dir, exist_ok=True)
         destination_path = security_report_dir / os.path.basename(report_path)
-        # Move the report file to the new location
+
         shutil.move(report_path, destination_path)
         print(f"Report moved to {destination_path}")
 
@@ -100,7 +106,6 @@ def server_scaning_arachni(data_set: list) -> str:
     else:
         print("***** Arachni setup failed. *****")
         return "zeuz_failed"
-
 
 def server_scaning_nikto(data_set: list) -> str:
     """
