@@ -60,7 +60,8 @@ def inspect():
     try:
         # Capture UI and screenshot
         capture_ui_dump()
-        
+        capture_screenshot()
+
         # Read XML file
         with open(UI_XML_PATH, 'r') as xml_file:
             xml_content = xml_file.read()
@@ -92,8 +93,31 @@ def run_adb_command(command):
 
 
 def capture_ui_dump():
-    """Capture the current UI hierarchy from the device and take a screenshot."""
-    run_adb_command(f"{ADB_PATH} shell uiautomator dump /sdcard/ui.xml")
-    run_adb_command(f"{ADB_PATH} pull /sdcard/ui.xml {UI_XML_PATH}")
-    run_adb_command(f"{ADB_PATH} shell screencap -p /sdcard/screen.png")
-    run_adb_command(f"{ADB_PATH} pull /sdcard/screen.png {SCREENSHOT_PATH}")
+    """Capture the current UI hierarchy from the device"""
+    out = run_adb_command(f"{ADB_PATH} shell uiautomator dump /sdcard/ui.xml")
+    if out.startswith("Error:"):
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+        if appium_driver is None:
+            return
+        page_src = appium_driver.page_source
+        with open(UI_XML_PATH, 'w') as xml_file:
+            xml_file.write(page_src)
+    else:
+        out = run_adb_command(f"{ADB_PATH} pull /sdcard/ui.xml {UI_XML_PATH}")
+        if out.startswith("Error:"):
+            return
+
+
+def capture_screenshot():
+    """Capture the current UI hierarchy from the device"""
+    out = run_adb_command(f"{ADB_PATH} shell screencap -p /sdcard/screen.png")
+    if out.startswith("Error:"):
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+        if appium_driver is None:
+            return
+        full_screenshot_path = os.path.join(os.getcwd(), SCREENSHOT_PATH)
+        appium_driver.save_screenshot(full_screenshot_path)
+    else:
+        out = run_adb_command(f"{ADB_PATH} pull /sdcard/screen.png {SCREENSHOT_PATH}")
+        if out.startswith("Error:"):
+            return
