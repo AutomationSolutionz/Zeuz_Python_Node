@@ -14,8 +14,8 @@ def run_nmap(ip, output_dir=None):
     xml_output_file = os.path.join(output_dir, f"nmap_scan_{ip}.xml")
     normal_output_file = os.path.join(output_dir, f"nmap_scan_{ip}.txt")
 
-    command = f"nmap -sV --script vuln -oX {xml_output_file} -oN {normal_output_file} {ip}"
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(["nmap", "-sV", "--script", "vuln", "-oX", xml_output_file, "-oN", normal_output_file, ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
     spinner = ['|', '/', '-', '\\']
     start_time = datetime.now()
     scanning = True
