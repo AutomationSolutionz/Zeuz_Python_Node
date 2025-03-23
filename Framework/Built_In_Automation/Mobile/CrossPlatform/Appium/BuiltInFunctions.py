@@ -64,6 +64,7 @@ appium_port = 4721  # Default appium port - changes if we have multiple devices
 wdaLocalPort = 8100
 appium_details = {}  # Used to store device serial number, appium driver, if multiple devices are used
 appium_driver = None  # Holds the currently used appium instance
+Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
 device_serial = ""  # Holds the identifier for the currently used device (if any are specified)
 
 device_id = ""  # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
@@ -93,6 +94,7 @@ if Shared_Resources.Test_Shared_Variables("appium_details"):  # Check if driver 
         appium_server = appium_details[name]["server"]
         device_serial = appium_details[name]["serial"]
         device_id = name
+        Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
 
 
 # Recall device_info, if not already set
@@ -508,7 +510,7 @@ def launch_application(data_set):
                     macos = right.strip()
                 elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
-                elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
+                elif left in ("no reset", "no_reset", "noreset"):
                     if right.strip().lower() in ("yes", "true", "ok", "enable"):
                         no_reset = True
                     else:
@@ -785,6 +787,7 @@ def start_appium_driver(
                 command_executor="http://hub-cloud.browserstack.com",
                 options=desiredcaps
             )
+            Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
             appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
             Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -800,6 +803,7 @@ def start_appium_driver(
                 command_executor="http://127.0.0.1:4723",
                 desired_capabilities = desiredcaps
             )
+            Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
             appium_details["aws device 1"] = {"driver": appium_driver, "serial": "0"}
             Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -940,6 +944,7 @@ def start_appium_driver(
                 try:
                     capabilities_options = UiAutomator2Options().load_capabilities(desired_caps)
                     appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, options=capabilities_options)  # Create instance
+                    Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
 
                     if appium_driver:
                         break
@@ -962,6 +967,7 @@ def start_appium_driver(
                 return "passed", launch_app
             else:  # Error during setup, reset
                 appium_driver = None
+                Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
                 CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
                 return "zeuz_failed", launch_app
         except Exception:
@@ -3596,6 +3602,7 @@ def switch_device(data_set):
             device_serial = appium_details[ID]["serial"]
             appium_driver = appium_details[ID]["driver"]
             device_id = ID
+            Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
 
             # Update shared variables, for anything that requires accessing that information
             Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)  # Save device id, because functions outside this file may require it
