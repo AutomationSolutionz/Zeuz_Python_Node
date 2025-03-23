@@ -147,7 +147,7 @@ def main():
 
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
-    install_missing_modules()
+    update_outdated_modules()
     monkeypatch_fromisoformat()
     start_server()
 
