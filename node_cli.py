@@ -1043,7 +1043,7 @@ if __name__ == "__main__":
 
             server_name = ConfigModule.get_config_value(
                 AUTHENTICATION_TAG, "server_address"
-            ).strip()
+            ).strip('""').strip()
             api = (
                 ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
                 .strip('"')
