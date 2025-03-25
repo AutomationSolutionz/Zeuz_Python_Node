@@ -178,16 +178,49 @@ def db_get_connection(session_name):
             db_service_name = db_params.get(DB_SERVICE_NAME)
 
         if "postgres" in db_type:
-            import psycopg2
-
-            # Connect to db
-            db_con = psycopg2.connect(
-                user=db_user_id,
-                password=db_password,
-                database=db_name,
-                host=db_host,
-                port=db_port
-            )
+            try:
+                # Attempt to import psycopg2
+                import psycopg2
+        
+                # Log successful import of psycopg2
+                CommonUtil.ExecLog(sModuleInfo, "Successfully imported psycopg2.", 1)
+        
+                # Connect to the database using psycopg2
+                db_con = psycopg2.connect(
+                    user=db_user_id,
+                    password=db_password,
+                    database=db_name,
+                    host=db_host,
+                    port=db_port
+                )
+                # Log successful connection
+                CommonUtil.ExecLog(sModuleInfo, "Connected to PostgreSQL using psycopg2.", 1)
+        
+            except ImportError:
+                try:
+                    # Fall back to importing psycopg (v3)
+                    import psycopg
+        
+                    # Log fallback to psycopg (v3)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to import psycopg2, falling back to psycopg (v3).", 2)
+        
+                    # Connect to the database using psycopg (v3)
+                    db_con = psycopg.connect(
+                        user=db_user_id,
+                        password=db_password,
+                        dbname=db_name,  # Note: 'dbname' instead of 'database'
+                        host=db_host,
+                        port=db_port
+                    )
+                    # Log successful connection
+                    CommonUtil.ExecLog(sModuleInfo, "Connected to PostgreSQL using psycopg (v3).", 1)
+        
+                except ImportError:
+                    # Log error if neither library is available
+                    CommonUtil.ExecLog(sModuleInfo, "Neither psycopg2 nor psycopg (v3) could be imported. Please install one of them.", 3)
+                    return "zeuz_failed"
+        
+        
         elif "mysql" in db_type:
             import mysql.connector
 
