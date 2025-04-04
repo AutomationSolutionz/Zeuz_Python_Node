@@ -1,6 +1,6 @@
 [project]
 name = "zeuz-python-node"
-version = "19.10.0"
+version = "20.1.0"
 description = "A cross-platform automation tool + framework that can automate web, mobile, desktop, rest api & databases."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -46,7 +46,6 @@ dependencies = [
     "pyautoit>=0.6.5 ; sys_platform == 'win32'",
     "pydantic>=2.10.6",
     "pygetwindow",
-    "pyodbc>=5.2.0 ; sys_platform == 'win32'",
     "pypdf2>=3.0.1",
     "pyperclip>=1.9.0",
     "pyrsistent>=0.20.0",
@@ -89,6 +88,9 @@ dependencies = [
     "xlwings>=0.33.9",
     "xmltodict>=0.14.2",
     "xvfbwrapper>=0.2.9 ; sys_platform == 'linux'",
+    "pyodbc>=5.2.0",
+    "psycopg2-binary>=2.9.10",
+    "cryptography==42.0.8",
 ]
 
 [dependency-groups]
