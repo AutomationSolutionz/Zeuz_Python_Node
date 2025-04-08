@@ -18,6 +18,7 @@ from rich.console import Console
 # from rich import print
 from rich import print_json
 from collections import namedtuple, Counter
+import platform
 
 ai_module_update_flag = None
 ai_module_update_time_difference = None
@@ -1098,17 +1099,20 @@ class MachineInfo:
                 if unique_id == "":
                     ConfigModule.clean_config_file(node_id_file_path)
                     ConfigModule.add_section("UniqueID", node_id_file_path)
-                    unique_id = uuid.uuid4()
-                    unique_id = str(unique_id)[:10]
+                    os_name = platform.system().lower()
+                    os_name = 'mac' if os_name == 'darwin' else os_name
+                    unique_id = os_name
                     ConfigModule.add_config_value(
                         "UniqueID", "id", unique_id, node_id_file_path
                     )
-                    machine_name = (
-                        ConfigModule.get_config_value("Authentication", "username")
-                        + "_"
-                        + str(unique_id)
+                    machine_name = f"{ConfigModule.get_config_value("Authentication", "username")}_{unique_id}"
+                    return machine_name
+                elif unique_id != unique_id.lower():
+                    unique_id = unique_id.lower()
+                    ConfigModule.add_config_value(
+                        "UniqueID", "id", unique_id, node_id_file_path
                     )
-                    return machine_name[:100]
+
                 machine_name = (
                     ConfigModule.get_config_value("Authentication", "username")
                     + "_"
@@ -1118,24 +1122,20 @@ class MachineInfo:
                 # create the file name
                 f = open(node_id_file_path, "w")
                 f.close()
-                unique_id = uuid.uuid4()
-                unique_id = str(unique_id).lower()[:10]
+                os_name = platform.system().lower()
+                os_name = 'mac' if os_name == 'darwin' else os_name
+                unique_id = os_name
                 ConfigModule.add_section("UniqueID", node_id_file_path)
                 ConfigModule.add_config_value(
                     "UniqueID", "id", unique_id, node_id_file_path
                 )
-                machine_name = (
-                    ConfigModule.get_config_value("Authentication", "username")
-                    + "_"
-                    + str(unique_id)
-                )
-            return machine_name[:100]
+                machine_name = f"{ConfigModule.get_config_value("Authentication", "username")}_{unique_id}"
+            return machine_name
 
         except Exception:
             ErrorMessage = "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
             return str(Exception_Handler(sys.exc_info(), None, ErrorMessage))
 
-    def getUniqueId(self):
         """
         This function is not used any more
         :return: returns the local pc unique ID
@@ -1152,8 +1152,12 @@ class MachineInfo:
                 if unique_id == "":
                     ConfigModule.clean_config_file(node_id_file_path)
                     ConfigModule.add_section("UniqueID", node_id_file_path)
-                    unique_id = uuid.uuid4()
-                    unique_id = str(unique_id)[:10]
+                    computer_name = platform.node().lower()
+                    os_name = platform.system().lower()
+                    # Combine OS name and computer name, ensuring total length <= 10
+                    if len(computer_name) > 7:
+                        computer_name = computer_name[:7]
+                    unique_id = f"{os_name[:2]}{computer_name}"[:10]
                     ConfigModule.add_config_value(
                         "UniqueID", "id", unique_id, node_id_file_path
                     )
@@ -1164,8 +1168,12 @@ class MachineInfo:
                 # create the file name
                 f = open(node_id_file_path, "w")
                 f.close()
-                unique_id = uuid.uuid4()
-                unique_id = str(unique_id)[:10]
+                computer_name = platform.node().lower()
+                os_name = platform.system().lower()
+                # Combine OS name and computer name, ensuring total length <= 10
+                if len(computer_name) > 7:
+                    computer_name = computer_name[:7]
+                unique_id = f"{os_name[:2]}{computer_name}"[:10]
                 ConfigModule.add_section("UniqueID", node_id_file_path)
                 ConfigModule.add_config_value(
                     "UniqueID", "id", unique_id, node_id_file_path
