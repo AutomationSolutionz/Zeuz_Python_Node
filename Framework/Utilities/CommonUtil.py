@@ -1105,7 +1105,8 @@ class MachineInfo:
                     ConfigModule.add_config_value(
                         "UniqueID", "id", unique_id, node_id_file_path
                     )
-                    machine_name = f"{ConfigModule.get_config_value("Authentication", "username")}_{unique_id}"
+                    #machine_name = f"{ConfigModule.get_config_value("Authentication", "username")}_{unique_id}"
+                    machine_name = f"{ConfigModule.get_config_value('Authentication', 'username')}_{unique_id}"
                     return machine_name
                 elif unique_id != unique_id.lower():
                     unique_id = unique_id.lower()
@@ -1129,7 +1130,8 @@ class MachineInfo:
                 ConfigModule.add_config_value(
                     "UniqueID", "id", unique_id, node_id_file_path
                 )
-                machine_name = f"{ConfigModule.get_config_value("Authentication", "username")}_{unique_id}"
+                #machine_name = f"{ConfigModule.get_config_value("Authentication", "username")}_{unique_id}"
+                machine_name = f"{ConfigModule.get_config_value('Authentication', 'username')}_{unique_id}"
             return machine_name
 
         except Exception:
