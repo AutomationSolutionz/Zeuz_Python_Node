@@ -5943,12 +5943,10 @@ def data_store_read(data_set):
             **headers
         )
         response_json = json.loads(res.text)
-        status_code = response_json['status']
-        if status_code==200:
-            # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
-            return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        if res.status_code == 200:
+            return sr.Set_Shared_Variables(var_name, response_json, pretty=True)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "No data found , please check your dataset", 1)
+            CommonUtil.ExecLog(sModuleInfo, "No data found, please check your dataset", 1)
         return "passed"
 
     except Exception:
