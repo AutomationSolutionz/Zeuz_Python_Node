@@ -5942,8 +5942,8 @@ def data_store_read(data_set):
             verify=False,
             **headers
         )
-        response_json = json.loads(res.text)
         if res.status_code == 200:
+            response_json = json.loads(res.text)
             return sr.Set_Shared_Variables(var_name, response_json, pretty=True)
         else:
             CommonUtil.ExecLog(sModuleInfo, "No data found, please check your dataset", 1)
