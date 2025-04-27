@@ -1161,12 +1161,13 @@ def send_dom_variables():
                     builder = SchemaBuilder()
                     builder.add_object(var_value)
                     schema = builder.to_schema()
-                    variables.append({
-                        "type": "json_schema",
-                        "variable_name": var_name,
-                        "variable_value": schema,
-                        "description": "",
-                    })
+                    if len(json.dumps(schema)) <= max_threshold:
+                        variables.append({
+                            "type": "json_schema",
+                            "variable_name": var_name,
+                            "variable_value": schema,
+                            "description": "",
+                        })
                 else:
                     variables.append({
                         "type": "json_object",
