@@ -25,6 +25,8 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
 )
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
+from selenium.webdriver.common.actions.action_builder import ActionBuilder
+from selenium.webdriver.common.actions.pointer_input import PointerInput
 # from appium.webdriver.common.touch_action import TouchAction
 # from appium.webdriver.common.multi_action import MultiAction
 from selenium.webdriver.common.action_chains import ActionChains
@@ -2159,6 +2161,340 @@ def Click_Element_Appium(data_set):
             context_result = auto_switch_context_and_try("native")
         errMsg = "Could not find/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+from selenium.webdriver.common.actions.action_builder import ActionBuilder
+from selenium.webdriver.common.actions.pointer_input import PointerInput
+import time
+
+@logger
+def Double_Click_Element_Appium(data_set):
+    """ Execute true double-click using macOS native doubleClick command """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        x_offset = 0
+        y_offset = 0
+        offset = False
+
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if mid in ("option", "optional parameter") and "offset" in left:
+                offset = True
+                x_offset, y_offset = [int(i.strip()) for i in right.strip().split(",")]
+
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+
+        if Element.is_enabled():
+            try:
+                rect = Element.rect
+                x = rect['x'] + rect['width'] / 2
+                y = rect['y'] + rect['height'] / 2
+
+                if offset:
+                    x += (x_offset / 100.0) * (rect['width'] / 2)
+                    y += (y_offset / 100.0) * (rect['height'] / 2)
+
+                # ✅ Use Appium's macOS double click command
+                appium_driver.execute_script("macos: doubleClick", {
+                    "x": int(x),
+                    "y": int(y)
+                })
+
+                CommonUtil.ExecLog(sModuleInfo, "Successfully performed double-click using macOS native command.", 1)
+                return "passed"
+
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Element is enabled. Native double-click failed: {str(e)}", 3)
+                return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to double-click.", 3)
+            return "zeuz_failed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Exception occurred: {str(e)}", 3)
+        return "zeuz_failed"
+
+
+@logger
+def Right_Click_Element_Appium(data_set):
+    """ Perform a native macOS right-click using the 'macos: rightClick' command """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        x_offset = 0
+        y_offset = 0
+        offset = False
+
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if mid in ("option", "optional parameter") and "offset" in left:
+                offset = True
+                x_offset, y_offset = [int(i.strip()) for i in right.strip().split(",")]
+
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+
+        if Element.is_enabled():
+            try:
+                rect = Element.rect
+                x = rect['x'] + rect['width'] / 2
+                y = rect['y'] + rect['height'] / 2
+
+                if offset:
+                    x += (x_offset / 100.0) * (rect['width'] / 2)
+                    y += (y_offset / 100.0) * (rect['height'] / 2)
+
+                # ✅ Native right-click via Appium
+                appium_driver.execute_script("macos: rightClick", {
+                    "x": int(x),
+                    "y": int(y)
+                })
+
+                CommonUtil.ExecLog(sModuleInfo, "Successfully performed native right-click via macos: rightClick.", 1)
+                return "passed"
+
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Element is enabled. Native right-click failed: {str(e)}", 3)
+                return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to right-click.", 3)
+            return "zeuz_failed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Exception occurred: {str(e)}", 3)
+        return "zeuz_failed"
+
+
+@logger
+def Wait_For_Element_To_Appear_Appium(data_set):
+    """ Wait for an element to appear on screen within the timeout (default 10s) """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
+    timeout = 10  # default timeout
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if mid in ("option", "optional parameter") and "timeout" in left:
+                timeout = int(right.strip())
+
+        CommonUtil.ExecLog(sModuleInfo, f"Waiting for element to appear (timeout={timeout}s)...", 1)
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            Element = LocateElement.Get_Element(data_set, appium_driver)
+            if Element != "zeuz_failed" and Element.is_displayed():
+                CommonUtil.ExecLog(sModuleInfo, "Element appeared and is visible.", 1)
+                return "passed"
+            time.sleep(0.5)
+
+        CommonUtil.ExecLog(sModuleInfo, "Timeout: Element did not appear.", 3)
+        return "zeuz_failed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Exception while waiting for element: {str(e)}", 3)
+        return "zeuz_failed"
+
+
+@logger
+def Wait_For_Element_To_Disappear_Appium(data_set):
+    """ Wait for an element to disappear from screen within the timeout (default 10s) """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
+    timeout = 10  # default timeout
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if mid in ("option", "optional parameter") and "timeout" in left:
+                timeout = int(right.strip())
+
+        CommonUtil.ExecLog(sModuleInfo, f"Waiting for element to disappear (timeout={timeout}s)...", 1)
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            Element = LocateElement.Get_Element(data_set, appium_driver)
+            if Element == "zeuz_failed" or not Element.is_displayed():
+                CommonUtil.ExecLog(sModuleInfo, "Element has disappeared or is no longer visible.", 1)
+                return "passed"
+            time.sleep(0.5)
+
+        CommonUtil.ExecLog(sModuleInfo, "Timeout: Element did not disappear.", 3)
+        return "zeuz_failed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Exception while waiting for element to disappear: {str(e)}", 3)
+        return "zeuz_failed"
+
+
+@logger
+def Smart_Scroll_To_Element(data_set):
+    """
+    Scroll to a desired element using platform-specific logic for Android, iOS, and macOS
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        global appium_driver
+        platform = appium_driver.capabilities.get("platformName", "").lower()
+
+        scroll_dataset = []
+        for left, mid, right in data_set:
+            mid_clean = mid.strip().lower()
+            if not mid_clean.startswith("desired"):
+                scroll_dataset.append((left, mid, right))
+
+        scrollable_element = LocateElement.Get_Element(scroll_dataset, appium_driver)
+        if scrollable_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
+            return "zeuz_failed"
+
+        desired_dataset = []
+        inset = 0.1
+        position = 0.5
+        height = scrollable_element.size["height"]
+        width = scrollable_element.size["width"]
+        xstart_location = scrollable_element.location["x"]
+        ystart_location = scrollable_element.location["y"]
+        max_try = 10
+        direction = "up" if height > width else "left"
+        swipe_speed = None
+
+        for left, mid, right in data_set:
+            mid = mid.strip().lower()
+            if mid.startswith("desired"):
+                desired_dataset.append((left, mid[8:].strip().lower(), right))
+            if "scroll parameter" in mid:
+                right = right.replace("%", "").replace(" ", "")
+                left = left.strip().lower()
+                if left == "direction" and right in ("up", "down", "left", "right"):
+                    direction = right
+                elif left == "swipe speed":
+                    swipe_speed = float(right) / 1000.00
+                elif left == "inset":
+                    inset = float(right) / 100.0
+                elif left == "position":
+                    position = float(right) / 100.0
+                elif left == "max try":
+                    max_try = float(right)
+
+        if direction == "up":
+            tmp = 1.0 - inset
+            new_height = round(tmp * height)
+            new_width = round(position * width)
+            x1 = xstart_location + new_width
+            x2 = x1
+            y1 = ystart_location + new_height - 1
+            y2 = ystart_location
+            duration = new_height * (swipe_speed if swipe_speed else 0.0032)
+        elif direction == "down":
+            tmp = 1.0 - inset
+            new_height = round(tmp * height)
+            new_width = round(position * width)
+            x1 = xstart_location + new_width
+            x2 = x1
+            y1 = ystart_location + 1
+            y2 = ystart_location + new_height
+            duration = new_height * (swipe_speed if swipe_speed else 0.0032)
+        elif direction == "left":
+            tmp = 1.0 - inset
+            new_width = round(tmp * width)
+            new_height = round(position * height)
+            x1 = xstart_location + new_width - 1
+            x2 = xstart_location
+            y1 = ystart_location + new_height
+            y2 = y1
+            duration = new_width * (swipe_speed if swipe_speed else 0.0032)
+        elif direction == "right":
+            tmp = 1.0 - inset
+            new_width = round(tmp * width)
+            new_height = round(position * height)
+            x1 = xstart_location + 1
+            x2 = xstart_location + new_width
+            y1 = ystart_location + new_height
+            y2 = y1
+            duration = new_width * (swipe_speed if swipe_speed else 0.0032)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
+            return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+
+    try:
+        CommonUtil.ExecLog(sModuleInfo, f"Platform detected: {platform.upper()}", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Scrolling with the following scroll parameter:\n" +
+                           f"Max_try: {max_try}, Direction: {direction}, Duration: {duration}, Inset: {inset*100}, Position:{position*100}\n" +
+                           f"Calculated Coordinate: ({x1},{y1}) to ({x2},{y2})", 1)
+
+        i = 0
+        while i < max_try:
+            Element = LocateElement.Get_Element(desired_dataset, appium_driver, element_wait=1.5)
+            if Element != 'zeuz_failed':
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled to the desired element successfully.", 1)
+                return "passed"
+
+            if platform == "android":
+                appium_driver.swipe(x1, y1, x2, y2, duration * 1000)
+            elif platform == "ios":
+                appium_driver.execute_script("mobile: dragFromToForDuration", {
+                    "duration": duration,
+                    "fromX": x1,
+                    "fromY": y1,
+                    "toX": x2,
+                    "toY": y2
+                })
+            elif platform == "mac":
+                appium_driver.execute_script("macos: scroll", {
+                    "elementId": scrollable_element.id,
+                    "direction": direction
+                })
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Unsupported platform: {platform}", 3)
+                return "zeuz_failed"
+
+            i += 1
+
+        CommonUtil.ExecLog(sModuleInfo, f"Scrolled {int(max_try)} times. Couldn't find the element.", 3)
+        return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
+
 
 
 @logger
@@ -2658,6 +2994,7 @@ def Enter_Text_Appium(data_set):
             )
             context_result = auto_switch_context_and_try("native")
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
 
 
 @logger
@@ -2980,6 +3317,73 @@ def iOS_Keystroke_Key_Mapping(keystroke):
     except Exception:
         errMsg = "Could not press enter for your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+@logger
+def iOS_Keystroke_Key_Mapping(keystroke, hold_key=False):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        keystroke = keystroke.strip().lower()
+        focused_element = appium_driver.switch_to.active_element
+
+        if keystroke in ["return", "enter"]:
+            focused_element.send_keys("\n")
+        elif keystroke in ["space", "spacebar"]:
+            focused_element.send_keys(" ")
+        elif keystroke == "backspace":
+            focused_element.send_keys("\b")
+        elif keystroke in ["go back", "back"]:
+            appium_driver.back()
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"iOS key event not yet supported: {keystroke}", 3)
+            return "zeuz_failed"
+
+        CommonUtil.ExecLog(sModuleInfo, f"iOS key event executed successfully: {keystroke}", 1)
+        return "passed"
+
+    except Exception:
+        errMsg = "Could not execute iOS key event."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def Mac_Keystroke_Key_Mapping(keystroke, hold_key=False):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "[DEBUG] Entered Mac_Keystroke_Key_Mapping", 1)
+
+    try:
+        keystroke = keystroke.strip().lower()
+        CommonUtil.ExecLog(sModuleInfo, f"[DEBUG] mac key = {keystroke}", 1)
+
+        mac_key_map = {
+            "return": "\n",
+            "enter": "\n",
+            "tab": "\t",
+            "space": " ",
+            "spacebar": " ",
+            "backspace": "\b",
+        }
+
+        key_to_press = mac_key_map.get(keystroke, None)
+        CommonUtil.ExecLog(sModuleInfo, f"[DEBUG] mapped to = {repr(key_to_press)}", 1)
+
+        if key_to_press is None:
+            CommonUtil.ExecLog(sModuleInfo, f"macOS key event not supported: {keystroke}", 3)
+            return "zeuz_failed"
+
+        try:
+            CommonUtil.ExecLog(sModuleInfo, f"[DEBUG] Sending key via macos: keys", 1)
+            appium_driver.execute_script("macos: keys", {"keys": [key_to_press]})
+            CommonUtil.ExecLog(sModuleInfo, f"macOS fallback key sent via script: {keystroke}", 1)
+            return "passed"
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"[DEBUG] macOS key press via script failed: {str(e)}", 3)
+            return "zeuz_failed"
+
+    except Exception:
+        errMsg = "Could not execute macOS key event."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 
 @logger
@@ -3052,7 +3456,7 @@ def Keystroke_Appium(data_set):
             if appium_details[device_id]["type"] == "android":
                 result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
             elif appium_details[device_id]["type"] == "ios":
-                result = iOS_Keystroke_Key_Mapping(keystroke_value)
+                result = iOS_Keystroke_Key_Mapping(keystroke_value, hold_key)
             else:
                 result = "zeuz_failed"
         else:
@@ -3084,6 +3488,147 @@ def Keystroke_Appium(data_set):
     except Exception:
         errMsg = "Could not enter keystroke."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def Keypress_Appium(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        keystroke_value = ""
+        hold_key = False
+
+        for left, _, right in data_set:
+            if "keypress" in left.lower():
+                if "long press" in right.lower():
+                    hold_key = True
+                    keystroke_value = right.replace("long press", "").strip().lower()
+                elif "longpress" in right.lower():
+                    hold_key = True
+                    keystroke_value = right.replace("longpress", "").strip().lower()
+                else:
+                    keystroke_value = right.strip().lower()
+
+        if keystroke_value == "":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find keystroke value", 3)
+            return "zeuz_failed"
+
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    try:
+        result = "zeuz_failed"
+
+        if 'browserstack device' not in device_id:
+            device_type = appium_details.get(device_id, {}).get("type", "").lower()
+            CommonUtil.ExecLog(sModuleInfo, f"Detected device type: {device_type}", 1)
+            if device_type == "android":
+                result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
+            elif device_type == "ios":
+                result = iOS_Keystroke_Key_Mapping(keystroke_value, hold_key)
+            elif device_type in ["mac", "macos"]:
+                CommonUtil.ExecLog(sModuleInfo, f"[DEBUG] About to call Mac_Keystroke_Key_Mapping('{keystroke_value}', hold_key={hold_key})", 1)
+                result = Mac_Keystroke_Key_Mapping(keystroke_value, hold_key)
+        else:
+            for mapping_func in [Android_Keystroke_Key_Mapping, iOS_Keystroke_Key_Mapping, Mac_Keystroke_Key_Mapping]:
+                try:
+                    result = mapping_func(keystroke_value, hold_key)
+                    if result in passed_tag_list:
+                        break
+                except Exception:
+                    continue
+
+        if result in passed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke", 3)
+            return "zeuz_failed"
+
+    except Exception:
+        errMsg = "Could not enter keystroke."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+@logger
+def Save_Text(data_set):
+    """ Save the text from the given element to shared variables under the variable name provided """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # Get webdriver
+    if sr.Test_Shared_Variables("common_driver"):
+        common_driver = sr.Get_Shared_Variables("common_driver")
+    else:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function",
+            3,
+        )
+        return "zeuz_failed"
+
+    # Parse data set
+    try:
+        variable_name = ""
+        for row in data_set:
+            if row[1] == "action":
+                variable_name = row[2]  # Save action Value as the shared variable name
+        if variable_name == "":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Missing variable name to save text as from Value field on action line",
+                3,
+            )
+            return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
+
+    # Find element
+    Element = LocateElement.Get_Element(data_set, common_driver)
+    if Element in failed_tag_list:
+        CommonUtil.ExecLog(
+            sModuleInfo, "Unable to locate your element with given data.", 3
+        )
+        return "zeuz_failed"
+
+    try:
+        # !!! Seems like a really round about way of just removing \n. Why not use replace()?
+        list_of_element_text = Element.text.split("\n")  # Split multi-line text
+        visible_list_of_element_text = ""
+        for each_text_item in list_of_element_text:  # For each line of text
+            if each_text_item != "":
+                # visible_list_of_element_text+=each_text_item # Append each line into one string
+                tmp = [
+                    c for c in each_text_item if 0 < ord(c) < 127
+                ]  # Strip any binary characters
+                visible_list_of_element_text += "".join(
+                    tmp
+                )  # Append each line into one string
+
+        result = sr.Set_Shared_Variables(
+            variable_name, visible_list_of_element_text
+        )  # Save element text into shared variable using name given by user
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Value of Variable '%s' could not be saved" % variable_name,
+                3,
+            )
+            return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Element text saved", 1)
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error reading and saving element text"
+        )
+    
 
 
 # Validating text from an element given information regarding the expected text
@@ -3274,6 +3819,133 @@ def Validate_Text_Appium(data_set):
         errMsg = "Could not compare text as requested."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+@logger
+def Validate_Partial_Text_Appium(data_set):
+    """ Validate if the element's text contains expected value from column 3 (e.g. %| my_text |%) """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        expected_text = ""
+        for left, mid, right in data_set:
+            if left.lower().strip() == "validate partial":
+                expected_text = right.strip().lower().replace("%|", "").replace("|%", "").strip()
+
+        if not expected_text:
+            CommonUtil.ExecLog(sModuleInfo, "Expected text not provided in data set (column 3).", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate element.", 3)
+            return "zeuz_failed"
+
+        actual_text = Element.text.strip().lower()
+
+        if expected_text in actual_text:
+            CommonUtil.ExecLog(sModuleInfo, f"Validation passed: '{expected_text}' found in '{actual_text}'", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Validation failed: '{expected_text}' NOT found in '{actual_text}'", 3)
+            return "zeuz_failed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Exception in partial text validation: {str(e)}", 3)
+        return "zeuz_failed"
+    
+
+@logger
+def Validate_Full_Text_Appium(data_set):
+    """ Validate if the element's text exactly matches the expected value from column 3 (e.g. %| my_text |%) """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        expected_text = ""
+        for left, mid, right in data_set:
+            if left.lower().strip() == "validate full":
+                expected_text = right.strip().lower().replace("%|", "").replace("|%", "").strip()
+
+        if not expected_text:
+            CommonUtil.ExecLog(sModuleInfo, "Expected full text not provided in data set (column 3).", 3)
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate element.", 3)
+            return "zeuz_failed"
+
+        actual_text = Element.text.strip().lower()
+
+        if expected_text == actual_text:
+            CommonUtil.ExecLog(sModuleInfo, f"Validation passed: actual text exactly matches expected: '{actual_text}'", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Validation failed: expected '{expected_text}' but got '{actual_text}'", 3)
+            return "zeuz_failed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Exception in full text validation: {str(e)}", 3)
+        return "zeuz_failed"
+
+def Hover_Over_Element_Appium(data_set):
+    """ Hover over an element on macOS using Appium """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
+    try:
+        global appium_driver
+
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate element to hover.", 3)
+            return "zeuz_failed"
+
+        location = Element.location
+        size = Element.size
+
+        # Calculate center of the element
+        center_x = location["x"] + (size["width"] / 2)
+        center_y = location["y"] + (size["height"] / 2)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            f"Hovering over element at center coordinates: ({center_x}, {center_y})",
+            1
+        )
+
+        # Perform hover using macOS driver extension
+        appium_driver.execute_script(
+            "macos: hover",
+            {
+                "x": int(center_x),
+                "y": int(center_y)
+            }
+        )
+
+        CommonUtil.ExecLog(sModuleInfo, "Successfully hovered over the element.", 1)
+        return "passed"
+
+    except Exception:
+        if 'appium_driver' in globals():
+            errMsg = "Could not hover over the element."
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Appium driver is not initialized or not accessible.", 3)
+            return "zeuz_failed"
 
 @logger
 def get_program_names(search_name):
