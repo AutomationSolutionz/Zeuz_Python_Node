@@ -1178,7 +1178,6 @@ def send_dom_variables():
             except (json.decoder.JSONDecodeError, TypeError):
                 try:
                     dir_ = { k:str(type(v)) for k,v in [(i, getattr(var_value, i)) for i in dir(var_value) if not i.startswith('__')]}
-                    print(len(json.dumps(dir_)))
                     variables.append({
                         "type": f"non_json: {str(var_value)}",
                         "variable_name": var_name,
