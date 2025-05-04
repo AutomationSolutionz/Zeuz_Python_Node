@@ -32,7 +32,6 @@ clr.AddReference(dll_path + "UIAutomationProvider")
 clr.AddReference( "System.Windows.Forms")
 x, y = -1, -1
 path_priority = 0
-path = ""
 from System.Windows.Automation import *
 
 from urllib3.exceptions import InsecureRequestWarning
@@ -69,7 +68,7 @@ def _found(Element):
 server = ""
 api_key = ""
 auth = ""
-def Authenticate(xml_str, window_name):
+def Authenticate(xml_str, window_name, path):
     global server, api_key
     config = configparser.ConfigParser()
     config.read("..\..\Framework\settings.conf")
@@ -374,7 +373,7 @@ class WindowsInspector:
         self.x = -1
         self.y = -1
         self.path_priority = 0
-        self.path = ""
+        self.paths = []
         self.xml_str = ""
         self.window_name = ""
         self.findall_time = 0
@@ -475,7 +474,7 @@ class WindowsInspector:
             return s_name_control + ">" + "\n" if self.new_line else ""
         return s_name_control + ',index="%s">' % (index_trace[s_name_control] + 1) + "\n" if self.new_line else ""
 
-    def exact_path_maker(self, xmlElem, pathList:list, areaList=None, window_cond=False):
+    def exact_path_maker(self, xmlElem, pathList:list, areaList:list, window_cond=False):
         index_trace = {}
 
         if window_cond:
@@ -501,7 +500,10 @@ class WindowsInspector:
             for i in sortIndex:
                 print(f"\n======== COPY Exact Path. Element Area = {areaList[i]} ========")
                 print(pathList[i])
-                self.path = pathList[sortIndex[0]]
+                self.paths = [{
+                    "path": pathList[i],
+                    "area": int(areaList[i])
+                } for i in sortIndex]
 
     def create_tree(self, xmlELem, ParentElement, level):
         try:
@@ -619,12 +621,18 @@ class WindowsInspector:
                 return root, window
                 
         return None, None
+    
+    def clear_tree(self, root):
+        self.Remove_zeuz_aiplugin(root)
+        self.Remove_attribs(root)
+        ET.indent(root, "")
+        self.xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()
 
     def inspect_element(self, x, y):
         """Main inspection function that can be called from UI"""
         root, window = self.get_element_at_position(x, y)
         if root is None or window is None:
-            return None, "No window found at those coordinates"
+            return lambda: None
             
         self.window_name = self._sanitize_text(window.Current.Name)
         self.create_tree(root, window, 0)
@@ -643,17 +651,17 @@ class WindowsInspector:
         tree = Tree(f"[cyan]{self.create_tag(root)}", guide_style="red")
         self.printTree(root, tree)
         print(tree)
-        print('self relaxing for 5 seconds')
-        time.sleep(5)
         
         self.exact_path_maker(root, [], [], True)
         
-        self.Remove_zeuz_aiplugin(root)
-        self.Remove_attribs(root)
-        ET.indent(root, "")
-        self.xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()
+        def cleanup():
+            self.Remove_zeuz_aiplugin(root)
+            self.Remove_attribs(root)
+            ET.indent(root, "")
+            self.xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()
         
-        return tree, self.path
+        return cleanup
+        
     def _found(self, Element):
         """Check if element is at current coordinates"""
         try:
@@ -685,8 +693,9 @@ def main():
             x, y = inspect()
             
             print("Searching for the Element identifier")
-            tree, path = inspector.inspect_element(x, y)
-            Authenticate(inspector.xml_str, inspector.window_name)
+            cleanup = inspector.inspect_element(x, y)
+            cleanup()
+            Authenticate(inspector.xml_str, inspector.window_name, inspector.paths[0]["path"])
             
     except:
         traceback.print_exc()
