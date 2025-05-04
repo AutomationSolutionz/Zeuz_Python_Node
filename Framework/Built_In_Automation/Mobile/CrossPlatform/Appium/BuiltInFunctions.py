@@ -2168,8 +2168,23 @@ import time
 
 @logger
 def Double_Click_Element_Appium(data_set):
-    """ Execute true double-click using macOS native doubleClick command """
+    """
+    This action performs a **double-click** on a macOS app element using **Appium** and accessibility properties.
 
+    - Identify elements using properties like 'title', 'label', 'value', 'identifier'.
+    - Use '*' prefix for **partial matching** (e.g., *label).
+    - You can define **multiple rows of properties** for precise targeting.
+    - The Appium action used is: double click.
+
+    Data Input Fields:
+
+    | Action                                                   | Field Type       | Value              |
+    |----------------------------------------------------------|------------------|--------------------|
+    | Enter elements property name to double click.            | element parameter| label or *title    |
+    | double click                                             | appium action    | double click       |
+
+    Note: This is useful for automating interactions in macOS apps via Appium.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -2227,8 +2242,23 @@ def Double_Click_Element_Appium(data_set):
 
 @logger
 def Right_Click_Element_Appium(data_set):
-    """ Perform a native macOS right-click using the 'macos: rightClick' command """
+    """
+    This action performs a **right-click (context-click)** on a macOS app element using **Appium** and its accessibility properties.
 
+    - Locate UI elements using properties like 'title', 'label', 'value', or 'identifier'.
+    - Supports **partial matching** using `*` before the property name (e.g., *label).
+    - You can provide **multiple rows of element properties** for accurate targeting.
+    - The Appium action used is: right click.
+
+    Data Input Fields:
+
+    | Action                                                        | Field Type       | Value           |
+    |---------------------------------------------------------------|------------------|-----------------|
+    | Enter element's property name to right-click.                 | element parameter| title or *label |
+    | right click                                                   | appium action    | right click     |
+
+    Note: Useful for automating context-clicks in macOS apps via Appium.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -2286,8 +2316,23 @@ def Right_Click_Element_Appium(data_set):
 
 @logger
 def Wait_For_Element_To_Appear_Appium(data_set):
-    """ Wait for an element to appear on screen within the timeout (default 10s) """
+    """
+    This action validates whether a specific UI element exists on the screen using **Appium**.
 
+    - You must provide a property (e.g., 'label', 'title', 'value', 'identifier') and its value to locate the element.
+    - Specify a **maximum wait time (in seconds)**.
+    - If the element appears within that time, the test proceeds. Otherwise, it **fails**.
+
+    Data Input Fields:
+
+    | Action                                                         | Field Type         | Value                                            |
+    |----------------------------------------------------------------|--------------------|--------------------------------------------------|
+    | Enter element property name to wait for (e.g., "label")        | element parameter  |Enter the value of the element property Example: "Today"|
+    | wait                                                           | appium action      |Number of seconds you want to wait. Example `10   |
+
+
+    Note: If the element doesn't appear within the wait time, the test step fails.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     timeout = 10  # default timeout
@@ -2323,8 +2368,23 @@ def Wait_For_Element_To_Appear_Appium(data_set):
 
 @logger
 def Wait_For_Element_To_Disappear_Appium(data_set):
-    """ Wait for an element to disappear from screen within the timeout (default 10s) """
+    """
+    This action validates whether a specific UI element **disappears** from the screen within a defined time using **Appium**.
 
+    - Provide a property (e.g., 'label', 'title', 'value', 'identifier') and its value to locate the element.
+    - Specify a **maximum wait time (in seconds)**.
+    - If the element disappears within the time, the test proceeds. If it still exists after the time, the test **fails**.
+
+    Data Input Fields:
+
+    | Action                                                                                 | Field Type         | Value                            |
+    |----------------------------------------------------------------------------------------|--------------------|----------------------------------|
+    | Enter element property name to wait for disappearance (e.g., "label")                 | element parameter  | Enter the value of the element property Example: "Today" |
+    | wait disable                                                                          | appium action      |Number of seconds you want to wait. Example `10   |
+
+
+    Note: Useful for validating disappearance of spinners, alerts, or temporary UI elements before proceeding.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     timeout = 10  # default timeout
@@ -2361,7 +2421,19 @@ def Wait_For_Element_To_Disappear_Appium(data_set):
 @logger
 def Smart_Scroll_To_Element(data_set):
     """
-    Scroll to a desired element using platform-specific logic for Android, iOS, and macOS
+    This action scrolls to a specific UI element in a macOS and iOS application using **Appium**, by directly manipulating the **scrollbar** (not via swipe/page).
+
+    - Locates the target element using properties like 'identifier', 'label', 'value', or 'title'.
+    - Scrolls via specified method: 'js', 'webdriver', or 'action chain'.
+    - Optional controls include alignment to top and additional scroll offset for fine-tuning visibility.
+
+    Data Input Fields:
+
+    | Action                                      | Field Type        | Value                                                                                 |
+    |---------------------------------------------|-------------------|----------------------------------------------------------------------------------------|
+    | Enter elements properties name that element you want to click.Example: "label" You can use "*" before the name to allow partial or case-insensitive match | element parameter  | Enter value of the element’s properties that element you want to click.
+     Example: "search_omnibox_text_box"  |
+    | scroll to element                                 | selenium action        | scroll     |
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -3492,6 +3564,20 @@ def Keystroke_Appium(data_set):
 
 @logger
 def Keypress_Appium(data_set):
+    """
+    This action simulates a **physical or virtual keypress** on a macOS application using **Appium**.
+
+    - Supports both **named keys** (e.g., 'enter', 'tab', 'escape') and **raw key codes** (`raw=36`).
+    - To simulate a long key press (0.5 seconds), prefix the value with `long press`.
+    - Useful for automating keystrokes in dialogs, text inputs, and system-level interactions.
+
+    Data Input Fields:
+
+    | Action     | Sub Field       | Value                                                                                  |
+    |------------|------------------|----------------------------------------------------------------------------------------|
+    | keypresss  | appium action    | A standard key (e.g., "enter", "tab") or raw code (e.g., "raw=36").<br>Use "long press" prefix for holding a key (e.g., "long press escape", "long press raw=53"). |
+
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -3556,7 +3642,27 @@ def Keypress_Appium(data_set):
 
 @logger
 def Save_Text(data_set):
-    """ Save the text from the given element to shared variables under the variable name provided """
+    """
+    This action extracts the **visible text** from a UI element in a mobile or desktop app using **Appium**, and **stores it into a variable** for later use.  
+    It works across **macOS, iOS, and Android** platforms.
+
+    - The element is located via a property like 'identifier', 'label', 'value', or 'title'.
+    - The extracted text is saved in a named variable.
+    - You can reuse the variable using the syntax: %|VariableName|%.
+
+    UI Data Input Fields:
+
+    | Action                                                                                 | Field Type         | Value                                                                                  |
+    |----------------------------------------------------------------------------------------|--------------------|-----------------------------------------------------------------------------------------|
+    | Enter element property name to identify the element (e.g., "identifier")               | element parameter  | Enter the value of the elements property (e.g., "fileTitle")      |
+    | save text                                                                              | appium action       | Enter the variable name to assign the text (e.g., "Variable_1" → use as %|Variable_1|%)|
+   
+    Note:
+    - Applicable for macOS, iOS, and Android automation scenarios.
+    - Ensure the target element is visible and stable before capturing its text.
+  
+    """
+
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -3821,7 +3927,22 @@ def Validate_Text_Appium(data_set):
 
 @logger
 def Validate_Partial_Text_Appium(data_set):
-    """ Validate if the element's text contains expected value from column 3 (e.g. %| my_text |%) """
+    """
+    This action validates whether the **text content of a UI element** contains a **partial match** to a given string using **Appium** on macOS.
+
+    - Useful for checking labels, field values, or messages that may include dynamic content or partial keywords.
+    - Supports partial and case-insensitive matching when `*` is used before the property name.
+    - The target element must be uniquely identifiable using the given property.
+
+    UI Data Input Fields:
+
+    | Action                                                                                 | Field Type         | Value                                                    |
+    |----------------------------------------------------------------------------------------|--------------------|-----------------------------------------------------------|
+    | Enter elements property name to validate (e.g., "title", "*identifier")                | element parameter  | Enter the value of the elements property (e.g., "noteTitle") |
+    | Validate partial                                                                       | appium action      | Expected text or variable (e.g., Meeting, %|my_date|%)        |
+
+    """
+
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
@@ -3860,8 +3981,22 @@ def Validate_Partial_Text_Appium(data_set):
 
 @logger
 def Validate_Full_Text_Appium(data_set):
-    """ Validate if the element's text exactly matches the expected value from column 3 (e.g. %| my_text |%) """
+    """
+    This action validates whether the **entire text** of a UI element **exactly matches** the expected value using **Appium** on macOS.
 
+    - Locates the element using properties like 'title', 'label', 'value', or 'identifier'.
+    - Extracts the full visible text from the element.
+    - Compares it against the expected value and passes/fails based on exact match.
+    - Prefix the property name with `*` to allow case-insensitive or partial name matching (not for the text).
+
+    UI Data Input Fields:
+
+    | Action                                                                                 | Field Type         | Value                                                   |
+    |----------------------------------------------------------------------------------------|--------------------|----------------------------------------------------------|
+    | Enter elements property name to validate (e.g., "title")                              | element parameter  | Enter the value of the element’s property (e.g., "searchBarTitle") |
+    | Validate full                                                                          | appium action      | Expected full text or variable (e.g., Wikipedia, %|my_date|%)       |
+
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -3897,8 +4032,24 @@ def Validate_Full_Text_Appium(data_set):
         return "zeuz_failed"
 
 def Hover_Over_Element_Appium(data_set):
-    """ Hover over an element on macOS using Appium """
+    """
+    This action performs a **hover (mouse-over)** on a specified UI element in a **macOS application** using **Appium**.
 
+    - Used to reveal tooltips, dropdowns, hover-based menus, or trigger UI changes tied to mouse-over events.
+    - The target element is identified using a property like 'label', 'title', 'identifier', or 'value'.
+
+    UI Data Input Fields:
+
+    | Action                       | Field Type         | Value                                |
+    |------------------------------|--------------------|---------------------------------------|
+    | Element property name to locate the UI element    | element parameter  | Value of Element Properties           |
+    | hover                                             | appium action      | hover                                 |
+
+    Note:
+    - Ensure the element is **visible and interactable** before performing the hover.
+    - Hover is supported for **macOS only** in this context.
+
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
