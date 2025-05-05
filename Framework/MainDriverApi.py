@@ -1151,19 +1151,23 @@ def send_dom_variables():
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         variables = []
-        max_threshold = 30000
+        max_threshold = 50000
         for var_name in shared.shared_variables:
+            if var_name.startswith("__") and var_name.endswith("__"):
+                continue
             var_value = shared.shared_variables[var_name]
             try:
                 if len(json.dumps(var_value)) > max_threshold:
                     builder = SchemaBuilder()
                     builder.add_object(var_value)
-                    variables.append({
-                        "type": "json_schema",
-                        "variable_name": var_name,
-                        "variable_value": builder.to_schema(),
-                        "description": "",
-                    })
+                    schema = builder.to_schema()
+                    if len(json.dumps(schema)) <= max_threshold:
+                        variables.append({
+                            "type": "json_schema",
+                            "variable_name": var_name,
+                            "variable_value": schema,
+                            "description": "",
+                        })
                 else:
                     variables.append({
                         "type": "json_object",
@@ -1172,15 +1176,18 @@ def send_dom_variables():
                         "description": "",
                     })
             except (json.decoder.JSONDecodeError, TypeError):
-                # CommonUtil.Exception_Handler(sys.exc_info())
-                variables.append({
-                    "type": f"non_json: {str(type(var_value))}",
-                    "variable_name": var_name,
-                    "variable_value": "",
-                    "description": "",
-                })
+                try:
+                    dir_ = { k:str(type(v)) for k,v in [(i, getattr(var_value, i)) for i in dir(var_value) if not i.startswith('__')]}
+                    variables.append({
+                        "type": f"non_json: {str(var_value)}",
+                        "variable_name": var_name,
+                        "variable_value": dir_,
+                        "description": "",
+                    })
+                except Exception as e:
+                    CommonUtil.ExecLog(sModuleInfo, str(e), 2)
             except Exception as e:
-                CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
+                CommonUtil.ExecLog(sModuleInfo, str(e), 2)
 
         if shared.Test_Shared_Variables('selenium_driver'):
             try:
@@ -1214,10 +1221,10 @@ def send_dom_variables():
                     var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
                     return result;""")
             except selenium.common.exceptions.JavascriptException as e:
-                CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
+                CommonUtil.ExecLog(sModuleInfo, sys.exc_info(), 2)
                 dom = ""
             except Exception as e:
-                CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
+                CommonUtil.ExecLog(sModuleInfo, sys.exc_info(), 2)
                 dom = None
         else:
             dom = None
@@ -1238,7 +1245,7 @@ def send_dom_variables():
             CommonUtil.ExecLog(sModuleInfo, 'The chatbot API does not exist, server upgrade needed', 2)
         return
     except Exception as e:
-        CommonUtil.ExecLog(sModuleInfo, e.msg, 2)
+        CommonUtil.ExecLog(sModuleInfo, str(e), 2)
 
 
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
