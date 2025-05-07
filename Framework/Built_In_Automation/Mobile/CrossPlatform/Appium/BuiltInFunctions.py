@@ -2429,11 +2429,13 @@ def Smart_Scroll_To_Element(data_set):
 
     Data Input Fields:
 
-    | Action                                      | Field Type        | Value                                                                                 |
-    |---------------------------------------------|-------------------|----------------------------------------------------------------------------------------|
-    | Enter elements properties name that element you want to click.Example: "label" You can use "*" before the name to allow partial or case-insensitive match | element parameter  | Enter value of the element’s properties that element you want to click.
-     Example: "search_omnibox_text_box"  |
-    | scroll to element                                 | selenium action        | scroll     |
+    | Field Name             | Field Type             | Description                                                            |
+|------------------------|------------------------|----------------------------------------------------------------------------|
+| attribute name         | element parameter      | User must enter the attribute value of the scrollable container.           |
+| attribute name         | desired element parameter | User must enter the attribute value of the target element.              |
+| direction              | scroll parameter       | Direction of scroll: up / down / left / right.                             |
+| max try                | scroll parameter       | Number of scroll attempts to find the element.                             |
+| scroll to element      | appium action          | Triggers the scroll-to-element behavior.                                   |
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -3575,7 +3577,7 @@ def Keypress_Appium(data_set):
 
     | Action     | Sub Field       | Value                                                                                  |
     |------------|------------------|----------------------------------------------------------------------------------------|
-    | keypresss  | appium action    | A standard key (e.g., "enter", "tab") or raw code (e.g., "raw=36").<br>Use "long press" prefix for holding a key (e.g., "long press escape", "long press raw=53"). |
+    | keypresss  | appium action    | A standard key (e.g., "return", "tab") or raw code (e.g., "raw=36").<br>Use "long press" prefix for holding a key (e.g., "long press escape", "long press raw=53"). |
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
