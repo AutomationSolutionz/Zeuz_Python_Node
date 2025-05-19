@@ -465,12 +465,10 @@ def remote_launch(data_set):
         for entry in data_set:
             key = entry[0].strip()
             value = entry[2].strip()
-            print(value)
             if key == "remote_url":
                 remote_url = value
             elif key == "desired_caps":
-                import ast
-                desired_caps = ast.literal_eval(value)
+                desired_caps = CommonUtil.parse_value_into_object(value)
 
         if not remote_url:
             CommonUtil.ExecLog(sModuleInfo, "Remote URL not provided", 3)
@@ -506,7 +504,6 @@ def remote_launch(data_set):
 
         time.sleep(5)
     
-
         session_id = appium_driver.session_id
         device_name = desired_caps.get('appium:deviceName', 'Unknown Device')
 
