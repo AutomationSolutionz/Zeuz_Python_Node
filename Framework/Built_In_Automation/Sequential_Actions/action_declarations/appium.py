@@ -52,6 +52,7 @@ declarations = (
     { "name": "seek progress bar",        "function": "Seek_Progress_Bar",           "screenshot": "mobile"},
     { "name": "zoom",                     "function": "zoom_action",                 "screenshot": "mobile"},
     { "name": "pan",                      "function": "pan_action",                  "screenshot": "mobile"},
+    { "name": "remote launch",            "function": "remote_launch",               "screenshot": "none"},
 ) # yapf: disable
 
 module_name = "appium"
