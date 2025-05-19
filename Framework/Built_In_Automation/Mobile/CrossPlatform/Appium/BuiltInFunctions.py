@@ -11,10 +11,14 @@
 #                       #
 #########################
 
+
 from appium import webdriver
-from appium.options.android import UiAutomator2Options
-from appium.options.ios import XCUITestOptions
-from appium.options.mac import Mac2Options
+# from appium.options.android import UiAutomator2Options
+# from appium.options.ios import XCUITestOptions
+# from appium.options.mac import Mac2Options
+from appium.options.android.uiautomator2.base import UiAutomator2Options
+from appium.options.ios.xcuitest.base import XCUITestOptions
+from appium.options.mac.mac2.base import Mac2Options
 import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
@@ -444,6 +448,99 @@ def unlock_android_app(data_set):
             None,
             " Either device is not connected, or authorized, or a capability is incorrect.",
         )
+
+
+def remote_launch(data_set):
+    """
+    Launch the application on a Kobiton remote device using direct user input.
+    Handles commented desired capabilities.
+    """
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    remote_url = ""
+    desired_caps = {}
+
+    try:
+        for entry in data_set:
+            key = entry[0].strip()
+            value = entry[2].strip()
+            print(value)
+            if key == "remote_url":
+                remote_url = value
+            elif key == "desired_caps":
+                import ast
+                desired_caps = ast.literal_eval(value)
+
+        if not remote_url:
+            CommonUtil.ExecLog(sModuleInfo, "Remote URL not provided", 3)
+            return "zeuz_failed"
+        if not desired_caps:
+            CommonUtil.ExecLog(sModuleInfo, "Desired capabilities not provided", 3)
+            return "zeuz_failed"
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            f"Launching Kobiton session with capabilities: {desired_caps}",
+            1,
+        )
+
+        global appium_driver, appium_details, device_id, device_serial
+
+        platform = desired_caps["platformName"].lower()
+        
+        if platform == "android":
+            from appium.options.android import UiAutomator2Options
+            options = UiAutomator2Options().load_capabilities(desired_caps)
+        elif platform == "ios":
+            from appium.options.ios import XCUITestOptions
+            options = XCUITestOptions().load_capabilities(desired_caps)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Platform must be either 'Android' or 'iOS'", 3)
+            return "zeuz_failed"
+
+        appium_driver = webdriver.Remote(
+            command_executor=remote_url,
+            options=options
+        )
+
+        time.sleep(5)
+    
+
+        session_id = appium_driver.session_id
+        device_name = desired_caps.get('appium:deviceName', 'Unknown Device')
+
+        device_id = f"Kobiton_{device_name}_{session_id[:8]}"
+        device_serial = f"kobiton_{session_id}"
+        
+        appium_details[device_id] = {
+            "driver": appium_driver,
+            "serial": device_serial,
+            "type": platform,
+            "kobiton_session": session_id
+        }
+
+        Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
+        Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)
+        Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
+
+        portal_url = f"https://portal.kobiton.com/sessions/{session_id}"
+        CommonUtil.ExecLog(
+            sModuleInfo, 
+            f"Kobiton session created successfully. View session at: {portal_url}", 
+            1
+        )
+        
+        return "passed"
+
+    except Exception:
+        error_msg = CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            f"Failed to create Kobiton Appium driver: {error_msg}",
+            3
+        )
+        return "zeuz_failed"
 
 
 @logger
