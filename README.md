@@ -1,5 +1,7 @@
 # Zeuz Node
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/AutomationSolutionz/Zeuz_Python_Node)
+
 ## Download
 
 [Releases](https://github.com/AutomationSolutionz/Zeuz_Python_Node/releases) -

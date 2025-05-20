@@ -52,6 +52,7 @@ declarations = (
     { "name": "seek progress bar",        "function": "Seek_Progress_Bar",           "screenshot": "mobile"},
     { "name": "zoom",                     "function": "zoom_action",                 "screenshot": "mobile"},
     { "name": "pan",                      "function": "pan_action",                  "screenshot": "mobile"},
+    { "name": "remote launch",            "function": "remote_launch",               "screenshot": "none"},
     { "name": "double click",             "function": "Double_Click_Element_Appium",       "screenshot": "mobile" },
     { "name": "right click",              "function": "Right_Click_Element_Appium",        "screenshot": "mobile" },
     { "name": "wait",                     "function": "Wait_For_Element_To_Appear_Appium", "screenshot": "mobile" },

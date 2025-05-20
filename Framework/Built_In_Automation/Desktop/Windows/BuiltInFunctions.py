@@ -552,7 +552,7 @@ def _child_search(
 
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
-        return []
+        return [], []
 
 
 def Parent_search(

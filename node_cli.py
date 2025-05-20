@@ -378,7 +378,7 @@ def notify_complete(message="Run completed"):
                 default_notification_icon=icon,
             )
             notification.message = message
-            notification.send()
+            # notification.send()
         else:
             # Linux and Windows - Use plyer
             from plyer import notification
