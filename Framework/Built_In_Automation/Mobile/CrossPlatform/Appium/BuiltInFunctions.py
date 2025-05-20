@@ -1039,7 +1039,7 @@ def start_appium_driver(
             while count <= 5:
                 try:
                     capabilities_options = UiAutomator2Options().load_capabilities(desired_caps)
-                    appium_driver = webdriver.Remote("http://localhost:%d" % appium_port, options=capabilities_options)  # Create instance
+                    appium_driver = webdriver.Remote("http://127.0.0.1:%d" % appium_port, options=capabilities_options)  # Create instance
                     Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
 
                     if appium_driver:
@@ -3495,7 +3495,8 @@ def iOS_Keystroke_Key_Mapping(keystroke, hold_key=False):
         focused_element = appium_driver.switch_to.active_element
 
         if keystroke in ["return", "enter"]:
-            focused_element.send_keys("\n")
+            from selenium.webdriver.common.keys import Keys
+            focused_element.send_keys(Keys.RETURN)
         elif keystroke in ["space", "spacebar"]:
             focused_element.send_keys(" ")
         elif keystroke == "backspace":
@@ -3623,7 +3624,7 @@ def Keystroke_Appium(data_set):
         if 'browserstack device' not in device_id:
             if appium_details[device_id]["type"] == "android":
                 result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
-            elif appium_details[device_id]["type"] == "ios":
+            elif appium_details[device_id]["type"] in ("ios", "macos"):
                 result = iOS_Keystroke_Key_Mapping(keystroke_value, hold_key)
             else:
                 result = "zeuz_failed"
