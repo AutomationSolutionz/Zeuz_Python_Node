@@ -108,7 +108,9 @@ class Inspector:
     
     def run(self):
         while True:
+            input("Press any key to start capturing...")
             self.wait_for_control_press()
+            self.get_frontmost_app()
             self.check_appium_server()
 
             time.sleep(0.2)
