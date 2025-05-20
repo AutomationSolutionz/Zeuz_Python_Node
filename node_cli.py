@@ -31,6 +31,8 @@ from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 
+print(f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}")
+print(f"Current file path: {os.path.abspath(__file__)}")
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -128,9 +130,6 @@ def monkeypatch_fromisoformat():
 
 
 def main():
-    print(
-        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
-    )
 
     # Load environment variables from .env file
     load_dotenv()
