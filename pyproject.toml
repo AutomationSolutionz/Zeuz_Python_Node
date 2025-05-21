@@ -48,6 +48,11 @@ dependencies = [
     "pygetwindow",
     "pypdf2>=3.0.1",
     "pyperclip>=1.9.0",
+    "pyobjc-core>=9.2 ; sys_platform == 'darwin'",
+    "pyobjc-framework-Quartz>=9.2 ; sys_platform == 'darwin'",
+    "pyobjc-framework-AppKit>=9.2 ; sys_platform == 'darwin'",
+    "pyobjc-framework-Foundation>=9.2 ; sys_platform == 'darwin'",
+    "pyobjc-framework-ApplicationServices>=9.2 ; sys_platform == 'darwin'",
     "pyrsistent>=0.20.0",
     "pyscreenshot>=3.1",
     "pyserial>=3.5",
@@ -91,6 +96,7 @@ dependencies = [
     "pyodbc>=5.2.0",
     "psycopg2-binary>=2.9.10",
     "cryptography==42.0.8",
+    "pipdeptree>=2.26.1",
 ]
 
 [dependency-groups]
