@@ -5,7 +5,6 @@
     "files.readonlyInclude": {
         "**/.git": true,
         "**/node_modules": true,
-        "Framework/settings.conf": true,
         "node_state.json": true,
         "pid.txt": true
     }
