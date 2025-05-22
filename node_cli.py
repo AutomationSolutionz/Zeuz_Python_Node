@@ -66,7 +66,6 @@ from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
 
 settings_conf_path = str(Path(__file__).parent / "Framework" / "settings.conf")
-print(f"Settings config path: {settings_conf_path}")
 def create_config_file():
     if not os.path.exists(settings_conf_path):
         config = ConfigObj()

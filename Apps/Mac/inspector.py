@@ -1,11 +1,21 @@
 import sys
 import os
 from textwrap import dedent
+import requests
+import json
+from configobj import ConfigObj
+from pathlib import Path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 print(f"Python Version: {sys.version}")
 print(f"Python Path: {sys.executable}")
 print(f"Current file path: {os.path.abspath(__file__)}")
 
+from rich import print as rich_print
+from rich.text import Text
+from rich.tree import Tree
+from colorama import Fore, init as colorama_init
+colorama_init(autoreset=True)
 
 import ctypes
 import objc
@@ -45,15 +55,14 @@ AX = objc.loadBundleFunctions(ApplicationServices, globals(), [
     ("AXUIElementCreateApplication", b"^{__AXUIElement=}" + b"i")
 ])
 
+settings_conf_path = str(Path(__file__).parent.parent.parent / "Framework" / "settings.conf")
+print(f"Settings config path: {settings_conf_path}")
 
 def get_mouse_position():
     event = CoreGraphics.CGEventCreate(None)
     loc = CoreGraphics.CGEventGetLocation(event)
     x, y = round(loc.x), round(loc.y)
     return x, y
-
-
-
 
 
 class App:
@@ -64,7 +73,7 @@ class App:
         self.window_title = window_title
     
     def __str__(self):
-        return dedent(f"""
+        return Fore.GREEN + dedent(f"""
         App(
             name={self.name},
             bundle_id={self.bundle_id},
@@ -79,13 +88,17 @@ class Inspector:
         self.app: App = App(name="", bundle_id="", pid=-1, window_title="")
         self.xml_path: str = ""
 
+        self.server_address: str = "http://127.0.0.1"
+        self.server_path: str = "/api/v1/mac/dump/driver"
+        self.server_port: int = 18100
+        self.page_src: str = ""
     def wait_for_control_press(self):
         print("Hover over the element and press ⌃ Control key...")
         while True:
             flags = CGEventSourceFlagsState(kCGEventSourceStateHIDSystemState)
             if flags & kCGEventFlagMaskControl:
                 point = NSEvent.mouseLocation()
-                print(f"Captured at x={point.x}, y={point.y}")
+                rich_print(f"Captured at x={point.x}, y={point.y}")
                 self.x, self.y = round(point.x), round(point.y)
                 return
             time.sleep(0.1)
@@ -103,15 +116,45 @@ class Inspector:
                 print(self.app)
                 break
     
-    def check_appium_server(self):
-        pass
+    def get_server_port(self):
+        config = ConfigObj(settings_conf_path)
+        self.server_port =  config["server"]["port"]
+    
+    def get_dump(self):
+        url = f"{self.server_address}:{self.server_port}{self.server_path}"
+        response = requests.get(url).json()
+        print('url', url)
+        print('response', response)
+        if response["status"] == "ok":
+            self.response = response["ui_xml"]
+            print(Fore.GREEN + f"Successfully got dump from appium driver")
+        elif response["status"] == "not_found":
+            print(Fore.GREEN + f"You have not launched any app yet. Launch app with the following action:")
+            action = [
+                {
+                    "action_name":f"Launch {self.app.name}",
+                    "action_disabled":"true",
+                    "step_actions":[
+                        ["macos app bundle id","element parameter",self.app.bundle_id],
+                        ["launch","appium action","launch"]
+                    ]
+                }
+            ]
+            print(Fore.CYAN + json.dumps(action, indent=4))
+            self.page_src = ""
+        else:
+            print(Fore.RED + f"Error: {response['error']}")
+            self.page_src = ""
     
     def run(self):
         while True:
-            input("Press any key to start capturing...")
+            # input("Press any key to start capturing...")
             self.wait_for_control_press()
             self.get_frontmost_app()
-            self.check_appium_server()
+            self.get_server_port()
+            self.get_dump()
+            if not self.page_src:
+                continue
 
             time.sleep(0.2)
                 
