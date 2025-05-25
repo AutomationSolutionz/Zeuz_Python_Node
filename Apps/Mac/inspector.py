@@ -57,7 +57,6 @@ AX = objc.loadBundleFunctions(ApplicationServices, globals(), [
 ])
 
 settings_conf_path = str(Path(__file__).parent.parent.parent / "Framework" / "settings.conf")
-print(f"Settings config path: {settings_conf_path}")
 
 def get_mouse_position():
     event = CoreGraphics.CGEventCreate(None)
@@ -154,7 +153,6 @@ class Inspector:
             self.page_src = ""
 
     def render_tree(self):
-        print('rendertree')
         if not self.page_src:
             return
 
@@ -178,7 +176,7 @@ class Inspector:
 
         def get_attribute_string(element):
             ignore = ['x', 'y', 'width', 'height']
-            return " ".join([f'{k}="{v}"' for k, v in element.attrib.items() if k not in ignore])
+            return " ".join([f'{k}="{v}"' for k, v in element.attrib.items() if k not in ignore and v])
 
         def set_single_zeuz_apiplugin(root):
             elements = root.findall(".//*[@zeuz='aiplugin']")
@@ -250,7 +248,6 @@ class Inspector:
         try:
             url = server + "/" if server[-1] != "/" else server
             url += "ai_record_single_action/"
-            print(url)
             content = json.dumps({
                 'page_src': self.xml_str,
                 "action_type": "android",
