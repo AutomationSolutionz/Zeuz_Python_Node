@@ -1,5 +1,4 @@
 import os
-import signal
 import subprocess
 import base64
 from typing import Literal
@@ -81,6 +80,14 @@ def inspect():
             status="error",
             error=str(e)
         )
+
+@router.get("/dump/driver")
+def dump_driver():
+    """Dump the current driver."""
+    from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+    if appium_driver is None:
+        return
+    return appium_driver.page_source
 
 
 def run_adb_command(command):

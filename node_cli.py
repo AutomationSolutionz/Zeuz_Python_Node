@@ -31,6 +31,8 @@ from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 
+print(f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}")
+print(f"Current file path: {os.path.abspath(__file__)}")
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -63,6 +65,37 @@ from Framework.Utilities import live_log_service  # noqa: E402
 from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
 
+settings_conf_path = str(Path(__file__).parent / "Framework" / "settings.conf")
+def create_config_file():
+    if not os.path.exists(settings_conf_path):
+        config = ConfigObj()
+        config["Authentication"] = {
+            "username": "",
+            "api-key": "",
+            "server_address": ""
+        }
+        config["Advanced Options"] = {
+            "module_update_interval": 30,
+            "log_delete_interval": 7,
+            "last_module_update_date": "2025-02-21",
+            "last_log_delete_date": "2023-09-19",
+            "element_wait": 10,
+            "available_to_all_project": False,
+            "_file": "temp_config.ini",
+            "_file_upload_path": "TestExecutionLog",
+            "stop_live_log": False
+        }
+        config["Inspector"] = {
+            "Window": "",
+            "No_of_level_to_skip": 0,
+            "ai_plugin": True
+        }
+        config["server"] = {
+            "port": 0
+        }
+        config.filename = settings_conf_path
+        config.write()
+        print(f"Created settings.conf at {settings_conf_path}")
 
 def start_server():
     def is_port_in_use(port):
@@ -76,14 +109,18 @@ def start_server():
             while is_port_in_use(node_server_port) and tries < 99:
                 node_server_port += 1
                 tries += 1
+            config = ConfigObj(settings_conf_path)
+            config["server"]["port"] = node_server_port
+            config.write()
             uvicorn.run(
                 node_server.main(),
                 host="127.0.0.1",
                 port=node_server_port,
                 log_level="warning",
             )
-        except Exception:
-            print("[WARN] Failed to launch node-server. Seamless connect feature is disabled.")
+                
+        except Exception as e:
+            print(f"[WARN] Failed to launch node-server: {str(e)}")
 
     t = threading.Thread(target=run, daemon=True)
     t.start()
@@ -128,9 +165,6 @@ def monkeypatch_fromisoformat():
 
 
 def main():
-    print(
-        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
-    )
 
     # Load environment variables from .env file
     load_dotenv()
@@ -147,6 +181,7 @@ def main():
 
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
+    create_config_file()
     update_outdated_modules()
     monkeypatch_fromisoformat()
     start_server()
@@ -532,23 +567,6 @@ def PreProcess(log_dir=None):
     current_path_file = TMP_INI_FILE
     ConfigModule.clean_config_file(current_path_file)
     ConfigModule.add_section("sectionOne", current_path_file)
-
-    if not ConfigModule.has_section("Selenium_driver_paths"):
-        ConfigModule.add_section("Selenium_driver_paths")
-        ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", "")
-    if not ConfigModule.get_config_value(
-        "Selenium_driver_paths", "electron_chrome_path"
-    ):
-        ConfigModule.add_config_value(
-            "Selenium_driver_paths", "electron_chrome_path", ""
-        )
-
-    # If `log_dir` is not specified, then store all logs inside Zeuz Node's
-    # "AutomationLog" folder
     if log_dir is None:
         log_dir = TMP_INI_FILE.parent
 
