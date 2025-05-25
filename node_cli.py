@@ -31,8 +31,11 @@ from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 
-print(f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}")
+print(
+    f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+)
 print(f"Current file path: {os.path.abspath(__file__)}")
+
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -48,12 +51,46 @@ def adjust_python_path():
     # Move to Framework directory and add parent to path for module imports
     os.chdir(framework_dir)
 
+
+def create_config_file():
+    settings_conf_path = Path.cwd() / "settings.conf"
+    if settings_conf_path.exists():
+        return
+
+    today = date.today().strftime("%Y-%m-%d")
+
+    config = ConfigObj()
+    config["Authentication"] = {"username": "", "api-key": "", "server_address": ""}
+    config["Advanced Options"] = {
+        "module_update_interval": 30,
+        "log_delete_interval": 7,
+        "last_module_update_date": today,
+        "last_log_delete_date": today,
+        "element_wait": 10,
+        "available_to_all_project": False,
+        "_file": "temp_config.ini",
+        "_file_upload_path": "TestExecutionLog",
+        "stop_live_log": False,
+    }
+    config["Inspector"] = {
+        "Window": "",
+        "No_of_level_to_skip": 0,
+        "ai_plugin": True,
+    }
+    config["server"] = {"port": 0}
+    config.filename = str(settings_conf_path)
+    config.write()
+    print(f"Created settings.conf at {settings_conf_path}")
+
+
 adjust_python_path()
+create_config_file()
+
 
 from Framework.module_installer import (  # noqa: E402
     check_min_python_version,
-    install_missing_modules,
     update_outdated_modules,
+    # install_missing_modules,
 )
 
 from Framework.deploy_handler import (  # noqa: E402
@@ -65,39 +102,10 @@ from Framework.Utilities import live_log_service  # noqa: E402
 from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
 
-settings_conf_path = str(Path(__file__).parent / "Framework" / "settings.conf")
-def create_config_file():
-    if not os.path.exists(settings_conf_path):
-        config = ConfigObj()
-        config["Authentication"] = {
-            "username": "",
-            "api-key": "",
-            "server_address": ""
-        }
-        config["Advanced Options"] = {
-            "module_update_interval": 30,
-            "log_delete_interval": 7,
-            "last_module_update_date": "2025-02-21",
-            "last_log_delete_date": "2023-09-19",
-            "element_wait": 10,
-            "available_to_all_project": False,
-            "_file": "temp_config.ini",
-            "_file_upload_path": "TestExecutionLog",
-            "stop_live_log": False
-        }
-        config["Inspector"] = {
-            "Window": "",
-            "No_of_level_to_skip": 0,
-            "ai_plugin": True
-        }
-        config["server"] = {
-            "port": 0
-        }
-        config.filename = settings_conf_path
-        config.write()
-        print(f"Created settings.conf at {settings_conf_path}")
 
 def start_server():
+    settings_conf_path = Path.cwd() / "settings.conf"
+
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("127.0.0.1", port)) == 0
@@ -109,7 +117,7 @@ def start_server():
             while is_port_in_use(node_server_port) and tries < 99:
                 node_server_port += 1
                 tries += 1
-            config = ConfigObj(settings_conf_path)
+            config = ConfigObj(str(settings_conf_path))
             config["server"]["port"] = node_server_port
             config.write()
             uvicorn.run(
@@ -118,7 +126,7 @@ def start_server():
                 port=node_server_port,
                 log_level="warning",
             )
-                
+
         except Exception as e:
             print(f"[WARN] Failed to launch node-server: {str(e)}")
 
@@ -165,7 +173,6 @@ def monkeypatch_fromisoformat():
 
 
 def main():
-
     # Load environment variables from .env file
     load_dotenv()
 
@@ -181,7 +188,6 @@ def main():
 
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
-    create_config_file()
     update_outdated_modules()
     monkeypatch_fromisoformat()
     start_server()
@@ -1059,9 +1065,11 @@ if __name__ == "__main__":
 
                 STATE.reconnect_with_credentials = None
 
-            server_name = ConfigModule.get_config_value(
-                AUTHENTICATION_TAG, "server_address"
-            ).strip('""').strip()
+            server_name = (
+                ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+                .strip('""')
+                .strip()
+            )
             api = (
                 ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
                 .strip('"')
@@ -1070,7 +1078,10 @@ if __name__ == "__main__":
 
             if len(server_name) == 0 and len(api) == 0:
                 if print_login_information:
-                    console.print("\n" + ":red_circle: " + "Zeuz Node is disconnected.", style="bold red")
+                    console.print(
+                        "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+                        style="bold red",
+                    )
                     console.print("Please log in to ZeuZ server and connect.")
 
                     print_login_information = False
@@ -1087,8 +1098,8 @@ if __name__ == "__main__":
 
             if RUN_ONCE:
                 console.print(
-                    ":yellow_circle: " +
-                    "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
+                    ":yellow_circle: "
+                    + "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
                     style="bold cyan",
                 )
                 os._exit(0)
