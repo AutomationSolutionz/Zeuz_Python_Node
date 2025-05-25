@@ -5,6 +5,7 @@ import requests
 import json
 from configobj import ConfigObj
 from pathlib import Path
+import traceback
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 print(f"Python Version: {sys.version}")
@@ -86,7 +87,8 @@ class Inspector:
         self.x: int = -1
         self.y: int = -1
         self.app: App = App(name="", bundle_id="", pid=-1, window_title="")
-        self.xml_path: str = ""
+        self.xml_str: str = ""
+        self.xml_tree: ET.ElementTree = None
 
         self.server_address: str = "http://127.0.0.1"
         self.server_path: str = "/api/v1/mac/dump/driver"
@@ -98,8 +100,11 @@ class Inspector:
             flags = CGEventSourceFlagsState(kCGEventSourceStateHIDSystemState)
             if flags & kCGEventFlagMaskControl:
                 point = NSEvent.mouseLocation()
-                rich_print(f"Captured at x={point.x}, y={point.y}")
-                self.x, self.y = round(point.x), round(point.y)
+                height = NSScreen.mainScreen().frame().size.height
+                x = round(point.x)
+                y = round(height - point.y)
+                rich_print(f"Captured at x={x}, y={y}")
+                self.x, self.y = x, y
                 return
             time.sleep(0.1)
 
@@ -122,11 +127,13 @@ class Inspector:
     
     def get_dump(self):
         url = f"{self.server_address}:{self.server_port}{self.server_path}"
-        response = requests.get(url).json()
-        print('url', url)
-        print('response', response)
+        try:
+            response = requests.get(url).json()
+        except requests.exceptions.ConnectionError:
+            print(Fore.RED + "Failed to connect to the server. Please launch the Zeuz Node first and launch an app")
+            return
         if response["status"] == "ok":
-            self.response = response["ui_xml"]
+            self.page_src = response["ui_xml"]
             print(Fore.GREEN + f"Successfully got dump from appium driver")
         elif response["status"] == "not_found":
             print(Fore.GREEN + f"You have not launched any app yet. Launch app with the following action:")
@@ -145,16 +152,138 @@ class Inspector:
         else:
             print(Fore.RED + f"Error: {response['error']}")
             self.page_src = ""
-    
+
+    def render_tree(self):
+        print('rendertree')
+        if not self.page_src:
+            return
+
+        root = ET.fromstring(self.page_src)
+        tree = Tree(f"[bold green]{self.app.name} ({self.app.bundle_id})")
+        self.xml_tree = tree
+
+        def check_bounding_box(element):
+            if element.attrib.get('x') and element.attrib.get('y') and element.attrib.get('width') and element.attrib.get('height'):
+                x = int(element.attrib.get('x'))
+                y = int(element.attrib.get('y'))
+                width = int(element.attrib.get('width'))
+                height = int(element.attrib.get('height'))
+                if (self.x >= x and 
+                    self.x <= x + width and 
+                    self.y >= y and 
+                    self.y <= y + height
+                ):
+                    return True
+            return False
+
+        def get_attribute_string(element):
+            ignore = ['x', 'y', 'width', 'height']
+            return " ".join([f'{k}="{v}"' for k, v in element.attrib.items() if k not in ignore])
+
+        def set_single_zeuz_apiplugin(root):
+            elements = root.findall(".//*[@zeuz='aiplugin']")
+            if len(elements) > 1:
+                element_areas = []
+                for element in elements:
+                    width = int(element.attrib.get('width', 0))
+                    height = int(element.attrib.get('height', 0))
+                    area = width * height
+                    element_areas.append((element, area))
+                
+                element_areas.sort(key=lambda x: x[1])
+                for element, _ in element_areas[1:]:
+                    del element.attrib['zeuz']
+        
+        def remove_coordinates(node):
+            remove = ['x', 'y', 'width', 'height']
+            for child in node:
+                for attrib in list(child.attrib):
+                    if attrib in remove:
+                        del child.attrib[attrib]
+                remove_coordinates(child)
+
+        def build_tree(element, parent_tree):
+            element_tag = element.tag
+            ignore = ['x', 'y', 'width', 'height']
+            element_attribs = get_attribute_string(element)
+            element_coords = f"x={element.attrib.get('x', '')}, y={element.attrib.get('y', '')}, w={element.attrib.get('width', '')}, h={element.attrib.get('height', '')}"
+            recorded_coords = f"self.x={self.x}, self.y={self.y}"
+
+            if check_bounding_box(element):
+                if not any(check_bounding_box(child) for child in element):
+                    area = int(element.attrib.get('width', '1')) * int(element.attrib.get('height', '1'))
+                    label = f"[bold blue]{element_tag}: [green]{element_attribs} [dim]({element_coords} Area: {area} {recorded_coords})"
+                    element.set('zeuz', 'aiplugin')
+                else:
+                    label = f"[bold blue]{element_tag}: [yellow]{element_attribs}"
+
+            else:
+                label = f"[bold]{element_tag}: {element_attribs}"
+            node = parent_tree.add(label)
+
+            for child in element:
+                if check_bounding_box(child):
+                    build_tree(child, node)
+                else:
+                    node.add(f"[bold]{child.tag}: {get_attribute_string(child)}")
+
+        build_tree(root, tree)
+        set_single_zeuz_apiplugin(root)
+        rich_print(tree)
+        remove_coordinates(root)
+        self.xml_str = ET.tostring(root).decode().encode('ascii', 'ignore').decode()
+
+
+        ''' Comment out the below code to check if tree contains single zeuz apiplugin '''
+        # tree2 = Tree(f"[bold green]{self.app.name} ({self.app.bundle_id})")
+        # build_tree(root, tree2)
+        # rich_print(tree2)
+    def send_to_server(self):
+        config = ConfigObj(settings_conf_path)
+        api_key = config["Authentication"]["api-key"].strip()
+        server = config["Authentication"]["server_address"].strip()
+
+        if not api_key or not server:
+            print(Fore.RED + "API key or server address is not set. Please launch the Zeuz Node first and login")
+            return
+        url = f"{self.server_address}:{self.server_port}{self.server_path}"
+        try:
+            url = server + "/" if server[-1] != "/" else server
+            url += "ai_record_single_action/"
+            print(url)
+            content = json.dumps({
+                'page_src': self.xml_str,
+                "action_type": "android",
+            })
+            headers = {
+                "X-Api-Key": api_key,
+            }
+
+            r = requests.request("POST", url, headers=headers, data=content, verify=False)
+            response = r.json()
+            if response["info"] == "success":
+                r.ok and print("Element sent. You can " + Fore.GREEN + "'Add by AI' " + Fore.RESET + "from server")
+            else:
+                print(Fore.RED + response["info"])
+        except:
+            traceback.print_exc()
+            print(Fore.RED + "Failed to send content to AI Engine")
+            return
+
     def run(self):
         while True:
-            # input("Press any key to start capturing...")
+            input("Press any key to start capturing...")
             self.wait_for_control_press()
             self.get_frontmost_app()
             self.get_server_port()
+            if self.server_port == 0:
+                print(Fore.RED + "Server port is not set. Please launch the Zeuz Node first and launch an app")
+                continue
             self.get_dump()
             if not self.page_src:
                 continue
+            self.render_tree()
+            self.send_to_server()
 
             time.sleep(0.2)
                 
