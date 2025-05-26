@@ -101,38 +101,42 @@ def build_css_selector_query(dataset:list[list[str]]) -> str:
 
 get_element_return_type = list[selenium.webdriver.remote.webelement.WebElement] | Literal["zeuz_failed"] | selenium.webdriver.remote.webelement.WebElement
 def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[str]], Filter: str, element_wait: float, return_all_elements: bool) -> get_element_return_type:
-    """ Finds the shadow root container and the element inside there, both in css-selector method"""
+    """Traverses nested shadow roots and returns the target element"""
+
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        child_shadow_root_ds = []
-        for left, mid, right in shadow_root_ds:
-            mid = mid.strip().lower()
-            if mid.startswith("sr"):
-                child_shadow_root_ds.append((left, mid, right))
-        if len(child_shadow_root_ds) > 0:
-            # handle nested roots later
-            CommonUtil.ExecLog(sModuleInfo, "Nested shadow root is not supported yet", 2)
-            return "zeuz_failed"
-        else:
-            element_query = build_css_selector_query(shadow_root_ds)
-            index = _locate_index_number(shadow_root_ds)
-            index = 0 if index is None else index
-            elements = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
-            filtered_elements = filter_elements(elements, Filter)
-            shadow_container_element = filtered_elements[index]
-            shadow_root_element = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_container_element)
+        current_root = generic_driver  # Start with main document
 
-            element_query = build_css_selector_query(element_ds)
-            index = _locate_index_number(element_ds)
-            index = 0 if index is None else index
-            elements = shadow_root_element.find_elements(By.CSS_SELECTOR, element_query)
+        # Traverse each shadow root level
+        for shadow_param in shadow_root_ds:
+            # Build CSS selector for the current shadow host
+            element_query = build_css_selector_query([shadow_param])
+            index = _locate_index_number([shadow_param]) or 0
+
+            # Find shadow host element
+            elements = current_root.find_elements(By.CSS_SELECTOR, element_query)
             filtered_elements = filter_elements(elements, Filter)
-            if return_all_elements:
-                return filtered_elements
-            elif len(filtered_elements) == 0:
-                return []
-            else:
-                return filtered_elements[index]
+            if not filtered_elements:
+                CommonUtil.ExecLog(sModuleInfo, "Shadow host element not found", 3)
+                return "zeuz_failed"
+            shadow_host = filtered_elements[index]
+
+            # Access the shadow root
+            shadow_root = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_host)
+            if not shadow_root:
+                CommonUtil.ExecLog(sModuleInfo, "No shadow root found for element", 3)
+                return "zeuz_failed"
+            current_root = shadow_root  # Move into the shadow root
+
+        # Locate the target element in the deepest shadow root
+        element_query = build_css_selector_query(element_ds)
+        index = _locate_index_number(element_ds) or 0
+        elements = current_root.find_elements(By.CSS_SELECTOR, element_query)
+        filtered_elements = filter_elements(elements, Filter)
+
+        if return_all_elements:
+            return filtered_elements
+        return filtered_elements[index] if filtered_elements else []
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
