@@ -1,0 +1,108 @@
+{
+  "TestCases": [
+    {
+      "Title": "AWS Local Run Android",
+      "Folder": "Sample folder for zeuz zeuz",
+      "Feature": "Sample Feature/Sample REST API",
+      "dependency": {
+        "Mobile": "Android",
+        "OS": "Linux"
+      },
+      "run_time_params": {},
+      "Steps": [
+        {
+          "Step name": "sazid Sample Step",
+          "Step description": "sazid Sample Step",
+          "Step expected": "sazid Sample Step",
+          "Step actions": [
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "package",
+                  "element parameter",
+                  "com.experitest.ExperiBank"
+                ],
+                [
+                  "launch",
+                  "appium action",
+                  "launch"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "text",
+                  "element parameter",
+                  "OK"
+                ],
+                [
+                  "click",
+                  "appium action",
+                  "click"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "text",
+                  "element parameter",
+                  "Username"
+                ],
+                [
+                  "text",
+                  "appium action",
+                  "company"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "text",
+                  "element parameter",
+                  "Password"
+                ],
+                [
+                  "text",
+                  "appium action",
+                  "company"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "text",
+                  "element parameter",
+                  "Login"
+                ],
+                [
+                  "click",
+                  "appium action",
+                  "click"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "teardown",
+                  "appium action",
+                  "teardown"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

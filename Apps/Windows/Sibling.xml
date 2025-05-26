@@ -1,0 +1,1046 @@
+<body Name="IngredientCompare-edit.docx - Word" AutomationId="" LocalizedControlType="window" ClassName="OpusApp" pid="16592">
+<div Name="Compare Result" AutomationId="" LocalizedControlType="window" ClassName="ThunderDFrame">
+<div Name="Compare Result" AutomationId="" LocalizedControlType="pane" ClassName="F3 Server 757c0000">
+<div Name="" AutomationId="" LocalizedControlType="pane" ClassName="Shell Embedding">
+<div Name="" AutomationId="" LocalizedControlType="pane" ClassName="Shell DocObject View">
+<div Name="Product Compare Report" AutomationId="" LocalizedControlType="pane" ClassName="Internet Explorer_Server">
+<div Name="Product Compare Report" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="table" ClassName="">
+<div Name="Base Document: IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Base Document: IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Comparison Document: IngredientCompare.docx" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Comparison Document: IngredientCompare.docx" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+</div>
+<div Name="" AutomationId="" LocalizedControlType="table" ClassName="">
+<div Name="Legend" AutomationId="" LocalizedControlType="header" ClassName="">
+<div Name="Legend" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="Row contains no differences in data." AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Row contains no differences in data." AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="Row contains differences in data." AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Row contains differences in data." AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="Row contains same data with different display value." AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Row contains same data with different display value." AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+</div>
+<div Name="" AutomationId="" LocalizedControlType="table" ClassName="">
+<div Name="Product Information" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Product Information" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="IngredientCompare.docx" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="IngredientCompare.docx" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="Product (1234-1234) vs. Product (1234-1234)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Product Info" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Dosage Form" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Dosage Form" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="&#9472; &#9472; Route of Administration" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Route of Administration" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="&#9472; &#9472; DEA Schedule" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="DEA Schedule" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Packaging" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Package" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; &#9472; NDC" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="NDC" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="1234-1234-12" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="1234-1234-12" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="1234-1234-12" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="1234-1234-12" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; &#9472; Package Description" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Package Description" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="5 In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="5  In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="5 In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="5  In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 1 vs. Ingredient 1" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="B-10324" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="B-10324" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="B-10324" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="B-10324" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="A-105972" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="A-105972" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="B-10324" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="B-10324" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 2 vs. Ingredient 2" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="A-105972" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="A-105972" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 h / 2 L" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 h / 2 L" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 h / 2 L" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 h / 2 L" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 3 vs. Ingredient 3" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="S-(2-AMINO-2-OXOETHYL)CYSTEINE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="S-(2-AMINO-2-OXOETHYL)CYSTEINE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 4 vs. Ingredient 4" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="4 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="4 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 5 vs. Ingredient 5" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="M-295820" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="M-295820" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="M-295820" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="M-295820" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="F-12434" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="F-12434" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="F-12434" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="F-12434" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="3 g / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="3 g / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="3 [D&amp;apos;ag&amp;apos;U] / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="3 [D&amp;apos;ag&amp;apos;U] / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 6 vs. Ingredient 6" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 [hp_M] / 4 [PFU]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 [hp_M] / 4 [PFU]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 [hp_M] / 2 [PFU]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 [hp_M] / 2 [PFU]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 7 vs. Ingredient 7" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="56 [kp_C] / 2 g" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="56 [kp_C] / 2 g" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="56 [kp_C] / 2 [hp_C]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="56 [kp_C] / 2 [hp_C]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 8 vs. Ingredient 8" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Moiety as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Moiety as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 9 vs. Ingredient 9" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Equivalent Substance" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Equivalent Substance" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="A-105972" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="A-105972" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="K-67-001" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="K-67-001" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 10 vs. Ingredient 10" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Confidential" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Confidential" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Yes" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Yes" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="No" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="No" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 11 vs. Ingredient 11" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="4 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="4 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="7 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="7 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 12 vs. Ingredient 12" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="QM-652" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="QM-652" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="QM-652" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="QM-652" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="25 g / 3 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="25 g / 3 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="25 dL / 3 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="25 dL / 3 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 13 vs. Ingredient 13" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="QF-0510B" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="QF-0510B" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="QF-0510B" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="QF-0510B" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="44 kg / 4 g" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="44 kg / 4 g" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="44 kg / 2 g" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="44 kg / 2 g" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Ingredient 14 vs. Ingredient 14" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-PRA" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-PRA" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="E-PRA" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="E-PRA" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="56 d / 3 g" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="56 d / 3 g" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="56 d / 3 umol" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="56 d / 3 umol" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Marketing Information" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Status" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Status" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="active" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="active" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="active" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="active" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="&#9472; &#9472; Product Code" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Product Code" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="&#9472; &#9472; Category" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Category" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="&#9472; &#9472; Application number or monograph" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Application number or monograph" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="&#9472; &#9472; Marketing start date" AutomationId="" LocalizedControlType="" ClassName="">
+<div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" />
+<div Name="Marketing start date" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="" AutomationId="" LocalizedControlType="" ClassName="" />
+</div>
+<div Name="Tue May 06 14:57:26 BDT 2025 &#9472; SPL [SPL4] (en) vs. SPL [SPL4] (en)" AutomationId="" LocalizedControlType="text" ClassName="" />
+</div>
+</div>
+</div>
+<div Name="wbMyBrowser" AutomationId="" LocalizedControlType="" ClassName="" />
+<div Name="OK" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="Print" AutomationId="" LocalizedControlType="button" ClassName="" />
+<div Name="Save" AutomationId="" LocalizedControlType="button" ClassName="" />
+</div>
+<div Name="Compare Result" AutomationId="TitleBar" LocalizedControlType="title bar" ClassName="">
+<div Name="System Menu Bar" AutomationId="SystemMenuBar" LocalizedControlType="menu bar" ClassName="">
+<div Name="System" AutomationId="Item 1" LocalizedControlType="menu item" ClassName="" />
+</div>
+<div Name="Close" AutomationId="Close" LocalizedControlType="button" ClassName="" />
+</div>
+</div>
+<div Name="DropShadowTop" AutomationId="" LocalizedControlType="pane" ClassName="DropShadow" />
+<div Name="MsoDockTop" AutomationId="" LocalizedControlType="pane" ClassName="MsoCommandBarDock">
+<div Name="Ribbon" AutomationId="" LocalizedControlType="tool bar" ClassName="MsoCommandBar">
+<div Name="Ribbon" AutomationId="" LocalizedControlType="pane" ClassName="MsoWorkPane">
+<div Name="" AutomationId="" LocalizedControlType="pane" ClassName="NUIPane">
+<div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIHWNDElement">
+<div Name="Ribbon" AutomationId="" LocalizedControlType="Pane" ClassName="NetUInetpane">
+<div Name="Quick Access Toolbar" AutomationId="" LocalizedControlType="ToolBar" ClassName="NetUIElement">
+<div Name="AutoSave" AutomationId="AutoSaveSwitch" LocalizedControlType="Toggle Switch" ClassName="NetUISwitch" />
+<div Name="Save" AutomationId="FileSave" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Undo Lock Control Contents" AutomationId="Undo" LocalizedControlType="SplitButton" ClassName="NetUISplitButtonAnchor">
+<div Name="Undo Lock Control Contents" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="More Options" AutomationId="Undo_Dropdown" LocalizedControlType="Menu Item" ClassName="NetUIRibbonButton" />
+</div>
+<div Name="Repeat Doc Close" AutomationId="RedoOrRepeat" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Customize Quick Access Toolbar" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="&#8234;IngredientCompare-edit.docx&#8236;  -  Saved to this PC" AutomationId="" LocalizedControlType="Title Bar" ClassName="NetUIOfficeCaption">
+<div Name="&#8234;IngredientCompare-edit.docx&#8236;  -  Saved to this PC" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="Type to search and use the up and down arrow keys to navigate" AutomationId="TellMeControlAnchor" LocalizedControlType="Menu Item" ClassName="NetUISearchBoxAnchor">
+<div Name="Microsoft search" AutomationId="TellMeTextBoxAutomationId" LocalizedControlType="Edit Box" ClassName="NetUISearchBoxTextbox" />
+</div>
+<div Name="ZeuZ Office" AutomationId="MeControlWidget" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="My Benefits" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Minimize" AutomationId="" LocalizedControlType="Button" ClassName="NetUIAppFrameHelper" />
+<div Name="Restore Down" AutomationId="" LocalizedControlType="Button" ClassName="NetUIAppFrameHelper" />
+<div Name="Close" AutomationId="" LocalizedControlType="Button" ClassName="NetUIAppFrameHelper" />
+<div Name="File Tab" AutomationId="FileTabButton" LocalizedControlType="Button" ClassName="NetUIRibbonTab" />
+<div Name="Ribbon Tabs" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIPanViewer">
+<div Name="Home" AutomationId="TabHome" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Insert" AutomationId="TabInsert" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Draw" AutomationId="TabDrawInk" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Design" AutomationId="TabWordDesign" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Layout" AutomationId="TabPageLayoutWord" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="References" AutomationId="TabReferences" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Mailings" AutomationId="TabMailings" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Review" AutomationId="TabReviewWord" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="View" AutomationId="TabView" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Help" AutomationId="HelpTab" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Acrobat" AutomationId="" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="A4L" AutomationId="" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" />
+<div Name="Comments" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" />
+<div Name="Editing" AutomationId="" LocalizedControlType="ComboBox" ClassName="NetUIDropdownAnchor" />
+<div Name="Share" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="Lower Ribbon" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIPanViewer">
+<div Name="A4L" AutomationId="" LocalizedControlType="Group" ClassName="NetUIOrderedGroup">
+<div Name="File" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Validate" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Preview" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Publish" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="Insert" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Insert Keyword" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Edit Keyword" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Vocabulary" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Table Objects" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="Links" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="Inline Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="Manage" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Manage Sections" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Edit Section Type" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Toggle Shading" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="Refresh" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Outline Level" AutomationId="" LocalizedControlType="ComboBox" ClassName="NetUIDropdownAnchor">
+<div Name="Body Text" AutomationId="" LocalizedControlType="Text" ClassName="NetUILabel" />
+<div Name="Open" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" />
+</div>
+</div>
+<div Name="SPL" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="SPL " AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="Boxed Warning" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="Image Alt Text" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+</div>
+<div Name="Conversions" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Add Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Undo Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Remove Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+</div>
+<div Name="External Review" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Save For Review" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+<div Name="Send For Review" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="Advanced" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Properties" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Attributes" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Annotation" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Side By Side" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Compare Data" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+<div Name="Help" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk">
+<div Name="Help" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="About A4L" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="About i4i" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+<div Name="Check For Updates" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" />
+</div>
+</div>
+</div>
+<div Name="Ribbon Display Options" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" />
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div Name="MsoDockBottom" AutomationId="" LocalizedControlType="pane" ClassName="MsoCommandBarDock">
+<div Name="Status Bar" AutomationId="" LocalizedControlType="tool bar" ClassName="MsoCommandBar">
+<div Name="Status Bar" AutomationId="" LocalizedControlType="pane" ClassName="MsoWorkPane">
+<div Name="" AutomationId="" LocalizedControlType="pane" ClassName="NUIPane">
+<div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIHWNDElement">
+<div Name="Status Bar" AutomationId="" LocalizedControlType="Status Bar" ClassName="NetUInetpane">
+<div Name="Word Count 229 words" AutomationId="" LocalizedControlType="Text" ClassName="NetUISimpleButton" />
+<div Name="Text Predictions Text Predictions: On" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" />
+<div Name="Macro Recording Not Recording" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" />
+<div Name="Focus " AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" />
+<div Name="Read Mode" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" />
+<div Name="Print Layout" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" />
+<div Name="Web Layout" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" />
+<div Name="Zoom Out (Ctrl -)" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" />
+<div Name="Zoom" AutomationId="" LocalizedControlType="Slider" ClassName="NetUISlider">
+<div Name="Zoom Out" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" />
+<div Name="Position" AutomationId="" LocalizedControlType="Thumb" ClassName="NetUIThumb" />
+<div Name="Zoom In" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" />
+</div>
+<div Name="Zoom In (Ctrl +)" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" />
+<div Name="Zoom 100%" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" />
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="pane" ClassName="_WwB">
+<div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="document" ClassName="_WwG">
+<div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIToolWindow">
+<div Name="SPL4" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIToolWindow">
+<div Name="SPL4" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" />
+</div>
+<div Name="Page 1" AutomationId="UIA_AutomationId_Word_Page_1" LocalizedControlType="page" ClassName="">
+<div Name="Header -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" />
+<div Name="Page 1 content" AutomationId="Body" LocalizedControlType="edit" ClassName="">
+<div Name="Title" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Convert From Word" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" zeuz="aiplugin" />
+<div Name="DESCRIPTION" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Description Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="CLINICAL PHARMACOLOGY" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Pharmacology Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="INDICATIONS AND USAGE" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Indications Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="CONTRAINDICATIONS" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Contraindications Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="WARNINGS" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Warnings Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Precautions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="General" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="General Precautions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Information for Patients" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Information for Patients Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Laboratory Tests" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Laboratory Tests Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Interactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Drug Interactions" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Drug Interactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+</div>
+<div Name="Footer -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" />
+</div>
+<div Name="Page 2" AutomationId="UIA_AutomationId_Word_Page_2" LocalizedControlType="page" ClassName="">
+<div Name="Header -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" />
+<div Name="Page 2 content" AutomationId="Body" LocalizedControlType="edit" ClassName="">
+<div Name="Drug/Laboratory Test Interactions" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Drug Lab Interactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Carcinogenesis, Mutagenesis, Impairment of Fertility" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Carcinogenesis, Mutagenesis, Impairment of Fertility Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Pregnancy" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Pregnancy Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Labor and Delivery" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Labor and Delivery Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Nursing Mothers" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Nursing Mothers Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Pediatric Use" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Pediatric Use Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Geriatric Use" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Geriatric Use Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="ADVERSE REACTIONS" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Adverse Reactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="DRUG ABUSE AND DEPENDENCE" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Drug Abuse and Dependence Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Controlled Substance" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Controlled Substance Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Abuse" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Abuse Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="Dependence" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Dependence Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+</div>
+<div Name="OVERDOSAGE" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Overdosage Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+</div>
+<div Name="Footer -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" />
+</div>
+<div Name="Page 3" AutomationId="UIA_AutomationId_Word_Page_3" LocalizedControlType="page" ClassName="">
+<div Name="Header -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" />
+<div Name="Page 3 content" AutomationId="Body" LocalizedControlType="edit" ClassName="">
+<div Name="DOSAGE AND ADMINISTRATION" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Dosage and Administration Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="HOW SUPPLIED" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="How Supplied Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+<div Name="PACKAGE/LABEL PRINCIPAL DISPLAY PANEL" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control">
+<div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+<div Name="Package/Label Display Panel Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" />
+</div>
+</div>
+<div Name="Footer -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" />
+</div>
+</div>
+<div Name="Vertical" AutomationId="" LocalizedControlType="pane" ClassName="NUIScrollbar">
+<div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIHWNDElement">
+<div Name="" AutomationId="" LocalizedControlType="ScrollBar" ClassName="NetUIScrollBar" />
+</div>
+</div>
+</div>
+<div Name="IngredientCompare-edit.docx - Word" AutomationId="TitleBar" LocalizedControlType="title bar" ClassName="">
+<div Name="System Menu Bar" AutomationId="SystemMenuBar" LocalizedControlType="menu bar" ClassName="">
+<div Name="System" AutomationId="Item 1" LocalizedControlType="menu item" ClassName="" />
+</div>
+<div Name="Minimize" AutomationId="Minimize" LocalizedControlType="button" ClassName="" />
+<div Name="Restore" AutomationId="Restore" LocalizedControlType="button" ClassName="" />
+<div Name="Close" AutomationId="Close" LocalizedControlType="button" ClassName="" />
+</div>
+</body>

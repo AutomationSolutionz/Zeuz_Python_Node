@@ -1,0 +1,1046 @@
+<body Name="IngredientCompare-edit.docx - Word" AutomationId="" LocalizedControlType="window" ClassName="OpusApp" pid="16592">
+  <div Name="Compare Result" AutomationId="" LocalizedControlType="window" ClassName="ThunderDFrame" Left="784.0" Right="1776.0" Top="321.0" Bottom="1071.0" found="True">
+    <div Name="Compare Result" AutomationId="" LocalizedControlType="pane" ClassName="F3 Server 757c0000" Left="792.0" Right="1768.0" Top="352.0" Bottom="1063.0">
+      <div Name="" AutomationId="" LocalizedControlType="pane" ClassName="Shell Embedding" Left="794.0" Right="1770.0" Top="354.0" Bottom="1013.0">
+        <div Name="" AutomationId="" LocalizedControlType="pane" ClassName="Shell DocObject View" Left="794.0" Right="1770.0" Top="354.0" Bottom="1013.0">
+          <div Name="Product Compare Report" AutomationId="" LocalizedControlType="pane" ClassName="Internet Explorer_Server" Left="794.0" Right="1770.0" Top="354.0" Bottom="1013.0">
+            <div Name="Product Compare Report" AutomationId="" LocalizedControlType="text" ClassName="" Left="852.0" Right="1137.0" Top="432.0" Bottom="460.0" />
+            <div Name="" AutomationId="" LocalizedControlType="table" ClassName="" Left="852.0" Right="1695.0" Top="479.0" Bottom="516.0">
+              <div Name="Base Document: IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1274.0" Top="480.0" Bottom="515.0">
+                <div Name="Base Document: IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="1190.0" Top="488.0" Bottom="507.0" />
+              </div>
+              <div Name="Comparison Document: IngredientCompare.docx" AutomationId="" LocalizedControlType="" ClassName="" Left="1274.0" Right="1695.0" Top="480.0" Bottom="515.0">
+                <div Name="Comparison Document: IngredientCompare.docx" AutomationId="" LocalizedControlType="text" ClassName="" Left="1282.0" Right="1629.0" Top="488.0" Bottom="507.0" />
+              </div>
+            </div>
+            <div Name="" AutomationId="" LocalizedControlType="table" ClassName="" Left="852.0" Right="1695.0" Top="520.0" Bottom="663.0">
+              <div Name="Legend" AutomationId="" LocalizedControlType="header" ClassName="" Left="853.0" Right="1695.0" Top="521.0" Bottom="556.0">
+                <div Name="Legend" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="918.0" Top="529.0" Bottom="547.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="926.0" Top="556.0" Bottom="591.0" />
+              <div Name="Row contains no differences in data." AutomationId="" LocalizedControlType="" ClassName="" Left="926.0" Right="1695.0" Top="556.0" Bottom="591.0">
+                <div Name="Row contains no differences in data." AutomationId="" LocalizedControlType="text" ClassName="" Left="936.0" Right="1194.0" Top="564.0" Bottom="583.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="926.0" Top="591.0" Bottom="627.0" />
+              <div Name="Row contains differences in data." AutomationId="" LocalizedControlType="" ClassName="" Left="926.0" Right="1695.0" Top="591.0" Bottom="627.0">
+                <div Name="Row contains differences in data." AutomationId="" LocalizedControlType="text" ClassName="" Left="936.0" Right="1172.0" Top="600.0" Bottom="618.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="926.0" Top="627.0" Bottom="662.0" />
+              <div Name="Row contains same data with different display value." AutomationId="" LocalizedControlType="" ClassName="" Left="926.0" Right="1695.0" Top="627.0" Bottom="662.0">
+                <div Name="Row contains same data with different display value." AutomationId="" LocalizedControlType="text" ClassName="" Left="936.0" Right="1308.0" Top="635.0" Bottom="654.0" />
+              </div>
+            </div>
+            <div Name="" AutomationId="" LocalizedControlType="table" ClassName="" Left="852.0" Right="1695.0" Top="667.0" Bottom="4157.0">
+              <div Name="Product Information" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1133.0" Top="667.0" Bottom="703.0">
+                <div Name="Product Information" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="1001.0" Top="676.0" Bottom="694.0" />
+              </div>
+              <div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="" ClassName="" Left="1133.0" Right="1414.0" Top="667.0" Bottom="703.0">
+                <div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="text" ClassName="" Left="1142.0" Right="1348.0" Top="676.0" Bottom="694.0" />
+              </div>
+              <div Name="IngredientCompare.docx" AutomationId="" LocalizedControlType="" ClassName="" Left="1414.0" Right="1695.0" Top="667.0" Bottom="703.0">
+                <div Name="IngredientCompare.docx" AutomationId="" LocalizedControlType="text" ClassName="" Left="1422.0" Right="1598.0" Top="676.0" Bottom="694.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1695.0" Top="703.0" Bottom="743.0">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="1651.0" Right="1681.0" Top="711.0" Bottom="735.0" />
+                <div Name="Product (1234-1234) vs. Product (1234-1234)" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="1188.0" Top="711.0" Bottom="730.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1695.0" Top="743.0" Bottom="783.0">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="1651.0" Right="1681.0" Top="752.0" Bottom="775.0" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="872.0" Top="752.0" Bottom="770.0" />
+                <div Name="Product Info" AutomationId="" LocalizedControlType="text" ClassName="" Left="872.0" Right="968.0" Top="752.0" Bottom="770.0" />
+              </div>
+              <div Name="&#9472; &#9472; Dosage Form" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1133.0" Top="783.0" Bottom="819.0">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="888.0" Top="792.0" Bottom="810.0" />
+                <div Name="Dosage Form" AutomationId="" LocalizedControlType="text" ClassName="" Left="888.0" Right="994.0" Top="792.0" Bottom="810.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="1133.0" Right="1414.0" Top="783.0" Bottom="819.0" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="1414.0" Right="1695.0" Top="783.0" Bottom="819.0" />
+              <div Name="&#9472; &#9472; Route of Administration" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1133.0" Top="819.0" Bottom="854.0">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="888.0" Top="827.0" Bottom="846.0" />
+                <div Name="Route of Administration" AutomationId="" LocalizedControlType="text" ClassName="" Left="888.0" Right="1063.0" Top="827.0" Bottom="846.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="1133.0" Right="1414.0" Top="819.0" Bottom="854.0" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="1414.0" Right="1695.0" Top="819.0" Bottom="854.0" />
+              <div Name="&#9472; &#9472; DEA Schedule" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1133.0" Top="854.0" Bottom="890.0">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="888.0" Top="863.0" Bottom="881.0" />
+                <div Name="DEA Schedule" AutomationId="" LocalizedControlType="text" ClassName="" Left="888.0" Right="1001.0" Top="863.0" Bottom="881.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="1133.0" Right="1414.0" Top="854.0" Bottom="890.0" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="1414.0" Right="1695.0" Top="854.0" Bottom="890.0" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1695.0" Top="890.0" Bottom="930.0">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="1651.0" Right="1681.0" Top="898.0" Bottom="921.0" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="872.0" Top="898.0" Bottom="917.0" />
+                <div Name="Packaging" AutomationId="" LocalizedControlType="text" ClassName="" Left="872.0" Right="956.0" Top="898.0" Bottom="917.0" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1695.0" Top="930.0" Bottom="970.0">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="1651.0" Right="1681.0" Top="938.0" Bottom="962.0" />
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="888.0" Top="938.0" Bottom="957.0" />
+                <div Name="Package" AutomationId="" LocalizedControlType="text" ClassName="" Left="888.0" Right="959.0" Top="938.0" Bottom="957.0" />
+              </div>
+              <div Name="&#9472; &#9472; &#9472; NDC" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1133.0" Top="970.0" Bottom="1006.0">
+                <div Name="&#9472; &#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="861.0" Right="904.0" Top="979.0" Bottom="997.0" />
+                <div Name="NDC" AutomationId="" LocalizedControlType="text" ClassName="" Left="904.0" Right="947.0" Top="979.0" Bottom="997.0" />
+              </div>
+              <div Name="1234-1234-12" AutomationId="" LocalizedControlType="" ClassName="" Left="1133.0" Right="1414.0" Top="970.0" Bottom="1006.0">
+                <div Name="1234-1234-12" AutomationId="" LocalizedControlType="text" ClassName="" Left="1142.0" Right="1241.0" Top="979.0" Bottom="997.0" />
+              </div>
+              <div Name="1234-1234-12" AutomationId="" LocalizedControlType="" ClassName="" Left="1414.0" Right="1695.0" Top="970.0" Bottom="1006.0">
+                <div Name="1234-1234-12" AutomationId="" LocalizedControlType="text" ClassName="" Left="1422.0" Right="1522.0" Top="979.0" Bottom="997.0" />
+              </div>
+              <div Name="&#9472; &#9472; &#9472; Package Description" AutomationId="" LocalizedControlType="" ClassName="" Left="853.0" Right="1133.0" Top="1006.0" Bottom="1059.0">
+                <div Name="&#9472; &#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Package Description" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="5 In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="" ClassName="" Left="1133.0" Right="1414.0" Top="1006.0" Bottom="1059.0">
+                <div Name="5  In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="5 In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="" ClassName="" Left="1414.0" Right="1695.0" Top="1006.0" Bottom="1059.0">
+                <div Name="5  In 1 BOX, UNIT-DOSE (Type 0: Not a Combination Product)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 1 vs. Ingredient 1" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="B-10324" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="B-10324" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="B-10324" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="B-10324" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="A-105972" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="A-105972" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="B-10324" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="B-10324" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="5 d / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 2 vs. Ingredient 2" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="F-15063" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="F-15063" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="A-105972" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="A-105972" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 h / 2 L" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 h / 2 L" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 h / 2 L" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 h / 2 L" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 3 vs. Ingredient 3" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="IBAFLOXACIN" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="S-(2-AMINO-2-OXOETHYL)CYSTEINE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="S-(2-AMINO-2-OXOETHYL)CYSTEINE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="5 umol / 2 ug" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 4 vs. Ingredient 4" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-1010 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="4 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="4 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 [hp_X] / 2 kg" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 5 vs. Ingredient 5" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="M-295820" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="M-295820" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="M-295820" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="M-295820" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="F-12434" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="F-12434" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="F-12434" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="F-12434" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="3 g / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="3 g / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="3 [D&amp;apos;ag&amp;apos;U] / 2 [FFU]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="3 [D&amp;apos;ag&amp;apos;U] / 2 [FFU]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 6 vs. Ingredient 6" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-COUPLED RECEPTOR KINASE 5" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 [hp_M] / 4 [PFU]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 [hp_M] / 4 [PFU]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 [hp_M] / 2 [PFU]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 [hp_M] / 2 [PFU]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 7 vs. Ingredient 7" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="O,O,O-TRIS(2-CHLOROETHYL) PHOSPHOROTHIOATE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="56 [kp_C] / 2 g" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="56 [kp_C] / 2 g" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="56 [kp_C] / 2 [hp_C]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="56 [kp_C] / 2 [hp_C]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 8 vs. Ingredient 8" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G PROTEIN-ACTIVATED INWARD RECTIFIER POTASSIUM CHANNEL 1" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="6 g / 3 uL" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Moiety as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Moiety as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Ingredient as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 9 vs. Ingredient 9" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Moiety" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Moiety" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-3030" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-3030" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="45 [hp_Q] / 23 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Equivalent Substance" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Equivalent Substance" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="A-105972" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="A-105972" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="K-67-001" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="K-67-001" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Active (Reference Substance as basis of strength)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 10 vs. Ingredient 10" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="G 1 (GPER AGONIST), (3AR,4S,9BS)-" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="2 [hp_M] / 2 h" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Confidential" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Confidential" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Yes" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Yes" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="No" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="No" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 11 vs. Ingredient 11" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-2508 FREE BASE" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="4 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="4 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="7 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="7 [FFU] / 1 [hp_M]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 12 vs. Ingredient 12" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="QM-652" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="QM-652" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="QM-652" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="QM-652" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="25 g / 3 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="25 g / 3 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="25 dL / 3 [hp_X]" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="25 dL / 3 [hp_X]" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 13 vs. Ingredient 13" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="QF-0510B" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="QF-0510B" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="QF-0510B" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="QF-0510B" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="44 kg / 4 g" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="44 kg / 4 g" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="44 kg / 2 g" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="44 kg / 2 g" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Ingredient 14 vs. Ingredient 14" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Name" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Name" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-PRA" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-PRA" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="E-PRA" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="E-PRA" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Strength" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Strength" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="56 d / 3 g" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="56 d / 3 g" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="56 d / 3 umol" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="56 d / 3 umol" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Type" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Type" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="Inactive" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="Inactive" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#8722;" AutomationId="" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="&#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Marketing Information" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Status" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Status" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="active" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="active" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="active" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="active" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="&#9472; &#9472; Product Code" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Product Code" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="&#9472; &#9472; Category" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Category" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="&#9472; &#9472; Application number or monograph" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Application number or monograph" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="&#9472; &#9472; Marketing start date" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+                <div Name="&#9472; &#9472;" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+                <div Name="Marketing start date" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              </div>
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="" AutomationId="" LocalizedControlType="" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            </div>
+            <div Name="Tue May 06 14:57:26 BDT 2025 &#9472; SPL [SPL4] (en) vs. SPL [SPL4] (en)" AutomationId="" LocalizedControlType="text" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+        </div>
+      </div>
+      <div Name="wbMyBrowser" AutomationId="" LocalizedControlType="" ClassName="" Left="794.0" Right="1770.0" Top="354.0" Bottom="1013.0" />
+      <div Name="OK" AutomationId="" LocalizedControlType="button" ClassName="" Left="1610.0" Right="1682.0" Top="1026.0" Bottom="1050.0" />
+      <div Name="Print" AutomationId="" LocalizedControlType="button" ClassName="" Left="1434.0" Right="1506.0" Top="1026.0" Bottom="1050.0" />
+      <div Name="Save" AutomationId="" LocalizedControlType="button" ClassName="" Left="1522.0" Right="1594.0" Top="1026.0" Bottom="1050.0" />
+    </div>
+    <div Name="Compare Result" AutomationId="TitleBar" LocalizedControlType="title bar" ClassName="" Left="792.0" Right="1768.0" Top="329.0" Bottom="352.0" found="True" zeuz="aiplugin" area="22448.0" pattern_list="[]">
+      <div Name="System Menu Bar" AutomationId="SystemMenuBar" LocalizedControlType="menu bar" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+        <div Name="System" AutomationId="Item 1" LocalizedControlType="menu item" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+      </div>
+      <div Name="Close" AutomationId="Close" LocalizedControlType="button" ClassName="" Left="1735.0" Right="1769.0" Top="322.0" Bottom="352.0" />
+    </div>
+  </div>
+  <div Name="DropShadowTop" AutomationId="" LocalizedControlType="pane" ClassName="DropShadow" Left="0.0" Right="2560.0" Top="178.0" Bottom="184.0" />
+  <div Name="MsoDockTop" AutomationId="" LocalizedControlType="pane" ClassName="MsoCommandBarDock" Left="0.0" Right="2560.0" Top="0.0" Bottom="178.0">
+    <div Name="Ribbon" AutomationId="" LocalizedControlType="tool bar" ClassName="MsoCommandBar" Left="0.0" Right="2560.0" Top="0.0" Bottom="178.0">
+      <div Name="Ribbon" AutomationId="" LocalizedControlType="pane" ClassName="MsoWorkPane" Left="0.0" Right="2560.0" Top="0.0" Bottom="178.0">
+        <div Name="" AutomationId="" LocalizedControlType="pane" ClassName="NUIPane" Left="0.0" Right="2560.0" Top="0.0" Bottom="178.0">
+          <div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIHWNDElement" Left="0.0" Right="2560.0" Top="0.0" Bottom="178.0">
+            <div Name="Ribbon" AutomationId="" LocalizedControlType="Pane" ClassName="NetUInetpane" Left="0.0" Right="2560.0" Top="0.0" Bottom="178.0">
+              <div Name="Quick Access Toolbar" AutomationId="" LocalizedControlType="ToolBar" ClassName="NetUIElement" Left="42.0" Right="280.0" Top="0.0" Bottom="48.0">
+                <div Name="AutoSave" AutomationId="AutoSaveSwitch" LocalizedControlType="Toggle Switch" ClassName="NetUISwitch" Left="42.0" Right="154.0" Top="9.0" Bottom="38.0" />
+                <div Name="Save" AutomationId="FileSave" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="155.0" Right="183.0" Top="9.0" Bottom="38.0" />
+                <div Name="Undo Lock Control Contents" AutomationId="Undo" LocalizedControlType="SplitButton" ClassName="NetUISplitButtonAnchor" Left="184.0" Right="222.0" Top="9.0" Bottom="38.0">
+                  <div Name="Undo Lock Control Contents" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="184.0" Right="209.0" Top="9.0" Bottom="38.0" />
+                  <div Name="More Options" AutomationId="Undo_Dropdown" LocalizedControlType="Menu Item" ClassName="NetUIRibbonButton" Left="209.0" Right="222.0" Top="9.0" Bottom="38.0" />
+                </div>
+                <div Name="Repeat Doc Close" AutomationId="RedoOrRepeat" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="223.0" Right="251.0" Top="9.0" Bottom="38.0" />
+                <div Name="Customize Quick Access Toolbar" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="252.0" Right="280.0" Top="8.0" Bottom="39.0" />
+              </div>
+              <div Name="&#8234;IngredientCompare-edit.docx&#8236;  -  Saved to this PC" AutomationId="" LocalizedControlType="Title Bar" ClassName="NetUIOfficeCaption" Left="281.0" Right="1104.0" Top="0.0" Bottom="48.0">
+                <div Name="&#8234;IngredientCompare-edit.docx&#8236;  -  Saved to this PC" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="281.0" Right="579.0" Top="0.0" Bottom="48.0" />
+              </div>
+              <div Name="Type to search and use the up and down arrow keys to navigate" AutomationId="TellMeControlAnchor" LocalizedControlType="Menu Item" ClassName="NetUISearchBoxAnchor" Left="1104.0" Right="1472.0" Top="8.0" Bottom="40.0">
+                <div Name="Microsoft search" AutomationId="TellMeTextBoxAutomationId" LocalizedControlType="Edit Box" ClassName="NetUISearchBoxTextbox" Left="1145.0" Right="1459.0" Top="15.0" Bottom="35.0" />
+              </div>
+              <div Name="ZeuZ Office" AutomationId="MeControlWidget" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="2320.0" Right="2370.0" Top="0.0" Bottom="48.0" />
+              <div Name="My Benefits" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="2370.0" Right="2416.0" Top="0.0" Bottom="48.0" />
+              <div Name="Minimize" AutomationId="" LocalizedControlType="Button" ClassName="NetUIAppFrameHelper" Left="2416.0" Right="2464.0" Top="0.0" Bottom="48.0" />
+              <div Name="Restore Down" AutomationId="" LocalizedControlType="Button" ClassName="NetUIAppFrameHelper" Left="2464.0" Right="2512.0" Top="0.0" Bottom="48.0" />
+              <div Name="Close" AutomationId="" LocalizedControlType="Button" ClassName="NetUIAppFrameHelper" Left="2512.0" Right="2560.0" Top="0.0" Bottom="48.0" />
+              <div Name="File Tab" AutomationId="FileTabButton" LocalizedControlType="Button" ClassName="NetUIRibbonTab" Left="4.0" Right="58.0" Top="48.0" Bottom="78.0" />
+              <div Name="Ribbon Tabs" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIPanViewer" Left="58.0" Right="2548.0" Top="48.0" Bottom="78.0">
+                <div Name="Home" AutomationId="TabHome" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="58.0" Right="113.0" Top="48.0" Bottom="78.0" />
+                <div Name="Insert" AutomationId="TabInsert" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="114.0" Right="167.0" Top="48.0" Bottom="78.0" />
+                <div Name="Draw" AutomationId="TabDrawInk" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="168.0" Right="217.0" Top="48.0" Bottom="78.0" />
+                <div Name="Design" AutomationId="TabWordDesign" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="218.0" Right="277.0" Top="48.0" Bottom="78.0" />
+                <div Name="Layout" AutomationId="TabPageLayoutWord" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="278.0" Right="337.0" Top="48.0" Bottom="78.0" />
+                <div Name="References" AutomationId="TabReferences" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="338.0" Right="421.0" Top="48.0" Bottom="78.0" />
+                <div Name="Mailings" AutomationId="TabMailings" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="422.0" Right="490.0" Top="48.0" Bottom="78.0" />
+                <div Name="Review" AutomationId="TabReviewWord" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="491.0" Right="551.0" Top="48.0" Bottom="78.0" />
+                <div Name="View" AutomationId="TabView" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="552.0" Right="598.0" Top="48.0" Bottom="78.0" />
+                <div Name="Help" AutomationId="HelpTab" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="599.0" Right="645.0" Top="48.0" Bottom="78.0" />
+                <div Name="Acrobat" AutomationId="" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="646.0" Right="712.0" Top="48.0" Bottom="78.0" />
+                <div Name="A4L" AutomationId="" LocalizedControlType="Tab Item" ClassName="NetUIRibbonTab" Left="713.0" Right="753.0" Top="48.0" Bottom="78.0" />
+                <div Name="Comments" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" Left="2289.0" Right="2379.0" Top="51.0" Bottom="75.0" />
+                <div Name="Editing" AutomationId="" LocalizedControlType="ComboBox" ClassName="NetUIDropdownAnchor" Left="2387.0" Right="2469.0" Top="51.0" Bottom="75.0" />
+                <div Name="Share" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="2477.0" Right="2548.0" Top="48.0" Bottom="78.0" />
+              </div>
+              <div Name="Lower Ribbon" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIPanViewer" Left="8.0" Right="2524.0" Top="78.0" Bottom="178.0">
+                <div Name="A4L" AutomationId="" LocalizedControlType="Group" ClassName="NetUIOrderedGroup" Left="12.0" Right="2524.0" Top="78.0" Bottom="178.0">
+                  <div Name="File" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="12.0" Right="111.0" Top="80.0" Bottom="176.0">
+                    <div Name="Validate" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="20.0" Right="94.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Preview" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="20.0" Right="94.0" Top="108.0" Bottom="132.0" />
+                    <div Name="Publish" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="20.0" Right="103.0" Top="134.0" Bottom="158.0" />
+                  </div>
+                  <div Name="Insert" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="111.0" Right="397.0" Top="80.0" Bottom="176.0">
+                    <div Name="Insert Keyword" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="119.0" Right="230.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Edit Keyword" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="119.0" Right="221.0" Top="108.0" Bottom="132.0" />
+                    <div Name="Vocabulary" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="119.0" Right="210.0" Top="134.0" Bottom="158.0" />
+                    <div Name="Table Objects" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="232.0" Right="347.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Links" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="232.0" Right="303.0" Top="108.0" Bottom="132.0" />
+                    <div Name="Inline Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="232.0" Right="338.0" Top="134.0" Bottom="158.0" />
+                    <div Name="" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="349.0" Right="389.0" Top="82.0" Bottom="106.0" />
+                  </div>
+                  <div Name="Manage" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="397.0" Right="636.0" Top="80.0" Bottom="176.0">
+                    <div Name="Manage Sections" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="405.0" Right="528.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Edit Section Type" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="405.0" Right="528.0" Top="108.0" Bottom="132.0" />
+                    <div Name="Toggle Shading" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="405.0" Right="531.0" Top="134.0" Bottom="158.0" />
+                    <div Name="Refresh" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="533.0" Right="605.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Outline Level" AutomationId="" LocalizedControlType="ComboBox" ClassName="NetUIDropdownAnchor" Left="533.0" Right="628.0" Top="108.0" Bottom="132.0">
+                      <div Name="Body Text" AutomationId="" LocalizedControlType="Text" ClassName="NetUILabel" Left="535.0" Right="592.0" Top="109.0" Bottom="131.0" />
+                      <div Name="Open" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" Left="614.0" Right="627.0" Top="109.0" Bottom="131.0" />
+                    </div>
+                  </div>
+                  <div Name="SPL" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="636.0" Right="820.0" Top="80.0" Bottom="176.0">
+                    <div Name="SPL " AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="644.0" Right="686.0" Top="82.0" Bottom="158.0" />
+                    <div Name="Boxed Warning" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="688.0" Right="812.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Image Alt Text" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="688.0" Right="796.0" Top="108.0" Bottom="132.0" />
+                  </div>
+                  <div Name="Conversions" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="820.0" Right="956.0" Top="80.0" Bottom="176.0">
+                    <div Name="Add Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="828.0" Right="927.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Undo Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="828.0" Right="934.0" Top="108.0" Bottom="132.0" />
+                    <div Name="Remove Markup" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="828.0" Right="948.0" Top="134.0" Bottom="158.0" />
+                  </div>
+                  <div Name="External Review" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="956.0" Right="1102.0" Top="80.0" Bottom="176.0">
+                    <div Name="Save For Review" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="964.0" Right="1092.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Send For Review" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="964.0" Right="1094.0" Top="108.0" Bottom="132.0" />
+                  </div>
+                  <div Name="Advanced" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="1102.0" Right="1333.0" Top="80.0" Bottom="176.0">
+                    <div Name="Properties" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1110.0" Right="1196.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Attributes" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1110.0" Right="1195.0" Top="108.0" Bottom="132.0" />
+                    <div Name="Annotation" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1110.0" Right="1203.0" Top="134.0" Bottom="158.0" />
+                    <div Name="Side By Side" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1205.0" Right="1301.0" Top="82.0" Bottom="106.0" />
+                    <div Name="Compare Data" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="1205.0" Right="1325.0" Top="108.0" Bottom="132.0" />
+                  </div>
+                  <div Name="Help" AutomationId="" LocalizedControlType="Group" ClassName="NetUIChunk" Left="1333.0" Right="1572.0" Top="80.0" Bottom="176.0">
+                    <div Name="Help" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1341.0" Right="1399.0" Top="82.0" Bottom="106.0" />
+                    <div Name="About A4L" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1341.0" Right="1430.0" Top="108.0" Bottom="132.0" />
+                    <div Name="About i4i" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1341.0" Right="1422.0" Top="134.0" Bottom="158.0" />
+                    <div Name="Check For Updates" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRibbonButton" Left="1432.0" Right="1564.0" Top="82.0" Bottom="106.0" />
+                  </div>
+                </div>
+              </div>
+              <div Name="Ribbon Display Options" AutomationId="" LocalizedControlType="Menu Item" ClassName="NetUIAnchor" Left="2528.0" Right="2548.0" Top="154.0" Bottom="174.0" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div Name="MsoDockBottom" AutomationId="" LocalizedControlType="pane" ClassName="MsoCommandBarDock" Left="0.0" Right="2560.0" Top="1370.0" Bottom="1392.0">
+    <div Name="Status Bar" AutomationId="" LocalizedControlType="tool bar" ClassName="MsoCommandBar" Left="0.0" Right="2560.0" Top="1370.0" Bottom="1392.0">
+      <div Name="Status Bar" AutomationId="" LocalizedControlType="pane" ClassName="MsoWorkPane" Left="0.0" Right="2560.0" Top="1370.0" Bottom="1392.0">
+        <div Name="" AutomationId="" LocalizedControlType="pane" ClassName="NUIPane" Left="0.0" Right="2560.0" Top="1370.0" Bottom="1392.0">
+          <div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIHWNDElement" Left="0.0" Right="2560.0" Top="1370.0" Bottom="1392.0">
+            <div Name="Status Bar" AutomationId="" LocalizedControlType="Status Bar" ClassName="NetUInetpane" Left="0.0" Right="2560.0" Top="1370.0" Bottom="1392.0">
+              <div Name="Word Count 229 words" AutomationId="" LocalizedControlType="Text" ClassName="NetUISimpleButton" Left="4.0" Right="73.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Text Predictions Text Predictions: On" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" Left="76.0" Right="193.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Macro Recording Not Recording" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" Left="196.0" Right="228.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Focus " AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" Left="2193.0" Right="2257.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Read Mode" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" Left="2260.0" Right="2300.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Print Layout" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" Left="2300.0" Right="2340.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Web Layout" AutomationId="" LocalizedControlType="Button" ClassName="NetUIStickyButton" Left="2340.0" Right="2380.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Zoom Out (Ctrl -)" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" Left="2381.0" Right="2399.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Zoom" AutomationId="" LocalizedControlType="Slider" ClassName="NetUISlider" Left="2399.0" Right="2499.0" Top="1371.0" Bottom="1392.0">
+                <div Name="Zoom Out" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" Left="2399.0" Right="2447.0" Top="1371.0" Bottom="1392.0" />
+                <div Name="Position" AutomationId="" LocalizedControlType="Thumb" ClassName="NetUIThumb" Left="2447.0" Right="2452.0" Top="1376.0" Bottom="1387.0" />
+                <div Name="Zoom In" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" Left="2452.0" Right="2499.0" Top="1371.0" Bottom="1392.0" />
+              </div>
+              <div Name="Zoom In (Ctrl +)" AutomationId="" LocalizedControlType="Button" ClassName="NetUIRepeatButton" Left="2499.0" Right="2517.0" Top="1371.0" Bottom="1392.0" />
+              <div Name="Zoom 100%" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" Left="2517.0" Right="2560.0" Top="1371.0" Bottom="1392.0" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="pane" ClassName="_WwB" Left="0.0" Right="2560.0" Top="178.0" Bottom="1370.0" found="True">
+    <div Name="IngredientCompare-edit.docx" AutomationId="" LocalizedControlType="document" ClassName="_WwG" Left="0.0" Right="2543.0" Top="178.0" Bottom="1370.0" found="True">
+      <div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIToolWindow" Left="957.0" Right="993.0" Top="1343.0" Bottom="1360.0">
+        <div Name="SPL4" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" Left="957.0" Right="993.0" Top="1343.0" Bottom="1360.0" />
+      </div>
+      <div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIToolWindow" Left="957.0" Right="993.0" Top="273.0" Bottom="290.0">
+        <div Name="SPL4" AutomationId="" LocalizedControlType="Button" ClassName="NetUISimpleButton" Left="957.0" Right="993.0" Top="273.0" Bottom="290.0" />
+      </div>
+      <div Name="Page 1" AutomationId="UIA_AutomationId_Word_Page_1" LocalizedControlType="page" ClassName="" Left="863.0" Right="1679.0" Top="195.0" Bottom="1251.0" found="True">
+        <div Name="Header -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" Left="863.0" Right="1679.0" Top="195.0" Bottom="291.0" />
+        <div Name="Page 1 content" AutomationId="Body" LocalizedControlType="edit" ClassName="" Left="863.0" Right="1679.0" Top="291.0" Bottom="1155.0" found="True">
+          <div Name="Title" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="1176.0" Right="1366.0" Top="299.0" Bottom="320.0" />
+          <div Name="Convert From Word" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1379.0" Top="337.0" Bottom="354.0" found="True" zeuz="aiplugin" area="7140.0" pattern_list="['Text', 'ScrollItem']" />
+          <div Name="DESCRIPTION" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1140.0" Top="375.0" Bottom="429.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1089.0" Top="375.0" Bottom="396.0" />
+            <div Name="Description Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1140.0" Top="412.0" Bottom="429.0" />
+          </div>
+          <div Name="CLINICAL PHARMACOLOGY" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1239.0" Top="448.0" Bottom="502.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1224.0" Top="448.0" Bottom="469.0" />
+            <div Name="Pharmacology Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1210.0" Top="485.0" Bottom="502.0" />
+          </div>
+          <div Name="INDICATIONS AND USAGE" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1214.0" Top="521.0" Bottom="575.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1200.0" Top="521.0" Bottom="542.0" />
+            <div Name="Indications Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1137.0" Top="558.0" Bottom="575.0" />
+          </div>
+          <div Name="CONTRAINDICATIONS" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1181.0" Top="594.0" Bottom="648.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1166.0" Top="594.0" Bottom="615.0" />
+            <div Name="Contraindications Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1176.0" Top="631.0" Bottom="648.0" />
+          </div>
+          <div Name="WARNINGS" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1128.0" Top="666.0" Bottom="720.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1064.0" Top="666.0" Bottom="687.0" />
+            <div Name="Warnings Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1128.0" Top="703.0" Bottom="720.0" />
+          </div>
+          <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1095.0" Top="739.0" Bottom="760.0" />
+          <div Name="Precautions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1140.0" Top="776.0" Bottom="793.0" />
+          <div Name="General" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1190.0" Top="812.0" Bottom="855.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1014.0" Top="812.0" Bottom="830.0" />
+            <div Name="General Precautions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1190.0" Top="838.0" Bottom="855.0" />
+          </div>
+          <div Name="Information for Patients" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1212.0" Top="874.0" Bottom="917.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1126.0" Top="874.0" Bottom="892.0" />
+            <div Name="Information for Patients Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1212.0" Top="900.0" Bottom="917.0" />
+          </div>
+          <div Name="Laboratory Tests" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1171.0" Top="936.0" Bottom="979.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1078.0" Top="936.0" Bottom="954.0" />
+            <div Name="Laboratory Tests Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1171.0" Top="962.0" Bottom="979.0" />
+          </div>
+          <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1042.0" Top="997.0" Bottom="1015.0" />
+          <div Name="Interactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1141.0" Top="1023.0" Bottom="1040.0" />
+          <div Name="Drug Interactions" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1174.0" Top="1059.0" Bottom="1101.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1062.0" Top="1059.0" Bottom="1076.0" />
+            <div Name="Drug Interactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1174.0" Top="1084.0" Bottom="1101.0" />
+          </div>
+        </div>
+        <div Name="Footer -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" Left="863.0" Right="1679.0" Top="1155.0" Bottom="1251.0" />
+      </div>
+      <div Name="Page 2" AutomationId="UIA_AutomationId_Word_Page_2" LocalizedControlType="page" ClassName="" Left="863.0" Right="1679.0" Top="1265.0" Bottom="1370.0">
+        <div Name="Header -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" Left="863.0" Right="1679.0" Top="1265.0" Bottom="1361.0" />
+        <div Name="Page 2 content" AutomationId="Body" LocalizedControlType="edit" ClassName="" Left="863.0" Right="1679.0" Top="1361.0" Bottom="1370.0">
+          <div Name="Drug/Laboratory Test Interactions" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1170.0" Top="1361.0" Bottom="1370.0">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="959.0" Right="1160.0" Top="1361.0" Bottom="1370.0" />
+            <div Name="Drug Lab Interactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="Carcinogenesis, Mutagenesis, Impairment of Fertility" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Carcinogenesis, Mutagenesis, Impairment of Fertility Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="Pregnancy" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Pregnancy Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="Labor and Delivery" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Labor and Delivery Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="Nursing Mothers" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Nursing Mothers Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="Pediatric Use" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Pediatric Use Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="Geriatric Use" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Geriatric Use Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="ADVERSE REACTIONS" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Adverse Reactions Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="DRUG ABUSE AND DEPENDENCE" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Drug Abuse and Dependence Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Controlled Substance" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+              <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="Controlled Substance Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            </div>
+            <div Name="Abuse" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+              <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="Abuse Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            </div>
+            <div Name="Dependence" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+              <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+              <div Name="Dependence Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            </div>
+          </div>
+          <div Name="OVERDOSAGE" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Overdosage Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+        </div>
+        <div Name="Footer -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+      </div>
+      <div Name="Page 3" AutomationId="UIA_AutomationId_Word_Page_3" LocalizedControlType="page" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+        <div Name="Header -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+        <div Name="Page 3 content" AutomationId="Body" LocalizedControlType="edit" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+          <div Name="DOSAGE AND ADMINISTRATION" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Dosage and Administration Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="HOW SUPPLIED" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="How Supplied Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+          <div Name="PACKAGE/LABEL PRINCIPAL DISPLAY PANEL" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf">
+            <div Name="" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+            <div Name="Package/Label Display Panel Body" AutomationId="" LocalizedControlType="Rich text content control" ClassName="Rich text content control" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+          </div>
+        </div>
+        <div Name="Footer -Section 1-" AutomationId="" LocalizedControlType="edit" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+      </div>
+    </div>
+    <div Name="Vertical" AutomationId="" LocalizedControlType="pane" ClassName="NUIScrollbar" Left="2543.0" Right="2560.0" Top="178.0" Bottom="1370.0">
+      <div Name="" AutomationId="" LocalizedControlType="Pane" ClassName="NetUIHWNDElement" Left="2543.0" Right="2560.0" Top="178.0" Bottom="1370.0">
+        <div Name="" AutomationId="" LocalizedControlType="ScrollBar" ClassName="NetUIScrollBar" Left="2543.0" Right="2560.0" Top="178.0" Bottom="1370.0" />
+      </div>
+    </div>
+  </div>
+  <div Name="IngredientCompare-edit.docx - Word" AutomationId="TitleBar" LocalizedControlType="title bar" ClassName="" Left="0.0" Right="2560.0" Top="0.0" Bottom="23.0">
+    <div Name="System Menu Bar" AutomationId="SystemMenuBar" LocalizedControlType="menu bar" ClassName="" Left="0.0" Right="22.0" Top="0.0" Bottom="22.0">
+      <div Name="System" AutomationId="Item 1" LocalizedControlType="menu item" ClassName="" Left="0.0" Right="22.0" Top="0.0" Bottom="22.0" />
+    </div>
+    <div Name="Minimize" AutomationId="Minimize" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+    <div Name="Restore" AutomationId="Restore" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+    <div Name="Close" AutomationId="Close" LocalizedControlType="button" ClassName="" Left="inf" Right="-inf" Top="inf" Bottom="-inf" />
+  </div>
+</body>

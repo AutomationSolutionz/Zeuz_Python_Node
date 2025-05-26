@@ -1,0 +1,106 @@
+{
+  "TestCases": [
+    {
+      "Title": "muhib If element found",
+      "Folder": "Muhib Rough Tests",
+      "Feature": "testtest",
+      "dependency": {
+        "Browser": "Chrome"
+      },
+      "Steps": [
+        {
+          "Step name": "Zeuz demo ai",
+          "Step description": "Log in to demo app",
+          "Step expected": "Log in to demo app",
+          "Step actions": [
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "go to link",
+                  "selenium action",
+                  "https://demo.zeuz.ai/web/level/one/scenerios/login"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "id",
+                  "element parameter",
+                  "username_idd"
+                ],
+                [
+                  "true",
+                  "selenium conditional action",
+                  "3-6"
+                ],
+                [
+                  "false",
+                  "selenium conditional action",
+                  "5,6"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "sleep",
+                  "common action",
+                  "5"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "log 2",
+                  "utility action",
+                  "...... Paisi"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "id",
+                  "element parameter",
+                  "username_id"
+                ],
+                [
+                  "click",
+                  "selenium action",
+                  "click"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "log 2",
+                  "utility action",
+                  "...... Pai nai"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "log 2",
+                  "utility action",
+                  "...... Action 6"
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

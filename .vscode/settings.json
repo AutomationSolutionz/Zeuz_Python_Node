@@ -1,0 +1,12 @@
+{
+    "python.linting.enabled": true,
+    "python.formatting.provider": "yapf",
+    "python.analysis.typeCheckingMode": "basic",
+    "files.readonlyInclude": {
+        "**/.git": true,
+        "**/node_modules": true,
+        "Framework/settings.conf": true,
+        "node_state.json": true,
+        "pid.txt": true
+    }
+}

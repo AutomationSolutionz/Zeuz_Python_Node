@@ -1,0 +1,58 @@
+# Environment variables file
+.env
+
+*.pyc
+*.conf
+*.ini
+*.log
+*.bak
+
+.idea/
+.venv/
+
+.DS_Store
+.settings/
+.project
+.pydevproject
+
+pid.txt
+
+# Zeuz Node specific ignores
+Framework/settings.conf
+Apps/Web/aiplugin/data.json
+node-bigquery-privkey.json
+AutomationLog/
+iosSimulator/*
+node_state.json
+*.zvt
+Framework/session.bin
+session.bin
+
+# Nodejs gitignore
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Snowpack dependency directory (https://snowpack.dev/)
+web_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+custom_profiles/

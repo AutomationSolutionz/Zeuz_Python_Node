@@ -1,0 +1,448 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zeuz Preformance Report</title>
+    <link rel="shortcut icon" href="../static/img/favicon.ico" type="image/x-icon"/>
+    <style>
+        body {
+            background: #161f1b;
+        }
+        .container {
+            width: 1000px;
+            margin: 0 auto;
+            padding: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #ecf3ee;
+        }
+
+        .info span {
+            color: #b3c3bc;
+        }
+
+        .charts-container .chart {
+            width: 100%;
+            height: 350px;
+            margin-bottom: 30px;
+        }
+
+        .download {
+            float: right;
+        }
+
+        .download a {
+            color: #00ca5a;
+        }
+
+        /* tables.css */
+table.stats {
+  width: 100%;
+  border-radius: 3px;
+  border: 2px solid #1c3f2f;
+  border-spacing: 0;
+  margin-bottom: 30px;
+}
+table.stats thead {
+  padding: 0;
+  margin: 0;
+  color: #a9c5ba;
+}
+table.stats thead tr {
+  background: #1c3f2f;
+}
+table.stats thead tr:nth-child(even) {
+  background: #1c3f2f;
+}
+table.stats thead tr:hover {
+  background: #1c3f2f;
+}
+table.stats thead th {
+  font-weight: bold;
+  cursor: default;
+}
+table.stats thead th.nowrap {
+  white-space: nowrap;
+}
+table.stats thead th[data-sortkey] {
+  cursor: pointer;
+}
+table.stats tr:hover {
+  background: #1d4434;
+}
+table.stats tr td, table.stats tr th {
+  padding: 10px;
+  margin: 0;
+  text-align: left;
+}
+table.stats tr td:first-child, table.stats tr th:first-child {
+  padding-left: 16px;
+}
+table.stats tr td:last-child, table.stats tr th:last-child {
+  padding-right: 16px;
+}
+table.stats tr td.numeric, table.stats tr th.numeric {
+  text-align: right;
+}
+table.stats tr td {
+  max-width: 450px;
+  overflow: hidden;
+  word-wrap: break-word;
+  white-space: no-wrap;
+  text-overflow: ellipsis;
+}
+@media (max-width: 1100px) {
+  table.stats tr td {
+    max-width: 350px;
+  }
+}
+table.stats tr:nth-child(even) {
+  background: #153126;
+}
+table.stats tr:nth-child(even):hover {
+  background: #1d4434;
+}
+table.stats tr.total {
+  background: #11251c;
+}
+table.stats tr.total td {
+  font-weight: bold;
+}
+.center {
+  margin: auto;
+  width: 50%;
+  padding: 10px;
+}
+
+/*# sourceMappingURL=tables.css.map */
+
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Zeuz Test Report</h1>
+
+        <div class="info">
+
+
+            <p>Run ID: <span class="l10n datetime">{{ run_id }}</span></p>
+            <p>Testcase ID: <span class="l10n datetime">{{ tc_id }}</span></p>
+            <p>During: <span class="l10n datetime">{{ teststarttime }}</span> - <span class="l10n datetime">{{ testendtime }}</span></p>
+        </div>
+
+        <div class="requests">
+            <h2>Request Statistics</h2>
+            <table class="stats">
+                <thead>
+                    <tr>
+                        <th class="sortable">Method</th>
+                        <th class="sortable">Name</th>
+                        <th class="sortable"># Requests</th>
+                        <th class="sortable"># Fails</th>
+                        <th class="sortable">Average (ms)</th>
+                        <th class="sortable">Min (ms)</th>
+                        <th class="sortable">Max (ms)</th>
+                        <th class="sortable">Average size (bytes)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for _, item in endpoint_wise.items() %}
+
+                        <tr>
+                            <td>{{item.method}}</td>
+                            <td>{{item.endpoint}}</td>
+                            <td>{{item.total_request}}</td>
+                            <td>{{item.total_failed_request}}</td>
+                            <td>{{item.avg_elapsed_time}}</td>
+                            <td>{{item.min_time}}</td>
+                            <td>{{item.max_time}}</td>
+                            <td>{{item.avg_content_length}}</td>
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="responses">
+            <h2>Response Time Statistics</h2>
+            <table class="stats">
+                <thead>
+                    <tr>
+                        <th class="sortable">Method</th>
+                        <th class="sortable">Name</th>
+                        <th class="sortable">50%ile (ms)</th>
+                        <th class="sortable">60%ile (ms)</th>
+                        <th class="sortable">70%ile (ms)</th>
+                        <th class="sortable">80%ile (ms)</th>
+                        <th class="sortable">90%ile (ms)</th>
+                        <th class="sortable">95%ile (ms)</th>
+                        <th class="sortable">99%ile (ms)</th>
+                        <th class="sortable">100%ile (ms)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for _, item in endpoint_wise.items() %}
+                        <tr>
+                            <td>{{item.method}}</td>
+                            <td>{{item.endpoint}}</td>
+                            <td>{{item.fifty}}</td>
+                            <td>{{item.sixty}}</td>
+                            <td>{{item.seventy}}</td>
+                            <td>{{item.eighty}}</td>
+                            <td>{{item.ninety}}</td>
+                            <td>{{item.ninety_five}}</td>
+                            <td>{{item.ninety_nine}}</td>
+                            <td>{{item.hundred}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+
+<!--            <div class="failures">-->
+<!--                <h2>Failures Statistics</h2>-->
+<!--                <table class="stats">-->
+<!--                    <thead>-->
+<!--                        <tr>-->
+<!--                            <th class="sortable">Method</th>-->
+<!--                            <th class="sortable">Name</th>-->
+<!--                            <th class="sortable">Error</th>-->
+<!--                            <th class="sortable">Occurrences</th>-->
+<!--                        </tr>-->
+<!--                    </thead>-->
+<!--                    <tbody>-->
+
+<!--                            <tr>-->
+<!--                                <td>GET</td>-->
+<!--                                <td>/Home/Login/</td>-->
+<!--                                <td>502 Server Error: Bad Gateway for url: /Home/Login/</td>-->
+<!--                                <td>4182</td>-->
+<!--                            </tr>-->
+
+<!--                    </tbody>-->
+<!--                </table>-->
+<!--            </div>-->
+
+
+
+
+
+
+
+    </div>
+
+
+    <div id="chartContainer" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="percentile_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="byte_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="user_count" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.1/dist/echarts.min.js"></script>
+    <script>
+        var chart = echarts.init(document.getElementById('chartContainer'), 'dark');
+
+        var options = {
+            title: {
+                text: 'Response time vs Time',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data:
+                        {{ item.response_time_vs_time }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('byte_per_second'), 'dark');
+
+        var options = {
+            title: {
+                text: 'Byte Throughput vs Time',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data:
+                        {{ item.byte_throughput_vs_time }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('user_count'), 'dark');
+
+        var options = {
+            title: {
+                text: 'User vs Time',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data:
+                        {{ item.user_count_per_second }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('percentile_per_second'), 'dark');
+
+        var options = {
+            title: {
+                text: 'Percentile per Second',
+          },
+            toolbox: {
+                feature: {
+                  saveAsImage: {}
+                }
+              },
+            tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}} 50%ile', '{{item.endpoint}} 90%ile', {% endfor %}]
+          },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}} 50%ile',
+                        type: 'line',
+                        data:
+                        {{ item.fiftypercentile_per_second }}
+
+                    },
+                    {
+                        name: '{{item.endpoint}} 90%ile',
+                        type: 'line',
+                        data:
+                        {{ item.ninetypercentile_per_second }}
+
+                    },
+                {% endfor %}
+]
+                ,
+            };
+            chart.setOption(options);
+
+
+    </script>
+
+
+
+</body>
+</html>

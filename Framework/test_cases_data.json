@@ -1,0 +1,707 @@
+{
+  "Sat-Dec-19-09:25:47-2020": {
+    "is_linked": "",
+    "run_time_params": [
+      {
+        "field": "param1",
+        "value": "subfield_val1_param1"
+      },
+      {
+        "field": "param2",
+        "value": "subfield_val2_param2"
+      }
+    ],
+    "dependency": {
+      "Mobile": "Android"
+    },
+    "device_info": {
+      "browser_stack": {},
+      "local": [
+        [
+          1,
+          1
+        ]
+      ]
+    },
+    "remote_config": {
+      "threading": false,
+      "local_run": false,
+      "take_screenshot": true,
+      "debug_mode": false,
+      "upload_log_file_only_for_fail": false,
+      "window_size_x": null,
+      "window_size_y": null
+    },
+    "TestCases": [
+      {
+        "TestCase no": "5198",
+        "Title": "Go to My Profile",
+        "debug_steps": "{2}-NO-{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}",
+        "performance data": {
+          "hatch_rate": 1,
+          "no_of_users": 1,
+          "time_period": 60
+        },
+        "Automatability": "Automated",
+        "Testcase Attachments links": [
+          [
+            "/tc_folder/TEST-5198/3Dlidar.png",
+            "3Dlidar",
+            "png"
+          ]
+        ],
+        "Step Attachments links": [],
+        "Steps": [
+          {
+            "Step id": "6279",
+            "Step_sequence": 1,
+            "Step name": "Launch Android Tribe",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "None",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "package",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes"
+                  ],
+                  [
+                    "launch",
+                    "appium action",
+                    "launch"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6280",
+            "Step_sequence": 2,
+            "Step name": "Log in if not already logged in",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "Click on hamburger menu",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/discover_toolbar_menu_button"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Check if already logged in..",
+                "Action_sequence": 2,
+                "Action data": [
+                  [
+                    "text",
+                    "element parameter",
+                    "Log Out"
+                  ],
+                  [
+                    "true",
+                    "appium conditional action",
+                    "3,4,5"
+                  ],
+                  [
+                    "false",
+                    "appium conditional action",
+                    "6,7,8,9,10"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Display user already logged in",
+                "Action_sequence": 3,
+                "Action data": [
+                  [
+                    "log 1",
+                    "utility action",
+                    "User already logged in...Skipping Log in..."
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Close hamburger menu",
+                "Action_sequence": 4,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/drawer_menu_close_button"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "step passed..",
+                "Action_sequence": 5,
+                "Action data": [
+                  [
+                    "step exit",
+                    "appium action",
+                    "pass"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Else, click on Login",
+                "Action_sequence": 6,
+                "Action data": [
+                  [
+                    "text",
+                    "element parameter",
+                    "Login"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Enter Email",
+                "Action_sequence": 7,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/editText_loginEmail"
+                  ],
+                  [
+                    "clear and enter text",
+                    "appium action",
+                    "mithun@zeuz.ai"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Enter Password",
+                "Action_sequence": 8,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/editText_loginPassword"
+                  ],
+                  [
+                    "clear and enter text",
+                    "appium action",
+                    "Zxcvbnm7*"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Hide Keyboard",
+                "Action_sequence": 9,
+                "Action data": [
+                  [
+                    "hide keyboard",
+                    "appium action",
+                    "hide keyboard"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Click Log in",
+                "Action_sequence": 10,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/button_login"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6281",
+            "Step_sequence": 3,
+            "Step name": "Go to My Profile",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": true,
+                "Action name": "Click on My Profile icon",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/discover_toolbar_profile_icon"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6282",
+            "Step_sequence": 4,
+            "Step name": "Log out",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": true,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": true,
+                "Action name": "Click back button",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/general_toolbar_back_button"
+                  ],
+                  [
+                    "click",
+                    "appium optional action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Click on hamburger menu",
+                "Action_sequence": 2,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/discover_toolbar_menu_button"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Else, click on Login",
+                "Action_sequence": 3,
+                "Action data": [
+                  [
+                    "text",
+                    "element parameter",
+                    "Log Out"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6283",
+            "Step_sequence": 5,
+            "Step name": "Teardown - Mobile",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "Teardown",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "teardown",
+                    "appium action",
+                    "teardown"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "TestCase no": "5199",
+        "Title": "Login with Email (Android)",
+        "debug_steps": "{2}-NO-{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}",
+        "performance data": {
+          "hatch_rate": 1,
+          "no_of_users": 1,
+          "time_period": 60
+        },
+        "Automatability": "Automated",
+        "Testcase Attachments links": [
+          [
+            "/tc_folder/TEST-5198/3Dlidar.png",
+            "3Dlidar",
+            "png"
+          ]
+        ],
+        "Step Attachments links": [],
+        "Steps": [
+          {
+            "Step id": "6284",
+            "Step_sequence": 1,
+            "Step name": "Launch Android Tribe",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "None",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "package",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes"
+                  ],
+                  [
+                    "launch",
+                    "appium action",
+                    "launch"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6285",
+            "Step_sequence": 2,
+            "Step name": "Go to Login Page if not logged in",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "Click on hamburger menu",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/discover_toolbar_menu_button"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Check if logged in or not..",
+                "Action_sequence": 2,
+                "Action data": [
+                  [
+                    "text",
+                    "element parameter",
+                    "Log Out"
+                  ],
+                  [
+                    "true",
+                    "appium conditional action",
+                    "3,9"
+                  ],
+                  [
+                    "false",
+                    "appium conditional action",
+                    "4,5,6,7,8"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Display already logged in message",
+                "Action_sequence": 3,
+                "Action data": [
+                  [
+                    "log 1",
+                    "utility action",
+                    "User already logged in...Skipping Log in..."
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Else, click on Login",
+                "Action_sequence": 4,
+                "Action data": [
+                  [
+                    "text",
+                    "element parameter",
+                    "Login"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Enter Username",
+                "Action_sequence": 5,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/editText_loginEmail"
+                  ],
+                  [
+                    "clear and enter text",
+                    "appium action",
+                    "mithun@zeuz.ai"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Enter Password",
+                "Action_sequence": 6,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/editText_loginPassword"
+                  ],
+                  [
+                    "clear and enter text",
+                    "appium action",
+                    "Zxcvbnm7*"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Hide Keyboard",
+                "Action_sequence": 7,
+                "Action data": [
+                  [
+                    "hide keyboard",
+                    "appium action",
+                    "hide keyboard"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Click Log In button",
+                "Action_sequence": 8,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/button_login"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Close the hamburger menu",
+                "Action_sequence": 9,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/drawer_menu_close_button"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6286",
+            "Step_sequence": 3,
+            "Step name": "Validate Loginn",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": false,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "Click on Tribes from bottom panel",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/discover_toolbar_profile_iconnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+                  ],
+                  [
+                    "click",
+                    "appium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Check if My Tribes is found",
+                "Action_sequence": 2,
+                "Action data": [
+                  [
+                    "resource-id",
+                    "element parameter",
+                    "com.dakiadigital.hyprtribes:id/general_info_toolbar_notifications_icon"
+                  ],
+                  [
+                    "wait",
+                    "optional parameter",
+                    "3"
+                  ],
+                  [
+                    "true",
+                    "appium conditional action",
+                    "3"
+                  ],
+                  [
+                    "false",
+                    "appium conditional action",
+                    "4"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Return Passed if My Tribes is found..",
+                "Action_sequence": 3,
+                "Action data": [
+                  [
+                    "step exit",
+                    "appium action",
+                    "pass"
+                  ]
+                ]
+              },
+              {
+                "Action disabled": false,
+                "Action name": "Otherwise return Failed",
+                "Action_sequence": 4,
+                "Action data": [
+                  [
+                    "step exit",
+                    "appium action",
+                    "fail"
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "Step id": "6287",
+            "Step_sequence": 4,
+            "Step name": "Teardown - Mobile",
+            "Step_alias_name": "Sequential Actions",
+            "Step driver": "Built_In_Driver",
+            "Step function": "Sequential Actions",
+            "Continue on fail": false,
+            "Always run": true,
+            "Step time": 59,
+            "Automatability": "Automated",
+            "Step actions": [
+              {
+                "Action disabled": false,
+                "Action name": "Teardown",
+                "Action_sequence": 1,
+                "Action data": [
+                  [
+                    "teardown",
+                    "appium action",
+                    "teardown"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

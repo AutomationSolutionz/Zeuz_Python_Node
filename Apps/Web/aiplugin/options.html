@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <style>
+   body{
+     background-color: #3B88FD;
+   }
+    #mydiv {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 30em;
+      height: 18em;
+      margin-top: -9em;
+      /*set to a negative number 1/2 of your height*/
+      margin-left: -15em;
+    }
+    #xpath-form{
+      background-color: rgb(222, 226, 214);
+    }
+    label {
+      padding: 5px;
+      margin-left: 5px;
+      min-width: 200px;
+      display: inline-block;
+    }
+
+    label span {
+      font-size: 0.9em;
+    }
+
+    #shortcut {
+      width: 20px;
+    }
+
+    .command {
+      font-weight: bold;
+    }
+
+    .desc {
+      display: block;
+      font-size: 0.9em;
+      padding: 5px;
+      margin-left: 5px;
+    }
+
+    .submit {
+      margin-left: 220px;
+      padding: 5px 10px;
+      background: #f9f9fa;
+      border: 1px solid #ccc;
+    }
+
+    .submit:hover {
+      background: #3B88FD;
+      cursor: pointer;
+    }
+
+    .logout {
+      margin-left: 0px;
+      padding: 5px 10px;
+      background: #f9f9fa;
+      border: 1px solid #ccc;
+    }
+
+    .logout:hover {
+      background: #3B88FD;
+      cursor: pointer;
+    }
+
+    .status {
+      margin-left: 300px;
+      padding: 0px;
+      color: #33b3cc;
+      min-height: 20px;
+    }
+  </style>
+  <!--#008000-->
+</head>
+
+<body>
+  <div id="mydiv">
+    <form id="xpath-form">
+      <div class="options-elem">
+        <table>
+          <tr>
+            <td><label for="shortid">ZeuZ Server URL: </label></td>
+            <td align="left" id="url">server url loading</td>
+          </tr>
+          <tr>
+            <td><label for="shortid">API Key: </label></td>
+            <td align="left" id="key">api key loading</td>
+          </tr>
+          <tr>
+            <td><label for="shortid">Logout: </label></td>
+            <td align="left"><button type="logout" id="logout" class="logout">Logout</button></td>
+          </tr>
+        </table>
+
+        <label><span>If you logout, you will need to provide ZeuZ Server <br />and API Key next time you launch the
+            extension.</span></label>
+      </div>
+      <hr>
+      <div class="status"></div>
+      <div class="options-elem">
+        <label for="inspector">Highlight elements:</label>
+        <input checked id="inspector" type="checkbox">
+      </div>
+      <div class="options-elem">
+        <label for="inspector">Ask for Sibling?</label>
+        <input id="sibling" type="checkbox">
+      </div>
+      <div class="options-elem">
+        <label for="copy">Auto copy to clipboard:</label>
+        <input checked id="copy" type="checkbox">
+      </div>
+      <div class="options-elem">
+        <label for="shortid">Short ID's: <span>eg. //*[@id="logo"]</span></label>
+        <input checked id="shortid" type="checkbox">
+      </div>
+      <div class="options-elem">
+        <label for="position">Xpath box align:</label>
+        <select id="position" class="icon">
+          <option value="tl">Top left</option>
+          <option value="tr">Top right</option>
+          <option value="br">Bottom right</option>
+          <option value="bl" selected>Bottom left</option>
+        </select>
+      </div>
+      <div class="options-elem">
+        <label for="shortcut">Keyboard shortcut:</label>
+        <span class="command">CTRL+SHIFT+</span>
+        <input type="text" required maxlength="1" id="shortcut" pattern="[A-Z]">
+        <button id="reset" type="reset">Reset</button>
+      </div>
+      <div class="status"></div>
+      <button type="submit" class="submit">Save options</button>
+    </form>
+    <script src="options.js"></script>
+  </div>
+</body>
+
+</html>

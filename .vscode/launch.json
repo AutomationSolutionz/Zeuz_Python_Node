@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Attach using Process Id",
+            "type": "python",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: node_cli",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: node_cli custom log dir",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "args": ["-d /home/szxo3/Desktop/test_node_dir"],
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: local_run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "args": ["--local_run"],
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: node_cli with GH_TOKEN",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "args": ["--gh", "TOKEN_HERE"],
+            "console": "integratedTerminal",
+        },
+    ]
+}
