@@ -107,8 +107,30 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         current_root = generic_driver  # Start with main document
 
-        # Traverse each shadow root level
+        shadow_root_params = []
         for shadow_param in shadow_root_ds:
+            left = shadow_param[0].strip()
+            mid = shadow_param[1].strip().lower()
+            right = shadow_param[2].strip()
+            
+            words = mid.strip().split()
+            if len(words) < 3 or len(words) > 4:
+                CommonUtil.ExecLog(sModuleInfo, f"Invalid shadow root parameter format: {mid}", 3)
+                return "zeuz_failed"
+            idx = int(words[1]) if len(words) == 4 else 1
+            param = ' '.join(words[-2:])
+            shadow_root_params.append((idx, [left, param, right]))
+
+        # Check for duplicate indices
+        indices = [idx for idx, _ in shadow_root_params]
+        if len(indices) != len(set(indices)):
+            CommonUtil.ExecLog(sModuleInfo, "Duplicate shadow root indices found. Use 'sr 1', 'sr 2', etc.", 3)
+            return "zeuz_failed"
+
+        shadow_root_params.sort(key=lambda x: x[0])
+
+        # Traverse each shadow root level
+        for idx, shadow_param in shadow_root_params:
             # Build CSS selector for the current shadow host
             element_query = build_css_selector_query([shadow_param])
             index = _locate_index_number([shadow_param]) or 0
@@ -250,7 +272,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 elif left == "text filter":
                     text_filter_cond = right in ("yes", "true", "ok", "enable")
             elif row[1].strip().lower().startswith("sr"):
-                shadow_root_ds.append([row[0], row[1][2:].strip(), row[2]])
+                shadow_root_ds.append([row[0], row[1], row[2]])
             else:
                 element_ds.append([row[0], row[1], row[2]])
 
