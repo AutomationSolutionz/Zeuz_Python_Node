@@ -108,6 +108,7 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
         current_root = generic_driver  # Start with main document
 
         shadow_root_params = []
+        parent_params = []
         for shadow_param in shadow_root_ds:
             left = shadow_param[0].strip().lower()
             mid = shadow_param[1].strip().lower()
@@ -119,6 +120,7 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
                     f"Shadow DOM does not support XPath expressions with 'text()'. Please use an attribute-based or tag-based selector instead to identify the element.", 
                     3
                 )
+                return "zeuz_failed"
             
             words = mid.strip().split()
             if len(words) < 3 or len(words) > 4:
@@ -126,36 +128,56 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
                 return "zeuz_failed"
             idx = int(words[1]) if len(words) == 4 else 1
             param = ' '.join(words[-2:])
-            shadow_root_params.append((idx, [left, param, right]))
+
+            if "parent" in param:
+                parent_params.append((idx, [left, param, right]))
+            elif "element" in param:
+                shadow_root_params.append((idx, [left, param, right]))
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo, 
+                    f"Invalid parameter '{param}' encountered for shadow DOM access. Only 'parent parameter' and 'element parameter' are supported.", 
+                    3
+                )
+                return "zeuz_failed"
 
         # Check for duplicate indices
-        indices = [idx for idx, _ in shadow_root_params]
-        if len(indices) != len(set(indices)):
+        indices1 = [idx for idx, _ in parent_params]
+        indices2 = [idx for idx, _ in shadow_root_params]
+        if (len(indices1) != len(set(indices1))) or (len(indices2) != len(set(indices2))):
             CommonUtil.ExecLog(sModuleInfo, "Duplicate shadow root indices found. Use 'sr 1', 'sr 2', etc.", 3)
             return "zeuz_failed"
 
+        parent_params.sort(key=lambda x: x[0])
         shadow_root_params.sort(key=lambda x: x[0])
 
         # Traverse each shadow root level
         for idx, shadow_param in shadow_root_params:
-            # Build CSS selector for the current shadow host
-            element_query = build_css_selector_query([shadow_param])
-            index = _locate_index_number([shadow_param]) or 0
+            shadow_host_query = None
+            for idx2, parent_param in parent_params:
+                if idx == idx2:
+                    shadow_host_query = build_css_selector_query([parent_param, shadow_param])
+                    break
 
-            # Find shadow host element
-            elements = current_root.find_elements(By.CSS_SELECTOR, element_query)
+            # Build CSS selector for the current shadow host
+            if not shadow_host_query:
+                shadow_host_query = build_css_selector_query([shadow_param])
+            shadow_host_index = _locate_index_number([shadow_param]) or 0
+
+            elements = current_root.find_elements(By.CSS_SELECTOR, shadow_host_query)
+
             filtered_elements = filter_elements(elements, Filter)
             if not filtered_elements:
                 CommonUtil.ExecLog(sModuleInfo, "Shadow host element not found", 3)
                 return "zeuz_failed"
-            shadow_host = filtered_elements[index]
+            shadow_host = filtered_elements[shadow_host_index]
 
             # Access the shadow root
             shadow_root = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_host)
             if not shadow_root:
                 CommonUtil.ExecLog(sModuleInfo, "No shadow root found for element", 3)
                 return "zeuz_failed"
-            current_root = shadow_root  # Move into the shadow root
+            current_root = shadow_root
 
         # Locate the target element in the deepest shadow root
         element_query = build_css_selector_query(element_ds)
