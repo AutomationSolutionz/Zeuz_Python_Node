@@ -109,9 +109,16 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
 
         shadow_root_params = []
         for shadow_param in shadow_root_ds:
-            left = shadow_param[0].strip()
+            left = shadow_param[0].strip().lower()
             mid = shadow_param[1].strip().lower()
             right = shadow_param[2].strip()
+
+            if "text" in left:
+                CommonUtil.ExecLog(
+                    sModuleInfo, 
+                    f"Shadow DOM does not support XPath expressions with 'text()'. Please use an attribute-based or tag-based selector instead to identify the element.", 
+                    3
+                )
             
             words = mid.strip().split()
             if len(words) < 3 or len(words) > 4:
