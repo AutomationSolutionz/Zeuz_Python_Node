@@ -154,17 +154,37 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
         # Traverse each shadow root level
         for idx, shadow_param in shadow_root_params:
             shadow_host_query = None
+            locator_type = None
             for idx2, parent_param in parent_params:
                 if idx == idx2:
-                    shadow_host_query = build_css_selector_query([parent_param, shadow_param])
+                    if idx == 1: 
+                        shadow_host_query, query_type = _construct_query([parent_param, shadow_param])
+                        locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+                    else:
+                        shadow_host_query = build_css_selector_query([parent_param, shadow_param])
                     break
 
             # Build CSS selector for the current shadow host
             if not shadow_host_query:
-                shadow_host_query = build_css_selector_query([shadow_param])
+                if idx == 1:  # First shadow root without parent, use XPath
+                    shadow_host_query, query_type = _construct_query([shadow_param])
+                    locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+                else:
+                    shadow_host_query = build_css_selector_query([shadow_param])
+                    locator_type = By.CSS_SELECTOR
             shadow_host_index = _locate_index_number([shadow_param]) or 0
 
-            elements = current_root.find_elements(By.CSS_SELECTOR, shadow_host_query)
+            CommonUtil.ExecLog(
+                sModuleInfo, 
+                f"To locate the Element we used {locator_type}:\n{shadow_host_query}", 
+                5
+            )
+
+            elements = None
+            if locator_type == By.XPATH:
+                elements = current_root.find_elements(By.XPATH, shadow_host_query)
+            else:
+                elements = current_root.find_elements(By.CSS_SELECTOR, shadow_host_query)
 
             filtered_elements = filter_elements(elements, Filter)
             if not filtered_elements:
@@ -549,7 +569,7 @@ def _construct_query(step_data_set, web_element_object=False):
             and driver_type in ("appium", "selenium")
         ):  # for unique identifier
             return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
-        elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
+        elif "css_selector" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw css query
             return ([x for x in step_data_set if "css" in x[0]][0][2]), "css"
