@@ -101,38 +101,113 @@ def build_css_selector_query(dataset:list[list[str]]) -> str:
 
 get_element_return_type = list[selenium.webdriver.remote.webelement.WebElement] | Literal["zeuz_failed"] | selenium.webdriver.remote.webelement.WebElement
 def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[str]], Filter: str, element_wait: float, return_all_elements: bool) -> get_element_return_type:
-    """ Finds the shadow root container and the element inside there, both in css-selector method"""
+    """Traverses nested shadow roots and returns the target element"""
+
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        child_shadow_root_ds = []
-        for left, mid, right in shadow_root_ds:
-            mid = mid.strip().lower()
-            if mid.startswith("sr"):
-                child_shadow_root_ds.append((left, mid, right))
-        if len(child_shadow_root_ds) > 0:
-            # handle nested roots later
-            CommonUtil.ExecLog(sModuleInfo, "Nested shadow root is not supported yet", 2)
-            return "zeuz_failed"
-        else:
-            element_query = build_css_selector_query(shadow_root_ds)
-            index = _locate_index_number(shadow_root_ds)
-            index = 0 if index is None else index
-            elements = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
-            filtered_elements = filter_elements(elements, Filter)
-            shadow_container_element = filtered_elements[index]
-            shadow_root_element = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_container_element)
+        current_root = generic_driver  # Start with main document
 
-            element_query = build_css_selector_query(element_ds)
-            index = _locate_index_number(element_ds)
-            index = 0 if index is None else index
-            elements = shadow_root_element.find_elements(By.CSS_SELECTOR, element_query)
-            filtered_elements = filter_elements(elements, Filter)
-            if return_all_elements:
-                return filtered_elements
-            elif len(filtered_elements) == 0:
-                return []
+        shadow_root_params = []
+        parent_params = []
+        for shadow_param in shadow_root_ds:
+            left = shadow_param[0].strip().lower()
+            mid = shadow_param[1].strip().lower()
+            right = shadow_param[2].strip()
+
+            if "text" in left:
+                CommonUtil.ExecLog(
+                    sModuleInfo, 
+                    f"Shadow DOM does not support XPath expressions with 'text()'. Please use an attribute-based or tag-based selector instead to identify the element.", 
+                    3
+                )
+                return "zeuz_failed"
+            
+            words = mid.strip().split()
+            if len(words) < 3 or len(words) > 4:
+                CommonUtil.ExecLog(sModuleInfo, f"Invalid shadow root parameter format: {mid}", 3)
+                return "zeuz_failed"
+            idx = int(words[1]) if len(words) == 4 else 1
+            param = ' '.join(words[-2:])
+
+            if "parent" in param:
+                parent_params.append((idx, [left, param, right]))
+            elif "element" in param:
+                shadow_root_params.append((idx, [left, param, right]))
             else:
-                return filtered_elements[index]
+                CommonUtil.ExecLog(
+                    sModuleInfo, 
+                    f"Invalid parameter '{param}' encountered for shadow DOM access. Only 'parent parameter' and 'element parameter' are supported.", 
+                    3
+                )
+                return "zeuz_failed"
+
+        # Check for duplicate indices
+        indices1 = [idx for idx, _ in parent_params]
+        indices2 = [idx for idx, _ in shadow_root_params]
+        if (len(indices1) != len(set(indices1))) or (len(indices2) != len(set(indices2))):
+            CommonUtil.ExecLog(sModuleInfo, "Duplicate shadow root indices found. Use 'sr 1', 'sr 2', etc.", 3)
+            return "zeuz_failed"
+
+        parent_params.sort(key=lambda x: x[0])
+        shadow_root_params.sort(key=lambda x: x[0])
+
+        # Traverse each shadow root level
+        for idx, shadow_param in shadow_root_params:
+            shadow_host_query = None
+            locator_type = None
+            for idx2, parent_param in parent_params:
+                if idx == idx2:
+                    if idx == 1: 
+                        shadow_host_query, query_type = _construct_query([parent_param, shadow_param])
+                        locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+                    else:
+                        shadow_host_query = build_css_selector_query([parent_param, shadow_param])
+                    break
+
+            # Build CSS selector for the current shadow host
+            if not shadow_host_query:
+                if idx == 1:  # First shadow root without parent, use XPath
+                    shadow_host_query, query_type = _construct_query([shadow_param])
+                    locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+                else:
+                    shadow_host_query = build_css_selector_query([shadow_param])
+                    locator_type = By.CSS_SELECTOR
+            shadow_host_index = _locate_index_number([shadow_param]) or 0
+
+            CommonUtil.ExecLog(
+                sModuleInfo, 
+                f"To locate the Element we used {locator_type}:\n{shadow_host_query}", 
+                5
+            )
+
+            elements = None
+            if locator_type == By.XPATH:
+                elements = current_root.find_elements(By.XPATH, shadow_host_query)
+            else:
+                elements = current_root.find_elements(By.CSS_SELECTOR, shadow_host_query)
+
+            filtered_elements = filter_elements(elements, Filter)
+            if not filtered_elements:
+                CommonUtil.ExecLog(sModuleInfo, "Shadow host element not found", 3)
+                return "zeuz_failed"
+            shadow_host = filtered_elements[shadow_host_index]
+
+            # Access the shadow root
+            shadow_root = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_host)
+            if not shadow_root:
+                CommonUtil.ExecLog(sModuleInfo, "No shadow root found for element", 3)
+                return "zeuz_failed"
+            current_root = shadow_root
+
+        # Locate the target element in the deepest shadow root
+        element_query = build_css_selector_query(element_ds)
+        index = _locate_index_number(element_ds) or 0
+        elements = current_root.find_elements(By.CSS_SELECTOR, element_query)
+        filtered_elements = filter_elements(elements, Filter)
+
+        if return_all_elements:
+            return filtered_elements
+        return filtered_elements[index] if filtered_elements else []
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -246,7 +321,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 elif left == "text filter":
                     text_filter_cond = right in ("yes", "true", "ok", "enable")
             elif row[1].strip().lower().startswith("sr"):
-                shadow_root_ds.append([row[0], row[1][2:].strip(), row[2]])
+                shadow_root_ds.append([row[0], row[1], row[2]])
             else:
                 element_ds.append([row[0], row[1], row[2]])
 
@@ -494,7 +569,7 @@ def _construct_query(step_data_set, web_element_object=False):
             and driver_type in ("appium", "selenium")
         ):  # for unique identifier
             return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
-        elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
+        elif "css_selector" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw css query
             return ([x for x in step_data_set if "css" in x[0]][0][2]), "css"

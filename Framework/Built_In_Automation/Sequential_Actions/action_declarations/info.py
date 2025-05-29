@@ -110,6 +110,7 @@ patterns = [
     r'^(sr\s+)?'  # Optional 'sr' prefix
     r'(src |source |dst |destination |desired )?'
     r'element parameter$',
+    r'^sr( \d+| \w+)? \w+ parameter$',
 ]
 
 # List of supported mobile platforms - must be lower case
