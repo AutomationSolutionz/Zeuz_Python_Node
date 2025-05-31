@@ -18,6 +18,7 @@ import sys, os, time, inspect, shutil, subprocess, json
 import socket
 import requests
 import psutil
+import base64, imghdr
 from pathlib import Path
 sys.path.append("..")
 from selenium import webdriver
@@ -3458,3 +3459,154 @@ def if_element_exists(data_set):
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+
+@logger
+def copy_image_into_browser(data_set):
+    """
+    This action will copy an image from path or a variable into browser, and later you can paste via ctrl+v or cmd+v.
+
+    Example 1:
+    Field	                    Sub Field	            Value
+    image file                  element parameter	    %| image.png |%
+    image type                  optional parameter      image/png
+    copy image into browser     selenium action 	    switch window or frame
+
+    Example 2:
+    Field	                    Sub Field	            Value
+    image variable              element parameter       image_var
+    copy image into browser     selenium action 	    switch window or frame
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    
+    try:
+        image_data = None
+        image_path = ""
+        variable_name = ""
+        mime_type = "image/png"
+        
+        # Parse
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left == "image file" and mid == "element parameter":
+                image_path = CommonUtil.path_parser(right.strip())
+            elif left == "image variable" and mid == "element parameter":
+                variable_name = right.strip()
+            elif left == "image type" and mid == "element parameter":
+                mime_type = right.strip().lower()
+        
+        if image_path:
+            if not os.path.exists(image_path):
+                CommonUtil.ExecLog(sModuleInfo, f"Image file not found: {image_path}", 3)
+                return "zeuz_failed"
+            
+            # if file type is not provided
+            if mime_type == "image/png":
+                detected_type = imghdr.what(image_path)
+                if detected_type:
+                    mime_type = f"image/{detected_type}"
+            
+            with open(image_path, "rb") as image_file:
+                image_data = image_file.read()
+
+        elif variable_name:
+            image_data = Shared_Resources.Get_Shared_Variables(variable_name)
+            if not image_data:
+                CommonUtil.ExecLog(sModuleInfo, f"Image data not found in variable: {variable_name}", 3)
+                return "zeuz_failed"
+
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Must provide either 'image file' or 'image variable'", 3)
+            return "zeuz_failed"
+        
+        # Convert
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        
+        async_script = """
+        const base64Data = arguments[0];
+        const mimeType = arguments[1];
+        const callback = arguments[arguments.length - 1];
+        
+        function b64toBlob(b64Data, contentType) {
+            contentType = contentType || 'image/png';
+            const byteCharacters = atob(b64Data);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+            
+            return new Blob(byteArrays, {type: contentType});
+        }
+        
+        const blob = b64toBlob(base64Data, mimeType);
+        const item = new ClipboardItem({ [mimeType]: blob });
+        
+        navigator.clipboard.write([item])
+            .then(() => callback(true))
+            .catch(async (err) => {
+                console.error('Standard clipboard failed:', err);
+                
+                // Fallback for browsers with limited clipboard support
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = 'Fallback clipboard content';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    
+                    if (!document.execCommand('copy')) {
+                        throw new Error('execCommand failed');
+                    }
+                    
+                    document.body.removeChild(textArea);
+                    callback(true);
+                } catch (fallbackErr) {
+                    console.error('Fallback clipboard failed:', fallbackErr);
+                    callback(false);
+                }
+            });
+        """
+        
+        # Execute async script
+        success = selenium_driver.execute_async_script(async_script, image_b64, mime_type)
+        if not success:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to write image to clipboard", 3)
+            return "zeuz_failed"
+        
+        # Robust OS detection for paste shortcut
+        capabilities = selenium_driver.capabilities
+        platform_name = capabilities.get('platformName', '').lower()
+        browser_name = capabilities.get('browserName', '').lower()
+        
+        # Determine paste key with comprehensive detection
+        if 'mac' in platform_name or 'os x' in platform_name:
+            paste_key = Keys.COMMAND
+        elif platform.system().lower() in ('darwin', 'macos'):
+            paste_key = Keys.COMMAND
+        else:
+            paste_key = Keys.CONTROL
+        
+        # Special handling for Firefox on Linux
+        if browser_name == 'firefox' and ('linux' in platform_name or platform.system().lower() == 'linux'):
+            paste_key = Keys.CONTROL
+        
+        # Simulate paste action with error handling
+        try:
+            ActionChains(selenium_driver).key_down(paste_key).send_keys('v').key_up(paste_key).perform()
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Standard paste failed: {str(e)}. Trying JavaScript fallback...", 2)
+            selenium_driver.execute_script("document.execCommand('paste');")
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Image ({mime_type}) pasted successfully", 1)
+        return "passed"
+        
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
