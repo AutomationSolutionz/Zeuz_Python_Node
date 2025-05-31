@@ -3467,14 +3467,14 @@ def copy_image_into_browser(data_set):
 
     Example 1:
     Field	                    Sub Field	            Value
-    image file                  element parameter	    %| image.png |%
+    image file                  element parameter	    image.png
     image type                  optional parameter      image/png
-    copy image into browser     selenium action 	    switch window or frame
+    copy image into browser     selenium action 	    copy image into browser
 
     Example 2:
     Field	                    Sub Field	            Value
     image variable              element parameter       image_var
-    copy image into browser     selenium action 	    switch window or frame
+    copy image into browser     selenium action 	    copy image into browser
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -3492,7 +3492,7 @@ def copy_image_into_browser(data_set):
                 image_path = CommonUtil.path_parser(right.strip())
             elif left == "image variable" and mid == "element parameter":
                 variable_name = right.strip()
-            elif left == "image type" and mid == "element parameter":
+            elif left == "image type" and mid == "optional parameter":
                 mime_type = right.strip().lower()
         
         if image_path:
@@ -3514,6 +3514,9 @@ def copy_image_into_browser(data_set):
             if not image_data:
                 CommonUtil.ExecLog(sModuleInfo, f"Image data not found in variable: {variable_name}", 3)
                 return "zeuz_failed"
+            
+            with open(variable_name, "rb") as image_file:
+                image_data = image_file.read()
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "Must provide either 'image file' or 'image variable'", 3)
