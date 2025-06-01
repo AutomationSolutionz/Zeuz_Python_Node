@@ -3464,11 +3464,11 @@ def if_element_exists(data_set):
 def copy_image_into_browser(data_set):
     """
     This action will copy an image from path or a variable into browser, and later you can paste via ctrl+v or cmd+v.
+    Supported formats: PNG, JPG, WebP
 
     Example 1:
     Field	                    Sub Field	            Value
     image file                  element parameter	    image.png
-    image type                  optional parameter      image/png
     copy image into browser     selenium action 	    copy image into browser
 
     Example 2:
@@ -3486,41 +3486,34 @@ def copy_image_into_browser(data_set):
         mime_type = "image/png"
         
         # Parse
-        for left, mid, right in step_data:
+        for left, mid, right in data_set:
             left = left.lower().strip()
+            mid = mid.lower().strip()
             if left == "image file" and mid == "element parameter":
                 image_path = CommonUtil.path_parser(right.strip())
             elif left == "image variable" and mid == "element parameter":
                 variable_name = right.strip()
-            elif left == "image type" and mid == "optional parameter":
-                mime_type = right.strip().lower()
         
         if image_path:
             if not os.path.exists(image_path):
                 CommonUtil.ExecLog(sModuleInfo, f"Image file not found: {image_path}", 3)
                 return "zeuz_failed"
-            
-            # if file type is not provided
-            if mime_type == "image/png":
-                detected_type = imghdr.what(image_path)
-                if detected_type:
-                    mime_type = f"image/{detected_type}"
-            
-            with open(image_path, "rb") as image_file:
-                image_data = image_file.read()
-
         elif variable_name:
-            image_data = Shared_Resources.Get_Shared_Variables(variable_name)
-            if not image_data:
+            image_path = Shared_Resources.Get_Shared_Variables(variable_name)
+            if not image_path:
                 CommonUtil.ExecLog(sModuleInfo, f"Image data not found in variable: {variable_name}", 3)
                 return "zeuz_failed"
-            
-            with open(variable_name, "rb") as image_file:
-                image_data = image_file.read()
-
         else:
             CommonUtil.ExecLog(sModuleInfo, "Must provide either 'image file' or 'image variable'", 3)
             return "zeuz_failed"
+        
+        if mime_type == "image/png":
+            detected_type = imghdr.what(image_path)
+            if detected_type:
+                mime_type = f"image/{detected_type}"
+        
+        with open(image_path, "rb") as image_file:
+            image_data = image_file.read()
         
         # Convert
         image_b64 = base64.b64encode(image_data).decode('utf-8')
@@ -3558,7 +3551,6 @@ def copy_image_into_browser(data_set):
             .catch(async (err) => {
                 console.error('Standard clipboard failed:', err);
                 
-                // Fallback for browsers with limited clipboard support
                 try {
                     const textArea = document.createElement('textarea');
                     textArea.value = 'Fallback clipboard content';
@@ -3578,18 +3570,16 @@ def copy_image_into_browser(data_set):
             });
         """
         
-        # Execute async script
         success = selenium_driver.execute_async_script(async_script, image_b64, mime_type)
         if not success:
             CommonUtil.ExecLog(sModuleInfo, "Failed to write image to clipboard", 3)
             return "zeuz_failed"
         
-        # Robust OS detection for paste shortcut
+        ################################## PASTE ##################################
         capabilities = selenium_driver.capabilities
         platform_name = capabilities.get('platformName', '').lower()
         browser_name = capabilities.get('browserName', '').lower()
         
-        # Determine paste key with comprehensive detection
         if 'mac' in platform_name or 'os x' in platform_name:
             paste_key = Keys.COMMAND
         elif platform.system().lower() in ('darwin', 'macos'):
@@ -3597,11 +3587,10 @@ def copy_image_into_browser(data_set):
         else:
             paste_key = Keys.CONTROL
         
-        # Special handling for Firefox on Linux
+        # handling for Firefox on Linux
         if browser_name == 'firefox' and ('linux' in platform_name or platform.system().lower() == 'linux'):
             paste_key = Keys.CONTROL
         
-        # Simulate paste action with error handling
         try:
             ActionChains(selenium_driver).key_down(paste_key).send_keys('v').key_up(paste_key).perform()
         except Exception as e:
