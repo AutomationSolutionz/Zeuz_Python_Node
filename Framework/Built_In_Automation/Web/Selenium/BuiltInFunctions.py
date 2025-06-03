@@ -3510,7 +3510,7 @@ def copy_image_into_browser(data_set):
         elif variable_name:
             image_path = Shared_Resources.Get_Shared_Variables(variable_name)
             if not image_path:
-                CommonUtil.ExecLog(sModuleInfo, f"Image path not found in variable: {variable_name}. Make sure you must be use '%| |%' syntax for any variable.", 3)
+                CommonUtil.ExecLog(sModuleInfo, f"Image path not found in variable: {variable_name}. Make sure you must be use '%| |%' syntax for any variable or attachment.", 3)
                 return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Must provide either 'image file' or 'image variable'", 3)
@@ -3562,23 +3562,7 @@ def copy_image_into_browser(data_set):
             .then(() => callback(true))
             .catch(async (err) => {
                 console.error('Standard clipboard failed:', err);
-                
-                try {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = 'Fallback clipboard content';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    
-                    if (!document.execCommand('copy')) {
-                        throw new Error('execCommand failed');
-                    }
-                    
-                    document.body.removeChild(textArea);
-                    callback(true);
-                } catch (fallbackErr) {
-                    console.error('Fallback clipboard failed:', fallbackErr);
-                    callback(false);
-                }
+                callback(false);
             });
         """
         
