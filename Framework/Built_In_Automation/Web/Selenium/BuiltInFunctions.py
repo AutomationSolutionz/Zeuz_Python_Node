@@ -3530,14 +3530,34 @@ def copy_image_into_browser(data_set):
         # Convert
         image_b64 = base64.b64encode(image_data).decode('utf-8')
         
-        async_script = """
-        const base64Data = arguments[0];
-        const mimeType = arguments[1];
-        const callback = arguments[arguments.length - 1];
-        
-        function b64toBlob(b64Data, contentType) {
-            contentType = contentType || 'image/png';
-            const byteCharacters = atob(b64Data);
+        browser_name = selenium_driver.capabilities.get('browserName', '').lower()
+        if browser_name in ('chrome', 'microsoft edge', 'edge'):
+            try:
+                selenium_driver.execute_cdp_cmd('Browser.setClipboard', {
+                    'data': image_b64,
+                    'type': mime_type
+                })
+                CommonUtil.ExecLog(sModuleInfo, f"Image copied to clipboard via CDP: {image_path}", 1)
+                return "passed"
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"CDP failed ({str(e)}). Trying fallback method", 2)
+
+        try:
+            # Grant clipboard permissions via CDP if possible
+            try:
+                from urllib.parse import urlparse
+                parsed_uri = urlparse(selenium_driver.current_url)
+                origin = f'{parsed_uri.scheme}://{parsed_uri.netloc}'
+                selenium_driver.execute_cdp_cmd('Browser.grantPermissions', {
+                    'origin': origin,
+                    'permissions': ['clipboardReadWrite', 'clipboardSanitizedWrite']
+                })
+            except:
+                pass
+
+            async_script = """
+            const [base64Data, mimeType, callback] = arguments;
+            const byteCharacters = atob(base64Data);
             const byteArrays = [];
             
             for (let offset = 0; offset < byteCharacters.length; offset += 512) {
@@ -3548,56 +3568,26 @@ def copy_image_into_browser(data_set):
                     byteNumbers[i] = slice.charCodeAt(i);
                 }
                 
-                const byteArray = new Uint8Array(byteNumbers);
-                byteArrays.push(byteArray);
+                byteArrays.push(new Uint8Array(byteNumbers));
             }
             
-            return new Blob(byteArrays, {type: contentType});
-        }
-        
-        const blob = b64toBlob(base64Data, mimeType);
-        const item = new ClipboardItem({ [mimeType]: blob });
-        
-        navigator.clipboard.write([item])
-            .then(() => callback(true))
-            .catch(async (err) => {
-                console.error('Standard clipboard failed:', err);
-                callback(false);
-            });
-        """
-        
-        success = selenium_driver.execute_async_script(async_script, image_b64, mime_type)
-        if success:
-            CommonUtil.ExecLog(sModuleInfo, f"The image ({mime_type}) successfully copied to clipboard.", 1)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to write image to clipboard", 3)
+            const blob = new Blob(byteArrays, {type: mimeType});
+            const item = new ClipboardItem({ [mimeType]: blob });
+            
+            navigator.clipboard.write([item])
+                .then(() => callback(true))
+                .catch(err => callback(false));
+            """
+            
+            success = selenium_driver.execute_async_script(async_script, image_b64, mime_type)
+            if success:
+                CommonUtil.ExecLog(sModuleInfo, f"Image copied to clipboard: {image_path}", 1)
+                return "passed"
             return "zeuz_failed"
-        
-        ################################## PASTE ##################################
-        # capabilities = selenium_driver.capabilities
-        # platform_name = capabilities.get('platformName', '').lower()
-        # browser_name = capabilities.get('browserName', '').lower()
-        
-        # if 'mac' in platform_name or 'os x' in platform_name:
-        #     paste_key = Keys.COMMAND
-        # elif platform.system().lower() in ('darwin', 'macos'):
-        #     paste_key = Keys.COMMAND
-        # else:
-        #     paste_key = Keys.CONTROL
-        
-        # # handling for Firefox on Linux
-        # if browser_name == 'firefox' and ('linux' in platform_name or platform.system().lower() == 'linux'):
-        #     paste_key = Keys.CONTROL
-        
-        # try:
-        #     ActionChains(selenium_driver).key_down(paste_key).send_keys('v').key_up(paste_key).perform()
-        # except Exception as e:
-        #     CommonUtil.ExecLog(sModuleInfo, f"Standard paste failed: {str(e)}. Trying JavaScript fallback...", 2)
-        #     selenium_driver.execute_script("document.execCommand('paste');")
-        
-        # CommonUtil.ExecLog(sModuleInfo, f"Image ({mime_type}) pasted successfully", 1)
-        # return "passed"
-        
+
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Fallback method failed: {str(e)}", 3)
+            return "zeuz_failed"
+            
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
