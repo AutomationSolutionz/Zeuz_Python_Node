@@ -3574,15 +3574,26 @@ def copy_image_into_browser(data_set):
             const blob = new Blob(byteArrays, {type: mimeType});
             const item = new ClipboardItem({ [mimeType]: blob });
             
+            window.focus();
             navigator.clipboard.write([item])
-                .then(() => callback(true))
-                .catch(err => callback(false));
+                .then(() => {
+                    console.log('Successfully copied image to clipboard.');
+                    callback(true);
+                })
+                .catch(err => {
+                    console.log('Failed to copy image to clipboard', err);
+                    callback(false);
+                });
             """
-            
+
+            selenium_driver.switch_to.window(selenium_driver.current_window_handle)
+            selenium_driver.execute_script("window.focus();")
+
             success = selenium_driver.execute_async_script(async_script, image_b64, mime_type)
             if success:
                 CommonUtil.ExecLog(sModuleInfo, f"Image copied to clipboard: {image_path}", 1)
                 return "passed"
+            CommonUtil.ExecLog(sModuleInfo, f"Document is not focused. Failed to copy image to clipboard: {image_path}", 3)
             return "zeuz_failed"
 
         except Exception as e:
