@@ -1263,7 +1263,63 @@ def Keystroke_For_Element(data_set):
             }
             for key in convert:
                 keystroke_value = keystroke_value.replace(key, convert[key])
-            if "+" in keystroke_value:
+                
+            # Special handling for paste command (Ctrl+V / Command+V)
+            normalized_keystroke = keystroke_value.replace(" ", "").replace("_", "").lower()
+            if normalized_keystroke in ("ctrl+v", "control+v", "ctrlv", "controlv", "cmd+v", "cmdv", "command+v", "commandv"):
+                capabilities = selenium_driver.capabilities
+                platform_name = capabilities.get('platformName', '').lower()
+                browser_name = capabilities.get('browserName', '').lower()
+                
+                if 'mac' in platform_name or 'os x' in platform_name:
+                    paste_key = Keys.COMMAND
+                elif platform.system().lower() in ('darwin', 'macos'):
+                    paste_key = Keys.COMMAND
+                else:
+                    paste_key = Keys.CONTROL
+                
+                if browser_name == 'firefox' and ('linux' in platform_name or platform.system().lower() == 'linux'):
+                    paste_key = Keys.CONTROL
+
+                try:
+                    if get_element:
+                        selenium_driver.execute_script("arguments[0].focus();", Element)
+                        time.sleep(0.1)
+                        
+                        # Perform paste using ActionChains
+                        actions = ActionChains(selenium_driver)
+                        actions.key_down(paste_key, element=Element)
+                        actions.send_keys_to_element(Element, 'v')
+                        actions.key_up(paste_key, element=Element)
+                        actions.perform()
+                    else:
+                        actions = ActionChains(selenium_driver)
+                        actions.key_down(paste_key)
+                        actions.send_keys('v')
+                        actions.key_up(paste_key)
+                        actions.perform()
+                        
+                    CommonUtil.ExecLog(sModuleInfo, "Paste command executed successfully", 1)
+                    return "passed"
+                except Exception as e:
+                    # Fallback to JavaScript if ActionChains fails
+                    try:
+                        CommonUtil.ExecLog(sModuleInfo, f"Standard paste failed: {str(e)}. Trying JavaScript fallback...", 2)
+                        if get_element:
+                            selenium_driver.execute_script("arguments[0].focus();", Element)
+                            selenium_driver.execute_script("arguments[0].value = arguments[1];", Element, pyperclip.paste())
+                        else:
+                            selenium_driver.execute_script(f"document.activeElement.value += '{pyperclip.paste()}';")
+                        CommonUtil.ExecLog(sModuleInfo, "Paste executed via JavaScript fallback", 1)
+                        return "passed"
+                    except Exception as js_e:
+                        return CommonUtil.Exception_Handler(
+                            sys.exc_info(),
+                            None,
+                            f"Both methods failed for paste operation: {str(js_e)}"
+                        )
+
+            elif "+" in keystroke_value:
                 hotkey_list = keystroke_value.split("+")
                 for i in range(len(hotkey_list)):
                     if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
