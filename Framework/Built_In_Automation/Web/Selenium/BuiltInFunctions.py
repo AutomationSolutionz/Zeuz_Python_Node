@@ -556,6 +556,7 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         browser in ("chrome", "microsoft edge chromium")
     ):
         set_extension_variables()
+        options.add_argument("--disable-features=DisableLoadExtensionCommandLineSwitch")
         options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
         # This is for running extension on a http server to call a https request
         options.add_argument("--allow-running-insecure-content")
