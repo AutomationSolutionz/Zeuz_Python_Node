@@ -2,7 +2,7 @@ declarations = (
     { "name": "click",                         "function": "Click_Element",                 "screenshot": "web" },
     { "name": "click and hold",                "function": "Click_and_Hold_Element",        "screenshot": "web" },
     { "name": "click and download",            "function": "Click_and_Download",            "screenshot": "web" },
-    { "name": "right click",                   "function": "Right_Click_Element",         "screenshot": "web" },
+    { "name": "right click",                   "function": "Right_Click_Element",           "screenshot": "web" },
     { "name": "double click",                  "function": "Double_Click_Element",          "screenshot": "web" },
     { "name": "hover",                         "function": "Hover_Over_Element",            "screenshot": "web" },
     { "name": "keystroke keys",                "function": "Keystroke_For_Element",         "screenshot": "web" },
@@ -58,6 +58,7 @@ declarations = (
     { "name": "change attribute value",        "function": "Change_Attribute_Value",        "screenshot": "web" },
     { "name": "capture network log",           "function": "capture_network_log",           "screenshot": "web" },
     { "name": "if element exists",             "function": "if_element_exists",             "screenshot": "web" },
+    { "name": "copy image into browser",       "function": "copy_image_into_browser",       "screenshot": "web" },
 ) # yapf: disable
 
 module_name = "selenium"

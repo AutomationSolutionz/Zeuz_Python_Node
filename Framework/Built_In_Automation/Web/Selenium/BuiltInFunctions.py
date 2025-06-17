@@ -18,6 +18,7 @@ import sys, os, time, inspect, shutil, subprocess, json
 import socket
 import requests
 import psutil
+import base64, imghdr
 from pathlib import Path
 sys.path.append("..")
 from selenium import webdriver
@@ -555,6 +556,7 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         browser in ("chrome", "microsoft edge chromium")
     ):
         set_extension_variables()
+        options.add_argument("--disable-features=DisableLoadExtensionCommandLineSwitch")
         options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
         # This is for running extension on a http server to call a https request
         options.add_argument("--allow-running-insecure-content")
@@ -1262,7 +1264,63 @@ def Keystroke_For_Element(data_set):
             }
             for key in convert:
                 keystroke_value = keystroke_value.replace(key, convert[key])
-            if "+" in keystroke_value:
+                
+            # Special handling for paste command (Ctrl+V / Command+V)
+            normalized_keystroke = keystroke_value.replace(" ", "").replace("_", "").lower()
+            if normalized_keystroke in ("ctrl+v", "control+v", "ctrlv", "controlv", "cmd+v", "cmdv", "command+v", "commandv"):
+                capabilities = selenium_driver.capabilities
+                platform_name = capabilities.get('platformName', '').lower()
+                browser_name = capabilities.get('browserName', '').lower()
+                
+                if 'mac' in platform_name or 'os x' in platform_name:
+                    paste_key = Keys.COMMAND
+                elif platform.system().lower() in ('darwin', 'macos'):
+                    paste_key = Keys.COMMAND
+                else:
+                    paste_key = Keys.CONTROL
+                
+                if browser_name == 'firefox' and ('linux' in platform_name or platform.system().lower() == 'linux'):
+                    paste_key = Keys.CONTROL
+
+                try:
+                    if get_element:
+                        selenium_driver.execute_script("arguments[0].focus();", Element)
+                        time.sleep(0.1)
+                        
+                        # Perform paste using ActionChains
+                        actions = ActionChains(selenium_driver)
+                        actions.key_down(paste_key, element=Element)
+                        actions.send_keys_to_element(Element, 'v')
+                        actions.key_up(paste_key, element=Element)
+                        actions.perform()
+                    else:
+                        actions = ActionChains(selenium_driver)
+                        actions.key_down(paste_key)
+                        actions.send_keys('v')
+                        actions.key_up(paste_key)
+                        actions.perform()
+                        
+                    CommonUtil.ExecLog(sModuleInfo, "Paste command executed successfully", 1)
+                    return "passed"
+                except Exception as e:
+                    # Fallback to JavaScript if ActionChains fails
+                    try:
+                        CommonUtil.ExecLog(sModuleInfo, f"Standard paste failed: {str(e)}. Trying JavaScript fallback...", 2)
+                        if get_element:
+                            selenium_driver.execute_script("arguments[0].focus();", Element)
+                            selenium_driver.execute_script("arguments[0].value = arguments[1];", Element, pyperclip.paste())
+                        else:
+                            selenium_driver.execute_script(f"document.activeElement.value += '{pyperclip.paste()}';")
+                        CommonUtil.ExecLog(sModuleInfo, "Paste executed via JavaScript fallback", 1)
+                        return "passed"
+                    except Exception as js_e:
+                        return CommonUtil.Exception_Handler(
+                            sys.exc_info(),
+                            None,
+                            f"Both methods failed for paste operation: {str(js_e)}"
+                        )
+
+            elif "+" in keystroke_value:
                 hotkey_list = keystroke_value.split("+")
                 for i in range(len(hotkey_list)):
                     if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
@@ -3458,3 +3516,146 @@ def if_element_exists(data_set):
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+
+@logger
+def copy_image_into_browser(data_set):
+    """
+    This action will copy an image from path or a variable into browser, and later you can paste via ctrl+v or cmd+v.
+    Supported formats: PNG, SVG
+
+    Example 1:
+    Field	                    Sub Field	            Value
+    image file                  input parameter 	    %| image.png |%
+    copy image into browser     selenium action 	    copy image into browser
+
+    Example 2:
+    Field	                    Sub Field	            Value
+    image variable              input parameter         %| image_var |%
+    copy image into browser     selenium action 	    copy image into browser
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    
+    try:
+        image_data = None
+        image_path = ""
+        variable_name = ""
+        mime_type = "image/png"
+        
+        # Parse
+        for left, mid, right in data_set:
+            left = left.lower().replace(" ", "")
+            mid = mid.lower().replace(" ", "")
+            right = right.strip()
+
+            if left == "imagefile":
+                if os.path.exists(right):
+                    image_path = right
+                else:
+                    image_path = CommonUtil.path_parser(right)
+
+            elif left == "imagevariable":
+                if os.path.exists(right):
+                    image_path = right
+                else:
+                    variable_name = right
+
+        if image_path:
+            if not os.path.exists(image_path):
+                CommonUtil.ExecLog(sModuleInfo, f"Image file not found: {image_path}", 3)
+                return "zeuz_failed"
+        elif variable_name:
+            image_path = Shared_Resources.Get_Shared_Variables(variable_name)
+            if not image_path:
+                CommonUtil.ExecLog(sModuleInfo, f"Image path not found in variable: {variable_name}. Make sure you must be use '%| |%' syntax for any variable or attachment.", 3)
+                return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Must provide either 'image file' or 'image variable'", 3)
+            return "zeuz_failed"
+        
+        if image_path.lower().endswith(".svg"):
+            mime_type = "image/svg+xml"
+        elif image_path.lower().endswith(".png"):
+            mime_type = "image/png"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unsupported file format. You can copy only PNG or SVG image.", 2)
+            return "zeuz_failed"
+        
+        with open(image_path, "rb") as image_file:
+            image_data = image_file.read()
+        
+        # Convert
+        image_b64 = base64.b64encode(image_data).decode('utf-8')
+        
+        browser_name = selenium_driver.capabilities.get('browserName', '').lower()
+        if browser_name in ('chrome', 'microsoft edge', 'edge'):
+            try:
+                selenium_driver.execute_cdp_cmd('Browser.setClipboard', {
+                    'data': image_b64,
+                    'type': mime_type
+                })
+                CommonUtil.ExecLog(sModuleInfo, f"Image copied to clipboard via CDP: {image_path}", 1)
+                return "passed"
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"CDP failed ({str(e)}). Trying fallback method", 2)
+
+        try:
+            # Grant clipboard permissions via CDP if possible
+            try:
+                from urllib.parse import urlparse
+                parsed_uri = urlparse(selenium_driver.current_url)
+                origin = f'{parsed_uri.scheme}://{parsed_uri.netloc}'
+                selenium_driver.execute_cdp_cmd('Browser.grantPermissions', {
+                    'origin': origin,
+                    'permissions': ['clipboardReadWrite', 'clipboardSanitizedWrite']
+                })
+            except:
+                pass
+
+            async_script = """
+            const [base64Data, mimeType, callback] = arguments;
+            const byteCharacters = atob(base64Data);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                
+                byteArrays.push(new Uint8Array(byteNumbers));
+            }
+            
+            const blob = new Blob(byteArrays, {type: mimeType});
+            const item = new ClipboardItem({ [mimeType]: blob });
+            
+            window.focus();
+            navigator.clipboard.write([item])
+                .then(() => {
+                    console.log('Successfully copied image to clipboard.');
+                    callback(true);
+                })
+                .catch(err => {
+                    console.log('Failed to copy image to clipboard', err);
+                    callback(false);
+                });
+            """
+
+            selenium_driver.switch_to.window(selenium_driver.current_window_handle)
+            selenium_driver.execute_script("window.focus();")
+
+            success = selenium_driver.execute_async_script(async_script, image_b64, mime_type)
+            if success:
+                CommonUtil.ExecLog(sModuleInfo, f"Image copied to clipboard: {image_path}", 1)
+                return "passed"
+            CommonUtil.ExecLog(sModuleInfo, f"Document is not focused. Failed to copy image to clipboard: {image_path}", 3)
+            return "zeuz_failed"
+
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Fallback method failed: {str(e)}", 3)
+            return "zeuz_failed"
+            
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
