@@ -7,7 +7,7 @@
 <details>
 <summary>🪟 Windows</summary>
    
-https://github.com/user-attachments/assets/05367373-a90d-4dd0-b7aa-ef9b73223963
+https://github.com/user-attachments/assets/f523003c-f48e-406f-9d02-32c1c640baa0
    
 </details>
 
@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/6c74e0e0-d9df-4683-a053-c6e927b638c5
 <details>
 <summary>🐧 Linux</summary>
    
-https://github.com/user-attachments/assets/f523003c-f48e-406f-9d02-32c1c640baa0
+https://github.com/user-attachments/assets/05367373-a90d-4dd0-b7aa-ef9b73223963
 
 </details>
 
