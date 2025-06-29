@@ -1129,16 +1129,16 @@ def capture_network_log(step_data):
                     result.append(int(part))
             return result
 
-        # Parse
         params = {
             'variable_name': None,
             'mode': None,
-            'filter_domains': None,
-            'status_filter': None,
-            'method_filter': None,
+            'filter_domains': [],
+            'status_filter': [],
+            'method_filter': [],
             'include_body': False
         }
         
+        # Parse
         for left, mid, right in step_data:
             left = left.lower().strip()
             if left == "capture network log":
@@ -1169,7 +1169,6 @@ def capture_network_log(step_data):
             browser_log = selenium_driver.get_log("performance")
             api_logs = []
             requests = {}
-            # print("\nBrowser Log: \n", browser_log, "\n\n")
             
             for entry in browser_log:
                 try:
@@ -1195,7 +1194,7 @@ def capture_network_log(step_data):
                             continue
                         
                         request = requests.get(request_id, {})
-                        
+
                         # Apply filters
                         if params['filter_domains']:
                             domain = urlparse(url).netloc
