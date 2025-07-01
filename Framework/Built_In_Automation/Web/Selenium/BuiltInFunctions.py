@@ -20,6 +20,7 @@ import requests
 import psutil
 import base64, imghdr
 from pathlib import Path
+from urllib.parse import urlparse
 sys.path.append("..")
 from selenium import webdriver
 if "linux" in platform.system().lower():
@@ -1093,39 +1094,161 @@ def Change_Attribute_Value(step_data):
         errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+
 @logger
 def capture_network_log(step_data):
+    """
+    This action captures network activity (API requests, responses, status codes, etc.) from a Chromium-based browser using Selenium. The logs can be filtered and saved to a variable for further validation or analysis.
+
+    Example 1:
+    Field	                    Sub Field	            Value
+    capture network log         selenium action 	    start
+
+    Example 2:
+    Field	                    Sub Field	            Value
+    save                        input parameter         variable_name
+    filter domain               input parameter         zeuz.ai
+    include status code         input parameter         201, 400-504
+    include request method      input parameter         GET, POST
+    include response body       input parameter         false
+    capture network log         selenium action 	    stop
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
     try:
-        global selenium_driver
+        # Helper function to parse status code
+        def parse_status_codes(code_str):
+            result = []
+            for part in code_str.split(','):
+                part = part.strip()
+                if '-' in part:
+                    start, end = map(int, part.split('-'))
+                    result.extend(range(start, end + 1))
+                else:
+                    result.append(int(part))
+            return result
 
-        def process_browser_log_entry(entry):
-            response = json.loads(entry["message"])["message"]
-            return response
+        params = {
+            'variable_name': None,
+            'mode': None,
+            'filter_domains': [],
+            'status_filter': [],
+            'method_filter': [],
+            'include_body': False
+        }
+        
+        # Parse
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left == "capture network log":
+                params['mode'] = right.lower().strip()
+            elif left == "save":
+                params['variable_name'] = right.strip()
+            elif left == "filter domain":
+                params['filter_domains'] = [d.strip() for d in right.split(',')]
+            elif left == "include status code":
+                params['status_filter'] = parse_status_codes(right.strip())
+            elif left == "include request method":
+                params['method_filter'] = [m.strip().upper() for m in right.split(',')]
+            elif left == "include response body":
+                params['include_body'] = right.strip().lower() == "true"
 
-        variable_name = None
-        mode = None
-        for left, _, right in step_data:
-            if left.lower().strip() == "capture network log":
-                mode = right.lower().strip()
-            if left.lower().strip() == "save":
-                variable_name = right.lower().strip()
-        if not mode or ( mode == 'stop' and variable_name == None):
-            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided.", 3)
-            return "zeuz_failed"
-
-        if mode == 'start':
+        # Start/stop handling
+        if params['mode'] == 'start':
             selenium_driver.get_log("performance")
-            CommonUtil.ExecLog(sModuleInfo, "Started collecting network logs", 1    )
-        if mode == 'stop':
-            browser_log = selenium_driver.get_log("performance")
-            events = [process_browser_log_entry(entry) for entry in browser_log]
-            Shared_Resources.Set_Shared_Variables(variable_name, events)
+            CommonUtil.ExecLog(sModuleInfo, "Started collecting network logs...", 1)
             return "passed"
+
+        if params['mode'] == 'stop':
+            EXCLUDED_EXTENSIONS = {'.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', 
+                                  '.woff', '.woff2', '.ttf', '.eot', '.webp', '.map', '.txt'}
+            EXCLUDED_MIME_PREFIXES = {'image/', 'font/', 'text/css', 'application/javascript', 
+                                     'text/javascript', 'application/font-', 'application/x-font-'}
+            
+            browser_log = selenium_driver.get_log("performance")
+            api_logs = []
+            requests = {}
+            
+            for entry in browser_log:
+                try:
+                    outer = json.loads(entry['message'])
+                    message_data = outer.get('message', {})
+                    method = message_data.get('method')
+                    log_params = message_data.get('params', {})
+                    request_id = log_params.get('requestId')
+                    
+                    if method == 'Network.requestWillBeSent':
+                        requests[request_id] = log_params.get('request', {})
+                        
+                    elif method == 'Network.responseReceived':
+                        response = log_params.get('response', {})
+                        url = response.get('url', '')
+                        mime_type = response.get('mimeType', '')
+                        status = response.get('status', 0)
+                        
+                        # Skip static resources
+                        if any(url.endswith(ext) for ext in EXCLUDED_EXTENSIONS):
+                            continue
+                        if any(mime_type.startswith(prefix) for prefix in EXCLUDED_MIME_PREFIXES):
+                            continue
+                        
+                        request = requests.get(request_id, {})
+
+                        # Apply filters
+                        if params['filter_domains']:
+                            domain = urlparse(url).netloc
+                            if not any(d in domain for d in params['filter_domains']):
+                                continue
+                        
+                        if params['method_filter']:
+                            request_method = request.get('method', '').upper()
+                            if request_method not in params['method_filter']:
+                                continue
+                        
+                        if params['status_filter']:
+                            if status not in params['status_filter']:
+                                continue
+                        
+                        # Build log entry
+                        log_entry = {
+                            'url': url,
+                            'status': status,
+                            'method': request.get('method', ''),
+                            'mimeType': mime_type,
+                            'type': log_params.get('type', ''),
+                            'timestamp': entry.get('timestamp')
+                        }
+                        
+                        # Add response body if requested
+                        if params['include_body']:
+                            try:
+                                body = selenium_driver.execute_cdp_cmd(
+                                    'Network.getResponseBody', 
+                                    {'requestId': request_id}
+                                )
+                                log_entry['body'] = body.get('body', 'Unavailable')
+                            except:
+                                log_entry['body'] = 'Unavailable'
+                        
+                        api_logs.append(log_entry)
+
+                except Exception as e:
+                    err = f"Error processing log entry: {str(e)}"
+                    CommonUtil.ExecLog(sModuleInfo, err, 3)
+                    continue
+            
+            # Save results
+            if params['variable_name']:
+                Shared_Resources.Set_Shared_Variables(params['variable_name'], api_logs)
+                CommonUtil.ExecLog(sModuleInfo, f"Saved {len(api_logs)} network events to '{params['variable_name']}'", 1)
+            return "passed"
+            
     except Exception:
-        errMsg = "Could not collect network logs. Make sure logging is enabled at browser startup"
+        errMsg = "Could not collect network logs. Ensure performance logging is enabled in browser options"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-    
+
+
 # Method to enter texts in a text box; step data passed on by the user
 @logger
 def Enter_Text_In_Text_Box(step_data):
