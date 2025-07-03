@@ -58,6 +58,7 @@ from Framework.Utilities.CommonUtil import (
     skipped_tag_list,
 )
 from Framework.AI.NLP import binary_classification
+from .utils import ChromeForTesting
 
 #########################
 #                       #
@@ -598,6 +599,25 @@ def Open_Browser(browser, browser_options: BrowserOptions):
         options = generate_options(browser, browser_options)
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
+
+            chrome_bin = browser_options["chrome"].get("binary_location", None)
+            driver_bin = browser_options["chrome"].get("driver_path", None)
+
+            if chrome_bin and driver_bin:
+                # Use Chrome for Testing binaries
+                service = Service(executable_path=driver_bin)
+                options.binary_location = chrome_bin
+                CommonUtil.ExecLog(sModuleInfo, "Using Chrome for Testing binaries", 1)
+            else:
+                # Use standard ChromeDriverManager
+                service = Service()
+                CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
+
+            selenium_driver = webdriver.Chrome(
+                service=service,
+                options=options,
+            )
+
             service = Service()
             selenium_driver = webdriver.Chrome(
                 service=service,
@@ -822,6 +842,8 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
         else:
             browser = None
         driver_id = ""
+        chrome_version = None
+        chrome_channel = None
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "gotolink":
@@ -836,6 +858,8 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 resolution = right.split(",")
                 window_size_X = int(resolution[0])
                 window_size_Y = int(resolution[1])
+            elif left == "chrome:version":
+                chrome_version = right
 
             # Capabilities are WebDriver attribute common across different browser
             elif mid.strip().lower() == "shared capability":
@@ -862,6 +886,25 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                     browser_options[browser]["page_load_strategy"] = right.strip()
                 elif left == "debuggeraddress":
                     browser_options[browser]["debugger_address"] = right.strip()
+
+        if dependency["Browser"] in ("Chrome", "ChromeHeadless") and not browser_options["chrome"].get("debugger_address", ""):
+            cft = ChromeForTesting()
+
+            if chrome_version:
+                if chrome_version.strip().lower() in ("beta", "dev", "canary"):
+                    chrome_channel = chrome_version.strip().capitalize()
+                    chrome_version = None
+                else:
+                    chrome_version = chrome_version.strip()
+
+            chrome_bin, driver_bin = cft.setup_chrome_for_testing(chrome_version, chrome_channel)
+            
+            if chrome_bin and driver_bin:
+                browser_options["chrome"]["binary_location"] = str(chrome_bin)
+                browser_options["chrome"]["driver_path"] = str(driver_bin)
+                CommonUtil.ExecLog(sModuleInfo, f"Using Chrome for Testing {chrome_version or 'latest'}", 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Failed to get Chrome for Testing binaries. Using system Chrome", 2)
 
         if not driver_id:
             if len(selenium_details.keys()) == 0:

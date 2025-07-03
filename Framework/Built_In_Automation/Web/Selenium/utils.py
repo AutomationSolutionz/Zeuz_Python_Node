@@ -282,7 +282,10 @@ class ChromeForTesting:
         """Setup Chrome for testing, install if necessary"""
         # Clean up old versions first
         self.cleanup_old_versions()
-        
+
+        if not channel:
+            channel = "Stable"
+
         if version and version < "115.0.5763.0":
             print("Chrome for testing version must be at least: '115.0.5763.0'")
             return None, None
