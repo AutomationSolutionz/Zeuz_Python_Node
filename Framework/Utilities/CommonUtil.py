@@ -710,11 +710,13 @@ def ExecLog(
                     if not zeuz_tc_logs or not isinstance(zeuz_tc_logs, dict):
                         zeuz_tc_logs = {"errors": []}
                     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    test_case_id = zeuz_tc_logs.get("current_test_case_id", 'unknown')
                     error_entry = {
-                        "step": str(current_step_no),
-                        "action": str(current_action_no),
+                        "step": int(current_step_no),
+                        "action": int(current_action_no),
                         "module": sModuleInfo,
                         "message": sDetails,
+                        "test_case_id": test_case_id,
                         "timestamp": now
                     }
                     zeuz_tc_logs["errors"].append(error_entry)

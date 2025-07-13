@@ -950,6 +950,9 @@ def run_test_case(
     browserDriver=None,
 ):
     try:
+        prev_zeuz_tc_logs = shared.Get_Shared_Variables("zeuz_tc_logs")
+        prev_zeuz_tc_logs['current_test_case_id'] = TestCaseID
+        shared.Set_Shared_Variables("zeuz_tc_logs", prev_zeuz_tc_logs, pretty=False, print_variable=False)
         TestCaseStartTime = time.time()
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
@@ -1802,6 +1805,8 @@ def download_attachments(testcase_info):
 # main function
 def main(device_dict, all_run_id_info):
     try:
+        # Set TC logs
+        shared.Set_Shared_Variables("zeuz_tc_logs", {"errors": []}, print_variable=False, pretty=False)
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
