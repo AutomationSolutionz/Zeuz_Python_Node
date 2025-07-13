@@ -1944,6 +1944,7 @@ def main(device_dict, all_run_id_info):
 
             shared.Set_Shared_Variables("run_id", run_id)
             shared.Set_Shared_Variables("node_id", CommonUtil.MachineInfo().getLocalUser())
+            shared.Set_Shared_Variables("zeuz_tc_logs", {"errors": []}, print_variable=False, pretty=False)
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True

@@ -702,6 +702,27 @@ def ExecLog(
             # Except the browser logs
             global all_logs, all_logs_count, all_logs_list
 
+            # Append the errors in the zeuz_tc_logs
+            if iLogLevel == 3:
+                try:
+                    from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
+                    zeuz_tc_logs = shared.Get_Shared_Variables("zeuz_tc_logs")
+                    if not zeuz_tc_logs or not isinstance(zeuz_tc_logs, dict):
+                        zeuz_tc_logs = {"errors": []}
+                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    error_entry = {
+                        "step": str(current_step_no),
+                        "action": str(current_action_no),
+                        "module": sModuleInfo,
+                        "message": sDetails,
+                        "timestamp": now
+                    }
+                    zeuz_tc_logs["errors"].append(error_entry)
+                    shared.Set_Shared_Variables("zeuz_tc_logs", zeuz_tc_logs, print_variable=False, pretty=False)
+                except:
+                    pass
+                
+
             log_id = ConfigModule.get_config_value(
                 "sectionOne", "sTestStepExecLogId", temp_config
             )
