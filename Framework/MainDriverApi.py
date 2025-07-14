@@ -969,6 +969,7 @@ def run_test_case(
             shared.Set_Shared_Variables("zeuz_prettify_limit", 500)
             CommonUtil.prettify_limit = 500
 
+        shared.Set_Shared_Variables("zeuz_tc_logs", {"errors": []}, pretty=False, print_variable=False)
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
