@@ -922,6 +922,10 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
             if Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
                 return "zeuz_failed"
 
+            if ConfigModule.get_config_value("RunDefinition", "window_size_x") and ConfigModule.get_config_value("RunDefinition", "window_size_y"):
+                window_size_X = ConfigModule.get_config_value("RunDefinition", "window_size_x")
+                window_size_Y = ConfigModule.get_config_value("RunDefinition", "window_size_y")
+                
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
