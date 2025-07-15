@@ -17,7 +17,10 @@ import datetime
 from datetime import timedelta
 import struct
 import urllib.request
-from settings import ZEUZ_NODE_DOWNLOADS_DIR
+
+
+# ZeuZ Node Downloads base directory
+ZEUZ_NODE_DOWNLOADS_DIR = Path.home() / "zeuz_node_downloads"
 
 
 class ChromeForTesting:
@@ -352,8 +355,6 @@ class ChromeForTesting:
 class ChromeExtensionDownloader:
     CHROME_EXTENSIONS_DIR = ZEUZ_NODE_DOWNLOADS_DIR / "chrome_extensions"
     CFT_INFO_FILE = ZEUZ_NODE_DOWNLOADS_DIR / "chrome_for_testing" / "info.json"
-    EXTENSIONS_BASE_DIR = CHROME_EXTENSIONS_DIR / "downloaded_extensions"
-    EXTENSIONS_INFO_FILE = CHROME_EXTENSIONS_DIR / "info.json"
     DEFAULT_CHROME_VERSION = "138.0.7204.92"
 
     def __init__(self, chrome_version=None):
@@ -362,12 +363,9 @@ class ChromeExtensionDownloader:
         
         self.chrome_version = chrome_version or self._get_cft_version()
         self._setup_platform_info()
-        self.output_dir = self.EXTENSIONS_BASE_DIR
+        self.output_dir = self.CHROME_EXTENSIONS_DIR
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.CHROME_EXTENSIONS_DIR.mkdir(parents=True, exist_ok=True)
-        
-        if not self.EXTENSIONS_INFO_FILE.exists():
-            self._init_info_file()
 
     def _get_cft_version(self):
         try:
@@ -401,33 +399,6 @@ class ChromeExtensionDownloader:
         else:
             self.platform_arch = "x86-64"
 
-    def _init_info_file(self):
-        info = {
-            "downloaded_extensions": {},  # extension_id: {version, download_date, file_path, extracted_path}
-            "settings": {
-                "default_chrome_version": self.DEFAULT_CHROME_VERSION,
-                "output_dir": str(self.EXTENSIONS_BASE_DIR)
-            }
-        }
-        with open(self.EXTENSIONS_INFO_FILE, 'w') as f:
-            json.dump(info, f, indent=4)
-
-    def _load_info(self):
-        if not self.EXTENSIONS_INFO_FILE.exists():
-            return {
-                "downloaded_extensions": {},
-                "settings": {
-                    "default_chrome_version": self.DEFAULT_CHROME_VERSION,
-                    "output_dir": str(self.EXTENSIONS_BASE_DIR)
-                }
-            }
-        with open(self.EXTENSIONS_INFO_FILE, 'r') as f:
-            return json.load(f)
-
-    def _save_info(self, info):
-        with open(self.EXTENSIONS_INFO_FILE, 'w') as f:
-            json.dump(info, f, indent=4)
-
     def _build_download_url(self, extension_id):
         base_url = "https://clients2.google.com/service/update2/crx"
         params = [
@@ -453,11 +424,14 @@ class ChromeExtensionDownloader:
     def download_extension(self, extension_id, extract=True, keep_crx=True):
         print(f"Downloading extension '{extension_id}' for Chrome {self.chrome_version}...")
         
+        # Clean up first
+        extension_dir = self.output_dir / extension_id
+        if extension_dir.exists():
+            shutil.rmtree(extension_dir)
+        extension_dir.mkdir(parents=True, exist_ok=True)
+        
         url = self._build_download_url(extension_id)
         headers = self._get_download_headers(extension_id)
-        
-        extension_dir = self.output_dir / extension_id
-        extension_dir.mkdir(exist_ok=True)
         
         crx_path = extension_dir / f"{extension_id}.crx"
         
@@ -478,7 +452,6 @@ class ChromeExtensionDownloader:
         result = {
             "extension_id": extension_id,
             "chrome_version": self.chrome_version,
-            "download_date": datetime.date.today().isoformat(),
             "crx_path": str(crx_path),
             "extracted_path": None,
             "file_size": crx_path.stat().st_size
@@ -492,15 +465,11 @@ class ChromeExtensionDownloader:
                 crx_path.unlink()
                 result["crx_path"] = None
         
-        self._update_extension_info(extension_id, result)
-        
         return result
 
     def extract_extension(self, crx_path):
         crx_path = Path(crx_path)
         extract_path = crx_path.parent / crx_path.stem
-        
-        print(f"Extracting extension to: {extract_path}")
         
         if extract_path.exists():
             shutil.rmtree(extract_path)
@@ -526,46 +495,14 @@ class ChromeExtensionDownloader:
                     
         except Exception as e:
             raise Exception(f"Extraction failed: {str(e)}")
-        
-        print("Extraction completed successfully")
+
         return extract_path
 
-    def _update_extension_info(self, extension_id, extension_data):
-        info = self._load_info()
-        info["downloaded_extensions"][extension_id] = extension_data
-        self._save_info(info)
-
-    def get_extension_info(self, extension_id):
-        info = self._load_info()
-        return info["downloaded_extensions"].get(extension_id)
-
-    def list_downloaded_extensions(self):
-        info = self._load_info()
-        return info["downloaded_extensions"]
-
-    def is_extension_downloaded(self, extension_id):
-        info = self._load_info()
-        return extension_id in info["downloaded_extensions"]
-
-    def remove_extension(self, extension_id):
-        info = self._load_info()
-        
-        if extension_id not in info["downloaded_extensions"]:
-            print(f"Extension {extension_id} not found in downloaded extensions")
-            return False
-        
-        extension_data = info["downloaded_extensions"][extension_id]
-        
-        extension_dir = self.output_dir / extension_id
-        if extension_dir.exists():
-            shutil.rmtree(extension_dir)
-            print(f"Removed extension directory: {extension_dir}")
-        
-        del info["downloaded_extensions"][extension_id]
-        self._save_info(info)
-        
-        print(f"Extension {extension_id} removed successfully")
-        return True
+    def cleanup_extensions(self):
+        if self.CHROME_EXTENSIONS_DIR.exists():
+            shutil.rmtree(self.CHROME_EXTENSIONS_DIR)
+            
+        self.CHROME_EXTENSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
     def setup_chrome_extension_download(self, extension_id=None, extract=True, keep_crx=True):
         print(f"Initializing Chrome Extension Downloader...")
@@ -578,13 +515,11 @@ class ChromeExtensionDownloader:
             return None
         
         try:
-            if self.is_extension_downloaded(extension_id):
-                print(f"Extension {extension_id} already downloaded.")
-                existing_info = self.get_extension_info(extension_id)
-                if existing_info and existing_info.get('extracted_path'):
-                    print(f"Extracted path: {existing_info['extracted_path']}")
-                return existing_info
-            
+            # Clean up any existing version before downloading
+            extension_dir = self.output_dir / extension_id
+            if extension_dir.exists():
+                shutil.rmtree(extension_dir)
+                
             # Download extension
             result = self.download_extension(extension_id, extract=extract, keep_crx=keep_crx)
             
