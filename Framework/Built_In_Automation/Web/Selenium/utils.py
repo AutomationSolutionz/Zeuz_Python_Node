@@ -421,7 +421,7 @@ class ChromeExtensionDownloader:
             "Referer": f"https://chrome.google.com/webstore/detail/{extension_id}"
         }
 
-    def download_extension(self, extension_id, extract=True, keep_crx=True):
+    def download_extension(self, extension_id, extract=False, keep_crx=True):
         print(f"Downloading extension '{extension_id}' for Chrome {self.chrome_version}...")
         
         # Clean up first
@@ -446,8 +446,6 @@ class ChromeExtensionDownloader:
         if crx_path.stat().st_size == 0:
             crx_path.unlink()
             raise Exception("Downloaded file is empty")
-        
-        print(f"Downloaded to: {crx_path}")
         
         result = {
             "extension_id": extension_id,
@@ -500,11 +498,15 @@ class ChromeExtensionDownloader:
 
     def cleanup_extensions(self):
         if self.CHROME_EXTENSIONS_DIR.exists():
-            shutil.rmtree(self.CHROME_EXTENSIONS_DIR)
-            
+            if any(self.CHROME_EXTENSIONS_DIR.iterdir()):
+                print(f"Cleaning up {self.CHROME_EXTENSIONS_DIR} directory...")
+                shutil.rmtree(self.CHROME_EXTENSIONS_DIR)
+                print("Cleanup complete.")
+            else:
+                shutil.rmtree(self.CHROME_EXTENSIONS_DIR) # for safety
         self.CHROME_EXTENSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-    def setup_chrome_extension_download(self, extension_id=None, extract=True, keep_crx=True):
+    def setup_chrome_extension_download(self, extension_id=None, extract=False, keep_crx=True):
         print(f"Initializing Chrome Extension Downloader...")
         print(f"Using Chrome version: {self.chrome_version}")
         print(f"Output directory: {self.output_dir}")
@@ -539,7 +541,7 @@ class ChromeExtensionDownloader:
             return None
 
 
-############################## testing ##############################
+############################## testing ############################
 if __name__ == "__main__":
     extension_id = input("Enter Chrome Extension ID: ").strip()
     

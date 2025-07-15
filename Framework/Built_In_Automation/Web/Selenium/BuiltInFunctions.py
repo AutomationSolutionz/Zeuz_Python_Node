@@ -14,7 +14,7 @@
 #                       #
 #########################
 import platform
-import sys, os, time, inspect, shutil, subprocess, json
+import sys, os, time, inspect, shutil, subprocess, json, re
 import socket
 import requests
 import psutil
@@ -58,7 +58,7 @@ from Framework.Utilities.CommonUtil import (
     skipped_tag_list,
 )
 from Framework.AI.NLP import binary_classification
-from .utils import ChromeForTesting
+from .utils import ChromeForTesting, ChromeExtensionDownloader
 
 #########################
 #                       #
@@ -744,7 +744,7 @@ def Go_To_Link_V2(step_data):
     return "passed"
     
 
-def parse_and_verify_datatype(left:str, right:str):
+def parse_and_verify_datatype(left:str, right:str, chrome_version=None):
     val = CommonUtil.parse_value_into_object(right)
     if left == "addargument":
         if isinstance(val, list) and all(isinstance(item, str) for item in val):
@@ -753,7 +753,26 @@ def parse_and_verify_datatype(left:str, right:str):
     
     if left == "addextension":
         if isinstance(val, list) and all(isinstance(item, str) for item in val):
-            return val
+            extension_ids = []
+            extension_crxs = []
+            for item in val:
+                if item.lower().endswith(".crx") or os.path.isfile(item):
+                    extension_crxs.append(item)
+                elif re.match(r'^[a-p]{32}$', item):
+                    extension_ids.append(item)
+                else:
+                    raise ValueError(
+                        f"Invalid extension: {item}. Must be .crx file path or Chrome extension ID."
+                    )
+                    
+            # download all extensions from ids
+            for ext_id in extension_ids:
+                downloader = ChromeExtensionDownloader(chrome_version=chrome_version)
+                result = downloader.setup_chrome_extension_download(extension_id=ext_id)
+                if result.get("crx_path"):
+                    extension_crxs.append(result["crx_path"])
+                    
+            return extension_crxs
         raise ValueError("Extensions must be list of strings. Example: ['path/to/ex1.crx', 'path/to/ex2.crx']")
     
     if left == "addencodedextension":
@@ -859,7 +878,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 window_size_X = int(resolution[0])
                 window_size_Y = int(resolution[1])
             elif left == "chrome:version":
-                chrome_version = right
+                chrome_version = right.strip()
 
             # Capabilities are WebDriver attribute common across different browser
             elif mid.strip().lower() == "shared capability":
@@ -877,7 +896,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 elif left == "addexperimentaloption":
                     browser_options[browser]["add_experimental_option"] = parse_and_verify_datatype(left, right)
                 elif left == "addextension":
-                    browser_options[browser]["add_extension"] = parse_and_verify_datatype(left, right)
+                    browser_options[browser]["add_extension"] = parse_and_verify_datatype(left, right, chrome_version)
                 elif left == "addencodedextension":
                     browser_options[browser]["add_encoded_extension"] = parse_and_verify_datatype(left, right)
                 elif left == "setpreference":
