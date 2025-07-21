@@ -1,3 +1,4 @@
+import hashlib
 import os
 import subprocess
 import base64
@@ -138,29 +139,35 @@ def capture_screenshot():
 
 
 def upload_android_ui_dump():
+    prev_xml_hash = ""
     while True:
         try:
             capture_ui_dump()
             try:
                 with open(UI_XML_PATH, 'r') as xml_file:
                     xml_content = xml_file.read()
+                    xml_content = xml_content.replace("<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>", "", 1)
+                    new_xml_hash = hashlib.sha256(xml_content.encode('utf-8')).hexdigest()
+                    # Don't upload if the content hasn't changed
+                    if prev_xml_hash == new_xml_hash:
+                        time.sleep(5)
+                        continue
+                    prev_xml_hash = new_xml_hash
+
             except FileNotFoundError:
-                CommonUtil.ExecLog("", "UI XML file not found, skipping upload.", iLogLevel=2)
                 time.sleep(5)
                 continue
             url = ConfigModule.get_config_value("Authentication", "server_address").strip() + "/node_ai_contents/"
             apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
-            response = requests.post(
+            res = requests.post(
                 url,
                 headers={"X-Api-Key": apiKey},
                 json={
                     "dom_mob": {"dom": xml_content},
                     "node_id": CommonUtil.MachineInfo().getLocalUser().lower()
                 })
-            if response.status_code == 200:
-                CommonUtil.ExecLog("", f"UI dump uploaded successfully: {response.json()}", iLogLevel=1)
-            else:
-                CommonUtil.ExecLog("", f"Failed to upload UI dump: {response.status_code} - {response.text}", iLogLevel=3)
+            if res.ok:
+                CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
         except Exception as e:
             CommonUtil.ExecLog("", f"Error uploading UI dump: {str(e)}", iLogLevel=3)
         time.sleep(5)
