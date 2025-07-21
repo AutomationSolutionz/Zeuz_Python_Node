@@ -580,6 +580,9 @@ def ExecLog(
         if val != None:
             if str(val).lower() in sDetails.lower():
                 return
+            
+            elif sDetails.lower() in str(val).lower():
+                return
 
     if not print_execlog: return    # For bypass_bug() function dont print logs
 
