@@ -30,6 +30,7 @@ import socket
 import signal
 import os
 
+
 try:
     import xlwings as xw
 except:
@@ -48,6 +49,12 @@ import datetime, random
 import datefinder
 import traceback
 import json
+
+import html
+from selenium import webdriver
+import time
+from datetime import datetime
+
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
@@ -7107,3 +7114,564 @@ def download_chrome_extension(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#this function is used in the accessibilit_test action
+
+def create_summary_report(result):
+
+    """Create a summary report from the raw axe results."""
+    summary = {
+        "test_info": {
+            "url": result.get("url", "Unknown"),
+            "timestamp": result.get("timestamp", "Unknown"),
+            "test_date": datetime.now().isoformat()
+        },
+        "summary": {
+            "violations_count": len(result.get("violations", [])),
+            "passes_count": len(result.get("passes", [])),
+            "inapplicable_count": len(result.get("inapplicable", [])),
+            "incomplete_count": len(result.get("incomplete", []))
+        },
+        "violations_summary": [],
+        "passes_summary": []
+    }
+
+    # Process violations
+    for violation in result.get("violations", []):
+        violation_summary = {
+            "id": violation.get("id", "Unknown"),
+            "description": violation.get("description", "No description"),
+            "impact": violation.get("impact", "Unknown"),
+            "help": violation.get("help", "No help available"),
+            "helpUrl": violation.get("helpUrl", ""),
+            "tags": violation.get("tags", []),
+            "nodes_count": len(violation.get("nodes", [])),
+            "nodes": []
+        }
+
+        # Add first few affected elements
+        for node in violation.get("nodes", [])[:3]:
+            node_info = {
+                "html": node.get("html", ""),
+                "target": node.get("target", []),
+                "failureSummary": node.get("failureSummary", "")
+            }
+            violation_summary["nodes"].append(node_info)
+
+        summary["violations_summary"].append(violation_summary)
+
+    # Process passes
+    for passed in result.get("passes", []):
+        pass_summary = {
+            "id": passed.get("id", "Unknown"),
+            "description": passed.get("description", "No description"),
+            "impact": passed.get("impact", "Unknown"),
+            "tags": passed.get("tags", []),
+            "nodes_count": len(passed.get("nodes", []))
+        }
+        summary["passes_summary"].append(pass_summary)
+
+    return summary
+
+#this function is used in the accessibilit_test action
+
+def safe_join_target(target):
+    """Safely join target field which can be a list or other types."""
+    try:
+        if not target:
+            return "No target"
+        if isinstance(target, list):
+            # Handle nested lists and complex structures
+            result = []
+            for item in target:
+                if isinstance(item, list):
+                    result.append(', '.join(str(x) for x in item))
+                else:
+                    result.append(str(item))
+            return ', '.join(result)
+        return str(target)
+    except Exception as e:
+        return f"Target error: {str(e)}"
+
+#this function is used in the accessibilit_test action
+
+def create_html_report(result, summary):
+    """Create a detailed HTML report from the raw axe results."""
+    html_template = f"""
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Accessibility Test Report - {summary['test_info']['url']}</title>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            
+        }}
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }}
+        .header .subtitle {{
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }}
+        .summary-stats {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }}
+        .stat-card {{
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }}
+        .stat-number {{
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }}
+        .stat-label {{
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        .violations {{
+            color: #dc3545;
+        }}
+        .passes {{
+            color: #28a745;
+        }}
+        .inapplicable {{
+            color: #6c757d;
+        }}
+        .incomplete {{
+            color: #ffc107;
+        }}
+        .content {{
+            padding: 30px;
+        }}
+        .section {{
+            margin-bottom: 40px;
+        }}
+        .section h2 {{
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }}
+        .violation-card {{
+            background: #fff5f5;
+            border-left: 4px solid #dc3545;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+        }}
+        .violation-header {{
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+        }}
+        .violation-body {{
+            padding: 20px;
+        }}
+        .impact-badge {{
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }}
+        .impact-critical {{
+            background: #dc3545;
+            color: white;
+        }}
+        .impact-serious {{
+            background: #fd7e14;
+            color: white;
+        }}
+        .impact-moderate {{
+            background: #ffc107;
+            color: black;
+        }}
+        .impact-minor {{
+            background: #6c757d;
+            color: white;
+        }}
+        .help-link {{
+            color: #667eea;
+            text-decoration: none;
+        }}
+        .help-link:hover {{
+            text-decoration: underline;
+        }}
+        .node-item {{
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }}
+        .node-html {{
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }}
+        .passes-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }}
+        .violations-grid {{
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }}
+        .pass-card {{
+            background: #f8fff9;
+            border: 1px solid #d4edda;
+            border-radius: 4px;
+            padding: 15px;
+        }}
+        .pass-card h4 {{
+            color: #155724;
+            margin: 0 0 10px 0;
+        }}
+        .tags {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }}
+        .tag {{
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: #495057;
+        }}
+        .footer {{
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }}
+    </style>
+</head>
+<body>
+    <div class=\"container\">
+        <div class="header">
+            <h1>🔍 Accessibility Test Report</h1>
+            <div class="subtitle">
+                <strong>URL:</strong> {summary['test_info']['url']}<br>
+                <strong>Test Date:</strong> {datetime.fromisoformat(summary['test_info']['test_date']).strftime('%Y-%m-%d %H:%M:%S')}
+            </div>
+        </div>
+        
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-number violations">{summary['summary']['violations_count']}</div>
+                <div class="stat-label">Violations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number passes">{summary['summary']['passes_count']}</div>
+                <div class="stat-label">Passes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number inapplicable">{summary['summary']['inapplicable_count']}</div>
+                <div class="stat-label">Inapplicable</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number incomplete">{summary['summary']['incomplete_count']}</div>
+                <div class="stat-label">Incomplete</div>
+            </div>
+        </div>
+        
+        <div class="content">
+"""
+
+    # Add violations section
+    violations = result.get('violations', [])
+    if violations:
+        html_template += """
+            <div class="section">
+                <h2>❌ Accessibility Violations</h2>
+                <div class="violations-grid">
+        """
+
+        for violation in violations:
+            impact_class = f"impact-{violation.get('impact', 'minor')}" if violation.get('impact') else "impact-minor"
+            html_template += f"""
+                <div class="violation-card">
+                    <div class="violation-header">
+                        {html.escape(violation.get('id', 'Unknown'))} - {html.escape(violation.get('description', 'No description'))}
+                        <span class="impact-badge {impact_class}">{html.escape(str(violation.get('impact', 'minor')))}</span>
+                    </div>
+                    <div class="violation-body">
+                        <p><strong>Help:</strong> {html.escape(violation.get('help', 'No help available'))}</p>
+                        <p><strong>Affected Elements:</strong> {len(violation.get('nodes', []))}</p>
+                        <p><strong>More Info:</strong> <a href="{html.escape(violation.get('helpUrl', ''))}" class="help-link" target="_blank">View Documentation</a></p>
+                        
+                        <div class="tags">
+            """
+
+            for tag in violation.get('tags', []):
+                html_template += f'<span class="tag">{html.escape(str(tag))}</span>'
+
+            html_template += """
+                        </div>
+            """
+
+            # Add ALL affected elements (detailed)
+            nodes = violation.get('nodes', [])
+            if nodes:
+                html_template += f"""
+                        <h4>All Affected Elements ({len(nodes)} total):</h4>
+                """
+                for i, node in enumerate(nodes, 1):
+                    try:
+                        html_template += f"""
+                            <div class="node-item">
+                                <strong>Element {i}:</strong>
+                                <div class="node-html">{html.escape(str(node.get('html', 'No HTML available')))}</div>
+                                <strong>Target:</strong> {html.escape(safe_join_target(node.get('target', [])))}
+                                <br><strong>Impact:</strong> {html.escape(str(node.get('impact', 'Unknown')))}
+                                <br><strong>Issue:</strong> {html.escape(str(node.get('failureSummary', 'No failure summary')))}
+                            </div>
+                        """
+                    except Exception as node_error:
+                        logger.error(f"Error processing node {i}: {str(node_error)}")
+                        html_template += f"""
+                            <div class="node-item">
+                                <strong>Element {i}:</strong>
+                                <div class="node-html">Error processing this element</div>
+                                <strong>Target:</strong> Error
+                                <br><strong>Impact:</strong> Error
+                                <br><strong>Issue:</strong> Error processing element
+                            </div>
+                        """
+
+            html_template += """
+                    </div>
+                </div>
+            """
+
+        html_template += """
+                </div> <!-- end violations-grid -->
+            </div>
+        """
+    else:
+        html_template += """
+            <div class="section">
+                <h2>✅ No Accessibility Violations Found!</h2>
+                <p>Great job! No accessibility violations were detected on this page.</p>
+            </div>
+        """
+
+    # Add passes section
+    passes = result.get('passes', [])
+    if passes:
+        html_template += """
+            <div class="section">
+                <h2>✅ Passed Tests</h2>
+                <div class="passes-grid">
+        """
+
+        for passed in passes:
+            html_template += f"""
+                <div class="pass-card">
+                    <h4>{html.escape(passed.get('id', 'Unknown'))}</h4>
+                    <p>{html.escape(passed.get('description', 'No description'))}</p>
+                    <p><strong>Elements tested:</strong> {len(passed.get('nodes', []))}</p>
+                    <p><strong>Impact:</strong> {html.escape(str(passed.get('impact', 'Unknown')))}</p>
+                    <div class="tags">
+            """
+
+            for tag in passed.get('tags', []):
+                html_template += f'<span class="tag">{html.escape(str(tag))}</span>'
+
+            html_template += """
+                    </div>
+                </div>
+            """
+
+        html_template += """
+                </div> <!-- end passes-grid -->
+            </div>
+        """
+
+    html_template += """
+        </div>
+    </div>
+</body>
+</html>
+    """
+
+    return html_template
+
+
+@logger
+def accessibility_test(data_set):
+    """
+    This function test the accessibility of a web page 
+    
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            website link           | input parameter | "https://ilovepeanutbutter.com"
+            browser                | input parameter | "Chrome"
+            accessibilty test     | common action   | accessibility test
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` and generate 3 reports (raw json resutl, html report, summary report) if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        try:
+            import axe_selenium_python
+        except ImportError:
+            CommonUtil.ExecLog(sModuleInfo, "axe_selenium_python not found. Installing...", 3)
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "axe-selenium-python"])
+                CommonUtil.ExecLog(sModuleInfo, "axe_selenium_python installed successfully!", 1)
+            except subprocess.CalledProcessError as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to install axe_selenium_python: {e}", 3)
+                return "zeuz_failed"
+
+        from axe_selenium_python import Axe
+
+        link = None
+        browser = None
+
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+
+            if "website link" == left:
+                link = right.strip()
+            if "browser" == left:
+                browser = right.strip()
+
+
+        if link is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the link of the webpage you want to test accessibility", 3)
+            return "zeuz_failed"
+
+        if browser is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide your preferred browser e.g chrome, firefox, edge, safari", 3)
+            return "zeuz_failed"
+
+        if browser.lower() == "chrome":
+            driver = webdriver.Chrome()
+        elif browser.lower() == "firefox":
+            driver = webdriver.Firefox()
+        elif browser.lower() == "edge":
+            driver = webdriver.Edge()
+        elif browser.lower() == "safari":
+            driver = webdriver.Safari()
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Unsupported browser type: {browser}. Use: Chrome, Firefox, Edge, or Safari", 3)
+            return "zeuz_failed"
+
+        driver.get(link)
+
+        time.sleep(10) #to load the images properly
+
+        axe = Axe(driver)
+
+        axe.inject()
+
+        result = axe.run()
+
+        # Log results summary
+        violations_count = len(result.get('violations', []))
+        passes_count = len(result.get('passes', []))
+
+        print("Accessibility test completed")
+        #CommonUtil.ExecLog(sModuleInfo, f"Accessibility test completed", 1)
+
+        # Generate three types of reports
+
+        # 1. Raw JSON Report
+        try:
+            with open('accessibility_result.json', 'w', encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Raw JSON report saved successfully", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to save raw JSON report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 2. Summary JSON Report
+        try:
+            summary = create_summary_report(result)
+            with open('accessibility_report_summary.json', 'w', encoding='utf-8') as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Summary JSON report saved successfully", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create summary report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 3. HTML Report
+        try:
+            html_report = create_html_report(result, summary)
+            with open('accessibility_report.html', 'w', encoding='utf-8') as f:
+                f.write(html_report)
+            CommonUtil.ExecLog(sModuleInfo, f"HTML report saved successfully", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create HTML report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # Close driver
+        driver.close()
+
+        # Display console summary
+        summary_message = f"""SUMMARY STATISTICS:
+   [X] Violations: {summary['summary']['violations_count']}
+   [V] Tests Passed: {summary['summary']['passes_count']}
+   [!] Inapplicable: {summary['summary']['inapplicable_count']}
+   [~] Incomplete: {summary['summary']['incomplete_count']}
+Reports generated:
+  - accessibility_result.json (raw data)
+  - accessibility_report_summary.json (summary)
+  - accessibility_report.html (visual report)
+"""
+
+        CommonUtil.ExecLog(sModuleInfo, summary_message, 5)
+        CommonUtil.ExecLog(sModuleInfo, "Accessibility test completed successfully", 1)
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

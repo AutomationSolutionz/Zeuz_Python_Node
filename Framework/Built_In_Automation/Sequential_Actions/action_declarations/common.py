@@ -137,6 +137,7 @@ declarations = (
 
     {"name": "render jinja template",                       "function": "render_jinja_template",                  "screenshot": "none" },
     {"name": "download chrome extension",                    "function": "download_chrome_extension",             "screenshot": "none" },
+    {"name": "accessibility test",                           "function": "accessibility_test",                    "screenshot": "none" },
 
 ) # yapf: disable
 
