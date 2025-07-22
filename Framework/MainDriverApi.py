@@ -969,6 +969,7 @@ def run_test_case(
             shared.Set_Shared_Variables("zeuz_prettify_limit", 500)
             CommonUtil.prettify_limit = 500
 
+        shared.Set_Shared_Variables("zeuz_tc_logs", {"errors": []}, pretty=False, print_variable=False)
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
@@ -1944,7 +1945,6 @@ def main(device_dict, all_run_id_info):
 
             shared.Set_Shared_Variables("run_id", run_id)
             shared.Set_Shared_Variables("node_id", CommonUtil.MachineInfo().getLocalUser())
-            shared.Set_Shared_Variables("zeuz_tc_logs", {"errors": []}, print_variable=False, pretty=False)
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True

@@ -580,6 +580,9 @@ def ExecLog(
         if val != None:
             if str(val).lower() in sDetails.lower():
                 return
+            
+            elif sDetails.lower() in str(val).lower():
+                return
 
     if not print_execlog: return    # For bypass_bug() function dont print logs
 
@@ -707,18 +710,18 @@ def ExecLog(
                 try:
                     from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
                     zeuz_tc_logs = shared.Get_Shared_Variables("zeuz_tc_logs")
-                    if not zeuz_tc_logs or not isinstance(zeuz_tc_logs, dict):
-                        zeuz_tc_logs = {"errors": []}
-                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    error_entry = {
-                        "step": str(current_step_no),
-                        "action": str(current_action_no),
-                        "module": sModuleInfo,
-                        "message": sDetails,
-                        "timestamp": now
-                    }
-                    zeuz_tc_logs["errors"].append(error_entry)
-                    shared.Set_Shared_Variables("zeuz_tc_logs", zeuz_tc_logs, print_variable=False, pretty=False)
+                    if zeuz_tc_logs and isinstance(zeuz_tc_logs, dict):
+                        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        error_entry = {
+                            "step": int(current_step_no),
+                            "action": int(current_action_no),
+                            "module": sModuleInfo,
+                            "message": sDetails,
+                            "test_case_id": current_tc_no,
+                            "timestamp": now
+                        }
+                        zeuz_tc_logs["errors"].append(error_entry)
+                        shared.Set_Shared_Variables("zeuz_tc_logs", zeuz_tc_logs, print_variable=False, pretty=False)
                 except:
                     pass
                 
