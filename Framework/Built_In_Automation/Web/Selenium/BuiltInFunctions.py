@@ -946,12 +946,14 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 window_size_X = ConfigModule.get_config_value("RunDefinition", "window_size_x")
                 window_size_Y = ConfigModule.get_config_value("RunDefinition", "window_size_y")
                 
-            # removed maximize_window function because it's give error in headless browser
             if not window_size_X and not window_size_Y:
-                import pyautogui
-                window_size_X, window_size_Y = pyautogui.size()
-            
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+                if dependency["Browser"] == "ChromeHeadless":
+                    window_size_X, window_size_Y = 1920, 1080
+                    selenium_driver.set_window_size(window_size_X, window_size_Y)
+                else:
+                    selenium_driver.maximize_window()
+            else:
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
 
             selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
 
