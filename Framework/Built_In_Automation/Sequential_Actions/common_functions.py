@@ -30,6 +30,7 @@ import socket
 import signal
 import os
 
+
 try:
     import xlwings as xw
 except:
@@ -48,6 +49,12 @@ import datetime, random
 import datefinder
 import traceback
 import json
+
+import html
+from selenium import webdriver
+import time
+from datetime import datetime
+
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
@@ -7107,10 +7114,10 @@ def download_chrome_extension(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#this function is used in the accessibilit_test action
 
-
-#this function is used for the accessibility_test action
 def create_summary_report(result):
+
     """Create a summary report from the raw axe results."""
     summary = {
         "test_info": {
@@ -7127,7 +7134,7 @@ def create_summary_report(result):
         "violations_summary": [],
         "passes_summary": []
     }
-    
+
     # Process violations
     for violation in result.get("violations", []):
         violation_summary = {
@@ -7140,7 +7147,7 @@ def create_summary_report(result):
             "nodes_count": len(violation.get("nodes", [])),
             "nodes": []
         }
-        
+
         # Add first few affected elements
         for node in violation.get("nodes", [])[:3]:
             node_info = {
@@ -7149,9 +7156,9 @@ def create_summary_report(result):
                 "failureSummary": node.get("failureSummary", "")
             }
             violation_summary["nodes"].append(node_info)
-        
+
         summary["violations_summary"].append(violation_summary)
-    
+
     # Process passes
     for passed in result.get("passes", []):
         pass_summary = {
@@ -7162,10 +7169,11 @@ def create_summary_report(result):
             "nodes_count": len(passed.get("nodes", []))
         }
         summary["passes_summary"].append(pass_summary)
-    
+
     return summary
 
-#this function is used for the accessibility_test action
+#this function is used in the accessibilit_test action
+
 def safe_join_target(target):
     """Safely join target field which can be a list or other types."""
     try:
@@ -7184,7 +7192,8 @@ def safe_join_target(target):
     except Exception as e:
         return f"Target error: {str(e)}"
 
-#this function is used for the accessibility_test action
+#this function is used in the accessibilit_test action
+
 def create_html_report(result, summary):
     """Create a detailed HTML report from the raw axe results."""
     html_template = f"""
@@ -7420,7 +7429,7 @@ def create_html_report(result, summary):
                 <h2>❌ Accessibility Violations</h2>
                 <div class="violations-grid">
         """
-        
+
         for violation in violations:
             impact_class = f"impact-{violation.get('impact', 'minor')}" if violation.get('impact') else "impact-minor"
             html_template += f"""
@@ -7436,14 +7445,14 @@ def create_html_report(result, summary):
                         
                         <div class="tags">
             """
-            
+
             for tag in violation.get('tags', []):
                 html_template += f'<span class="tag">{html.escape(str(tag))}</span>'
-            
+
             html_template += """
                         </div>
             """
-            
+
             # Add ALL affected elements (detailed)
             nodes = violation.get('nodes', [])
             if nodes:
@@ -7472,12 +7481,12 @@ def create_html_report(result, summary):
                                 <br><strong>Issue:</strong> Error processing element
                             </div>
                         """
-            
+
             html_template += """
                     </div>
                 </div>
             """
-        
+
         html_template += """
                 </div> <!-- end violations-grid -->
             </div>
@@ -7489,7 +7498,7 @@ def create_html_report(result, summary):
                 <p>Great job! No accessibility violations were detected on this page.</p>
             </div>
         """
-    
+
     # Add passes section
     passes = result.get('passes', [])
     if passes:
@@ -7498,7 +7507,7 @@ def create_html_report(result, summary):
                 <h2>✅ Passed Tests</h2>
                 <div class="passes-grid">
         """
-        
+
         for passed in passes:
             html_template += f"""
                 <div class="pass-card">
@@ -7508,25 +7517,147 @@ def create_html_report(result, summary):
                     <p><strong>Impact:</strong> {html.escape(str(passed.get('impact', 'Unknown')))}</p>
                     <div class="tags">
             """
-            
+
             for tag in passed.get('tags', []):
                 html_template += f'<span class="tag">{html.escape(str(tag))}</span>'
-            
+
             html_template += """
                     </div>
                 </div>
             """
-        
+
         html_template += """
                 </div> <!-- end passes-grid -->
             </div>
         """
-    
+
     html_template += """
         </div>
     </div>
 </body>
 </html>
     """
-    
+
     return html_template
+
+
+@logger
+def accessibility_test(data_set):
+    """
+    This function test the accessibility of a web page . First navigate to the website and then test the accessibility.
+    
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            accessibilty test     | common action   | accessibility test
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` and generate 3 reports (raw json resutl, html report, summary report) if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+
+        from axe_selenium_python import Axe
+
+        if sr.Test_Shared_Variables("selenium_driver"):
+            common_driver = sr.Get_Shared_Variables("selenium_driver")
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function",
+                3,
+            )
+            return "zeuz_failed"
+
+    
+
+        time.sleep(5) #to load the images properly
+
+        axe = Axe(common_driver)
+
+        axe.inject()
+
+        result = axe.run()
+
+        # Log results summary
+        violations_count = len(result.get('violations', []))
+        passes_count = len(result.get('passes', []))
+
+        CommonUtil.ExecLog(sModuleInfo, "Accessibility test completed successfully", 1)
+    
+
+        reports_dir = "Accessibility Test Report"
+        try:
+            os.makedirs(reports_dir, exist_ok=True)
+            CommonUtil.ExecLog(sModuleInfo, f"Reports directory created/verified: {reports_dir}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create reports directory: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # Generate dynamic filename with timestamp and URL
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        url = result.get("url", "unknown_page")
+        # Clean URL for filename (remove special characters)
+        url_clean = re.sub(r'[^\w\-_.]', '_', url.replace('https://', '').replace('http://', ''))
+        if len(url_clean) > 50:  # Limit length
+            url_clean = url_clean[:50]
+        
+        # 1. Raw JSON Report
+        try:
+            json_filename = f"accessibility_result_{url_clean}_{current_time}.json"
+            json_path = os.path.join(reports_dir, json_filename)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Raw JSON report saved successfully to: {json_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to save raw JSON report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 2. Summary JSON Report
+        try:
+            summary = create_summary_report(result)
+            summary_filename = f"accessibility_summary_{url_clean}_{current_time}.json"
+            summary_path = os.path.join(reports_dir, summary_filename)
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Summary JSON report saved successfully to: {summary_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create summary report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 3. HTML Report
+        try:
+            html_report = create_html_report(result, summary)
+            html_filename = f"accessibility_report_{url_clean}_{current_time}.html"
+            html_path = os.path.join(reports_dir, html_filename)
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(html_report)
+            CommonUtil.ExecLog(sModuleInfo, f"HTML report saved successfully to: {html_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create HTML report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # Close driver
+        #common_driver.close()
+
+        # Display console summary
+        summary_message = f"""SUMMARY STATISTICS:
+   [X] Violations: {summary['summary']['violations_count']}
+   [V] Tests Passed: {summary['summary']['passes_count']}
+   [!] Inapplicable: {summary['summary']['inapplicable_count']}
+   [~] Incomplete: {summary['summary']['incomplete_count']}
+Reports generated:
+  - {json_filename} (raw data)
+  - {summary_filename} (summary)
+  - {html_filename} (visual report)
+Location: {reports_dir}
+"""
+
+        CommonUtil.ExecLog(sModuleInfo, summary_message, 5)
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
