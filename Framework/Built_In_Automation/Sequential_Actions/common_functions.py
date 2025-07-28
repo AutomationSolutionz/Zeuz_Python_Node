@@ -7107,3 +7107,207 @@ def download_chrome_extension(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def AI_visual_reader(data_set):
+    """
+    This action will extract the text from images using OpenAI's vision API. This action also takes user prompt and returns
+    the result according to the user prompt. If the user does not give any prompt, then by default it
+    extracts all text from the image. 
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            image                       | input parameter | %| image.png |%
+            user prompt                 | optional parameter | Extract invoice details
+            AI visual reader            | common action   | AI visual reader
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        import base64
+        import requests
+        import json
+        import os
+        
+        user_image_path = None
+        user_prompt = None
+        
+        for left, mid, right in data_set:
+            left = left.lower().replace(" ", "")
+            mid = mid.lower().replace(" ", "")
+            right = right.strip()
+
+            if left == 'image':
+                if right != '':
+                    user_image_path = right
+            
+            if left == "userprompt":
+                if right != '':
+                    user_prompt = right
+        
+        # Validate image path
+        if not user_image_path:
+            CommonUtil.ExecLog(sModuleInfo, "No image path provided. Please provide an image path.", 3)
+            return "zeuz_failed"
+        
+        image_path = user_image_path
+        CommonUtil.ExecLog(sModuleInfo, f"Processing image: {image_path}", 1)
+        
+        if not os.path.isfile(image_path):
+            CommonUtil.ExecLog(sModuleInfo, f"Image file not found: {image_path}", 3)
+            return "zeuz_failed"
+
+        # Set default prompt if none provided
+        prompt = user_prompt
+        if not prompt:
+            prompt = "Extract all text from this image and return the result in JSON format."
+
+        # Convert Image to Base64
+        with open(image_path, "rb") as img_file:
+            base64_image = base64.b64encode(img_file.read()).decode("utf-8")
+
+        # Load API key from .env file
+        try:
+            from dotenv import load_dotenv
+            framework_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            env_path = os.path.join(framework_dir, ".env")
+            load_dotenv(env_path)
+            api_key = os.getenv("OPENAI_API")
+            if not api_key:
+                CommonUtil.ExecLog(sModuleInfo, "OPENAI_API not found in .env file", 3)
+                return "zeuz_failed"
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to load API key from .env: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # Prepare API Request
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Send Request
+        CommonUtil.ExecLog(sModuleInfo, "Analyzing image...", 1)
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload)
+        )
+
+        # Process Response
+        if response.status_code == 200:
+            response_data = response.json()
+            extracted_data = response_data["choices"][0]["message"]["content"]
+            CommonUtil.ExecLog(sModuleInfo, f"Text extracted successfully from: {image_path}", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Extracted content: {extracted_data}", 5)
+            
+            # Create file based on user prompt
+            try:
+                # Determine file type from prompt
+                prompt_lower = prompt.lower()
+                file_extension = None
+                
+                if "json" in prompt_lower:
+                    file_extension = ".json"
+                elif "csv" in prompt_lower:
+                    file_extension = ".csv"
+                elif "xml" in prompt_lower:
+                    file_extension = ".xml"
+                elif "yaml" in prompt_lower or "yml" in prompt_lower:
+                    file_extension = ".yaml"
+                elif "txt" in prompt_lower or "text" in prompt_lower:
+                    file_extension = ".txt"
+                else:
+                    # Default to JSON if no specific format requested
+                    file_extension = ".json"
+                
+                # Create output directory inside Framework folder
+                framework_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                output_dir = os.path.join(framework_dir, "Extracted data from image")
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # Generate filename with extracted_ prefix and _data suffix (exclude original extension)
+                base_filename = os.path.splitext(os.path.basename(image_path))[0]
+                output_filename = f"extracted_{base_filename}_data{file_extension}"
+                output_path = os.path.join(output_dir, output_filename)
+                
+                # Write data to file based on extension
+                if file_extension == ".json":
+                    # Try to parse as JSON if it's already JSON, otherwise wrap it
+                    try:
+                        json.loads(extracted_data)
+                        # It's already valid JSON
+                        with open(output_path, 'w', encoding='utf-8') as f:
+                            f.write(extracted_data)
+                    except json.JSONDecodeError:
+                        # Wrap in JSON structure
+                        with open(output_path, 'w', encoding='utf-8') as f:
+                            json.dump({"extracted_text": extracted_data}, f, indent=2)
+                
+                elif file_extension == ".csv":
+                    # For CSV, we'll create a simple structure
+                    import csv
+                    with open(output_path, 'w', newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(["Extracted_Text"])
+                        writer.writerow([extracted_data])
+                
+                elif file_extension == ".xml":
+                    # Create simple XML structure
+                    xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<extracted_data>
+    <text>{extracted_data}</text>
+</extracted_data>"""
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(xml_content)
+                
+                elif file_extension == ".yaml":
+                    # Create YAML structure
+                    yaml_content = f"""extracted_data:
+  text: "{extracted_data}" """
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(yaml_content)
+                
+                else:  # .txt or default
+                    with open(output_path, 'w', encoding='utf-8') as f:
+                        f.write(extracted_data)
+                
+                CommonUtil.ExecLog(sModuleInfo, f"Data saved to file: {output_path}", 1)
+                
+            except Exception as file_error:
+                CommonUtil.ExecLog(sModuleInfo, f"Warning: Could not create file: {str(file_error)}", 2)
+                # Continue execution even if file creation fails
+            
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"OpenAI API error: {response.status_code} - {response.text}", 3)
+            return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
