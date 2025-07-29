@@ -1,6 +1,8 @@
 import re
 import inspect
 import time
+import subprocess
+from typing import Union
 
 from pyatspi import Accessible
 import pyatspi
@@ -12,6 +14,44 @@ from Framework.Utilities.decorators import logger
 
 MODULE_NAME = inspect.getmodulename(__file__)
 ui_xml_strings = [] # needed for generating XML tree
+
+
+def convert_data_set_to_dict(data_set):
+    """ Convert data set to dictionary for easier access """
+    data_dict = {}
+    for item in data_set:
+        if len(item) == 3:
+            key, _, value = item
+            data_dict[key.strip()] = value
+        else:
+            CommonUtil.ExecLog(MODULE_NAME, f"Invalid item in data set: {item}", 3)
+    return data_dict
+
+
+def simulate_keyboard_typing(app_name: str, node: Accessible, text: str) -> bool:
+    action_iface = node.queryAction()
+    if action_iface and action_iface.nActions > 0:
+        for i in range(action_iface.nActions):
+            action_name = action_iface.getName(i)
+            if "activate" in action_name.lower():
+                action_iface.doAction(i)
+                try:
+                    app_window = subprocess.run(['xdotool', 'search', '--name', app_name], capture_output=True, text=True).stdout.strip().split('\n')[0]
+                    if app_window:
+                        subprocess.run(['xdotool', 'windowactivate', app_window], capture_output=True)
+                    else:
+                        CommonUtil.ExecLog(MODULE_NAME, f"Application window for '{app_name}' not found.", 3)
+                        return False
+                except:
+                    pass
+                
+                time.sleep(0.2)
+                subprocess.run(['xdotool', 'type', '--delay', '50', text], capture_output=True)                
+                return True
+        else:
+            return False
+    else:
+        return False
 
 
 def get_attributes(accessible):
@@ -184,21 +224,12 @@ def get_parent_path_from_paths(paths: list[str]) -> str | None:
 
 
 def get_path_appname_from_dataset(
-        data_set: list[tuple[str, str, str]], 
+        data_dict: dict[str, str], 
         wait_time=Shared_Resources.Get_Shared_Variables("element_wait")
     ) -> tuple[str | None, str | None]:
-    path, app_name = None, None
-    for left, mid, right in data_set:
-        left = left.replace(" ", "").lower()
-        mid = mid.strip().lower()
-        if left == "wait": 
-            wait_time = float(right.strip())
-        elif "app_name" == left:
-            app_name = right.strip().lower()
-        elif "path" == left:
-            path = right.strip()
-        elif "text" == left:
-            text = right.strip()
+    path, app_name = data_dict.get("path"), data_dict.get("app_name")
+    wait_time = data_dict.get("wait", wait_time)
+    text = data_dict.get("text", "").strip()
     if not path and text:
         while True:
             ui_tree = get_ui_tree(app_name)
@@ -220,15 +251,15 @@ def get_path_appname_from_dataset(
 
 
 @logger
-def get_node(data_set, wait_time=Shared_Resources.Get_Shared_Variables("element_wait")) -> Accessible | None:
+def get_node(data_dict, wait_time=Shared_Resources.Get_Shared_Variables("element_wait")) -> Accessible | None:
     """ Get element using path_string from dataset """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     start_time = time.time()
-    if not data_set:
+    if not data_dict:
         CommonUtil.ExecLog(sModuleInfo, "Data set is empty", 3)
         return None
     try:
-        path, app_name = get_path_appname_from_dataset(data_set)
+        path, app_name = get_path_appname_from_dataset(data_dict)
         if not path:
             CommonUtil.ExecLog(sModuleInfo, "No path found in the dataset", 3)
             return None
@@ -284,7 +315,7 @@ def click_element_by_node(node: Accessible) -> str:
                 click_action_index: int = -1
                 for i in range(action_iface.nActions):
                     action_name: str = action_iface.getName(i)
-                    if action_name in ["click", "jump", "press", "activate", "select"]:
+                    if action_name in ["click", "jump", "press", "open", "activate", "select", "clickAncestor"]:
                         click_action_index = i
                         break
                 
@@ -312,7 +343,8 @@ def click_element(data_set):
     """ Click using element, first get the element then click"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    node = get_node(data_set)
+    data_dict = convert_data_set_to_dict(data_set)
+    node = get_node(data_dict)
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
@@ -324,4 +356,63 @@ def click_element(data_set):
         return "zeuz_failed"
     except Exception as e:
         CommonUtil.ExecLog(sModuleInfo, f"Failed to click element: {e}", 3)
+        return "zeuz_failed"
+
+
+def enter_text_in_node(app_name: str, node: Accessible, text: str) -> str:
+    """ Enter text using node, first get the element then enter text"""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        return "zeuz_failed"
+
+    while node:
+        try:
+            editable_iface = node.queryEditableText()
+            if editable_iface:
+                editable_iface.setTextContents(text)
+                CommonUtil.ExecLog(sModuleInfo, f"Entering text: {text}", 1)
+                return "passed"
+            elif simulate_keyboard_typing(app_name, node, text):
+                return "passed"
+            else:
+                node = node.parent
+                continue
+        except NotImplementedError:
+            if simulate_keyboard_typing(app_name, node, text):
+                return "passed"
+            node = node.parent
+            continue
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed enter text: {e}", 3)
+            return "zeuz_failed"
+
+
+@logger
+def enter_text(data_set):
+    """ Enter text using element, first get the element then enter text"""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    data_dict = convert_data_set_to_dict(data_set)
+    app_name = data_dict.get("app_name", "").strip()
+    text = data_dict.get("text", "").strip()
+    if not text:
+        CommonUtil.ExecLog(sModuleInfo, "No text provided to enter", 3)
+        return "zeuz_failed"
+    if not app_name:
+        CommonUtil.ExecLog(sModuleInfo, "No app_name provided to enter text", 3)
+        return "zeuz_failed"
+    node = get_node(data_dict)
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        return "zeuz_failed"
+
+    try:
+        return enter_text_in_node(app_name, node, text)
+    except NotImplementedError:
+        CommonUtil.ExecLog(sModuleInfo, "This node does not support the Action interface.", 3)
+        return "zeuz_failed"
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Failed to enter text: {e}", 3)
         return "zeuz_failed"
