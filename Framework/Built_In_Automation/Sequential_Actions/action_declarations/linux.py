@@ -1,5 +1,6 @@
 declarations = (
-    { "name": "click",           "function": "click_element",          "screenshot": "desktop" },
+    { "name": "click",           "function": "click_element",           "screenshot": "desktop" },
+    { "name": "text",            "function": "enter_text",              "screenshot": "desktop" },
 )
 
 module_name = "linux"
