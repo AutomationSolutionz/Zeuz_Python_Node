@@ -3,6 +3,10 @@ import inspect
 import time
 import subprocess
 from typing import Union
+import shutil
+import os
+import glob
+from typing import List, Optional
 
 from pyatspi import Accessible
 import pyatspi
@@ -416,3 +420,66 @@ def enter_text(data_set):
     except Exception as e:
         CommonUtil.ExecLog(sModuleInfo, f"Failed to enter text: {e}", 3)
         return "zeuz_failed"
+
+
+def find_matched_app_name(app_name: str) -> Optional[str]:
+    available_apps = set()
+    
+    try:
+        desktop_files = glob.glob("/usr/share/applications/*.desktop")
+        for desktop_file in desktop_files:
+            app_name = os.path.basename(desktop_file).replace('.desktop', '')
+            available_apps.add(app_name)
+    except Exception:
+        pass
+    available_apps = sorted(list(available_apps))
+
+    user_lower = app_name.lower()
+    for app in available_apps:
+        if app.lower() == user_lower:
+            return app
+    for app in available_apps:
+        if app.lower().startswith(user_lower):
+            return app
+    for app in available_apps:
+        if user_lower in app.lower():
+            return app
+    user_clean = user_lower.replace('-', '').replace('_', '').replace(' ', '')
+    for app in available_apps:
+        app_clean = app.lower().replace('-', '').replace('_', '').replace(' ', '')
+        if app_clean == user_clean or user_clean in app_clean:
+            return app
+    return None
+
+
+@logger
+def open_app(data_set):
+    """ Open application using element, first get the element then open app"""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    data_dict = convert_data_set_to_dict(data_set)
+    app_name = data_dict.get("app_name", "").strip()
+
+    best_match = find_matched_app_name(app_name)
+
+    if best_match:
+        if best_match != app_name:
+            CommonUtil.ExecLog(MODULE_NAME, f"Best match found: {best_match} for {app_name}", 1)        
+        try:
+            # if args:
+            #     command = f"nohup {app_name} {' '.join(args)} >/dev/null 2>&1 &"
+            # else:
+            command = f"nohup {app_name} >/dev/null 2>&1 &"
+            exit_code = os.system(command)
+            if exit_code == 0:
+                CommonUtil.ExecLog(sModuleInfo, f"Successfully launched '{app_name}'", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to launch '{app_name}' (exit code: {exit_code})", 3)
+                return "zeuz_failed"
+
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Error launching '{app_name}': {e}", 3)
+            return "zeuz_failed"
+    else:
+        CommonUtil.ExecLog(MODULE_NAME, f"No matching application found for '{app_name}'", 3)
