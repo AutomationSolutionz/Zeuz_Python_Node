@@ -5,7 +5,7 @@ import subprocess
 import sys
 import os
 import glob
-from typing import List, Literal, Tuple, Optional, Any, Callable
+from typing import Dict, List, Literal, Tuple, Optional, Any, Callable
 
 import pyatspi
 from pyatspi.action import Action
@@ -507,33 +507,82 @@ def enter_text(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
         return "zeuz_failed"
 
 
-def find_matched_app_name(app_name: str) -> Optional[str]:
-    available_apps = set()
+def parse_desktop_file(desktop_file: str) -> Tuple[Optional[str], Optional[str]]:
+    """Parse a desktop file to extract Name and Exec command."""
+    name = None
+    exec_cmd = None
+    
+    try:
+        with open(desktop_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('Name=') and not line.startswith('Name['):
+                    name = line[5:]
+                elif line.startswith('Exec='):
+                    exec_cmd = line[5:]
+                    # Remove common exec field codes (%f, %F, %u, %U, etc.)
+                    exec_cmd = exec_cmd.replace('%f', '').replace('%F', '').replace('%u', '').replace('%U', '')
+                    exec_cmd = exec_cmd.replace('%d', '').replace('%D', '').replace('%n', '').replace('%N', '')
+                    exec_cmd = exec_cmd.replace('%i', '').replace('%c', '').replace('%k', '').replace('%v', '')
+                    exec_cmd = exec_cmd.strip()
+                
+                # Stop if we found both
+                if name and exec_cmd:
+                    break
+    except Exception:
+        pass
+    
+    return name, exec_cmd
+
+
+def find_best_app_match(user_input: str) -> Optional[Tuple[str, str, str]]:
+    """Find the best matching application and return (key, name, exec_cmd)."""
+    apps = {}
     
     try:
         desktop_files = glob.glob("/usr/share/applications/*.desktop")
         for desktop_file in desktop_files:
-            app_name = os.path.basename(desktop_file).replace('.desktop', '')
-            available_apps.add(app_name)
+            name, exec_cmd = parse_desktop_file(desktop_file)
+            if name and exec_cmd:
+                # Use the desktop file basename as the key for matching
+                key = os.path.basename(desktop_file).replace('.desktop', '')
+                apps[key] = (name, exec_cmd)
     except Exception:
         pass
-    available_apps = sorted(list(available_apps))
+    
+    user_lower = user_input.lower()
 
-    user_lower = app_name.lower()
-    for app in available_apps:
-        if app.lower() == user_lower:
-            return app
-    for app in available_apps:
-        if app.lower().startswith(user_lower):
-            return app
-    for app in available_apps:
-        if user_lower in app.lower():
-            return app
+    for key, (name, exec_cmd) in apps.items():
+        if key.lower() == user_lower:
+            return key, name, exec_cmd
+
+    for key, (name, exec_cmd) in apps.items():
+        if name.lower() == user_lower:
+            return key, name, exec_cmd
+
+    for key, (name, exec_cmd) in apps.items():
+        if key.lower().startswith(user_lower):
+            return key, name, exec_cmd
+
+    for key, (name, exec_cmd) in apps.items():
+        if name.lower().startswith(user_lower):
+            return key, name, exec_cmd
+
+    for key, (name, exec_cmd) in apps.items():
+        if user_lower in key.lower():
+            return key, name, exec_cmd
+
+    for key, (name, exec_cmd) in apps.items():
+        if user_lower in name.lower():
+            return key, name, exec_cmd
+    
     user_clean = user_lower.replace('-', '').replace('_', '').replace(' ', '')
-    for app in available_apps:
-        app_clean = app.lower().replace('-', '').replace('_', '').replace(' ', '')
-        if app_clean == user_clean or user_clean in app_clean:
-            return app
+    for key, (name, exec_cmd) in apps.items():
+        key_clean = key.lower().replace('-', '').replace('_', '').replace(' ', '')
+        name_clean = name.lower().replace('-', '').replace('_', '').replace(' ', '')
+        if key_clean == user_clean or user_clean in key_clean or name_clean == user_clean or user_clean in name_clean:
+            return key, name, exec_cmd
+    
     return None
 
 
@@ -546,19 +595,19 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
 
-    best_match = find_matched_app_name(app_name)
+    _, matched_app, exec_cmd = find_best_app_match(app_name) or (None, None, None)
 
-    if best_match:
-        if best_match != app_name:
-            CommonUtil.ExecLog(MODULE_NAME, f"Best match found: {best_match} for {app_name}", 1)        
+    if matched_app:
+        if matched_app != app_name:
+            CommonUtil.ExecLog(MODULE_NAME, f"Best match found: {matched_app} for {app_name}", 1)        
         try:
             # if args:
             #     command = f"nohup {app_name} {' '.join(args)} >/dev/null 2>&1 &"
             # else:
-            command = f"nohup {app_name} >/dev/null 2>&1 &"
+            command = f"nohup {exec_cmd} >/dev/null 2>&1 &"
             exit_code = os.system(command)
             if exit_code == 0:
-                CommonUtil.ExecLog(sModuleInfo, f"Successfully launched '{app_name}'", 1)
+                CommonUtil.ExecLog(sModuleInfo, f"Successfully launched '{app_name}' with command: {command}", 1)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, f"Failed to launch '{app_name}' (exit code: {exit_code})", 3)
@@ -572,6 +621,15 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
         return "zeuz_failed"
 
 
+def get_process_ids(app_name: str) -> List[str]:
+    """ Get process ID of the application by name """
+    try:
+        process_ids = subprocess.run(['pgrep', '-f', app_name], capture_output=True, text=True).stdout.strip().splitlines()
+        return [pid for pid in process_ids if pid.isdigit()]
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Error getting process ID for '{app_name}': {e}", 3)
+        return []
+
 @logger
 def close_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     """ Close application using element, first get the element then close app"""
@@ -581,25 +639,37 @@ def close_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
 
-    best_match = find_matched_app_name(app_name)
+    app_key, matched_app, exec_cmd = find_best_app_match(app_name) or (None, None, None)
+    if app_key:
+        app_key = app_key.split('.')[-1]
 
-    if best_match:
-        if best_match != app_name:
-            CommonUtil.ExecLog(MODULE_NAME, f"Best match found: {best_match} for {app_name}", 1)        
+    if matched_app:
+        if matched_app != app_name:
+            CommonUtil.ExecLog(MODULE_NAME, f"Best match found: {matched_app} for {app_name}", 1)        
         try:
             # get the process ID of the application
-            process_id = subprocess.run(['pgrep', '-f', best_match], capture_output=True, text=True).stdout.strip()
-            if not process_id:
-                CommonUtil.ExecLog(sModuleInfo, f"No running process found for '{app_name}'", 3)
-                return "zeuz_failed"
+            process_ids = get_process_ids(matched_app)
+            if not process_ids and exec_cmd:
+                process_ids = get_process_ids(exec_cmd)
+                if not process_ids and app_key:
+                    process_ids = get_process_ids(app_key)
+                    if not process_ids:
+                        CommonUtil.ExecLog(sModuleInfo, f"No running process found for Name: '{app_name}', Key: '{app_key}', Command: '{exec_cmd}'", 3)
+                        return "zeuz_failed"
+
             # kill the process
-            command = f"kill -9 {process_id}"
-            exit_code = os.system(command)
-            if exit_code == 0:
-                CommonUtil.ExecLog(sModuleInfo, f"Successfully closed '{app_name}'", 1)
+            for pid in process_ids:
+                command = f"kill -9 {pid}"
+                CommonUtil.ExecLog(sModuleInfo, f"Closing application '{matched_app}' with command: {command}", 1)
+                exit_code = os.system(command)
+                if exit_code != 0:
+                    CommonUtil.ExecLog(sModuleInfo, f"Failed to close application '{matched_app}' with PID {pid} (exit code: {exit_code})", 3)
+                    return "zeuz_failed"
+            if process_ids:
+                CommonUtil.ExecLog(sModuleInfo, f"Successfully closed application '{matched_app}' with PIDs: {', '.join(process_ids)}", 1)
                 return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, f"Failed to close '{app_name}' (exit code: {exit_code})", 3)
+                CommonUtil.ExecLog(sModuleInfo, f"No running process found for '{matched_app}'", 3)
                 return "zeuz_failed"
 
         except Exception as e:
