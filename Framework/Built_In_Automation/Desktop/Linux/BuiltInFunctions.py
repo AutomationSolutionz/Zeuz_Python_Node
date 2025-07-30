@@ -2,25 +2,97 @@ import re
 import inspect
 import time
 import subprocess
-from typing import Union
-import shutil
+import sys
 import os
 import glob
-from typing import List, Optional
+from typing import List, Tuple, Optional, Any, Callable
 
-from pyatspi import Accessible
 import pyatspi
+from pyatspi.action import Action
+from pyatspi.editabletext import EditableText, Text
+from pyatspi.Accessibility import Accessible
 
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.decorators import logger
 
 
-MODULE_NAME = inspect.getmodulename(__file__)
+
+class Collection: ...
+class Component: ...
+class Document: ...
+class Hypertext: ...
+class Image: ...
+class Selection: ...
+class Table: ...
+class TableCell: ...
+class Value: ...
+DataSet = List[Tuple[str, str, str]]
+
+def getInterface(iface_func: Callable, obj: Any) -> Any: ...
+
+class Accessible:
+    def __init__(self): ...
+
+    def get_child_at_index(self, index: int) -> 'Accessible': ...
+    def get_attributes_as_array(self) -> List[str]: ...
+    def get_application(self) -> Optional['Accessible']: ...
+    def get_child_count(self) -> int: ...
+    def get_index_in_parent(self) -> int: ...
+    def get_localized_role_name(self) -> str: ...
+    def get_relation_set(self) -> Any: ...
+    def get_role(self) -> int: ...
+    def get_role_name(self) -> str: ...
+    def get_state_set(self) -> Any: ...
+    def get_description(self) -> Optional[str]: ...
+    def get_object_locale(self) -> str: ...
+    def get_name(self) -> Optional[str]: ...
+    def get_parent(self) -> Optional['Accessible']: ...
+    def set_cache_mask(self, mask: int) -> None: ...
+    def clear_cache(self) -> None: ...
+    def get_id(self) -> str: ...
+    def get_toolkit_name(self) -> str: ...
+    def get_toolkit_version(self) -> str: ...
+    def get_atspi_version(self) -> str: ...
+
+    def __getitem__(self, index: int) -> 'Accessible': ...
+    def __len__(self) -> int: ...
+    def __bool__(self) -> bool: ...
+    def __str__(self) -> str: ...
+    def isEqual(self, other: 'Accessible') -> bool: ...
+
+    # Properties
+    childCount: int
+    description: Optional[str]
+    objectLocale: str
+    name: Optional[str]
+    parent: Optional['Accessible']
+    id: str
+    toolkitName: str
+    toolkitVersion: str
+    atspiVersion: str
+
+    # Query interfaces
+    def queryAction(self) -> Action: ...
+    def queryCollection(self) -> Collection: ...
+    def queryComponent(self) -> Component: ...
+    def queryDocument(self) -> Document: ...
+    def queryEditableText(self) -> EditableText: ...
+    def queryHyperlink(self) -> Any: ...
+    def queryHypertext(self) -> Hypertext: ...
+    def queryImage(self) -> Image: ...
+    def querySelection(self) -> Selection: ...
+    def queryTable(self) -> Table: ...
+    def queryTableCell(self) -> TableCell: ...
+    def queryText(self) -> Text: ...
+    def queryValue(self) -> Value: ...
+
+
+MODULE_NAME = inspect.getmodulename(__file__) or "BuiltInFunctions"
 ui_xml_strings = [] # needed for generating XML tree
 
 
-def convert_data_set_to_dict(data_set):
+def convert_data_set_to_dict(data_set: DataSet) -> dict[str, str]:
     """ Convert data set to dictionary for easier access """
     data_dict = {}
     for item in data_set:
@@ -80,7 +152,7 @@ def get_extended_info(accessible):
         pass
     try:
         state_set = accessible.getStateSet()
-        states = [pyatspi.stateToString(s) for s in state_set.getStates()]
+        states = [pyatspi.stateToString(s) or "" for s in state_set.getStates()]
         if states:
             info_str += f' states="{",".join(states)}"'
     except Exception:
@@ -108,13 +180,15 @@ def get_position_info(accessible):
     
     return position_str
 
-def dump_node(node, indent_level=0, path=[]):
+def dump_node(node: Accessible, indent_level=0, path=[], recursive=True) -> list[str] | None:
     global ui_xml_strings
+    if not recursive:
+        ui_xml_strings = []
     if not node:
         return
 
     indent = "  " * indent_level
-    role = node.getRoleName().replace(' ', '_')
+    role = node.get_role_name().replace(' ', '_')
     name = node.name or ""
     safe_name = (name.replace('&', '&amp;')
                  .replace('<', '&lt;')
@@ -156,11 +230,14 @@ def dump_node(node, indent_level=0, path=[]):
     if child_count > 0:
         ui_xml_strings.append(f'{indent}<{role} name="{safe_name}"{attributes}{path_attr}{position_info}{iface_attrs}{text_content_attr}>')
         for i in range(child_count):
-            child = node.getChildAtIndex(i)
-            dump_node(child, indent_level + 1, path + [i])
+            child = node.get_child_at_index(i)
+            if recursive:
+                dump_node(child, indent_level + 1, path + [i])
         ui_xml_strings.append(f'{indent}</{role}>')
     else:
         ui_xml_strings.append(f'{indent}<{role} name="{safe_name}"{attributes}{path_attr}{position_info}{iface_attrs}{text_content_attr}/>')
+    if not recursive:
+        return ui_xml_strings
 
 
 def get_ui_tree(app_keyword) -> str | None:
@@ -232,11 +309,15 @@ def get_path_appname_from_dataset(
         wait_time=Shared_Resources.Get_Shared_Variables("element_wait")
     ) -> tuple[str | None, str | None]:
     path, app_name = data_dict.get("path"), data_dict.get("app_name")
-    wait_time = data_dict.get("wait", wait_time)
+    wait_time = float(data_dict.get("wait", wait_time) or str(wait_time or 10))
     text = data_dict.get("text", "").strip()
+    start_time = time.time()
     if not path and text:
         while True:
             ui_tree = get_ui_tree(app_name)
+            if not ui_tree:
+                CommonUtil.ExecLog("", "UI tree not found for app_name: %s" % app_name, 3)
+                return None, app_name
             paths = get_paths_by_text(ui_tree, text)
             CommonUtil.ExecLog("", "Found paths: %s" % paths, 1)
             if len(paths) == 0:
@@ -255,9 +336,10 @@ def get_path_appname_from_dataset(
 
 
 @logger
-def get_node(data_dict, wait_time=Shared_Resources.Get_Shared_Variables("element_wait")) -> Accessible | None:
+def get_node(data_dict: dict[str, str], wait_time=Shared_Resources.Get_Shared_Variables("element_wait")) -> Accessible | None:
     """ Get element using path_string from dataset """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
     start_time = time.time()
     if not data_dict:
         CommonUtil.ExecLog(sModuleInfo, "Data set is empty", 3)
@@ -304,9 +386,10 @@ def get_node(data_dict, wait_time=Shared_Resources.Get_Shared_Variables("element
         return None
 
 
-def click_element_by_node(node: Accessible) -> str:
+def click_element_by_node(node: Accessible | None) -> str:
     """ Click using node, first get the element then click"""
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
@@ -339,13 +422,14 @@ def click_element_by_node(node: Accessible) -> str:
             continue
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to click element: {e}", 3)
-            return "zeuz_failed"
+    return "zeuz_failed"
 
 
 @logger
-def click_element(data_set):
+def click_element(data_set: DataSet):
     """ Click using element, first get the element then click"""
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     data_dict = convert_data_set_to_dict(data_set)
     node = get_node(data_dict)
@@ -363,9 +447,10 @@ def click_element(data_set):
         return "zeuz_failed"
 
 
-def enter_text_in_node(app_name: str, node: Accessible, text: str) -> str:
+def enter_text_in_node(app_name: str, node: Accessible | None, text: str) -> str:
     """ Enter text using node, first get the element then enter text"""
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
@@ -390,13 +475,14 @@ def enter_text_in_node(app_name: str, node: Accessible, text: str) -> str:
             continue
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed enter text: {e}", 3)
-            return "zeuz_failed"
+    return "zeuz_failed"
 
 
 @logger
-def enter_text(data_set):
+def enter_text(data_set: DataSet):
     """ Enter text using element, first get the element then enter text"""
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
@@ -453,9 +539,10 @@ def find_matched_app_name(app_name: str) -> Optional[str]:
 
 
 @logger
-def open_app(data_set):
+def open_app(data_set: DataSet):
     """ Open application using element, first get the element then open app"""
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
@@ -483,3 +570,73 @@ def open_app(data_set):
             return "zeuz_failed"
     else:
         CommonUtil.ExecLog(MODULE_NAME, f"No matching application found for '{app_name}'", 3)
+
+
+@logger
+def wait_for_element(data_set: DataSet):
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    data_dict = convert_data_set_to_dict(data_set)
+    try:
+        timeout_duration = 10
+        appear_condition = True
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "action":
+                if left.strip().lower() == "wait to disappear":
+                    appear_condition = False
+                timeout_duration = int(right.strip())
+
+        end_time = time.time() + timeout_duration
+        while time.time() <= end_time:
+            node = get_node(data_dict, 0)
+            if appear_condition and node:  # Element found
+                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                return "passed"
+            elif not appear_condition and not node:  # Element removed
+                CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                return "passed"
+            time.sleep(1)
+
+        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
+        return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_attribute_value(tag_str: str, attr_name: str) -> str | None:
+    pattern = rf'{attr_name}="(.*?)"'
+    match = re.search(pattern, tag_str)
+    return match.group(1) if match else None
+
+
+@logger
+def save_attribute(data_set: DataSet):
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+
+    data_dict = convert_data_set_to_dict(data_set)
+    try:
+        variable_name = ""
+        field = "value"
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "save parameter":
+                field = left.replace(" ", "").lower()
+                field2 = left.strip()
+                variable_name = right.strip()
+
+        node = get_node(data_dict)
+        if node is None:
+            return "zeuz_failed"
+        tag_str = (dump_node(node, recursive=False) or ["", ""])[0]
+        actual_text = get_attribute_value(tag_str, field)
+
+        if actual_text is None:
+            CommonUtil.ExecLog(sModuleInfo, f"Attribute '{field}' not found in the element", 3)
+            return "zeuz_failed"
+
+        Shared_Resources.Set_Shared_Variables(variable_name, actual_text)
+        CommonUtil.ExecLog(sModuleInfo, f"Text '{actual_text}' is saved in the variable '{variable_name}'", 1)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
