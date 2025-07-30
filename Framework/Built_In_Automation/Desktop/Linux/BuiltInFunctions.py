@@ -573,6 +573,44 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 
 
 @logger
+def close_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """ Close application using element, first get the element then close app"""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+
+    data_dict = convert_data_set_to_dict(data_set)
+    app_name = data_dict.get("app_name", "").strip()
+
+    best_match = find_matched_app_name(app_name)
+
+    if best_match:
+        if best_match != app_name:
+            CommonUtil.ExecLog(MODULE_NAME, f"Best match found: {best_match} for {app_name}", 1)        
+        try:
+            # get the process ID of the application
+            process_id = subprocess.run(['pgrep', '-f', best_match], capture_output=True, text=True).stdout.strip()
+            if not process_id:
+                CommonUtil.ExecLog(sModuleInfo, f"No running process found for '{app_name}'", 3)
+                return "zeuz_failed"
+            # kill the process
+            command = f"kill -9 {process_id}"
+            exit_code = os.system(command)
+            if exit_code == 0:
+                CommonUtil.ExecLog(sModuleInfo, f"Successfully closed '{app_name}'", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to close '{app_name}' (exit code: {exit_code})", 3)
+                return "zeuz_failed"
+
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Error launching '{app_name}': {e}", 3)
+            return "zeuz_failed"
+    else:
+        CommonUtil.ExecLog(MODULE_NAME, f"No matching application found for '{app_name}'", 3)
+        return "zeuz_failed"
+
+
+@logger
 def wait_for_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
