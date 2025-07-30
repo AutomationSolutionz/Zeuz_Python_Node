@@ -1,5 +1,6 @@
 declarations = (
     { "name": "open app",        "function": "open_app",                "screenshot": "desktop" },
+    { "name": "close app",       "function": "close_app",               "screenshot": "desktop" },
     { "name": "click",           "function": "click_element",           "screenshot": "desktop" },
     { "name": "text",            "function": "enter_text",              "screenshot": "desktop" },
     { "name": "wait to appear",  "function": "wait_for_element",        "screenshot": "desktop" },
