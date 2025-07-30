@@ -5,12 +5,23 @@ import subprocess
 import sys
 import os
 import glob
-from typing import Dict, List, Literal, Tuple, Optional, Any, Callable
+from typing import List, Literal, Tuple, Optional, Any, Callable
 
-import pyatspi
-from pyatspi.action import Action
-from pyatspi.editabletext import EditableText, Text
-from pyatspi.Accessibility import Accessible
+from Framework.module_installer import install_missing_modules
+
+try:
+    import pyatspi
+    from pyatspi.action import Action
+    from pyatspi.editabletext import EditableText, Text
+except ImportError:
+    install_missing_modules(["python3-pyatspi", "pygobject"])
+    try:
+        import pyatspi
+        from pyatspi.action import Action
+        from pyatspi.editabletext import EditableText, Text
+    except ImportError:
+        sys.stderr.write("Error: pyatspi module is not installed. Please install it to use this script.\n")
+        sys.exit(1)
 
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
