@@ -5,7 +5,7 @@ import subprocess
 import sys
 import os
 import glob
-from typing import List, Tuple, Optional, Any, Callable
+from typing import List, Literal, Tuple, Optional, Any, Callable
 
 import pyatspi
 from pyatspi.action import Action
@@ -104,30 +104,29 @@ def convert_data_set_to_dict(data_set: DataSet) -> dict[str, str]:
     return data_dict
 
 
-def simulate_keyboard_typing(app_name: str, node: Accessible, text: str) -> bool:
-    action_iface = node.queryAction()
-    if action_iface and action_iface.nActions > 0:
-        for i in range(action_iface.nActions):
-            action_name = action_iface.getName(i)
-            if "activate" in action_name.lower():
-                action_iface.doAction(i)
-                try:
-                    app_window = subprocess.run(['xdotool', 'search', '--name', app_name], capture_output=True, text=True).stdout.strip().split('\n')[0]
-                    if app_window:
-                        subprocess.run(['xdotool', 'windowactivate', app_window], capture_output=True)
-                    else:
-                        CommonUtil.ExecLog(MODULE_NAME, f"Application window for '{app_name}' not found.", 3)
-                        return False
-                except:
-                    pass
-                
-                time.sleep(0.2)
-                subprocess.run(['xdotool', 'type', '--delay', '50', text], capture_output=True)                
-                return True
-        else:
-            return False
-    else:
-        return False
+def simulate_keyboard_typing(app_name: str | None, node: Accessible | None, text: str) -> bool:
+    if node:
+        action_iface = node.queryAction()
+        if action_iface and action_iface.nActions > 0:
+            for i in range(action_iface.nActions):
+                action_name = action_iface.getName(i)
+                if "activate" in action_name.lower():
+                    action_iface.doAction(i)
+    try:
+        if app_name:
+            app_window = subprocess.run(['xdotool', 'search', '--name', app_name], capture_output=True, text=True).stdout.strip().split('\n')[0]
+            if app_window:
+                subprocess.run(['xdotool', 'windowactivate', app_window], capture_output=True)
+            else:
+                CommonUtil.ExecLog(MODULE_NAME, f"Application window for '{app_name}' not found.", 3)
+                return False
+    except:
+        pass
+    
+    time.sleep(0.2)
+    subprocess.run(['xdotool', 'type', '--delay', '50', text], capture_output=True)                
+    return True
+
 
 
 def get_attributes(accessible):
@@ -386,7 +385,7 @@ def get_node(data_dict: dict[str, str], wait_time=Shared_Resources.Get_Shared_Va
         return None
 
 
-def click_element_by_node(node: Accessible | None) -> str:
+def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_failed"]:
     """ Click using node, first get the element then click"""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
@@ -426,7 +425,7 @@ def click_element_by_node(node: Accessible | None) -> str:
 
 
 @logger
-def click_element(data_set: DataSet):
+def click_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     """ Click using element, first get the element then click"""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
@@ -447,7 +446,7 @@ def click_element(data_set: DataSet):
         return "zeuz_failed"
 
 
-def enter_text_in_node(app_name: str, node: Accessible | None, text: str) -> str:
+def enter_text_in_node(app_name: str, node: Accessible | None, text: str) -> Literal["passed", "zeuz_failed"]:
     """ Enter text using node, first get the element then enter text"""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
@@ -479,7 +478,7 @@ def enter_text_in_node(app_name: str, node: Accessible | None, text: str) -> str
 
 
 @logger
-def enter_text(data_set: DataSet):
+def enter_text(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     """ Enter text using element, first get the element then enter text"""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
@@ -539,7 +538,7 @@ def find_matched_app_name(app_name: str) -> Optional[str]:
 
 
 @logger
-def open_app(data_set: DataSet):
+def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     """ Open application using element, first get the element then open app"""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
@@ -570,10 +569,11 @@ def open_app(data_set: DataSet):
             return "zeuz_failed"
     else:
         CommonUtil.ExecLog(MODULE_NAME, f"No matching application found for '{app_name}'", 3)
+        return "zeuz_failed"
 
 
 @logger
-def wait_for_element(data_set: DataSet):
+def wait_for_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
     data_dict = convert_data_set_to_dict(data_set)
@@ -601,7 +601,8 @@ def wait_for_element(data_set: DataSet):
         return "zeuz_failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo, "Error while waiting for element", 3)
+        return "zeuz_failed"
 
 
 def get_attribute_value(tag_str: str, attr_name: str) -> str | None:
@@ -611,7 +612,7 @@ def get_attribute_value(tag_str: str, attr_name: str) -> str | None:
 
 
 @logger
-def save_attribute(data_set: DataSet):
+def save_attribute(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
@@ -639,4 +640,86 @@ def save_attribute(data_set: DataSet):
         CommonUtil.ExecLog(sModuleInfo, f"Text '{actual_text}' is saved in the variable '{variable_name}'", 1)
         return "passed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+        CommonUtil.ExecLog(sModuleInfo, "Error while saving attribute", 3)
+        return "zeuz_failed"
+
+
+
+def is_valid_hotkey(hotkey: str) -> bool:
+    """
+    Validates hotkey: all lowercase, only modifiers + known keys.
+    """
+    MODIFIERS = {"ctrl", "alt", "shift", "super", "meta"}
+    KEYS = {
+        "return", "enter", "tab", "escape", "esc", "backspace", "delete",
+        "up", "down", "left", "right", "home", "end", "page_up", "page_down",
+        "insert", "space",
+        *(f"f{i}" for i in range(1, 13)),
+    }
+    parts = hotkey.split("+")
+    if not parts:
+        return False
+
+    *mods, key = parts
+    if any(mod not in MODIFIERS for mod in mods):
+        return False
+
+    return key in KEYS or (len(key) == 1 and key.isalnum())
+
+def send_hotkey(hotkey: str) -> bool:
+    """
+    Sends a lowercase hotkey (e.g., 'ctrl+a', 'alt+f4') using xdotool.
+    """
+    hotkey = hotkey.lower()
+
+    if not is_valid_hotkey(hotkey):
+        CommonUtil.ExecLog(MODULE_NAME, f"Invalid hotkey: {hotkey}. Space is not allowed", 3)
+        return False
+
+    try:
+        subprocess.run(['xdotool', 'key', hotkey], check=True, capture_output=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Error sending hotkey '{hotkey}': {e.stderr.decode()}", 3)
+        return False
+
+
+@logger
+def send_keystroke(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """ Insert characters - mainly key combinations and single key presses."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+
+    keystroke_value = ""
+    keystroke_char = ""
+    for left, mid, right in data_set:
+        left = left.strip().lower()
+        if "action" in mid.lower():
+            if left == "keystroke keys":
+                keystroke_value = right.strip().lower()
+            elif left == "keystroke chars":
+                keystroke_char = right.strip().lower()
+
+    if keystroke_value == "" and keystroke_char == "":
+        CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
+        return "zeuz_failed"
+    
+    if keystroke_value != "" and keystroke_char != "":
+        CommonUtil.ExecLog(sModuleInfo, "Both keystroke keys and characters are provided, only one is supported", 3)
+        return "zeuz_failed"
+    
+    success = True
+    if keystroke_char != "":
+        success = simulate_keyboard_typing(None, None, keystroke_char)
+    else:
+        key_combinations = keystroke_value.split(',')
+        for hotkey in key_combinations:
+            success_tem = send_hotkey(hotkey.strip())
+            if not success:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to send hotkey: {hotkey.strip()}", 3)
+            success = success and success_tem
+    if success:
+        return "passed"
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to send some or all keystroke", 3)
+        return "zeuz_failed"
