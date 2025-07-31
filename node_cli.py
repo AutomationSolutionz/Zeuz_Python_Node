@@ -415,15 +415,16 @@ def notify_complete(message="Run completed"):
     try:
         if sys.platform == "darwin":
             # macOS - Use notifypy
-            from notifypy import Notify
+            # from notifypy import Notify
 
-            notification = Notify(
-                default_notification_title=title,
-                default_notification_icon=icon,
-            )
-            notification.message = message
+            # notification = Notify(
+            #     default_notification_title=title,
+            #     default_notification_icon=icon,
+            # )
+            # notification.message = message
             # notification.send()
-        else:
+            pass
+        elif sys.platform == "win32":
             # Linux and Windows - Use plyer
             from plyer import notification
 
@@ -433,6 +434,8 @@ def notify_complete(message="Run completed"):
                 app_icon=icon,
                 timeout=7,
             )
+        elif sys.platform == "linux":
+            pass
     except Exception:
         print("Failed to send notification")
 
