@@ -1047,22 +1047,22 @@ def New_Compare_Variables(step_data):
         # --- Deep-diff specific features, these default values are taken from the
         # deep diff docs.
 
-        # truncate_datetime can take value one of ‘second’, ‘minute’, ‘hour’,
-        # ‘day’ and truncate with this value datetime objects before hashing it
+        # truncate_datetime can take value one of 'second', 'minute', 'hour',
+        # 'day' and truncate with this value datetime objects before hashing it
         truncate_datetime = None
 
         # Whether to be case-sensitive or not when comparing strings. By setting
         # ignore_string_case=False, strings will be compared case-insensitively.
         ignore_string_case = False
 
-        # Whether to ignore float(‘nan’) inequality in Python.
+        # Whether to ignore float('nan') inequality in Python.
         ignore_nan_inequality = False
 
         # significant_digits defines the number of digits AFTER the decimal point
         # to be used in the comparison.
         significant_digits = None
 
-        # math_epsilon uses Python’s built in Math.isclose. It defines a tolerance
+        # math_epsilon uses Python's built in Math.isclose. It defines a tolerance
         # value which is passed to math.isclose(). Any numbers that are within the
         # tolerance will not report as being different. Any numbers outside of
         # that tolerance will show up as different.
@@ -7195,350 +7195,37 @@ def safe_join_target(target):
 #this function is used in the accessibilit_test action
 
 def create_html_report(result, summary):
-    """Create a detailed HTML report from the raw axe results."""
-    html_template = f"""
-<!DOCTYPE html>
-<html lang=\"en\">
-<head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-    <title>Accessibility Test Report - {summary['test_info']['url']}</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }}
-        .container {{
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            
-        }}
-        .header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }}
-        .header h1 {{
-            margin: 0;
-            font-size: 2.5em;
-            font-weight: 300;
-        }}
-        .header .subtitle {{
-            margin-top: 10px;
-            opacity: 0.9;
-            font-size: 1.1em;
-        }}
-        .summary-stats {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }}
-        .stat-card {{
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }}
-        .stat-number {{
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }}
-        .stat-label {{
-            color: #666;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }}
-        .violations {{
-            color: #dc3545;
-        }}
-        .passes {{
-            color: #28a745;
-        }}
-        .inapplicable {{
-            color: #6c757d;
-        }}
-        .incomplete {{
-            color: #ffc107;
-        }}
-        .content {{
-            padding: 30px;
-        }}
-        .section {{
-            margin-bottom: 40px;
-        }}
-        .section h2 {{
-            color: #333;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }}
-        .violation-card {{
-            background: #fff5f5;
-            border-left: 4px solid #dc3545;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            overflow: hidden;
-        }}
-        .violation-header {{
-            background: #dc3545;
-            color: white;
-            padding: 15px 20px;
-            font-weight: bold;
-        }}
-        .violation-body {{
-            padding: 20px;
-        }}
-        .impact-badge {{
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-            text-transform: uppercase;
-        }}
-        .impact-critical {{
-            background: #dc3545;
-            color: white;
-        }}
-        .impact-serious {{
-            background: #fd7e14;
-            color: white;
-        }}
-        .impact-moderate {{
-            background: #ffc107;
-            color: black;
-        }}
-        .impact-minor {{
-            background: #6c757d;
-            color: white;
-        }}
-        .help-link {{
-            color: #667eea;
-            text-decoration: none;
-        }}
-        .help-link:hover {{
-            text-decoration: underline;
-        }}
-        .node-item {{
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 10px 0;
-            font-family: monospace;
-            font-size: 0.9em;
-        }}
-        .node-html {{
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            overflow-x: auto;
-        }}
-        .passes-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-        }}
-        .violations-grid {{
-            max-height: 500px;
-            overflow-y: auto;
-            padding-right: 10px;
-        }}
-        .pass-card {{
-            background: #f8fff9;
-            border: 1px solid #d4edda;
-            border-radius: 4px;
-            padding: 15px;
-        }}
-        .pass-card h4 {{
-            color: #155724;
-            margin: 0 0 10px 0;
-        }}
-        .tags {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-top: 10px;
-        }}
-        .tag {{
-            background: #e9ecef;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            color: #495057;
-        }}
-        .footer {{
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            border-top: 1px solid #dee2e6;
-        }}
-    </style>
-</head>
-<body>
-    <div class=\"container\">
-        <div class="header">
-            <h1>🔍 Accessibility Test Report</h1>
-            <div class="subtitle">
-                <strong>URL:</strong> {summary['test_info']['url']}<br>
-                <strong>Test Date:</strong> {datetime.fromisoformat(summary['test_info']['test_date']).strftime('%Y-%m-%d %H:%M:%S')}
-            </div>
-        </div>
-        
-        <div class="summary-stats">
-            <div class="stat-card">
-                <div class="stat-number violations">{summary['summary']['violations_count']}</div>
-                <div class="stat-label">Violations</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number passes">{summary['summary']['passes_count']}</div>
-                <div class="stat-label">Passes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number inapplicable">{summary['summary']['inapplicable_count']}</div>
-                <div class="stat-label">Inapplicable</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number incomplete">{summary['summary']['incomplete_count']}</div>
-                <div class="stat-label">Incomplete</div>
-            </div>
-        </div>
-        
-        <div class="content">
-"""
-
-    # Add violations section
-    violations = result.get('violations', [])
-    if violations:
-        html_template += """
-            <div class="section">
-                <h2>❌ Accessibility Violations</h2>
-                <div class="violations-grid">
-        """
-
-        for violation in violations:
-            impact_class = f"impact-{violation.get('impact', 'minor')}" if violation.get('impact') else "impact-minor"
-            html_template += f"""
-                <div class="violation-card">
-                    <div class="violation-header">
-                        {html.escape(violation.get('id', 'Unknown'))} - {html.escape(violation.get('description', 'No description'))}
-                        <span class="impact-badge {impact_class}">{html.escape(str(violation.get('impact', 'minor')))}</span>
-                    </div>
-                    <div class="violation-body">
-                        <p><strong>Help:</strong> {html.escape(violation.get('help', 'No help available'))}</p>
-                        <p><strong>Affected Elements:</strong> {len(violation.get('nodes', []))}</p>
-                        <p><strong>More Info:</strong> <a href="{html.escape(violation.get('helpUrl', ''))}" class="help-link" target="_blank">View Documentation</a></p>
-                        
-                        <div class="tags">
-            """
-
-            for tag in violation.get('tags', []):
-                html_template += f'<span class="tag">{html.escape(str(tag))}</span>'
-
-            html_template += """
-                        </div>
-            """
-
-            # Add ALL affected elements (detailed)
-            nodes = violation.get('nodes', [])
-            if nodes:
-                html_template += f"""
-                        <h4>All Affected Elements ({len(nodes)} total):</h4>
-                """
-                for i, node in enumerate(nodes, 1):
-                    try:
-                        html_template += f"""
-                            <div class="node-item">
-                                <strong>Element {i}:</strong>
-                                <div class="node-html">{html.escape(str(node.get('html', 'No HTML available')))}</div>
-                                <strong>Target:</strong> {html.escape(safe_join_target(node.get('target', [])))}
-                                <br><strong>Impact:</strong> {html.escape(str(node.get('impact', 'Unknown')))}
-                                <br><strong>Issue:</strong> {html.escape(str(node.get('failureSummary', 'No failure summary')))}
-                            </div>
-                        """
-                    except Exception as node_error:
-                        logger.error(f"Error processing node {i}: {str(node_error)}")
-                        html_template += f"""
-                            <div class="node-item">
-                                <strong>Element {i}:</strong>
-                                <div class="node-html">Error processing this element</div>
-                                <strong>Target:</strong> Error
-                                <br><strong>Impact:</strong> Error
-                                <br><strong>Issue:</strong> Error processing element
-                            </div>
-                        """
-
-            html_template += """
-                    </div>
-                </div>
-            """
-
-        html_template += """
-                </div> <!-- end violations-grid -->
-            </div>
-        """
+    """Create a detailed HTML report from the raw axe results using Jinja2 templates."""
+    
+    from jinja2 import Environment, select_autoescape
+    import html
+    
+    # Format the test date for display
+    if 'test_date' in summary['test_info']:
+        try:
+            from datetime import datetime
+            test_date = datetime.fromisoformat(summary['test_info']['test_date'])
+            summary['test_info']['test_date_formatted'] = test_date.strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            summary['test_info']['test_date_formatted'] = summary['test_info']['test_date']
     else:
-        html_template += """
-            <div class="section">
-                <h2>✅ No Accessibility Violations Found!</h2>
-                <p>Great job! No accessibility violations were detected on this page.</p>
-            </div>
-        """
+        summary['test_info']['test_date_formatted'] = 'Unknown'
+    
+    # Jinja2 template with autoescaping
+    env = Environment(autoescape=select_autoescape(['html', 'xml']))
+    env.globals['safe_join_target'] = safe_join_target
+    
+    # Read template from external file in the Html_templates directory
+    import os
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Html_templates', 'accessibility_html_template.html')
+    
+    with open(template_path, 'r', encoding='utf-8') as f:
+        template_content = f.read()
+    template = env.from_string(template_content)
+    
+    return template.render(result=result, summary=summary)
 
-    # Add passes section
-    passes = result.get('passes', [])
-    if passes:
-        html_template += """
-            <div class="section">
-                <h2>✅ Passed Tests</h2>
-                <div class="passes-grid">
-        """
 
-        for passed in passes:
-            html_template += f"""
-                <div class="pass-card">
-                    <h4>{html.escape(passed.get('id', 'Unknown'))}</h4>
-                    <p>{html.escape(passed.get('description', 'No description'))}</p>
-                    <p><strong>Elements tested:</strong> {len(passed.get('nodes', []))}</p>
-                    <p><strong>Impact:</strong> {html.escape(str(passed.get('impact', 'Unknown')))}</p>
-                    <div class="tags">
-            """
-
-            for tag in passed.get('tags', []):
-                html_template += f'<span class="tag">{html.escape(str(tag))}</span>'
-
-            html_template += """
-                    </div>
-                </div>
-            """
-
-        html_template += """
-                </div> <!-- end passes-grid -->
-            </div>
-        """
-
-    html_template += """
-        </div>
-    </div>
-</body>
-</html>
-    """
-
-    return html_template
 
 
 @logger
@@ -7586,7 +7273,7 @@ def accessibility_test(data_set):
         violations_count = len(result.get('violations', []))
         passes_count = len(result.get('passes', []))
 
-        CommonUtil.ExecLog(sModuleInfo, "Accessibility test completed successfully", 1)
+        
     
 
         reports_dir = "Accessibility Test Report"
@@ -7640,8 +7327,6 @@ def accessibility_test(data_set):
             CommonUtil.ExecLog(sModuleInfo, f"Failed to create HTML report: {str(e)}", 3)
             return "zeuz_failed"
 
-        # Close driver
-        #common_driver.close()
 
         # Display console summary
         summary_message = f"""SUMMARY STATISTICS:
@@ -7657,6 +7342,7 @@ Location: {reports_dir}
 """
 
         CommonUtil.ExecLog(sModuleInfo, summary_message, 5)
+        CommonUtil.ExecLog(sModuleInfo, f"Accessibility test completed successfully for webpage: {url}", 1)
         return "passed"
 
     except Exception:

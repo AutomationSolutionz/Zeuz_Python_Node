@@ -92,3 +92,7 @@ stateDiagram-v2
         artifacts_uploader --> run_id_complete
     }
 ```
+
+## Attributions
+- [axe-selenium-python](https://github.com/axe-selenium-python/axe-selenium-python)
+
