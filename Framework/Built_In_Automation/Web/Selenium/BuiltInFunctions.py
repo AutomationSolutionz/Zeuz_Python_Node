@@ -53,6 +53,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -1344,6 +1345,13 @@ def Enter_Text_In_Text_Box(step_data):
                 use_js = right.strip().lower() in ("true", "yes", "1")
             elif left == "clear":
                 clear = False if right.strip().lower() in ("no", "false") else True
+
+        var_name = "zeuz_node_use_js"
+        if sr.Test_Shared_Variables(var_name):
+           value = CommonUtil.parse_value_into_object(sr.Get_Shared_Variables(var_name))
+           if value != "zeuz_failed":
+               use_js = CommonUtil.parse_value_into_object(value)
+
         if use_js:  # Use js will automatically clear the field and then enter text
             try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
@@ -1668,6 +1676,12 @@ def Click_Element(data_set, retry=0):
                 use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    var_name = "zeuz_node_use_js"
+    if sr.Test_Shared_Variables(var_name):
+       value = CommonUtil.parse_value_into_object(sr.Get_Shared_Variables(var_name))
+       if value != "zeuz_failed":
+           use_js = CommonUtil.parse_value_into_object(value)
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element in failed_tag_list:
