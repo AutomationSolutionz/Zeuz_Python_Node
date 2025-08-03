@@ -14,13 +14,13 @@ try:
     from pyatspi.action import Action
     from pyatspi.editabletext import EditableText, Text
 except ImportError:
-    install_missing_modules(["python3-pyatspi", "pygobject"])
+    install_missing_modules(["python3-pyatspi==1.19.0", "pygobject==3.50.1"])
     try:
         import pyatspi
         from pyatspi.action import Action
         from pyatspi.editabletext import EditableText, Text
     except ImportError:
-        sys.stderr.write("Error: pyatspi module is not installed. Please install it to use this script.\n")
+        sys.stderr.write("Error: system dependency is not installed. Install them by running Installer/setup_linux_inspector.sh.\n")
         sys.exit(1)
 
 from Framework.Utilities import CommonUtil
