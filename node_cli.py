@@ -30,15 +30,12 @@ from rich.console import Console
 from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
-from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
 
 
 print(
     f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
 )
 print(f"Current file path: {os.path.abspath(__file__)}")
-extension_downloader = ChromeExtensionDownloader()
-extension_downloader.cleanup_extensions()
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -104,6 +101,7 @@ from Framework.Utilities import ConfigModule  # noqa: E402
 from Framework.Utilities import live_log_service  # noqa: E402
 from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
+from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
 
 
 def start_server():
@@ -194,6 +192,10 @@ def main():
     update_outdated_modules()
     monkeypatch_fromisoformat()
     start_server()
+
+    # Cleanup downloaded extensions
+    extension_downloader = ChromeExtensionDownloader()
+    extension_downloader.cleanup_extensions()
 
     # Set the console title to include the version number.
     version_path = Path("Version.txt")
