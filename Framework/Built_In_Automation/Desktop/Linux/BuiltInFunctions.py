@@ -412,7 +412,7 @@ def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_fa
                 click_action_index: int = -1
                 for i in range(action_iface.nActions):
                     action_name: str = action_iface.getName(i)
-                    if action_name in ["click", "jump", "press", "open", "activate", "select", "clickAncestor"]:
+                    if action_name in ["click", "jump", "press", "open", "activate", "select", "clickAncestor", "link.open"]:
                         click_action_index = i
                         break
                 
@@ -554,6 +554,7 @@ def find_best_app_match(user_input: str) -> Optional[Tuple[str, str, str]]:
         desktop_files = glob.glob("/usr/share/applications/*.desktop")
         for desktop_file in desktop_files:
             name, exec_cmd = parse_desktop_file(desktop_file)
+            print(f"Found desktop file: {desktop_file}, Name: {name}, Exec: {exec_cmd}")
             if name and exec_cmd:
                 # Use the desktop file basename as the key for matching
                 key = os.path.basename(desktop_file).replace('.desktop', '')
@@ -569,29 +570,6 @@ def find_best_app_match(user_input: str) -> Optional[Tuple[str, str, str]]:
 
     for key, (name, exec_cmd) in apps.items():
         if name.lower() == user_lower:
-            return key, name, exec_cmd
-
-    for key, (name, exec_cmd) in apps.items():
-        if key.lower().startswith(user_lower):
-            return key, name, exec_cmd
-
-    for key, (name, exec_cmd) in apps.items():
-        if name.lower().startswith(user_lower):
-            return key, name, exec_cmd
-
-    for key, (name, exec_cmd) in apps.items():
-        if user_lower in key.lower():
-            return key, name, exec_cmd
-
-    for key, (name, exec_cmd) in apps.items():
-        if user_lower in name.lower():
-            return key, name, exec_cmd
-    
-    user_clean = user_lower.replace('-', '').replace('_', '').replace(' ', '')
-    for key, (name, exec_cmd) in apps.items():
-        key_clean = key.lower().replace('-', '').replace('_', '').replace(' ', '')
-        name_clean = name.lower().replace('-', '').replace('_', '').replace(' ', '')
-        if key_clean == user_clean or user_clean in key_clean or name_clean == user_clean or user_clean in name_clean:
             return key, name, exec_cmd
     
     return None
@@ -628,8 +606,18 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
             CommonUtil.ExecLog(sModuleInfo, f"Error launching '{app_name}': {e}", 3)
             return "zeuz_failed"
     else:
-        CommonUtil.ExecLog(MODULE_NAME, f"No matching application found for '{app_name}'", 3)
-        return "zeuz_failed"
+        try:
+            command = f"nohup {app_name} >/dev/null 2>&1 &"
+            exit_code = os.system(command)
+            if exit_code == 0:
+                CommonUtil.ExecLog(sModuleInfo, f"Successfully launched '{app_name}' with command: {command}", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to launch '{app_name}' (exit code: {exit_code})", 3)
+                return "zeuz_failed"
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Error launching '{app_name}': {e}", 3)
+            return "zeuz_failed"
 
 
 def get_process_ids(app_name: str) -> List[str]:
@@ -742,7 +730,6 @@ def save_attribute(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
         for left, mid, right in data_set:
             if mid.strip().lower() == "save parameter":
                 field = left.replace(" ", "").lower()
-                field2 = left.strip()
                 variable_name = right.strip()
 
         node = get_node(data_dict)
