@@ -178,6 +178,58 @@ else:
 @logger
 def get_driver():
     return selenium_driver
+
+@logger
+def is_headless_environment():
+    """
+    Detect if the current environment is headless (no display available).
+    This includes cloud instances, Docker containers, CI/CD environments, etc.
+    
+    Returns:
+        bool: True if headless environment is detected, False otherwise
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    try:
+        # Check for common headless environment indicators
+        headless_indicators = [
+            # Environment variables commonly set in headless environments
+            os.getenv('CI') is not None,  # CI/CD environments
+            os.getenv('GITHUB_ACTIONS') is not None,  # GitHub Actions
+            os.getenv('JENKINS_URL') is not None,  # Jenkins
+            os.getenv('BUILDKITE') is not None,  # Buildkite
+            os.getenv('TRAVIS') is not None,  # Travis CI
+            os.getenv('CIRCLECI') is not None,  # CircleCI
+            os.getenv('GITLAB_CI') is not None,  # GitLab CI
+            os.getenv('TEAMCITY_VERSION') is not None,  # TeamCity
+            os.getenv('TF_BUILD') is not None,  # Azure DevOps
+            os.getenv('CODEBUILD_BUILD_ID') is not None,  # AWS CodeBuild
+            os.getenv('DOCKER_CONTAINER') is not None,  # Docker container
+            os.path.exists('/.dockerenv'),  # Docker container indicator
+            os.getenv('KUBERNETES_SERVICE_HOST') is not None,  # Kubernetes
+            os.getenv('HEADLESS') == '1',  # Explicit headless flag
+            os.getenv('DISPLAY') is None and platform.system() == 'Linux',  # No display on Linux
+        ]
+        
+        # Check if any headless indicator is present
+        if any(headless_indicators):
+            CommonUtil.ExecLog(sModuleInfo, "Headless environment detected based on environment variables", 1)
+            return True
+        
+        display_vars = ['DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY']
+        for var in display_vars:
+            if os.environ.get(var) is not None:
+                CommonUtil.ExecLog(sModuleInfo, "Headless environment detection failed on environment variables", 2)
+                return False
+        CommonUtil.ExecLog(sModuleInfo, "Headless environment detected based on environment variables", 1)
+        return True
+            
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Error detecting headless environment: {str(e)}", 2)
+        # If we can't determine, assume non-headless to be safe
+        return False
+
+
 @logger
 def find_exe_in_path(exe):
     """ Search the path for an executable """
@@ -489,6 +541,13 @@ def generate_options(browser: str, browser_options:BrowserOptions):
     """ Adds capabilities and options for Browser/WebDriver """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     chromium_condition = browser in ("android", "chrome", "chromeheadless", "microsoft edge chromium", "edgechromiumheadless")
+    
+    # Check if we're in a headless environment and need to auto-enable headless mode
+    auto_headless = False
+    if "headless" not in browser.lower() and is_headless_environment():
+        auto_headless = True
+        CommonUtil.ExecLog(sModuleInfo, f"Headless environment detected. Auto-enabling headless mode for {browser}", 2)
+    
     msg = ""
     if chromium_condition:
         b = "edge" if "edge" in browser else "chrome"
@@ -542,10 +601,24 @@ def generate_options(browser: str, browser_options:BrowserOptions):
         from selenium.webdriver.common.options import ArgOptions
         return ArgOptions()
 
-    if "headless" in browser:
+    # Add headless arguments if explicitly requested or auto-detected
+    if "headless" in browser or auto_headless:
         def headless():
-            arg = "--headless=new" if "chrome" in browser else "--headless"
-            options.add_argument(arg)
+            if "chrome" in browser or "edge" in browser:
+                arg = "--headless=new"
+            else:
+                arg = "--headless"
+            
+            # Check if headless argument is already present
+            headless_already_added = any(
+                "--headless" in str(arg) for arg in getattr(options, 'arguments', [])
+            )
+            
+            if not headless_already_added:
+                options.add_argument(arg)
+                if auto_headless:
+                    CommonUtil.ExecLog(sModuleInfo, f"Added {arg} argument due to headless environment detection", 1)
+                    
         use_xvfb_or_headless(headless)
 
     for key, value in browser_options["capabilities"].items():
