@@ -709,7 +709,7 @@ def ExecLog(
             if iLogLevel == 3:
                 try:
                     from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
-                    zeuz_tc_logs = shared.Get_Shared_Variables("zeuz_tc_logs")
+                    zeuz_tc_logs = shared.Get_Shared_Variables("zeuz_tc_logs", False)
                     if zeuz_tc_logs and isinstance(zeuz_tc_logs, dict):
                         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         error_entry = {
