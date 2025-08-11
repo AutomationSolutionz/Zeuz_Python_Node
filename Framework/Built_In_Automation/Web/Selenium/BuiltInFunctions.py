@@ -1136,6 +1136,7 @@ def take_screenshot_selenium(data_set):
 
         # Save the screenshot's name into a variable
         Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
+        return 'passed'
     except Exception:
         errMsg = "Failed to take screenshot"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
