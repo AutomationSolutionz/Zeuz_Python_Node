@@ -903,7 +903,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 "--ignore-certificate-errors",
                 "--ignore-ssl-errors",
                 "--zeuz_pid_finder",
-                "--remote-debugging-port=9222",  # Required for playright
+                # "--remote-debugging-port=9222",  # Required for playright
                 # "--no-sandbox"
             ],
             "add_experimental_option": {
@@ -961,6 +961,8 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
         driver_id = ""
         chrome_version = None
         chrome_channel = None
+        debug_port = False
+
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "gotolink":
@@ -1015,6 +1017,16 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                     browser_options[browser]["page_load_strategy"] = right.strip()
                 elif left == "debuggeraddress":
                     browser_options[browser]["debugger_address"] = right.strip()
+
+        debug_port = None
+        if browser in browser_options:
+            for arg in browser_options[browser]["add_argument"]:
+                if any(arg.startswith(prefix) for prefix in [
+                        "--remote-debugging-port=",
+                        "--webkit-remote-debugging-port="
+                ]):
+                    debug_port = int(arg.split("=")[1])
+                    break
 
         if dependency["Browser"] in (
             "Chrome",
@@ -1100,9 +1112,9 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
 
             selenium_details[driver_id] = {
-                "driver": Shared_Resources.Get_Shared_Variables("selenium_driver")
+                "driver": Shared_Resources.Get_Shared_Variables("selenium_driver"),
+                "remote-debugging-port": debug_port
             }
-
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
@@ -1162,9 +1174,6 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
             )
             return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
         try:
-            selenium_details[driver_id] = {
-                "driver": Shared_Resources.Get_Shared_Variables("selenium_driver")
-            }
             selenium_driver.get(web_link)
             selenium_driver.implicitly_wait(0.5)
             CommonUtil.ExecLog(
@@ -3630,7 +3639,8 @@ def close_tab(step_data):
 
             try:
                 with sync_playwright() as p:
-                    browser = p.chromium.connect_over_cdp("http://localhost:9222")
+                    debug_port = selenium_details[current_driver_id]["remote-debugging-port"]
+                    browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
                     context = browser.contexts[0]
                     pages = context.pages
 
@@ -3663,7 +3673,7 @@ def close_tab(step_data):
                             import json
 
                             with urllib.request.urlopen(
-                                "http://localhost:9222/json"
+                                f"http://localhost:{debug_port}/json"
                             ) as response:
                                 tabs = json.load(response)
                                 # Filter only 'page' type tabs for clean left-to-right order
@@ -3674,7 +3684,6 @@ def close_tab(step_data):
                                 target_urls.reverse()  # Reverse to get actual left-to-right visual order
 
                             if idx < len(target_urls):
-                                print(f"target_urls: {target_urls}")
                                 desired_url = target_urls[idx]
                                 # Find the page with matching URL
                                 for page in pages:
@@ -3736,7 +3745,7 @@ def close_tab(step_data):
                                     import json
 
                                     with urllib.request.urlopen(
-                                        "http://localhost:9222/json"
+                                        f"http://localhost:{debug_port}/json"
                                     ) as response:
                                         tabs = json.load(response)
 
