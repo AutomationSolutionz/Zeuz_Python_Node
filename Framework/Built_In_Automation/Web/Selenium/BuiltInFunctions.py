@@ -18,6 +18,7 @@ import sys, os, time, inspect, shutil, subprocess, json, re
 import socket
 import requests
 import psutil
+import pyperclip
 import base64, imghdr
 from pathlib import Path
 from urllib.parse import urlparse
@@ -1650,6 +1651,7 @@ def Keystroke_For_Element(data_set):
     # Parse the data set
     try:
         stype = ""  # keys/chars
+        paste_image = False # identifiying image paste
         get_element = False  # Use element
         key_count = 1  # Default number of button presses
         for row in data_set:
@@ -1668,6 +1670,9 @@ def Keystroke_For_Element(data_set):
                     keystroke_value = row[2]
             elif row[1] == "element parameter":
                 get_element = True
+            elif row[1] == "optional parameter":
+                if row[0] == "paste image":
+                    paste_image = row[2].strip().lower() == "true"
 
         if stype == "":
             CommonUtil.ExecLog(sModuleInfo, "Field contains incorrect data", 3)
@@ -1731,36 +1736,63 @@ def Keystroke_For_Element(data_set):
                 ):
                     paste_key = Keys.CONTROL
 
-                try:
-                    if get_element:
-                        selenium_driver.execute_script("arguments[0].focus();", Element)
-                        time.sleep(0.1)
-
-                        # Perform paste using ActionChains
-                        actions = ActionChains(selenium_driver)
-                        actions.key_down(paste_key, element=Element)
-                        actions.send_keys_to_element(Element, "v")
-                        actions.key_up(paste_key, element=Element)
-                        actions.perform()
-                    else:
-                        actions = ActionChains(selenium_driver)
-                        actions.key_down(paste_key)
-                        actions.send_keys("v")
-                        actions.key_up(paste_key)
-                        actions.perform()
-
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Paste command executed successfully", 1
-                    )
-                    return "passed"
-                except Exception as e:
-                    # Fallback to JavaScript if ActionChains fails
+                if paste_image:
                     try:
+                        if get_element:
+                            selenium_driver.execute_script("arguments[0].focus();", Element)
+                            time.sleep(0.1)
+
+                            # Perform paste using ActionChains
+                            actions = ActionChains(selenium_driver)
+                            actions.key_down(paste_key, element=Element)
+                            actions.send_keys_to_element(Element, "v")
+                            actions.key_up(paste_key, element=Element)
+                            actions.perform()
+                        else:
+                            actions = ActionChains(selenium_driver)
+                            actions.key_down(paste_key)
+                            actions.send_keys("v")
+                            actions.key_up(paste_key)
+                            actions.perform()
+
                         CommonUtil.ExecLog(
-                            sModuleInfo,
-                            f"Standard paste failed: {str(e)}. Trying JavaScript fallback...",
-                            2,
+                            sModuleInfo, "Copied image is successfully pasted", 1
                         )
+                        return "passed"
+                    except Exception as e:
+                        # Fallback to JavaScript if ActionChains fails
+                        try:
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Standard paste failed. Trying JavaScript fallback...",
+                                2,
+                            )
+                            if get_element:
+                                selenium_driver.execute_script(
+                                    "arguments[0].focus();", Element
+                                )
+                                selenium_driver.execute_script(
+                                    "arguments[0].value = arguments[1];",
+                                    Element,
+                                    pyperclip.paste(),
+                                )
+                            else:
+                                selenium_driver.execute_script(
+                                    f"document.activeElement.value += '{pyperclip.paste()}';"
+                                )
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Successfully image paste executed via JavaScript fallback", 1
+                            )
+                            return "passed"
+                        except Exception as js_e:
+                            return CommonUtil.Exception_Handler(
+                                sys.exc_info(),
+                                None,
+                                f"Both methods failed for paste the image: {str(js_e)}",
+                            )
+                else:
+                    # simple text paste
+                    try:
                         if get_element:
                             selenium_driver.execute_script(
                                 "arguments[0].focus();", Element
@@ -1775,14 +1807,12 @@ def Keystroke_For_Element(data_set):
                                 f"document.activeElement.value += '{pyperclip.paste()}';"
                             )
                         CommonUtil.ExecLog(
-                            sModuleInfo, "Paste executed via JavaScript fallback", 1
+                            sModuleInfo, "Paste successfully executed via JavaScript", 1
                         )
                         return "passed"
                     except Exception as js_e:
-                        return CommonUtil.Exception_Handler(
-                            sys.exc_info(),
-                            None,
-                            f"Both methods failed for paste operation: {str(js_e)}",
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "JavaScript paste execution failed. Trying keypress...", 3
                         )
 
             elif "+" in keystroke_value:
