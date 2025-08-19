@@ -1798,16 +1798,26 @@ def Keystroke_For_Element(data_set):
                                 "arguments[0].focus();", Element
                             )
                             selenium_driver.execute_script(
-                                "arguments[0].value = arguments[1];",
+                                """
+                                arguments[0].value = arguments[1];
+                                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+                                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+                                """,
                                 Element,
                                 pyperclip.paste(),
                             )
                         else:
                             selenium_driver.execute_script(
-                                f"document.activeElement.value += '{pyperclip.paste()}';"
+                                """
+                                var text = arguments[0];
+                                document.activeElement.value += text;
+                                document.activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+                                document.activeElement.dispatchEvent(new Event('change', { bubbles: true }));
+                                """,
+                                pyperclip.paste(),
                             )
                         CommonUtil.ExecLog(
-                            sModuleInfo, "Paste successfully executed via JavaScript", 1
+                            sModuleInfo, "Paste successfully executed via JavaScript with events", 1
                         )
                         return "passed"
                     except Exception as js_e:
