@@ -1,0 +1,37 @@
+# Use Alpine Linux as base for smaller size
+FROM alpine:3.18
+
+# Install required packages
+RUN apk add --no-cache \
+    ruby \
+    ruby-dev \
+    ruby-bundler \
+    build-base \
+    libffi-dev \
+    openssl-dev \
+    sqlite-dev \
+    git \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /arachni
+
+# Clone Arachni from source (more recent than Docker Hub images)
+RUN git clone https://github.com/Arachni/arachni.git . && \
+    git checkout v1.6.1.3
+
+# Install Arachni dependencies (simplified approach)
+RUN bundle install --without development test
+
+# Create necessary directories
+RUN mkdir -p /arachni/reports /arachni/logs
+
+# Expose port
+EXPOSE 9292
+
+# Set environment variables
+ENV ARACHNI_UI_ADDRESS=0.0.0.0
+ENV ARACHNI_UI_PORT=9292
+
+# Default command - use arachni_web_ui instead of arachni_web
+CMD ["bundle", "exec", "arachni_web_ui"]
