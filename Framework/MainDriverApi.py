@@ -208,47 +208,47 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-    run_id_folder = str(Path(log_file_path)/run_id.replace(":", "-"))
-    test_case_folder = str(Path(run_id_folder)/CommonUtil.current_session_name/test_case.replace(":", "-"))
+    log_path = Path(log_file_path)
+    run_id_folder = log_path / run_id.replace(":", "-")
+    test_case_folder = run_id_folder / CommonUtil.current_session_name / test_case.replace(":", "-")
 
-    # TODO: Use pathlib for following items
     # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
-    ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
-    FL.CreateFolder(test_case_folder)
+    ConfigModule.add_config_value("sectionOne", "test_case_folder", str(test_case_folder), temp_ini_file)
+    FL.CreateFolder(str(test_case_folder))
 
     # create log_folder for browser console error logs
-    log_folder = test_case_folder + os.sep + "Log"
-    ConfigModule.add_config_value("sectionOne", "log_folder", log_folder, temp_ini_file)
-    FL.CreateFolder(log_folder)
+    log_folder = test_case_folder / "Log"
+    ConfigModule.add_config_value("sectionOne", "log_folder", str(log_folder), temp_ini_file)
+    FL.CreateFolder(str(log_folder))
 
     # create screenshot_folder
-    screenshot_folder = test_case_folder + os.sep + "screenshots"
-    ConfigModule.add_config_value("sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file)
-    FL.CreateFolder(screenshot_folder)
+    screenshot_folder = test_case_folder / "screenshots"
+    ConfigModule.add_config_value("sectionOne", "screen_capture_folder", str(screenshot_folder), temp_ini_file)
+    FL.CreateFolder(str(screenshot_folder))
 
     # performance report folder
-    performance_report = test_case_folder + os.sep + "performance_report"
-    ConfigModule.add_config_value("sectionOne", "performance_report", performance_report, temp_ini_file)
-    FL.CreateFolder(performance_report)
+    performance_report = test_case_folder / "performance_report"
+    ConfigModule.add_config_value("sectionOne", "performance_report", str(performance_report), temp_ini_file)
+    FL.CreateFolder(str(performance_report))
 
     # TODO: we'll be breaking internal server compatibility anyway
     # ! This will be unnecessary
     if float(server_version.split(".")[0]) >= 7:
         # json report folder
-        json_report = test_case_folder + os.sep + "json_report"
-        ConfigModule.add_config_value("sectionOne", "json_report", json_report, temp_ini_file)
-        FL.CreateFolder(json_report)
+        json_report = test_case_folder / "json_report"
+        ConfigModule.add_config_value("sectionOne", "json_report", str(json_report), temp_ini_file)
+        FL.CreateFolder(str(json_report))
 
     # create where attachments from selenium browser will be
     # downloaded
     # ? Why are we keeping two separate download folders?
-    zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
-    FL.CreateFolder(zeuz_download_folder)
-    initial_download_folder = run_id_folder + os.sep + "initial_download_folder"
-    FL.CreateFolder(initial_download_folder)
-    ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
-    shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
+    zeuz_download_folder = test_case_folder / "zeuz_download_folder"
+    FL.CreateFolder(str(zeuz_download_folder))
+    initial_download_folder = run_id_folder / "initial_download_folder"
+    FL.CreateFolder(str(initial_download_folder))
+    ConfigModule.add_config_value("sectionOne", "initial_download_folder", str(initial_download_folder), temp_ini_file)
+    shared.Set_Shared_Variables("zeuz_download_folder", str(zeuz_download_folder))
 
     # ? Can't we run the above folder creation codes only once when
     # the node starts or when main driver is called for the first
@@ -256,8 +256,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
-    download_folder = str(Path(log_file_path) / "attachments" / test_case.replace(":", "-"))
-    ConfigModule.add_config_value("sectionOne", "download_folder", download_folder, temp_ini_file)
+    download_folder = log_path / "attachments" / test_case.replace(":", "-")
+    ConfigModule.add_config_value("sectionOne", "download_folder", str(download_folder), temp_ini_file)
 
 
 import ctypes
@@ -755,15 +755,17 @@ def zip_and_delete_tc_folder(
     if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
             all_steps = CommonUtil.all_logs_json[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]["steps"]
+            json_report_folder = Path(ConfigModule.get_config_value("sectionOne", "json_report", temp_ini_file))
             for step in all_steps:
-                json_filename = Path(ConfigModule.get_config_value("sectionOne", "json_report", temp_ini_file))/(str(step["step_sequence"])+".json")
+                json_filename = json_report_folder / (str(step["step_sequence"]) + ".json")
                 with open(json_filename, "w", encoding="utf-8") as f:
                     json.dump(step, f)
 
+            test_case_folder = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file))
             zip_name = run_id.replace(":", "-") + "_" + TestCaseID.replace(":", "-") + ".zip"
             FL.ZipFolder(
-                ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file),
-                str(Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)).parent/zip_name),
+                str(test_case_folder),
+                str(test_case_folder.parent / zip_name),
             )
     # Delete the folder
     path = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
@@ -1618,35 +1620,39 @@ def retry_failed_report_upload():
         try:
             sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
             failed_report_dir = PROJECT_ROOT / 'AutomationLog' / 'failed_uploads'
-            os.makedirs(failed_report_dir, exist_ok=True)
+            failed_report_dir.mkdir(parents=True, exist_ok=True)
             folders = [entry.name for entry in failed_report_dir.iterdir() if entry.is_dir()]
 
-            if folders == []:
+            if not folders:
                 return
             else:
                 for folder in folders:
                     report_json_path = failed_report_dir / folder / 'report.json'
-                    report_json = json.load(open(report_json_path))
+                    with open(report_json_path, 'r') as f:
+                        report_json = json.load(f)
+                    
                     if not report_json.get('perf_filepath'):
                         res = RequestFormatter.request("post",
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": report_json.get('execution_report')},
                             verify=False)
                     else:
-                        res = RequestFormatter.request("post",
-                                    RequestFormatter.form_uri("create_report_log_api/"),
-                                    data={"execution_report": report_json.get('execution_report'),
-                                        "processed_tc_id":report_json.get('processed_tc_id')
-
-                                        },
-                                    files=[("file",open(failed_report_dir / folder / 'files' /report_json.get('perf_filepath'),'rb'))],
-                                    verify=False)
+                        perf_file_path = failed_report_dir / folder / 'files' / report_json.get('perf_filepath')
+                        with open(perf_file_path, 'rb') as perf_file:
+                            res = RequestFormatter.request("post",
+                                RequestFormatter.form_uri("create_report_log_api/"),
+                                data={
+                                    "execution_report": report_json.get('execution_report'),
+                                    "processed_tc_id": report_json.get('processed_tc_id')
+                                },
+                                files=[("file", perf_file)],
+                                verify=False)
 
                         if res.status_code == 200:
                             CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {report_json.get('run_id')}", 1)
-                            shutil.rmtree(failed_report_dir / folder)
+                            shutil.rmtree(str(failed_report_dir / folder))
                         else:
-                            CommonUtil.ExecLog(sModuleInfo, f"Unabel to upload the execution report of run_id {report_json.get('run_id')}", 1)
+                            CommonUtil.ExecLog(sModuleInfo, f"Unable to upload the execution report of run_id {report_json.get('run_id')}", 1)
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, str(e), 3)
             pass
@@ -1700,8 +1706,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
     # assumes that the last segment after the / represents the file name
     # if url is abc/xyz/file.txt, the file name will be file.txt
     url = attachment_info["url"]
-    file_name_start_pos = url.rfind("/") + 1
-    file_name = url[file_name_start_pos:]
+    file_name = Path(url).name
     file_path = attachment_info["download_dir"] / file_name
 
     r = RequestFormatter.request("get", url, stream=True)
@@ -1721,17 +1726,9 @@ def download_attachments(testcase_info):
     """Download test case and step attachments for the given test case."""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    temp_ini_file = os.path.join(
-        os.path.join(
-            os.path.abspath(__file__).split("Framework")[0],
-            os.path.join(
-                "AutomationLog",
-                ConfigModule.get_config_value("Advanced Options", "_file"),
-            ),
-        )
-    )
-    attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-    attachment_db_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments_db"
+    temp_ini_file = Path(os.path.abspath(__file__)).parent.parent / "AutomationLog" / ConfigModule.get_config_value("Advanced Options", "_file")
+    attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", str(temp_ini_file))) / "attachments"
+    attachment_db_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", str(temp_ini_file))) / "attachments_db"
 
     url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
     urls = []
@@ -1766,7 +1763,7 @@ def download_attachments(testcase_info):
             urls.append(to_append)
         else:
             try:
-                shutil.copyfile(str(entry["path"]), download_dir / Path(attachment["path"]).name)
+                shutil.copyfile(str(entry["path"]), str(download_dir / Path(attachment["path"]).name))
             except:
                 # If copy fails, the file either does not exist or we don't have
                 # permission. Download the file again and remove from db.
@@ -1794,7 +1791,7 @@ def download_attachments(testcase_info):
             # If entry is successful, we copy the downloaded attachment to the
             # db directory.
             try:
-                shutil.copyfile(r["path"], put["path"])
+                shutil.copyfile(str(r["path"]), str(put["path"]))
             except:
                 # If copying the attachment fails, we remove the entry.
                 db.remove(r["hash"])
@@ -1806,17 +1803,10 @@ def main(device_dict, all_run_id_info):
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-        temp_ini_file = os.path.join(
-            os.path.join(
-                os.path.abspath(__file__).split("Framework")[0],
-                os.path.join(
-                    "AutomationLog",
-                    ConfigModule.get_config_value("Advanced Options", "_file"),
-                ),
-            )
-        )
+        temp_ini_file = Path(os.path.abspath(__file__)).parent.parent / "AutomationLog" / ConfigModule.get_config_value("Advanced Options", "_file")
+
         # add temp file to config values
-        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
+        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, str(temp_ini_file))
 
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()

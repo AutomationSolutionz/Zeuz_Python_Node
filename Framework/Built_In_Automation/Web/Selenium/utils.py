@@ -17,7 +17,9 @@ import datetime
 from datetime import timedelta
 import struct
 import urllib.request
-
+from Framework.Built_In_Automation.Shared_Resources import (
+    BuiltInFunctionSharedResources as Shared_Resources,
+)
 
 # ZeuZ Node Downloads base directory
 ZEUZ_NODE_DOWNLOADS_DIR = Path.home() / "zeuz_node_downloads"
@@ -353,7 +355,8 @@ class ChromeForTesting:
 
 
 class ChromeExtensionDownloader:
-    CHROME_EXTENSIONS_DIR = ZEUZ_NODE_DOWNLOADS_DIR / "chrome_extensions"
+    ZEUZ_DOWNLOAD_FOLDER = Path(Shared_Resources.Get_Shared_Variables('zeuz_download_folder'))
+    CHROME_EXTENSIONS_DIR = ZEUZ_DOWNLOAD_FOLDER / "chrome_extensions"
     CFT_INFO_FILE = ZEUZ_NODE_DOWNLOADS_DIR / "chrome_for_testing" / "info.json"
     DEFAULT_CHROME_VERSION = "138.0.7204.92"
 
