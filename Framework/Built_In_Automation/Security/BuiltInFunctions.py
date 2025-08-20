@@ -434,7 +434,7 @@ def server_scaning_wapiti(data_set: list) -> str:
             print("Report path not found in Wapiti output.")
             return "zeuz_failed"
         
-        security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report' / 'wapiti'
+        security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report'
         os.makedirs(security_report_dir, exist_ok=True)
         destination_path = security_report_dir / os.path.basename(report_path)
 
@@ -461,9 +461,13 @@ def server_scaning_arachni(data_set: list) -> str:
     if success:
         if not arachni_target.startswith(("http://", "https://")):
             arachni_target = "http://" + arachni_target
-        run_arachni_scan(arachni_target)
+        
+        # Get the security report directory for this test case
         security_report_dir = Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)) / 'security_report'
-        generate_report_from_afr(security_report_dir)
+        
+        # Run the scan and save reports directly to security_report_dir
+        run_arachni_scan(arachni_target, security_report_dir)
+        
         return "passed"
     else:
         print("***** Arachni setup failed. *****")

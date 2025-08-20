@@ -5,9 +5,6 @@ services:
     container_name: zeuz_arachni
     ports:
       - "9292:9292"  # Web UI port
-    volumes:
-      - ./reports:/home/arachni/arachni-ui/reports
-      - ./logs:/home/arachni/arachni-ui/logs
     environment:
       - ARACHNI_UI_ADDRESS=0.0.0.0
       - ARACHNI_UI_PORT=9292
