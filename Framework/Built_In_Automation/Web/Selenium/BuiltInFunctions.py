@@ -3467,7 +3467,7 @@ def open_new_tab(step_data):
 
 @logger
 def switch_window_or_tab(step_data):
-    
+
     """
     This action will switch tab/window in browser using Selenium or Playwright (via CDP) based on the 'playwright' flag.
         Example 1:
@@ -3656,6 +3656,8 @@ def switch_window_or_tab(step_data):
 
 @logger
 def close_tab(step_data):
+
+    
     """
     This action will close tab/window in browser. Supports both Selenium and Playwright.
 
