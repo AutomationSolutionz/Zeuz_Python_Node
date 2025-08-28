@@ -3504,37 +3504,43 @@ def open_new_tab(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
 @logger
 def switch_window_or_tab(step_data):
+    
     """
-    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
-
-    Example 1:
+    This action will switch tab/window in browser using Selenium or Playwright (via CDP) based on the 'playwright' flag.
+        Example 1:
     Field	                    Sub Field	        Value
-    *window title               input parameter	    googl
+    *window title               input parameter	    google
+    playwright                  option	            true
     switch window/tab           selenium action 	switch window or frame
 
 
     Example 2:
     Field	                    Sub Field	        Value
     window title                input parameter	    google
+    playwright                  option	            false
     switch window/tab           selenium action 	switch window or frame
 
     Example 3:
     Field	                    Sub Field	        Value
     window index                input parameter	    9
+    playwright                  option	            false
     switch window/tab           selenium action 	switch window or frame
-
     """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+
     try:
         window_title_condition = False
         window_index_condition = False
         partial_match = False
+        playwright_enabled = False
+
         for left, mid, right in step_data:
             left = left.lower().strip()
+            right = right.strip()
             if left in ("window title", "tab title"):
                 switch_by_title = right
                 window_title_condition = True
@@ -3543,71 +3549,145 @@ def switch_window_or_tab(step_data):
                 partial_match = True
                 window_title_condition = True
             elif left in ("window index", "tab index"):
-                switch_by_index = right.strip()
+                switch_by_index = right
                 window_index_condition = True
                 window_title_condition = False
+            elif left == "playwright":
+                playwright_enabled = right.lower() == "true"
 
     except Exception:
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Unable to parse data. Maintain correct format writen in document",
+            "Unable to parse data. Maintain correct format written in documentation",
             3,
         )
         return "zeuz_failed"
 
     try:
-        if window_title_condition:
-            all_windows = selenium_driver.window_handles
-            current_window = selenium_driver.current_window_handle
-            window_handles_found = False
-            Tries = 3
-            for Try in range(Tries):
-                for each in all_windows:
-                    selenium_driver.switch_to.window(each)
-                    if (
-                        partial_match
-                        and switch_by_title.lower() in selenium_driver.title.lower()
-                    ) or (
-                        not partial_match
-                        and switch_by_title.lower() == selenium_driver.title.lower()
-                    ):
-                        window_handles_found = True
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Tab switched to '%s'" % selenium_driver.title,
-                            1,
-                        )
-                        break
-                else:
+        import time  # Import time for both Playwright and Selenium paths
+
+        if playwright_enabled:
+            print("Playwright is enabled")
+            from playwright.sync_api import sync_playwright
+
+            with sync_playwright() as p:
+                debug_port = selenium_details[current_driver_id][
+                    "remote-debugging-port"
+                ]
+                browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
+                context = browser.contexts[0]
+                print("context: ", context)
+                pages = context.pages
+                print("pages: ", pages)
+
+                # Handle title-based tab switch
+                if window_title_condition:
+                    for i, page in enumerate(pages):
+                        page_title = page.title()
+                        if (
+                            partial_match
+                            and switch_by_title.lower() in page_title.lower()
+                        ) or (
+                            not partial_match
+                            and switch_by_title.lower() == page_title.lower()
+                        ):
+                            # Step 1: Use Playwright to switch tabs
+                            page.bring_to_front()
+                            time.sleep(1)
+
+                            # Step 3: Re-align Selenium to match the target tab
+                            target_url = page.url
+                            for handle in selenium_driver.window_handles:
+                                selenium_driver.switch_to.window(handle)
+                                if (
+                                    selenium_driver.current_url == target_url
+                                    or target_url in selenium_driver.title
+                                ):
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        f"Selenium aligned to: {selenium_driver.title}",
+                                        1,
+                                    )
+                                    return "passed"
+
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Failed to align Selenium with target tab",
+                                3,
+                            )
+                            return "zeuz_failed"
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Couldn't find the title. Trying again after 1 second delay",
-                        2,
+                        f"Playwright: No tab with title '{switch_by_title}' found",
+                        3,
                     )
-                    time.sleep(1)
-                    continue  # only executed if the inner loop did not break
-                break  # only executed if the inner loop did break
+                    return "zeuz_failed"
 
-            if not window_handles_found:
-                selenium_driver.switch_to.window(current_window)
+                # Index-based switching not supported with Playwright due to CDP ordering inconsistency
+                elif window_index_condition:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Index-based tab switching is not supported with Playwright. Use title-based switching instead.",
+                        3,
+                    )
+                    return "zeuz_failed"
+
+        else:
+            # --- Selenium tab switching ---
+            print("using selenium")
+            if window_title_condition:
+                all_windows = selenium_driver.window_handles
+                current_window = selenium_driver.current_window_handle
+                window_handles_found = False
+
+                for _ in range(3):  # retry
+                    for handle in all_windows:
+                        selenium_driver.switch_to.window(handle)
+                        if (
+                            partial_match
+                            and switch_by_title.lower() in selenium_driver.title.lower()
+                        ) or (
+                            not partial_match
+                            and switch_by_title.lower() == selenium_driver.title.lower()
+                        ):
+                            window_handles_found = True
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Tab switched to '{selenium_driver.title}'",
+                                1,
+                            )
+                            break
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Couldn't find the title. Trying again after 1 second delay",
+                            2,
+                        )
+                        time.sleep(1)
+                        continue
+                    break
+
+                if not window_handles_found:
+                    selenium_driver.switch_to.window(current_window)
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Unable to find the title among the tabs. Use '*tab title' for partial match.",
+                        3,
+                    )
+                    return "zeuz_failed"
+
+            elif window_index_condition:
+                window_index = int(switch_by_index)
+                window_to_switch = selenium_driver.window_handles[window_index]
+                selenium_driver.switch_to.window(window_to_switch)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "unable to find the title among the tabs. If you want to match partially please use '*tab title'",
-                    3,
+                    f"Tab switched to index {switch_by_index} title {selenium_driver.title}",
+                    1,
                 )
-                return "zeuz_failed"
 
-        elif window_index_condition:
-            window_index = int(switch_by_index)
-            window_to_switch = selenium_driver.window_handles[window_index]
-            selenium_driver.switch_to.window(window_to_switch)
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                f"Tab switched to index {switch_by_index} title {selenium_driver.title}",
-                1,
-            )
+            return "passed"
 
-        return "passed"
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
