@@ -21,6 +21,7 @@ with (
     from Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions import switch_window_or_tab
 
 
+
 @pytest.fixture
 def mock_step_data_title():
     """Fixture for step data with window title"""
