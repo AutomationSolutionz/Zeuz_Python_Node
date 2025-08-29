@@ -18,6 +18,11 @@ from datetime import timedelta
 import struct
 import urllib.request
 
+#for progress bar
+#from alive_progress import alive_bar
+
+from rich.progress import Progress
+
 
 # ZeuZ Node Downloads base directory
 ZEUZ_NODE_DOWNLOADS_DIR = Path.home() / "zeuz_node_downloads"
@@ -182,15 +187,30 @@ class ChromeForTesting:
         else:
             return driver_dir / driver_dir_name / "chromedriver"
 
-    def download_file(self, url):
-        """Download file from URL"""
-        response = requests.get(url)
+    def download_file(self, url, target_path, title="Downloading"):
+        """Download file from URL
+        Now shows progress bar"""
+        response = requests.get(url, stream=True) #download with stream
         response.raise_for_status()
-        return response.content
 
-    def extract_zip(self, content, target_dir):
+        total_size = int(response.headers.get('content-length', 0)) #gets total size
+        block_size = 1024  # 1 Kibibyte
+        
+        with open(target_path, "wb") as f, Progress() as progress:
+
+            task = progress.add_task(title, total=total_size)
+
+            for block in response.iter_content(block_size): #block size 1K
+                
+                if block:
+                    f.write(block) #writes to file
+                    progress.update(task, advance=len(block)) #advances bar length by block size
+
+        return target_path
+
+    def extract_zip(self, content, target_dir): #modification here since path is passed instead of bytes
         """Extract ZIP content to target directory"""
-        with zipfile.ZipFile(io.BytesIO(content)) as zip_ref:
+        with zipfile.ZipFile(content) as zip_ref:
             for member in zip_ref.infolist():
                 if member.is_dir():
                     continue
@@ -261,17 +281,25 @@ class ChromeForTesting:
 
         chrome_url, driver_url = self.get_download_url_for_version(version)
         
+        chrome_zip_path = version_dir / "chrome.zip"
+        
         # Download and extract Chrome
         print(f"Downloading Chrome for Testing {version}...")
-        chrome_content = self.download_file(chrome_url)
+        self.download_file(chrome_url, chrome_zip_path, title="Downloading Chrome") #download zip to path
         print(f"Extracting Chrome to {version_dir / 'chrome'}...")
-        self.extract_zip(chrome_content, version_dir / "chrome")
+        self.extract_zip(open(chrome_zip_path, 'rb'), version_dir / "chrome")
+
+        chrome_zip_path.unlink() # remove zip
+        
+        driver_zip_path = version_dir / "driver.zip"
         
         # Download and extract ChromeDriver
         print(f"Downloading ChromeDriver {version}...")
-        driver_content = self.download_file(driver_url)
+        self.download_file(driver_url, driver_zip_path, title="Downloading ChromeDriver")
         print(f"Extracting ChromeDriver to {version_dir / 'driver'}...")
-        self.extract_zip(driver_content, version_dir / "driver")
+        self.extract_zip(open(driver_zip_path, 'rb'), version_dir / "driver")
+        
+        driver_zip_path.unlink()
 
         # Set execute permissions (Unix systems)
         self.set_execute_permissions(version_dir)
