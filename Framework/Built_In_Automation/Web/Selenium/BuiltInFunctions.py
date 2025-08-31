@@ -3567,7 +3567,7 @@ def switch_window_or_tab(step_data):
         import time  # Import time for both Playwright and Selenium paths
 
         if playwright_enabled:
-            print("Playwright is enabled")
+            CommonUtil.ExecLog(sModuleInfo, "Playwright is enabled", 1)
             from playwright.sync_api import sync_playwright
 
             with sync_playwright() as p:
@@ -3576,9 +3576,7 @@ def switch_window_or_tab(step_data):
                 ]
                 browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
                 context = browser.contexts[0]
-                print("context: ", context)
                 pages = context.pages
-                print("pages: ", pages)
 
                 # Handle title-based tab switch
                 if window_title_condition:
@@ -3634,7 +3632,7 @@ def switch_window_or_tab(step_data):
 
         else:
             # --- Selenium tab switching ---
-            print("using selenium")
+            CommonUtil.ExecLog(sModuleInfo, "Using Selenium for tab switching", 1)
             if window_title_condition:
                 all_windows = selenium_driver.window_handles
                 current_window = selenium_driver.current_window_handle
