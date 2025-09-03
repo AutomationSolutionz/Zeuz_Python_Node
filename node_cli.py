@@ -826,6 +826,24 @@ def command_line_args() -> Path | None:
         help="Disables log in live server",
     )
 
+    #modification here to add parsers to change chrome download settings
+    parser_object.add_argument(
+        "-cf",
+        "--chrome-fetch",
+        type=int,
+        action="store",
+        help="Days before fetching new Chrome version (default: 7)",
+        metavar="",
+    )
+    parser_object.add_argument(
+        "-cc",
+        "--chrome-cleanup",
+        type=int,
+        action="store",
+        help="Days before cleaning up old Chrome versions (default: 90)",
+        metavar="",
+    )
+
     all_arguments = parser_object.parse_args()
 
     server = all_arguments.server
@@ -837,6 +855,21 @@ def command_line_args() -> Path | None:
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
     show_browser_log = all_arguments.show_browser_log
     stop_live_log = all_arguments.stop_live_log
+
+    #get the chrome extension download settings
+    chrome_fetch = all_arguments.chrome_fetch
+    chrome_cleanup = all_arguments.chrome_cleanup
+
+    # Update chrome extension download settings if specified
+    if chrome_fetch is not None:
+        os.environ['CHROME_DAYS_BEFORE_FETCH'] = str(chrome_fetch)
+        
+        print(f"Set days_before_fetch to {os.environ.get('CHROME_DAYS_BEFORE_FETCH')}")
+
+    if chrome_cleanup is not None:
+        os.environ['CHROME_DAYS_BEFORE_CLEANUP'] = str(chrome_cleanup)
+        
+        print(f"Set days_before_cleanup to {os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')}")
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -879,6 +912,7 @@ def command_line_args() -> Path | None:
     module_update_interval = config.get("Advanced Options", {}).get(
         "module_update_interval", ""
     )
+
     if date_str:
         # Parse the date from the configuration file
         config_date = date.fromisoformat(date_str)
