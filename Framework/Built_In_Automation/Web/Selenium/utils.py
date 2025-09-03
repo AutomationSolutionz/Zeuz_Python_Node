@@ -18,6 +18,11 @@ from datetime import timedelta
 import struct
 import urllib.request
 
+#for progress bar
+#from alive_progress import alive_bar
+
+from rich.progress import Progress
+
 
 # ZeuZ Node Downloads base directory
 ZEUZ_NODE_DOWNLOADS_DIR = Path.home() / "zeuz_node_downloads"
@@ -48,29 +53,52 @@ class ChromeForTesting:
             self._init_info_file()
 
     def _init_info_file(self):
+        #modification here to add settings to default structure
         """Initialize the info.json file with default structure"""
         info = {
             "latest": {
                 "version": "",
                 "last_check": ""
             },
-            "installed_versions": {} # ex: ("132.0.6763.0" : "2025-07-02")  <-- (version : last run) 
+            "installed_versions": {},  # ex: ("132.0.6763.0" : "2025-07-02")
+            "settings": {
+                "days_before_fetch": 7,     # set default fetch latest after 7 days
+                "days_before_cleanup": 90   # set default cleanup old versions after 90 days
+            }
         }
         with open(self.CHROME_INFO_FILE, 'w') as f:
             json.dump(info, f, indent=4)
 
+
     def _load_info(self):
         """Load the info.json content"""
-        if not self.CHROME_INFO_FILE.exists():
-            return {
-                "latest": {
-                    "version": "", 
-                    "last_check": ""
-                },
-                "installed_versions": {}
+        #modification here to use defaults with settings
+        defaults = {
+            "latest": {
+                "version": "",
+                "last_check": ""
+            },
+            "installed_versions": {},
+            "settings": {
+                "days_before_fetch": 7,
+                "days_before_cleanup": 90
             }
+        }
+
+        if not self.CHROME_INFO_FILE.exists():
+            return defaults
+
         with open(self.CHROME_INFO_FILE, 'r') as f:
-            return json.load(f)
+            info = json.load(f)
+
+        #adds settings if missing
+        if "settings" not in info:
+            info["settings"] = defaults["settings"]
+            self._save_info(info)
+
+        return info
+
+
 
     def _save_info(self, info):
         """Save data to info.json"""
@@ -84,9 +112,23 @@ class ChromeForTesting:
         cached_version = latest_info.get("version", "")
         last_check_str = latest_info.get("last_check", "")
         
+        #get days_before_fetch from settings
+        settings = info.get("settings", {})
+
+        # Check environment variable first
+        env_fetch = os.environ.get('CHROME_DAYS_BEFORE_FETCH')
+        if env_fetch:
+            days_before_fetch = int(env_fetch)
+            print(f"Using days_before_fetch from env: {days_before_fetch}")
+        else:
+            # otherwise use info.json or default
+            days_before_fetch = settings.get("days_before_fetch", 7)
+
+        #modification here to use settings for days_before_fetch
         if last_check_str and not force_check:
             last_check = datetime.datetime.fromisoformat(last_check_str).date()
-            if (datetime.date.today() - last_check) <= timedelta(days=7):
+            
+            if (datetime.date.today() - last_check) <= timedelta(days=days_before_fetch):
                 return cached_version
         
         # Fetch from API
@@ -103,6 +145,7 @@ class ChromeForTesting:
         self._save_info(info)
         
         return new_version
+
 
     def get_download_url_for_version(self, version):
         """Get download URLs for specific Chrome version"""
@@ -182,15 +225,30 @@ class ChromeForTesting:
         else:
             return driver_dir / driver_dir_name / "chromedriver"
 
-    def download_file(self, url):
-        """Download file from URL"""
-        response = requests.get(url)
+    def download_file(self, url, target_path, title="Downloading"):
+        """Download file from URL
+        Now shows progress bar"""
+        response = requests.get(url, stream=True) #download with stream
         response.raise_for_status()
-        return response.content
 
-    def extract_zip(self, content, target_dir):
+        total_size = int(response.headers.get('content-length', 0)) #gets total size
+        block_size = 1024  # 1 Kibibyte
+        
+        with open(target_path, "wb") as f, Progress() as progress:
+
+            task = progress.add_task(title, total=total_size)
+
+            for block in response.iter_content(block_size): #block size 1K
+                
+                if block:
+                    f.write(block) #writes to file
+                    progress.update(task, advance=len(block)) #advances bar length by block size
+
+        return target_path
+
+    def extract_zip(self, content, target_dir): #modification here since path is passed instead of bytes
         """Extract ZIP content to target directory"""
-        with zipfile.ZipFile(io.BytesIO(content)) as zip_ref:
+        with zipfile.ZipFile(content) as zip_ref:
             for member in zip_ref.infolist():
                 if member.is_dir():
                     continue
@@ -224,11 +282,25 @@ class ChromeForTesting:
                         print(f"Failed to fix macOS permissions: {e}")
 
     def cleanup_old_versions(self):
-        """Remove versions not used in the last 90 days"""
+        """Remove versions not used in the last X days (from settings)"""
         info = self._load_info()
         installed_versions = info.get("installed_versions", {})
         today = datetime.date.today()
-        cutoff_date = today - timedelta(days=90)
+
+        #get days_before_cleanup from  settings
+        settings = info.get("settings", {})
+        
+        # Check environment variable first
+        env_fetch = os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')
+        if env_fetch:
+            days_before_cleanup = int(env_fetch)
+            print(f"Using days_before_cleanup from env: {days_before_cleanup}")
+        else:
+            # otherwise use info.json or default
+            days_before_cleanup = settings.get("days_before_cleanup", 90)
+        
+        #modification here to use settings for days_before_cleanup
+        cutoff_date = today - timedelta(days=days_before_cleanup)
         
         versions_to_remove = []
         for version, date_str in installed_versions.items():
@@ -251,6 +323,7 @@ class ChromeForTesting:
             self._save_info(info)
             print(f"Removed {len(versions_to_remove)} old versions of CfT")
 
+
     def install_version(self, version):
         """Install a specific Chrome version"""
         version_dir = self.CHROME_VERSIONS_DIR / version
@@ -261,17 +334,25 @@ class ChromeForTesting:
 
         chrome_url, driver_url = self.get_download_url_for_version(version)
         
+        chrome_zip_path = version_dir / "chrome.zip"
+        
         # Download and extract Chrome
         print(f"Downloading Chrome for Testing {version}...")
-        chrome_content = self.download_file(chrome_url)
+        self.download_file(chrome_url, chrome_zip_path, title="Downloading Chrome") #download zip to path
         print(f"Extracting Chrome to {version_dir / 'chrome'}...")
-        self.extract_zip(chrome_content, version_dir / "chrome")
+        self.extract_zip(open(chrome_zip_path, 'rb'), version_dir / "chrome")
+
+        chrome_zip_path.unlink() # remove zip
+        
+        driver_zip_path = version_dir / "driver.zip"
         
         # Download and extract ChromeDriver
         print(f"Downloading ChromeDriver {version}...")
-        driver_content = self.download_file(driver_url)
+        self.download_file(driver_url, driver_zip_path, title="Downloading ChromeDriver")
         print(f"Extracting ChromeDriver to {version_dir / 'driver'}...")
-        self.extract_zip(driver_content, version_dir / "driver")
+        self.extract_zip(open(driver_zip_path, 'rb'), version_dir / "driver")
+        
+        driver_zip_path.unlink()
 
         # Set execute permissions (Unix systems)
         self.set_execute_permissions(version_dir)
@@ -555,4 +636,3 @@ if __name__ == "__main__":
     if not result:
         print("Failed to download Chrome extension")
         sys.exit(1)
-
