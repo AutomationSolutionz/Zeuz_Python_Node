@@ -8,7 +8,7 @@ from server.status import router as status_router
 from server.connect import router as connect_router
 from server.evaluator import router as evaluator_router
 from server.node_operator import router as operator_router
-from server.mobile import router as mobile_router, upload_android_ui_dump
+from server.mobile import router as mobile_router, quiet_upload_android_ui_dump #modification here to suppress appium logs at startup
 from server.mac import router as mac_router
 
 class EndpointFilter(logging.Filter):
@@ -27,7 +27,7 @@ class EndpointFilter(logging.Filter):
 def main() -> FastAPI:
     # Filter out /endpoint
     logging.getLogger("uvicorn.access").addFilter(EndpointFilter(path="/status"))
-    thread = threading.Thread(target=upload_android_ui_dump, daemon=True)
+    thread = threading.Thread(target=quiet_upload_android_ui_dump, daemon=True)
     thread.start()
 
     v1router = APIRouter(
