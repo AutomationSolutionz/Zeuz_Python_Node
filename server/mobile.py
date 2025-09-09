@@ -5,6 +5,10 @@ import base64
 import time
 from typing import Literal
 
+# modification to suppress appium logs at startup
+import sys
+from contextlib import contextmanager
+
 import requests
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -171,3 +175,29 @@ def upload_android_ui_dump():
         except Exception as e:
             CommonUtil.ExecLog("", f"Error uploading UI dump: {str(e)}", iLogLevel=3)
         time.sleep(5)
+
+
+#modification here to stop appium logs at startup
+@contextmanager
+def suppress_stdout():
+    """Temporarily suppress print statements"""
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
+    try:
+        yield
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
+
+def quiet_upload_android_ui_dump():
+    """Run first cycle with stdout suppressed, then continue normally"""
+
+    with suppress_stdout():
+        try:
+            capture_ui_dump()
+            capture_screenshot()
+        finally:
+            pass
+
+    # now continue with normal infinite loop
+    upload_android_ui_dump()
