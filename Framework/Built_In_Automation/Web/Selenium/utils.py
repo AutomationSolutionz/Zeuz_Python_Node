@@ -90,7 +90,7 @@ class ChromeForTesting:
                 return cached_version
         
         # Fetch from API
-        response = requests.get("https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json")
+        response = requests.get("https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json", verify=False)
         response.raise_for_status()
         data = response.json()
         new_version = data['channels'][channel]['version']
@@ -107,7 +107,8 @@ class ChromeForTesting:
     def get_download_url_for_version(self, version):
         """Get download URLs for specific Chrome version"""
         response = requests.get(
-            "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json"
+            "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json",
+            verify=False
         )
         response.raise_for_status()
         data = response.json()
@@ -184,7 +185,7 @@ class ChromeForTesting:
 
     def download_file(self, url):
         """Download file from URL"""
-        response = requests.get(url)
+        response = requests.get(url, verify=False)
         response.raise_for_status()
         return response.content
 
