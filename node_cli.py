@@ -529,7 +529,8 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                 return False
 
             print("[deploy] Run complete.")
-            notify_complete("Run completed")
+            if CommonUtil.debug_status:
+                notify_complete("Run completed")
 
             if run_once:
                 return True
@@ -541,7 +542,8 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                 return
 
             print("[deploy] Run cancelled.")
-            notify_complete("Run cancelled")
+            if CommonUtil.debug_status:
+                notify_complete("Run cancelled")
             CommonUtil.run_cancelled = True
 
         deploy_handler = long_poll_handler.DeployHandler(
