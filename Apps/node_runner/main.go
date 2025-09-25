@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
 )
 
 const (
@@ -172,43 +174,29 @@ func installUV() error {
 
 	fmt.Println("Installing UV...")
 
-	// Create temporary directory for installation files
-	tempDir, err := os.MkdirTemp("", "uv-install")
-	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	var (
-		scriptURL  string
-		scriptPath string
-		cmd        *exec.Cmd
-	)
-
 	if runtime.GOOS == "windows" {
-		scriptURL = "https://astral.sh/uv/install.ps1"
-		scriptPath = filepath.Join(tempDir, "install.ps1")
-
-		if err := downloadFile(scriptURL, scriptPath); err != nil {
-			return err
-		}
-
-		cmd = exec.Command("powershell", "-ExecutionPolicy", "ByPass", "-File", scriptPath)
+		return uv_installer.InstallUVFromSource()
 	} else {
-		scriptURL = "https://astral.sh/uv/install.sh"
-		scriptPath = filepath.Join(tempDir, "install.sh")
+		// For non-Windows systems, use the shell script
+		tempDir, err := os.MkdirTemp("", "uv-install")
+		if err != nil {
+			return fmt.Errorf("failed to create temp directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		scriptURL := "https://astral.sh/uv/install.sh"
+		scriptPath := filepath.Join(tempDir, "install.sh")
 
 		if err := downloadFile(scriptURL, scriptPath); err != nil {
 			return err
 		}
 
-		cmd = exec.Command("sh", scriptPath)
+		cmd := exec.Command("sh", scriptPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		return cmd.Run()
 	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	return cmd.Run()
 }
 
 // updatePath adds UV binary location to PATH
