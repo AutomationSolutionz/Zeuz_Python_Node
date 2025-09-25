@@ -377,7 +377,7 @@ class ChromeForTesting:
         
         # Use latest version if not specified
         if not version:
-            version = self.get_latest_version(channel=channel, force_check=True)
+            version = self.get_latest_version(channel=channel, force_check=False)
             print(f"Using latest chrome for testing version: {channel or ''} {version}")
         else:
             print(f"Using specified chrome for testing version: {version}")
