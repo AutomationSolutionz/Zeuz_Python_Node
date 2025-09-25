@@ -830,7 +830,7 @@ def command_line_args() -> Path | None:
         "--chrome-fetch",
         type=int,
         action="store",
-        help="Days before fetching new Chrome version (default: 7)",
+        help="Days before fetching new Chrome version (default: 15)",
         metavar="",
     )
     parser_object.add_argument(
@@ -838,7 +838,7 @@ def command_line_args() -> Path | None:
         "--chrome-cleanup",
         type=int,
         action="store",
-        help="Days before cleaning up old Chrome versions (default: 90)",
+        help="Days before cleaning up old Chrome versions (default: 50)",
         metavar="",
     )
 
