@@ -369,7 +369,7 @@ class ChromeForTesting:
             if version < "115.0.5763.0":
                 print("Chrome for testing version must be at least: '115.0.5763.0'")
                 return None, None
-            if version.strip().lower() == "none":
+            if version.strip().lower() == "system":
                 print("Forcefully trying to use regular chrome instead of chrome for testing.")
                 return None, None
         
