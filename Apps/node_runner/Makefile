@@ -8,8 +8,10 @@ VERSION=1.0.0
 APPNAME=ZeuZ_Node
 
 windows:
+	x86_64-w64-mingw32-windres -o resource.syso resource.rc
 	GOOS=windows GOARCH=amd64 go build -o '$(BUILD_DIR)/$(APPNAME).exe' main.go
 	GOOS=windows GOARCH=arm64 go build -o '$(BUILD_DIR)/$(APPNAME)_arm64.exe' main.go
+	rm -f resource.syso
 
 mac:
 	GOOS=darwin GOARCH=arm64 go build -o '$(BUILD_DIR)/$(APPNAME)_macos' main.go
