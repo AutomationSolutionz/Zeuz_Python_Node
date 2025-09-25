@@ -1,4 +1,4 @@
-.PHONY: all clean windows mac linux
+.PHONY: all clean windows mac linux checksums
 
 # Output directory
 BUILD_DIR=build
@@ -19,7 +19,10 @@ linux:
 	GOOS=linux GOARCH=amd64 go build -o '$(BUILD_DIR)/$(APPNAME)_linux' main.go
 	GOOS=linux GOARCH=arm64 go build -o '$(BUILD_DIR)/$(APPNAME)_linux_arm64' main.go
 
-all: windows linux mac
+checksums:
+	cd $(BUILD_DIR) && sha256sum * > checksums.txt
+
+all: windows linux mac checksums
 
 clean:
 	rm -rf $(BUILD_DIR)
