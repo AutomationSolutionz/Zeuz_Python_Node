@@ -17,10 +17,6 @@ import datetime
 from datetime import timedelta
 import struct
 import urllib.request
-
-#for progress bar
-#from alive_progress import alive_bar
-
 from rich.progress import Progress
 
 
@@ -62,8 +58,8 @@ class ChromeForTesting:
             },
             "installed_versions": {},  # ex: ("132.0.6763.0" : "2025-07-02")
             "settings": {
-                "days_before_fetch": 7,     # set default fetch latest after 7 days
-                "days_before_cleanup": 90   # set default cleanup old versions after 90 days
+                "days_before_fetch": 15,     # set default fetch latest after 15 days
+                "days_before_cleanup": 50   # set default cleanup old versions after 50 days
             }
         }
         with open(self.CHROME_INFO_FILE, 'w') as f:
@@ -80,8 +76,8 @@ class ChromeForTesting:
             },
             "installed_versions": {},
             "settings": {
-                "days_before_fetch": 7,
-                "days_before_cleanup": 90
+                "days_before_fetch": 15,
+                "days_before_cleanup": 50
             }
         }
 
@@ -122,7 +118,7 @@ class ChromeForTesting:
             print(f"Using days_before_fetch from env: {days_before_fetch}")
         else:
             # otherwise use info.json or default
-            days_before_fetch = settings.get("days_before_fetch", 7)
+            days_before_fetch = settings.get("days_before_fetch", 15)
 
         #modification here to use settings for days_before_fetch
         if last_check_str and not force_check:
@@ -298,7 +294,7 @@ class ChromeForTesting:
             print(f"Using days_before_cleanup from env: {days_before_cleanup}")
         else:
             # otherwise use info.json or default
-            days_before_cleanup = settings.get("days_before_cleanup", 90)
+            days_before_cleanup = settings.get("days_before_cleanup", 50)
         
         #modification here to use settings for days_before_cleanup
         cutoff_date = today - timedelta(days=days_before_cleanup)
@@ -371,9 +367,13 @@ class ChromeForTesting:
         if not channel:
             channel = "Stable"
 
-        if version and version < "115.0.5763.0":
-            print("Chrome for testing version must be at least: '115.0.5763.0'")
-            return None, None
+        if version:
+            if version < "115.0.5763.0":
+                print("Chrome for testing version must be at least: '115.0.5763.0'")
+                return None, None
+            if version.strip().lower() == "none":
+                print("Forcefully trying to use regular chrome instead of chrome for testing.")
+                return None, None
         
         # Use latest version if not specified
         if not version:
