@@ -116,6 +116,15 @@ def get_npm_path():
         return node_dir / "bin" / "npm"
 
 
+def get_appium_path():
+    """Get appium binary path."""
+    node_dir = get_node_dir()
+    if platform.system() == "Windows":
+        return node_dir / "appium.cmd"
+    else:
+        return node_dir / "bin" / "appium"
+
+
 def install_appium():
     """Install Appium and drivers using local Node.js."""
     npm_path = get_npm_path()
@@ -126,13 +135,25 @@ def install_appium():
     print("Installing Appium...")
     subprocess.run([str(npm_path), "install", "-g", "appium"], check=True)
 
+    # Install platform-specific drivers
+    appium_path = get_appium_path()
+    system = platform.system().lower()
+
+    drivers_to_install = []
+    if system == "windows":
+        drivers_to_install = ["uiautomator2", "windows"]
+    elif system == "darwin":
+        drivers_to_install = ["uiautomator2", "xcuitest", "mac2"]
+    elif system == "linux":
+        drivers_to_install = ["uiautomator2"]
+
     print("Installing Appium drivers...")
-    subprocess.run(
-        [str(npm_path), "install", "-g", "appium-uiautomator2-driver"], check=True
-    )
-    subprocess.run(
-        [str(npm_path), "install", "-g", "appium-xcuitest-driver"], check=True
-    )
+    for driver in drivers_to_install:
+        try:
+            subprocess.run([str(appium_path), "driver", "install", driver], check=True)
+            print(f"Successfully installed {driver} driver")
+        except subprocess.CalledProcessError:
+            print(f"Warning: Failed to install {driver} driver, continuing...")
 
     print("Appium installation completed")
 
