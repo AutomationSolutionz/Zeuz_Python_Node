@@ -275,8 +275,8 @@ func runUVCommands(args []string) error {
 func main() {
 	flag.Parse()
 
-	fmt.Printf("✅ ZeuZ Node v%s\n", version)
-	setConsoleTitle(fmt.Sprintf("✅ ZeuZ Node v%s", version))
+	fmt.Printf("✅ ZeuZ Node %s\n", version)
+	setConsoleTitle(fmt.Sprintf("✅ ZeuZ Node %s", version))
 
 	// Setup ZeuZ Node directory and change into it
 	if err := setupZeuzNode(); err != nil {
