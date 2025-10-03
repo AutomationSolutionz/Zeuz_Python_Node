@@ -191,6 +191,10 @@ def main():
 
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
+    
+    # Setup Node.js and Appium before other operations
+    setup_nodejs_appium()
+    
     update_outdated_modules()
     monkeypatch_fromisoformat()
     start_server()
@@ -203,6 +207,31 @@ def main():
         os.system(
             f"title Node {text} - 🐍 {platform.python_version()} {platform.architecture()[0]}"
         )
+
+
+def setup_nodejs_appium():
+    """Setup Node.js and Appium if not already installed."""
+    try:
+        # Import the installer module
+        import nodejs_appium_installer
+        
+        print("Checking Node.js and Appium installation...")
+        node_installed, appium_installed = nodejs_appium_installer.check_installations()
+        
+        if not node_installed or not appium_installed:
+            print("Setting up Node.js and Appium...")
+            if nodejs_appium_installer.setup_nodejs_appium():
+                print("Node.js and Appium setup completed successfully")
+            else:
+                print("Warning: Node.js and Appium setup failed")
+        else:
+            print("Node.js and Appium already installed")
+            # Still update PATH in case it's not set
+            nodejs_appium_installer.update_path()
+            
+    except Exception as e:
+        print(f"Warning: Failed to setup Node.js and Appium: {e}")
+        print("Continuing without Node.js/Appium setup...")
 
 
 main()
