@@ -22,6 +22,7 @@ from appium.options.mac.mac2.base import Mac2Options
 import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
+from pathlib import Path
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
@@ -117,10 +118,17 @@ def find_appium():
 
     # Expected locations
     appium_list = [
+        str(Path.home() / ".zeuz" / "nodejs" / "appium.cmd"),
+        str(Path.home() / ".zeuz" / "nodejs" / "appium.exe"),
+        str(Path.home() / ".zeuz" / "nodejs" / "appium.ps1"),
+        str(Path.home() / ".zeuz" / "nodejs" / "appium"),
+        str(Path.home() / ".zeuz" / "nodejs" / "bin" / "appium"),
         "/usr/bin/appium",
         os.path.join(str(os.getenv("HOME")), ".linuxbrew/bin/appium"),
         os.path.join(str(os.getenv("ProgramFiles")), "APPIUM", "Appium.exe"),
-        os.path.join(str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"),
+        os.path.join(
+            str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"
+        ),
     ]  # getenv() must be wrapped in str(), so it doesn't fail on other platforms
 
     # Try to find the appium executable
@@ -779,19 +787,19 @@ def start_appium_server():
             appium_server = None
             if sys.platform == "win32":  # We need to open appium in it's own command dos box on Windows
                 cmd = (
-                    'start "Appium Server" /wait /min cmd /c "%s" --allow-insecure chromedriver_autodownload -p %d'
+                    'start "Appium Server" /wait /min cmd /c "%s" -p %d'
                     % (appium_binary, appium_port)
                 )  # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell=True)  # Needs to run in a shell due to the execution command
             elif sys.platform == "darwin":
                 appium_server = subprocess.Popen(
-                    "%s --allow-insecure chromedriver_autodownload -p %s"
+                    "%s -p %s"
                     % (appium_binary, str(appium_port)),
                     shell=True,
                 )
             elif sys.platform == "linux" or sys.platform == "linux2":
                 appium_server = subprocess.Popen(
-                    "%s --allow-insecure chromedriver_autodownload -p %s"
+                    "%s -p %s"
                     % (appium_binary, str(appium_port)),
                     shell=True,
                 )
@@ -802,7 +810,7 @@ def start_appium_server():
                     env = {"PATH": str(appium_binary_path)}
                     appium_server = subprocess.Popen(
                         subprocess.Popen(
-                            "%s --allow-insecure chromedriver_autodownload -p %s"
+                            "%s -p %s"
                             % (appium_binary, str(appium_port)),
                             shell=True,
                         ),
@@ -844,7 +852,7 @@ def start_appium_server():
                 pass  # Keep waiting for appium to start
 
         if appium_server:
-            CommonUtil.ExecLog(sModuleInfo, "Server started", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Appium server started", 1)
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Server failed to start", 3)

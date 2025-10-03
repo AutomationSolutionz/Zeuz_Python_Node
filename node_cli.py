@@ -200,15 +200,6 @@ def main():
     monkeypatch_fromisoformat()
     start_server()
 
-    # Set the console title to include the version number.
-    version_path = Path("Version.txt")
-    text = version_path.read_text()
-    text = text[text.find("=") + 1 :].split("\n")[0].strip()
-    if os.name == "nt":
-        os.system(
-            f"title Node {text} - 🐍 {platform.python_version()} {platform.architecture()[0]}"
-        )
-
 
 def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
