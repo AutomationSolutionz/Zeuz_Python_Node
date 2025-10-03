@@ -6,6 +6,7 @@ import tarfile
 import zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
+import json
 
 # This should always be the latest LTS version
 NODE_VERSION = "22.20.0"
@@ -125,6 +126,18 @@ def get_appium_path():
         return node_dir / "bin" / "appium"
 
 
+def install_drivers(drivers):
+    """Install specified Appium drivers."""
+    appium_path = get_appium_path()
+
+    for driver in drivers:
+        try:
+            subprocess.run([str(appium_path), "driver", "install", driver], check=True)
+            print(f"Successfully installed {driver} driver")
+        except subprocess.CalledProcessError:
+            print(f"Warning: Failed to install {driver} driver, continuing...")
+
+
 def install_appium():
     """Install Appium and drivers using local Node.js."""
     npm_path = get_npm_path()
@@ -135,26 +148,8 @@ def install_appium():
     print("Installing Appium...")
     subprocess.run([str(npm_path), "install", "-g", "appium"], check=True)
 
-    # Install platform-specific drivers
-    appium_path = get_appium_path()
-    system = platform.system().lower()
-
-    drivers_to_install = []
-    if system == "windows":
-        drivers_to_install = ["uiautomator2", "windows"]
-    elif system == "darwin":
-        drivers_to_install = ["uiautomator2", "xcuitest", "mac2"]
-    elif system == "linux":
-        drivers_to_install = ["uiautomator2"]
-
     print("Installing Appium drivers...")
-    for driver in drivers_to_install:
-        try:
-            subprocess.run([str(appium_path), "driver", "install", driver], check=True)
-            print(f"Successfully installed {driver} driver")
-        except subprocess.CalledProcessError:
-            print(f"Warning: Failed to install {driver} driver, continuing...")
-
+    install_drivers(get_required_drivers())
     print("Appium installation completed")
 
 
@@ -191,16 +186,12 @@ def check_appium_drivers():
 
     try:
         result = subprocess.run(
-            [str(appium_path), "driver", "list", "--installed"],
+            [str(appium_path), "driver", "list", "--json"],
             capture_output=True,
             text=True,
         )
-        installed_drivers = []
-        for line in result.stdout.split("\n"):
-            if "@" in line and "installed" in line.lower():
-                driver_name = line.split("@")[0].strip()
-                installed_drivers.append(driver_name)
-        return installed_drivers
+        drivers_data = json.loads(result.stdout)
+        return [name for name, info in drivers_data.items() if info.get("installed", False)]
     except:  # noqa: E722
         return []
 
@@ -217,9 +208,10 @@ def check_installations():
     if npm_path.exists():
         try:
             result = subprocess.run(
-                [str(npm_path), "list", "-g", "appium"], capture_output=True, text=True
+                [str(npm_path), "list", "-g", "--json", "appium"], capture_output=True, text=True
             )
-            appium_installed = "appium@" in result.stdout
+            npm_data = json.loads(result.stdout)
+            appium_installed = "appium" in npm_data.get("dependencies", {})
         except:  # noqa: E722
             pass
 
@@ -233,15 +225,8 @@ def check_installations():
 
 def install_missing_drivers(missing_drivers):
     """Install missing Appium drivers."""
-    appium_path = get_appium_path()
-
     print("Installing missing Appium drivers...")
-    for driver in missing_drivers:
-        try:
-            subprocess.run([str(appium_path), "driver", "install", driver], check=True)
-            print(f"Successfully installed {driver} driver")
-        except subprocess.CalledProcessError:
-            print(f"Warning: Failed to install {driver} driver, continuing...")
+    install_drivers(missing_drivers)
 
 
 def setup_nodejs_appium():
