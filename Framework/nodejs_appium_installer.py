@@ -41,7 +41,9 @@ def get_node_url():
 
 def get_node_dir():
     """Get Node.js installation directory."""
-    return Path.home() / ".zeuz" / "nodejs"
+    node_dir = Path.home() / ".zeuz" / "nodejs"
+    node_dir.mkdir(parents=True, exist_ok=True)
+    return node_dir
 
 
 def extract_archive(archive_path, dest_dir):
@@ -232,15 +234,16 @@ def install_missing_drivers(missing_drivers):
 def setup_nodejs_appium():
     """Main setup function."""
     try:
+        update_path()  # Ensure Node.js is in PATH from the start
+
         print("Checking Node.js and Appium installation...")
         node_installed, appium_installed, missing_drivers = check_installations()
 
         if not node_installed:
             install_nodejs()
+            update_path()  # Update PATH after installation
         else:
             print("Node.js already installed")
-
-        update_path()
 
         if not appium_installed:
             install_appium()
