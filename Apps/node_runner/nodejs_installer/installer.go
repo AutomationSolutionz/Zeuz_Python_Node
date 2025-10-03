@@ -164,20 +164,43 @@ func extractTarGz(src, dest string) error {
 		if len(parts) <= 1 {
 			continue
 		}
-		path := filepath.Join(dest, filepath.Join(parts[1:]...))
-		
+		unsafePath := filepath.Join(parts[1:]...)
+		cleanPath := filepath.Clean(unsafePath)
+
+		// Prevent Zip Slip: Don't allow '..' anywhere, nor absolute extraction
+		if strings.Contains(cleanPath, "..") || filepath.IsAbs(cleanPath) {
+			// Skip entries with directory traversal or absolute paths
+			continue
+		}
+
+		// Build absolute extraction path
+		path := filepath.Join(dest, cleanPath)
+		absDest, err := filepath.Abs(dest)
+		if err != nil {
+			return err
+		}
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasPrefix(absPath, absDest+string(os.PathSeparator)) && absPath != absDest {
+			// Extraction path is outside of destination: skip entry
+			continue
+		}
+
 		switch header.Typeflag {
 		case tar.TypeDir:
-			os.MkdirAll(path, 0755)
+			os.MkdirAll(absPath, 0755)
 		case tar.TypeReg:
-			os.MkdirAll(filepath.Dir(path), 0755)
-			outFile, err := os.Create(path)
+			os.MkdirAll(filepath.Dir(absPath), 0755)
+			outFile, err := os.Create(absPath)
 			if err != nil {
 				return err
 			}
 			io.Copy(outFile, tr)
 			outFile.Close()
-			os.Chmod(path, os.FileMode(header.Mode))
+			os.Chmod(absPath, os.FileMode(header.Mode))
 		}
 	}
 	return nil
