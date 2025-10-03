@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,8 +16,12 @@ import (
 )
 
 const (
-	zeuzURL = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
 	zeuzDir = "ZeuZ_Node"
+)
+
+var (
+	version = "dev"
+	branch  = flag.String("branch", "", "Branch to download (defaults to tagged version)")
 )
 
 // downloadFile downloads a file from URL to a local path
@@ -119,6 +124,17 @@ func unzip(zipFile, dest string) error {
 	return nil
 }
 
+// getZeuZNodeURL returns the appropriate download URL based on version and branch
+func getZeuZNodeURL() string {
+	if *branch != "" {
+		return fmt.Sprintf("https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/%s.zip", *branch)
+	}
+	if version != "dev" && !strings.HasPrefix(version, "dev-") {
+		return fmt.Sprintf("https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/tags/%s.zip", version)
+	}
+	return "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
+}
+
 // setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
 func setupZeuzNode() error {
 	// Check if ZeuZ Node directory already exists and contains files
@@ -145,7 +161,8 @@ func setupZeuzNode() error {
 
 	// Download zip file
 	zipPath := filepath.Join(tempDir, "zeuz.zip")
-	fmt.Println("Downloading ZeuZ Node repository...")
+	zeuzURL := getZeuZNodeURL()
+	fmt.Printf("Downloading ZeuZ Node repository from: %s\n", zeuzURL)
 	if err := downloadFile(zeuzURL, zipPath); err != nil {
 		return err
 	}
@@ -244,6 +261,10 @@ func runUVCommands(args []string) error {
 }
 
 func main() {
+	flag.Parse()
+
+	fmt.Printf("ZeuZ Node Runner v%s\n", version)
+
 	// Setup ZeuZ Node directory and change into it
 	if err := setupZeuzNode(); err != nil {
 		fmt.Printf("Error setting up ZeuZ Node: %v\n", err)
@@ -272,8 +293,8 @@ func main() {
 		fmt.Printf("Error updating path: %v\n", err)
 	}
 
-	// Get command line arguments, excluding the program name
-	args := os.Args[1:]
+	// Get remaining command line arguments after flag parsing
+	args := flag.Args()
 
 	// Run UV commands with arguments
 	if err := runUVCommands(args); err != nil {
