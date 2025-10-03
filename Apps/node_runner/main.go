@@ -11,8 +11,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"syscall"
-	"unsafe"
 
 	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
 )
@@ -242,10 +240,8 @@ func updatePath() error {
 // setConsoleTitle sets the console window title on Windows
 func setConsoleTitle(title string) {
 	if runtime.GOOS == "windows" {
-		kernel32 := syscall.NewLazyDLL("kernel32.dll")
-		setConsoleTitleW := kernel32.NewProc("SetConsoleTitleW")
-		titlePtr, _ := syscall.UTF16PtrFromString(title)
-		setConsoleTitleW.Call(uintptr(unsafe.Pointer(titlePtr)))
+		cmd := exec.Command("title", title)
+		cmd.Run()
 	}
 }
 
