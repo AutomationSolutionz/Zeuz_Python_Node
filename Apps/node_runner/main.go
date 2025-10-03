@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+	"unsafe"
 
 	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
 )
@@ -237,6 +239,16 @@ func updatePath() error {
 	return nil
 }
 
+// setConsoleTitle sets the console window title on Windows
+func setConsoleTitle(title string) {
+	if runtime.GOOS == "windows" {
+		kernel32 := syscall.NewLazyDLL("kernel32.dll")
+		setConsoleTitleW := kernel32.NewProc("SetConsoleTitleW")
+		titlePtr, _ := syscall.UTF16PtrFromString(title)
+		setConsoleTitleW.Call(uintptr(unsafe.Pointer(titlePtr)))
+	}
+}
+
 // runUVCommands executes UV sync and run commands
 func runUVCommands(args []string) error {
 	// Run UV sync
@@ -263,7 +275,8 @@ func runUVCommands(args []string) error {
 func main() {
 	flag.Parse()
 
-	fmt.Printf("ZeuZ Node Runner v%s\n", version)
+	fmt.Printf("✅ ZeuZ Node v%s\n", version)
+	setConsoleTitle(fmt.Sprintf("✅ ZeuZ Node v%s", version))
 
 	// Setup ZeuZ Node directory and change into it
 	if err := setupZeuzNode(); err != nil {
