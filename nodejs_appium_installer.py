@@ -171,8 +171,42 @@ def update_path():
         os.environ["PATH"] = f"{bin_dir}{os.pathsep}{current_path}"
 
 
+def get_required_drivers():
+    """Get list of required drivers for current platform."""
+    system = platform.system().lower()
+    if system == "windows":
+        return ["uiautomator2", "windows"]
+    elif system == "darwin":
+        return ["uiautomator2", "xcuitest", "mac2"]
+    elif system == "linux":
+        return ["uiautomator2"]
+    return []
+
+
+def check_appium_drivers():
+    """Check if required Appium drivers are installed."""
+    appium_path = get_appium_path()
+    if not appium_path.exists():
+        return []
+
+    try:
+        result = subprocess.run(
+            [str(appium_path), "driver", "list", "--installed"],
+            capture_output=True,
+            text=True,
+        )
+        installed_drivers = []
+        for line in result.stdout.split("\n"):
+            if "@" in line and "installed" in line.lower():
+                driver_name = line.split("@")[0].strip()
+                installed_drivers.append(driver_name)
+        return installed_drivers
+    except:  # noqa: E722
+        return []
+
+
 def check_installations():
-    """Check if Node.js and Appium are installed."""
+    """Check if Node.js, Appium and required drivers are installed."""
     node_dir = get_node_dir()
     node_bin = node_dir / ("node.exe" if platform.system() == "Windows" else "bin/node")
 
@@ -189,22 +223,48 @@ def check_installations():
         except:  # noqa: E722
             pass
 
-    return node_bin.exists(), appium_installed
+    # Check drivers
+    required_drivers = get_required_drivers()
+    installed_drivers = check_appium_drivers() if appium_installed else []
+    missing_drivers = [d for d in required_drivers if d not in installed_drivers]
+
+    return node_bin.exists(), appium_installed, missing_drivers
+
+
+def install_missing_drivers(missing_drivers):
+    """Install missing Appium drivers."""
+    appium_path = get_appium_path()
+
+    print("Installing missing Appium drivers...")
+    for driver in missing_drivers:
+        try:
+            subprocess.run([str(appium_path), "driver", "install", driver], check=True)
+            print(f"Successfully installed {driver} driver")
+        except subprocess.CalledProcessError:
+            print(f"Warning: Failed to install {driver} driver, continuing...")
 
 
 def setup_nodejs_appium():
     """Main setup function."""
     try:
-        node_installed, appium_installed = check_installations()
+        print("Checking Node.js and Appium installation...")
+        node_installed, appium_installed, missing_drivers = check_installations()
 
         if not node_installed:
             install_nodejs()
+        else:
+            print("Node.js already installed")
 
         update_path()
 
         if not appium_installed:
             install_appium()
+        elif missing_drivers:
+            install_missing_drivers(missing_drivers)
+        else:
+            print("Appium and all required drivers already installed")
 
+        print("Node.js and Appium setup completed successfully")
         return True
     except Exception as e:
         print(f"Error during setup: {e}")

@@ -40,6 +40,7 @@ print(f"Current file path: {os.path.abspath(__file__)}")
 extension_downloader = ChromeExtensionDownloader()
 extension_downloader.cleanup_extensions()
 
+
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
     root_dir = Path.cwd()
@@ -191,10 +192,10 @@ def main():
 
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
-    
+
     # Setup Node.js and Appium before other operations
     setup_nodejs_appium()
-    
+
     update_outdated_modules()
     monkeypatch_fromisoformat()
     start_server()
@@ -212,23 +213,8 @@ def main():
 def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
     try:
-        # Import the installer module
         import nodejs_appium_installer
-        
-        print("Checking Node.js and Appium installation...")
-        node_installed, appium_installed = nodejs_appium_installer.check_installations()
-        
-        if not node_installed or not appium_installed:
-            print("Setting up Node.js and Appium...")
-            if nodejs_appium_installer.setup_nodejs_appium():
-                print("Node.js and Appium setup completed successfully")
-            else:
-                print("Warning: Node.js and Appium setup failed")
-        else:
-            print("Node.js and Appium already installed")
-            # Still update PATH in case it's not set
-            nodejs_appium_installer.update_path()
-            
+        nodejs_appium_installer.setup_nodejs_appium()
     except Exception as e:
         print(f"Warning: Failed to setup Node.js and Appium: {e}")
         print("Continuing without Node.js/Appium setup...")
@@ -853,7 +839,7 @@ def command_line_args() -> Path | None:
         help="Disables log in live server",
     )
 
-    #modification here to add parsers to change chrome download settings
+    # modification here to add parsers to change chrome download settings
     parser_object.add_argument(
         "-cf",
         "--chrome-fetch",
@@ -883,20 +869,22 @@ def command_line_args() -> Path | None:
     show_browser_log = all_arguments.show_browser_log
     stop_live_log = all_arguments.stop_live_log
 
-    #get the chrome extension download settings
+    # get the chrome extension download settings
     chrome_fetch = all_arguments.chrome_fetch
     chrome_cleanup = all_arguments.chrome_cleanup
 
     # Update chrome extension download settings if specified
     if chrome_fetch is not None:
-        os.environ['CHROME_DAYS_BEFORE_FETCH'] = str(chrome_fetch)
-        
+        os.environ["CHROME_DAYS_BEFORE_FETCH"] = str(chrome_fetch)
+
         print(f"Set days_before_fetch to {os.environ.get('CHROME_DAYS_BEFORE_FETCH')}")
 
     if chrome_cleanup is not None:
-        os.environ['CHROME_DAYS_BEFORE_CLEANUP'] = str(chrome_cleanup)
-        
-        print(f"Set days_before_cleanup to {os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')}")
+        os.environ["CHROME_DAYS_BEFORE_CLEANUP"] = str(chrome_cleanup)
+
+        print(
+            f"Set days_before_cleanup to {os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')}"
+        )
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
