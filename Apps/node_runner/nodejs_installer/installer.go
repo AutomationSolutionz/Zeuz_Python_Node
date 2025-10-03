@@ -72,6 +72,24 @@ func downloadFile(url, dest string) error {
 	return err
 }
 
+// safeJoin securely joins and validates that the resulting path is within the intended directory.
+func safeJoin(destDir, filePath string) (string, error) {
+	cleanDest, err := filepath.Abs(destDir)
+	if err != nil {
+		return "", err
+	}
+	destPath := filepath.Join(cleanDest, filePath)
+	cleanPath, err := filepath.Abs(destPath)
+	if err != nil {
+		return "", err
+	}
+	// Ensure the cleaned path starts with the cleaned destination root path + separator
+	if !strings.HasPrefix(cleanPath, cleanDest+string(os.PathSeparator)) && cleanPath != cleanDest {
+		return "", fmt.Errorf("illegal file path: %s", filePath)
+	}
+	return cleanPath, nil
+}
+
 // extractZip extracts a zip file
 func extractZip(src, dest string) error {
 	r, err := zip.OpenReader(src)
@@ -86,20 +104,24 @@ func extractZip(src, dest string) error {
 		if len(parts) <= 1 {
 			continue
 		}
-		path := filepath.Join(dest, filepath.Join(parts[1:]...))
-		
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(path, 0755)
+		outputPath, err := safeJoin(dest, filepath.Join(parts[1:]...))
+		if err != nil {
+			// Skip files with unsafe paths
 			continue
 		}
 		
-		os.MkdirAll(filepath.Dir(path), 0755)
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(outputPath, 0755)
+			continue
+		}
+		
+		os.MkdirAll(filepath.Dir(outputPath), 0755)
 		rc, err := f.Open()
 		if err != nil {
 			return err
 		}
 		
-		outFile, err := os.Create(path)
+		outFile, err := os.Create(outputPath)
 		if err != nil {
 			rc.Close()
 			return err
