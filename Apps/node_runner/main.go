@@ -237,14 +237,6 @@ func updatePath() error {
 	return nil
 }
 
-// setConsoleTitle sets the console window title on Windows
-func setConsoleTitle(title string) {
-	if runtime.GOOS == "windows" {
-		cmd := exec.Command("title", title)
-		cmd.Run()
-	}
-}
-
 // runUVCommands executes UV sync and run commands
 func runUVCommands(args []string) error {
 	// Run UV sync
@@ -272,7 +264,6 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("✅ ZeuZ Node %s\n", version)
-	setConsoleTitle(fmt.Sprintf("✅ ZeuZ Node %s", version))
 
 	// Setup ZeuZ Node directory and change into it
 	if err := setupZeuzNode(); err != nil {
