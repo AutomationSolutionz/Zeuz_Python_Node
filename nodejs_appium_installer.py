@@ -91,7 +91,7 @@ def install_nodejs():
     # Download Node.js
     url = get_node_url()
     archive_name = Path(url).name
-    archive_path = Path.cwd() / archive_name
+    archive_path = node_dir / archive_name
 
     print("Downloading Node.js...")
     urlretrieve(url, archive_path)
@@ -165,7 +165,7 @@ def check_installations():
                 [str(npm_path), "list", "-g", "appium"], capture_output=True, text=True
             )
             appium_installed = "appium@" in result.stdout
-        except:
+        except:  # noqa: E722
             pass
 
     return node_bin.exists(), appium_installed
