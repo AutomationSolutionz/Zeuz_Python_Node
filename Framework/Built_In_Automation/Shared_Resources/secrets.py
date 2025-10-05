@@ -16,8 +16,7 @@ Example:
 import json
 import base64
 import inspect
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -26,6 +25,9 @@ from cryptography.hazmat.primitives.padding import PKCS7
 
 from Framework.Utilities import CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+
+
+from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 
 
 MODULE_NAME = inspect.getmodulename(__file__)
@@ -44,7 +46,7 @@ class Secret:
     
     def __init__(self):
         self._cache: Dict[str, str] = {}
-        self._private_key_path = Path.home() / "zeuz_node_downloads" / "private_key.pem"
+        self._private_key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
         
     def __getitem__(self, key_name: str) -> str:
         """
@@ -148,24 +150,32 @@ class Secret:
             raise KeyError(f"Failed to retrieve secret '{key_name}': {str(e)}")
 
     
-    def _load_private_key(self):
+    def _load_private_keys(self):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         
         try:
-            if not self._private_key_path.exists():
+            if not self._private_key_folder.exists():
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    f"Private key not found at {self._private_key_path}",
+                    f"Private key folder not found at {self._private_key_folder}",
                     3
                 )
-                raise FileNotFoundError(f"Private key not found at {self._private_key_path}")
+                raise FileNotFoundError(f"Private key folder not found at {self._private_key_folder}")
             
-            with open(self._private_key_path, 'rb') as f:
-                return serialization.load_pem_private_key(f.read(), password=None)
+            private_keys = []
+            for pem_file in self._private_key_folder.glob("*.pem"):
+                with open(pem_file, 'rb') as f:
+                    private_key = serialization.load_pem_private_key(f.read(), password=None)
+                    private_keys.append(private_key)
+            
+            if not private_keys:
+                raise FileNotFoundError(f"No .pem files found in {self._private_key_folder}")
+            
+            return private_keys
         except Exception as e:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                f"Failed to load private key: {str(e)}",
+                f"Failed to load private keys: {str(e)}",
                 3
             )
             raise
@@ -180,32 +190,38 @@ class Secret:
         Returns:
             Decrypted plaintext string
         """
-        private_key = self._load_private_key()
+        private_keys = self._load_private_keys()
         
         decoded_data = base64.b64decode(encrypted_data)
         data = json.loads(decoded_data.decode('utf-8'))
         
         encrypted_aes_key = base64.b64decode(data['encryptedKey'])
-        aes_key = private_key.decrypt(
-            encrypted_aes_key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
-        
         iv = base64.b64decode(data['iv'])
         encrypted_content = base64.b64decode(data['encryptedData'])
         
-        cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
-        decryptor = cipher.decryptor()
-        decrypted_padded = decryptor.update(encrypted_content) + decryptor.finalize()
+        for private_key in private_keys:
+            try:
+                aes_key = private_key.decrypt(
+                    encrypted_aes_key,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                )
+                
+                cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
+                decryptor = cipher.decryptor()
+                decrypted_padded = decryptor.update(encrypted_content) + decryptor.finalize()
+                
+                unpadder = PKCS7(128).unpadder()
+                decrypted = unpadder.update(decrypted_padded) + unpadder.finalize()
+                
+                return decrypted.decode('utf-8')
+            except Exception:
+                continue
         
-        unpadder = PKCS7(128).unpadder()
-        decrypted = unpadder.update(decrypted_padded) + unpadder.finalize()
-        
-        return decrypted.decode('utf-8')
+        raise Exception("No private key could decrypt the data")
     
     def clear_cache(self, key_name: Optional[str] = None):
         """
