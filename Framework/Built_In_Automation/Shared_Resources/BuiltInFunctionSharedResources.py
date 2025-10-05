@@ -616,13 +616,26 @@ def parse_variable(name):
             # CommonUtil.prettify(copy_of_name, result)
             return result
         else:
-            val = eval(name, shared_variables)
+            from .secrets import secret
+            
+            eval_context = dict(shared_variables)
+            eval_context['secret'] = secret
+            
+            val = eval(name, eval_context)
             val_to_print = copy.deepcopy(val)
 
             for each_var in CommonUtil.zeuz_disable_var_print.keys():
                 if each_var in name:
                     val_to_print = '*****'
                     break
+            
+            if 'secret[' in name:
+                secret_key_match = re.search(r"secret\[['\"](.*?)['\"]\]", name)
+                if secret_key_match:
+                    secret_key = secret_key_match.group(1)
+                    if secret_key not in CommonUtil.zeuz_disable_var_print:
+                        CommonUtil.zeuz_disable_var_print[secret_key] = val
+                    val_to_print = '*****'
 
             if str(shared_variables['zeuz_enable_variable_logging']).lower() in {"on", "yes", "true", "1"} and not "os.environ" in name:
                 CommonUtil.AddVariableToLog(sModuleInfo, copy_of_name, val_to_print)
