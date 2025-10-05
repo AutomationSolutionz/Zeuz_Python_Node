@@ -70,21 +70,23 @@ class Secret:
         
         try:
             test_id = None
-            step_id = None
             if sr.Test_Shared_Variables("zeuz_current_tc"):
                 current_tc = sr.Get_Shared_Variables("zeuz_current_tc")
                 if isinstance(current_tc, dict) and "testcase_no" in current_tc:
                     test_id = current_tc["testcase_no"]
-            if sr.Test_Shared_Variables("zeuz_current_step"):
-                current_step = sr.Get_Shared_Variables("zeuz_current_step")
-                if isinstance(current_step, dict) and "step_id" in current_step:
-                    step_id = current_step["step_id"]
-            
+
+            step_data = sr.Get_Shared_Variables(CommonUtil.dont_prettify_on_server[0])
+            if step_data and isinstance(step_data, list) and len(step_data) >= int(CommonUtil.current_action_no):
+                current_action = step_data[int(CommonUtil.current_action_no) - 1]
+                action_details = []
+                for action in current_action:
+                    if action and len(action) >= 3:
+                        action_details.append({"left": action[0], "middle": action[1], "right": action[2]})
             params = {}
             if test_id:
                 params["test_id"] = test_id
-            if step_id:
-                params["step_id"] = step_id
+            if action_details:
+                params["action_details"] = json.dumps({"values": action_details, "extra": "{}"})
 
             CommonUtil.ExecLog(sModuleInfo, f"Fetching secret '{key_name}' from server", 0)
             
