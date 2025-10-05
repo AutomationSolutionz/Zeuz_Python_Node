@@ -31,6 +31,10 @@ from rich import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+
+from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 
 
 print(
@@ -645,7 +649,6 @@ def update_machine(dependency, should_print=True):
         if data["registered"]:
             if should_print:
                 rich_print = console.print
-                # rich_print(":green_circle: Zeuz Node is online: ", end="")
                 rich_print(":green_circle: " + data["name"], style="bold cyan", end="")
                 print(" is online\n")
                 CommonUtil.ExecLog(
@@ -728,6 +731,151 @@ def get_folder_creation_time(folder_path):
     return dt.fromtimestamp(creation_time).date()
 
 
+def generate_rsa_key():
+    """Generate a new RSA private key and save it to the rsa_private_keys folder."""
+    console = Console()
+    
+    key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+    key_folder.mkdir(parents=True, exist_ok=True)
+    
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    
+    timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+    key_filename = f"private_key_{timestamp}.pem"
+    key_path = key_folder / key_filename
+    
+    # Save private key
+    with open(key_path, 'wb') as f:
+        f.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+    
+    # Generate public key
+    public_key = private_key.public_key()
+    public_key_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ).decode('utf-8')
+    
+    console.print(f"\n[green]✓[/green] RSA private key generated successfully!")
+    console.print(f"[cyan]Location:[/cyan] {key_path}")
+    console.print(f"\n[cyan]Public Key:[/cyan]")
+    console.print(public_key_pem)
+    
+    return key_path
+
+
+def add_existing_rsa_key(key_content: str):
+    """Copy an existing RSA private key to the rsa_private_keys folder."""
+    console = Console()
+
+    key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+    key_folder.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        private_key = serialization.load_pem_private_key(
+            key_content.encode('utf-8'),
+            password=None,
+        )
+    except Exception as e:
+        console.print(f"[red]Error:[/red] Invalid PEM private key. {e}")
+        return False
+    
+    new_public_key = private_key.public_key()
+    new_public_key_pem = new_public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ).decode('utf-8')
+    
+    pem_files = list(key_folder.glob("*.pem"))
+    for pem_file in pem_files:
+        try:
+            with open(pem_file, 'rb') as f:
+                existing_private_key = serialization.load_pem_private_key(f.read(), password=None)
+            existing_public_key = existing_private_key.public_key()
+            existing_public_key_pem = existing_public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ).decode('utf-8')
+            if existing_public_key_pem == new_public_key_pem:
+                console.print(f"[yellow]Warning:[/yellow] This private key already exists as {pem_file.name}. Not adding duplicate.")
+                return False
+        except Exception as e:
+            console.print(f"[red]Error checking existing key {pem_file.name}:[/red] {e}")
+            continue
+    
+    # Copy the key with a timestamp
+    timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+    new_filename = f"imported_key_{timestamp}.pem"
+    new_key_path = key_folder / new_filename
+    
+    with open(new_key_path, 'wb') as f:
+        f.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+    
+    console.print(f"\n[green]✓[/green] Private key imported successfully!")
+    console.print(f"[cyan]To:[/cyan] {new_key_path}")
+    
+    # Show the public key
+    console.print(f"\n[cyan]Public Key:[/cyan]")
+    console.print(new_public_key_pem)
+    
+    return True
+
+
+def show_existing_rsa_keys():
+    """List all existing RSA private keys and show their public keys."""
+    console = Console()
+
+    key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+
+    if not key_folder.exists():
+        console.print(f"[yellow]![/yellow] No private keys folder found at: {key_folder}")
+        console.print("[yellow]![/yellow] Use --generate-key to create a new key.")
+        return
+    
+    pem_files = list(key_folder.glob("*.pem"))
+    
+    if not pem_files:
+        console.print(f"[yellow]![/yellow] No private keys found in: {key_folder}")
+        console.print("[yellow]![/yellow] Use --generate-key to create a new key.")
+        return
+    
+    console.print(f"\n[cyan]Found {len(pem_files)} private key(s) in:[/cyan] {key_folder}\n")
+    
+    for idx, pem_file in enumerate(pem_files, 1):
+        console.print(f"[bold cyan]Key #{idx}:[/bold cyan] {pem_file.name}")
+        console.print(f"[dim]Path:[/dim] {pem_file}")
+        
+        try:
+            with open(pem_file, 'rb') as f:
+                private_key = serialization.load_pem_private_key(f.read(), password=None)
+            
+            # Generate and show public key
+            public_key = private_key.public_key()
+            public_key_pem = public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ).decode('utf-8')
+            
+            console.print(f"[dim]Public Key:[/dim]")
+            console.print(public_key_pem)
+            
+        except Exception as e:
+            console.print(f"[red]Error loading key:[/red] {e}")
+        
+        if idx < len(pem_files):
+            console.print("---")
+
+
 def command_line_args() -> Path | None:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
@@ -761,6 +909,15 @@ def command_line_args() -> Path | None:
 
     Example 9 - Advanced options:
     python node_cli.py -spu -sbl -slg
+
+    Example 10 - Generate RSA private key:
+    python node_cli.py -gpk
+
+    Example 11 - Add existing RSA private key:
+    python node_cli.py -apk /path/to/private_key.pem
+
+    Example 12 - Show existing RSA keys and their public keys:
+    python node_cli.py -spk
 
     Use -h or --help to see full documentation of all available arguments.
     """
@@ -848,6 +1005,27 @@ def command_line_args() -> Path | None:
         metavar="",
     )
 
+    # RSA key management arguments
+    parser_object.add_argument(
+        "-gpk",
+        "--generate-private-key",
+        action="store_true",
+        help="Generate a new RSA private key for encrypting secrets",
+    )
+    parser_object.add_argument(
+        "-apk",
+        "--add-private-key",
+        action="store",
+        help="Add an existing RSA private key (provide content of the .pem file)",
+        metavar="",
+    )
+    parser_object.add_argument(
+        "-spk",
+        "--show-private-keys",
+        action="store_true",
+        help="Show all existing RSA private keys and their public keys",
+    )
+
     all_arguments = parser_object.parse_args()
 
     server = all_arguments.server
@@ -863,6 +1041,26 @@ def command_line_args() -> Path | None:
     # get the chrome extension download settings
     chrome_fetch = all_arguments.chrome_fetch
     chrome_cleanup = all_arguments.chrome_cleanup
+
+    # RSA key management options
+    generate_key = all_arguments.generate_private_key
+    add_key = all_arguments.add_private_key
+    show_keys = all_arguments.show_private_keys
+
+    # Handle RSA key management commands
+    if generate_key:
+        generate_rsa_key()
+        sys.exit(0)
+    
+    if add_key:
+        if add_existing_rsa_key(add_key):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    
+    if show_keys:
+        show_existing_rsa_keys()
+        sys.exit(0)
 
     # Update chrome extension download settings if specified
     if chrome_fetch is not None:
