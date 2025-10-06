@@ -5,8 +5,8 @@ import subprocess
 import tarfile
 import zipfile
 from pathlib import Path
-from urllib.request import urlretrieve
 import json
+import requests
 
 # This should always be the latest LTS version
 NODE_VERSION = "22.20.0"
@@ -97,7 +97,10 @@ def install_nodejs():
     archive_path = node_dir / archive_name
 
     print("Downloading Node.js...")
-    urlretrieve(url, archive_path)
+    response = requests.get(url, verify=False)
+    response.raise_for_status()
+    with open(archive_path, 'wb') as out_file:
+        out_file.write(response.content)
 
     try:
         # Extract Node.js
