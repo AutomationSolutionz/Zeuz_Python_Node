@@ -136,8 +136,8 @@ declarations = (
     {"name": "proxy server",                                "function": "proxy_server",                           "screenshot": "none" },
 
     {"name": "render jinja template",                       "function": "render_jinja_template",                  "screenshot": "none" },
-    {"name": "download chrome extension",                    "function": "download_chrome_extension",             "screenshot": "none" },
-    {"name": "AI visual reader",                            "function": "AI_visual_reader",                       "screenshot": "none" },
+    {"name": "download chrome extension",                   "function": "download_chrome_extension",             "screenshot": "none" },
+    {"name": "AI - LLM prompt with files",                  "function": "AI_LLM_prompt_with_files",               "screenshot": "none" },
 
 ) # yapf: disable
 

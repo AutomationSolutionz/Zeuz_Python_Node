@@ -7109,7 +7109,7 @@ def download_chrome_extension(data_set):
 
 
 @logger
-def AI_visual_reader(data_set):
+def AI_LLM_prompt_with_files(data_set):
     """
     This action will extract the text from images using OpenAI's vision API. This action also takes user prompt and returns
     the result according to the user prompt. If the user does not give any prompt, then by default it
@@ -7120,7 +7120,7 @@ def AI_visual_reader(data_set):
             ------------------------------------------------------------------------------
             image                       | input parameter | %| image.png |%
             user prompt                 | optional parameter | Extract invoice details
-            AI visual reader            | common action   | AI visual reader
+            AI - LLM prompt with files | common action   | AI - LLM prompt with files
             ------------------------------------------------------------------------------
     
     Return:
