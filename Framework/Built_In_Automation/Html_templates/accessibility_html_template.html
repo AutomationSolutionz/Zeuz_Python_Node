@@ -5,30 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accessibility Test Report - {{ summary.test_info.url }}</title>
     <style>
+        :root {
+            --primary-color: #7f28ff;
+            --primary-color-hover: #9d52ff;
+            --primary-color-rgb: 127, 40, 255;
+            --secondary-color: #ff29a4;
+            --teal-color: #33cccc;
+            --pass-color: #25d366;
+            --fail-color: #fe2993;
+            --block-color: #ffbc2b;
+            --skip-color: #00b0ff;
+            --submit-color: #7979796a;
+            --submit-color-dark: #9E9E9E;
+            --font-color: #1f1f1fbd;
+            --light-font-color: #3d3d3dbd;
+            --line-height: 1.25rem;
+            --line-height-2: 2rem;
+            --border-color: #7979796a;
+            --solid-white: #ffffff;
+            --scroll-color: #7F7F7F;
+            --zeuz-color-automated: #25d366;
+            --zeuz-color-easily-automatable: #33cccc;
+            --zeuz-color-hard-to-automate: #FF9800;
+            --zeuz-color-not-automatable: #fe2993;
+            --zeuz-color-performance: #7f28ff;
+            --zeuz-color-undefined: #9E9E9E;
+            --zeuz-color-pass: #25d366;
+            --zeuz-color-complete: #25d366;
+            --zeuz-color-fail: #fe2993;
+            --zeuz-color-block: #ffbc2b;
+            --zeuz-color-skip: #00b0ff;
+            --zeuz-color-submit: #7979796a;
+            --zeuz-color-in-progress: #c337ff;
+            --zeuz-color-cancelled: #fe2993;
+            --zeuz-color-default: #e0e0e0;
+            --zeuz-light-box-shadow-color: rgba(0, 0, 0, 0.06);
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: white;
+            color: var(--font-color);
+            min-height: 100vh;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            background: var(--solid-white);
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px var(--zeuz-light-box-shadow-color);
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
+            background: #e4dff9;
+            color: var(--font-color);
+            padding: 40px 30px;
             text-align: center;
         }
         .header h1 {
             margin: 0;
             font-size: 2.5em;
             font-weight: 300;
+            color: #a96fff;
         }
         .header .subtitle {
             margin-top: 10px;
@@ -40,14 +80,15 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             padding: 30px;
-            background: #f8f9fa;
+            background: white;
         }
         .stat-card {
-            background: white;
+            background: var(--solid-white);
             padding: 20px;
             border-radius: 8px;
             text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px var(--zeuz-light-box-shadow-color);
+            border: 1px solid var(--border-color);
         }
         .stat-number {
             font-size: 2.5em;
@@ -55,45 +96,46 @@
             margin-bottom: 10px;
         }
         .stat-label {
-            color: #666;
+            color: var(--light-font-color);
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .violations {
-            color: #dc3545;
+            color: var(--zeuz-color-fail);
         }
         .passes {
-            color: #28a745;
+            color: var(--zeuz-color-pass);
         }
         .inapplicable {
-            color: #6c757d;
+            color: var(--zeuz-color-skip);
         }
         .incomplete {
-            color: #ffc107;
+            color: var(--zeuz-color-undefined);
         }
         .content {
             padding: 30px;
+            background: white;
         }
         .section {
             margin-bottom: 40px;
         }
         .section h2 {
-            color: #333;
-            border-bottom: 2px solid #667eea;
+            color: var(--font-color);
+            border-bottom: 2px solid var(--primary-color);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
         .violation-card {
-            background: #fff5f5;
-            border-left: 4px solid #dc3545;
+            background: white;
+            border-left: 4px solid white;
             margin-bottom: 20px;
             border-radius: 4px;
             overflow: hidden;
         }
         .violation-header {
-            background: #dc3545;
-            color: white;
+            background: var(--zeuz-color-fail);
+            color: var(--solid-white);
             padding: 15px 20px;
             font-weight: bold;
         }
@@ -110,30 +152,30 @@
         }
         .impact-critical {
             background: #dc3545;
-            color: white;
+            color: var(--solid-white);
         }
         .impact-serious {
-            background: #fd7e14;
-            color: white;
+            background: var(--zeuz-color-hard-to-automate);
+            color: var(--solid-white);
         }
         .impact-moderate {
-            background: #ffc107;
-            color: black;
+            background: var(--zeuz-color-block);
+            color: var(--font-color);
         }
         .impact-minor {
-            background: #6c757d;
-            color: white;
+            background: var(--zeuz-color-undefined);
+            color: var(--solid-white);
         }
         .help-link {
-            color: #667eea;
+            color: var(--primary-color);
             text-decoration: none;
         }
         .help-link:hover {
             text-decoration: underline;
         }
         .node-item {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background: rgba(var(--primary-color-rgb), 0.02);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 15px;
             margin: 10px 0;
@@ -141,7 +183,7 @@
             font-size: 0.9em;
         }
         .node-html {
-            background: #e9ecef;
+            background: var(--zeuz-color-default);
             padding: 10px;
             border-radius: 4px;
             margin: 10px 0;
@@ -158,13 +200,13 @@
             padding-right: 10px;
         }
         .pass-card {
-            background: #f8fff9;
-            border: 1px solid #d4edda;
+            background: rgba(37, 211, 102, 0.05);
+            border: 1px solid rgba(37, 211, 102, 0.2);
             border-radius: 4px;
             padding: 15px;
         }
         .pass-card h4 {
-            color: #155724;
+            color: var(--zeuz-color-pass);
             margin: 0 0 10px 0;
         }
         .tags {
@@ -174,18 +216,18 @@
             margin-top: 10px;
         }
         .tag {
-            background: #e9ecef;
+            background: var(--zeuz-color-default);
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 0.8em;
-            color: #495057;
+            color: var(--light-font-color);
         }
         .footer {
-            background: #f8f9fa;
+            background: white;
             padding: 20px;
             text-align: center;
-            color: #666;
-            border-top: 1px solid #dee2e6;
+            color: var(--light-font-color);
+            border-top: 1px solid var(--border-color);
         }
     </style>
 </head>
@@ -293,7 +335,12 @@
         </div>
         
         <div class="footer">
-            <p>Generated by ZeuZ</p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span>Generated by</span>
+                <img src="https://zeuz.ai/_next/image?url=%2Fold-assets%2FLogo.svg&w=384&q=75" 
+                     alt="ZeuZ Logo" 
+                     style="height: 24px; width: auto;">
+            </div>
         </div>
     </div>
 </body>
