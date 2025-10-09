@@ -7347,3 +7347,257 @@ Location: {reports_dir}
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def AI_LLM_prompt_with_files(data_set):
+    """
+    This action will extract the text from images using OpenAI's vision API. This action also takes user prompt and returns
+    the result according to the user prompt. If the user does not give any prompt, then by default it
+    extracts all text from the image and returns the result in JSON format.
+
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            image                       | input parameter | %| image.png |%
+            user prompt                 | optional parameter | Extract invoice details
+            model                       | optional parameter | gpt-4o (supported: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-5)
+            temperature                 | optional parameter | 0.7 (default: 0.7, range: 0.0-2.0)
+            max tokens                  | optional parameter | 1000 (default: 1000, range: 1-4096)
+            top p                       | optional parameter | 1.0 (default: 1.0, range: 0.0-1.0)
+            frequency penalty           | optional parameter | 0.0 (default: 0.0, range: -2.0 to 2.0)
+            presence penalty            | optional parameter | 0.0 (default: 0.0, range: -2.0 to 2.0)
+            AI - LLM prompt with files | common action   | AI - LLM prompt with files
+            ------------------------------------------------------------------------------
+   
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+
+    try:
+        import base64
+        import requests
+        import json
+        import os
+        user_image_path = None
+        user_prompt = None
+        model_name = "gpt-4o"  # Default model
+        temperature = 0.7      # Default temperature
+        max_tokens = 1000     # Default max tokens
+        top_p = 1.0          # Default top_p
+        frequency_penalty = 0.0  # Default frequency penalty
+        presence_penalty = 0.0   # Default presence penalty
+        
+        
+       
+        for left, mid, right in data_set:
+            left = left.lower().replace(" ", "")
+            mid = mid.lower().replace(" ", "")
+            right = right.strip()
+
+
+            if left == 'image':
+                if right != '':
+                    user_image_path = right
+           
+            if left == "userprompt":
+                if right != '':
+                    user_prompt = right
+           
+            if left == "model":
+                if right != '':
+                    model_name = right
+           
+            if left == "temperature":
+                if right != '':
+                    try:
+                        temperature = float(right)
+                    except ValueError:
+                        CommonUtil.ExecLog(sModuleInfo, f"Invalid temperature value: {right}. Using default 0.7", 2)
+                        temperature = 0.7
+            
+            if left == "maxtokens":
+                if right != '':
+                    try:
+                        max_tokens = int(right)
+                    except ValueError:
+                        CommonUtil.ExecLog(sModuleInfo, f"Invalid max_tokens value: {right}. Using default 1000", 2)
+                        max_tokens = 1000
+           
+            if left == "topp":
+                if right != '':
+                    try:
+                        top_p = float(right)
+                    except ValueError:
+                        CommonUtil.ExecLog(sModuleInfo, f"Invalid top_p value: {right}. Using default 1.0", 2)
+                        top_p = 1.0
+           
+            if left == "frequencypenalty":
+                if right != '':
+                    try:
+                        frequency_penalty = float(right)
+                    except ValueError:
+                        CommonUtil.ExecLog(sModuleInfo, f"Invalid frequency_penalty value: {right}. Using default 0.0", 2)
+                        frequency_penalty = 0.0
+           
+            if left == "presencepenalty":
+                if right != '':
+                    try:
+                        presence_penalty = float(right)
+                    except ValueError:
+                        CommonUtil.ExecLog(sModuleInfo, f"Invalid presence_penalty value: {right}. Using default 0.0", 2)
+                        presence_penalty = 0.0
+        
+       
+
+        # Validate image path
+        if not user_image_path:
+            CommonUtil.ExecLog(sModuleInfo, "No image path provided. Please provide an image path.", 3)
+            return "zeuz_failed"
+       
+        image_path = user_image_path
+        CommonUtil.ExecLog(sModuleInfo, f"Processing image: {image_path}", 1)
+       
+        if not os.path.isfile(image_path):
+            CommonUtil.ExecLog(sModuleInfo, f"Image file not found: {image_path}", 3)
+            return "zeuz_failed"
+
+
+        prompt = user_prompt
+        if not prompt:
+            prompt = "Extract all text from this image and return the result in JSON format."
+
+
+        # Convert Image to Base64
+        with open(image_path, "rb") as img_file:
+            base64_image = base64.b64encode(img_file.read()).decode("utf-8")
+
+
+        # Validate model name - only GPT-4o vision models allowed
+        vision_models = [
+           "gpt-4o", "gpt-4o-mini", "gpt-4-turbo","gpt-5"
+        ]
+       
+        if model_name not in vision_models:
+            CommonUtil.ExecLog(sModuleInfo, f"Model '{model_name}' is not supported. Only GPT-4o vision models are allowed.", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"Supported models: {', '.join(vision_models)}", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"Using default model: gpt-4o", 2)
+            model_name = "gpt-4o"
+       
+        # Validate temperature range
+        if temperature < 0.0 or temperature > 2.0:
+            CommonUtil.ExecLog(sModuleInfo, f"Temperature {temperature} is out of range (0.0-2.0). Using default 0.7", 2)
+            temperature = 0.7
+
+        # Validate max_tokens
+        if max_tokens < 1 or max_tokens > 4096:
+            CommonUtil.ExecLog(sModuleInfo, f"Max tokens {max_tokens} is out of range (1-4096). Using default 1000", 2)
+            max_tokens = 1000
+       
+        # Validate top_p
+        if top_p < 0.0 or top_p > 1.0:
+            CommonUtil.ExecLog(sModuleInfo, f"Top_p {top_p} is out of range (0.0-1.0). Using default 1.0", 2)
+            top_p = 1.0
+       
+        # Validate frequency_penalty
+        if frequency_penalty < -2.0 or frequency_penalty > 2.0:
+            CommonUtil.ExecLog(sModuleInfo, f"Frequency penalty {frequency_penalty} is out of range (-2.0 to 2.0). Using default 0.0", 2)
+            frequency_penalty = 0.0
+       
+        # Validate presence_penalty
+        if presence_penalty < -2.0 or presence_penalty > 2.0:
+            CommonUtil.ExecLog(sModuleInfo, f"Presence penalty {presence_penalty} is out of range (-2.0 to 2.0). Using default 0.0", 2)
+            presence_penalty = 0.0
+
+
+        # Get API key from environment variables
+        api_key = os.getenv("OPENAI_API")
+        if not api_key:
+            CommonUtil.ExecLog(sModuleInfo, "OPENAI_API not found in environment variables", 3)
+            return "zeuz_failed"
+
+
+        # Prepare API Request
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+
+        # Build payload based on model capabilities
+        payload = {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        # Add model-specific parameters
+        if model_name in ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]:
+            # GPT-4 models support these parameters
+            payload.update({
+                "temperature": temperature,
+                "max_completion_tokens": max_tokens,
+                "top_p": top_p,
+                "frequency_penalty": frequency_penalty,
+                "presence_penalty": presence_penalty
+            })
+            CommonUtil.ExecLog(sModuleInfo, f"Final configuration - model: {model_name}, temperature: {temperature}, max_tokens: {max_tokens}, top_p: {top_p}, frequency_penalty: {frequency_penalty}, presence_penalty: {presence_penalty}", 1)
+        elif model_name == "gpt-5":
+            # GPT-5 might have different parameter support
+            payload.update({
+                "max_completion_tokens": max_tokens
+            })
+            CommonUtil.ExecLog(sModuleInfo, f"Using model: {model_name} - using minimal parameters (max_tokens only)", 1)
+
+
+        # Log configuration
+        
+       
+        # Send Request
+        CommonUtil.ExecLog(sModuleInfo, "Analyzing image...", 1)
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(payload)
+        )
+
+
+        # === 5. Process Response ===
+        if response.status_code == 200:
+            response_data = response.json()
+            extracted_data = response_data["choices"][0]["message"]["content"]
+            CommonUtil.ExecLog(sModuleInfo, f"Text extracted successfully from: {image_path}", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Extracted content: {extracted_data}", 5)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"OpenAI API error: {response.status_code} - {response.text}", 3)
+            return "zeuz_failed"
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+
+
