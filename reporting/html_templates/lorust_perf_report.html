@@ -1,24 +1,54 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Zeuz Preformance Report</title>
+    <title>Zeuz Performance Report</title>
     <link rel="shortcut icon" href="../static/img/favicon.ico" type="image/x-icon"/>
     <style>
         body {
-            background: #161f1b;
+            background: #ffffff;
         }
         .container {
-            width: 1000px;
+            width: 1200px;
             margin: 0 auto;
             padding: 10px;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 14px;
-            color: #ecf3ee;
+            color: #1a0a2e;
+        }
+
+        .header {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .header img {
+            height: 60px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #7f28ff;
+            font-size: 32px;
+            margin: 10px 0;
+        }
+
+        .info {
+            background: linear-gradient(135deg, #7f28ff 0%, #c084fc 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            box-shadow: 0 4px 6px rgba(127, 40, 255, 0.1);
+        }
+
+        .info p {
+            color: #ffffff;
+            margin: 12px 0;
+            font-size: 16px;
         }
 
         .info span {
-            color: #b3c3bc;
+            color: #e9d5ff;
+            font-weight: 600;
         }
 
         .charts-container .chart {
@@ -32,104 +62,146 @@
         }
 
         .download a {
-            color: #00ca5a;
+            color: #f50384;
         }
 
         /* tables.css */
-table.stats {
-  width: 100%;
-  border-radius: 3px;
-  border: 2px solid #1c3f2f;
-  border-spacing: 0;
-  margin-bottom: 30px;
-}
-table.stats thead {
-  padding: 0;
-  margin: 0;
-  color: #a9c5ba;
-}
-table.stats thead tr {
-  background: #1c3f2f;
-}
-table.stats thead tr:nth-child(even) {
-  background: #1c3f2f;
-}
-table.stats thead tr:hover {
-  background: #1c3f2f;
-}
-table.stats thead th {
-  font-weight: bold;
-  cursor: default;
-}
-table.stats thead th.nowrap {
-  white-space: nowrap;
-}
-table.stats thead th[data-sortkey] {
-  cursor: pointer;
-}
-table.stats tr:hover {
-  background: #1d4434;
-}
-table.stats tr td, table.stats tr th {
-  padding: 10px;
-  margin: 0;
-  text-align: left;
-}
-table.stats tr td:first-child, table.stats tr th:first-child {
-  padding-left: 16px;
-}
-table.stats tr td:last-child, table.stats tr th:last-child {
-  padding-right: 16px;
-}
-table.stats tr td.numeric, table.stats tr th.numeric {
-  text-align: right;
-}
-table.stats tr td {
-  max-width: 450px;
-  overflow: hidden;
-  word-wrap: break-word;
-  white-space: no-wrap;
-  text-overflow: ellipsis;
-}
-@media (max-width: 1100px) {
-  table.stats tr td {
-    max-width: 350px;
-  }
-}
-table.stats tr:nth-child(even) {
-  background: #153126;
-}
-table.stats tr:nth-child(even):hover {
-  background: #1d4434;
-}
-table.stats tr.total {
-  background: #11251c;
-}
-table.stats tr.total td {
-  font-weight: bold;
-}
-.center {
-  margin: auto;
-  width: 50%;
-  padding: 10px;
-}
+        table.stats {
+            width: 100%;
+            border-radius: 3px;
+            border: 2px solid #c084fc;
+            border-spacing: 0;
+            margin-bottom: 30px;
+        }
+        table.stats thead {
+            padding: 0;
+            margin: 0;
+            color: #ffffff;
+        }
+        table.stats thead tr {
+            background: #7f28ff;
+        }
+        table.stats thead tr:nth-child(even) {
+            background: #7f28ff;
+        }
+        table.stats thead tr:hover {
+            background: #7f28ff;
+        }
+        table.stats thead th {
+            font-weight: bold;
+            cursor: default;
+        }
+        table.stats thead th.nowrap {
+            white-space: nowrap;
+        }
+        table.stats thead th[data-sortkey] {
+            cursor: pointer;
+        }
+        table.stats tr:hover {
+            background: #e9d5ff;
+        }
+        table.stats tr td, table.stats tr th {
+            padding: 10px;
+            margin: 0;
+            text-align: left;
+        }
+        table.stats tr td:first-child, table.stats tr th:first-child {
+            padding-left: 16px;
+        }
+        table.stats tr td:last-child, table.stats tr th:last-child {
+            padding-right: 16px;
+        }
+        table.stats tr td.numeric, table.stats tr th.numeric {
+            text-align: right;
+        }
+        table.stats tr td {
+            max-width: 450px;
+            overflow: hidden;
+            word-wrap: break-word;
+            white-space: no-wrap;
+            text-overflow: ellipsis;
+        }
+        @media (max-width: 1100px) {
+            table.stats tr td {
+                max-width: 350px;
+            }
+        }
+        table.stats tr:nth-child(even) {
+            background: #f5f3ff;
+        }
+        table.stats tr:nth-child(even):hover {
+            background: #e9d5ff;
+        }
+        table.stats tr.total {
+            background: #c49cff;
+        }
+        table.stats tr.total td {
+            font-weight: bold;
+        }
+        .center {
+            margin: auto;
+            width: 50%;
+            padding: 10px;
+        }
 
-/*# sourceMappingURL=tables.css.map */
-
-
-
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                width: 100%;
+                max-width: none;
+            }
+            .info {
+                background: #f5f3ff !important;
+                color: #1a0a2e !important;
+                box-shadow: none;
+                border: 2px solid #c084fc;
+                page-break-inside: avoid;
+            }
+            .info p {
+                color: #1a0a2e !important;
+            }
+            .info span {
+                color: #7f28ff !important;
+            }
+            .header {
+                page-break-after: avoid;
+            }
+            table.stats {
+                page-break-inside: avoid;
+            }
+            table.stats thead tr {
+                background: #7f28ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            table.stats tr:nth-child(even) {
+                background: #f5f3ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .center {
+                page-break-inside: avoid;
+                width: 100%;
+            }
+            h2 {
+                page-break-after: avoid;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Zeuz Test Report</h1>
+        <div class="header">
+            <img src="https://zeuz.ai/_next/image?url=%2Fold-assets%2FLogo.svg&w=384&q=75" alt="ZeuZ Logo">
+            <h1>Performance Test Report</h1>
+        </div>
 
         <div class="info">
-
-
-            <p>Run ID: <span class="l10n datetime">{{ run_id }}</span></p>
-            <p>Testcase ID: <span class="l10n datetime">{{ tc_id }}</span></p>
-            <p>During: <span class="l10n datetime">{{ teststarttime }}</span> - <span class="l10n datetime">{{ testendtime }}</span></p>
+            <p><strong>Run ID:</strong> <span class="l10n datetime">{{ run_id }}</span></p>
+            <p><strong>Testcase ID:</strong> <span class="l10n datetime">{{ tc_id }}</span></p>
+            <p><strong>Duration:</strong> <span class="l10n datetime">{{ teststarttime }}</span> - <span class="l10n datetime">{{ testendtime }}</span></p>
         </div>
 
         <div class="requests">
@@ -149,7 +221,6 @@ table.stats tr.total td {
                 </thead>
                 <tbody>
                     {% for _, item in endpoint_wise.items() %}
-
                         <tr>
                             <td>{{item.method}}</td>
                             <td>{{item.endpoint}}</td>
@@ -161,7 +232,6 @@ table.stats tr.total td {
                             <td>{{item.avg_content_length}}</td>
                         </tr>
                     {% endfor %}
-
                 </tbody>
             </table>
         </div>
@@ -201,66 +271,33 @@ table.stats tr.total td {
                 </tbody>
             </table>
         </div>
-
-
-<!--            <div class="failures">-->
-<!--                <h2>Failures Statistics</h2>-->
-<!--                <table class="stats">-->
-<!--                    <thead>-->
-<!--                        <tr>-->
-<!--                            <th class="sortable">Method</th>-->
-<!--                            <th class="sortable">Name</th>-->
-<!--                            <th class="sortable">Error</th>-->
-<!--                            <th class="sortable">Occurrences</th>-->
-<!--                        </tr>-->
-<!--                    </thead>-->
-<!--                    <tbody>-->
-
-<!--                            <tr>-->
-<!--                                <td>GET</td>-->
-<!--                                <td>/Home/Login/</td>-->
-<!--                                <td>502 Server Error: Bad Gateway for url: /Home/Login/</td>-->
-<!--                                <td>4182</td>-->
-<!--                            </tr>-->
-
-<!--                    </tbody>-->
-<!--                </table>-->
-<!--            </div>-->
-
-
-
-
-
-
-
     </div>
-
 
     <div id="chartContainer" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
     <div id="percentile_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
     <div id="byte_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
     <div id="user_count" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
 
-
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.1/dist/echarts.min.js"></script>
     <script>
-        var chart = echarts.init(document.getElementById('chartContainer'), 'dark');
-
+        var chart = echarts.init(document.getElementById('chartContainer'), 'light');
         var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
             title: {
                 text: 'Response time vs Time',
-          },
+                textStyle: { color: '#7f28ff' }
+            },
             toolbox: {
                 feature: {
-                  saveAsImage: {}
+                    saveAsImage: {}
                 }
-              },
+            },
             tooltip: {
-            trigger: 'axis'
-          },
-          legend: {
-            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
-          },
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+            },
             xAxis: {
                 type: 'time',
             },
@@ -278,37 +315,33 @@ table.stats tr.total td {
                     {
                         name: '{{item.endpoint}}',
                         type: 'line',
-                        data:
-                        {{ item.response_time_vs_time }}
-
+                        data: {{ item.response_time_vs_time }}
                     },
                 {% endfor %}
-]
-                ,
-            };
-            chart.setOption(options);
-
-
+            ]
+        };
+        chart.setOption(options);
     </script>
 
     <script>
-        var chart = echarts.init(document.getElementById('byte_per_second'), 'dark');
-
+        var chart = echarts.init(document.getElementById('byte_per_second'), 'light');
         var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
             title: {
                 text: 'Byte Throughput vs Time',
-          },
+                textStyle: { color: '#7f28ff' }
+            },
             toolbox: {
                 feature: {
-                  saveAsImage: {}
+                    saveAsImage: {}
                 }
-              },
+            },
             tooltip: {
-            trigger: 'axis'
-          },
-          legend: {
-            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
-          },
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+            },
             xAxis: {
                 type: 'time',
             },
@@ -326,37 +359,33 @@ table.stats tr.total td {
                     {
                         name: '{{item.endpoint}}',
                         type: 'line',
-                        data:
-                        {{ item.byte_throughput_vs_time }}
-
+                        data: {{ item.byte_throughput_vs_time }}
                     },
                 {% endfor %}
-]
-                ,
-            };
-            chart.setOption(options);
-
-
+            ]
+        };
+        chart.setOption(options);
     </script>
 
     <script>
-        var chart = echarts.init(document.getElementById('user_count'), 'dark');
-
+        var chart = echarts.init(document.getElementById('user_count'), 'light');
         var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
             title: {
                 text: 'User vs Time',
-          },
+                textStyle: { color: '#7f28ff' }
+            },
             toolbox: {
                 feature: {
-                  saveAsImage: {}
+                    saveAsImage: {}
                 }
-              },
+            },
             tooltip: {
-            trigger: 'axis'
-          },
-          legend: {
-            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
-          },
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+            },
             xAxis: {
                 type: 'time',
             },
@@ -374,37 +403,33 @@ table.stats tr.total td {
                     {
                         name: '{{item.endpoint}}',
                         type: 'line',
-                        data:
-                        {{ item.user_count_per_second }}
-
+                        data: {{ item.user_count_per_second }}
                     },
                 {% endfor %}
-]
-                ,
-            };
-            chart.setOption(options);
-
-
+            ]
+        };
+        chart.setOption(options);
     </script>
 
     <script>
-        var chart = echarts.init(document.getElementById('percentile_per_second'), 'dark');
-
+        var chart = echarts.init(document.getElementById('percentile_per_second'), 'light');
         var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
             title: {
                 text: 'Percentile per Second',
-          },
+                textStyle: { color: '#7f28ff' }
+            },
             toolbox: {
                 feature: {
-                  saveAsImage: {}
+                    saveAsImage: {}
                 }
-              },
+            },
             tooltip: {
-            trigger: 'axis'
-          },
-          legend: {
-            data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}} 50%ile', '{{item.endpoint}} 90%ile', {% endfor %}]
-          },
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}} 50%ile', '{{item.endpoint}} 90%ile', {% endfor %}]
+            },
             xAxis: {
                 type: 'time',
             },
@@ -422,27 +447,17 @@ table.stats tr.total td {
                     {
                         name: '{{item.endpoint}} 50%ile',
                         type: 'line',
-                        data:
-                        {{ item.fiftypercentile_per_second }}
-
+                        data: {{ item.fiftypercentile_per_second }}
                     },
                     {
                         name: '{{item.endpoint}} 90%ile',
                         type: 'line',
-                        data:
-                        {{ item.ninetypercentile_per_second }}
-
+                        data: {{ item.ninetypercentile_per_second }}
                     },
                 {% endfor %}
-]
-                ,
-            };
-            chart.setOption(options);
-
-
+            ]
+        };
+        chart.setOption(options);
     </script>
-
-
-
 </body>
 </html>
