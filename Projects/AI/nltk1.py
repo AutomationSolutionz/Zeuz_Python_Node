@@ -1,4 +1,8 @@
 import nltk
+nltk.download('punkt_tab')
+# This needs to be downloaded only once
+# Uncomment this line in your environment once and run the code
+# Then you can comment it out once again.
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
@@ -27,8 +31,8 @@ def similarity(sentence1, sentence2):
 
     # Calculate the cosine similarity between the two frequency vectors
     dot_product = sum([vector1[i] * vector2[i] for i in range(len(vector1))])
-    magnitude1 = sum([vector1[i] * 2 for i in range(len(vector1))]) * 0.5
-    magnitude2 = sum([vector2[i] * 2 for i in range(len(vector2))]) * 0.5
+    magnitude1 = sum([vector1[i] * 2 for i in range(len(vector1))]) ** 0.5
+    magnitude2 = sum([vector2[i] * 2 for i in range(len(vector2))]) ** 0.5
     cosine_similarity = dot_product / (magnitude1 * magnitude2)
 
     # Return the cosine similarity
@@ -40,7 +44,7 @@ sentence1 = "you could successfully log in"
 sentence2 = "you have successfully logged in"
 
 similarity_score = similarity(sentence1, sentence2)
-
+# print(similarity_score)
 if similarity_score > 0.5:
     print("The sentences are similar.")
 else:
