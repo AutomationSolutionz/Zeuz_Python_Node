@@ -3,7 +3,7 @@
 
 ### Step 1: First Time Setup (Run Once)
 
-**Run:** `AndroidSetup_New.py`
+**Run:** `AndroidSetup.py`
 
 **What it does:**
 - Installs JDK 21 LTS (~190 MB)
@@ -17,19 +17,19 @@
 
 **Windows:**
 ```Terminal / powershell
-python AndroidSetup_New.py
+python AndroidSetup.py
 ```
 
 **Linux:**
 ```bash / terminal
-sudo python3 AndroidSetup_New.py
+sudo python3 AndroidSetup.py
 ```
 
 ---
 
-### Step 2: Daily Usage (Run Anytime)
+### Step 2: Daily Usage (Run Anytime after running the step 1 file )
 
-**Run:** `cross_avd_launcher.py` 
+**Run:** `Avd_Launcher.py` 
 
 **What it does:**
 - Shows all installed Android emulators
@@ -39,13 +39,13 @@ sudo python3 AndroidSetup_New.py
 
 **Windows:**
 ```powershell
-python cross_avd_launcher.py
+python Avd_Launcher.py
 # Or double-click "Android AVD Launcher" desktop shortcut
 ```
 
 **Linux:**
 ```bash
-python3 cross_avd_launcher.py
+python3 Avd_Launcher.py
 # Or double-click "Android_AVD_Launcher.desktop" shortcut
 ```
 
