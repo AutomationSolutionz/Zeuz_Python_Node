@@ -4,10 +4,13 @@ from typing import Any, Callable
 import traceback
 import time
 import random
+import json
 import requests
 from colorama import Fore
+from pathlib import Path
+from urllib.parse import urlparse
 
-from Framework.Utilities import RequestFormatter
+from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.node_server_state import STATE
 from concurrent.futures import ThreadPoolExecutor
 
@@ -20,6 +23,8 @@ class DeployHandler:
 
     COMMAND_DONE = b"DONE"
     COMMAND_CANCEL = b"CANCEL"
+    COMMAND_KEY_REQUEST = b"KEY_REQUEST"
+    COMMAND_PRIVATE_KEY = b"PRIVATE_KEY"
     ERROR_PREFIX = b"error"
 
     def __init__(
@@ -50,6 +55,16 @@ class DeployHandler:
             # Run cancelled by the user/service.
             self.cancel_callback()
             return False
+        
+        elif message.startswith(b'{"command":"KEY_REQUEST"'):
+            # Handle key request from server
+            self.handle_key_request(message)
+            return False
+        
+        elif message.startswith(b'{"command":"PRIVATE_KEY"'):
+            # Handle private key received from server
+            self.handle_private_key(message)
+            return False
 
         self.response_callback(message)
         return False
@@ -59,6 +74,193 @@ class DeployHandler:
         print(error)
         if self.backoff_time < 6:
             self.backoff_time += 1
+
+    def handle_key_request(self, message: bytes) -> None:
+        """
+        Handle KEY_REQUEST command.
+        Server is asking this node to share its private key that matches the provided public key.
+        """
+        try:
+            payload = json.loads(message)
+            request_id = payload["request_id"]
+            public_key_pem = payload["public_key"]
+            receiver_node_ids = payload["receiver_node_ids"]
+            
+            print(f"[key-request] Received request {request_id} to share key with {receiver_node_ids}")
+            
+            # Find the private key that matches the provided public key
+            private_key_pem = self.get_private_key_matching_public_key(public_key_pem)
+            
+            if private_key_pem:
+                # Respond to the key request immediately - no need for separate distribute call!
+                self.respond_to_key_request(request_id, private_key_pem)
+            else:
+                print("[key-request] ERROR: No private key found matching the provided public key")
+        except Exception as e:
+            print(f"[key-request] Error handling key request: {e}")
+            traceback.print_exc()
+
+    def handle_private_key(self, message: bytes) -> None:
+        """
+        Handle PRIVATE_KEY command.
+        Server is sending us a private key.
+        """
+        try:
+            payload = json.loads(message)
+            key_id = payload["key_id"]
+            private_key_pem = payload["private_key"]
+            
+            print(f"[private-key] Received key {key_id}")
+            
+            # Save the private key securely
+            self.save_private_key(key_id, private_key_pem)
+            
+            print(f"[private-key] Key {key_id} saved successfully")
+        except Exception as e:
+            print(f"[private-key] Error handling private key: {e}")
+            traceback.print_exc()
+
+    def get_private_key_matching_public_key(self, public_key_pem: str) -> str | None:
+        """
+        Find and retrieve the private key that corresponds to the provided public key.
+        Returns the private key in PEM format, or None if no matching key exists.
+        """
+        try:
+            from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+            from cryptography.hazmat.primitives import serialization
+            
+            key_folder = Path(ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR)
+            if not key_folder.exists():
+                print("[key-request] Key folder does not exist")
+                return None
+            
+            # Parse the provided public key
+            try:
+                target_public_key = serialization.load_pem_public_key(
+                    public_key_pem.encode('utf-8')
+                )
+                target_public_key_bytes = target_public_key.public_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                )
+            except Exception as e:
+                print(f"[key-request] Error parsing provided public key: {e}")
+                return None
+            
+            # Get all PEM files
+            pem_files = list(key_folder.glob("*.pem"))
+            
+            if not pem_files:
+                print("[key-request] No private key files found")
+                return None
+            
+            # Search through all keys to find matching private key
+            for pem_file in pem_files:
+                try:
+                    with open(pem_file, 'rb') as f:
+                        private_key_bytes = f.read()
+                        
+                    # Load the private key
+                    private_key = serialization.load_pem_private_key(
+                        private_key_bytes, 
+                        password=None
+                    )
+                    
+                    # Extract its public key
+                    derived_public_key = private_key.public_key()
+                    derived_public_key_bytes = derived_public_key.public_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PublicFormat.SubjectPublicKeyInfo
+                    )
+                    
+                    # Compare public keys
+                    if derived_public_key_bytes == target_public_key_bytes:
+                        print(f"[key-request] Found matching private key: {pem_file.name}")
+                        return private_key_bytes.decode('utf-8')
+                        
+                except Exception as e:
+                    print(f"[key-request] Error reading key file {pem_file.name}: {e}")
+                    continue
+            
+            print("[key-request] No private key matches the provided public key")
+            return None
+            
+        except Exception as e:
+            print(f"[key-request] Error searching for matching private key: {e}")
+            traceback.print_exc()
+            return None
+
+    def save_private_key(self, key_id: str, private_key_pem: str) -> None:
+        """
+        Save the received private key to encrypted storage.
+        This key is saved to the same location where generated keys are stored.
+        """
+        try:
+            from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+            from cryptography.hazmat.primitives import serialization
+            from datetime import datetime as dt
+            
+            key_folder = Path(ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR)
+            key_folder.mkdir(parents=True, exist_ok=True)
+            
+            # Validate the private key
+            private_key = serialization.load_pem_private_key(
+                private_key_pem.encode('utf-8'),
+                password=None,
+            )
+            
+            # Save with descriptive filename
+            timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+            key_filename = f"received_key_{key_id}_{timestamp}.pem"
+            key_path = key_folder / key_filename
+            
+            # Save the key
+            with open(key_path, 'wb') as f:
+                f.write(private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption()
+                ))
+            
+            print(f"[private-key] Saved to: {key_path}")
+        except Exception as e:
+            print(f"[private-key] Error saving private key: {e}")
+            traceback.print_exc()
+
+    def respond_to_key_request(self, request_id: str, private_key_pem: str) -> None:
+        """
+        Respond to a key request - server will automatically distribute to receivers.
+        """
+        try:
+            server_url = urlparse(
+                ConfigModule.get_config_value("Authentication", "server_address")
+            )
+            api_url = f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/respond-to-key-request"
+            
+            # Get node ID
+            node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+            
+            response = RequestFormatter.request(
+                "post",
+                api_url,
+                json_data={
+                    "request_id": request_id,
+                    "donor_node_id": node_id,
+                    "private_key": private_key_pem
+                },
+                verify=False
+            )
+            
+            if response.ok:
+                result = response.json()
+                success_count = result.get('success_count', 0)
+                print(f"[key-request] Successfully distributed key to {success_count} receiver nodes")
+            else:
+                print(f"[key-request] Failed to respond to key request: {response.status_code}")
+                print(f"[key-request] Response: {response.text}")
+        except Exception as e:
+            print(f"[key-request] Error responding to key request: {e}")
+            traceback.print_exc()
 
     def run(self, host: str) -> None:
         reconnect = False
