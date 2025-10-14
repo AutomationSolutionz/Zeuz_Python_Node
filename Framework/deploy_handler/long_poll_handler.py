@@ -57,12 +57,10 @@ class DeployHandler:
             return False
         
         elif message.startswith(b'{"command":"KEY_REQUEST"'):
-            # Handle key request from server
             self.handle_key_request(message)
             return False
         
         elif message.startswith(b'{"command":"PRIVATE_KEY"'):
-            # Handle private key received from server
             self.handle_private_key(message)
             return False
 
@@ -85,14 +83,11 @@ class DeployHandler:
             request_id = payload["request_id"]
             public_key_pem = payload["public_key"]
             receiver_node_ids = payload["receiver_node_ids"]
-            
             print(f"[key-request] Received request {request_id} to share key with {receiver_node_ids}")
             
-            # Find the private key that matches the provided public key
             private_key_pem = self.get_private_key_matching_public_key(public_key_pem)
             
             if private_key_pem:
-                # Respond to the key request immediately - no need for separate distribute call!
                 self.respond_to_key_request(request_id, private_key_pem)
             else:
                 print("[key-request] ERROR: No private key found matching the provided public key")
@@ -112,7 +107,6 @@ class DeployHandler:
             
             print(f"[private-key] Received key {key_id}")
             
-            # Save the private key securely
             self.save_private_key(key_id, private_key_pem)
             
             print(f"[private-key] Key {key_id} saved successfully")
@@ -121,10 +115,6 @@ class DeployHandler:
             traceback.print_exc()
 
     def get_private_key_matching_public_key(self, public_key_pem: str) -> str | None:
-        """
-        Find and retrieve the private key that corresponds to the provided public key.
-        Returns the private key in PEM format, or None if no matching key exists.
-        """
         try:
             from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
             from cryptography.hazmat.primitives import serialization
@@ -176,7 +166,12 @@ class DeployHandler:
                     # Compare public keys
                     if derived_public_key_bytes == target_public_key_bytes:
                         print(f"[key-request] Found matching private key: {pem_file.name}")
-                        return private_key_bytes.decode('utf-8')
+                        # Return the private key in traditional RSA PRIVATE KEY format
+                        return private_key.private_bytes(
+                            encoding=serialization.Encoding.PEM,
+                            format=serialization.PrivateFormat.TraditionalOpenSSL,
+                            encryption_algorithm=serialization.NoEncryption()
+                        ).decode('utf-8')
                         
                 except Exception as e:
                     print(f"[key-request] Error reading key file {pem_file.name}: {e}")
@@ -198,27 +193,22 @@ class DeployHandler:
         try:
             from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
             from cryptography.hazmat.primitives import serialization
-            from datetime import datetime as dt
             
             key_folder = Path(ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR)
             key_folder.mkdir(parents=True, exist_ok=True)
             
-            # Validate the private key
             private_key = serialization.load_pem_private_key(
                 private_key_pem.encode('utf-8'),
                 password=None,
             )
             
-            # Save with descriptive filename
-            timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
-            key_filename = f"received_key_{key_id}_{timestamp}.pem"
+            key_filename = f"received-{key_id}.pem"
             key_path = key_folder / key_filename
             
-            # Save the key
             with open(key_path, 'wb') as f:
                 f.write(private_key.private_bytes(
                     encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.PKCS8,
+                    format=serialization.PrivateFormat.TraditionalOpenSSL,
                     encryption_algorithm=serialization.NoEncryption()
                 ))
             
@@ -243,7 +233,7 @@ class DeployHandler:
             response = RequestFormatter.request(
                 "post",
                 api_url,
-                json_data={
+                json={
                     "request_id": request_id,
                     "donor_node_id": node_id,
                     "private_key": private_key_pem
