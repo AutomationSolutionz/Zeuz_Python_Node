@@ -18,10 +18,7 @@ from datetime import timedelta
 import struct
 import urllib.request
 from rich.progress import Progress
-
-
-# ZeuZ Node Downloads base directory
-ZEUZ_NODE_DOWNLOADS_DIR = Path.home() / "zeuz_node_downloads"
+from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 
 class ChromeForTesting:

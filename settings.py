@@ -7,6 +7,10 @@ from Framework.Utilities import ConfigModule
 # BASE_DIR or PROJECT_ROOT or Zeuz_Python_Node dir
 PROJECT_ROOT = Path(__file__).parent
 
+ZEUZ_NODE_ARTIFACTS_DIR = Path.home() / ".zeuz"
+ZEUZ_NODE_DOWNLOADS_DIR = ZEUZ_NODE_ARTIFACTS_DIR / "zeuz_node_downloads"
+ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR = ZEUZ_NODE_ARTIFACTS_DIR / "rsa_private_keys"
+
 # AutomationLog dir
 AutomationLog_DIR = PROJECT_ROOT / "AutomationLog"
 
