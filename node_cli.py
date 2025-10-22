@@ -1,3 +1,5 @@
+node_cli.py
+
 #!/usr/bin/env python3
 import os
 import socket
@@ -61,7 +63,6 @@ def adjust_python_path():
     os.chdir(framework_dir)
 
 
-
 from Framework.module_installer import (  # noqa: E402
     check_min_python_version,
     update_outdated_modules,
@@ -79,10 +80,10 @@ from server import main as node_server  # noqa: E402
 
 
 async def start_server():
-    
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("127.0.0.1", port)) == 0
+
     try:
         node_server_port = 18100
         tries = 0
@@ -91,7 +92,7 @@ async def start_server():
             tries += 1
         ConfigModule.add_config_value("server", "port", str(node_server_port))
         print(f"Launching node-server on port {node_server_port}")
-        
+
         app = node_server.main()
         config = uvicorn.Config(
             app,
@@ -105,6 +106,7 @@ async def start_server():
     except Exception as e:
         traceback.print_exc()
         print(f"[WARN] Failed to launch node-server: {str(e)}")
+
 
 def kill_old_process(pid_file_path: os.PathLike):
     """kill any process that is running  from the same node folder."""
@@ -133,6 +135,7 @@ def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
     try:
         import nodejs_appium_installer
+
         nodejs_appium_installer.setup_nodejs_appium()
     except Exception as e:
         print(f"Warning: Failed to setup Node.js and Appium: {e}")
@@ -486,11 +489,11 @@ async def RunProcess(node_id, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        
+
         deploy_task = asyncio.create_task(deploy_handler.run(deploy_srv_addr()))
-        
+
         await asyncio.gather(install_task, deploy_task, return_exceptions=True)
-        
+
         return False
 
     except Exception:
@@ -632,100 +635,93 @@ def get_folder_creation_time(folder_path):
 def generate_rsa_key():
     """Generate a new RSA private key and save it to the rsa_private_keys folder."""
     console = Console()
-    
+
+    from Framework.Utilities.RSAKeyUtil import (
+        save_private_key as save_key_util,
+        get_public_key_pem,
+    )
+
     key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-    key_folder.mkdir(parents=True, exist_ok=True)
-    
+
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
     )
-    
+
     timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
     key_filename = f"private_key_{timestamp}.pem"
-    key_path = key_folder / key_filename
-    
-    # Save private key
-    with open(key_path, 'wb') as f:
-        f.write(private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
-    
+
+    success, _, saved_path = save_key_util(
+        private_key=private_key,
+        key_folder=key_folder,
+        filename=key_filename,
+        format_type="pkcs8",
+        check_duplicate=False,  # New keys shouldn't have duplicates
+    )
+
+    if not success:
+        console.print(f"[red]Error:[/red] Failed to save generated private key.")
+        return
+
     # Generate public key
-    public_key = private_key.public_key()
-    public_key_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    ).decode('utf-8')
-    
+    public_key_pem = get_public_key_pem(private_key)
+
     console.print(f"\n[green]✓[/green] RSA private key generated successfully!")
-    console.print(f"[cyan]Location:[/cyan] {key_path}")
+    console.print(f"[cyan]Location:[/cyan] {saved_path}")
     console.print(f"\n[cyan]Public Key:[/cyan]")
     console.print(public_key_pem)
-    
-    return key_path
 
 
 def add_existing_rsa_key(key_content: str):
     """Copy an existing RSA private key to the rsa_private_keys folder."""
     console = Console()
 
+    from Framework.Utilities.RSAKeyUtil import (
+        load_private_key_from_pem,
+        save_private_key as save_key_util,
+        get_public_key_pem,
+        check_duplicate_key,
+    )
+
     key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-    key_folder.mkdir(parents=True, exist_ok=True)
-    
-    try:
-        private_key = serialization.load_pem_private_key(
-            key_content.encode('utf-8'),
-            password=None,
-        )
-    except Exception as e:
-        console.print(f"[red]Error:[/red] Invalid PEM private key. {e}")
+
+    private_key = load_private_key_from_pem(key_content)
+    if private_key is None:
+        console.print(f"[red]Error:[/red] Invalid PEM private key.")
         return False
-    
-    new_public_key = private_key.public_key()
-    new_public_key_pem = new_public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    ).decode('utf-8')
-    
-    pem_files = list(key_folder.glob("*.pem"))
-    for pem_file in pem_files:
-        try:
-            with open(pem_file, 'rb') as f:
-                existing_private_key = serialization.load_pem_private_key(f.read(), password=None)
-            existing_public_key = existing_private_key.public_key()
-            existing_public_key_pem = existing_public_key.public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
-            ).decode('utf-8')
-            if existing_public_key_pem == new_public_key_pem:
-                console.print(f"[yellow]Warning:[/yellow] This private key already exists as {pem_file.name}. Not adding duplicate.")
-                return False
-        except Exception as e:
-            console.print(f"[red]Error checking existing key {pem_file.name}:[/red] {e}")
-            continue
-    
+
+    # Check for duplicates
+    duplicate = check_duplicate_key(private_key, key_folder)
+    if duplicate:
+        console.print(
+            f"[yellow]Warning:[/yellow] This private key already exists as {duplicate}. Not adding duplicate."
+        )
+        return False
+
     # Copy the key with a timestamp
     timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
     new_filename = f"imported_key_{timestamp}.pem"
-    new_key_path = key_folder / new_filename
-    
-    with open(new_key_path, 'wb') as f:
-        f.write(private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
-    
+
+    success, _, saved_path = save_key_util(
+        private_key=private_key,
+        key_folder=key_folder,
+        filename=new_filename,
+        format_type="pkcs8",
+        check_duplicate=False,  # Already checked above
+    )
+
+    if not success:
+        console.print(f"[red]Error:[/red] Failed to save private key.")
+        return False
+
     console.print(f"\n[green]✓[/green] Private key imported successfully!")
-    console.print(f"[cyan]To:[/cyan] {new_key_path}")
-    
+    console.print(f"[cyan]To:[/cyan] {saved_path}")
+
     # Show the public key
+    public_key_pem = get_public_key_pem(private_key)
     console.print(f"\n[cyan]Public Key:[/cyan]")
-    console.print(new_public_key_pem)
-    
+    console.print(public_key_pem)
+
     return True
 
 
@@ -733,11 +729,15 @@ def show_existing_rsa_keys():
     """List all existing RSA private keys and show their public keys."""
     console = Console()
 
+    from Framework.Utilities.RSAKeyUtil import list_existing_keys
+
     key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 
-    if not key_folder.exists():
-        console.print(f"[yellow]![/yellow] No private keys folder found at: {key_folder}")
-        console.print("[yellow]![/yellow] Use --generate-key to create a new key.")
+    keys_info = list_existing_keys(key_folder)
+
+    if not keys_info:
+        console.print(f"\n[yellow]No private keys found in:[/yellow] {key_folder}")
+        console.print("[cyan]Use -gpk to generate a new key[/cyan]\n")
         return
     
     pem_files = list(key_folder.glob("*.pem"))
@@ -768,10 +768,71 @@ def show_existing_rsa_keys():
             console.print(public_key_pem)
             
         except Exception as e:
-            console.print(f"[red]Error loading key:[/red] {e}")
+            import traceback as tb
+            console.print(f"\n[red]✗[/red] Error sharing keys: {str(e)}\n")
+            tb.print_exc()
+            return False
+
+
+def fetch_private_keys(share_code: str):
+    """Fetch and decrypt shared RSA private keys from server."""
+    console = Console()
+    
+    from Framework.Utilities import ShareKeysUtil
+    from Framework.Utilities import RequestFormatter
+    
+    # Validate code format
+    if len(share_code) != 9 or share_code[4] != '-':
+        console.print(f"\n[red]✗[/red] Invalid share code format. Expected format: AkEf-B910 (9 characters with dash)\n")
+        return False
+    
+    console.print(f"\n[cyan]Fetching keys from server...[/cyan]")
+    
+    try:
+        # Fetch from server
+        response = RequestFormatter.Get(f"zsvc/deploy/v1/fetch-keys/{share_code}")
         
-        if idx < len(pem_files):
-            console.print("---")
+        if not response or not response.get("success"):
+            error_msg = response.get("message", "Keys not found or expired") if response else "No response from server"
+            console.print(f"\n[red]✗[/red] Failed to fetch keys: {error_msg}\n")
+            return False
+        
+        encrypted_data = response.get("encrypted_data")
+        if not encrypted_data:
+            console.print(f"\n[red]✗[/red] No encrypted data received from server\n")
+            return False
+        
+        # Decrypt data
+        console.print("[cyan]Decrypting keys...[/cyan]")
+        decrypted_json = ShareKeysUtil.decrypt_data(encrypted_data, share_code)
+        
+        if not decrypted_json:
+            console.print(f"\n[red]✗[/red] Failed to decrypt keys. Invalid share code or corrupted data.\n")
+            return False
+        
+        keys = json.loads(decrypted_json)
+        
+        # Save keys
+        console.print(f"[cyan]Saving {len(keys)} key(s)...[/cyan]")
+        key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+        success_count, skipped_count, failed_count = ShareKeysUtil.save_private_keys(keys, key_folder)
+        
+        console.print(f"\n[green]✓[/green] Keys fetched successfully!")
+        console.print(f"[cyan]Saved:[/cyan] {success_count} key(s)")
+        if skipped_count > 0:
+            console.print(f"[yellow]Skipped:[/yellow] {skipped_count} key(s) (duplicates)")
+        if failed_count > 0:
+            console.print(f"[red]Failed:[/red] {failed_count} key(s)")
+        console.print(f"[cyan]Location:[/cyan] {key_folder}\n")
+        
+        return True
+        
+    except json.JSONDecodeError as e:
+        console.print(f"\n[red]✗[/red] Error parsing decrypted data: {str(e)}\n")
+        return False
+    except Exception as e:
+        console.print(f"\n[red]✗[/red] Error fetching keys: {str(e)}\n")
+        return False
 
 
 
@@ -880,6 +941,12 @@ async def command_line_args() -> Path | None:
     Example 12 - Show existing RSA keys and their public keys:
     python node_cli.py -spk
 
+    Example 13 - Share all RSA private keys (generates a share code):
+    python node_cli.py -sh
+
+    Example 14 - Fetch shared RSA private keys using a share code:
+    python node_cli.py -fe AkEf-B910
+
     Use -h or --help to see full documentation of all available arguments.
     """
     # try:
@@ -978,6 +1045,21 @@ async def command_line_args() -> Path | None:
         help="Show all existing RSA private keys and their public keys",
     )
 
+    # Share and fetch keys arguments
+    parser_object.add_argument(
+        "-sh",
+        "--share",
+        action="store_true",
+        help="Share all RSA private keys - generates a single code for encryption and retrieval",
+    )
+    parser_object.add_argument(
+        "-fe",
+        "--fetch",
+        action="store",
+        help="Fetch shared RSA private keys using the share code (format: AkEf-B910)",
+        metavar="",
+    )
+
     all_arguments = parser_object.parse_args()
 
     server = all_arguments.server
@@ -995,20 +1077,48 @@ async def command_line_args() -> Path | None:
     add_key = all_arguments.add_private_key
     show_keys = all_arguments.show_private_keys
 
+    # Share and fetch keys options
+    share_keys = all_arguments.share
+    fetch_code = all_arguments.fetch
+
     # Handle RSA key management commands
     if generate_key:
         generate_rsa_key()
         sys.exit(0)
-    
+
     if add_key:
         if add_existing_rsa_key(add_key):
             sys.exit(0)
         else:
             sys.exit(1)
-    
+
     if show_keys:
         show_existing_rsa_keys()
         sys.exit(0)
+
+    # Handle share/fetch commands
+    if share_keys:
+        share_private_keys()
+        sys.exit(0)
+    
+    if fetch_code:
+        if fetch_private_keys(fetch_code):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    # Update chrome extension download settings if specified
+    if chrome_fetch is not None:
+        os.environ["CHROME_DAYS_BEFORE_FETCH"] = str(chrome_fetch)
+
+        print(f"Set days_before_fetch to {os.environ.get('CHROME_DAYS_BEFORE_FETCH')}")
+
+    if chrome_cleanup is not None:
+        os.environ["CHROME_DAYS_BEFORE_CLEANUP"] = str(chrome_cleanup)
+
+        print(
+            f"Set days_before_cleanup to {os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')}"
+        )
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1128,9 +1238,7 @@ async def main():
         .strip()
     )
     api = (
-        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
-        .strip('"')
-        .strip()
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"').strip()
     )
 
     if len(server_name) == 0 and len(api) == 0:
@@ -1142,10 +1250,12 @@ async def main():
         await asyncio.sleep(1)
 
     else:
-        asyncio.create_task(Login(
-            server_name=server_name,
-            log_dir=log_dir,
-        ))
+        asyncio.create_task(
+            Login(
+                server_name=server_name,
+                log_dir=log_dir,
+            )
+        )
     while True:
         if STATE.reconnect_with_credentials is not None:
             await destroy_session()
@@ -1172,10 +1282,13 @@ async def main():
                 )
                 console.print("Please log in to ZeuZ server and connect.")
 
-            asyncio.create_task(Login(
-                server_name=server_name,
-                log_dir=log_dir,
-            ))
+            asyncio.create_task(
+                Login(
+                    server_name=server_name,
+                    log_dir=log_dir,
+                )
+            )
         await asyncio.sleep(1)
+
 
 asyncio.run(main())
