@@ -17,7 +17,7 @@ import io
 from rich.console import Console
 # from rich import print
 from rich import print_json
-from collections import namedtuple, Counter
+from collections import namedtuple, Counter, defaultdict
 import platform
 
 ai_module_update_flag = None
@@ -1318,19 +1318,73 @@ def calculated_percentile(elapsed_times: Dict[int, int], total_requests: int, pe
 
 def generate_time_based_performance_report(run_id, tc_id, teststarttime, testendtime, duration, perf_data):
     """
-    Generate the time based performance report
-    :param session:
+    Generate the time based performance report enriched with summary numbers,
+    corrected timelines, and additional breakdowns.
     """
-    # print("Generating Performance Report")
 
     endpoint_wise = {}
+    perf_data = perf_data or []
+
+    overall_total_requests = 0
+    overall_total_failed = 0
+    overall_total_elapsed_time = 0
+    overall_total_content_length = 0
+
+    overall_elapsed_time_dict = Counter()
+    overall_status_code_counts = Counter()
+    overall_error_counter = Counter()
+
+    overall_requests_per_second = defaultdict(int)
+    overall_latency_per_second = defaultdict(list)
+    overall_throughput_per_second = defaultdict(list)
+    overall_failures_per_second = defaultdict(int)
+
+    concurrency_events = defaultdict(int)
+    earliest_concurrency_second = None
+    latest_concurrency_second = None
+
+    first_request_start = None
+    last_request_end = None
 
     for data in perf_data:
         data: PerformanceDataPoint = data
-        key = data.url + '|' + data.http_verb
+        key = f"{data.url}|{data.http_verb}"
 
-        input_datetime = datetime.datetime.strptime(data.time_stamp[:-3], "%Y-%m-%d %H:%M:%S.%f")
+        try:
+            input_datetime = datetime.datetime.strptime(data.time_stamp[:-3], "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            input_datetime = datetime.datetime.strptime(data.time_stamp, "%Y-%m-%d %H:%M:%S")
+
         formatted_datetime_str = input_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        end_datetime = input_datetime
+        start_datetime = end_datetime - datetime.timedelta(milliseconds=data.elapsed_time)
+
+        if first_request_start is None or start_datetime < first_request_start:
+            first_request_start = start_datetime
+        if last_request_end is None or end_datetime > last_request_end:
+            last_request_end = end_datetime
+
+        start_second = start_datetime.replace(microsecond=0)
+        end_second = (end_datetime + datetime.timedelta(seconds=1)).replace(microsecond=0)
+
+        concurrency_events[start_second] += 1
+        concurrency_events[end_second] -= 1
+
+        if earliest_concurrency_second is None or start_second < earliest_concurrency_second:
+            earliest_concurrency_second = start_second
+        if latest_concurrency_second is None or end_second > latest_concurrency_second:
+            latest_concurrency_second = end_second
+
+        overall_total_requests += 1
+        overall_total_elapsed_time += data.elapsed_time
+        overall_total_content_length += data.response_body_size
+        overall_elapsed_time_dict[data.elapsed_time] += 1
+        overall_status_code_counts[data.status_code] += 1
+
+        overall_requests_per_second[formatted_datetime_str] += 1
+        overall_latency_per_second[formatted_datetime_str].append(data.elapsed_time)
+        overall_throughput_per_second[formatted_datetime_str].append(data.response_body_size)
 
         if endpoint_wise.get(key) is None:
             endpoint_wise[key] = {
@@ -1341,89 +1395,268 @@ def generate_time_based_performance_report(run_id, tc_id, teststarttime, testend
                 'total_elapsed_time': data.elapsed_time,
                 'elapsed_time_dict': {data.elapsed_time: 1},
                 'total_content_length': data.response_body_size,
-                'error': {} if data.response_body == "" else {data.response_body: 1},
+                'status_code_counts': Counter({data.status_code: 1}),
+                'error_counter': Counter() if data.response_body == "" else Counter({data.response_body: 1}),
                 'dict_response_time_per_time': {formatted_datetime_str: [data.elapsed_time]},
-                'dict_byte_throughput_per_time': {formatted_datetime_str: [data.response_body_size]}
+                'dict_byte_throughput_per_time': {formatted_datetime_str: [data.response_body_size]},
             }
         else:
-            endpoint_wise[key]['total_request'] += 1
-            endpoint_wise[key]['total_failed_request'] += 0 if data.response_body == "" else 1
-            endpoint_wise[key]['total_elapsed_time'] += data.elapsed_time
-            endpoint_wise[key]['elapsed_time_dict'][data.elapsed_time] = endpoint_wise[key]['elapsed_time_dict'].get(
+            endpoint_wise_data = endpoint_wise[key]
+            endpoint_wise_data['total_request'] += 1
+            endpoint_wise_data['total_failed_request'] += 0 if data.response_body == "" else 1
+            endpoint_wise_data['total_elapsed_time'] += data.elapsed_time
+            endpoint_wise_data['elapsed_time_dict'][data.elapsed_time] = endpoint_wise_data['elapsed_time_dict'].get(
                 data.elapsed_time, 0) + 1
-            endpoint_wise[key]['total_content_length'] += data.response_body_size
-            if data.response_body != "":
-                endpoint_wise[key]['error'][data.response_body] = endpoint_wise[key]['error'].get(data.response_body, 0) + 1
+            endpoint_wise_data['total_content_length'] += data.response_body_size
+            endpoint_wise_data['status_code_counts'][data.status_code] += 1
 
-            if endpoint_wise[key]['dict_response_time_per_time'].get(formatted_datetime_str) is None:
-                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str] = [data.elapsed_time]
+            if endpoint_wise_data['dict_response_time_per_time'].get(formatted_datetime_str) is None:
+                endpoint_wise_data['dict_response_time_per_time'][formatted_datetime_str] = [data.elapsed_time]
             else:
-                endpoint_wise[key]['dict_response_time_per_time'][formatted_datetime_str].append(data.elapsed_time)
+                endpoint_wise_data['dict_response_time_per_time'][formatted_datetime_str].append(data.elapsed_time)
 
-            if endpoint_wise[key]['dict_byte_throughput_per_time'].get(formatted_datetime_str) is None:
-                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str] = [data.response_body_size]
+            if endpoint_wise_data['dict_byte_throughput_per_time'].get(formatted_datetime_str) is None:
+                endpoint_wise_data['dict_byte_throughput_per_time'][formatted_datetime_str] = [data.response_body_size]
             else:
-                endpoint_wise[key]['dict_byte_throughput_per_time'][formatted_datetime_str].append(data.response_body_size)
+                endpoint_wise_data['dict_byte_throughput_per_time'][formatted_datetime_str].append(data.response_body_size)
+
+        if data.response_body != "":
+            overall_total_failed += 1
+            overall_error_counter[data.response_body] += 1
+            overall_failures_per_second[formatted_datetime_str] += 1
+            endpoint_wise[key]['error_counter'][data.response_body] += 1
 
     for endpoint in endpoint_wise:
-        endpoint_wise[endpoint]['avg_elapsed_time'] = int(
-            endpoint_wise[endpoint]['total_elapsed_time'] / endpoint_wise[endpoint]['total_request'])
-        endpoint_wise[endpoint]['avg_content_length'] = int(
-            endpoint_wise[endpoint]['total_content_length'] / endpoint_wise[endpoint]['total_request'])
-        endpoint_wise[endpoint]['min_time'] = min(endpoint_wise[endpoint]['elapsed_time_dict'].keys())
-        endpoint_wise[endpoint]['max_time'] = max(endpoint_wise[endpoint]['elapsed_time_dict'].keys())
+        endpoint_data = endpoint_wise[endpoint]
+        total_request = endpoint_data['total_request']
 
-        endpoint_wise[endpoint]['fifty'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                 endpoint_wise[endpoint]['total_request'], 50)
-        endpoint_wise[endpoint]['sixty'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                 endpoint_wise[endpoint]['total_request'], 60)
-        endpoint_wise[endpoint]['seventy'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                   endpoint_wise[endpoint]['total_request'], 70)
-        endpoint_wise[endpoint]['eighty'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                  endpoint_wise[endpoint]['total_request'], 80)
-        endpoint_wise[endpoint]['ninety'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                  endpoint_wise[endpoint]['total_request'], 90)
-        endpoint_wise[endpoint]['ninety_nine'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                       endpoint_wise[endpoint]['total_request'], 99)
-        endpoint_wise[endpoint]['ninety_five'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                       endpoint_wise[endpoint]['total_request'], 95)
-        endpoint_wise[endpoint]['hundred'] = calculated_percentile(endpoint_wise[endpoint]['elapsed_time_dict'],
-                                                                   endpoint_wise[endpoint]['total_request'], 100)
-        endpoint_wise[endpoint]['response_time_vs_time'] = []
-        endpoint_wise[endpoint]['user_count_per_second'] = []
-        endpoint_wise[endpoint]['percentile_vs_time'] = []
-        endpoint_wise[endpoint]['fiftypercentile_per_second'] = []
-        endpoint_wise[endpoint]['ninetypercentile_per_second'] = []
+        if total_request > 0:
+            endpoint_data['avg_elapsed_time'] = int(endpoint_data['total_elapsed_time'] / total_request)
+            endpoint_data['avg_content_length'] = int(endpoint_data['total_content_length'] / total_request)
+        else:
+            endpoint_data['avg_elapsed_time'] = 0
+            endpoint_data['avg_content_length'] = 0
 
-        endpoint_wise[endpoint]['dict_response_time_per_time'] = dict(
-            sorted(endpoint_wise[endpoint]['dict_response_time_per_time'].items(),
-                   key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
-        endpoint_wise[endpoint]['dict_byte_throughput_per_time'] = dict(
-            sorted(endpoint_wise[endpoint]['dict_byte_throughput_per_time'].items(),
-                   key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp()))
+        if endpoint_data['elapsed_time_dict']:
+            endpoint_data['min_time'] = min(endpoint_data['elapsed_time_dict'].keys())
+            endpoint_data['max_time'] = max(endpoint_data['elapsed_time_dict'].keys())
+        else:
+            endpoint_data['min_time'] = 0
+            endpoint_data['max_time'] = 0
 
-        for key, value_list in endpoint_wise[endpoint]['dict_response_time_per_time'].items():
-            endpoint_wise[endpoint]['response_time_vs_time'].append([key, int(sum(value_list) / len(value_list))])
-            endpoint_wise[endpoint]['user_count_per_second'].append([key, len(value_list) + endpoint_wise[endpoint]['user_count_per_second'][-1][1] if len(endpoint_wise[endpoint]['user_count_per_second']) > 0 else 0])
+        endpoint_data['fifty'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 50) or 0
+        endpoint_data['sixty'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 60) or 0
+        endpoint_data['seventy'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 70) or 0
+        endpoint_data['eighty'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 80) or 0
+        endpoint_data['ninety'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 90) or 0
+        endpoint_data['ninety_nine'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 99) or 0
+        endpoint_data['ninety_five'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 95) or 0
+        endpoint_data['hundred'] = calculated_percentile(endpoint_data['elapsed_time_dict'], total_request, 100) or 0
+        endpoint_data['success_rate'] = round(
+            ((total_request - endpoint_data['total_failed_request']) / total_request) * 100, 2
+        ) if total_request else 0.0
+
+        endpoint_data['display_name'] = f"[{endpoint_data['method']}] {endpoint_data['endpoint']}"
+
+        endpoint_data['response_time_vs_time'] = []
+        endpoint_data['requests_per_second'] = []
+        endpoint_data['fiftypercentile_per_second'] = []
+        endpoint_data['ninetypercentile_per_second'] = []
+
+        endpoint_data['dict_response_time_per_time'] = dict(
+            sorted(
+                endpoint_data['dict_response_time_per_time'].items(),
+                key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp(),
+            )
+        )
+        endpoint_data['dict_byte_throughput_per_time'] = dict(
+            sorted(
+                endpoint_data['dict_byte_throughput_per_time'].items(),
+                key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%dT%H:%M:%SZ").timestamp(),
+            )
+        )
+
+        for timestamp_key, value_list in endpoint_data['dict_response_time_per_time'].items():
+            endpoint_data['response_time_vs_time'].append(
+                [timestamp_key, int(sum(value_list) / len(value_list))]
+            )
+            endpoint_data['requests_per_second'].append(
+                [timestamp_key, len(value_list)]
+            )
 
             items_count = dict(Counter(value_list))
-            endpoint_wise[endpoint]['fiftypercentile_per_second'].append(
-                [key, calculated_percentile(items_count, len(value_list), 50)])
-            endpoint_wise[endpoint]['ninetypercentile_per_second'].append(
-                [key, calculated_percentile(items_count, len(value_list), 90)])
+            endpoint_data['fiftypercentile_per_second'].append(
+                [timestamp_key, calculated_percentile(items_count, len(value_list), 50) or 0]
+            )
+            endpoint_data['ninetypercentile_per_second'].append(
+                [timestamp_key, calculated_percentile(items_count, len(value_list), 90) or 0]
+            )
 
-        endpoint_wise[endpoint]['byte_throughput_vs_time'] = []
-        for key, value_list in endpoint_wise[endpoint]['dict_byte_throughput_per_time'].items():
-            endpoint_wise[endpoint]['byte_throughput_vs_time'].append([key, int(sum(value_list) / len(value_list))])
+        endpoint_data['byte_throughput_vs_time'] = []
+        for timestamp_key, value_list in endpoint_data['dict_byte_throughput_per_time'].items():
+            endpoint_data['byte_throughput_vs_time'].append(
+                [timestamp_key, int(sum(value_list) / len(value_list))]
+            )
 
+        status_counts = endpoint_data.pop('status_code_counts', Counter())
+        endpoint_data['status_code_breakdown'] = [
+            {
+                'code': code,
+                'count': count,
+                'percentage': round((count / total_request) * 100, 2) if total_request else 0.0,
+            }
+            for code, count in sorted(status_counts.items(), key=lambda item: item[0])
+        ]
+
+        error_counter = endpoint_data.pop('error_counter', Counter())
+        endpoint_data['error_details'] = [
+            {'message': message, 'count': count}
+            for message, count in error_counter.most_common()
+        ]
+
+        # Clean up intermediary data structures that are no longer required outside this function.
+        endpoint_data.pop('dict_response_time_per_time', None)
+        endpoint_data.pop('dict_byte_throughput_per_time', None)
+        endpoint_data.pop('elapsed_time_dict', None)
+
+    overall_requests_per_second_series = [
+        [timestamp, count]
+        for timestamp, count in sorted(overall_requests_per_second.items(), key=lambda item: item[0])
+    ]
+    overall_avg_response_time_per_second = [
+        [timestamp, int(sum(values) / len(values))]
+        for timestamp, values in sorted(overall_latency_per_second.items(), key=lambda item: item[0])
+    ]
+    overall_throughput_per_second_series = [
+        [timestamp, int(sum(values))]
+        for timestamp, values in sorted(overall_throughput_per_second.items(), key=lambda item: item[0])
+    ]
+    overall_failures_per_second_series = [
+        [timestamp, count]
+        for timestamp, count in sorted(overall_failures_per_second.items(), key=lambda item: item[0])
+    ]
+    overall_error_rate_per_second_series = []
+    for timestamp, total_count in sorted(overall_requests_per_second.items(), key=lambda item: item[0]):
+        fail_count = overall_failures_per_second.get(timestamp, 0)
+        if total_count:
+            overall_error_rate_per_second_series.append([timestamp, round((fail_count / total_count) * 100, 2)])
+        else:
+            overall_error_rate_per_second_series.append([timestamp, 0.0])
+
+    overall_percentiles_per_second = {'p50': [], 'p90': [], 'p99': []}
+    for timestamp, values in sorted(overall_latency_per_second.items(), key=lambda item: item[0]):
+        counts = Counter(values)
+        total_count = sum(counts.values())
+        overall_percentiles_per_second['p50'].append(
+            [timestamp, calculated_percentile(counts, total_count, 50) or 0]
+        )
+        overall_percentiles_per_second['p90'].append(
+            [timestamp, calculated_percentile(counts, total_count, 90) or 0]
+        )
+        overall_percentiles_per_second['p99'].append(
+            [timestamp, calculated_percentile(counts, total_count, 99) or 0]
+        )
+
+    overall_concurrency_per_second = []
+    if earliest_concurrency_second is not None and latest_concurrency_second is not None:
+        current = 0
+        cursor = earliest_concurrency_second
+        while cursor <= latest_concurrency_second:
+            current += concurrency_events.get(cursor, 0)
+            overall_concurrency_per_second.append(
+                [cursor.strftime("%Y-%m-%dT%H:%M:%SZ"), current]
+            )
+            cursor += datetime.timedelta(seconds=1)
+
+    duration_seconds = 0.0
+    if first_request_start and last_request_end:
+        duration_seconds = max(0.0, (last_request_end - first_request_start).total_seconds())
+
+    effective_duration = duration_seconds if duration_seconds > 0 else duration
+    effective_duration = effective_duration if effective_duration > 0 else 1
+
+    if overall_total_requests:
+        avg_elapsed = overall_total_elapsed_time / overall_total_requests
+        avg_content_length = overall_total_content_length / overall_total_requests
+        min_latency = min(overall_elapsed_time_dict.keys())
+        max_latency = max(overall_elapsed_time_dict.keys())
+        p50 = calculated_percentile(overall_elapsed_time_dict, overall_total_requests, 50) or 0
+        p90 = calculated_percentile(overall_elapsed_time_dict, overall_total_requests, 90) or 0
+        p95 = calculated_percentile(overall_elapsed_time_dict, overall_total_requests, 95) or 0
+        p99 = calculated_percentile(overall_elapsed_time_dict, overall_total_requests, 99) or 0
+    else:
+        avg_elapsed = 0
+        avg_content_length = 0
+        min_latency = 0
+        max_latency = 0
+        p50 = p90 = p95 = p99 = 0
+
+    peak_concurrency = max((value for _, value in overall_concurrency_per_second), default=0)
+    avg_concurrency = round(
+        sum(value for _, value in overall_concurrency_per_second) / len(overall_concurrency_per_second), 2
+    ) if overall_concurrency_per_second else 0.0
+
+    overall_summary = {
+        'total_requests': overall_total_requests,
+        'total_failures': overall_total_failed,
+        'success_rate': round(
+            ((overall_total_requests - overall_total_failed) / overall_total_requests) * 100, 2
+        ) if overall_total_requests else 0.0,
+        'avg_response_time_ms': int(avg_elapsed),
+        'min_response_time_ms': int(min_latency),
+        'max_response_time_ms': int(max_latency),
+        'p50_response_time_ms': int(p50),
+        'p90_response_time_ms': int(p90),
+        'p95_response_time_ms': int(p95),
+        'p99_response_time_ms': int(p99),
+        'avg_bytes_per_request': int(avg_content_length),
+        'total_data_bytes': int(overall_total_content_length),
+        'total_data_mb': round(overall_total_content_length / (1024 * 1024), 2),
+        'avg_throughput_bytes_per_sec': round(overall_total_content_length / effective_duration, 2)
+        if effective_duration else 0.0,
+        'avg_requests_per_sec': round(overall_total_requests / effective_duration, 2)
+        if effective_duration else 0.0,
+        'duration_seconds': round(duration_seconds, 2),
+        'duration_human': str(datetime.timedelta(seconds=int(duration_seconds))) if duration_seconds else "0:00:00",
+        'measured_duration_seconds': round(duration, 4),
+        'start_time': first_request_start.strftime("%Y-%m-%dT%H:%M:%SZ") if first_request_start else None,
+        'end_time': last_request_end.strftime("%Y-%m-%dT%H:%M:%SZ") if last_request_end else None,
+        'peak_concurrency': peak_concurrency,
+        'avg_concurrency': avg_concurrency,
+    }
+
+    overall_status_codes = [
+        {
+            'code': code,
+            'count': count,
+            'percentage': round((count / overall_total_requests) * 100, 2) if overall_total_requests else 0.0,
+        }
+        for code, count in sorted(overall_status_code_counts.items(), key=lambda item: item[0])
+    ]
+    overall_error_details = [
+        {'message': message, 'count': count}
+        for message, count in overall_error_counter.most_common()
+    ]
 
     data = {
         'run_id': run_id,
-        'teststarttime': teststarttime,
-        'testendtime': testendtime,
-        'duration': duration,
         'tc_id': tc_id,
-        'endpoint_wise': endpoint_wise
+        'teststarttime': overall_summary['start_time'] or teststarttime,
+        'testendtime': overall_summary['end_time'] or testendtime,
+        'duration': overall_summary['duration_seconds'],
+        'duration_human': overall_summary['duration_human'],
+        'measured_duration_seconds': overall_summary['measured_duration_seconds'],
+        'endpoint_wise': endpoint_wise,
+        'overall_summary': overall_summary,
+        'overall_status_codes': overall_status_codes,
+        'overall_error_details': overall_error_details,
+        'overall_requests_per_second': overall_requests_per_second_series,
+        'overall_avg_response_time_per_second': overall_avg_response_time_per_second,
+        'overall_throughput_per_second': overall_throughput_per_second_series,
+        'overall_failures_per_second': overall_failures_per_second_series,
+        'overall_error_rate_per_second': overall_error_rate_per_second_series,
+        'overall_percentiles_per_second': overall_percentiles_per_second,
+        'overall_concurrency_per_second': overall_concurrency_per_second,
     }
 
     global processed_performance_data

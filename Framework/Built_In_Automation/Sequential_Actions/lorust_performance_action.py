@@ -61,6 +61,14 @@ def lorust_performance_action_handler(
                         for i in range(l, r+1):
                             actions_to_execute.append(i-1) #[9,10,11,12,13,14]
 
+        if max_tasks is None:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "`max tasks` parameter is missing",
+                3,
+            )
+            return "zuez_failed"
+
         def find_row_by(
                 action: List[List[str]],
                 left: str | None = None,
@@ -86,7 +94,8 @@ def lorust_performance_action_handler(
         load_gen_function = {
             "spawn_rate": spawn_rate,
             "timeout": timeout,
-            "functions_to_execute": []
+            "max_tasks": max_tasks,
+            "functions_to_execute": [],
         }
         flow = {
             "functions": [
