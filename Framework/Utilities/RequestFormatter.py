@@ -190,10 +190,6 @@ def Post(resource_path, payload=None, **kwargs):
             timeout=REQUEST_TIMEOUT,
             **kwargs
         )
-        # Debug: print response details
-        if resp.status_code != 200:
-            print(f"Post Status Code: {resp.status_code}")
-            print(f"Post Response Text: {resp.text[:500]}")  # First 500 chars
         return resp.json()
     except Exception as e:
         print("Post Exception: {}".format(e))
