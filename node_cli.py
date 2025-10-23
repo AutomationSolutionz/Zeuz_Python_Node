@@ -1,5 +1,3 @@
-node_cli.py
-
 #!/usr/bin/env python3
 import os
 import socket
@@ -889,7 +887,7 @@ def share_private_keys():
             console.print(f"[yellow]═══════════════════════════════════[/yellow]")
             console.print(f"\n[cyan]This code will expire in 30 minutes.[/cyan]")
             console.print(f"[cyan]Use this code with -fe option to fetch keys on another machine.[/cyan]\n")
-            console.print(f"[dim]Example: python node_cli.py -fe {share_code}[/dim]\n")
+            console.print(f"[dim]Example: uv run node_cli.py -fe {share_code}[/dim]\n")
             return True
         else:
             error_msg = response.get("message", "Unknown error") if response else "No response from server"
