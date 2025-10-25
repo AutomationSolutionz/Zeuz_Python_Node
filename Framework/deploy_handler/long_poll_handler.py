@@ -2,17 +2,16 @@
 
 from typing import Any, Callable
 import traceback
-import time
+import asyncio
 import random
 import json
-import requests
+import httpx
 from colorama import Fore
 from pathlib import Path
 from urllib.parse import urlparse
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.node_server_state import STATE
-from concurrent.futures import ThreadPoolExecutor
 
 
 class DeployHandler:
@@ -44,16 +43,16 @@ class DeployHandler:
 
         self.backoff_time = 0
 
-    def on_message(self, message) -> bool:
+    async def on_message(self, message) -> bool:
         """Returns True if the handler should quit, False otherwise."""
 
         if message == self.COMMAND_DONE:
             # We're done for this run session.
-            return self.done_callback()
+            return await self.done_callback()
 
         elif message == self.COMMAND_CANCEL:
             # Run cancelled by the user/service.
-            self.cancel_callback()
+            await self.cancel_callback()
             return False
         
         elif message.startswith(b'{"command":"KEY_REQUEST"'):
@@ -64,7 +63,7 @@ class DeployHandler:
             self.handle_private_key(message)
             return False
 
-        self.response_callback(message)
+        await self.response_callback(message)
         return False
 
     def on_error(self, error) -> None:
@@ -252,78 +251,82 @@ class DeployHandler:
             print(f"[key-request] Error responding to key request: {e}")
             traceback.print_exc()
 
-    def run(self, host: str) -> None:
+    async def run(self, host: str) -> None:
         reconnect = False
         server_online = False
-        while True:
-            if STATE.reconnect_with_credentials is not None:
-                break
-
-            if reconnect:
-                if server_online:
-                    time.sleep(0.1)
-                else:
-                    time.sleep(random.randint(1, 3))
-
-            self.on_connect_callback(reconnect)
-
-            try:
-                reconnect = True
-                resp = self.fetch(host)
-                if resp is None:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(70.0), verify=False) as client:
+            while True:
+                if STATE.reconnect_with_credentials is not None:
                     break
 
-                if resp.content.startswith(self.ERROR_PREFIX):
-                    server_online = False
-                    self.on_error(resp.content)
-                    continue
+                if reconnect:
+                    if server_online:
+                        await asyncio.sleep(0.1)
+                    else:
+                        await asyncio.sleep(random.randint(1, 3))
 
-                if resp.status_code == requests.codes["no_content"]:
-                    server_online = False
-                    continue
+                await self.on_connect_callback(reconnect)
 
-                if not resp.ok:
-                    server_online = False
-                    print(
-                        "[deploy] facing difficulty communicating with the server, status code:",
-                        resp.status_code,
-                        " | reconnecting",
-                    )
-                    try:
-                        print(Fore.YELLOW + str(resp.content))
-                    except Exception:
-                        pass
+                try:
+                    reconnect = True
+                    resp = await self.fetch(host, client)
+                    if resp is None:
+                        break
 
-                    # Encountered a server error, retry.
-                    time.sleep(random.randint(1, 3))
-                    return
+                    if resp.content.startswith(self.ERROR_PREFIX):
+                        server_online = False
+                        self.on_error(resp.content)
+                        continue
 
-                should_quit = self.on_message(resp.content)
-                if should_quit:
-                    break
+                    if resp.status_code == httpx.codes.NO_CONTENT:
+                        server_online = False
+                        continue
 
-                reconnect = False
-                server_online = True
-            except requests.exceptions.ReadTimeout:
-                pass
-            except Exception:
-                traceback.print_exc()
-                print("[deploy] RETRYING...")
+                    if not resp.is_success:
+                        server_online = False
+                        print(
+                            "[deploy] facing difficulty communicating with the server, status code:",
+                            resp.status_code,
+                            " | reconnecting",
+                        )
+                        try:
+                            print(Fore.YELLOW + str(resp.content))
+                        except Exception:
+                            pass
 
-    def fetch(self, host) -> requests.Response | None:
-        executor = ThreadPoolExecutor(max_workers=1)
-        future = executor.submit(
-            lambda: RequestFormatter.request("get", host, verify=False)
-        )
+                        # Encountered a server error, retry.
+                        await asyncio.sleep(random.randint(1, 3))
+                        return
 
-        while not future.done():
-            if STATE.reconnect_with_credentials is not None:
-                future.cancel()
-                executor.shutdown(wait=False, cancel_futures=True)
-                return None
-            time.sleep(1)
+                    should_quit = await self.on_message(resp.content)
+                    if should_quit:
+                        break
 
-        resp = None
-        if not future.cancelled():
-            resp = future.result()
-        return resp
+                    reconnect = False
+                    server_online = True
+                except httpx.ReadTimeout:
+                    pass
+                except Exception:
+                    traceback.print_exc()
+                    print("[deploy] RETRYING...")
+
+    async def fetch(self, host: str, client: httpx.AsyncClient) -> httpx.Response | None:
+        try:
+            api_key = ConfigModule.get_config_value("Authentication", "api-key")
+            headers = {"X-API-KEY": api_key}
+            
+            while True:
+                if STATE.reconnect_with_credentials is not None:
+                    return None
+                
+                try:
+                    resp = await client.get(host, headers=headers)
+                    return resp
+                except asyncio.CancelledError:
+                    return None
+                except Exception:
+                    if STATE.reconnect_with_credentials is not None:
+                        return None
+                    await asyncio.sleep(0.1)
+        except Exception:
+            return None
