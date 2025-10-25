@@ -18,6 +18,7 @@ import time
 import threading
 from datetime import date
 from datetime import datetime as dt
+import asyncio
 
 import psutil
 import requests
@@ -33,9 +34,8 @@ import uvicorn
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-
+from Framework.install_handler.long_poll_handler import InstallHandler
 
 print(
     f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
@@ -180,31 +180,6 @@ def monkeypatch_fromisoformat():
         print("WARN: failed to monkeypatch fromisoformat")
 
 
-def main():
-    # Load environment variables from .env file
-    load_dotenv()
-
-    traceback.install(show_locals=True, max_frames=1)
-
-    # Suppress the InsecureRequestWarning since we use verify=False parameter.
-    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
-
-    # Disable WebdriverManager SSL verification.
-    os.environ["WDM_SSL_VERIFY"] = "0"
-
-    colorama_init(autoreset=True)
-
-    kill_old_process(Path.cwd().parent / "pid.txt")
-    check_min_python_version(min_python_version="3.11", show_warning=True)
-
-    # Setup Node.js and Appium before other operations
-    setup_nodejs_appium()
-
-    update_outdated_modules()
-    monkeypatch_fromisoformat()
-    start_server()
-
-
 def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
     try:
@@ -214,8 +189,6 @@ def setup_nodejs_appium():
         print(f"Warning: Failed to setup Node.js and Appium: {e}")
         print("Continuing without Node.js/Appium setup...")
 
-
-main()
 
 # Tells node whether it should run a test set/deployment only once and quit.
 RUN_ONCE = False
@@ -304,7 +277,7 @@ class UserData:
     project_id: str
 
 
-def Login(
+async def Login(
     server_name: str,
     run_once: bool = False,
     log_dir: os.PathLike | None = None,
@@ -397,7 +370,7 @@ def Login(
     report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
     report_thread.start()
 
-    RunProcess(node_id, run_once=run_once, log_dir=log_dir)
+    await RunProcess(node_id, run_once=run_once, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
@@ -450,7 +423,7 @@ def notify_complete(message="Run completed"):
         print("Failed to send notification")
 
 
-def RunProcess(node_id, run_once=False, log_dir=None):
+async def RunProcess(node_id, run_once=False, log_dir=None):
     try:
         # --- START websocket service connections --- #
 
@@ -482,7 +455,10 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
         from Framework import node_server_state
 
-        def response_callback(response: str):
+        install_handler = InstallHandler(node_id)
+        install_task = asyncio.create_task(install_handler.run())
+
+        async def response_callback(response: str):
             node_server_state.STATE.state = "in_progress"
             nonlocal node_json
             nonlocal log_dir
@@ -520,17 +496,18 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
+            await install_handler.cancel_run()
             MainDriverApi.main(
                 device_dict=device_info,
                 all_run_id_info=node_json,
             )
 
-        def on_connect_callback(reconnected: bool):
+        async def on_connect_callback(reconnected: bool):
             node_server_state.STATE.state = "idle"
             update_machine_info(node_id, should_print=not reconnected)
             return
 
-        def done_callback() -> bool:
+        async def done_callback() -> bool:
             """
             Returns True if we do not want to connect to the service further.
             """
@@ -540,19 +517,21 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
             print("[deploy] Run complete.")
             notify_complete("Run completed")
+            asyncio.create_task(install_handler.run())
 
             if run_once:
                 return True
 
             return False
 
-        def cancel_callback():
+        async def cancel_callback():
             if not node_json:
                 return
 
             print("[deploy] Run cancelled.")
             notify_complete("Run cancelled")
             CommonUtil.run_cancelled = True
+            asyncio.create_task(install_handler.run())
 
         deploy_handler = long_poll_handler.DeployHandler(
             on_connect_callback=on_connect_callback,
@@ -560,7 +539,11 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        deploy_handler.run(deploy_srv_addr())
+        
+        deploy_task = asyncio.create_task(deploy_handler.run(deploy_srv_addr()))
+        
+        await asyncio.gather(install_task, deploy_task, return_exceptions=True)
+        
         return False
 
     except Exception:
@@ -1271,15 +1254,30 @@ def set_new_credentials(server, api_key):
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
 
-def Bypass():
-    while True:
-        oLocalInfo = CommonUtil.MachineInfo()
-        testerid = (oLocalInfo.getLocalUser()).lower()
-        print("[Bypass] Zeuz Node is online: %s" % testerid)
-        RunProcess(testerid)
+async def main():
+    # Load environment variables from .env file
+    load_dotenv()
 
+    traceback.install(show_locals=True, max_frames=1)
 
-if __name__ == "__main__":
+    # Suppress the InsecureRequestWarning since we use verify=False parameter.
+    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
+
+    # Disable WebdriverManager SSL verification.
+    os.environ["WDM_SSL_VERIFY"] = "0"
+
+    colorama_init(autoreset=True)
+
+    kill_old_process(Path.cwd().parent / "pid.txt")
+    check_min_python_version(min_python_version="3.11", show_warning=True)
+
+    # Setup Node.js and Appium before other operations
+    # setup_nodejs_appium()
+
+    update_outdated_modules()
+    monkeypatch_fromisoformat()
+    start_server()
+
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
@@ -1334,7 +1332,7 @@ if __name__ == "__main__":
                 time.sleep(1)
                 continue
 
-            Login(
+            await Login(
                 server_name=server_name,
                 run_once=RUN_ONCE,
                 log_dir=log_dir,
@@ -1350,3 +1348,5 @@ if __name__ == "__main__":
 
             print_login_information = True
             time.sleep(1)
+
+asyncio.run(main())
