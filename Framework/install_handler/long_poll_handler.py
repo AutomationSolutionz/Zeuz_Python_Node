@@ -2,9 +2,10 @@ import asyncio
 import json
 import traceback
 import random
+import platform
 import httpx
 from colorama import Fore
-from Framework.install_handler.route import Response
+from Framework.install_handler.route import Response, services
 
 from Framework.Utilities import RequestFormatter, ConfigModule
 debug = True
@@ -29,8 +30,10 @@ class InstallHandler:
             }
             if debug: print(f"[installer] Sending response to server: {payload}")
             resp = await self.client.post(url, json=payload, headers={"X-API-KEY": api_key})
+            if debug: print(f"[installer] Response status: {resp.status_code}")
+            if debug: print(f"[installer] Response content: {resp.content}")
             if not resp.is_success:
-                print(f"[installer] Failed to send response: {resp.status_code}")
+                if debug: print(f"[installer] Failed to send response: {resp.status_code}")
         except Exception as e:
             print(f"[installer] Error sending response: {e}")
 
@@ -40,7 +43,36 @@ class InstallHandler:
             return
         action = message.value.action
         if action == "services_list":
-            await self.send_response([])
+            current_os = platform.system().lower()
+            if debug: print(f"[installer] Current OS: {current_os}")
+            
+            filtered_services = []
+            for category in services:
+                filtered_category = {
+                    "category": category["category"],
+                    "services": []
+                }
+                for service in category["services"]:
+                    if current_os not in service["os"]:
+                        if debug: print(f"[installer] Skipping {service['name']} - not compatible with {current_os}")
+                        continue
+                    
+                    filtered_service = {
+                        "name": service["name"],
+                        "status": service["status"],
+                        "comment": service["comment"],
+                        "install_text": service["install_text"],
+                        "os": service["os"]
+                    }
+                    filtered_category["services"].append(filtered_service)
+                
+                if filtered_category["services"]:
+                    filtered_services.append(filtered_category)
+            
+            await self.send_response({
+                "action": "services_list",
+                "data": filtered_services
+            })
         elif action == "install":
             await self.send_response(None)
         elif action == "status":
