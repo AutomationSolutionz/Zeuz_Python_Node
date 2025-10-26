@@ -237,7 +237,7 @@ TEAM_TAG = "team"
 device_dict: dict[str, Any] = {}
 
 
-def destroy_session():
+async def destroy_session():
     """
     Destroy session file.
     """
@@ -1246,7 +1246,7 @@ def command_line_args() -> Path | None:
     return log_dir
 
 
-def set_new_credentials(server, api_key):
+async def set_new_credentials(server, api_key):
     """Store new credentials in the settings file."""
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api_key)
@@ -1300,10 +1300,10 @@ async def main():
         print_login_information = True
         while True:
             if STATE.reconnect_with_credentials is not None:
-                destroy_session()
+                await destroy_session()
                 server_name = STATE.reconnect_with_credentials.server
                 api_key = STATE.reconnect_with_credentials.api_key
-                set_new_credentials(server=server_name, api_key=api_key)
+                await set_new_credentials(server=server_name, api_key=api_key)
 
                 STATE.reconnect_with_credentials = None
 
