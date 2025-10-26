@@ -38,46 +38,60 @@ class InstallHandler:
             print(f"[installer] Error sending response: {e}")
 
     async def on_message(self, message: Response) -> None:
-        if debug: print(f"[installer] Received message:\n {message.model_dump_json(indent=4)}")
-        if message.value is None:
-            return
-        action = message.value.action
-        if action == "services_list":
-            current_os = platform.system().lower()
-            if debug: print(f"[installer] Current OS: {current_os}")
-            
-            filtered_services = []
-            for category in services:
-                filtered_category = {
-                    "category": category["category"],
-                    "services": []
-                }
-                for service in category["services"]:
-                    if current_os not in service["os"]:
-                        if debug: print(f"[installer] Skipping {service['name']} - not compatible with {current_os}")
-                        continue
-                    
-                    filtered_service = {
-                        "name": service["name"],
-                        "status": service["status"],
-                        "comment": service["comment"],
-                        "install_text": service["install_text"],
-                        "os": service["os"]
-                    }
-                    filtered_category["services"].append(filtered_service)
+        try:
+            if debug: print(f"[installer] Received message:\n {message.model_dump_json(indent=4)}")
+            if message.value is None:
+                return
+            action = message.value.action
+            if action == "services_list":
+                current_os = platform.system().lower()
+                if debug: print(f"[installer] Current OS: {current_os}")
                 
-                if filtered_category["services"]:
-                    filtered_services.append(filtered_category)
-            
-            await self.send_response({
-                "action": "services_list",
-                "data": filtered_services
-            })
-        elif action == "install":
-            await self.send_response(None)
-        elif action == "status":
-            await self.send_response(None)
+                filtered_services = []
+                for category in services:
+                    filtered_category = {
+                        "category": category["category"],
+                        "services": []
+                    }
+                    for service in category["services"]:
+                        if current_os not in service["os"]:
+                            if debug: print(f"[installer] Skipping {service['name']} - not compatible with {current_os}")
+                            continue
+                        
+                        filtered_service = {
+                            "name": service["name"],
+                            "status": service["status"],
+                            "comment": service["comment"],
+                            "install_text": service["install_text"],
+                            "os": service["os"]
+                        }
+                        filtered_category["services"].append(filtered_service)
+                    
+                    if filtered_category["services"]:
+                        filtered_services.append(filtered_category)
+                
+                await self.send_response({
+                    "action": "services_list",
+                    "data": filtered_services
+                })
+            elif action in ["install", "status"]:
+                if debug: print(f"[installer] Installing {message}")
 
+                category = [i for i in services if i["category"] == message.value.item.category][0]
+                service = [i for i in category["services"] if i["name"] == message.value.item.name][0]
+                if action == "install":
+                    func = service["install_function"]
+                elif action == "status":
+                    func = service["status_function"]
+                
+                if func is None:
+                    print(f"[installer] Function not found for {message.value.item.name}")
+                    return
+                await func()
+
+        except Exception as e:
+            print(f"[installer] Error onMessage: {e}")
+            traceback.print_exc()
 
     async def cancel_run(self) -> None:
         self.cancel_ = True
