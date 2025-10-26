@@ -92,6 +92,11 @@ class InstallHandler:
         async with httpx.AsyncClient(timeout=httpx.Timeout(70.0), verify=False) as client:
             self.client = client
             while not self.cancel_:
+                from Framework.node_server_state import STATE
+                if STATE.reconnect_with_credentials is not None:
+                    if debug: print("[installer] Reconnection requested, stopping...")
+                    break
+                
                 self.running = True
                 try:                
                     if debug: print("[installer] Active")
