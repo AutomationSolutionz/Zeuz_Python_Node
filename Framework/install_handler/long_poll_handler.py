@@ -6,36 +6,19 @@ import platform
 import httpx
 from colorama import Fore
 from Framework.install_handler.route import Response, services
-
+from Framework.install_handler.utils import send_response, debug, node_id
+from pydantic import BaseModel
 from Framework.Utilities import RequestFormatter, ConfigModule
-debug = True
+
 if debug:
     print(f"[installer] Debug mode enabled")
 
 class InstallHandler:
 
-    def __init__(self, node_id: str):
-        self.node_id = node_id
+    def __init__(self):
         self.cancel_ = False
         self.running = False
         self.client = None
-
-    async def send_response(self, data=None) -> None:
-        try:
-            api_key = ConfigModule.get_config_value("Authentication", "api-key")
-            url = RequestFormatter.form_uri("d/nodes/install/server/push")
-            payload = {
-                "node_id": self.node_id,
-                "data": data
-            }
-            if debug: print(f"[installer] Sending response to server: {payload}")
-            resp = await self.client.post(url, json=payload, headers={"X-API-KEY": api_key})
-            if debug: print(f"[installer] Response status: {resp.status_code}")
-            if debug: print(f"[installer] Response content: {resp.content}")
-            if not resp.is_success:
-                if debug: print(f"[installer] Failed to send response: {resp.status_code}")
-        except Exception as e:
-            print(f"[installer] Error sending response: {e}")
 
     async def on_message(self, message: Response) -> None:
         try:
@@ -70,7 +53,7 @@ class InstallHandler:
                     if filtered_category["services"]:
                         filtered_services.append(filtered_category)
                 
-                await self.send_response({
+                await send_response({
                     "action": "services_list",
                     "data": filtered_services
                 })
@@ -113,7 +96,7 @@ class InstallHandler:
                 try:                
                     if debug: print("[installer] Active")
                     api_key = ConfigModule.get_config_value("Authentication", "api-key")
-                    url = RequestFormatter.form_uri(f"d/nodes/install/node/listen?node_id={self.node_id}")
+                    url = RequestFormatter.form_uri(f"d/nodes/install/node/listen?node_id={node_id}")
                     
                     resp = await client.get(url, headers={"X-API-KEY": api_key})
                     if resp.status_code == httpx.codes.NO_CONTENT:

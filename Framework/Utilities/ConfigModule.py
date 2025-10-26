@@ -30,7 +30,7 @@ def get_config_value(section, key, location: os.PathLike | None = None):
         config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
-            _file_name = os.getcwd() + os.sep + file_name
+            _file_name = os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name
         else:
             _file_name = location
         try:
