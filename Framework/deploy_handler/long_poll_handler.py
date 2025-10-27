@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
+from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
 from Framework.node_server_state import STATE
 
 
