@@ -131,10 +131,10 @@ def login():
     return data, r.status_code
 
 
-def form_uri(resource_path):
+def form_uri(resource_path: str | None = None) -> str:
     web_server_address = ConfigModule.get_config_value(AUTHENTICATION_CATEGORY, SERVER_ADDRESS_TAG)
     base_server_address = web_server_address
-    if len(resource_path) > 0:
+    if resource_path and len(resource_path) > 0:
         if resource_path[0] == "/":
             resource_path = resource_path[1:]
         base_server_address += "/" + resource_path

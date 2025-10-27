@@ -222,8 +222,12 @@ def lorust_performance_action_handler(
         metrics_output_path = save_path / "lorust_performance_report"
         metrics_output_path.mkdir(parents=True, exist_ok=True)
 
-        flow_save_path = metrics_output_path / "flow.json"
-        metrics_output_json_path = metrics_output_path / "http.json"
+        step_no: int = CommonUtil.current_step_sequence # type: ignore
+        action_no: int = CommonUtil.current_action_no # type: ignore
+        tc_id: str = CommonUtil.current_tc_no
+        file_name_prefix = f"{tc_id}_STEP-{step_no}_ACTION-{action_no}"
+        flow_save_path = metrics_output_path / f"{file_name_prefix}_flow.json"
+        metrics_output_json_path = metrics_output_path / f"{file_name_prefix}_http.json"
 
         # Save the flow configuration
         with open(flow_save_path, "w") as f:
@@ -246,11 +250,16 @@ def lorust_performance_action_handler(
         binary_name = f"lorust_{uname.system}_{uname.machine}.exe"
         lorust_path = lorust_path / binary_name
 
-        subprocess.run(' '.join([
-            str(lorust_path),
-            f"--output-path {metrics_output_path}",
-            f"--flow-path {flow_save_path}",
-        ]), shell=True)
+        subprocess.run(
+            " ".join(
+                [
+                    str(lorust_path),
+                    f"--output-path {metrics_output_json_path}",
+                    f"--flow-path {flow_save_path}",
+                ]
+            ),
+            shell=True,
+        )
 
         testendtime = time.perf_counter()
         duration = testendtime - teststarttime
@@ -305,7 +314,7 @@ def create_html_report(
 
     step_no: int = CommonUtil.current_step_sequence # type: ignore
     action_no: int = CommonUtil.current_action_no # type: ignore
-    file_name = report_save_path / f"{tc_id}_STEP-{step_no}_ACTION-{action_no}.html"
+    file_name = report_save_path / f"{tc_id}_STEP-{step_no}_ACTION-{action_no}_report.html"
 
     with open(file_name, "w", encoding="utf-8") as file:
         file.write(html)
