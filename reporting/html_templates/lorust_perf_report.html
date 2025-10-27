@@ -66,6 +66,17 @@
             box-shadow: 0 4px 10px rgba(127, 40, 255, 0.08);
         }
 
+        .info-card > a {
+            text-decoration: none;
+            color: #f50384;
+            transition: all 0.3s;
+        }
+
+        .info-card > a:hover {
+            text-decoration: underline;
+            color: #7f28ff;
+        }
+
         .info-label {
             font-size: 12px;
             letter-spacing: 0.06em;
@@ -320,11 +331,11 @@
         <div class="info-grid">
             <div class="info-card">
                 <span class="info-label">Run ID</span>
-                <span class="info-value">{{ run_id }}</span>
+                <a href="{{ zeuz_server_url ~ "/Home/RunID/" ~ run_id ~ "/?old=False" }}" target="_blank"><span class="info-value">{{ run_id }}</span></a>
             </div>
             <div class="info-card">
                 <span class="info-label">Test Case</span>
-                <span class="info-value">{{ tc_id }}</span>
+                <a href="{{ zeuz_server_url ~ "/Home/ManageTestCases/Edit/" ~ tc_id }}" target="_blank"><span class="info-value">{{ tc_id }}</span></a>
             </div>
             <div class="info-card">
                 <span class="info-label">Start Time</span>

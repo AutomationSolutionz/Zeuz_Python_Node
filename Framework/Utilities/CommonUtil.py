@@ -24,7 +24,10 @@ ai_module_update_flag = None
 ai_module_update_time_difference = None
 
 ws_ss_log = True    # todo: Always keep it True
-from Framework.Utilities import live_log_service
+from Framework.Utilities import (
+    RequestFormatter,
+    live_log_service,
+)
 import concurrent.futures
 from typing import Dict, List
 
@@ -1543,7 +1546,7 @@ def generate_time_based_performance_report(run_id, tc_id, teststarttime, testend
         else:
             overall_error_rate_per_second_series.append([timestamp, 0.0])
 
-    overall_percentiles_per_second = {'p50': [], 'p90': [], 'p99': []}
+    overall_percentiles_per_second = {"p50": [], "p90": [], "p95": [], "p99": []}
     for timestamp, values in sorted(overall_latency_per_second.items(), key=lambda item: item[0]):
         counts = Counter(values)
         total_count = sum(counts.values())
@@ -1552,6 +1555,9 @@ def generate_time_based_performance_report(run_id, tc_id, teststarttime, testend
         )
         overall_percentiles_per_second['p90'].append(
             [timestamp, calculated_percentile(counts, total_count, 90) or 0]
+        )
+        overall_percentiles_per_second["p95"].append(
+            [timestamp, calculated_percentile(counts, total_count, 95) or 0]
         )
         overall_percentiles_per_second['p99'].append(
             [timestamp, calculated_percentile(counts, total_count, 99) or 0]
@@ -1639,6 +1645,7 @@ def generate_time_based_performance_report(run_id, tc_id, teststarttime, testend
     ]
 
     data = {
+        'zeuz_server_url': RequestFormatter.form_uri(),
         'run_id': run_id,
         'tc_id': tc_id,
         'teststarttime': overall_summary['start_time'] or teststarttime,
