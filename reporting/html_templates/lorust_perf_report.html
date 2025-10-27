@@ -34,26 +34,43 @@
             margin: 0;
         }
 
+        .brand-link {
+            margin-top: 6px;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+        }
+
+        .brand-link a {
+            color: #7f28ff;
+            text-decoration: none;
+        }
+
+        .brand-link a:hover,
+        .brand-link a:focus {
+            text-decoration: underline;
+        }
+
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
             margin-bottom: 32px;
         }
 
         .info-card {
-            background: linear-gradient(135deg, #7f28ff 0%, #c084fc 100%);
-            border-radius: 12px;
-            padding: 18px 20px;
-            color: #ffffff;
-            box-shadow: 0 6px 16px rgba(127, 40, 255, 0.2);
+            background: #f7f5ff;
+            border: 1px solid #d7caff;
+            border-radius: 10px;
+            padding: 16px 18px;
+            color: #1a0a2e;
+            box-shadow: 0 4px 10px rgba(127, 40, 255, 0.08);
         }
 
         .info-label {
             font-size: 12px;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: #e9d5ff;
+            color: #6b5b95;
         }
 
         .info-value {
@@ -74,7 +91,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 16px;
             margin-bottom: 32px;
         }
@@ -130,6 +147,36 @@
         .chart-container {
             width: 100%;
             height: 340px;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .chart-legend button {
+            border: 1px solid #d7caff;
+            border-radius: 16px;
+            padding: 6px 12px;
+            background: #f7f5ff;
+            color: #4b3f6b;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chart-legend button.active {
+            background: #7f28ff;
+            color: #ffffff;
+            border-color: #7f28ff;
+            box-shadow: 0 2px 6px rgba(127, 40, 255, 0.25);
+        }
+
+        .chart-legend button:hover,
+        .chart-legend button:focus {
+            border-color: #7f28ff;
         }
 
         .table-section {
@@ -220,6 +267,15 @@
             margin-bottom: 4px;
         }
 
+        @media (max-width: 1400px) {
+            .info-grid {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+            .summary-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
         @media print {
             body {
                 background: white;
@@ -256,6 +312,9 @@
         <div class="header">
             <img src="https://zeuz.ai/_next/image?url=%2Fold-assets%2FLogo.svg&w=384&q=75" alt="ZeuZ Logo">
             <h1>Performance Test Report</h1>
+            <div class="brand-link">
+                <a href="https://zeuz.ai" target="_blank" rel="noopener">zeuz.ai</a>
+            </div>
         </div>
 
         <div class="info-grid">
@@ -334,42 +393,51 @@
         <div class="charts-grid">
             <div class="chart-card">
                 <div class="chart-title">Requests Per Second (Total)</div>
-                <div id="overall_requests" class="chart-container"></div>
+                <div id="overall_requests" class="chart-container" data-legend-target="legend-overall_requests"></div>
+                <div class="chart-legend" id="legend-overall_requests"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Active Users (Estimated Concurrency)</div>
-                <div id="overall_concurrency" class="chart-container"></div>
+                <div id="overall_concurrency" class="chart-container" data-legend-target="legend-overall_concurrency"></div>
+                <div class="chart-legend" id="legend-overall_concurrency"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Total Data Transferred Per Second</div>
-                <div id="overall_throughput" class="chart-container"></div>
+                <div id="overall_throughput" class="chart-container" data-legend-target="legend-overall_throughput"></div>
+                <div class="chart-legend" id="legend-overall_throughput"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Error Rate (%) Per Second</div>
-                <div id="overall_error_rate" class="chart-container"></div>
+                <div id="overall_error_rate" class="chart-container" data-legend-target="legend-overall_error_rate"></div>
+                <div class="chart-legend" id="legend-overall_error_rate"></div>
             </div>
         </div>
 
         <div class="charts-grid">
             <div class="chart-card">
                 <div class="chart-title">Average Response Time (Overall)</div>
-                <div id="overall_avg_response" class="chart-container"></div>
+                <div id="overall_avg_response" class="chart-container" data-legend-target="legend-overall_avg_response"></div>
+                <div class="chart-legend" id="legend-overall_avg_response"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Latency Percentiles (Overall)</div>
-                <div id="overall_percentiles" class="chart-container"></div>
+                <div id="overall_percentiles" class="chart-container" data-legend-target="legend-overall_percentiles"></div>
+                <div class="chart-legend" id="legend-overall_percentiles"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Response Time vs Time (Per Endpoint)</div>
-                <div id="endpoint_response_time" class="chart-container"></div>
+                <div id="endpoint_response_time" class="chart-container" data-legend-target="legend-endpoint_response_time"></div>
+                <div class="chart-legend" id="legend-endpoint_response_time"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Requests Per Second (Per Endpoint)</div>
-                <div id="endpoint_requests" class="chart-container"></div>
+                <div id="endpoint_requests" class="chart-container" data-legend-target="legend-endpoint_requests"></div>
+                <div class="chart-legend" id="legend-endpoint_requests"></div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">Average Content Size Per Second (Per Endpoint)</div>
-                <div id="endpoint_throughput" class="chart-container"></div>
+                <div id="endpoint_throughput" class="chart-container" data-legend-target="legend-endpoint_throughput"></div>
+                <div class="chart-legend" id="legend-endpoint_throughput"></div>
             </div>
         </div>
 
@@ -588,25 +656,102 @@
             if (element.previousElementSibling && element.previousElementSibling.classList.contains('chart-title')) {
                 element.previousElementSibling.textContent = title;
             }
+            const legendTargetId = element.dataset.legendTarget;
+            const legendContainer = legendTargetId ? document.getElementById(legendTargetId) : null;
+            const legendNames = Array.from(new Set(series.map(item => item.name).filter(Boolean)));
+            const legendSelected = {};
+            legendNames.forEach(name => {
+                legendSelected[name] = true;
+            });
+
             const chart = echarts.init(element, 'light');
             const baseOptions = {
                 color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff', '#10b981', '#f59e0b'],
                 tooltip: { trigger: 'axis' },
-                legend: { type: 'scroll' },
+                legend: {
+                    show: false,
+                    data: legendNames,
+                    selected: legendSelected
+                },
                 toolbox: { feature: { saveAsImage: {} } },
-                xAxis: { type: 'time' },
+                xAxis: {
+                    type: 'time',
+                    axisLabel: { hideOverlap: true, rotate: 25, color: '#4b3f6b', fontSize: 11 },
+                    axisTick: { alignWithLabel: true },
+                    splitLine: { show: false }
+                },
                 yAxis: {
                     type: 'value',
                     name: yAxisName,
                     axisLine: { symbol: 'arrow' },
                     splitLine: { show: true, lineStyle: { color: '#ede3ff' } }
                 },
-                grid: { top: 24, left: 60, right: 30, bottom: 50 },
+                grid: { top: 40, left: 60, right: 30, bottom: 60 },
                 series: series
             };
-            chart.setOption(Object.assign(baseOptions, options));
+            const mergedOptions = Object.assign({}, baseOptions, options);
+            if (options.legend) {
+                mergedOptions.legend = Object.assign({}, baseOptions.legend, options.legend);
+            }
+            if (options.xAxis) {
+                mergedOptions.xAxis = Object.assign({}, baseOptions.xAxis, options.xAxis);
+            }
+            if (options.yAxis) {
+                mergedOptions.yAxis = Object.assign({}, baseOptions.yAxis, options.yAxis);
+            }
+            if (options.grid) {
+                mergedOptions.grid = Object.assign({}, baseOptions.grid, options.grid);
+            }
+            chart.setOption(mergedOptions);
+            if (legendContainer) {
+                renderExternalLegend(chart, legendContainer, legendNames);
+            }
             charts.push(chart);
             return chart;
+        }
+
+        function renderExternalLegend(chart, container, legendNames) {
+            if (!container) {
+                return;
+            }
+            container.innerHTML = '';
+            const buttons = {};
+
+            legendNames.forEach(name => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = name;
+                button.addEventListener('click', () => {
+                    chart.dispatchAction({
+                        type: 'legendToggleSelect',
+                        name: name,
+                    });
+                    updateState();
+                });
+                container.appendChild(button);
+                buttons[name] = button;
+            });
+
+            chart.on('legendselectchanged', updateState);
+            chart.on('restore', updateState);
+            updateState();
+
+            function updateState() {
+                const option = chart.getOption();
+                const legend = Array.isArray(option.legend) ? option.legend[0] : option.legend;
+                const selected = (legend && legend.selected) || {};
+                legendNames.forEach(name => {
+                    const button = buttons[name];
+                    if (!button) {
+                        return;
+                    }
+                    if (selected[name] === false) {
+                        button.classList.remove('active');
+                    } else {
+                        button.classList.add('active');
+                    }
+                });
+            }
         }
 
         createLineChart('overall_requests', 'Requests Per Second (Total)', [{
