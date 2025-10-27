@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
+from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
 from Framework.node_server_state import STATE
 from concurrent.futures import ThreadPoolExecutor
 
@@ -304,7 +305,7 @@ class DeployHandler:
 
                 reconnect = False
                 server_online = True
-            except requests.exceptions.ReadTimeout:
+            except requests.exceptions.Timeout:
                 pass
             except Exception:
                 traceback.print_exc()
@@ -313,7 +314,7 @@ class DeployHandler:
     def fetch(self, host) -> requests.Response | None:
         executor = ThreadPoolExecutor(max_workers=1)
         future = executor.submit(
-            lambda: RequestFormatter.request("get", host, verify=False)
+            lambda: RequestFormatter.request("get", host, verify=False, timeout=40)
         )
 
         while not future.done():
