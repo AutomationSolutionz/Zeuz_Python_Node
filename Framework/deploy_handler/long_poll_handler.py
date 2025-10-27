@@ -314,7 +314,7 @@ class DeployHandler:
     def fetch(self, host) -> requests.Response | None:
         executor = ThreadPoolExecutor(max_workers=1)
         future = executor.submit(
-            lambda: RequestFormatter.request("get", host, verify=False, timeout=30)
+            lambda: RequestFormatter.request("get", host, verify=False, timeout=40)
         )
 
         while not future.done():
