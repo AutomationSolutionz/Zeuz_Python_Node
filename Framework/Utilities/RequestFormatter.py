@@ -66,7 +66,13 @@ def datestring_to_obj(date_string: str) -> datetime:
 
 def is_less_than_N_minutes_away(target_datetime, n):
     # Get the current time
-    current_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+    # Handle both timezone-aware and timezone-naive datetimes
+    if target_datetime.tzinfo is None:
+        # Target is naive, use naive current time
+        current_time = datetime.now()
+    else:
+        # Target is aware, use aware current time in UTC
+        current_time = datetime.now(timezone.utc)
 
     # Calculate the difference between the target datetime and the current time
     time_difference = target_datetime - current_time
