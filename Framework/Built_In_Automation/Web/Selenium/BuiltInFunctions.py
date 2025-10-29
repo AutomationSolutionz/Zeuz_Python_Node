@@ -14,6 +14,7 @@ Description: Sequential Actions for controlling Web Browsers - All main Web Brow
 #                       #
 #########################
 import platform
+import tempfile
 import sys, os, time, inspect, shutil, subprocess, json, re
 import socket
 import requests
@@ -564,6 +565,10 @@ def generate_options(browser: str, browser_options: BrowserOptions):
             options.add_experimental_option("mobileEmulation", mobile_emulation)
         for argument in browser_options[b]["add_argument"]:
             options.add_argument(argument)
+        # Add a stability flag for newer Chrome builds if not already present
+        # This helps avoid DevToolsActivePort issues in some environments
+        if not any(arg.startswith("--remote-allow-origins=") for arg in options.arguments):
+            options.add_argument("--remote-allow-origins=*")
         for key, val in browser_options[b]["add_experimental_option"].items():
             options.add_experimental_option(key, val)
         for extension in browser_options[b]["add_extension"]:
@@ -676,7 +681,8 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             chrome_bin = browser_options["chrome"].get("binary_location", None)
             driver_bin = browser_options["chrome"].get("driver_path", None)
 
-            if chrome_bin and driver_bin:
+            cft_in_use = bool(chrome_bin and driver_bin)
+            if cft_in_use:
                 # Use Chrome for Testing binaries
                 service = Service(executable_path=driver_bin)
                 options.binary_location = chrome_bin
@@ -686,10 +692,74 @@ def Open_Browser(browser, browser_options: BrowserOptions):
                 service = Service()
                 CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
 
-            selenium_driver = webdriver.Chrome(
-                service=service,
-                options=options,
-            )
+            try:
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
+            except Exception as e:
+                # If Chrome for Testing fails to start (e.g., DevToolsActivePort),
+                # fall back to system Chrome without a custom binary.
+                err_msg = str(e).lower()
+                should_fallback = (
+                    cft_in_use and (
+                        "devtoolsactiveport" in err_msg
+                        or "chrome failed to start" in err_msg
+                        or "session not created" in err_msg
+                    )
+                )
+                if should_fallback:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Chrome for Testing launch failed; retrying with system Chrome",
+                        2,
+                    )
+                    # Clear CfT-specific bits and retry with fresh Options
+                    try:
+                        from selenium.webdriver.chrome.options import Options as ChromeOptions
+                        fresh_options = ChromeOptions()
+                        # Copy args and experimental options but DO NOT copy binary
+                        for arg in getattr(options, "arguments", []):
+                            fresh_options.add_argument(arg)
+                        for k, v in getattr(options, "experimental_options", {}).items():
+                            fresh_options.add_experimental_option(k, v)
+                        for ext in getattr(options, "extensions", []):
+                            fresh_options.add_extension(ext)
+                        # Preserve page load strategy
+                        try:
+                            fresh_options.page_load_strategy = options.page_load_strategy
+                        except Exception:
+                            pass
+                        # If no user-data-dir provided, add an isolated one to avoid profile locks
+                        if not any(a.startswith("--user-data-dir=") for a in getattr(options, "arguments", [])):
+                            profile_dir = Path(tempfile.gettempdir()) / f"zeuz_chrome_profile_{os.getpid()}"
+                            profile_dir.mkdir(parents=True, exist_ok=True)
+                            fresh_options.add_argument(f"--user-data-dir={profile_dir}")
+                        # Helpful stability flags if not already present
+                        if not any(a == "--no-first-run" for a in getattr(options, "arguments", [])):
+                            fresh_options.add_argument("--no-first-run")
+                        if not any(a == "--no-default-browser-check" for a in getattr(options, "arguments", [])):
+                            fresh_options.add_argument("--no-default-browser-check")
+
+                        # Re-apply any generic capabilities that might have been set earlier
+                        for key, value in browser_options.get("capabilities", {}).items():
+                            fresh_options.set_capability(key, value)
+
+                        # Ensure no leftover 'binary' capability exists
+                        gog = fresh_options.capabilities.get("goog:chromeOptions", {})
+                        if "binary" in gog:
+                            del gog["binary"]
+                        fresh_options.set_capability("goog:chromeOptions", gog)
+
+                        service = Service()
+                        selenium_driver = webdriver.Chrome(
+                            service=service,
+                            options=fresh_options,
+                        )
+                    except Exception:
+                        raise
+                else:
+                    raise
 
             # service = Service()
             # selenium_driver = webdriver.Chrome(
