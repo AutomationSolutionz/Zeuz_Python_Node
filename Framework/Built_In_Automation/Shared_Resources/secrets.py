@@ -1,6 +1,3 @@
-secrets.py
-
-# -*- coding: utf-8 -*-
 """
 ZeuZ Secrets Management Module
 
