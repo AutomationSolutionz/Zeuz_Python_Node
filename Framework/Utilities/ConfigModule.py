@@ -131,7 +131,7 @@ def add_config_value(section, key, value, location: os.PathLike | None = None):
         else:
             config.set(section, key, value)
 
-        with (open(_file_name, "w")) as open_file:
+        with open(_file_name, "w") as open_file:
             config.write(open_file)  # Write all configuration to file
         open_file.close()
         return True

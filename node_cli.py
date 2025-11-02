@@ -27,7 +27,8 @@ from colorama import init as colorama_init
 from colorama import Fore
 from rich.table import Table
 from rich.console import Console
-from rich import traceback
+from rich import traceback as rich_traceback
+import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
@@ -35,6 +36,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
+from server.mobile import upload_android_ui_dump
 
 print(
     f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
@@ -76,34 +78,33 @@ from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
 
 
-def start_server():
-
+async def start_server():
+    
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("127.0.0.1", port)) == 0
+    try:
+        node_server_port = 18100
+        tries = 0
+        while is_port_in_use(node_server_port) and tries < 99:
+            node_server_port += 1
+            tries += 1
+        ConfigModule.add_config_value("server", "port", str(node_server_port))
+        print(f"Launching node-server on port {node_server_port}")
+        
+        app = node_server.main()
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=node_server_port,
+            log_level="warning",
+        )
+        server = uvicorn.Server(config)
+        await server.serve()
 
-    def run():
-        try:
-            node_server_port = 18100
-            tries = 0
-            while is_port_in_use(node_server_port) and tries < 99:
-                node_server_port += 1
-                tries += 1
-            ConfigModule.add_config_value("server", "port", node_server_port)
-            print(f"Launching node-server on port {node_server_port}")
-            uvicorn.run(
-                node_server.main(),
-                host="127.0.0.1",
-                port=node_server_port,
-                log_level="warning",
-            )
-
-        except Exception as e:
-            print(f"[WARN] Failed to launch node-server: {str(e)}")
-
-    t = threading.Thread(target=run, daemon=True)
-    t.start()
-
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[WARN] Failed to launch node-server: {str(e)}")
 
 def kill_old_process(pid_file_path: os.PathLike):
     """kill any process that is running  from the same node folder."""
@@ -166,7 +167,7 @@ from Framework import MainDriverApi  # noqa: E402
 
 
 TMP_INI_FILE = (
-    Path.cwd().parent
+    Path.cwd()
     / "AutomationLog"
     / ConfigModule.get_config_value("Advanced Options", "_file")
 )
@@ -306,7 +307,7 @@ async def Login(
             console.print(table)
         elif status_code == 502:
             print(Fore.YELLOW + "Server offline. Retrying after 60s")
-            time.sleep(60)
+            await asyncio.sleep(60)
             return
         else:
             line_color = Fore.RED
@@ -319,7 +320,10 @@ async def Login(
             return
     except ConnectionError:
         print("Failed to connect to the server, retrying after 30s")
-        time.sleep(30)
+        await asyncio.sleep(30)
+        return
+    except Exception as e:
+        traceback.print_exc()
         return
 
     node_id = CommonUtil.MachineInfo().getLocalUser().lower()
@@ -453,9 +457,7 @@ async def RunProcess(node_id, run_once=False, log_dir=None):
                 print(Fore.RED + "ERROR failed to save test case json into file")
                 print(Fore.YELLOW + "JSON CONTENT:")
                 print(node_json)
-                import traceback as tb
-
-                tb.print_exc()
+                traceback.print_exc()
 
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
@@ -1109,7 +1111,7 @@ def command_line_args() -> Path | None:
                 )
 
             # Check every 5 hours for old automation logs
-            time.sleep(60 * 60 * 5)
+            # await asyncio.sleep(60 * 60 * 5)
 
     # Create a background thread for deleting automation log
     thread = threading.Thread(target=delete_old_automationlog_folders, daemon=True)
@@ -1172,7 +1174,7 @@ async def main():
     adjust_python_path()
     ConfigModule.create_settings_config_file()
 
-    traceback.install(show_locals=True, max_frames=1)
+    rich_traceback.install(show_locals=True, max_frames=1)
 
     # Suppress the InsecureRequestWarning since we use verify=False parameter.
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
@@ -1190,7 +1192,8 @@ async def main():
 
     update_outdated_modules()
     monkeypatch_fromisoformat()
-    start_server()
+    asyncio.create_task(start_server())
+    asyncio.create_task(upload_android_ui_dump())
 
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
@@ -1243,7 +1246,7 @@ async def main():
                     print_login_information = False
                 # If server_name and api are not set, then wait for the user to
                 # connect via the ZeuZ server.
-                time.sleep(1)
+                await asyncio.sleep(1)
                 continue
 
             await Login(
@@ -1261,6 +1264,6 @@ async def main():
                 os._exit(0)
 
             print_login_information = True
-            time.sleep(1)
+            await asyncio.sleep(1)
 
 asyncio.run(main())

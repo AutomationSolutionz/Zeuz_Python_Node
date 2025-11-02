@@ -4,6 +4,7 @@ import subprocess
 import base64
 import time
 from typing import Literal
+import asyncio
 
 import requests
 from fastapi import APIRouter
@@ -138,8 +139,9 @@ def capture_screenshot():
             return
 
 
-def upload_android_ui_dump():
+async def upload_android_ui_dump():
     prev_xml_hash = ""
+    print('upload_android_ui_dump')
     while True:
         try:
             capture_ui_dump()
@@ -150,12 +152,12 @@ def upload_android_ui_dump():
                     new_xml_hash = hashlib.sha256(xml_content.encode('utf-8')).hexdigest()
                     # Don't upload if the content hasn't changed
                     if prev_xml_hash == new_xml_hash:
-                        time.sleep(5)
+                        await asyncio.sleep(5)
                         continue
                     prev_xml_hash = new_xml_hash
 
             except FileNotFoundError:
-                time.sleep(5)
+                await asyncio.sleep(5)
                 continue
             url = ConfigModule.get_config_value("Authentication", "server_address").strip() + "/node_ai_contents/"
             apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
@@ -170,4 +172,4 @@ def upload_android_ui_dump():
                 CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
         except Exception as e:
             CommonUtil.ExecLog("", f"Error uploading UI dump: {str(e)}", iLogLevel=3)
-        time.sleep(5)
+        await asyncio.sleep(5)
