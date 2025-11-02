@@ -1048,45 +1048,6 @@ def command_line_args() -> Path | None:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    module_update_interval = ConfigModule.get_config_value("Advanced Options", "module_update_interval")
-    date_str = ConfigModule.get_config_value("Advanced Options", "last_module_update_date")
-
-    if date_str:
-        # Parse the date from the configuration file
-        config_date = date.fromisoformat(date_str)
-        current_date = datetime.date.today()
-        time_difference = (current_date - config_date).days
-        CommonUtil.ai_module_update_flag = stop_pip_auto_update
-        CommonUtil.ai_module_update_time_difference = time_difference
-        # Check if the time difference is greater than one month
-        if (
-            not stop_pip_auto_update
-            and CommonUtil.ws_ss_log
-            and time_difference > int(module_update_interval)
-        ):
-            update_outdated_modules()
-            config_date = date.today()
-            config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
-                config_date
-            )
-            config.write()
-            # print("module_updater: Module Updated..")
-        else:
-            # TODO: remove these print statements
-            # print("module_updater: All modules are already up to date.")
-            pass
-    else:
-        # Assign the current date
-        config_date = date.today()
-        config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
-            config_date
-        )
-        # Save the updated configuration file
-        config.write()
-        if not stop_pip_auto_update and CommonUtil.ws_ss_log:
-            update_outdated_modules()
-        print("module_updater: Module Updated..")
-
     # Delete Old Subfolders in Automationlog folder.
 
     def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
