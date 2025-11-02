@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-
+from filelock import FileLock
 import configparser, os
 from . import FileUtilities as FL
+from pathlib import Path
+from datetime import date
+from configobj import ConfigObj
 
 """constants"""
 file_name = "settings.conf"
-
+settings_file_lock = FileLock(os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name + ".lock")
+settings_conf_path = os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name
 remote_config = {
     "threading": False,
     "local_run": False,
@@ -15,7 +19,37 @@ remote_config = {
     "upload_log_file_only_for_fail": True,
 }
 
+@settings_file_lock
+def create_settings_config_file():
+    if Path(settings_conf_path).exists():
+        return
 
+    today = date.today().strftime("%Y-%m-%d")
+
+    config = ConfigObj()
+    config["Authentication"] = {"username": "", "api-key": "", "server_address": ""}
+    config["Advanced Options"] = {
+        "module_update_interval": 30,
+        "log_delete_interval": 7,
+        "last_module_update_date": today,
+        "last_log_delete_date": today,
+        "element_wait": 10,
+        "available_to_all_project": False,
+        "_file": "temp_config.ini",
+        "_file_upload_path": "TestExecutionLog",
+        "stop_live_log": False,
+    }
+    config["Inspector"] = {
+        "Window": "",
+        "No_of_level_to_skip": 0,
+        "ai_plugin": True,
+    }
+    config["server"] = {"port": 0}
+    config.filename = str(settings_conf_path)
+    config.write()
+    print(f"Created settings.conf at {settings_conf_path}")
+
+@settings_file_lock
 def get_config_value(section, key, location: os.PathLike | None = None):
     """
     :param section: name of section
@@ -46,7 +80,7 @@ def get_config_value(section, key, location: os.PathLike | None = None):
         # print "No option in that name: %s"%key
         return ""
 
-
+@settings_file_lock
 def remove_config_value(section, value, location=False):
     try:
         config = configparser.ConfigParser()
@@ -69,7 +103,7 @@ def remove_config_value(section, value, location=False):
         # print "No section in that name: %s"%section
         return ""
 
-
+@settings_file_lock
 def add_config_value(section, key, value, location: os.PathLike | None = None):
     try:
         config = configparser.ConfigParser()

@@ -22,7 +22,6 @@ import asyncio
 
 import psutil
 import requests
-from configobj import ConfigObj
 from dotenv import load_dotenv
 from colorama import init as colorama_init
 from colorama import Fore
@@ -60,40 +59,6 @@ def adjust_python_path():
     os.chdir(framework_dir)
 
 
-def create_config_file():
-    settings_conf_path = Path.cwd() / "settings.conf"
-    if settings_conf_path.exists():
-        return
-
-    today = date.today().strftime("%Y-%m-%d")
-
-    config = ConfigObj()
-    config["Authentication"] = {"username": "", "api-key": "", "server_address": ""}
-    config["Advanced Options"] = {
-        "module_update_interval": 30,
-        "log_delete_interval": 7,
-        "last_module_update_date": today,
-        "last_log_delete_date": today,
-        "element_wait": 10,
-        "available_to_all_project": False,
-        "_file": "temp_config.ini",
-        "_file_upload_path": "TestExecutionLog",
-        "stop_live_log": False,
-    }
-    config["Inspector"] = {
-        "Window": "",
-        "No_of_level_to_skip": 0,
-        "ai_plugin": True,
-    }
-    config["server"] = {"port": 0}
-    config.filename = str(settings_conf_path)
-    config.write()
-    print(f"Created settings.conf at {settings_conf_path}")
-
-
-adjust_python_path()
-create_config_file()
-
 
 from Framework.module_installer import (  # noqa: E402
     check_min_python_version,
@@ -112,7 +77,6 @@ from server import main as node_server  # noqa: E402
 
 
 def start_server():
-    settings_conf_path = Path.cwd() / "settings.conf"
 
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -125,9 +89,8 @@ def start_server():
             while is_port_in_use(node_server_port) and tries < 99:
                 node_server_port += 1
                 tries += 1
-            config = ConfigObj(str(settings_conf_path))
-            config["server"]["port"] = node_server_port
-            config.write()
+            ConfigModule.add_config_value("server", "port", node_server_port)
+            print(f"Launching node-server on port {node_server_port}")
             uvicorn.run(
                 node_server.main(),
                 host="127.0.0.1",
@@ -1085,20 +1048,8 @@ def command_line_args() -> Path | None:
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
-    settings_conf_path = (
-        os.path.dirname(os.path.abspath(__file__)).replace(
-            os.sep + "Framework", os.sep + ""
-        )
-        + os.sep
-        + "Framework"
-        + os.sep
-        + "settings.conf"
-    )
-    config = ConfigObj(settings_conf_path)
-    date_str = config.get("Advanced Options", {}).get("last_module_update_date", "")
-    module_update_interval = config.get("Advanced Options", {}).get(
-        "module_update_interval", ""
-    )
+    module_update_interval = ConfigModule.get_config_value("Advanced Options", "module_update_interval")
+    date_str = ConfigModule.get_config_value("Advanced Options", "last_module_update_date")
 
     if date_str:
         # Parse the date from the configuration file
@@ -1257,6 +1208,8 @@ async def set_new_credentials(server, api_key):
 async def main():
     # Load environment variables from .env file
     load_dotenv()
+    adjust_python_path()
+    ConfigModule.create_settings_config_file()
 
     traceback.install(show_locals=True, max_frames=1)
 

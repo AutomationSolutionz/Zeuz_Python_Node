@@ -74,7 +74,6 @@ class InstallHandler:
                 await func()
 
         except Exception as e:
-            print(f"[installer] Error onMessage: {e}")
             traceback.print_exc()
 
     async def cancel_run(self) -> None:
@@ -108,15 +107,13 @@ class InstallHandler:
                         continue
 
                     if not resp.is_success:
-                        print(
-                            "[installer] facing difficulty communicating with the server, status code:",
-                            resp.status_code,
-                            " | reconnecting",
-                        )
-                        try:
+                        if debug: 
+                            print(
+                                "[installer] facing difficulty communicating with the server, status code:",
+                                resp.status_code,
+                                " | reconnecting",
+                            )
                             print(Fore.YELLOW + str(resp.content))
-                        except Exception:
-                            pass
 
                         await asyncio.sleep(random.randint(1, 3))
                         continue
@@ -133,11 +130,11 @@ class InstallHandler:
                 except httpx.ReadTimeout:
                     pass
                 except httpx.ConnectError:
-                    print("[installer] Connection error, retrying...")
+                    if debug: print("[installer] Connection error, retrying...")
                     await asyncio.sleep(random.randint(3, 5))
                 except Exception:
-                    traceback.print_exc()
-                    print("[installer] RETRYING...")
+                    if debug: traceback.print_exc()
+                    if debug: print("[installer] RETRYING...")
                     await asyncio.sleep(random.randint(1, 3))
 
             self.running = False
