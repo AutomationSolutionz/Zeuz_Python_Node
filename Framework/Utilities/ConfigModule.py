@@ -29,7 +29,6 @@ def create_settings_config_file():
     config = ConfigObj()
     config["Authentication"] = {"username": "", "api-key": "", "server_address": ""}
     config["Advanced Options"] = {
-        "module_update_interval": 30,
         "log_delete_interval": 7,
         "last_module_update_date": today,
         "last_log_delete_date": today,
