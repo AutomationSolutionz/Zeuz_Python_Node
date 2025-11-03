@@ -129,21 +129,6 @@ def kill_old_process(pid_file_path: os.PathLike):
         pass
 
 
-# Conditionally monkey-patch datetime module to include the `fromisoformat` method.
-# TODO: remove this when we upgrade to Python 3.11
-def monkeypatch_fromisoformat():
-    try:
-        import sys
-
-        target_version = (3, 11)
-        if sys.version_info < target_version:
-            from backports.datetime_fromisoformat import MonkeyPatch  # type: ignore
-
-            MonkeyPatch.patch_fromisoformat()
-    except Exception:
-        print("WARN: failed to monkeypatch fromisoformat")
-
-
 def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
     try:
@@ -155,8 +140,6 @@ def setup_nodejs_appium():
 
 
 # Tells node whether it should run a test set/deployment only once and quit.
-RUN_ONCE = False
-local_run = False
 
 from Framework.Utilities import (  # noqa: E402
     RequestFormatter,
@@ -243,7 +226,6 @@ class UserData:
 
 async def Login(
     server_name: str,
-    run_once: bool = False,
     log_dir: os.PathLike | None = None,
 ):
     console = Console()
@@ -334,10 +316,13 @@ async def Login(
     # creates a new thread and keeps an infinite while loop - which is dangerous
     # for the server, since it'll be bombarded with requests from multiple
     # threads.
-    report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
-    report_thread.start()
 
-    await RunProcess(node_id, run_once=run_once, log_dir=log_dir)
+    # Todo: Make it async and not in thread. Fix the while loop inside as well
+    # Its returning on first iteration. This should be out of Login function
+    # report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+    # report_thread.start()
+
+    await RunProcess(node_id, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
@@ -390,7 +375,7 @@ def notify_complete(message="Run completed"):
         print("Failed to send notification")
 
 
-async def RunProcess(node_id, run_once=False, log_dir=None):
+async def RunProcess(node_id, log_dir=None):
     try:
         # --- START websocket service connections --- #
 
@@ -483,9 +468,6 @@ async def RunProcess(node_id, run_once=False, log_dir=None):
             print("[deploy] Run complete.")
             notify_complete("Run completed")
             asyncio.create_task(install_handler.run())
-
-            if run_once:
-                return True
 
             return False
 
@@ -630,38 +612,6 @@ def pass_decode(key, enc):
         dec_c = chr((256 + enc[i] - ord(key_c)) % 256)
         dec.append(dec_c)
     return "".join(dec)
-
-
-def Local_run(log_dir=None):
-    try:
-        PreProcess(log_dir=log_dir)
-        user_info_object = {}
-        user_info_object["project"] = ConfigModule.get_config_value(
-            "sectionOne", PROJECT_TAG, TMP_INI_FILE
-        )
-        user_info_object["team"] = ConfigModule.get_config_value(
-            "sectionOne", TEAM_TAG, TMP_INI_FILE
-        )
-        device_dict = All_Device_Info.get_all_connected_device_info()
-        rem_config = {"local_run": True}
-        ConfigModule.remote_config = rem_config
-        MainDriverApi.main(device_dict)
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
-        CommonUtil.ExecLog("", Error_Detail, 4, False)
 
 
 def get_folder_creation_time(folder_path):
@@ -824,6 +774,71 @@ def show_existing_rsa_keys():
             console.print("---")
 
 
+
+# Delete Old Subfolders in Automationlog folder.
+
+def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
+    subfolder_paths = []
+    current_time = time.time()
+    interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
+
+    for dir_name in os.listdir(folder_path):
+        dir_path = os.path.join(folder_path, dir_name)
+        if os.path.isdir(dir_path):
+            created_time = os.path.getctime(dir_path)
+
+            if current_time - created_time > interval_days_in_sec:
+                subfolder_paths.append(dir_path)
+
+    return subfolder_paths
+
+
+async def delete_old_automationlog_folders():
+    folder_path = (
+        os.path.dirname(os.path.abspath(__file__)).replace(
+            os.sep + "Framework", os.sep + ""
+        )
+        + os.sep
+        + "AutomationLog"
+    )
+    log_delete_interval = ConfigModule.get_config_value(
+        "Advanced Options", "log_delete_interval"
+    )
+
+    # By default set the automation log delete interval to 7 days
+    if not isinstance(log_delete_interval, int):
+        log_delete_interval = 7
+    else:
+        if log_delete_interval <= 0:
+            log_delete_interval = 7
+    while True:
+        auto_log_subfolders = get_subfolders_created_before_n_days(
+            folder_path, int(log_delete_interval)
+        )
+        auto_log_subfolders = [
+            subfolder
+            for subfolder in auto_log_subfolders
+            if subfolder
+            not in [
+                "attachments",
+                "attachments_db",
+                "outdated_modules.json",
+                "temp_config.ini",
+                "failed_reports",
+            ]
+        ]
+
+        for subfolder in auto_log_subfolders:
+            shutil.rmtree(subfolder)
+        if auto_log_subfolders:
+            print(
+                f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
+            )
+
+        # Check every 5 hours for old automation logs
+        await asyncio.sleep(60 * 60 * 5)
+
+
 def command_line_args() -> Path | None:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
@@ -846,8 +861,6 @@ def command_line_args() -> Path | None:
     Example 5 - Custom log directory:
     python node_cli.py -d /path/to/logs
 
-    Example 6 - Local run:
-    python node_cli.py -r
 
     Example 7 - Logout:
     python node_cli.py -l
@@ -889,15 +902,6 @@ def command_line_args() -> Path | None:
     )
     parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
-    )
-    parser_object.add_argument(
-        "-r", "--local_run", action="store_true", help="Performs a local run"
-    )
-    parser_object.add_argument(
-        "-o",
-        "--once",
-        action="store_true",
-        help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately",
     )
     parser_object.add_argument(
         "-d",
@@ -986,10 +990,6 @@ def command_line_args() -> Path | None:
     show_browser_log = all_arguments.show_browser_log
     stop_live_log = all_arguments.stop_live_log
 
-    # get the chrome extension download settings
-    chrome_fetch = all_arguments.chrome_fetch
-    chrome_cleanup = all_arguments.chrome_cleanup
-
     # RSA key management options
     generate_key = all_arguments.generate_private_key
     add_key = all_arguments.add_private_key
@@ -1009,19 +1009,6 @@ def command_line_args() -> Path | None:
     if show_keys:
         show_existing_rsa_keys()
         sys.exit(0)
-
-    # Update chrome extension download settings if specified
-    if chrome_fetch is not None:
-        os.environ["CHROME_DAYS_BEFORE_FETCH"] = str(chrome_fetch)
-
-        print(f"Set days_before_fetch to {os.environ.get('CHROME_DAYS_BEFORE_FETCH')}")
-
-    if chrome_cleanup is not None:
-        os.environ["CHROME_DAYS_BEFORE_CLEANUP"] = str(chrome_cleanup)
-
-        print(
-            f"Set days_before_cleanup to {os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')}"
-        )
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1043,79 +1030,6 @@ def command_line_args() -> Path | None:
         raise Exception(
             f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}"
         )
-
-    global local_run
-    local_run = all_arguments.local_run
-
-    global RUN_ONCE
-    RUN_ONCE = all_arguments.once
-
-    # Delete Old Subfolders in Automationlog folder.
-
-    def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
-        subfolder_paths = []
-        current_time = time.time()
-        interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
-
-        for dir_name in os.listdir(folder_path):
-            dir_path = os.path.join(folder_path, dir_name)
-            if os.path.isdir(dir_path):
-                created_time = os.path.getctime(dir_path)
-
-                if current_time - created_time > interval_days_in_sec:
-                    subfolder_paths.append(dir_path)
-
-        return subfolder_paths
-
-    folder_path = (
-        os.path.dirname(os.path.abspath(__file__)).replace(
-            os.sep + "Framework", os.sep + ""
-        )
-        + os.sep
-        + "AutomationLog"
-    )
-    log_delete_interval = ConfigModule.get_config_value(
-        "Advanced Options", "log_delete_interval"
-    )
-
-    # By default set the automation log delete interval to 7 days
-    if not isinstance(log_delete_interval, int):
-        log_delete_interval = 7
-    else:
-        if log_delete_interval <= 0:
-            log_delete_interval = 7
-
-    def delete_old_automationlog_folders():
-        while True:
-            auto_log_subfolders = get_subfolders_created_before_n_days(
-                folder_path, int(log_delete_interval)
-            )
-            auto_log_subfolders = [
-                subfolder
-                for subfolder in auto_log_subfolders
-                if subfolder
-                not in [
-                    "attachments",
-                    "attachments_db",
-                    "outdated_modules.json",
-                    "temp_config.ini",
-                    "failed_reports",
-                ]
-            ]
-
-            for subfolder in auto_log_subfolders:
-                shutil.rmtree(subfolder)
-            if auto_log_subfolders:
-                print(
-                    f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
-                )
-
-            # Check every 5 hours for old automation logs
-            # await asyncio.sleep(60 * 60 * 5)
-
-    # Create a background thread for deleting automation log
-    thread = threading.Thread(target=delete_old_automationlog_folders, daemon=True)
-    thread.start()
 
     if show_browser_log:
         CommonUtil.show_browser_log = True
@@ -1191,9 +1105,9 @@ async def main():
     # setup_nodejs_appium()
 
     update_outdated_modules()
-    monkeypatch_fromisoformat()
     asyncio.create_task(start_server())
     asyncio.create_task(upload_android_ui_dump())
+    asyncio.create_task(delete_old_automationlog_folders())
 
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
@@ -1203,30 +1117,44 @@ async def main():
     try:
         log_dir = command_line_args()
     except Exception as e:
-        from colorama import Fore
-
         print(Fore.RED + str(e))
         print("Exiting...")
         os._exit(1)
 
-    if local_run:
-        Local_run(log_dir=log_dir)
-    else:
-        # Bypass()
+    server_name = (
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+        .strip('"')
+        .strip()
+    )
+    api = (
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+        .strip('"')
+        .strip()
+    )
 
-        print_login_information = True
-        while True:
-            if STATE.reconnect_with_credentials is not None:
-                await destroy_session()
-                server_name = STATE.reconnect_with_credentials.server
-                api_key = STATE.reconnect_with_credentials.api_key
-                await set_new_credentials(server=server_name, api_key=api_key)
+    if len(server_name) == 0 and len(api) == 0:
+        console.print(
+            "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+            style="bold red",
+        )
+        console.print("Please log in to ZeuZ server and connect.")
+        await asyncio.sleep(1)
 
-                STATE.reconnect_with_credentials = None
+    asyncio.create_task(Login(
+        server_name=server_name,
+        log_dir=log_dir,
+    ))
+    while True:
+        if STATE.reconnect_with_credentials is not None:
+            await destroy_session()
+            server_name = STATE.reconnect_with_credentials.server
+            api_key = STATE.reconnect_with_credentials.api_key
+            await set_new_credentials(server=server_name, api_key=api_key)
 
+            STATE.reconnect_with_credentials = None
             server_name = (
                 ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-                .strip('""')
+                .strip('"')
                 .strip()
             )
             api = (
@@ -1236,34 +1164,16 @@ async def main():
             )
 
             if len(server_name) == 0 and len(api) == 0:
-                if print_login_information:
-                    console.print(
-                        "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
-                        style="bold red",
-                    )
-                    console.print("Please log in to ZeuZ server and connect.")
-
-                    print_login_information = False
-                # If server_name and api are not set, then wait for the user to
-                # connect via the ZeuZ server.
-                await asyncio.sleep(1)
-                continue
-
-            await Login(
-                server_name=server_name,
-                run_once=RUN_ONCE,
-                log_dir=log_dir,
-            )
-
-            if RUN_ONCE:
                 console.print(
-                    ":yellow_circle: "
-                    + "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
-                    style="bold cyan",
+                    "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+                    style="bold red",
                 )
-                os._exit(0)
+                console.print("Please log in to ZeuZ server and connect.")
 
-            print_login_information = True
-            await asyncio.sleep(1)
+            asyncio.create_task(Login(
+                server_name=server_name,
+                log_dir=log_dir,
+            ))
+        await asyncio.sleep(1)
 
 asyncio.run(main())
