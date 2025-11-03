@@ -298,7 +298,7 @@ async def Login(
             # api = api.strip('"')
 
             # Reset the credentials.
-            set_new_credentials(server="", api_key="")
+            await set_new_credentials(server="", api_key="")
             return
     except ConnectionError:
         print("Failed to connect to the server, retrying after 30s")
@@ -839,7 +839,7 @@ async def delete_old_automationlog_folders():
         await asyncio.sleep(60 * 60 * 5)
 
 
-def command_line_args() -> Path | None:
+async def command_line_args() -> Path | None:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
 
@@ -1040,10 +1040,10 @@ def command_line_args() -> Path | None:
     if server or logout or api:
         # destroy_session()
         if api and server:
-            set_new_credentials(server=server, api_key=api)
+            await set_new_credentials(server=server, api_key=api)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            set_new_credentials(server="", api_key="")
+            await set_new_credentials(server="", api_key="")
             # zeuz_authentication_prompts_for_cli()
         else:
             CommonUtil.ExecLog(
@@ -1115,7 +1115,7 @@ async def main():
     console = Console()
 
     try:
-        log_dir = command_line_args()
+        log_dir = await command_line_args()
     except Exception as e:
         print(Fore.RED + str(e))
         print("Exiting...")
