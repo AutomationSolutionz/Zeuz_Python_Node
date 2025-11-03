@@ -136,37 +136,9 @@ def add_config_value(section, key, value, location: os.PathLike | None = None):
         open_file.close()
         return True
     except configparser.NoSectionError:
-        # print "No section in that name: %s"%section
         return ""
     except configparser.NoOptionError:
-        # print "No option in that name: %s"%key
         return ""
-
-
-def get_all_option(section_name, location: os.PathLike | None = None):
-    """
-    :param section_name: given section name
-    :return: list of all option on that section
-    """
-    try:
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
-        if not location:
-            _file_name = os.getcwd() + os.sep + file_name
-        else:
-            _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except:
-            FL.DeleteFile(location)
-            config.read(_file_name)
-        return config.options(section_name)
-    except configparser.NoSectionError as e:
-        # print("Found no section with name %s" % section_name)
-        return []
-    except configparser.NoOptionError as e:
-        # print("Found no options on the section %s" % section_name)
-        return []
 
 
 def add_section(section_name, location: os.PathLike | None = None):
@@ -217,46 +189,3 @@ def clean_config_file(location: os.PathLike | None = None):
     except Exception as e:
         print(e)
         return False
-
-
-def get_all_sections(location: os.PathLike | None = None):
-    try:
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
-        if not location:
-            _file_name = os.getcwd() + os.sep + file_name
-        else:
-            _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except:
-            FL.DeleteFile(location)
-            config.read(_file_name)
-        return config.sections()
-    except configparser.NoSectionError as e:
-        print("found no sections")
-        return []
-    except configparser.NoOptionError as e:
-        print("found no options")
-        return []
-
-def has_section(section_name, location: os.PathLike | None = None):
-    try:
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
-        if not location:
-            _file_name = os.getcwd() + os.sep + file_name
-        else:
-            _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except:
-            FL.DeleteFile(location)
-            config.read(_file_name)
-        return config.has_section(section_name)
-    except configparser.NoSectionError as e:
-        print("found no sections")
-        return []
-    except configparser.NoOptionError as e:
-        print("found no options")
-        return []
