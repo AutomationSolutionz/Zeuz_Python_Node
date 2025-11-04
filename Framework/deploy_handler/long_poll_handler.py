@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
+from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
 from Framework.node_server_state import STATE
 from concurrent.futures import ThreadPoolExecutor
 
@@ -46,7 +47,6 @@ class DeployHandler:
 
     def on_message(self, message) -> bool:
         """Returns True if the handler should quit, False otherwise."""
-
         if message == self.COMMAND_DONE:
             # We're done for this run session.
             return self.done_callback()
@@ -56,12 +56,12 @@ class DeployHandler:
             self.cancel_callback()
             return False
         
-        elif message.startswith(b'{"command":"KEY_REQUEST"'):
-            self.handle_key_request(message)
+        elif message.startswith(b'SECRET:KEY_REQUEST'):
+            self.handle_key_request(message.replace(b'SECRET:KEY_REQUEST::', b''))
             return False
-        
-        elif message.startswith(b'{"command":"PRIVATE_KEY"'):
-            self.handle_private_key(message)
+
+        elif message.startswith(b'SECRET:PRIVATE_KEY'):
+            self.handle_private_key(message.replace(b'SECRET:PRIVATE_KEY::', b''))
             return False
 
         self.response_callback(message)
@@ -304,7 +304,7 @@ class DeployHandler:
 
                 reconnect = False
                 server_online = True
-            except requests.exceptions.ReadTimeout:
+            except requests.exceptions.Timeout:
                 pass
             except Exception:
                 traceback.print_exc()
@@ -313,7 +313,7 @@ class DeployHandler:
     def fetch(self, host) -> requests.Response | None:
         executor = ThreadPoolExecutor(max_workers=1)
         future = executor.submit(
-            lambda: RequestFormatter.request("get", host, verify=False)
+            lambda: RequestFormatter.request("get", host, verify=False, timeout=40)
         )
 
         while not future.done():
