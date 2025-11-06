@@ -5,3 +5,4 @@ async def check_status():
 async def install():
     print("[chrome_for_testing] Installing...")
 
+

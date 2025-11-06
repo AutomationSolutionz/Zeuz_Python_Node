@@ -72,6 +72,28 @@ class InstallHandler:
                     print(f"[installer] Function not found for {message.value.item.name}")
                     return
                 await func()
+            elif action == "install_category":
+                if debug: print(f"[installer] Installing category: {message.value.item.category if message.value.item else 'unknown'}")
+
+                if message.value.item is None:
+                    print("[installer] Item is required for install_category action")
+                    return
+
+                # Find the category
+                category = [i for i in services if i["category"] == message.value.item.category]
+                if not category:
+                    print(f"[installer] Category '{message.value.item.category}' not found")
+                    return
+                category = category[0]
+
+                # Call category-level install_function
+                func = category.get("install_function")
+                if func is None:
+                    print(f"[installer] Category-level install function not found for category '{message.value.item.category}'")
+                    return
+                
+                if debug: print(f"[installer] Calling category-level install function for '{message.value.item.category}'")
+                await func()
 
         except Exception as e:
             print(f"[installer] Error onMessage: {e}")
