@@ -1606,20 +1606,18 @@ def Enter_Text_In_Text_Box(step_data):
                     sModuleInfo, "Entering text without clicking the element", 2
                 )
             if clear:
-                # Element.clear()
-                # Safari Keys are extremely slow and not working
-                if selenium_driver.capabilities["browserName"] == "Safari":
-                    Element.clear()
-                else:
-                    if sys.platform == "darwin":
-                        Element.send_keys(Keys.COMMAND, "a")
+                try:
+                    if selenium_driver.capabilities["browserName"] == "Safari":
+                        Element.clear()
                     else:
-                        Element.send_keys(Keys.CONTROL, "a")
-                    Element.send_keys(Keys.DELETE)
-                    try:
+                        if sys.platform == "darwin":
+                            Element.send_keys(Keys.COMMAND, "a")
+                        else:
+                            Element.send_keys(Keys.CONTROL, "a")
+                        Element.send_keys(Keys.DELETE)
                         Element.clear()  # some cases it works .. so adding it here just incase
-                    except:
-                        pass
+                except:
+                    pass
             if delay == 0:
                 Element.send_keys(text_value)
             else:
@@ -1636,7 +1634,7 @@ def Enter_Text_In_Text_Box(step_data):
         return "passed"
     except Exception:
         errMsg = "Could not select/click your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None)
 
 
 @logger
