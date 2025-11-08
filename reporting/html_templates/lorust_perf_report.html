@@ -5,314 +5,187 @@
     <link rel="shortcut icon" href="../static/img/favicon.ico" type="image/x-icon"/>
     <style>
         body {
-            margin: 0;
             background: #ffffff;
+        }
+        .container {
+            width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 14px;
             color: #1a0a2e;
         }
 
-        .container {
-            width: 1200px;
-            margin: 0 auto;
-            padding: 24px 16px 60px;
-        }
-
         .header {
             text-align: center;
-            margin: 20px 0 40px;
+            margin: 30px 0;
         }
 
         .header img {
             height: 60px;
-            margin-bottom: 12px;
+            margin-bottom: 20px;
         }
 
         .header h1 {
             color: #7f28ff;
             font-size: 32px;
-            margin: 0;
+            margin: 10px 0;
         }
 
-        .brand-link {
-            margin-top: 6px;
-            font-size: 12px;
-            letter-spacing: 0.08em;
-        }
-
-        .brand-link a {
-            color: #7f28ff;
-            text-decoration: none;
-        }
-
-        .brand-link a:hover,
-        .brand-link a:focus {
-            text-decoration: underline;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .info-card {
-            background: #f7f5ff;
-            border: 1px solid #d7caff;
-            border-radius: 10px;
-            padding: 16px 18px;
-            color: #1a0a2e;
-            box-shadow: 0 4px 10px rgba(127, 40, 255, 0.08);
-        }
-
-        .info-card > a {
-            text-decoration: none;
-            color: #f50384;
-            transition: all 0.3s;
-        }
-
-        .info-card > a:hover {
-            text-decoration: underline;
-            color: #7f28ff;
-        }
-
-        .info-label {
-            font-size: 12px;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: #6b5b95;
-        }
-
-        .info-value {
-            display: block;
-            font-size: 18px;
-            margin-top: 6px;
-            font-weight: 600;
-            word-break: break-word;
-        }
-
-        .summary-section h2,
-        .table-section h2,
-        .endpoint-section h2 {
-            color: #7f28ff;
-            margin-bottom: 16px;
-            font-size: 22px;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .summary-card {
-            background: #f5f3ff;
-            border: 1px solid #d7caff;
-            border-radius: 10px;
-            padding: 14px 16px;
-            box-shadow: 0 4px 10px rgba(127, 40, 255, 0.12);
-        }
-
-        .summary-value {
-            display: block;
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a0a2e;
-        }
-
-        .summary-label {
-            display: block;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b5b95;
-            margin-top: 4px;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .chart-card {
-            background: #ffffff;
-            border: 1px solid #e9d5ff;
+        .info {
+            background: linear-gradient(135deg, #7f28ff 0%, #c084fc 100%);
             border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(127, 40, 255, 0.08);
+            padding: 24px;
+            margin: 24px 0;
+            box-shadow: 0 4px 6px rgba(127, 40, 255, 0.1);
         }
 
-        .chart-title {
-            display: block;
-            font-size: 16px;
-            font-weight: 600;
-            color: #7f28ff;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .chart-container {
-            width: 100%;
-            height: 340px;
-        }
-
-        .chart-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .chart-legend button {
-            border: 1px solid #d7caff;
-            border-radius: 16px;
-            padding: 6px 12px;
-            background: #f7f5ff;
-            color: #4b3f6b;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .chart-legend button.active {
-            background: #7f28ff;
+        .info p {
             color: #ffffff;
-            border-color: #7f28ff;
-            box-shadow: 0 2px 6px rgba(127, 40, 255, 0.25);
+            margin: 12px 0;
+            font-size: 16px;
         }
 
-        .chart-legend button:hover,
-        .chart-legend button:focus {
-            border-color: #7f28ff;
+        .info span {
+            color: #e9d5ff;
+            font-weight: 600;
         }
 
-        .table-section {
-            margin-bottom: 40px;
+        .charts-container .chart {
+            width: 100%;
+            height: 350px;
+            margin-bottom: 30px;
         }
 
+        .download {
+            float: right;
+        }
+
+        .download a {
+            color: #f50384;
+        }
+
+        /* tables.css */
         table.stats {
             width: 100%;
-            border-radius: 8px;
-            border: 1px solid #d7caff;
+            border-radius: 3px;
+            border: 2px solid #c084fc;
             border-spacing: 0;
-            border-collapse: collapse;
-            overflow: hidden;
+            margin-bottom: 30px;
         }
-
-        table.stats thead tr {
-            background: #7f28ff;
+        table.stats thead {
+            padding: 0;
+            margin: 0;
             color: #ffffff;
         }
-
-        table.stats th,
-        table.stats td {
-            padding: 10px 14px;
-            text-align: left;
-            border-bottom: 1px solid #e9d5ff;
+        table.stats thead tr {
+            background: #7f28ff;
         }
-
-        table.stats td.numeric,
-        table.stats th.numeric {
+        table.stats thead tr:nth-child(even) {
+            background: #7f28ff;
+        }
+        table.stats thead tr:hover {
+            background: #7f28ff;
+        }
+        table.stats thead th {
+            font-weight: bold;
+            cursor: default;
+        }
+        table.stats thead th.nowrap {
+            white-space: nowrap;
+        }
+        table.stats thead th[data-sortkey] {
+            cursor: pointer;
+        }
+        table.stats tr:hover {
+            background: #e9d5ff;
+        }
+        table.stats tr td, table.stats tr th {
+            padding: 10px;
+            margin: 0;
+            text-align: left;
+        }
+        table.stats tr td:first-child, table.stats tr th:first-child {
+            padding-left: 16px;
+        }
+        table.stats tr td:last-child, table.stats tr th:last-child {
+            padding-right: 16px;
+        }
+        table.stats tr td.numeric, table.stats tr th.numeric {
             text-align: right;
         }
-
-        table.stats tbody tr:nth-child(odd) {
+        table.stats tr td {
+            max-width: 450px;
+            overflow: hidden;
+            word-wrap: break-word;
+            white-space: no-wrap;
+            text-overflow: ellipsis;
+        }
+        @media (max-width: 1100px) {
+            table.stats tr td {
+                max-width: 350px;
+            }
+        }
+        table.stats tr:nth-child(even) {
             background: #f5f3ff;
         }
-
-        table.stats tbody tr:nth-child(even) {
-            background: #f9f7ff;
+        table.stats tr:nth-child(even):hover {
+            background: #e9d5ff;
         }
-
-        table.stats tbody tr:hover {
-            background: #ede3ff;
+        table.stats tr.total {
+            background: #c49cff;
         }
-
-        .endpoint-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 18px;
+        table.stats tr.total td {
+            font-weight: bold;
         }
-
-        .endpoint-card {
-            background: #ffffff;
-            border: 1px solid #d7caff;
-            border-radius: 12px;
-            padding: 18px;
-            box-shadow: 0 4px 10px rgba(127, 40, 255, 0.08);
-        }
-
-        .endpoint-title {
-            font-weight: 600;
-            color: #7f28ff;
-            font-size: 15px;
-            margin-bottom: 12px;
-            word-break: break-word;
-        }
-
-        .endpoint-metric {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-            font-size: 13px;
-        }
-
-        .endpoint-subtitle {
-            margin-top: 12px;
-            font-weight: 600;
-            font-size: 13px;
-            color: #6b5b95;
-        }
-
-        .endpoint-list {
-            margin: 8px 0 0;
-            padding-left: 18px;
-            font-size: 12px;
-        }
-
-        .endpoint-list li {
-            margin-bottom: 4px;
-        }
-
-        @media (max-width: 1400px) {
-            .info-grid {
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            }
-            .summary-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
+        .center {
+            margin: auto;
+            width: 50%;
+            padding: 10px;
         }
 
         @media print {
             body {
                 background: white;
             }
-
             .container {
                 width: 100%;
-                padding: 12px;
+                max-width: none;
             }
-
-            .chart-card {
+            .info {
+                background: #f5f3ff !important;
+                color: #1a0a2e !important;
+                box-shadow: none;
+                border: 2px solid #c084fc;
                 page-break-inside: avoid;
             }
-
+            .info p {
+                color: #1a0a2e !important;
+            }
+            .info span {
+                color: #7f28ff !important;
+            }
+            .header {
+                page-break-after: avoid;
+            }
             table.stats {
                 page-break-inside: avoid;
             }
-
-            .info-card {
-                color: #1a0a2e;
-                background: #f5f3ff !important;
-                border: 1px solid #d7caff;
-                box-shadow: none;
+            table.stats thead tr {
+                background: #7f28ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
-
-            .header {
+            table.stats tr:nth-child(even) {
+                background: #f5f3ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .center {
+                page-break-inside: avoid;
+                width: 100%;
+            }
+            h2 {
                 page-break-after: avoid;
             }
         }
@@ -323,520 +196,268 @@
         <div class="header">
             <img src="https://zeuz.ai/_next/image?url=%2Fold-assets%2FLogo.svg&w=384&q=75" alt="ZeuZ Logo">
             <h1>Performance Test Report</h1>
-            <div class="brand-link">
-                <a href="https://zeuz.ai" target="_blank" rel="noopener">zeuz.ai</a>
-            </div>
         </div>
 
-        <div class="info-grid">
-            <div class="info-card">
-                <span class="info-label">Run ID</span>
-                <a href="{{ zeuz_server_url ~ "/Home/RunID/" ~ run_id ~ "/?old=False" }}" target="_blank"><span class="info-value">{{ run_id }}</span></a>
-            </div>
-            <div class="info-card">
-                <span class="info-label">Test Case</span>
-                <a href="{{ zeuz_server_url ~ "/Home/ManageTestCases/Edit/" ~ tc_id }}" target="_blank"><span class="info-value">{{ tc_id }}</span></a>
-            </div>
-            <div class="info-card">
-                <span class="info-label">Start Time</span>
-                <span class="info-value">{{ overall_summary.start_time or 'N/A' }}</span>
-            </div>
-            <div class="info-card">
-                <span class="info-label">End Time</span>
-                <span class="info-value">{{ overall_summary.end_time or 'N/A' }}</span>
-            </div>
-            <div class="info-card">
-                <span class="info-label">Duration</span>
-                <span class="info-value">{{ overall_summary.duration_human }}</span>
-            </div>
-            <div class="info-card">
-                <span class="info-label">Runtime (perf counter)</span>
-                <span class="info-value">{{ overall_summary.measured_duration_seconds }} s</span>
-            </div>
+        <div class="info">
+            <p><strong>Run ID:</strong> <span class="l10n datetime">{{ run_id }}</span></p>
+            <p><strong>Testcase ID:</strong> <span class="l10n datetime">{{ tc_id }}</span></p>
+            <p><strong>Duration:</strong> <span class="l10n datetime">{{ teststarttime }}</span> - <span class="l10n datetime">{{ testendtime }}</span></p>
         </div>
 
-        <div class="summary-section">
-            <h2>Overall Summary</h2>
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.total_requests }}</span>
-                    <span class="summary-label">Total Requests</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.total_failures }}</span>
-                    <span class="summary-label">Failures</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.success_rate|round(2) }}%</span>
-                    <span class="summary-label">Success Rate</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.avg_requests_per_sec|round(2) }}</span>
-                    <span class="summary-label">Avg Requests / sec</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.avg_response_time_ms }} ms</span>
-                    <span class="summary-label">Avg Response</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.p95_response_time_ms }} ms</span>
-                    <span class="summary-label">P95 Response</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.peak_concurrency }}</span>
-                    <span class="summary-label">Peak Concurrency</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.avg_concurrency }}</span>
-                    <span class="summary-label">Avg Concurrency</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.total_data_mb }} MB</span>
-                    <span class="summary-label">Total Data</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-value">{{ overall_summary.avg_throughput_bytes_per_sec|round(2) }}</span>
-                    <span class="summary-label">Bytes / sec</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-title">Requests Per Second (Total)</div>
-                <div id="overall_requests" class="chart-container" data-legend-target="legend-overall_requests"></div>
-                <div class="chart-legend" id="legend-overall_requests"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Active Users (Estimated Concurrency)</div>
-                <div id="overall_concurrency" class="chart-container" data-legend-target="legend-overall_concurrency"></div>
-                <div class="chart-legend" id="legend-overall_concurrency"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Total Data Transferred Per Second</div>
-                <div id="overall_throughput" class="chart-container" data-legend-target="legend-overall_throughput"></div>
-                <div class="chart-legend" id="legend-overall_throughput"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Error Rate (%) Per Second</div>
-                <div id="overall_error_rate" class="chart-container" data-legend-target="legend-overall_error_rate"></div>
-                <div class="chart-legend" id="legend-overall_error_rate"></div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-title">Average Response Time (Overall)</div>
-                <div id="overall_avg_response" class="chart-container" data-legend-target="legend-overall_avg_response"></div>
-                <div class="chart-legend" id="legend-overall_avg_response"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Latency Percentiles (Overall)</div>
-                <div id="overall_percentiles" class="chart-container" data-legend-target="legend-overall_percentiles"></div>
-                <div class="chart-legend" id="legend-overall_percentiles"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Response Time vs Time (Per Endpoint)</div>
-                <div id="endpoint_response_time" class="chart-container" data-legend-target="legend-endpoint_response_time"></div>
-                <div class="chart-legend" id="legend-endpoint_response_time"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Requests Per Second (Per Endpoint)</div>
-                <div id="endpoint_requests" class="chart-container" data-legend-target="legend-endpoint_requests"></div>
-                <div class="chart-legend" id="legend-endpoint_requests"></div>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title">Average Content Size Per Second (Per Endpoint)</div>
-                <div id="endpoint_throughput" class="chart-container" data-legend-target="legend-endpoint_throughput"></div>
-                <div class="chart-legend" id="legend-endpoint_throughput"></div>
-            </div>
-        </div>
-
-        <div class="table-section">
-            <h2>Endpoint Request Statistics</h2>
+        <div class="requests">
+            <h2>Request Statistics</h2>
             <table class="stats">
                 <thead>
                     <tr>
-                        <th>Method</th>
-                        <th>Endpoint</th>
-                        <th class="numeric"># Requests</th>
-                        <th class="numeric"># Fails</th>
-                        <th class="numeric">Success %</th>
-                        <th class="numeric">Avg (ms)</th>
-                        <th class="numeric">Min (ms)</th>
-                        <th class="numeric">Max (ms)</th>
-                        <th class="numeric">Avg Size (bytes)</th>
+                        <th class="sortable">Method</th>
+                        <th class="sortable">Name</th>
+                        <th class="sortable"># Requests</th>
+                        <th class="sortable"># Fails</th>
+                        <th class="sortable">Average (ms)</th>
+                        <th class="sortable">Min (ms)</th>
+                        <th class="sortable">Max (ms)</th>
+                        <th class="sortable">Average size (bytes)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in endpoint_wise.values() %}
-                    <tr>
-                        <td>{{ item.method }}</td>
-                        <td>{{ item.endpoint }}</td>
-                        <td class="numeric">{{ item.total_request }}</td>
-                        <td class="numeric">{{ item.total_failed_request }}</td>
-                        <td class="numeric">{{ item.success_rate }}</td>
-                        <td class="numeric">{{ item.avg_elapsed_time }}</td>
-                        <td class="numeric">{{ item.min_time }}</td>
-                        <td class="numeric">{{ item.max_time }}</td>
-                        <td class="numeric">{{ item.avg_content_length }}</td>
-                    </tr>
+                    {% for _, item in endpoint_wise.items() %}
+                        <tr>
+                            <td>{{item.method}}</td>
+                            <td>{{item.endpoint}}</td>
+                            <td>{{item.total_request}}</td>
+                            <td>{{item.total_failed_request}}</td>
+                            <td>{{item.avg_elapsed_time}}</td>
+                            <td>{{item.min_time}}</td>
+                            <td>{{item.max_time}}</td>
+                            <td>{{item.avg_content_length}}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <div class="table-section">
-            <h2>Endpoint Response Time Percentiles</h2>
+        <div class="responses">
+            <h2>Response Time Statistics</h2>
             <table class="stats">
                 <thead>
                     <tr>
-                        <th>Method</th>
-                        <th>Endpoint</th>
-                        <th class="numeric">50% (ms)</th>
-                        <th class="numeric">60% (ms)</th>
-                        <th class="numeric">70% (ms)</th>
-                        <th class="numeric">80% (ms)</th>
-                        <th class="numeric">90% (ms)</th>
-                        <th class="numeric">95% (ms)</th>
-                        <th class="numeric">99% (ms)</th>
-                        <th class="numeric">100% (ms)</th>
+                        <th class="sortable">Method</th>
+                        <th class="sortable">Name</th>
+                        <th class="sortable">50%ile (ms)</th>
+                        <th class="sortable">60%ile (ms)</th>
+                        <th class="sortable">70%ile (ms)</th>
+                        <th class="sortable">80%ile (ms)</th>
+                        <th class="sortable">90%ile (ms)</th>
+                        <th class="sortable">95%ile (ms)</th>
+                        <th class="sortable">99%ile (ms)</th>
+                        <th class="sortable">100%ile (ms)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in endpoint_wise.values() %}
-                    <tr>
-                        <td>{{ item.method }}</td>
-                        <td>{{ item.endpoint }}</td>
-                        <td class="numeric">{{ item.fifty }}</td>
-                        <td class="numeric">{{ item.sixty }}</td>
-                        <td class="numeric">{{ item.seventy }}</td>
-                        <td class="numeric">{{ item.eighty }}</td>
-                        <td class="numeric">{{ item.ninety }}</td>
-                        <td class="numeric">{{ item.ninety_five }}</td>
-                        <td class="numeric">{{ item.ninety_nine }}</td>
-                        <td class="numeric">{{ item.hundred }}</td>
-                    </tr>
+                    {% for _, item in endpoint_wise.items() %}
+                        <tr>
+                            <td>{{item.method}}</td>
+                            <td>{{item.endpoint}}</td>
+                            <td>{{item.fifty}}</td>
+                            <td>{{item.sixty}}</td>
+                            <td>{{item.seventy}}</td>
+                            <td>{{item.eighty}}</td>
+                            <td>{{item.ninety}}</td>
+                            <td>{{item.ninety_five}}</td>
+                            <td>{{item.ninety_nine}}</td>
+                            <td>{{item.hundred}}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-
-        <div class="table-section">
-            <h2>Status Code Distribution (Overall)</h2>
-            <table class="stats">
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th class="numeric">Count</th>
-                        <th class="numeric">Percentage</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for status in overall_status_codes %}
-                    <tr>
-                        <td>{{ status.code }}</td>
-                        <td class="numeric">{{ status.count }}</td>
-                        <td class="numeric">{{ status.percentage }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if overall_error_details %}
-        <div class="table-section">
-            <h2>Top Error Responses (Overall)</h2>
-            <table class="stats">
-                <thead>
-                    <tr>
-                        <th>Error Message</th>
-                        <th class="numeric">Count</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for error in overall_error_details %}
-                    <tr>
-                        <td>{{ error.message }}</td>
-                        <td class="numeric">{{ error.count }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
-        <div class="endpoint-section">
-            <h2>Endpoint Highlights</h2>
-            <div class="endpoint-cards">
-                {% for item in endpoint_wise.values() %}
-                <div class="endpoint-card">
-                    <div class="endpoint-title">{{ item.display_name }}</div>
-                    <div class="endpoint-metric">
-                        <span>Total Requests</span>
-                        <span>{{ item.total_request }}</span>
-                    </div>
-                    <div class="endpoint-metric">
-                        <span>Failures</span>
-                        <span>{{ item.total_failed_request }}</span>
-                    </div>
-                    <div class="endpoint-metric">
-                        <span>Success Rate</span>
-                        <span>{{ item.success_rate }}%</span>
-                    </div>
-                    <div class="endpoint-metric">
-                        <span>Avg Response</span>
-                        <span>{{ item.avg_elapsed_time }} ms</span>
-                    </div>
-                    <div class="endpoint-metric">
-                        <span>P95 Response</span>
-                        <span>{{ item.ninety_five }} ms</span>
-                    </div>
-                    {% if item.status_code_breakdown %}
-                    <div class="endpoint-subtitle">Status Codes</div>
-                    <ul class="endpoint-list">
-                        {% for status in item.status_code_breakdown %}
-                        <li>{{ status.code }}: {{ status.count }} ({{ status.percentage }}%)</li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                    {% if item.error_details %}
-                    <div class="endpoint-subtitle">Errors</div>
-                    <ul class="endpoint-list">
-                        {% for error in item.error_details %}
-                        <li>{{ error.message }} ({{ error.count }})</li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
         </div>
     </div>
 
+    <div id="chartContainer" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="percentile_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="byte_per_second" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+    <div id="user_count" class="center" style="width: 1200px; height: 600px; margin-top: 50px;"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.2.1/dist/echarts.min.js"></script>
     <script>
-        const endpointData = {{ endpoint_wise | tojson }};
-        const overallRequestsPerSecond = {{ overall_requests_per_second | tojson }};
-        const overallConcurrencyPerSecond = {{ overall_concurrency_per_second | tojson }};
-        const overallErrorRatePerSecond = {{ overall_error_rate_per_second | tojson }};
-        const overallAvgResponsePerSecond = {{ overall_avg_response_time_per_second | tojson }};
-        const overallThroughputPerSecond = {{ overall_throughput_per_second | tojson }};
-        const overallPercentiles = {{ overall_percentiles_per_second | tojson }};
-
-        const endpoints = Object.values(endpointData);
-        const endpointNames = endpoints.map(item => item.display_name);
-
-        const endpointResponseSeries = endpoints.map(item => ({
-            name: item.display_name,
-            type: 'line',
-            smooth: true,
-            data: item.response_time_vs_time
-        }));
-
-        const endpointRequestSeries = [
-            {
-                name: 'Total Requests',
-                type: 'line',
-                smooth: true,
-                lineStyle: { width: 3 },
-                data: overallRequestsPerSecond
+        var chart = echarts.init(document.getElementById('chartContainer'), 'light');
+        var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
+            title: {
+                text: 'Response time vs Time',
+                textStyle: { color: '#7f28ff' }
             },
-            ...endpoints.map(item => ({
-                name: item.display_name,
-                type: 'line',
-                smooth: true,
-                data: item.requests_per_second
-            }))
-        ];
-
-        const endpointThroughputSeries = endpoints.map(item => ({
-            name: item.display_name,
-            type: 'line',
-            smooth: true,
-            data: item.byte_throughput_vs_time
-        }));
-
-        const charts = [];
-
-        function createLineChart(elementId, title, series, yAxisName, options = {}) {
-            const element = document.getElementById(elementId);
-            if (!element) {
-                return null;
-            }
-            if (element.previousElementSibling && element.previousElementSibling.classList.contains('chart-title')) {
-                element.previousElementSibling.textContent = title;
-            }
-            const legendTargetId = element.dataset.legendTarget;
-            const legendContainer = legendTargetId ? document.getElementById(legendTargetId) : null;
-            const legendNames = Array.from(new Set(series.map(item => item.name).filter(Boolean)));
-            const legendSelected = {};
-            legendNames.forEach(name => {
-                legendSelected[name] = true;
-            });
-
-            const chart = echarts.init(element, 'light');
-            const baseOptions = {
-                color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff', '#10b981', '#f59e0b'],
-                tooltip: { trigger: 'axis' },
-                legend: {
-                    show: false,
-                    data: legendNames,
-                    selected: legendSelected
-                },
-                toolbox: { feature: { saveAsImage: {} } },
-                xAxis: {
-                    type: 'time',
-                    axisLabel: { hideOverlap: true, rotate: 25, color: '#4b3f6b', fontSize: 11 },
-                    axisTick: { alignWithLabel: true },
-                    splitLine: { show: false }
-                },
-                yAxis: {
-                    type: 'value',
-                    name: yAxisName,
-                    axisLine: { symbol: 'arrow' },
-                    splitLine: { show: true, lineStyle: { color: '#ede3ff' } }
-                },
-                grid: { top: 40, left: 60, right: 30, bottom: 60 },
-                series: series
-            };
-            const mergedOptions = Object.assign({}, baseOptions, options);
-            if (options.legend) {
-                mergedOptions.legend = Object.assign({}, baseOptions.legend, options.legend);
-            }
-            if (options.xAxis) {
-                mergedOptions.xAxis = Object.assign({}, baseOptions.xAxis, options.xAxis);
-            }
-            if (options.yAxis) {
-                mergedOptions.yAxis = Object.assign({}, baseOptions.yAxis, options.yAxis);
-            }
-            if (options.grid) {
-                mergedOptions.grid = Object.assign({}, baseOptions.grid, options.grid);
-            }
-            chart.setOption(mergedOptions);
-            if (legendContainer) {
-                renderExternalLegend(chart, legendContainer, legendNames);
-            }
-            charts.push(chart);
-            return chart;
-        }
-
-        function renderExternalLegend(chart, container, legendNames) {
-            if (!container) {
-                return;
-            }
-            container.innerHTML = '';
-            const buttons = {};
-
-            legendNames.forEach(name => {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.textContent = name;
-                button.addEventListener('click', () => {
-                    chart.dispatchAction({
-                        type: 'legendToggleSelect',
-                        name: name,
-                    });
-                    updateState();
-                });
-                container.appendChild(button);
-                buttons[name] = button;
-            });
-
-            chart.on('legendselectchanged', updateState);
-            chart.on('restore', updateState);
-            updateState();
-
-            function updateState() {
-                const option = chart.getOption();
-                const legend = Array.isArray(option.legend) ? option.legend[0] : option.legend;
-                const selected = (legend && legend.selected) || {};
-                legendNames.forEach(name => {
-                    const button = buttons[name];
-                    if (!button) {
-                        return;
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+            },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
                     }
-                    if (selected[name] === false) {
-                        button.classList.remove('active');
-                    } else {
-                        button.classList.add('active');
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data: {{ item.response_time_vs_time }}
+                    },
+                {% endfor %}
+            ]
+        };
+        chart.setOption(options);
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('byte_per_second'), 'light');
+        var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
+            title: {
+                text: 'Byte Throughput vs Time',
+                textStyle: { color: '#7f28ff' }
+            },
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+            },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
                     }
-                });
-            }
-        }
-
-        createLineChart('overall_requests', 'Requests Per Second (Total)', [{
-            name: 'Requests',
-            type: 'line',
-            smooth: true,
-            data: overallRequestsPerSecond
-        }], 'Requests');
-
-        createLineChart('overall_concurrency', 'Active Users (Concurrency)', [{
-            name: 'Active Users',
-            type: 'line',
-            smooth: true,
-            data: overallConcurrencyPerSecond
-        }], 'Users');
-
-        const throughputSeries = overallThroughputPerSecond.map(item => [item[0], Number((item[1] / 1024).toFixed(2))]);
-        createLineChart('overall_throughput', 'Total Data Transferred Per Second', [{
-            name: 'KB/s',
-            type: 'line',
-            smooth: true,
-            data: throughputSeries
-        }], 'KB / sec');
-
-        createLineChart('overall_error_rate', 'Error Rate (%)', [{
-            name: 'Error Rate',
-            type: 'line',
-            smooth: true,
-            data: overallErrorRatePerSecond
-        }], '%');
-
-        createLineChart('overall_avg_response', 'Average Response Time', [{
-            name: 'Average Response',
-            type: 'line',
-            smooth: true,
-            data: overallAvgResponsePerSecond
-        }], 'ms');
-
-        createLineChart('overall_percentiles', 'Latency Percentiles', [
-            {
-                name: 'P50',
-                type: 'line',
-                smooth: true,
-                data: overallPercentiles.p50
+                }
             },
-            {
-                name: 'P90',
-                type: 'line',
-                smooth: true,
-                data: overallPercentiles.p90
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data: {{ item.byte_throughput_vs_time }}
+                    },
+                {% endfor %}
+            ]
+        };
+        chart.setOption(options);
+    </script>
+
+    <script>
+        var chart = echarts.init(document.getElementById('user_count'), 'light');
+        var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
+            title: {
+                text: 'User vs Time',
+                textStyle: { color: '#7f28ff' }
             },
-            {
-                name: 'P99',
-                type: 'line',
-                smooth: true,
-                data: overallPercentiles.p99
-            }
-        ], 'ms');
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}}', {% endfor %}]
+            },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}}',
+                        type: 'line',
+                        data: {{ item.user_count_per_second }}
+                    },
+                {% endfor %}
+            ]
+        };
+        chart.setOption(options);
+    </script>
 
-        createLineChart('endpoint_response_time', 'Response Time (Per Endpoint)', endpointResponseSeries, 'ms', {
-            legend: { type: 'scroll', data: endpointNames }
-        });
-
-        createLineChart('endpoint_requests', 'Requests Per Second (Per Endpoint)', endpointRequestSeries, 'Requests / sec', {
-            legend: { type: 'scroll' }
-        });
-
-        createLineChart('endpoint_throughput', 'Avg Content Size (Per Endpoint)', endpointThroughputSeries, 'Bytes', {
-            legend: { type: 'scroll' }
-        });
-
-        window.addEventListener('resize', function () {
-            charts.forEach(chart => chart && chart.resize());
-        });
+    <script>
+        var chart = echarts.init(document.getElementById('percentile_per_second'), 'light');
+        var options = {
+            color: ['#7f28ff', '#f50384', '#c084fc', '#c49cff', '#e9d5ff'],
+            title: {
+                text: 'Percentile per Second',
+                textStyle: { color: '#7f28ff' }
+            },
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: [{% for _, item in endpoint_wise.items() %} '{{item.endpoint}} 50%ile', '{{item.endpoint}} 90%ile', {% endfor %}]
+            },
+            xAxis: {
+                type: 'time',
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    symbol: 'arrow',
+                    lineStyle: {
+                        type: false
+                    }
+                }
+            },
+            series:[
+                {% for _, item in endpoint_wise.items() %}
+                    {
+                        name: '{{item.endpoint}} 50%ile',
+                        type: 'line',
+                        data: {{ item.fiftypercentile_per_second }}
+                    },
+                    {
+                        name: '{{item.endpoint}} 90%ile',
+                        type: 'line',
+                        data: {{ item.ninetypercentile_per_second }}
+                    },
+                {% endfor %}
+            ]
+        };
+        chart.setOption(options);
     </script>
 </body>
 </html>

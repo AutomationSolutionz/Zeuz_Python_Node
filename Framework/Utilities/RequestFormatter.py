@@ -66,13 +66,7 @@ def datestring_to_obj(date_string: str) -> datetime:
 
 def is_less_than_N_minutes_away(target_datetime, n):
     # Get the current time
-    # Handle both timezone-aware and timezone-naive datetimes
-    if target_datetime.tzinfo is None:
-        # Target is naive, use naive current time
-        current_time = datetime.now()
-    else:
-        # Target is aware, use aware current time in UTC
-        current_time = datetime.now(timezone.utc)
+    current_time = datetime.utcnow().replace(tzinfo=timezone.utc)
 
     # Calculate the difference between the target datetime and the current time
     time_difference = target_datetime - current_time
@@ -137,10 +131,10 @@ def login():
     return data, r.status_code
 
 
-def form_uri(resource_path: str | None = None) -> str:
+def form_uri(resource_path):
     web_server_address = ConfigModule.get_config_value(AUTHENTICATION_CATEGORY, SERVER_ADDRESS_TAG)
     base_server_address = web_server_address
-    if resource_path and len(resource_path) > 0:
+    if len(resource_path) > 0:
         if resource_path[0] == "/":
             resource_path = resource_path[1:]
         base_server_address += "/" + resource_path

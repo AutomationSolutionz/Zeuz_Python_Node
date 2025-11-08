@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 ZeuZ Secrets Management Module
 
@@ -73,7 +74,6 @@ class Secret:
                 current_tc = sr.Get_Shared_Variables("zeuz_current_tc")
                 if isinstance(current_tc, dict) and "testcase_no" in current_tc:
                     test_id = current_tc["testcase_no"]
-            node_id = sr.Get_Shared_Variables("node_id") or None
 
             step_data = sr.Get_Shared_Variables(CommonUtil.dont_prettify_on_server[0])
             if step_data and isinstance(step_data, list) and len(step_data) >= int(CommonUtil.current_action_no):
@@ -85,8 +85,6 @@ class Secret:
             params = {}
             if test_id:
                 params["test_id"] = test_id
-            if node_id:
-                params["node_id"] = node_id
             if action_details:
                 params["action_details"] = json.dumps({"values": action_details, "extra": "{}"})
 
