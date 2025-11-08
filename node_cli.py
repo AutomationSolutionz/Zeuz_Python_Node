@@ -1108,6 +1108,7 @@ async def main():
     asyncio.create_task(start_server())
     asyncio.create_task(upload_android_ui_dump())
     asyncio.create_task(delete_old_automationlog_folders())
+    await destroy_session()
 
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
