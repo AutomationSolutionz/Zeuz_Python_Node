@@ -6,7 +6,7 @@ import platform
 import httpx
 from colorama import Fore
 from Framework.install_handler.route import Response, services
-from Framework.install_handler.utils import send_response, debug, node_id
+from Framework.install_handler.utils import send_response, debug, read_node_id
 from pydantic import BaseModel
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
@@ -100,7 +100,7 @@ class InstallHandler:
                 try:                
                     if debug: print("[installer] Active")
                     api_key = ConfigModule.get_config_value("Authentication", "api-key")
-                    url = RequestFormatter.form_uri(f"d/nodes/install/node/listen?node_id={node_id}")
+                    url = RequestFormatter.form_uri(f"d/nodes/install/node/listen?node_id={read_node_id()}")
                     
                     resp = await client.get(url, headers={"X-API-KEY": api_key})
                     if resp.status_code == httpx.codes.NO_CONTENT:
