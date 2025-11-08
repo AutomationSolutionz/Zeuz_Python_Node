@@ -141,7 +141,6 @@ def capture_screenshot():
 
 async def upload_android_ui_dump():
     prev_xml_hash = ""
-    print('upload_android_ui_dump')
     while True:
         try:
             capture_ui_dump()

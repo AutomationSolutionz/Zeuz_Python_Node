@@ -3,14 +3,16 @@ from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
 debug = False
 
-node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+def read_node_id():
+    return CommonUtil.MachineInfo().getLocalUser().lower()
+
 
 async def send_response(data=None) -> None:
     try:
         api_key = ConfigModule.get_config_value("Authentication", "api-key")
         url = RequestFormatter.form_uri("d/nodes/install/server/push")
         payload = {
-            "node_id": node_id,
+            "node_id": read_node_id(),
             "data": data
         }
         if debug: 
