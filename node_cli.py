@@ -1140,10 +1140,11 @@ async def main():
         console.print("Please log in to ZeuZ server and connect.")
         await asyncio.sleep(1)
 
-    asyncio.create_task(Login(
-        server_name=server_name,
-        log_dir=log_dir,
-    ))
+    else:
+        asyncio.create_task(Login(
+            server_name=server_name,
+            log_dir=log_dir,
+        ))
     while True:
         if STATE.reconnect_with_credentials is not None:
             await destroy_session()
