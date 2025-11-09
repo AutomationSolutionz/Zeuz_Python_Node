@@ -38,19 +38,10 @@ from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
 from server.mobile import upload_android_ui_dump
 
-print(
-    f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
-)
-print(f"Current file path: {os.path.abspath(__file__)}")
-
-
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
-    root_dir = Path.cwd()
+    root_dir = Path(__file__).parent
     framework_dir = root_dir / "Framework"
-
-    automation_log_dir = root_dir / "AutomationLog"
-    automation_log_dir.mkdir(exist_ok=True)
 
     # Append correct paths so that it can find the configuration files and other modules
     sys.path.append(str(framework_dir))
@@ -1188,17 +1179,26 @@ async def set_new_credentials(server, api_key):
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
+def print_system_info_version():
+    """Prints the system information and version of the Node"""
+    print(
+        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+    )
+    print(f"Current file path: {os.path.abspath(__file__)}")
+
+
 def create_temp_ini_automation_log():
     global TMP_INI_FILE
-    TMP_INI_FILE = (
-        Path.cwd()
-        / "AutomationLog"
-        / ConfigModule.get_config_value("Advanced Options", "_file")
-    )
-    Path(TMP_INI_FILE).parent.mkdir(parents=True, exist_ok=True)
+
+    root_dir = Path(__file__).parent
+    automation_log_dir = root_dir / "AutomationLog"
+    automation_log_dir.mkdir(exist_ok=True)
+    print(f"Created AutomationLog directory at {automation_log_dir}")
+
+    TMP_INI_FILE = automation_log_dir / ConfigModule.get_config_value("Advanced Options", "_file")
 
 async def main():
-    # Load environment variables from .env file
+    print_system_info_version()
     load_dotenv()
     adjust_python_path()
     ConfigModule.remove_settings_lock_file()
@@ -1222,7 +1222,7 @@ async def main():
     check_min_python_version(min_python_version="3.11", show_warning=True)
 
     # Setup Node.js and Appium before other operations
-    # setup_nodejs_appium()
+    setup_nodejs_appium()
 
     update_outdated_modules()
     asyncio.create_task(start_server())
