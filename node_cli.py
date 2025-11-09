@@ -150,12 +150,13 @@ from Framework.Utilities import (  # noqa: E402
 from Framework import MainDriverApi  # noqa: E402
 
 
-TMP_INI_FILE = (
-    Path.cwd()
-    / "AutomationLog"
-    / ConfigModule.get_config_value("Advanced Options", "_file")
-)
+TMP_INI_FILE = None
 
+"""Constants"""
+AUTHENTICATION_TAG = "Authentication"
+PROJECT_TAG = "project"
+TEAM_TAG = "team"
+device_dict: dict[str, Any] = {}
 
 def kill_child_processes():
     try:
@@ -178,11 +179,7 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-"""Constants"""
-AUTHENTICATION_TAG = "Authentication"
-PROJECT_TAG = "project"
-TEAM_TAG = "team"
-device_dict: dict[str, Any] = {}
+
 
 
 async def destroy_session():
@@ -1199,6 +1196,15 @@ async def main():
     load_dotenv()
     adjust_python_path()
     ConfigModule.create_settings_config_file()
+
+    global TMP_INI_FILE
+    TMP_INI_FILE = (
+        Path.cwd()
+        / "AutomationLog"
+        / ConfigModule.get_config_value("Advanced Options", "_file")
+    )
+
+    Path(TMP_INI_FILE).parent.mkdir(parents=True, exist_ok=True)
 
     rich_traceback.install(show_locals=True, max_frames=1)
 
