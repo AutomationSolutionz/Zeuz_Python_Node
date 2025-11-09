@@ -42,8 +42,6 @@ print(
     f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
 )
 print(f"Current file path: {os.path.abspath(__file__)}")
-extension_downloader = ChromeExtensionDownloader()
-extension_downloader.cleanup_extensions()
 
 
 def adjust_python_path():
@@ -1233,6 +1231,9 @@ async def main():
     ConfigModule.remove_settings_lock_file()
     ConfigModule.create_settings_config_file()
     create_temp_ini_automation_log()
+
+    extension_downloader = ChromeExtensionDownloader()
+    extension_downloader.cleanup_extensions()
 
     rich_traceback.install(show_locals=True, max_frames=1)
 
