@@ -1075,6 +1075,10 @@ async def command_line_args() -> Path | None:
     add_key = all_arguments.add_private_key
     show_keys = all_arguments.show_private_keys
 
+    # get the chrome extension download settings
+    chrome_fetch = all_arguments.chrome_fetch
+    chrome_cleanup = all_arguments.chrome_cleanup
+
     # Share and fetch keys options
     share_keys = all_arguments.share
     fetch_code = all_arguments.fetch
