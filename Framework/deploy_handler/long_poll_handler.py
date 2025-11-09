@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
+from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
 from Framework.node_server_state import STATE
 
 
@@ -45,7 +46,6 @@ class DeployHandler:
 
     async def on_message(self, message) -> bool:
         """Returns True if the handler should quit, False otherwise."""
-
         if message == self.COMMAND_DONE:
             # We're done for this run session.
             return await self.done_callback()
@@ -55,12 +55,12 @@ class DeployHandler:
             await self.cancel_callback()
             return False
         
-        elif message.startswith(b'{"command":"KEY_REQUEST"'):
-            self.handle_key_request(message)
+        elif message.startswith(b'SECRET:KEY_REQUEST'):
+            self.handle_key_request(message.replace(b'SECRET:KEY_REQUEST::', b''))
             return False
-        
-        elif message.startswith(b'{"command":"PRIVATE_KEY"'):
-            self.handle_private_key(message)
+
+        elif message.startswith(b'SECRET:PRIVATE_KEY'):
+            self.handle_private_key(message.replace(b'SECRET:PRIVATE_KEY::', b''))
             return False
 
         await self.response_callback(message)
