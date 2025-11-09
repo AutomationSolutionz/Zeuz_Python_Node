@@ -10,6 +10,7 @@ from server.evaluator import router as evaluator_router
 from server.node_operator import router as operator_router
 from server.mobile import router as mobile_router, upload_android_ui_dump
 from server.mac import router as mac_router
+import asyncio
 
 class EndpointFilter(logging.Filter):
     def __init__(
@@ -27,8 +28,6 @@ class EndpointFilter(logging.Filter):
 def main() -> FastAPI:
     # Filter out /endpoint
     logging.getLogger("uvicorn.access").addFilter(EndpointFilter(path="/status"))
-    thread = threading.Thread(target=upload_android_ui_dump, daemon=True)
-    thread.start()
 
     v1router = APIRouter(
         prefix="/api/v1",

@@ -3754,28 +3754,31 @@ def execute_python_code(data_set):
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
 
-        current_vars = set(sr.shared_variables)
-        new_variables = current_vars - previous_vars - {'__builtins__'}
-        removed_variables = previous_vars - current_vars  - {'__builtins__'}
+        try:
+            current_vars = set(sr.shared_variables)
+            new_variables = current_vars - previous_vars - {'__builtins__'}
+            removed_variables = previous_vars - current_vars  - {'__builtins__'}
 
-        text = ("Newly declared variables:\n" +
-                "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
-                )
-        text += (
-            "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
-            "and accessible in next python_code action or in %| |%.\n" +
-            "But if you dont want your newly declared variables accessible in next actions\n" +
-            "Cleanup the variables at the end of the code. Such as:\n" +
-            "del account_name\ndel function_name" if new_variables and CommonUtil.debug_status else ""
-        )
-        text += "\nRemoved variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200]}" for i in removed_variables]) if removed_variables else ""
-        CommonUtil.ExecLog(sModuleInfo, text, 5)
+            text = ("Newly declared variables:\n" +
+                    "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
+                    )
+            text += (
+                "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
+                "and accessible in next python_code action or in %| |%.\n" +
+                "But if you dont want your newly declared variables accessible in next actions\n" +
+                "Cleanup the variables at the end of the code. Such as:\n" +
+                "del account_name\ndel function_name" if new_variables and CommonUtil.debug_status else ""
+            )
+            text += "\nRemoved variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200]}" for i in removed_variables]) if removed_variables else ""
+            CommonUtil.ExecLog(sModuleInfo, text, 5)
 
-        for var in sr.shared_variables:
-            if var.startswith("zeuz_session_"):
-                CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
-        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
-        return "passed"
+            for var in sr.shared_variables:
+                if var.startswith("zeuz_session_"):
+                    CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
+            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+            return "passed"
+        except:
+            pass
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

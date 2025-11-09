@@ -97,6 +97,7 @@ dependencies = [
     "cryptography==42.0.8",
     "pipdeptree>=2.26.1",
     "axe-selenium-python>=2.1.6",
+    "filelock>=3.20.0",
 ]
 
 [dependency-groups]

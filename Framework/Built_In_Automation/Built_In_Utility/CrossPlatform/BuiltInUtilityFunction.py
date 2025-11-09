@@ -857,60 +857,6 @@ def download_file_using_url(file_url, location_of_file, headers=dict()):
             sys.exc_info(), None, "Error downloading file"
         )
 
-
-# Method to download and unzip file
-# def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
-#
-#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-#
-#
-#     try:
-#         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
-#           This avoids reading the content all at once into memory for large responses.
-#          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
-#         r = requests.get(file_url, stream=True)
-#
-#         list_the_parts_of_url = file_url.split("/") #get file name from the url
-#         file_name = os.path.join(location_of_file, list_the_parts_of_url[len(list_the_parts_of_url) - 1])
-#         actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
-#         with open(file_name, "wb") as f:
-#             for chunk in r.iter_content(chunk_size=1024):
-#
-#             # writing one chunk at a time to pdf file
-#                 if chunk:
-#                     f.write(chunk)
-#         # after performing the download operation we have to check that if the file with new name exists in correct location.
-#         # if the file exists in correct position then return passed
-#         # if the file doesn't exist in correct position then return failed
-#         if os.path.isfile(file_name):
-#             CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 0)
-#         else:
-#             CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
-#             return "zeuz_failed"
-#         unzip_location = os.path.join(location_of_file,"latest_directory" )
-#         CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 0)
-#         result1 = CreateFolder(unzip_location)
-#         if result1 in failed_tag_list:
-#             CommonUtil.ExecLog(sModuleInfo, "Can't not create folder '%s' " % unzip_location, 3)
-#             return "zeuz_failed"
-#         CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is created " % unzip_location, 1)
-#         result = UnZip(file_name,unzip_location)
-#         if result in failed_tag_list:
-#             CommonUtil.ExecLog(sModuleInfo, "Can't not unzip file '%s' to '%s'" % (file_name, unzip_location), 3)
-#             return "zeuz_failed"
-#         CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 0)
-#         CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
-#         #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
-#         downloaded_file = os.path.join(unzip_location,actual_file_name )
-#         Shared_Resources.Set_Shared_Variables("downloaded_file", downloaded_file)
-#         Shared_Resources.Show_All_Shared_Variables()
-#         return "passed"
-#
-#
-#     except Exception:
-#         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 # not done properly...need more works
 """def change_path_for_windows(src):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME

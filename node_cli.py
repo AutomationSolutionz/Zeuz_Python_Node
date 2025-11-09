@@ -18,31 +18,30 @@ import time
 import threading
 from datetime import date
 from datetime import datetime as dt
+import asyncio
 
 import psutil
 import requests
-from configobj import ConfigObj
 from dotenv import load_dotenv
 from colorama import init as colorama_init
 from colorama import Fore
 from rich.table import Table
 from rich.console import Console
-from rich import traceback
+from rich import traceback as rich_traceback
+import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-
+from Framework.install_handler.long_poll_handler import InstallHandler
+from server.mobile import upload_android_ui_dump
 
 print(
     f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
 )
 print(f"Current file path: {os.path.abspath(__file__)}")
-extension_downloader = ChromeExtensionDownloader()
-extension_downloader.cleanup_extensions()
 
 
 def adjust_python_path():
@@ -59,40 +58,6 @@ def adjust_python_path():
     # Move to Framework directory and add parent to path for module imports
     os.chdir(framework_dir)
 
-
-def create_config_file():
-    settings_conf_path = Path.cwd() / "settings.conf"
-    if settings_conf_path.exists():
-        return
-
-    today = date.today().strftime("%Y-%m-%d")
-
-    config = ConfigObj()
-    config["Authentication"] = {"username": "", "api-key": "", "server_address": ""}
-    config["Advanced Options"] = {
-        "module_update_interval": 30,
-        "log_delete_interval": 7,
-        "last_module_update_date": today,
-        "last_log_delete_date": today,
-        "element_wait": 10,
-        "available_to_all_project": False,
-        "_file": "temp_config.ini",
-        "_file_upload_path": "TestExecutionLog",
-        "stop_live_log": False,
-    }
-    config["Inspector"] = {
-        "Window": "",
-        "No_of_level_to_skip": 0,
-        "ai_plugin": True,
-    }
-    config["server"] = {"port": 0}
-    config.filename = str(settings_conf_path)
-    config.write()
-    print(f"Created settings.conf at {settings_conf_path}")
-
-
-adjust_python_path()
-create_config_file()
 
 
 from Framework.module_installer import (  # noqa: E402
@@ -111,36 +76,33 @@ from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
 
 
-def start_server():
-    settings_conf_path = Path.cwd() / "settings.conf"
-
+async def start_server():
+    
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("127.0.0.1", port)) == 0
+    try:
+        node_server_port = 18100
+        tries = 0
+        while is_port_in_use(node_server_port) and tries < 99:
+            node_server_port += 1
+            tries += 1
+        ConfigModule.add_config_value("server", "port", str(node_server_port))
+        print(f"Launching node-server on port {node_server_port}")
+        
+        app = node_server.main()
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=node_server_port,
+            log_level="warning",
+        )
+        server = uvicorn.Server(config)
+        await server.serve()
 
-    def run():
-        try:
-            node_server_port = 18100
-            tries = 0
-            while is_port_in_use(node_server_port) and tries < 99:
-                node_server_port += 1
-                tries += 1
-            config = ConfigObj(str(settings_conf_path))
-            config["server"]["port"] = node_server_port
-            config.write()
-            uvicorn.run(
-                node_server.main(),
-                host="127.0.0.1",
-                port=node_server_port,
-                log_level="warning",
-            )
-
-        except Exception as e:
-            print(f"[WARN] Failed to launch node-server: {str(e)}")
-
-    t = threading.Thread(target=run, daemon=True)
-    t.start()
-
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[WARN] Failed to launch node-server: {str(e)}")
 
 def kill_old_process(pid_file_path: os.PathLike):
     """kill any process that is running  from the same node folder."""
@@ -165,46 +127,6 @@ def kill_old_process(pid_file_path: os.PathLike):
         pass
 
 
-# Conditionally monkey-patch datetime module to include the `fromisoformat` method.
-# TODO: remove this when we upgrade to Python 3.11
-def monkeypatch_fromisoformat():
-    try:
-        import sys
-
-        target_version = (3, 11)
-        if sys.version_info < target_version:
-            from backports.datetime_fromisoformat import MonkeyPatch  # type: ignore
-
-            MonkeyPatch.patch_fromisoformat()
-    except Exception:
-        print("WARN: failed to monkeypatch fromisoformat")
-
-
-def main():
-    # Load environment variables from .env file
-    load_dotenv()
-
-    traceback.install(show_locals=True, max_frames=1)
-
-    # Suppress the InsecureRequestWarning since we use verify=False parameter.
-    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
-
-    # Disable WebdriverManager SSL verification.
-    os.environ["WDM_SSL_VERIFY"] = "0"
-
-    colorama_init(autoreset=True)
-
-    kill_old_process(Path.cwd().parent / "pid.txt")
-    check_min_python_version(min_python_version="3.11", show_warning=True)
-
-    # Setup Node.js and Appium before other operations
-    setup_nodejs_appium()
-
-    update_outdated_modules()
-    monkeypatch_fromisoformat()
-    start_server()
-
-
 def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
     try:
@@ -215,11 +137,7 @@ def setup_nodejs_appium():
         print("Continuing without Node.js/Appium setup...")
 
 
-main()
-
 # Tells node whether it should run a test set/deployment only once and quit.
-RUN_ONCE = False
-local_run = False
 
 from Framework.Utilities import (  # noqa: E402
     RequestFormatter,
@@ -229,12 +147,13 @@ from Framework.Utilities import (  # noqa: E402
 from Framework import MainDriverApi  # noqa: E402
 
 
-TMP_INI_FILE = (
-    Path.cwd().parent
-    / "AutomationLog"
-    / ConfigModule.get_config_value("Advanced Options", "_file")
-)
+TMP_INI_FILE = None
 
+"""Constants"""
+AUTHENTICATION_TAG = "Authentication"
+PROJECT_TAG = "project"
+TEAM_TAG = "team"
+device_dict: dict[str, Any] = {}
 
 def kill_child_processes():
     try:
@@ -257,14 +176,10 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-"""Constants"""
-AUTHENTICATION_TAG = "Authentication"
-PROJECT_TAG = "project"
-TEAM_TAG = "team"
-device_dict: dict[str, Any] = {}
 
 
-def destroy_session():
+
+async def destroy_session():
     """
     Destroy session file.
     """
@@ -304,9 +219,8 @@ class UserData:
     project_id: str
 
 
-def Login(
+async def Login(
     server_name: str,
-    run_once: bool = False,
     log_dir: os.PathLike | None = None,
 ):
     console = Console()
@@ -370,7 +284,7 @@ def Login(
             console.print(table)
         elif status_code == 502:
             print(Fore.YELLOW + "Server offline. Retrying after 60s")
-            time.sleep(60)
+            await asyncio.sleep(60)
             return
         else:
             line_color = Fore.RED
@@ -379,11 +293,14 @@ def Login(
             # api = api.strip('"')
 
             # Reset the credentials.
-            set_new_credentials(server="", api_key="")
+            await set_new_credentials(server="", api_key="")
             return
     except ConnectionError:
         print("Failed to connect to the server, retrying after 30s")
-        time.sleep(30)
+        await asyncio.sleep(30)
+        return
+    except Exception as e:
+        traceback.print_exc()
         return
 
     node_id = CommonUtil.MachineInfo().getLocalUser().lower()
@@ -394,10 +311,13 @@ def Login(
     # creates a new thread and keeps an infinite while loop - which is dangerous
     # for the server, since it'll be bombarded with requests from multiple
     # threads.
-    report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
-    report_thread.start()
 
-    RunProcess(node_id, run_once=run_once, log_dir=log_dir)
+    # Todo: Make it async and not in thread. Fix the while loop inside as well
+    # Its returning on first iteration. This should be out of Login function
+    # report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+    # report_thread.start()
+
+    await RunProcess(node_id, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
@@ -450,7 +370,7 @@ def notify_complete(message="Run completed"):
         print("Failed to send notification")
 
 
-def RunProcess(node_id, run_once=False, log_dir=None):
+async def RunProcess(node_id, log_dir=None):
     try:
         # --- START websocket service connections --- #
 
@@ -482,7 +402,10 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
         from Framework import node_server_state
 
-        def response_callback(response: str):
+        install_handler = InstallHandler()
+        install_task = asyncio.create_task(install_handler.run())
+
+        async def response_callback(response: str):
             node_server_state.STATE.state = "in_progress"
             nonlocal node_json
             nonlocal log_dir
@@ -514,23 +437,22 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                 print(Fore.RED + "ERROR failed to save test case json into file")
                 print(Fore.YELLOW + "JSON CONTENT:")
                 print(node_json)
-                import traceback as tb
-
-                tb.print_exc()
+                traceback.print_exc()
 
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
+            await install_handler.cancel_run()
             MainDriverApi.main(
                 device_dict=device_info,
                 all_run_id_info=node_json,
             )
 
-        def on_connect_callback(reconnected: bool):
+        async def on_connect_callback(reconnected: bool):
             node_server_state.STATE.state = "idle"
             update_machine_info(node_id, should_print=not reconnected)
             return
 
-        def done_callback() -> bool:
+        async def done_callback() -> bool:
             """
             Returns True if we do not want to connect to the service further.
             """
@@ -540,19 +462,18 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
             print("[deploy] Run complete.")
             notify_complete("Run completed")
-
-            if run_once:
-                return True
+            asyncio.create_task(install_handler.run())
 
             return False
 
-        def cancel_callback():
+        async def cancel_callback():
             if not node_json:
                 return
 
             print("[deploy] Run cancelled.")
             notify_complete("Run cancelled")
             CommonUtil.run_cancelled = True
+            asyncio.create_task(install_handler.run())
 
         deploy_handler = long_poll_handler.DeployHandler(
             on_connect_callback=on_connect_callback,
@@ -560,7 +481,11 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        deploy_handler.run(deploy_srv_addr())
+        
+        deploy_task = asyncio.create_task(deploy_handler.run(deploy_srv_addr()))
+        
+        await asyncio.gather(install_task, deploy_task, return_exceptions=True)
+        
         return False
 
     except Exception:
@@ -682,38 +607,6 @@ def pass_decode(key, enc):
         dec_c = chr((256 + enc[i] - ord(key_c)) % 256)
         dec.append(dec_c)
     return "".join(dec)
-
-
-def Local_run(log_dir=None):
-    try:
-        PreProcess(log_dir=log_dir)
-        user_info_object = {}
-        user_info_object["project"] = ConfigModule.get_config_value(
-            "sectionOne", PROJECT_TAG, TMP_INI_FILE
-        )
-        user_info_object["team"] = ConfigModule.get_config_value(
-            "sectionOne", TEAM_TAG, TMP_INI_FILE
-        )
-        device_dict = All_Device_Info.get_all_connected_device_info()
-        rem_config = {"local_run": True}
-        ConfigModule.remote_config = rem_config
-        MainDriverApi.main(device_dict)
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
-        CommonUtil.ExecLog("", Error_Detail, 4, False)
 
 
 def get_folder_creation_time(folder_path):
@@ -962,7 +855,72 @@ def fetch_private_keys(share_code: str):
         return False
 
 
-def command_line_args() -> Path | None:
+
+# Delete Old Subfolders in Automationlog folder.
+
+def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
+    subfolder_paths = []
+    current_time = time.time()
+    interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
+
+    for dir_name in os.listdir(folder_path):
+        dir_path = os.path.join(folder_path, dir_name)
+        if os.path.isdir(dir_path):
+            created_time = os.path.getctime(dir_path)
+
+            if current_time - created_time > interval_days_in_sec:
+                subfolder_paths.append(dir_path)
+
+    return subfolder_paths
+
+
+async def delete_old_automationlog_folders():
+    folder_path = (
+        os.path.dirname(os.path.abspath(__file__)).replace(
+            os.sep + "Framework", os.sep + ""
+        )
+        + os.sep
+        + "AutomationLog"
+    )
+    log_delete_interval = ConfigModule.get_config_value(
+        "Advanced Options", "log_delete_interval"
+    )
+
+    # By default set the automation log delete interval to 7 days
+    if not isinstance(log_delete_interval, int):
+        log_delete_interval = 7
+    else:
+        if log_delete_interval <= 0:
+            log_delete_interval = 7
+    while True:
+        auto_log_subfolders = get_subfolders_created_before_n_days(
+            folder_path, int(log_delete_interval)
+        )
+        auto_log_subfolders = [
+            subfolder
+            for subfolder in auto_log_subfolders
+            if subfolder
+            not in [
+                "attachments",
+                "attachments_db",
+                "outdated_modules.json",
+                "temp_config.ini",
+                "failed_reports",
+            ]
+        ]
+
+        for subfolder in auto_log_subfolders:
+            shutil.rmtree(subfolder)
+        if auto_log_subfolders:
+            print(
+                f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
+            )
+
+        # Check every 5 hours for old automation logs
+        await asyncio.sleep(60 * 60 * 5)
+
+
+async def command_line_args() -> Path | None:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
 
@@ -984,8 +942,6 @@ def command_line_args() -> Path | None:
     Example 5 - Custom log directory:
     python node_cli.py -d /path/to/logs
 
-    Example 6 - Local run:
-    python node_cli.py -r
 
     Example 7 - Logout:
     python node_cli.py -l
@@ -1033,15 +989,6 @@ def command_line_args() -> Path | None:
     )
     parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
-    )
-    parser_object.add_argument(
-        "-r", "--local_run", action="store_true", help="Performs a local run"
-    )
-    parser_object.add_argument(
-        "-o",
-        "--once",
-        action="store_true",
-        help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately",
     )
     parser_object.add_argument(
         "-d",
@@ -1145,14 +1092,14 @@ def command_line_args() -> Path | None:
     show_browser_log = all_arguments.show_browser_log
     stop_live_log = all_arguments.stop_live_log
 
-    # get the chrome extension download settings
-    chrome_fetch = all_arguments.chrome_fetch
-    chrome_cleanup = all_arguments.chrome_cleanup
-
     # RSA key management options
     generate_key = all_arguments.generate_private_key
     add_key = all_arguments.add_private_key
     show_keys = all_arguments.show_private_keys
+
+    # get the chrome extension download settings
+    chrome_fetch = all_arguments.chrome_fetch
+    chrome_cleanup = all_arguments.chrome_cleanup
 
     # Share and fetch keys options
     share_keys = all_arguments.share
@@ -1218,130 +1165,6 @@ def command_line_args() -> Path | None:
             f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}"
         )
 
-    global local_run
-    local_run = all_arguments.local_run
-
-    global RUN_ONCE
-    RUN_ONCE = all_arguments.once
-
-    settings_conf_path = (
-        os.path.dirname(os.path.abspath(__file__)).replace(
-            os.sep + "Framework", os.sep + ""
-        )
-        + os.sep
-        + "Framework"
-        + os.sep
-        + "settings.conf"
-    )
-    config = ConfigObj(settings_conf_path)
-    date_str = config.get("Advanced Options", {}).get("last_module_update_date", "")
-    module_update_interval = config.get("Advanced Options", {}).get(
-        "module_update_interval", ""
-    )
-
-    if date_str:
-        # Parse the date from the configuration file
-        config_date = date.fromisoformat(date_str)
-        current_date = datetime.date.today()
-        time_difference = (current_date - config_date).days
-        CommonUtil.ai_module_update_flag = stop_pip_auto_update
-        CommonUtil.ai_module_update_time_difference = time_difference
-        # Check if the time difference is greater than one month
-        if (
-            not stop_pip_auto_update
-            and CommonUtil.ws_ss_log
-            and time_difference > int(module_update_interval)
-        ):
-            update_outdated_modules()
-            config_date = date.today()
-            config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
-                config_date
-            )
-            config.write()
-            # print("module_updater: Module Updated..")
-        else:
-            # TODO: remove these print statements
-            # print("module_updater: All modules are already up to date.")
-            pass
-    else:
-        # Assign the current date
-        config_date = date.today()
-        config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
-            config_date
-        )
-        # Save the updated configuration file
-        config.write()
-        if not stop_pip_auto_update and CommonUtil.ws_ss_log:
-            update_outdated_modules()
-        print("module_updater: Module Updated..")
-
-    # Delete Old Subfolders in Automationlog folder.
-
-    def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
-        subfolder_paths = []
-        current_time = time.time()
-        interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
-
-        for dir_name in os.listdir(folder_path):
-            dir_path = os.path.join(folder_path, dir_name)
-            if os.path.isdir(dir_path):
-                created_time = os.path.getctime(dir_path)
-
-                if current_time - created_time > interval_days_in_sec:
-                    subfolder_paths.append(dir_path)
-
-        return subfolder_paths
-
-    folder_path = (
-        os.path.dirname(os.path.abspath(__file__)).replace(
-            os.sep + "Framework", os.sep + ""
-        )
-        + os.sep
-        + "AutomationLog"
-    )
-    log_delete_interval = ConfigModule.get_config_value(
-        "Advanced Options", "log_delete_interval"
-    )
-
-    # By default set the automation log delete interval to 7 days
-    if not isinstance(log_delete_interval, int):
-        log_delete_interval = 7
-    else:
-        if log_delete_interval <= 0:
-            log_delete_interval = 7
-
-    def delete_old_automationlog_folders():
-        while True:
-            auto_log_subfolders = get_subfolders_created_before_n_days(
-                folder_path, int(log_delete_interval)
-            )
-            auto_log_subfolders = [
-                subfolder
-                for subfolder in auto_log_subfolders
-                if subfolder
-                not in [
-                    "attachments",
-                    "attachments_db",
-                    "outdated_modules.json",
-                    "temp_config.ini",
-                    "failed_reports",
-                ]
-            ]
-
-            for subfolder in auto_log_subfolders:
-                shutil.rmtree(subfolder)
-            if auto_log_subfolders:
-                print(
-                    f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
-                )
-
-            # Check every 5 hours for old automation logs
-            time.sleep(60 * 60 * 5)
-
-    # Create a background thread for deleting automation log
-    thread = threading.Thread(target=delete_old_automationlog_folders, daemon=True)
-    thread.start()
-
     if show_browser_log:
         CommonUtil.show_browser_log = True
 
@@ -1351,10 +1174,10 @@ def command_line_args() -> Path | None:
     if server or logout or api:
         # destroy_session()
         if api and server:
-            set_new_credentials(server=server, api_key=api)
+            await set_new_credentials(server=server, api_key=api)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            set_new_credentials(server="", api_key="")
+            await set_new_credentials(server="", api_key="")
             # zeuz_authentication_prompts_for_cli()
         else:
             CommonUtil.ExecLog(
@@ -1385,55 +1208,102 @@ def command_line_args() -> Path | None:
     return log_dir
 
 
-def set_new_credentials(server, api_key):
+async def set_new_credentials(server, api_key):
     """Store new credentials in the settings file."""
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api_key)
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
+def create_temp_ini_automation_log():
+    global TMP_INI_FILE
+    TMP_INI_FILE = (
+        Path.cwd()
+        / "AutomationLog"
+        / ConfigModule.get_config_value("Advanced Options", "_file")
+    )
+    Path(TMP_INI_FILE).parent.mkdir(parents=True, exist_ok=True)
 
-def Bypass():
-    while True:
-        oLocalInfo = CommonUtil.MachineInfo()
-        testerid = (oLocalInfo.getLocalUser()).lower()
-        print("[Bypass] Zeuz Node is online: %s" % testerid)
-        RunProcess(testerid)
+async def main():
+    # Load environment variables from .env file
+    load_dotenv()
+    adjust_python_path()
+    ConfigModule.remove_settings_lock_file()
+    ConfigModule.create_settings_config_file()
+    create_temp_ini_automation_log()
 
+    extension_downloader = ChromeExtensionDownloader()
+    extension_downloader.cleanup_extensions()
 
-if __name__ == "__main__":
+    rich_traceback.install(show_locals=True, max_frames=1)
+
+    # Suppress the InsecureRequestWarning since we use verify=False parameter.
+    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
+
+    # Disable WebdriverManager SSL verification.
+    os.environ["WDM_SSL_VERIFY"] = "0"
+
+    colorama_init(autoreset=True)
+
+    kill_old_process(Path.cwd().parent / "pid.txt")
+    check_min_python_version(min_python_version="3.11", show_warning=True)
+
+    # Setup Node.js and Appium before other operations
+    # setup_nodejs_appium()
+
+    update_outdated_modules()
+    asyncio.create_task(start_server())
+    asyncio.create_task(upload_android_ui_dump())
+    asyncio.create_task(delete_old_automationlog_folders())
+    await destroy_session()
+
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
     console = Console()
 
     try:
-        log_dir = command_line_args()
+        log_dir = await command_line_args()
     except Exception as e:
-        from colorama import Fore
-
         print(Fore.RED + str(e))
         print("Exiting...")
         os._exit(1)
 
-    if local_run:
-        Local_run(log_dir=log_dir)
+    server_name = (
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+        .strip('"')
+        .strip()
+    )
+    api = (
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+        .strip('"')
+        .strip()
+    )
+
+    if len(server_name) == 0 and len(api) == 0:
+        console.print(
+            "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+            style="bold red",
+        )
+        console.print("Please log in to ZeuZ server and connect.")
+        await asyncio.sleep(1)
+
     else:
-        # Bypass()
+        asyncio.create_task(Login(
+            server_name=server_name,
+            log_dir=log_dir,
+        ))
+    while True:
+        if STATE.reconnect_with_credentials is not None:
+            await destroy_session()
+            server_name = STATE.reconnect_with_credentials.server
+            api_key = STATE.reconnect_with_credentials.api_key
+            await set_new_credentials(server=server_name, api_key=api_key)
 
-        print_login_information = True
-        while True:
-            if STATE.reconnect_with_credentials is not None:
-                destroy_session()
-                server_name = STATE.reconnect_with_credentials.server
-                api_key = STATE.reconnect_with_credentials.api_key
-                set_new_credentials(server=server_name, api_key=api_key)
-
-                STATE.reconnect_with_credentials = None
-
+            STATE.reconnect_with_credentials = None
             server_name = (
                 ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-                .strip('""')
+                .strip('"')
                 .strip()
             )
             api = (
@@ -1443,32 +1313,16 @@ if __name__ == "__main__":
             )
 
             if len(server_name) == 0 and len(api) == 0:
-                if print_login_information:
-                    console.print(
-                        "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
-                        style="bold red",
-                    )
-                    console.print("Please log in to ZeuZ server and connect.")
-
-                    print_login_information = False
-                # If server_name and api are not set, then wait for the user to
-                # connect via the ZeuZ server.
-                time.sleep(1)
-                continue
-
-            Login(
-                server_name=server_name,
-                run_once=RUN_ONCE,
-                log_dir=log_dir,
-            )
-
-            if RUN_ONCE:
                 console.print(
-                    ":yellow_circle: "
-                    + "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
-                    style="bold cyan",
+                    "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+                    style="bold red",
                 )
-                os._exit(0)
+                console.print("Please log in to ZeuZ server and connect.")
 
-            print_login_information = True
-            time.sleep(1)
+            asyncio.create_task(Login(
+                server_name=server_name,
+                log_dir=log_dir,
+            ))
+        await asyncio.sleep(1)
+
+asyncio.run(main())
