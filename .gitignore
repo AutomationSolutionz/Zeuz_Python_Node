@@ -60,4 +60,5 @@ custom_profiles/
 # Security tools
 /tools/security/*
 Apps/Windows/inspector.exe
+Apps/Windows/Element.xml
 Framework/settings.conf.lock
