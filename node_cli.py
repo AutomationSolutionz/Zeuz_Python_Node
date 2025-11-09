@@ -1190,21 +1190,21 @@ async def set_new_credentials(server, api_key):
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
-
-async def main():
-    # Load environment variables from .env file
-    load_dotenv()
-    adjust_python_path()
-    ConfigModule.create_settings_config_file()
-
+def create_temp_ini_automation_log():
     global TMP_INI_FILE
     TMP_INI_FILE = (
         Path.cwd()
         / "AutomationLog"
         / ConfigModule.get_config_value("Advanced Options", "_file")
     )
-
     Path(TMP_INI_FILE).parent.mkdir(parents=True, exist_ok=True)
+
+async def main():
+    # Load environment variables from .env file
+    load_dotenv()
+    adjust_python_path()
+    ConfigModule.create_settings_config_file()
+    create_temp_ini_automation_log()
 
     rich_traceback.install(show_locals=True, max_frames=1)
 
