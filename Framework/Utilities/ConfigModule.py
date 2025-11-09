@@ -6,6 +6,7 @@ from . import FileUtilities as FL
 from pathlib import Path
 from datetime import date
 from configobj import ConfigObj
+import traceback
 
 """constants"""
 file_name = "settings.conf"
@@ -47,6 +48,16 @@ def create_settings_config_file():
     config.filename = str(settings_conf_path)
     config.write()
     print(f"Created settings.conf at {settings_conf_path}")
+
+def remove_settings_lock_file():
+    """Remove stale lock file if the process that created it is no longer running."""
+    try:
+        lock_file_path = Path(settings_file_lock.lock_file)
+        if not lock_file_path.exists():
+            return
+        lock_file_path.unlink(missing_ok=True)
+    except Exception:
+        traceback.print_exc()
 
 @settings_file_lock
 def get_config_value(section, key, location: os.PathLike | None = None):

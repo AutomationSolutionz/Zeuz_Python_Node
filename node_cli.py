@@ -1230,6 +1230,7 @@ async def main():
     # Load environment variables from .env file
     load_dotenv()
     adjust_python_path()
+    ConfigModule.remove_settings_lock_file()
     ConfigModule.create_settings_config_file()
     create_temp_ini_automation_log()
 
