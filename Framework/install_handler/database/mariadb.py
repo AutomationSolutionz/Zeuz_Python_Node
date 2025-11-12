@@ -67,7 +67,7 @@ async def install():
                     "category": "Database",
                     "name": "MariaDB",
                     "status": "not installed",
-                    "comment": "There was an error installing the package.",
+                    "comment": "There was an error installing the package. Please see the error log in Node terminal.",
                 }
             })
             return False

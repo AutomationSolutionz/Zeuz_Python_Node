@@ -2,6 +2,7 @@ import asyncio
 import subprocess
 import sys
 import httpx
+from subprocess import CalledProcessError
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
 debug = False
@@ -33,32 +34,28 @@ async def send_response(data=None) -> None:
         print(f"[installer] Error sending response: {e}")
 
 
-async def check_package_available(package_import_name):
+async def check_package_available(module_name):
     """
-    Check if a package is available for import
+    Check if a module is available for import
 
     Args:
-        package_import_name (str): The name used to import the package
+        module_name (str): The name used to import the package
 
     Returns:
         bool: True if package is available, False otherwise
     """
+
     try:
-        # Run the import check in a separate process to avoid blocking
-        process = await asyncio.create_subprocess_exec(
-            sys.executable, "-c", f"import {package_import_name}",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        return process.returncode == 0
-    except Exception:
+        __import__(module_name)
+        return True
+    except ImportError:
         return False
 
 
-async def install_package(package_name):
+
+async def install_package(package_name) -> bool:
     """
-    Install a package using uv add
+    Install a package using uv
 
     Args:
         package_name (str): The name of the package to install
@@ -66,14 +63,38 @@ async def install_package(package_name):
     Returns:
         bool: True if installation successful, False otherwise
     """
+
+    # Define the command as a list of arguments
+    cmd = [sys.executable, "-m", "uv", "add", package_name]
+
     try:
         process = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "uv", "add", package_name,
+            *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
+
+        # Wait for the process to complete and capture output
         stdout, stderr = await process.communicate()
-        return process.returncode == 0
-    except Exception as e:
-        print(f"Error installing {package_name}: {e}")
+
+        if process.returncode != 0:
+            raise CalledProcessError(
+                process.returncode,
+                cmd,
+                output=stdout,
+                stderr=stderr
+            )
+
+        print(f"[installer] Successfully installed {package_name} using uv.")
+        if stdout:
+            print(f"[stdout]\n{stdout.decode()}")
+        return True
+
+    except CalledProcessError as e:
+        print(f"[installer] Failed to install {package_name}: {e}")
+        if e.stderr:
+            print(f"[stderr]\n{e.stderr.decode()}")
+        return False
+    except FileNotFoundError:
+        print("[installer] Error: 'uv' command not found or Python interpreter path is incorrect.")
         return False
