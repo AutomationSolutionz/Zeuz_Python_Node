@@ -3,7 +3,7 @@ from typing import Literal
 import asyncio
 
 
-from .web import chrome_for_testing
+from .web import chrome_for_testing, edge, mozilla
 from .android import adb, node_js_22, appium, java, android_emulator, android_sdk, jdk, emulator,install_android_items
 from .ios import xcode
 from .database import postgresql, mysql, mariadb, oracle, install_db_items
@@ -25,7 +25,26 @@ services = [
                "os": ["windows", "linux", "darwin"],
                "status_function": chrome_for_testing.check_status,
                "install_function": chrome_for_testing.install
+           },
+           {
+               "name": "Mozilla",
+               "status": "none",
+               "comment": "Mozilla Firefox is required to run web automation in Mozilla Firefox browser. ZZZ",
+               "install_text": "install",
+               "os": ["windows", "linux", "darwin"],
+               "status_function": mozilla.check_status,
+               "install_function": None
+           },
+           {
+               "name": "Edge",
+               "status": "none",
+               "comment": "Microsoft Edge is required to run web automation in Microsoft Edge browser. ZZZ",
+               "install_text": "install",
+               "os": ["windows", "linux", "darwin"],
+               "status_function": edge.check_status,
+               "install_function": edge.install
            }
+           
        ]
    },
    {
