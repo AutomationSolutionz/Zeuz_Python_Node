@@ -47,7 +47,7 @@ async def install():
                 "comment": "Downloading and installing, please wait...",
             }
         })
-        install_mariadb = await install_package('mariadb')
+        install_mariadb, msg = await install_package('mariadb')
         if install_mariadb:
             print("[database][mariadb] Installed successfully")
             await send_response({
@@ -66,8 +66,8 @@ async def install():
                 "data": {
                     "category": "Database",
                     "name": "MariaDB",
-                    "status": "not installed",
-                    "comment": "There was an error installing the package. Please see the error log in Node terminal.",
+                    "status": "error",
+                    "comment": msg,
                 }
             })
             return False

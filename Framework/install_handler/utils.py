@@ -3,6 +3,7 @@ import subprocess
 import sys
 import httpx
 from subprocess import CalledProcessError
+from typing import Tuple
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
 debug = False
@@ -34,7 +35,7 @@ async def send_response(data=None) -> None:
         print(f"[installer] Error sending response: {e}")
 
 
-async def check_package_available(module_name):
+async def check_package_available(module_name: str) -> bool:
     """
     Check if a module is available for import
 
@@ -53,7 +54,7 @@ async def check_package_available(module_name):
 
 
 
-async def install_package(package_name) -> bool:
+async def install_package(package_name: str) -> Tuple[bool, str]:
     """
     Install a package using uv
 
@@ -62,10 +63,12 @@ async def install_package(package_name) -> bool:
 
     Returns:
         bool: True if installation successful, False otherwise
+        str: Error message if installation failed, otherwise empty string
     """
 
     # Define the command as a list of arguments
     cmd = [sys.executable, "-m", "uv", "add", package_name]
+    message = ""
 
     try:
         process = await asyncio.create_subprocess_exec(
@@ -88,13 +91,15 @@ async def install_package(package_name) -> bool:
         print(f"[installer] Successfully installed {package_name} using uv.")
         if stdout:
             print(f"[stdout]\n{stdout.decode()}")
-        return True
+        return True, message
 
     except CalledProcessError as e:
         print(f"[installer] Failed to install {package_name}: {e}")
         if e.stderr:
-            print(f"[stderr]\n{e.stderr.decode()}")
-        return False
+            message = e.stderr.decode()
+            print(f"[stderr]\n{message}")
+        return False, message
     except FileNotFoundError:
-        print("[installer] Error: 'uv' command not found or Python interpreter path is incorrect.")
-        return False
+        message = "Error: 'uv' command not found or Python interpreter path is incorrect."
+        print(f"[installer] {message}")
+        return False, message

@@ -47,7 +47,7 @@ async def install():
                 "comment": "Downloading and installing, please wait...",
             }
         })
-        install_oracle = await install_package('cx_Oracle')
+        install_oracle, msg = await install_package('cx_Oracle') # NOTE: cx_Oracle is deprecated and gives install error
         if install_oracle:
             print("[database][oracle] Installed successfully.")
             await send_response({
@@ -66,8 +66,8 @@ async def install():
                 "data": {
                     "category": "Database",
                     "name": "Oracle",
-                    "status": "not installed",
-                    "comment": "There was an error installing the package. Please see the error log in Node terminal.",
+                    "status": "error",
+                    "comment": msg,
                 }
             })
             return False

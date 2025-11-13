@@ -47,7 +47,7 @@ async def install():
                 "comment": "Downloading and installing, please wait...",
             }
         })
-        install_mysql = await install_package('mysql-connector-python')
+        install_mysql, msg = await install_package('mysql-connector-python')
         if install_mysql:
             print("[database][mysql] Installed successfully.")
             await send_response({
@@ -66,8 +66,8 @@ async def install():
                 "data": {
                     "category": "Database",
                     "name": "MySQL",
-                    "status": "not installed",
-                    "comment": "There was an error installing the package. Please see the error log in Node terminal.",
+                    "status": "error",
+                    "comment": msg,
                 }
             })
             return False

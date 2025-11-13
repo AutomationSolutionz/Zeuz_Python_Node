@@ -50,7 +50,7 @@ async def install():
                 "comment": "Downloading and installing, please wait...",
             }
         })
-        install_psycopg = await install_package('psycopg')
+        install_psycopg, msg = await install_package('psycopg')
         if install_psycopg:
             print("[database][postgresql] Installed successfully.")
             await send_response({
@@ -69,8 +69,8 @@ async def install():
                 "data": {
                     "category": "Database",
                     "name": "PostgreSQL",
-                    "status": "not installed",
-                    "comment": "There was an error installing the package. Please see the error log in Node terminal.",
+                    "status": "error",
+                    "comment": msg,
                 }
             })
             return False
