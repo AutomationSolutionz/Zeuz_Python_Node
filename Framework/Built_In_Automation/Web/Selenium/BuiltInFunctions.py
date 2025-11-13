@@ -461,7 +461,12 @@ def Open_Electron_App(data_set):
 
             opts = Options()
             opts.binary_location = desktop_app_path
-            selenium_driver = webdriver.Chrome(opts, Service())
+            opts.add_argument("--remote-debugging-port=9222")
+            # service = Service(executable_path=electron_chrome_path)
+            p = '/Users/test/Downloads/chromedriver-mac-arm64/chromedriver'
+
+            service = Service(p)
+            selenium_driver = webdriver.Chrome(options=opts, service=service)
             selenium_driver.implicitly_wait(0.5)
             CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
