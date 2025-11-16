@@ -1560,4 +1560,25 @@ async def main():
         await asyncio.sleep(1)
 
 
+def handle_inspection_commands():
+    """Handle inspection commands that should not kill existing node processes."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-lsa", "--list-apps", action="store_true")
+    parser.add_argument("-dui", "--dump-ui", action="store")
+
+    # Parse only known args to avoid errors from other arguments
+    args, _ = parser.parse_known_args()
+
+    if args.list_apps:
+        list_available_apps()
+        sys.exit(0)
+
+    if args.dump_ui:
+        generate_ui_dump(args.dump_ui)
+        sys.exit(0)
+
+
+# Handle inspection commands before starting main process
+handle_inspection_commands()
+
 asyncio.run(main())
