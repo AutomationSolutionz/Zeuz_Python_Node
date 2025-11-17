@@ -99,7 +99,7 @@ def install_nodejs():
     print("Downloading Node.js...")
     response = requests.get(url, verify=False)
     response.raise_for_status()
-    with open(archive_path, 'wb') as out_file:
+    with open(archive_path, "wb") as out_file:
         out_file.write(response.content)
 
     try:
@@ -151,7 +151,9 @@ def install_appium():
         raise Exception("npm not found. Install Node.js first.")
 
     print("Installing Appium...")
-    subprocess.run([str(npm_path), "install", "-g", "appium"], check=True)
+    subprocess.run(
+        [str(npm_path), "install", "-g", "appium", "--strict-ssl=false"], check=True
+    )
 
     print("Installing Appium drivers...")
     install_drivers(get_required_drivers())
@@ -196,7 +198,9 @@ def check_appium_drivers():
             text=True,
         )
         drivers_data = json.loads(result.stdout)
-        return [name for name, info in drivers_data.items() if info.get("installed", False)]
+        return [
+            name for name, info in drivers_data.items() if info.get("installed", False)
+        ]
     except:  # noqa: E722
         return []
 
@@ -213,12 +217,19 @@ def check_installations():
     if npm_path.exists():
         try:
             result = subprocess.run(
-                [str(npm_path), "list", "-g", "--json", "appium"], capture_output=True, text=True
+                [str(npm_path), "list", "-g", "--json", "appium"],
+                capture_output=True,
+                text=True,
             )
             npm_data = json.loads(result.stdout)
             appium_installed = "appium" in npm_data.get("dependencies", {})
         except:  # noqa: E722
             pass
+
+    # Disable SSL verification for npm for environments that have proxies
+    subprocess.run(
+        [str(npm_path), "config", "set", "strict-ssl", "false"], check=False
+    )
 
     # Check drivers
     required_drivers = get_required_drivers()
@@ -238,6 +249,9 @@ def setup_nodejs_appium():
     """Main setup function."""
     try:
         update_path()  # Ensure Node.js is in PATH from the start
+
+        os.environ["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+        os.environ["npm_config_strict_ssl"] = "false"
 
         print("Checking Node.js and Appium installation...")
         node_installed, appium_installed, missing_drivers = check_installations()
