@@ -72,7 +72,7 @@ dependencies = [
     "rfc3339-validator>=0.1.4",
     "rfc3986-validator>=0.1.1",
     "rich>=13.9.4",
-    "selenium>=4.21.0",
+    "selenium>=4.38.0",
     "setuptools>=75.8.0 ; sys_platform == 'win32'",
     "simplejson>=3.20.1",
     "speechrecognition>=3.14.1 ; sys_platform == 'win32'",
