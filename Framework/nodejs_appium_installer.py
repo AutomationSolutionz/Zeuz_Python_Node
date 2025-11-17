@@ -112,6 +112,11 @@ def install_nodejs():
         if archive_path.exists():
             archive_path.unlink()
 
+    # Disable SSL verification for npm for environments that have proxies
+    print("Disabling SSL certificate verification for proxied environments for npm")
+    npm_path = get_npm_path()
+    subprocess.run([str(npm_path), "config", "set", "strict-ssl", "false"], check=False)
+
 
 def get_npm_path():
     """Get npm binary path."""
@@ -225,11 +230,6 @@ def check_installations():
             appium_installed = "appium" in npm_data.get("dependencies", {})
         except:  # noqa: E722
             pass
-
-    # Disable SSL verification for npm for environments that have proxies
-    subprocess.run(
-        [str(npm_path), "config", "set", "strict-ssl", "false"], check=False
-    )
 
     # Check drivers
     required_drivers = get_required_drivers()
