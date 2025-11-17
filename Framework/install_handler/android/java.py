@@ -4,6 +4,7 @@ import asyncio
 import platform
 import os
 from Framework.install_handler.utils import send_response
+from Framework.install_handler.android.jdk import install as install_jdk
 
 
 async def check_status() -> bool:
@@ -132,4 +133,33 @@ async def check_status() -> bool:
 
 
 async def install():
-   print("[java] Installing...")
+   """Install Java by calling JDK installation function"""
+   print("[installer][android-java] Installing...")
+   
+   # Call JDK installation function
+   success = await install_jdk()
+   
+   if success:
+       print("[installer][android-java] Java installation successful")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Java",
+               "status": "installed",
+               "comment": "Java is installed",
+           }
+       })
+       return True
+   else:
+       print("[installer][android-java] Java installation failed")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Java",
+               "status": "not installed",
+               "comment": "Failed to install Java",
+           }
+       })
+       return False

@@ -642,57 +642,12 @@ async def install() -> bool:
    """Main function to setup JDK 21 LTS"""
    print("[installer][android-jdk] Installing...")
   
-   system = platform.system()
+   # Check if JDK 21 is already installed
+   if await check_status():
+       print("[installer][android-jdk] JDK 21 is already installed")
+       return True
    
-   # Check if Java is already installed (async)
    jdk_home = None
-   try:
-       loop = asyncio.get_event_loop()
-       result = await loop.run_in_executor(
-           None,
-           lambda: subprocess.run(
-               ["java", "-version"],
-               capture_output=True,
-               text=True
-           )
-       )
-       
-       if "version \"21" in result.stderr:
-           print("[installer][android-jdk] JDK 21 is already installed")
-           # Find the JDK installation directory in ZEUZ downloads folder
-           jdk_dir = ZEUZ_NODE_DOWNLOADS_DIR / "jdk" / "jdk-21"
-           
-           if system == "Windows":
-               if jdk_dir.exists():
-                   # Find the actual JDK directory
-                   for item in jdk_dir.iterdir():
-                       if item.is_dir() and "jdk" in item.name.lower():
-                           jdk_home = item
-                           break
-                           
-           elif system == "Linux":
-               if jdk_dir.exists():
-                   # Find the actual JDK directory
-                   for item in jdk_dir.iterdir():
-                       if item.is_dir() and "jdk" in item.name.lower():
-                           jdk_home = item
-                           break
-              
-               if not jdk_home:
-                   print("[installer][android-jdk] JDK is installed but installation directory not found")
-                   
-           elif system == "Darwin":
-               if jdk_dir.exists():
-                   # Find the actual JDK directory
-                   for item in jdk_dir.iterdir():
-                       if item.is_dir() and "jdk" in item.name.lower():
-                           jdk_home = item
-                           break
-              
-               if not jdk_home:
-                   print("[installer][android-jdk] JDK is installed but installation directory not found")
-   except:
-       pass
   
    # If JDK is not installed, download and install it
    if not jdk_home:

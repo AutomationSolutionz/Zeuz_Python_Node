@@ -19,7 +19,7 @@ services = [
            {
                "name": "Chrome For Testing",
                "status": "none",
-               "comment": "Chrome for Testing is required to run web automation in Chrome browser. ZZZ",
+               "comment": "Chrome for Testing is required to run web automation in Chrome browser.",
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": chrome_for_testing.check_status,
@@ -28,7 +28,7 @@ services = [
            {
                "name": "Mozilla",
                "status": "none",
-               "comment": "Mozilla Firefox is required to run web automation in Mozilla Firefox browser. ZZZ",
+               "comment": "Mozilla Firefox is required to run web automation in Mozilla Firefox browser.",
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": mozilla.check_status,
@@ -37,7 +37,7 @@ services = [
            {
                "name": "Edge",
                "status": "none",
-               "comment": "Microsoft Edge is required to run web automation in Microsoft Edge browser. ZZZ",
+               "comment": "Microsoft Edge is required to run web automation in Microsoft Edge browser.",
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": edge.check_status,
@@ -91,7 +91,7 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": java.check_status,
-               "install_function": java.install
+               "install_function": java.install #install jdk here also. jdk.install will install java also.
            },
            {
                "name": "JDK",

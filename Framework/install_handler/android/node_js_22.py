@@ -1,6 +1,7 @@
 import subprocess
-import re
+import platform
 from Framework.install_handler.utils import send_response
+from Framework.nodejs_appium_installer import get_node_dir, check_installations
 
 
 async def check_status() -> bool:
@@ -8,14 +9,40 @@ async def check_status() -> bool:
    print("[installer][android-nodejs22] Checking status...")
   
    try:
-       result = subprocess.run(
-           ["node", "--version"],
-           capture_output=True,
-           text=True,
-           check=False
-       )
-         
-       if result.returncode != 0:
+       # Use the check function from nodejs_appium_installer
+       node_installed, appium_installed, missing_drivers = check_installations()
+       
+       if node_installed:
+           # Get the installation location
+           node_dir = get_node_dir()
+           node_location = str(node_dir.resolve())
+           
+           # Get version for display
+           node_bin = node_dir / ("node.exe" if platform.system() == "Windows" else "bin/node")
+           try:
+               result = subprocess.run(
+                   [str(node_bin), "--version"],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+               version_text = (result.stdout or result.stderr or "").strip()
+               version_info = f" (version: {version_text})" if version_text else ""
+           except:
+               version_info = ""
+           
+           print(f"[installer][android-nodejs22] Already installed at {node_location}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Android",
+                   "name": "Node js 22",
+                   "status": "installed",
+                   "comment": f"Node.js is installed at {node_location}{version_info}",
+               }
+           })
+           return True
+       else:
            print("[installer][android-nodejs22] Not installed")
            await send_response({
                "action": "status",
@@ -23,56 +50,10 @@ async def check_status() -> bool:
                    "category": "Android",
                    "name": "Node js 22",
                    "status": "not installed",
-                   "comment": "Install Node.js 22 to use it.",
+                   "comment": "Run the ZeuZ Node, it will automatically install Node.js",
                }
            })
            return False
-      
-       # node --version prints to stdout typically
-       version_text = (result.stderr or result.stdout).strip()
-       if not version_text:
-           print("[installer][android-nodejs22] Not installed")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Android",
-                   "name": "Node js 22",
-                   "status": "not installed",
-                   "comment": "Install Node.js 22 to use it.",
-               }
-           })
-           return False
-      
-       # Extract version number from output like "v22.0.0" or "v18.0.0"
-       version_match = re.search(r'v(\d+)\.(\d+)', version_text)
-       if version_match:
-           major_version = int(version_match.group(1))
-          
-           # Check if it's Node.js 22
-           if major_version == 22:
-               print(f"[installer][android-nodejs22] Already installed (version: {version_text})")
-               await send_response({
-                   "action": "status",
-                   "data": {
-                       "category": "Android",
-                       "name": "Node js 22",
-                       "status": "installed",
-                       "comment": f"Node.js is installed (version: {version_text})",
-                   }
-               })
-               return True
-      
-       print(f"[installer][android-nodejs22] Not installed (found version: {version_text})")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Node js 22",
-               "status": "not installed",
-               "comment": f"Install Node.js 22 to use it (found version: {version_text}).",
-           }
-       })
-       return False
    except Exception as e:
        print(f"[installer][android-nodejs22] Error checking status: {e}")
        await send_response({
@@ -81,7 +62,7 @@ async def check_status() -> bool:
                "category": "Android",
                "name": "Node js 22",
                "status": "not installed",
-               "comment": "Unable to check Node.js status.",
+               "comment": "Run the ZeuZ Node, it will automatically install Node.js",
            }
        })
        return False
