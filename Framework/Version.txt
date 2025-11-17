@@ -1,4 +1,4 @@
 [ZeuZ Python Version]
-version = 21.3.4
+version = 21.3.5
 [Release Date]
 date = Nov 17, 2025
