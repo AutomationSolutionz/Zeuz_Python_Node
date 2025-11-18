@@ -254,9 +254,9 @@ async def _download_firefox_installer():
            installer_url = "https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
            installer_path = download_dir / "FirefoxSetup.exe"
        elif system == "linux":
-           # Linux: Download .tar.bz2 package
+           # Linux: Download .tar.xz package (Mozilla now uses xz instead of bz2)
            installer_url = "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US"
-           installer_path = download_dir / "firefox-latest.tar.bz2"
+           installer_path = download_dir / "firefox-latest.tar.xz"
        elif system == "darwin":
            # macOS: Download .dmg installer
            installer_url = "https://download.mozilla.org/?product=firefox-latest&os=osx&lang=en-US"
@@ -328,7 +328,7 @@ async def _download_firefox_installer():
        return None
 
 
-async def _install_firefox_windows(installer_path):
+async def _install_firefox_windows(installer_path, user_password: str = ""):
    """Install Firefox on Windows"""
    print("[installer][web-mozilla] Installing Mozilla Firefox on Windows...")
    await send_response({
@@ -342,6 +342,38 @@ async def _install_firefox_windows(installer_path):
    })
    
    try:
+       # Helper function to run commands with elevation if password provided
+       def run_elevated(cmd_list):
+           if user_password:
+               import getpass
+               username = getpass.getuser()
+               escaped_args = []
+               for arg in cmd_list[1:]:
+                   escaped_arg = arg.replace('"', '`"').replace('$', '`$')
+                   escaped_args.append(f'"{escaped_arg}"')
+               args_str = ','.join(escaped_args)
+               ps_script = f'''
+               $password = ConvertTo-SecureString -String "{user_password}" -AsPlainText -Force
+               $credential = New-Object System.Management.Automation.PSCredential("{username}", $password)
+               Start-Process -FilePath "{cmd_list[0]}" -ArgumentList {args_str} -Credential $credential -Wait -NoNewWindow
+               '''
+               return subprocess.run(
+                   ["powershell", "-Command", ps_script],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+           else:
+               # Use RunAs elevation prompt
+               args_str = ' '.join([f'"{arg}"' for arg in cmd_list[1:]])
+               ps_script = f'Start-Process -FilePath "{cmd_list[0]}" -ArgumentList {args_str} -Verb RunAs -Wait -NoNewWindow'
+               return subprocess.run(
+                   ["powershell", "-Command", ps_script],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+       
        # Install to custom directory in downloads folder
        install_dir = ZEUZ_NODE_DOWNLOADS_DIR / "firefox" / "installation"
        install_dir.mkdir(parents=True, exist_ok=True)
@@ -350,14 +382,8 @@ async def _install_firefox_windows(installer_path):
        if installer_path and installer_path.exists():
            # Firefox installer supports /D parameter for custom directory
            # /S for silent installation
-           # Path needs to be quoted if it contains spaces
            install_dir_str = str(install_dir).replace('/', '\\')
-           exe_result = subprocess.run(
-               [str(installer_path), "/S", f"/D={install_dir_str}"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           exe_result = run_elevated([str(installer_path), "/S", f"/D={install_dir_str}"])
            
            if exe_result.returncode == 0:
                print("[installer][web-mozilla] Mozilla Firefox installed via .exe")
@@ -368,12 +394,27 @@ async def _install_firefox_windows(installer_path):
        else:
            print("[installer][web-mozilla] Installer not found, trying direct download")
            # Try direct download URL
-           download_result = subprocess.run(
-               ["powershell", "-Command", "Start-Process", "https://www.mozilla.org/firefox/download/thanks/", "-Wait"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           if user_password:
+               import getpass
+               username = getpass.getuser()
+               ps_script = f'''
+               $password = ConvertTo-SecureString -String "{user_password}" -AsPlainText -Force
+               $credential = New-Object System.Management.Automation.PSCredential("{username}", $password)
+               Start-Process "https://www.mozilla.org/firefox/download/thanks/" -Credential $credential -Wait
+               '''
+               download_result = subprocess.run(
+                   ["powershell", "-Command", ps_script],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+           else:
+               download_result = subprocess.run(
+                   ["powershell", "-Command", "Start-Process", "https://www.mozilla.org/firefox/download/thanks/", "-Wait"],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
            return download_result.returncode == 0
    except Exception as e:
        print(f"[installer][web-mozilla] Windows installation failed: {e}")
@@ -389,7 +430,7 @@ async def _install_firefox_windows(installer_path):
        return False
 
 
-async def _install_firefox_linux(installer_path):
+async def _install_firefox_linux(installer_path, user_password: str = ""):
    """Install Firefox on Linux"""
    print("[installer][web-mozilla] Installing Mozilla Firefox on Linux...")
    await send_response({
@@ -405,92 +446,147 @@ async def _install_firefox_linux(installer_path):
    try:
        pkg_manager = _get_linux_package_manager()
        
+       # Helper function to run sudo commands with password if provided
+       def run_sudo(cmd_list):
+           if user_password:
+               # Use echo to pipe password to sudo -S (read password from stdin)
+               cmd = f"echo '{user_password}' | sudo -S {' '.join(cmd_list[1:])}"
+               return subprocess.run(cmd, shell=True, capture_output=True, text=True, check=False)
+           else:
+               return subprocess.run(cmd_list, capture_output=True, text=True, check=False)
+       
        if pkg_manager == "apt":
            # Try installing via apt (if repository is configured)
-           apt_result = subprocess.run(
-               ["sudo", "apt-get", "update"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           # Update package list (optional - install will work without it, but update ensures latest package info)
+           apt_result = run_sudo(["sudo", "apt-get", "update"])
            
-           apt_install_result = subprocess.run(
-               ["sudo", "apt-get", "install", "-y", "firefox"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           # If update failed, continue anyway - install can work without update
+           if apt_result.returncode != 0:
+               print(f"[installer][web-mozilla] apt-get update failed, continuing with install anyway: {apt_result.stderr}")
+           
+           apt_install_result = run_sudo(["sudo", "apt-get", "install", "-y", "firefox"])
+           
+           # Check if apt-get install failed
+           if apt_install_result.returncode != 0:
+               print(f"[installer][web-mozilla] Installation failed. Error: {apt_install_result.stderr}")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Mozilla",
+                       "status": "not installed",
+                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                   }
+               })
+               return False
            
            if apt_install_result.returncode == 0:
-               print("[installer][web-mozilla] Mozilla Firefox installed via apt")
-               return True
-           
-           # Fallback to .tar.bz2 package
-           if installer_path and installer_path.exists():
-               # Extract and install from tar.bz2
-               extract_dir = installer_path.parent / "firefox"
-               extract_dir.mkdir(exist_ok=True)
-               
-               tar_result = subprocess.run(
-                   ["tar", "-xjf", str(installer_path), "-C", str(extract_dir.parent)],
+               # Check if apt installed a transitional package that requires snap
+               # Test if firefox command works
+               test_result = subprocess.run(
+                   ["firefox", "--version"],
                    capture_output=True,
                    text=True,
                    check=False
                )
                
-               if tar_result.returncode == 0:
-                   # Create symlink or move to /opt
-                   firefox_bin = extract_dir / "firefox" / "firefox"
-                   if firefox_bin.exists():
-                       # Try to create symlink in /usr/local/bin
-                       symlink_result = subprocess.run(
-                           ["sudo", "ln", "-sf", str(firefox_bin), "/usr/local/bin/firefox"],
-                           capture_output=True,
-                           text=True,
-                           check=False
-                       )
-                       if symlink_result.returncode == 0:
-                           print("[installer][web-mozilla] Mozilla Firefox installed via .tar.bz2 package")
-                           return True
+               # If Firefox requires snap, install it via snap
+               # Note: snap install doesn't require sudo or password for user installations
+               if test_result.returncode != 0 and test_result.stderr and "requires the firefox snap" in test_result.stderr.lower():
+                   print("[installer][web-mozilla] Detected transitional package, installing Firefox via snap...")
+                   # snap install doesn't need sudo or password (runs as user)
+                   snap_result = subprocess.run(
+                       ["snap", "install", "firefox"],
+                       capture_output=True,
+                       text=True,
+                       check=False
+                   )
+                   
+                   if snap_result.returncode == 0:
+                       print("[installer][web-mozilla] Mozilla Firefox installed via snap")
+                       return True
+                   else:
+                       print(f"[installer][web-mozilla] Snap installation failed: {snap_result.stderr}")
+               else:
+                   # Firefox works directly (not a transitional package)
+                   print("[installer][web-mozilla] Mozilla Firefox installed via apt")
+                   return True
+           
+           # apt/snap installation failed - no fallback
+           print("[installer][web-mozilla] apt/snap installation failed, no fallback available")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "not installed",
+                   "comment": "Installation failed. Please ensure you have provided the correct password.",
+               }
+           })
+           return False
        
        elif pkg_manager == "yum":
            # Try installing via yum
-           yum_result = subprocess.run(
-               ["sudo", "yum", "install", "-y", "firefox"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           yum_result = run_sudo(["sudo", "yum", "install", "-y", "firefox"])
            
            if yum_result.returncode == 0:
                print("[installer][web-mozilla] Mozilla Firefox installed via yum")
                return True
+           
+           # Installation failed
+           print(f"[installer][web-mozilla] Installation failed. Error: {yum_result.stderr}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "not installed",
+                   "comment": "Installation failed. Please ensure you have provided the correct password.",
+               }
+           })
+           return False
        
        elif pkg_manager == "dnf":
            # Try installing via dnf
-           dnf_result = subprocess.run(
-               ["sudo", "dnf", "install", "-y", "firefox"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           dnf_result = run_sudo(["sudo", "dnf", "install", "-y", "firefox"])
            
            if dnf_result.returncode == 0:
                print("[installer][web-mozilla] Mozilla Firefox installed via dnf")
                return True
+           
+           # Installation failed
+           print(f"[installer][web-mozilla] Installation failed. Error: {dnf_result.stderr}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "not installed",
+                   "comment": "Installation failed. Please ensure you have provided the correct password.",
+               }
+           })
+           return False
        
        elif pkg_manager == "pacman":
            # Try installing via pacman
-           pacman_result = subprocess.run(
-               ["sudo", "pacman", "-S", "--noconfirm", "firefox"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           pacman_result = run_sudo(["sudo", "pacman", "-S", "--noconfirm", "firefox"])
            
            if pacman_result.returncode == 0:
                print("[installer][web-mozilla] Mozilla Firefox installed via pacman")
                return True
+           
+           # Installation failed
+           print(f"[installer][web-mozilla] Installation failed. Error: {pacman_result.stderr}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "not installed",
+                   "comment": "Installation failed. Please ensure you have provided the correct password.",
+               }
+           })
+           return False
        
        await send_response({
            "action": "status",
@@ -516,7 +612,7 @@ async def _install_firefox_linux(installer_path):
        return False
 
 
-async def _install_firefox_darwin(installer_path):
+async def _install_firefox_darwin(installer_path, user_password: str = ""):
    """Install Firefox on macOS"""
    print("[installer][web-mozilla] Installing Mozilla Firefox on macOS...")
    await send_response({
@@ -530,7 +626,7 @@ async def _install_firefox_darwin(installer_path):
    })
    
    try:
-       # Try using homebrew first
+       # Try using homebrew first (doesn't need sudo)
        brew_result = subprocess.run(
            ["brew", "install", "--cask", "firefox"],
            capture_output=True,
@@ -544,7 +640,7 @@ async def _install_firefox_darwin(installer_path):
        
        # Fallback to .dmg installer
        if installer_path and installer_path.exists():
-           # Mount the DMG
+           # Mount the DMG (doesn't need sudo)
            mount_result = subprocess.run(
                ["hdiutil", "attach", str(installer_path)],
                capture_output=True,
@@ -566,19 +662,23 @@ async def _install_firefox_darwin(installer_path):
                    if mount_point:
                        firefox_app = Path(mount_point) / "Firefox.app"
                        if firefox_app.exists():
-                           # Copy to Applications
-                           copy_result = subprocess.run(
-                               ["cp", "-R", str(firefox_app), "/Applications/"],
-                               capture_output=True,
-                               text=True,
-                               check=False
-                           )
+                           # Copy to Applications (may need sudo if permissions require it)
+                           if user_password:
+                               cmd = f"echo '{user_password}' | sudo -S cp -R {str(firefox_app)} /Applications/"
+                               copy_result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=False)
+                           else:
+                               copy_result = subprocess.run(
+                                   ["cp", "-R", str(firefox_app), "/Applications/"],
+                                   capture_output=True,
+                                   text=True,
+                                   check=False
+                               )
                            
                            if copy_result.returncode == 0:
                                print("[installer][web-mozilla] Mozilla Firefox installed via .dmg")
                                return True
                finally:
-                   # Unmount the DMG
+                   # Unmount the DMG (doesn't need sudo)
                    subprocess.run(
                        ["hdiutil", "detach", mount_point or "/Volumes/Firefox"],
                        capture_output=True,
@@ -630,7 +730,7 @@ async def _verify_firefox_installation():
    return await check_status()
 
 
-async def install() -> bool:
+async def install(user_password: str = "") -> bool:
    """Main function to install Mozilla Firefox"""
    print("[installer][web-mozilla] Installing Mozilla Firefox...")
    
@@ -650,11 +750,11 @@ async def install() -> bool:
    
    # Install based on platform
    if system == "windows":
-       success = await _install_firefox_windows(installer_path)
+       success = await _install_firefox_windows(installer_path, user_password)
    elif system == "linux":
-       success = await _install_firefox_linux(installer_path)
+       success = await _install_firefox_linux(installer_path, user_password)
    elif system == "darwin":
-       success = await _install_firefox_darwin(installer_path)
+       success = await _install_firefox_darwin(installer_path, user_password)
    else:
        await send_response({
            "action": "status",

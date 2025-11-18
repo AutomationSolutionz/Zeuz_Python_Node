@@ -172,7 +172,8 @@ async def get_available_avds() -> list[dict]:
                     "comment": "",
                     "install_text": "",
                     "os": ["windows", "linux", "darwin"],
-                    "status_function": lambda avd=name: launch_avd(avd)
+                    "status_function": lambda avd=name: launch_avd(avd),
+                    "user_password": "no",
                 }
                 continue
             

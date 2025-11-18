@@ -23,7 +23,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": chrome_for_testing.check_status,
-               "install_function": chrome_for_testing.install
+               "install_function": chrome_for_testing.install,
+               "user_password": "no",
            },
            {
                "name": "Mozilla",
@@ -32,7 +33,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": mozilla.check_status,
-               "install_function": mozilla.install
+               "install_function": mozilla.install,
+               "user_password": "yes",
            },
            {
                "name": "Edge",
@@ -41,7 +43,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": edge.check_status,
-               "install_function": edge.install
+               "install_function": edge.install,
+               "user_password": "yes",
            }
            
        ]
@@ -64,7 +67,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": adb.check_status,
-               "install_function": adb.install
+               "install_function": adb.install,
+               "user_password": "no",
            },
            {
                "name": "Node js 22",
@@ -73,7 +77,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": node_js_22.check_status,
-               "install_function": node_js_22.install
+               "install_function": node_js_22.install,
+               "user_password": "no",
            },
            {
                "name": "Appium",
@@ -82,7 +87,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": appium.check_status,
-               "install_function": appium.install
+               "install_function": appium.install,
+               "user_password": "no",
            },
            {
                "name": "Java",
@@ -91,7 +97,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": java.check_status,
-               "install_function": java.install #install jdk here also. jdk.install will install java also.
+               "install_function": java.install, #install jdk here also. jdk.install will install java also.
+               "user_password": "no"
            },
            {
                "name": "JDK",
@@ -100,7 +107,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": jdk.check_status,
-               "install_function": jdk.install
+               "install_function": jdk.install,
+              "user_password": "no"
            },
            {
                "name": "Android SDK",
@@ -109,7 +117,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": android_sdk.check_status,
-               "install_function": android_sdk.install
+               "install_function": android_sdk.install,
+               "user_password": "no"
            }
        ]
    },
@@ -123,7 +132,8 @@ services = [
                "install_text": "install",
                "os": ["darwin"],
                "status_function": xcode.check_status,
-               "install_function": xcode.install
+               "install_function": xcode.install,
+               "user_password": "no"
            }
        ]
    },
@@ -137,7 +147,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": postgresql.check_status,
-               "install_function": postgresql.install
+               "install_function": postgresql.install,
+               "user_password": "no"
            },
            {
                "name": "MySQL",
@@ -146,7 +157,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": mysql.check_status,
-               "install_function": mysql.install
+               "install_function": mysql.install,
+               "user_password": "no"
            },
            {
                "name": "MariaDB",
@@ -155,7 +167,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": mariadb.check_status,
-               "install_function": mariadb.install
+               "install_function": mariadb.install,
+               "user_password": "no"
            },
            {
                "name": "Oracle",
@@ -164,7 +177,8 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": oracle.check_status,
-               "install_function": oracle.install
+               "install_function": oracle.install,
+               "user_password": "no"
            }
        ]
    },
@@ -179,7 +193,8 @@ services = [
                "install_text": "install",
                "os": ["windows"],
                "status_function": inspector.check_status,
-               "install_function": inspector.install
+               "install_function": inspector.install,
+               "user_password": "no"
            }
        ]
    }
@@ -247,6 +262,7 @@ for category in services:
 class Item(BaseModel):
    name: str | None = None
    category: str
+   user_password: str = ""  # Optional user password for installations requiring sudo/admin
 
 
 class Value(BaseModel):

@@ -283,7 +283,7 @@ async def _download_edge_installer():
        return None
 
 
-async def _install_edge_windows(installer_path):
+async def _install_edge_windows(installer_path, user_password: str = ""):
    """Install Edge on Windows"""
    print("[installer][web-edge] Installing Microsoft Edge on Windows...")
    await send_response({
@@ -297,13 +297,52 @@ async def _install_edge_windows(installer_path):
    })
    
    try:
+       # Helper function to run commands with elevation if password provided
+       def run_elevated(cmd_list):
+           if user_password:
+               # Use PowerShell to run with credentials
+               # Note: This requires username, so we'll use current user
+               import getpass
+               username = getpass.getuser()
+               # Create secure string and run with credentials
+               # Properly escape arguments for PowerShell
+               escaped_args = []
+               for arg in cmd_list[1:]:
+                   escaped_arg = arg.replace('"', '`"').replace('$', '`$')
+                   escaped_args.append(f'"{escaped_arg}"')
+               args_str = ','.join(escaped_args)
+               ps_script = f'''
+               $password = ConvertTo-SecureString -String "{user_password}" -AsPlainText -Force
+               $credential = New-Object System.Management.Automation.PSCredential("{username}", $password)
+               Start-Process -FilePath "{cmd_list[0]}" -ArgumentList {args_str} -Credential $credential -Wait -NoNewWindow
+               '''
+               return subprocess.run(
+                   ["powershell", "-Command", ps_script],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+           else:
+               # Try with RunAs elevation prompt
+               # Use Start-Process with -Verb RunAs for elevation
+               if cmd_list[0] == "winget":
+                   args_str = ' '.join([f'"{arg}"' for arg in cmd_list[1:]])
+                   ps_script = f'Start-Process -FilePath "winget" -ArgumentList {args_str} -Verb RunAs -Wait -NoNewWindow'
+               elif cmd_list[0] == "msiexec":
+                   args_str = ' '.join([f'"{arg}"' for arg in cmd_list[1:]])
+                   ps_script = f'Start-Process -FilePath "msiexec" -ArgumentList {args_str} -Verb RunAs -Wait -NoNewWindow'
+               else:
+                   return subprocess.run(cmd_list, capture_output=True, text=True, check=False)
+               
+               return subprocess.run(
+                   ["powershell", "-Command", ps_script],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+       
        # Try using winget first (Windows 10/11)
-       winget_result = subprocess.run(
-           ["winget", "install", "--id", "Microsoft.Edge", "--silent", "--accept-package-agreements", "--accept-source-agreements"],
-           capture_output=True,
-           text=True,
-           check=False
-       )
+       winget_result = run_elevated(["winget", "install", "--id", "Microsoft.Edge", "--silent", "--accept-package-agreements", "--accept-source-agreements"])
        
        if winget_result.returncode == 0:
            print("[installer][web-edge] Microsoft Edge installed via winget")
@@ -311,12 +350,7 @@ async def _install_edge_windows(installer_path):
        
        # Fallback to MSI installer
        if installer_path and installer_path.exists():
-           msi_result = subprocess.run(
-               ["msiexec", "/i", str(installer_path), "/quiet", "/norestart"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           msi_result = run_elevated(["msiexec", "/i", str(installer_path), "/quiet", "/norestart"])
            
            if msi_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via MSI")
@@ -326,13 +360,28 @@ async def _install_edge_windows(installer_path):
                return False
        else:
            print("[installer][web-edge] Installer not found, trying direct download")
-           # Try direct download URL
-           download_result = subprocess.run(
-               ["powershell", "-Command", "Start-Process", "https://go.microsoft.com/fwlink/?linkid=2109048", "-Wait"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           # Try direct download URL (this will prompt for elevation if needed)
+           if user_password:
+               import getpass
+               username = getpass.getuser()
+               ps_script = f'''
+               $password = ConvertTo-SecureString -String "{user_password}" -AsPlainText -Force
+               $credential = New-Object System.Management.Automation.PSCredential("{username}", $password)
+               Start-Process "https://go.microsoft.com/fwlink/?linkid=2109048" -Credential $credential -Wait
+               '''
+               download_result = subprocess.run(
+                   ["powershell", "-Command", ps_script],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
+           else:
+               download_result = subprocess.run(
+                   ["powershell", "-Command", "Start-Process", "https://go.microsoft.com/fwlink/?linkid=2109048", "-Wait"],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
            return download_result.returncode == 0
    except Exception as e:
        print(f"[installer][web-edge] Windows installation failed: {e}")
@@ -348,7 +397,7 @@ async def _install_edge_windows(installer_path):
        return False
 
 
-async def _install_edge_linux(installer_path):
+async def _install_edge_linux(installer_path, user_password: str = ""):
    """Install Edge on Linux"""
    print("[installer][web-edge] Installing Microsoft Edge on Linux...")
    await send_response({
@@ -364,21 +413,20 @@ async def _install_edge_linux(installer_path):
    try:
        pkg_manager = _get_linux_package_manager()
        
+       # Helper function to run sudo commands with password if provided
+       def run_sudo(cmd_list):
+           if user_password:
+               # Use echo to pipe password to sudo -S (read password from stdin)
+               cmd = f"echo '{user_password}' | sudo -S {' '.join(cmd_list[1:])}"
+               return subprocess.run(cmd, shell=True, capture_output=True, text=True, check=False)
+           else:
+               return subprocess.run(cmd_list, capture_output=True, text=True, check=False)
+       
        if pkg_manager == "apt":
            # Try installing via apt (if repository is configured)
-           apt_result = subprocess.run(
-               ["sudo", "apt-get", "update"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           apt_result = run_sudo(["sudo", "apt-get", "update"])
            
-           apt_install_result = subprocess.run(
-               ["sudo", "apt-get", "install", "-y", "microsoft-edge-stable"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           apt_install_result = run_sudo(["sudo", "apt-get", "install", "-y", "microsoft-edge-stable"])
            
            if apt_install_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via apt")
@@ -386,27 +434,12 @@ async def _install_edge_linux(installer_path):
            
            # Fallback to .deb package
            if installer_path and installer_path.exists():
-               deb_result = subprocess.run(
-                   ["sudo", "dpkg", "-i", str(installer_path)],
-                   capture_output=True,
-                   text=True,
-                   check=False
-               )
+               deb_result = run_sudo(["sudo", "dpkg", "-i", str(installer_path)])
                
                if deb_result.returncode != 0:
                    # Install dependencies if needed
-                   subprocess.run(
-                       ["sudo", "apt-get", "install", "-f", "-y"],
-                       capture_output=True,
-                       text=True,
-                       check=False
-                   )
-                   deb_result = subprocess.run(
-                       ["sudo", "dpkg", "-i", str(installer_path)],
-                       capture_output=True,
-                       text=True,
-                       check=False
-                   )
+                   run_sudo(["sudo", "apt-get", "install", "-f", "-y"])
+                   deb_result = run_sudo(["sudo", "dpkg", "-i", str(installer_path)])
                
                if deb_result.returncode == 0:
                    print("[installer][web-edge] Microsoft Edge installed via .deb package")
@@ -414,12 +447,7 @@ async def _install_edge_linux(installer_path):
        
        elif pkg_manager == "yum":
            # Try installing via yum
-           yum_result = subprocess.run(
-               ["sudo", "yum", "install", "-y", "microsoft-edge-stable"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           yum_result = run_sudo(["sudo", "yum", "install", "-y", "microsoft-edge-stable"])
            
            if yum_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via yum")
@@ -427,12 +455,7 @@ async def _install_edge_linux(installer_path):
        
        elif pkg_manager == "dnf":
            # Try installing via dnf
-           dnf_result = subprocess.run(
-               ["sudo", "dnf", "install", "-y", "microsoft-edge-stable"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           dnf_result = run_sudo(["sudo", "dnf", "install", "-y", "microsoft-edge-stable"])
            
            if dnf_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via dnf")
@@ -462,7 +485,7 @@ async def _install_edge_linux(installer_path):
        return False
 
 
-async def _install_edge_darwin(installer_path):
+async def _install_edge_darwin(installer_path, user_password: str = ""):
    """Install Edge on macOS"""
    print("[installer][web-edge] Installing Microsoft Edge on macOS...")
    await send_response({
@@ -476,7 +499,7 @@ async def _install_edge_darwin(installer_path):
    })
    
    try:
-       # Try using homebrew first
+       # Try using homebrew first (doesn't need sudo)
        brew_result = subprocess.run(
            ["brew", "install", "--cask", "microsoft-edge"],
            capture_output=True,
@@ -488,14 +511,19 @@ async def _install_edge_darwin(installer_path):
            print("[installer][web-edge] Microsoft Edge installed via homebrew")
            return True
        
-       # Fallback to .pkg installer
+       # Fallback to .pkg installer (needs sudo)
        if installer_path and installer_path.exists():
-           pkg_result = subprocess.run(
-               ["sudo", "installer", "-pkg", str(installer_path), "-target", "/"],
-               capture_output=True,
-               text=True,
-               check=False
-           )
+           if user_password:
+               # Use echo to pipe password to sudo -S
+               cmd = f"echo '{user_password}' | sudo -S installer -pkg {str(installer_path)} -target /"
+               pkg_result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=False)
+           else:
+               pkg_result = subprocess.run(
+                   ["sudo", "installer", "-pkg", str(installer_path), "-target", "/"],
+                   capture_output=True,
+                   text=True,
+                   check=False
+               )
            
            if pkg_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via .pkg")
@@ -545,8 +573,9 @@ async def _verify_edge_installation():
    return await check_status()
 
 
-async def install() -> bool:
+async def install(user_password: str = "") -> bool:
    """Main function to install Microsoft Edge"""
+   print("user password: ", user_password)
    print("[installer][web-edge] Installing Microsoft Edge...")
    
    # Check if Edge is already installed
@@ -565,11 +594,11 @@ async def install() -> bool:
    
    # Install based on platform
    if system == "windows":
-       success = await _install_edge_windows(installer_path)
+       success = await _install_edge_windows(installer_path, user_password)
    elif system == "linux":
-       success = await _install_edge_linux(installer_path)
+       success = await _install_edge_linux(installer_path, user_password)
    elif system == "darwin":
-       success = await _install_edge_darwin(installer_path)
+       success = await _install_edge_darwin(installer_path, user_password)
    else:
        await send_response({
            "action": "status",
@@ -589,13 +618,6 @@ async def install() -> bool:
    if not await _verify_edge_installation():
        print("[installer][web-edge] Microsoft Edge installation verification failed")
        return False
-   
-   # Clean up installer
-   if installer_path and installer_path.exists():
-       try:
-           installer_path.unlink()
-       except:
-           pass
    
    print("[installer][web-edge] Microsoft Edge installation complete")
    await send_response({

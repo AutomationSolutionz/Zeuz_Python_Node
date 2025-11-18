@@ -4,6 +4,7 @@ import traceback
 import random
 import platform
 import httpx
+import inspect
 from colorama import Fore
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import send_response, debug, read_node_id
@@ -48,7 +49,8 @@ class InstallHandler:
                             "status": service["status"],
                             "comment": service["comment"],
                             "install_text": service["install_text"],
-                            "os": service["os"]
+                            "os": service["os"],
+                            "user_password": service["user_password"]
                         }
                         filtered_category["services"].append(filtered_service)
                     
@@ -61,6 +63,11 @@ class InstallHandler:
                 })
             elif action in ["install", "status"]:
                 if debug: print(f"[installer] Installing {message}")
+
+                # Extract user_password only for install actions (not for status)
+                user_password = ""
+                if action == "install" and message.value.item:
+                    user_password = getattr(message.value.item, 'user_password', "") or ""
 
                 category = [i for i in services if i["category"] == message.value.item.category][0]
                 
@@ -112,13 +119,23 @@ class InstallHandler:
                 service = [i for i in category["services"] if i["name"] == message.value.item.name][0]
                 if action == "install":
                     func = service["install_function"]
+                    if func is None:
+                        print(f"[installer] Function not found for {message.value.item.name}")
+                        return
+                    # Check if function accepts parameters
+                    sig = inspect.signature(func)
+                    if len(sig.parameters) > 0:
+                        # Function accepts parameters, pass user_password
+                        await func(user_password)
+                    else:
+                        # Function doesn't accept parameters, call without (backward compatibility)
+                        await func()
                 elif action == "status":
                     func = service["status_function"]
-                
-                if func is None:
-                    print(f"[installer] Function not found for {message.value.item.name}")
-                    return
-                await func()
+                    if func is None:
+                        print(f"[installer] Function not found for {message.value.item.name}")
+                        return
+                    await func()
 
         except Exception as e:
             traceback.print_exc()
