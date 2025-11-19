@@ -98,6 +98,8 @@ dependencies = [
     "pipdeptree>=2.26.1",
     "axe-selenium-python>=2.1.6",
     "filelock>=3.20.0",
+    "snowflake-connector-python>=3.12.0",
+    "pyopenssl>=23.0.0",
 ]
 
 [dependency-groups]
