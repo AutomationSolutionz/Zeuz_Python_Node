@@ -425,6 +425,7 @@ def Open_Electron_App(data_set):
     try:
         desktop_app_path = ""
         driver_id = ""
+        chrome_version = ""
         for left, _, right in data_set:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if "windows" in left and platform.system() == "Windows":
@@ -435,6 +436,8 @@ def Open_Electron_App(data_set):
                 desktop_app_path = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
+            elif left == "chrome:version":
+                chrome_version = right.strip()
 
         if not desktop_app_path:
             CommonUtil.ExecLog(
@@ -461,7 +464,20 @@ def Open_Electron_App(data_set):
 
             opts = Options()
             opts.binary_location = desktop_app_path
-            selenium_driver = webdriver.Chrome(opts, Service())
+            opts.add_argument("--remote-debugging-port=9222")
+            # service = Service(executable_path=electron_chrome_path)
+            arch = platform.machine().lower()
+            if platform.system() == "Darwin" and arch == "arm64":
+                os.environ['WDM_ARCHITECTURE'] = 'arm64'
+            elif platform.system() == "Windows" and arch not in ("amd64", "x86_64"):
+                os.environ['WDM_ARCHITECTURE'] = 'x32'
+            else:
+                os.environ['WDM_ARCHITECTURE'] = 'x64'
+            
+            driver_bin_path = ChromeDriverManager(driver_version=chrome_version).install()
+
+            service = Service(driver_bin_path)
+            selenium_driver = webdriver.Chrome(options=opts, service=service)
             selenium_driver.implicitly_wait(0.5)
             CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
