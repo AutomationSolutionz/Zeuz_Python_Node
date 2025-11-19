@@ -90,7 +90,9 @@ dependencies = [
     "xvfbwrapper>=0.2.9 ; sys_platform == 'linux'",
     "pyodbc>=5.2.0",
     "psycopg2-binary>=2.9.10",
-    "cryptography==42.0.8",
+    "cryptography>=42.0.8",
+    "snowflake-connector-python>=3.12.0",
+    "pyopenssl>=23.0.0",
 ]
 
 [dependency-groups]
