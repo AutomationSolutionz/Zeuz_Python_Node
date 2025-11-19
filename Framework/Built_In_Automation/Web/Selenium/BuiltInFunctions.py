@@ -466,19 +466,12 @@ def Open_Electron_App(data_set):
             opts.binary_location = desktop_app_path
             opts.add_argument("--remote-debugging-port=9222")
             # service = Service(executable_path=electron_chrome_path)
-            arch = platform.machine().lower()
-            if platform.system() == "Darwin" and arch == "arm64":
-                os.environ['WDM_ARCHITECTURE'] = 'arm64'
-            elif platform.system() == "Windows" and arch not in ("amd64", "x86_64"):
-                os.environ['WDM_ARCHITECTURE'] = 'x32'
-            else:
-                os.environ['WDM_ARCHITECTURE'] = 'x64'
             
             driver_bin_path = ChromeDriverManager(driver_version=chrome_version).install()
 
             service = Service(driver_bin_path)
             selenium_driver = webdriver.Chrome(options=opts, service=service)
-            selenium_driver.implicitly_wait(0.5)
+            selenium_driver.implicitly_wait(2)
             CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
