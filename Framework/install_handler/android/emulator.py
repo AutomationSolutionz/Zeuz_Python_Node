@@ -361,6 +361,15 @@ async def get_available_system_images() -> list[dict]:
         # Check if Android SDK is installed
         if sdk_root is None:
             print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            await send_response({
+                "action": "status",
+                "data": {
+                    "category": "Android Emulator",
+                    "name": "System Images",
+                    "status": "not installed",
+                    "comment": "No system images found. Please make sure you have installed the ANDROID SDK components.",
+                }
+            })
             return []
         
         sdkmanager = _find_sdkmanager(sdk_root)
@@ -433,6 +442,7 @@ async def android_emulator_install():
                     "name": "System Images",
                     "status": "not installed",
                     "comment": "Download and install Android SDK first",
+                    "system_images": []
                 }
             })
             return False
@@ -450,20 +460,21 @@ async def android_emulator_install():
         # Get available system images
         system_images = await get_available_system_images()
         
-        if not system_images:
-            print("[installer][emulator] No system images found")
-            await send_response({
-                "action": "status",
-                "data": {
-                    "category": "AndroidEmulator",
-                    "name": "System Images",
-                    "status": "not installed",
-                    "comment": "No system images available. Please check Android SDK installation.",
-                }
-            })
-            return False
+        # if not system_images:
+        #     print("[installer][emulator] No system images found")
+        #     await send_response({
+        #         "action": "status",
+        #         "data": {
+        #             "category": "AndroidEmulator",
+        #             "name": "System Images",
+        #             "status": "not installed",
+        #             "comment": "No system images available. Please make sure you have installed the ANDROID SDK components",
+        #             "system_images": [],
+        #         }
+        #     })
+        #     return True
         
-        
+        print("here")
         await send_response({
             "action": "status",
             "data": {
@@ -474,7 +485,6 @@ async def android_emulator_install():
                 "system_images": system_images,  # Send the full list with details
             }
         })
-        
         return True
         
     except Exception as e:

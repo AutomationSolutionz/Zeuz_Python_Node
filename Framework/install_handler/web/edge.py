@@ -356,7 +356,16 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
                print("[installer][web-edge] Microsoft Edge installed via MSI")
                return True
            else:
-               print(f"[installer][web-edge] MSI installation failed: {msi_result.stderr}")
+               print(f"[installer][web-edge] Installation failed. Error: {msi_result.stderr}")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Edge",
+                       "status": "not installed",
+                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                   }
+               })
                return False
        else:
            print("[installer][web-edge] Installer not found, trying direct download")
@@ -382,7 +391,34 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
                    text=True,
                    check=False
                )
-           return download_result.returncode == 0
+           
+           if download_result.returncode == 0:
+               return True
+           else:
+               print(f"[installer][web-edge] Installation failed. Error: {download_result.stderr}")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Edge",
+                       "status": "not installed",
+                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                   }
+               })
+               return False
+       
+       # All installation methods failed
+       print(f"[installer][web-edge] Installation failed. Error: {winget_result.stderr}")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Web",
+               "name": "Edge",
+               "status": "not installed",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
+           }
+       })
+       return False
    except Exception as e:
        print(f"[installer][web-edge] Windows installation failed: {e}")
        await send_response({
@@ -391,7 +427,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
                "category": "Web",
                "name": "Edge",
                "status": "not installed",
-               "comment": f"Microsoft Edge installation failed: {str(e)}",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
            }
        })
        return False
@@ -432,6 +468,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
                print("[installer][web-edge] Microsoft Edge installed via apt")
                return True
            
+           
            # Fallback to .deb package
            if installer_path and installer_path.exists():
                deb_result = run_sudo(["sudo", "dpkg", "-i", str(installer_path)])
@@ -444,6 +481,32 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
                if deb_result.returncode == 0:
                    print("[installer][web-edge] Microsoft Edge installed via .deb package")
                    return True
+               
+               # .deb installation failed
+               print(f"[installer][web-edge] Installation failed. Error: {deb_result.stderr}")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Edge",
+                       "status": "not installed",
+                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                   }
+               })
+               return False
+           else:
+               # No .deb package available and apt failed
+               print(f"[installer][web-edge] Installation failed. Error: {apt_install_result.stderr}")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Edge",
+                       "status": "not installed",
+                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                   }
+               })
+               return False
        
        elif pkg_manager == "yum":
            # Try installing via yum
@@ -452,6 +515,19 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
            if yum_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via yum")
                return True
+           
+           # Installation failed
+           print(f"[installer][web-edge] Installation failed. Error: {yum_result.stderr}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Edge",
+                   "status": "not installed",
+                   "comment": "Installation failed. Please ensure you have provided the correct password.",
+               }
+           })
+           return False
        
        elif pkg_manager == "dnf":
            # Try installing via dnf
@@ -460,6 +536,19 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
            if dnf_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via dnf")
                return True
+           
+           # Installation failed
+           print(f"[installer][web-edge] Installation failed. Error: {dnf_result.stderr}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Edge",
+                   "status": "not installed",
+                   "comment": "Installation failed. Please ensure you have provided the correct password.",
+               }
+           })
+           return False
        
        await send_response({
            "action": "status",
@@ -467,7 +556,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
                "category": "Web",
                "name": "Edge",
                "status": "not installed",
-               "comment": "Microsoft Edge installation failed. Please install manually or configure repository.",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
            }
        })
        return False
@@ -479,7 +568,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
                "category": "Web",
                "name": "Edge",
                "status": "not installed",
-               "comment": f"Microsoft Edge installation failed: {str(e)}",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
            }
        })
        return False
@@ -528,6 +617,22 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
            if pkg_result.returncode == 0:
                print("[installer][web-edge] Microsoft Edge installed via .pkg")
                return True
+           else:
+               print(f"[installer][web-edge] Installation failed. Error: {pkg_result.stderr}")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Edge",
+                       "status": "not installed",
+                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                   }
+               })
+               return False
+       
+       # All installation methods failed
+       if brew_result.returncode != 0:
+           print(f"[installer][web-edge] Installation failed. Error: {brew_result.stderr}")
        
        await send_response({
            "action": "status",
@@ -535,7 +640,7 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
                "category": "Web",
                "name": "Edge",
                "status": "not installed",
-               "comment": "Microsoft Edge installation failed. Please install manually.",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
            }
        })
        return False
@@ -547,7 +652,7 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
                "category": "Web",
                "name": "Edge",
                "status": "not installed",
-               "comment": f"Microsoft Edge installation failed: {str(e)}",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
            }
        })
        return False
@@ -575,7 +680,6 @@ async def _verify_edge_installation():
 
 async def install(user_password: str = "") -> bool:
    """Main function to install Microsoft Edge"""
-   print("user password: ", user_password)
    print("[installer][web-edge] Installing Microsoft Edge...")
    
    # Check if Edge is already installed

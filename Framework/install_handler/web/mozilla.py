@@ -424,7 +424,7 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
                "category": "Web",
                "name": "Mozilla",
                "status": "not installed",
-               "comment": f"Mozilla Firefox installation failed: {str(e)}",
+               "comment": "Installation failed. Please ensure you have provided the correct password.",
            }
        })
        return False
