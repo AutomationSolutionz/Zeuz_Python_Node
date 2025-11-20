@@ -1,16 +1,23 @@
+import hashlib
 import os
-import signal
 import subprocess
 import base64
+import time
 from typing import Literal
+import asyncio
+
+import requests
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+from Framework.Utilities import ConfigModule, CommonUtil
 
 ADB_PATH = "adb"  # Ensure ADB is in PATH
 UI_XML_PATH = "ui.xml"
 SCREENSHOT_PATH = "screen.png"
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
+
 
 class InspectorResponse(BaseModel):
     """Response model for the /inspector endpoint."""
@@ -19,6 +26,7 @@ class InspectorResponse(BaseModel):
     ui_xml: str | None = None
     screenshot: str | None = None  # Base64 encoded image
     error: str | None = None
+
 
 class DeviceInfo(BaseModel):
     """Model for device information."""
@@ -82,6 +90,14 @@ def inspect():
             error=str(e)
         )
 
+@router.get("/dump/driver")
+def dump_driver():
+    """Dump the current driver."""
+    from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+    if appium_driver is None:
+        return
+    return appium_driver.page_source
+
 
 def run_adb_command(command):
     """Run an ADB command and return the output."""
@@ -121,3 +137,38 @@ def capture_screenshot():
         out = run_adb_command(f"{ADB_PATH} pull /sdcard/screen.png {SCREENSHOT_PATH}")
         if out.startswith("Error:"):
             return
+
+
+async def upload_android_ui_dump():
+    prev_xml_hash = ""
+    while True:
+        try:
+            capture_ui_dump()
+            try:
+                with open(UI_XML_PATH, 'r') as xml_file:
+                    xml_content = xml_file.read()
+                    xml_content = xml_content.replace("<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>", "", 1)
+                    new_xml_hash = hashlib.sha256(xml_content.encode('utf-8')).hexdigest()
+                    # Don't upload if the content hasn't changed
+                    if prev_xml_hash == new_xml_hash:
+                        await asyncio.sleep(5)
+                        continue
+                    prev_xml_hash = new_xml_hash
+
+            except FileNotFoundError:
+                await asyncio.sleep(5)
+                continue
+            url = ConfigModule.get_config_value("Authentication", "server_address").strip() + "/node_ai_contents/"
+            apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
+            res = requests.post(
+                url,
+                headers={"X-Api-Key": apiKey},
+                json={
+                    "dom_mob": {"dom": xml_content},
+                    "node_id": CommonUtil.MachineInfo().getLocalUser().lower()
+                })
+            if res.ok:
+                CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
+        except Exception as e:
+            CommonUtil.ExecLog("", f"Error uploading UI dump: {str(e)}", iLogLevel=3)
+        await asyncio.sleep(5)

@@ -2,6 +2,29 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/AutomationSolutionz/Zeuz_Python_Node)
 
+## Video - how to connect ZeuZ Node
+
+<details>
+<summary>🪟 Windows</summary>
+   
+https://github.com/user-attachments/assets/f523003c-f48e-406f-9d02-32c1c640baa0
+   
+</details>
+
+<details>
+<summary>🍎 MacOS</summary>
+   
+https://github.com/user-attachments/assets/6c74e0e0-d9df-4683-a053-c6e927b638c5
+
+</details>
+
+<details>
+<summary>🐧 Linux</summary>
+   
+https://github.com/user-attachments/assets/05367373-a90d-4dd0-b7aa-ef9b73223963
+
+</details>
+
 ## Download
 
 [Releases](https://github.com/AutomationSolutionz/Zeuz_Python_Node/releases) -
@@ -69,3 +92,7 @@ stateDiagram-v2
         artifacts_uploader --> run_id_complete
     }
 ```
+
+## Attributions
+- [axe-selenium-python](https://github.com/axe-selenium-python/axe-selenium-python)
+

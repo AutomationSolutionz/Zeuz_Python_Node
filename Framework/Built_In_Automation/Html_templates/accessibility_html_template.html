@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Test Report - {{ summary.test_info.url }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header .subtitle {
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .violations {
+            color: #dc3545;
+        }
+        .passes {
+            color: #28a745;
+        }
+        .inapplicable {
+            color: #6c757d;
+        }
+        .incomplete {
+            color: #ffc107;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .violation-card {
+            background: #fff5f5;
+            border-left: 4px solid #dc3545;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .violation-header {
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+        }
+        .violation-body {
+            padding: 20px;
+        }
+        .impact-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .impact-critical {
+            background: #dc3545;
+            color: white;
+        }
+        .impact-serious {
+            background: #fd7e14;
+            color: white;
+        }
+        .impact-moderate {
+            background: #ffc107;
+            color: black;
+        }
+        .impact-minor {
+            background: #6c757d;
+            color: white;
+        }
+        .help-link {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .help-link:hover {
+            text-decoration: underline;
+        }
+        .node-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .node-html {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .passes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .violations-grid {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .pass-card {
+            background: #f8fff9;
+            border: 1px solid #d4edda;
+            border-radius: 4px;
+            padding: 15px;
+        }
+        .pass-card h4 {
+            color: #155724;
+            margin: 0 0 10px 0;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .tag {
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: #495057;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Accessibility Test Report</h1>
+            <div class="subtitle">
+                <strong>URL:</strong> {{ summary.test_info.url }}<br>
+                <strong>Test Date:</strong> {{ summary.test_info.test_date_formatted }}
+            </div>
+        </div>
+        
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-number violations">{{ summary.summary.violations_count }}</div>
+                <div class="stat-label">Violations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number passes">{{ summary.summary.passes_count }}</div>
+                <div class="stat-label">Passes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number inapplicable">{{ summary.summary.inapplicable_count }}</div>
+                <div class="stat-label">Inapplicable</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number incomplete">{{ summary.summary.incomplete_count }}</div>
+                <div class="stat-label">Incomplete</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            {% if result.violations and result.violations|length > 0 %}
+            <div class="section">
+                <h2>❌ Accessibility Violations</h2>
+                <div class="violations-grid">
+                    {% for violation in result.violations %}
+                    <div class="violation-card">
+                        <div class="violation-header">
+                            {{ violation.id|default('Unknown') }} - {{ violation.description|default('No description') }}
+                            <span class="impact-badge impact-{{ violation.impact|default('minor') }}">{{ violation.impact|default('minor') }}</span>
+                        </div>
+                        <div class="violation-body">
+                            <p><strong>Help:</strong> {{ violation.help|default('No help available') }}</p>
+                            <p><strong>Affected Elements:</strong> {{ violation.nodes|length if violation.nodes else 0 }}</p>
+                            {% if violation.helpUrl %}
+                            <p><strong>More Info:</strong> <a href="{{ violation.helpUrl }}" class="help-link" target="_blank">View Documentation</a></p>
+                            {% endif %}
+                            
+                            {% if violation.tags %}
+                            <div class="tags">
+                                {% for tag in violation.tags %}
+                                <span class="tag">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if violation.nodes and violation.nodes|length > 0 %}
+                            <h4>All Affected Elements ({{ violation.nodes|length }} total):</h4>
+                            {% for node in violation.nodes %}
+                            <div class="node-item">
+                                <strong>Element {{ loop.index }}:</strong>
+                                <div class="node-html">{{ node.html|default('No HTML available')|e }}</div>
+                                <strong>Target:</strong> {{ safe_join_target(node.target) }}
+                                <br><strong>Impact:</strong> {{ node.impact|default('Unknown') }}
+                                <br><strong>Issue:</strong> {{ node.failureSummary|default('No failure summary') }}
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="section">
+                <h2>✅ No Accessibility Violations Found!</h2>
+                <p>Great job! No accessibility violations were detected on this page.</p>
+            </div>
+            {% endif %}
+            
+            {% if result.passes and result.passes|length > 0 %}
+            <div class="section">
+                <h2>✅ Passed Tests</h2>
+                <div class="passes-grid">
+                    {% for passed in result.passes %}
+                    <div class="pass-card">
+                        <h4>{{ passed.id|default('Unknown') }}</h4>
+                        <p>{{ passed.description|default('No description') }}</p>
+                        <p><strong>Elements tested:</strong> {{ passed.nodes|length if passed.nodes else 0 }}</p>
+                        <p><strong>Impact:</strong> {{ passed.impact|default('Unknown') }}</p>
+                        {% if passed.tags %}
+                        <div class="tags">
+                            {% for tag in passed.tags %}
+                            <span class="tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="footer">
+            <p>Generated by ZeuZ</p>
+        </div>
+    </div>
+</body>
+</html> 

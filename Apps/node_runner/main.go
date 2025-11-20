@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,11 +11,17 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
 )
 
 const (
-	zeuzURL = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
 	zeuzDir = "ZeuZ_Node"
+)
+
+var (
+	version = "dev"
+	branch  = flag.String("branch", "", "Branch to download (defaults to tagged version)")
 )
 
 // downloadFile downloads a file from URL to a local path
@@ -117,6 +124,17 @@ func unzip(zipFile, dest string) error {
 	return nil
 }
 
+// getZeuZNodeURL returns the appropriate download URL based on version and branch
+func getZeuZNodeURL() string {
+	if *branch != "" {
+		return fmt.Sprintf("https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/%s.zip", *branch)
+	}
+	if version != "dev" && !strings.HasPrefix(version, "dev-") {
+		return fmt.Sprintf("https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/tags/%s.zip", version)
+	}
+	return "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
+}
+
 // setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
 func setupZeuzNode() error {
 	// Check if ZeuZ Node directory already exists and contains files
@@ -143,7 +161,8 @@ func setupZeuzNode() error {
 
 	// Download zip file
 	zipPath := filepath.Join(tempDir, "zeuz.zip")
-	fmt.Println("Downloading ZeuZ Node repository...")
+	zeuzURL := getZeuZNodeURL()
+	fmt.Printf("Downloading ZeuZ Node repository from: %s\n", zeuzURL)
 	if err := downloadFile(zeuzURL, zipPath); err != nil {
 		return err
 	}
@@ -172,43 +191,29 @@ func installUV() error {
 
 	fmt.Println("Installing UV...")
 
-	// Create temporary directory for installation files
-	tempDir, err := os.MkdirTemp("", "uv-install")
-	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	var (
-		scriptURL  string
-		scriptPath string
-		cmd        *exec.Cmd
-	)
-
 	if runtime.GOOS == "windows" {
-		scriptURL = "https://astral.sh/uv/install.ps1"
-		scriptPath = filepath.Join(tempDir, "install.ps1")
-
-		if err := downloadFile(scriptURL, scriptPath); err != nil {
-			return err
-		}
-
-		cmd = exec.Command("powershell", "-ExecutionPolicy", "ByPass", "-File", scriptPath)
+		return uv_installer.InstallUVFromSource()
 	} else {
-		scriptURL = "https://astral.sh/uv/install.sh"
-		scriptPath = filepath.Join(tempDir, "install.sh")
+		// For non-Windows systems, use the shell script
+		tempDir, err := os.MkdirTemp("", "uv-install")
+		if err != nil {
+			return fmt.Errorf("failed to create temp directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		scriptURL := "https://astral.sh/uv/install.sh"
+		scriptPath := filepath.Join(tempDir, "install.sh")
 
 		if err := downloadFile(scriptURL, scriptPath); err != nil {
 			return err
 		}
 
-		cmd = exec.Command("sh", scriptPath)
+		cmd := exec.Command("sh", scriptPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		return cmd.Run()
 	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	return cmd.Run()
 }
 
 // updatePath adds UV binary location to PATH
@@ -256,6 +261,10 @@ func runUVCommands(args []string) error {
 }
 
 func main() {
+	flag.Parse()
+
+	fmt.Printf("✅ ZeuZ Node %s\n", version)
+
 	// Setup ZeuZ Node directory and change into it
 	if err := setupZeuzNode(); err != nil {
 		fmt.Printf("Error setting up ZeuZ Node: %v\n", err)
@@ -284,8 +293,8 @@ func main() {
 		fmt.Printf("Error updating path: %v\n", err)
 	}
 
-	// Get command line arguments, excluding the program name
-	args := os.Args[1:]
+	// Get remaining command line arguments after flag parsing
+	args := flag.Args()
 
 	// Run UV commands with arguments
 	if err := runUVCommands(args); err != nil {

@@ -969,6 +969,7 @@ def run_test_case(
             shared.Set_Shared_Variables("zeuz_prettify_limit", 500)
             CommonUtil.prettify_limit = 500
 
+        shared.Set_Shared_Variables("zeuz_tc_logs", {"errors": []}, pretty=False, print_variable=False)
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
@@ -1177,7 +1178,15 @@ def send_dom_variables():
                     })
             except (json.decoder.JSONDecodeError, TypeError):
                 try:
-                    dir_ = { k:str(type(v)) for k,v in [(i, getattr(var_value, i)) for i in dir(var_value) if not i.startswith('__')]}
+                    dir_ = {}
+                    for attr_name in dir(var_value):
+                        if attr_name.startswith('__'):
+                            continue
+                        try:
+                            attr_value = getattr(var_value, attr_name)
+                            dir_[attr_name] = str(type(attr_value))
+                        except Exception:  # ignore getattr errors
+                            pass
                     variables.append({
                         "type": f"non_json: {str(var_value)}",
                         "variable_name": var_name,

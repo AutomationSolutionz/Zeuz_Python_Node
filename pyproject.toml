@@ -48,6 +48,9 @@ dependencies = [
     "pygetwindow",
     "pypdf2>=3.0.1",
     "pyperclip>=1.9.0",
+    "pyobjc-core>=11.0 ; sys_platform == 'darwin'",
+    "pyobjc-framework-quartz>=11.0 ; sys_platform == 'darwin'",
+    "pyobjc-framework-cocoa>=11.0 ; sys_platform == 'darwin'",
     "pyrsistent>=0.20.0",
     "pyscreenshot>=3.1",
     "pyserial>=3.5",
@@ -62,6 +65,7 @@ dependencies = [
     "pytz>=2025.1",
     "pywin32>=308 ; sys_platform == 'win32'",
     "pyyaml>=6.0.2",
+    "playwright>=1.52.0",
     "rauth>=0.7.3",
     "regex>=2024.11.6",
     "requests>=2.32.3",
@@ -93,6 +97,9 @@ dependencies = [
     "cryptography>=42.0.8",
     "snowflake-connector-python>=3.12.0",
     "pyopenssl>=23.0.0",
+    "pipdeptree>=2.26.1",
+    "axe-selenium-python>=2.1.6",
+    "filelock>=3.20.0",
 ]
 
 [dependency-groups]
@@ -103,6 +110,11 @@ dev = [
     "types-psutil>=7.0.0.20250218",
     "types-pytz>=2025.1.0.20250204",
     "types-requests>=2.32.0.20241016",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-html>=3.1.0",
+    "pytest-xdist>=3.0.0",
+    "coverage>=7.0.0",
 ]
 
 [tool.uv.sources]

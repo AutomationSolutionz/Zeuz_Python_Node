@@ -53,6 +53,17 @@ declarations = (
     { "name": "zoom",                     "function": "zoom_action",                 "screenshot": "mobile"},
     { "name": "pan",                      "function": "pan_action",                  "screenshot": "mobile"},
     { "name": "remote launch",            "function": "remote_launch",               "screenshot": "none"},
+    { "name": "double click",             "function": "Double_Click_Element_Appium",       "screenshot": "mobile" },
+    { "name": "right click",              "function": "Right_Click_Element_Appium",        "screenshot": "mobile" },
+    { "name": "wait",                     "function": "Wait_For_Element_To_Appear_Appium", "screenshot": "mobile" },
+    { "name": "wait disable",             "function": "Wait_For_Element_To_Disappear_Appium", "screenshot": "mobile" },
+    { "name": "validate partial",    "function": "Validate_Partial_Text_Appium",        "screenshot": "mobile" },
+    { "name": "validate full",    "function": "Validate_Full_Text_Appium",        "screenshot": "mobile" },
+    { "name": "double tap",             "function": "Double_Tap_Appium",           "screenshot": "mobile" },
+    { "name": "keypresss",                "function": "Keypress_Appium",            "screenshot": "mobile" },
+    { "name": "save text",                "function": "Save_Text",            "screenshot": "mobile" },
+    { "name": "scroll to element",        "function": "Smart_Scroll_To_Element",       "screenshot": "mobile" },
+    { "name": "hover",                    "function": "Hover_Over_Element_Appium",       "screenshot": "mobile" },
 ) # yapf: disable
 
 module_name = "appium"

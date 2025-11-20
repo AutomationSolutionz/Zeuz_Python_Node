@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-
+from filelock import FileLock
 import configparser, os
 from . import FileUtilities as FL
+from pathlib import Path
+from datetime import date
+from configobj import ConfigObj
+import traceback
 
 """constants"""
 file_name = "settings.conf"
-
+settings_file_lock = FileLock(os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name + ".lock")
+settings_conf_path = os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name
 remote_config = {
     "threading": False,
     "local_run": False,
@@ -15,7 +20,46 @@ remote_config = {
     "upload_log_file_only_for_fail": True,
 }
 
+@settings_file_lock
+def create_settings_config_file():
+    if Path(settings_conf_path).exists():
+        return
 
+    today = date.today().strftime("%Y-%m-%d")
+
+    config = ConfigObj()
+    config["Authentication"] = {"username": "", "api-key": "", "server_address": ""}
+    config["Advanced Options"] = {
+        "log_delete_interval": 7,
+        "last_module_update_date": today,
+        "last_log_delete_date": today,
+        "element_wait": 10,
+        "available_to_all_project": False,
+        "_file": "temp_config.ini",
+        "_file_upload_path": "TestExecutionLog",
+        "stop_live_log": False,
+    }
+    config["Inspector"] = {
+        "Window": "",
+        "No_of_level_to_skip": 0,
+        "ai_plugin": True,
+    }
+    config["server"] = {"port": 0}
+    config.filename = str(settings_conf_path)
+    config.write()
+    print(f"Created settings.conf at {settings_conf_path}")
+
+def remove_settings_lock_file():
+    """Remove stale lock file if the process that created it is no longer running."""
+    try:
+        lock_file_path = Path(settings_file_lock.lock_file)
+        if not lock_file_path.exists():
+            return
+        lock_file_path.unlink(missing_ok=True)
+    except Exception:
+        traceback.print_exc()
+
+@settings_file_lock
 def get_config_value(section, key, location: os.PathLike | None = None):
     """
     :param section: name of section
@@ -30,7 +74,7 @@ def get_config_value(section, key, location: os.PathLike | None = None):
         config = configparser.ConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
-            _file_name = os.getcwd() + os.sep + file_name
+            _file_name = os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name
         else:
             _file_name = location
         try:
@@ -46,7 +90,7 @@ def get_config_value(section, key, location: os.PathLike | None = None):
         # print "No option in that name: %s"%key
         return ""
 
-
+@settings_file_lock
 def remove_config_value(section, value, location=False):
     try:
         config = configparser.ConfigParser()
@@ -69,7 +113,7 @@ def remove_config_value(section, value, location=False):
         # print "No section in that name: %s"%section
         return ""
 
-
+@settings_file_lock
 def add_config_value(section, key, value, location: os.PathLike | None = None):
     try:
         config = configparser.ConfigParser()
@@ -98,42 +142,14 @@ def add_config_value(section, key, value, location: os.PathLike | None = None):
         else:
             config.set(section, key, value)
 
-        with (open(_file_name, "w")) as open_file:
+        with open(_file_name, "w") as open_file:
             config.write(open_file)  # Write all configuration to file
         open_file.close()
         return True
     except configparser.NoSectionError:
-        # print "No section in that name: %s"%section
         return ""
     except configparser.NoOptionError:
-        # print "No option in that name: %s"%key
         return ""
-
-
-def get_all_option(section_name, location: os.PathLike | None = None):
-    """
-    :param section_name: given section name
-    :return: list of all option on that section
-    """
-    try:
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
-        if not location:
-            _file_name = os.getcwd() + os.sep + file_name
-        else:
-            _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except:
-            FL.DeleteFile(location)
-            config.read(_file_name)
-        return config.options(section_name)
-    except configparser.NoSectionError as e:
-        # print("Found no section with name %s" % section_name)
-        return []
-    except configparser.NoOptionError as e:
-        # print("Found no options on the section %s" % section_name)
-        return []
 
 
 def add_section(section_name, location: os.PathLike | None = None):
@@ -184,46 +200,3 @@ def clean_config_file(location: os.PathLike | None = None):
     except Exception as e:
         print(e)
         return False
-
-
-def get_all_sections(location: os.PathLike | None = None):
-    try:
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
-        if not location:
-            _file_name = os.getcwd() + os.sep + file_name
-        else:
-            _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except:
-            FL.DeleteFile(location)
-            config.read(_file_name)
-        return config.sections()
-    except configparser.NoSectionError as e:
-        print("found no sections")
-        return []
-    except configparser.NoOptionError as e:
-        print("found no options")
-        return []
-
-def has_section(section_name, location: os.PathLike | None = None):
-    try:
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
-        if not location:
-            _file_name = os.getcwd() + os.sep + file_name
-        else:
-            _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except:
-            FL.DeleteFile(location)
-            config.read(_file_name)
-        return config.has_section(section_name)
-    except configparser.NoSectionError as e:
-        print("found no sections")
-        return []
-    except configparser.NoOptionError as e:
-        print("found no options")
-        return []

@@ -30,6 +30,7 @@ import socket
 import signal
 import os
 
+
 try:
     import xlwings as xw
 except:
@@ -48,6 +49,12 @@ import datetime, random
 import datefinder
 import traceback
 import json
+
+import html
+from selenium import webdriver
+import time
+from datetime import datetime
+
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
@@ -1040,22 +1047,22 @@ def New_Compare_Variables(step_data):
         # --- Deep-diff specific features, these default values are taken from the
         # deep diff docs.
 
-        # truncate_datetime can take value one of ‘second’, ‘minute’, ‘hour’,
-        # ‘day’ and truncate with this value datetime objects before hashing it
+        # truncate_datetime can take value one of 'second', 'minute', 'hour',
+        # 'day' and truncate with this value datetime objects before hashing it
         truncate_datetime = None
 
         # Whether to be case-sensitive or not when comparing strings. By setting
         # ignore_string_case=False, strings will be compared case-insensitively.
         ignore_string_case = False
 
-        # Whether to ignore float(‘nan’) inequality in Python.
+        # Whether to ignore float('nan') inequality in Python.
         ignore_nan_inequality = False
 
         # significant_digits defines the number of digits AFTER the decimal point
         # to be used in the comparison.
         significant_digits = None
 
-        # math_epsilon uses Python’s built in Math.isclose. It defines a tolerance
+        # math_epsilon uses Python's built in Math.isclose. It defines a tolerance
         # value which is passed to math.isclose(). Any numbers that are within the
         # tolerance will not report as being different. Any numbers outside of
         # that tolerance will show up as different.
@@ -3747,28 +3754,31 @@ def execute_python_code(data_set):
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
 
-        current_vars = set(sr.shared_variables)
-        new_variables = current_vars - previous_vars - {'__builtins__'}
-        removed_variables = previous_vars - current_vars  - {'__builtins__'}
+        try:
+            current_vars = set(sr.shared_variables)
+            new_variables = current_vars - previous_vars - {'__builtins__'}
+            removed_variables = previous_vars - current_vars  - {'__builtins__'}
 
-        text = ("Newly declared variables:\n" +
-                "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
-                )
-        text += (
-            "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
-            "and accessible in next python_code action or in %| |%.\n" +
-            "But if you dont want your newly declared variables accessible in next actions\n" +
-            "Cleanup the variables at the end of the code. Such as:\n" +
-            "del account_name\ndel function_name" if new_variables and CommonUtil.debug_status else ""
-        )
-        text += "\nRemoved variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200]}" for i in removed_variables]) if removed_variables else ""
-        CommonUtil.ExecLog(sModuleInfo, text, 5)
+            text = ("Newly declared variables:\n" +
+                    "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
+                    )
+            text += (
+                "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
+                "and accessible in next python_code action or in %| |%.\n" +
+                "But if you dont want your newly declared variables accessible in next actions\n" +
+                "Cleanup the variables at the end of the code. Such as:\n" +
+                "del account_name\ndel function_name" if new_variables and CommonUtil.debug_status else ""
+            )
+            text += "\nRemoved variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200]}" for i in removed_variables]) if removed_variables else ""
+            CommonUtil.ExecLog(sModuleInfo, text, 5)
 
-        for var in sr.shared_variables:
-            if var.startswith("zeuz_session_"):
-                CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
-        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
-        return "passed"
+            for var in sr.shared_variables:
+                if var.startswith("zeuz_session_"):
+                    CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
+            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+            return "passed"
+        except:
+            pass
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -7107,3 +7117,236 @@ def download_chrome_extension(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#this function is used in the accessibilit_test action
+
+def create_summary_report(result):
+
+    """Create a summary report from the raw axe results."""
+    summary = {
+        "test_info": {
+            "url": result.get("url", "Unknown"),
+            "timestamp": result.get("timestamp", "Unknown"),
+            "test_date": datetime.now().isoformat()
+        },
+        "summary": {
+            "violations_count": len(result.get("violations", [])),
+            "passes_count": len(result.get("passes", [])),
+            "inapplicable_count": len(result.get("inapplicable", [])),
+            "incomplete_count": len(result.get("incomplete", []))
+        },
+        "violations_summary": [],
+        "passes_summary": []
+    }
+
+    # Process violations
+    for violation in result.get("violations", []):
+        violation_summary = {
+            "id": violation.get("id", "Unknown"),
+            "description": violation.get("description", "No description"),
+            "impact": violation.get("impact", "Unknown"),
+            "help": violation.get("help", "No help available"),
+            "helpUrl": violation.get("helpUrl", ""),
+            "tags": violation.get("tags", []),
+            "nodes_count": len(violation.get("nodes", [])),
+            "nodes": []
+        }
+
+        # Add first few affected elements
+        for node in violation.get("nodes", [])[:3]:
+            node_info = {
+                "html": node.get("html", ""),
+                "target": node.get("target", []),
+                "failureSummary": node.get("failureSummary", "")
+            }
+            violation_summary["nodes"].append(node_info)
+
+        summary["violations_summary"].append(violation_summary)
+
+    # Process passes
+    for passed in result.get("passes", []):
+        pass_summary = {
+            "id": passed.get("id", "Unknown"),
+            "description": passed.get("description", "No description"),
+            "impact": passed.get("impact", "Unknown"),
+            "tags": passed.get("tags", []),
+            "nodes_count": len(passed.get("nodes", []))
+        }
+        summary["passes_summary"].append(pass_summary)
+
+    return summary
+
+#this function is used in the accessibilit_test action
+
+def safe_join_target(target):
+    """Safely join target field which can be a list or other types."""
+    try:
+        if not target:
+            return "No target"
+        if isinstance(target, list):
+            # Handle nested lists and complex structures
+            result = []
+            for item in target:
+                if isinstance(item, list):
+                    result.append(', '.join(str(x) for x in item))
+                else:
+                    result.append(str(item))
+            return ', '.join(result)
+        return str(target)
+    except Exception as e:
+        return f"Target error: {str(e)}"
+
+#this function is used in the accessibilit_test action
+
+def create_html_report(result, summary):
+    """Create a detailed HTML report from the raw axe results using Jinja2 templates."""
+    
+    from jinja2 import Environment, select_autoescape
+    import html
+    
+    # Format the test date for display
+    if 'test_date' in summary['test_info']:
+        try:
+            from datetime import datetime
+            test_date = datetime.fromisoformat(summary['test_info']['test_date'])
+            summary['test_info']['test_date_formatted'] = test_date.strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            summary['test_info']['test_date_formatted'] = summary['test_info']['test_date']
+    else:
+        summary['test_info']['test_date_formatted'] = 'Unknown'
+    
+    # Jinja2 template with autoescaping
+    env = Environment(autoescape=select_autoescape(['html', 'xml']))
+    env.globals['safe_join_target'] = safe_join_target
+    
+    # Read template from external file in the Html_templates directory
+    import os
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Html_templates', 'accessibility_html_template.html')
+    
+    with open(template_path, 'r', encoding='utf-8') as f:
+        template_content = f.read()
+    template = env.from_string(template_content)
+    
+    return template.render(result=result, summary=summary)
+
+
+
+
+@logger
+def accessibility_test(data_set):
+    """
+    This function test the accessibility of a web page . First navigate to the website and then test the accessibility.
+    
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            accessibilty test     | common action   | accessibility test
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` and generate 3 reports (raw json resutl, html report, summary report) if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+
+        from axe_selenium_python import Axe
+
+        if sr.Test_Shared_Variables("selenium_driver"):
+            common_driver = sr.Get_Shared_Variables("selenium_driver")
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function",
+                3,
+            )
+            return "zeuz_failed"
+
+    
+
+        time.sleep(5) #to load the images properly
+
+        axe = Axe(common_driver)
+
+        axe.inject()
+
+        result = axe.run()
+
+        # Log results summary
+        violations_count = len(result.get('violations', []))
+        passes_count = len(result.get('passes', []))
+
+        
+    
+
+        reports_dir = "Accessibility Test Report"
+        try:
+            os.makedirs(reports_dir, exist_ok=True)
+            CommonUtil.ExecLog(sModuleInfo, f"Reports directory created/verified: {reports_dir}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create reports directory: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # Generate dynamic filename with timestamp and URL
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        url = result.get("url", "unknown_page")
+        # Clean URL for filename (remove special characters)
+        url_clean = re.sub(r'[^\w\-_.]', '_', url.replace('https://', '').replace('http://', ''))
+        if len(url_clean) > 50:  # Limit length
+            url_clean = url_clean[:50]
+        
+        # 1. Raw JSON Report
+        try:
+            json_filename = f"accessibility_result_{url_clean}_{current_time}.json"
+            json_path = os.path.join(reports_dir, json_filename)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Raw JSON report saved successfully to: {json_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to save raw JSON report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 2. Summary JSON Report
+        try:
+            summary = create_summary_report(result)
+            summary_filename = f"accessibility_summary_{url_clean}_{current_time}.json"
+            summary_path = os.path.join(reports_dir, summary_filename)
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Summary JSON report saved successfully to: {summary_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create summary report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 3. HTML Report
+        try:
+            html_report = create_html_report(result, summary)
+            html_filename = f"accessibility_report_{url_clean}_{current_time}.html"
+            html_path = os.path.join(reports_dir, html_filename)
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(html_report)
+            CommonUtil.ExecLog(sModuleInfo, f"HTML report saved successfully to: {html_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create HTML report: {str(e)}", 3)
+            return "zeuz_failed"
+
+
+        # Display console summary
+        summary_message = f"""SUMMARY STATISTICS:
+   [X] Violations: {summary['summary']['violations_count']}
+   [V] Tests Passed: {summary['summary']['passes_count']}
+   [!] Inapplicable: {summary['summary']['inapplicable_count']}
+   [~] Incomplete: {summary['summary']['incomplete_count']}
+Reports generated:
+  - {json_filename} (raw data)
+  - {summary_filename} (summary)
+  - {html_filename} (visual report)
+Location: {reports_dir}
+"""
+
+        CommonUtil.ExecLog(sModuleInfo, summary_message, 5)
+        CommonUtil.ExecLog(sModuleInfo, f"Accessibility test completed successfully for webpage: {url}", 1)
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

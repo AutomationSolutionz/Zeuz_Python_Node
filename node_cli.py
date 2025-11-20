@@ -18,27 +18,30 @@ import time
 import threading
 from datetime import date
 from datetime import datetime as dt
+import asyncio
 
 import psutil
 import requests
-from configobj import ConfigObj
 from dotenv import load_dotenv
 from colorama import init as colorama_init
 from colorama import Fore
 from rich.table import Table
 from rich.console import Console
-from rich import traceback
+from rich import traceback as rich_traceback
+import traceback
 from urllib3.exceptions import InsecureRequestWarning
 import uvicorn
-
+from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+from Framework.install_handler.long_poll_handler import InstallHandler
+from server.mobile import upload_android_ui_dump
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
-    root_dir = Path.cwd()
+    root_dir = Path(__file__).parent
     framework_dir = root_dir / "Framework"
-
-    automation_log_dir = root_dir / "AutomationLog"
-    automation_log_dir.mkdir(exist_ok=True)
 
     # Append correct paths so that it can find the configuration files and other modules
     sys.path.append(str(framework_dir))
@@ -46,12 +49,12 @@ def adjust_python_path():
     # Move to Framework directory and add parent to path for module imports
     os.chdir(framework_dir)
 
-adjust_python_path()
+
 
 from Framework.module_installer import (  # noqa: E402
     check_min_python_version,
-    install_missing_modules,
     update_outdated_modules,
+    # install_missing_modules,
 )
 
 from Framework.deploy_handler import (  # noqa: E402
@@ -64,30 +67,33 @@ from Framework.node_server_state import STATE  # noqa: E402
 from server import main as node_server  # noqa: E402
 
 
-def start_server():
+async def start_server():
+    
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("127.0.0.1", port)) == 0
+    try:
+        node_server_port = 18100
+        tries = 0
+        while is_port_in_use(node_server_port) and tries < 99:
+            node_server_port += 1
+            tries += 1
+        ConfigModule.add_config_value("server", "port", str(node_server_port))
+        print(f"Launching node-server on port {node_server_port}")
+        
+        app = node_server.main()
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=node_server_port,
+            log_level="warning",
+        )
+        server = uvicorn.Server(config)
+        await server.serve()
 
-    def run():
-        try:
-            node_server_port = 18100
-            tries = 0
-            while is_port_in_use(node_server_port) and tries < 99:
-                node_server_port += 1
-                tries += 1
-            uvicorn.run(
-                node_server.main(),
-                host="127.0.0.1",
-                port=node_server_port,
-                log_level="warning",
-            )
-        except Exception:
-            print("[WARN] Failed to launch node-server. Seamless connect feature is disabled.")
-
-    t = threading.Thread(target=run, daemon=True)
-    t.start()
-
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[WARN] Failed to launch node-server: {str(e)}")
 
 def kill_old_process(pid_file_path: os.PathLike):
     """kill any process that is running  from the same node folder."""
@@ -112,60 +118,17 @@ def kill_old_process(pid_file_path: os.PathLike):
         pass
 
 
-# Conditionally monkey-patch datetime module to include the `fromisoformat` method.
-# TODO: remove this when we upgrade to Python 3.11
-def monkeypatch_fromisoformat():
+def setup_nodejs_appium():
+    """Setup Node.js and Appium if not already installed."""
     try:
-        import sys
+        import nodejs_appium_installer
+        nodejs_appium_installer.setup_nodejs_appium()
+    except Exception as e:
+        print(f"Warning: Failed to setup Node.js and Appium: {e}")
+        print("Continuing without Node.js/Appium setup...")
 
-        target_version = (3, 11)
-        if sys.version_info < target_version:
-            from backports.datetime_fromisoformat import MonkeyPatch  # type: ignore
-
-            MonkeyPatch.patch_fromisoformat()
-    except Exception:
-        print("WARN: failed to monkeypatch fromisoformat")
-
-
-def main():
-    print(
-        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
-    )
-
-    # Load environment variables from .env file
-    load_dotenv()
-
-    traceback.install(show_locals=True, max_frames=1)
-
-    # Suppress the InsecureRequestWarning since we use verify=False parameter.
-    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
-
-    # Disable WebdriverManager SSL verification.
-    os.environ["WDM_SSL_VERIFY"] = "0"
-
-    colorama_init(autoreset=True)
-
-    kill_old_process(Path.cwd().parent / "pid.txt")
-    check_min_python_version(min_python_version="3.11", show_warning=True)
-    update_outdated_modules()
-    monkeypatch_fromisoformat()
-    start_server()
-
-    # Set the console title to include the version number.
-    version_path = Path("Version.txt")
-    text = version_path.read_text()
-    text = text[text.find("=") + 1 :].split("\n")[0].strip()
-    if os.name == "nt":
-        os.system(
-            f"title Node {text} - 🐍 {platform.python_version()} {platform.architecture()[0]}"
-        )
-
-
-main()
 
 # Tells node whether it should run a test set/deployment only once and quit.
-RUN_ONCE = False
-local_run = False
 
 from Framework.Utilities import (  # noqa: E402
     RequestFormatter,
@@ -175,12 +138,13 @@ from Framework.Utilities import (  # noqa: E402
 from Framework import MainDriverApi  # noqa: E402
 
 
-TMP_INI_FILE = (
-    Path.cwd().parent
-    / "AutomationLog"
-    / ConfigModule.get_config_value("Advanced Options", "_file")
-)
+TMP_INI_FILE = None
 
+"""Constants"""
+AUTHENTICATION_TAG = "Authentication"
+PROJECT_TAG = "project"
+TEAM_TAG = "team"
+device_dict: dict[str, Any] = {}
 
 def kill_child_processes():
     try:
@@ -203,14 +167,10 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-"""Constants"""
-AUTHENTICATION_TAG = "Authentication"
-PROJECT_TAG = "project"
-TEAM_TAG = "team"
-device_dict: dict[str, Any] = {}
 
 
-def destroy_session():
+
+async def destroy_session():
     """
     Destroy session file.
     """
@@ -250,9 +210,8 @@ class UserData:
     project_id: str
 
 
-def Login(
+async def Login(
     server_name: str,
-    run_once: bool = False,
     log_dir: os.PathLike | None = None,
 ):
     console = Console()
@@ -316,7 +275,7 @@ def Login(
             console.print(table)
         elif status_code == 502:
             print(Fore.YELLOW + "Server offline. Retrying after 60s")
-            time.sleep(60)
+            await asyncio.sleep(60)
             return
         else:
             line_color = Fore.RED
@@ -325,11 +284,14 @@ def Login(
             # api = api.strip('"')
 
             # Reset the credentials.
-            set_new_credentials(server="", api_key="")
+            await set_new_credentials(server="", api_key="")
             return
     except ConnectionError:
         print("Failed to connect to the server, retrying after 30s")
-        time.sleep(30)
+        await asyncio.sleep(30)
+        return
+    except Exception as e:
+        traceback.print_exc()
         return
 
     node_id = CommonUtil.MachineInfo().getLocalUser().lower()
@@ -340,10 +302,13 @@ def Login(
     # creates a new thread and keeps an infinite while loop - which is dangerous
     # for the server, since it'll be bombarded with requests from multiple
     # threads.
-    report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
-    report_thread.start()
 
-    RunProcess(node_id, run_once=run_once, log_dir=log_dir)
+    # Todo: Make it async and not in thread. Fix the while loop inside as well
+    # Its returning on first iteration. This should be out of Login function
+    # report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
+    # report_thread.start()
+
+    await RunProcess(node_id, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
@@ -371,15 +336,16 @@ def notify_complete(message="Run completed"):
     try:
         if sys.platform == "darwin":
             # macOS - Use notifypy
-            from notifypy import Notify
+            # from notifypy import Notify
 
-            notification = Notify(
-                default_notification_title=title,
-                default_notification_icon=icon,
-            )
-            notification.message = message
+            # notification = Notify(
+            #     default_notification_title=title,
+            #     default_notification_icon=icon,
+            # )
+            # notification.message = message
             # notification.send()
-        else:
+            pass
+        elif sys.platform == "win32":
             # Linux and Windows - Use plyer
             from plyer import notification
 
@@ -389,11 +355,13 @@ def notify_complete(message="Run completed"):
                 app_icon=icon,
                 timeout=7,
             )
+        elif sys.platform == "linux":
+            pass
     except Exception:
         print("Failed to send notification")
 
 
-def RunProcess(node_id, run_once=False, log_dir=None):
+async def RunProcess(node_id, log_dir=None):
     try:
         # --- START websocket service connections --- #
 
@@ -425,7 +393,10 @@ def RunProcess(node_id, run_once=False, log_dir=None):
 
         from Framework import node_server_state
 
-        def response_callback(response: str):
+        install_handler = InstallHandler()
+        install_task = asyncio.create_task(install_handler.run())
+
+        async def response_callback(response: str):
             node_server_state.STATE.state = "in_progress"
             nonlocal node_json
             nonlocal log_dir
@@ -457,23 +428,22 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                 print(Fore.RED + "ERROR failed to save test case json into file")
                 print(Fore.YELLOW + "JSON CONTENT:")
                 print(node_json)
-                import traceback as tb
-
-                tb.print_exc()
+                traceback.print_exc()
 
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
+            await install_handler.cancel_run()
             MainDriverApi.main(
                 device_dict=device_info,
                 all_run_id_info=node_json,
             )
 
-        def on_connect_callback(reconnected: bool):
+        async def on_connect_callback(reconnected: bool):
             node_server_state.STATE.state = "idle"
             update_machine_info(node_id, should_print=not reconnected)
             return
 
-        def done_callback() -> bool:
+        async def done_callback() -> bool:
             """
             Returns True if we do not want to connect to the service further.
             """
@@ -482,22 +452,19 @@ def RunProcess(node_id, run_once=False, log_dir=None):
                 return False
 
             print("[deploy] Run complete.")
-            if CommonUtil.debug_status:
-                notify_complete("Run completed")
-
-            if run_once:
-                return True
+            notify_complete("Run completed")
+            asyncio.create_task(install_handler.run())
 
             return False
 
-        def cancel_callback():
+        async def cancel_callback():
             if not node_json:
                 return
 
             print("[deploy] Run cancelled.")
-            if CommonUtil.debug_status:
-                notify_complete("Run cancelled")
+            notify_complete("Run cancelled")
             CommonUtil.run_cancelled = True
+            asyncio.create_task(install_handler.run())
 
         deploy_handler = long_poll_handler.DeployHandler(
             on_connect_callback=on_connect_callback,
@@ -505,7 +472,11 @@ def RunProcess(node_id, run_once=False, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        deploy_handler.run(deploy_srv_addr())
+        
+        deploy_task = asyncio.create_task(deploy_handler.run(deploy_srv_addr()))
+        
+        await asyncio.gather(install_task, deploy_task, return_exceptions=True)
+        
         return False
 
     except Exception:
@@ -532,23 +503,6 @@ def PreProcess(log_dir=None):
     current_path_file = TMP_INI_FILE
     ConfigModule.clean_config_file(current_path_file)
     ConfigModule.add_section("sectionOne", current_path_file)
-
-    if not ConfigModule.has_section("Selenium_driver_paths"):
-        ConfigModule.add_section("Selenium_driver_paths")
-        ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", "")
-        ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", "")
-    if not ConfigModule.get_config_value(
-        "Selenium_driver_paths", "electron_chrome_path"
-    ):
-        ConfigModule.add_config_value(
-            "Selenium_driver_paths", "electron_chrome_path", ""
-        )
-
-    # If `log_dir` is not specified, then store all logs inside Zeuz Node's
-    # "AutomationLog" folder
     if log_dir is None:
         log_dir = TMP_INI_FILE.parent
 
@@ -611,7 +565,6 @@ def update_machine(dependency, should_print=True):
         if data["registered"]:
             if should_print:
                 rich_print = console.print
-                # rich_print(":green_circle: Zeuz Node is online: ", end="")
                 rich_print(":green_circle: " + data["name"], style="bold cyan", end="")
                 print(" is online\n")
                 CommonUtil.ExecLog(
@@ -647,38 +600,6 @@ def pass_decode(key, enc):
     return "".join(dec)
 
 
-def Local_run(log_dir=None):
-    try:
-        PreProcess(log_dir=log_dir)
-        user_info_object = {}
-        user_info_object["project"] = ConfigModule.get_config_value(
-            "sectionOne", PROJECT_TAG, TMP_INI_FILE
-        )
-        user_info_object["team"] = ConfigModule.get_config_value(
-            "sectionOne", TEAM_TAG, TMP_INI_FILE
-        )
-        device_dict = All_Device_Info.get_all_connected_device_info()
-        rem_config = {"local_run": True}
-        ConfigModule.remote_config = rem_config
-        MainDriverApi.main(device_dict)
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
-        CommonUtil.ExecLog("", Error_Detail, 4, False)
-
-
 def get_folder_creation_time(folder_path):
     if platform.system() == "Windows":
         creation_time = os.path.getctime(folder_path)
@@ -694,7 +615,303 @@ def get_folder_creation_time(folder_path):
     return dt.fromtimestamp(creation_time).date()
 
 
-def command_line_args() -> Path | None:
+def generate_rsa_key():
+    """Generate a new RSA private key and save it to the rsa_private_keys folder."""
+    console = Console()
+    
+    from Framework.Utilities.RSAKeyUtil import save_private_key as save_key_util, get_public_key_pem
+
+    key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+    
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    
+    timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+    key_filename = f"private_key_{timestamp}.pem"
+    
+    success, _, saved_path = save_key_util(
+        private_key=private_key,
+        key_folder=key_folder,
+        filename=key_filename,
+        format_type="pkcs8",
+        check_duplicate=False  # New keys shouldn't have duplicates
+    )
+    
+    if not success:
+        console.print(f"[red]Error:[/red] Failed to save generated private key.")
+        return
+    
+    # Generate public key
+    public_key_pem = get_public_key_pem(private_key)
+    
+    console.print(f"\n[green]✓[/green] RSA private key generated successfully!")
+    console.print(f"[cyan]Location:[/cyan] {saved_path}")
+    console.print(f"\n[cyan]Public Key:[/cyan]")
+    console.print(public_key_pem)
+
+
+def add_existing_rsa_key(key_content: str):
+    """Copy an existing RSA private key to the rsa_private_keys folder."""
+    console = Console()
+
+    from Framework.Utilities.RSAKeyUtil import load_private_key_from_pem, save_private_key as save_key_util, get_public_key_pem, check_duplicate_key
+
+    key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+    
+    private_key = load_private_key_from_pem(key_content)
+    if private_key is None:
+        console.print(f"[red]Error:[/red] Invalid PEM private key.")
+        return False
+    
+    # Check for duplicates
+    duplicate = check_duplicate_key(private_key, key_folder)
+    if duplicate:
+        console.print(f"[yellow]Warning:[/yellow] This private key already exists as {duplicate}. Not adding duplicate.")
+        return False
+    
+    # Copy the key with a timestamp
+    timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+    new_filename = f"imported_key_{timestamp}.pem"
+    
+    success, _, saved_path = save_key_util(
+        private_key=private_key,
+        key_folder=key_folder,
+        filename=new_filename,
+        format_type="pkcs8",
+        check_duplicate=False  # Already checked above
+    )
+    
+    if not success:
+        console.print(f"[red]Error:[/red] Failed to save private key.")
+        return False
+    
+    console.print(f"\n[green]✓[/green] Private key imported successfully!")
+    console.print(f"[cyan]To:[/cyan] {saved_path}")
+    
+    # Show the public key
+    public_key_pem = get_public_key_pem(private_key)
+    console.print(f"\n[cyan]Public Key:[/cyan]")
+    console.print(public_key_pem)
+    
+    return True
+
+
+def show_existing_rsa_keys():
+    """List all existing RSA private keys and show their public keys."""
+    console = Console()
+
+    from Framework.Utilities.RSAKeyUtil import list_existing_keys
+
+    key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+
+    keys_info = list_existing_keys(key_folder)
+    
+    if not keys_info:
+        console.print(f"\n[yellow]No private keys found in:[/yellow] {key_folder}")
+        console.print("[cyan]Use -gpk to generate a new key[/cyan]\n")
+        return
+    
+    console.print(f"\n[cyan]Found {len(keys_info)} private key(s) in:[/cyan] {key_folder}\n")
+    
+    for idx, key_info in enumerate(keys_info, 1):
+        console.print(f"[green]Key #{idx}:[/green] {key_info['filename']}")
+        console.print(f"[cyan]Path:[/cyan] {key_info['path']}")
+        if 'error' in key_info:
+            console.print(f"[red]Error:[/red] {key_info['error']}\n")
+        else:
+            console.print(f"[cyan]Public Key:[/cyan]")
+            console.print(key_info['public_key'])
+
+
+def share_private_keys():
+    """Share all RSA private keys by encrypting and uploading to server."""
+    console = Console()
+    
+    try:
+        from Framework.Utilities import ShareKeysUtil
+        from Framework.Utilities import RequestFormatter, ConfigModule
+        
+        key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+        
+        # Collect all private keys
+        keys = ShareKeysUtil.collect_private_keys(key_folder)
+        
+        if not keys:
+            console.print(f"\n[red]✗[/red] No private keys found in: {key_folder}")
+            console.print("[cyan]Use -gpk to generate a new key first[/cyan]\n")
+            return False
+        
+        console.print(f"\n[cyan]Found {len(keys)} private key(s) to share[/cyan]")
+        
+        # Generate share code
+        share_code = ShareKeysUtil.generate_share_code()
+        
+        # Encrypt all keys
+        console.print("[cyan]Encrypting keys...[/cyan]")
+        keys_json = json.dumps(keys)
+        encrypted_data = ShareKeysUtil.encrypt_data(keys_json, share_code)
+        
+        # Send to server
+        console.print("[cyan]Uploading to server...[/cyan]")
+        
+        payload = {
+            "code": share_code,
+            "encrypted_data": encrypted_data
+        }
+        
+        console.print(f"[dim]Endpoint: /zsvc/deploy/v1/share-keys[/dim]")
+        response = RequestFormatter.Post("zsvc/deploy/v1/share-keys", payload)
+        
+        if response and response.get("success"):
+            console.print(f"\n[green]✓[/green] Keys shared successfully!")
+            console.print(f"\n[yellow]═══════════════════════════════════[/yellow]")
+            console.print(f"[yellow]  Share Code: [bold]{share_code}[/bold][/yellow]")
+            console.print(f"[yellow]═══════════════════════════════════[/yellow]")
+            console.print(f"\n[cyan]This code will expire in 30 minutes.[/cyan]")
+            console.print(f"[cyan]Use this code with -fe option to fetch keys on another machine.[/cyan]\n")
+            console.print(f"[dim]Example: uv run node_cli.py -fe {share_code}[/dim]\n")
+            return True
+        else:
+            error_msg = response.get("message", "Unknown error") if response else "No response from server"
+            console.print(f"\n[red]✗[/red] Failed to share keys: {error_msg}\n")
+            return False
+            
+    except Exception as e:
+        import traceback as tb
+        console.print(f"\n[red]✗[/red] Error sharing keys: {str(e)}\n")
+        tb.print_exc()
+        return False
+
+
+def fetch_private_keys(share_code: str):
+    """Fetch and decrypt shared RSA private keys from server."""
+    console = Console()
+    
+    from Framework.Utilities import ShareKeysUtil
+    from Framework.Utilities import RequestFormatter
+    
+    # Validate code format
+    if len(share_code) != 9 or share_code[4] != '-':
+        console.print(f"\n[red]✗[/red] Invalid share code format. Expected format: AkEf-B910 (9 characters with dash)\n")
+        return False
+    
+    console.print(f"\n[cyan]Fetching keys from server...[/cyan]")
+    
+    try:
+        # Fetch from server
+        response = RequestFormatter.Get(f"zsvc/deploy/v1/fetch-keys/{share_code}")
+        
+        if not response or not response.get("success"):
+            error_msg = response.get("message", "Keys not found or expired") if response else "No response from server"
+            console.print(f"\n[red]✗[/red] Failed to fetch keys: {error_msg}\n")
+            return False
+        
+        encrypted_data = response.get("encrypted_data")
+        if not encrypted_data:
+            console.print(f"\n[red]✗[/red] No encrypted data received from server\n")
+            return False
+        
+        # Decrypt data
+        console.print("[cyan]Decrypting keys...[/cyan]")
+        decrypted_json = ShareKeysUtil.decrypt_data(encrypted_data, share_code)
+        
+        if not decrypted_json:
+            console.print(f"\n[red]✗[/red] Failed to decrypt keys. Invalid share code or corrupted data.\n")
+            return False
+        
+        keys = json.loads(decrypted_json)
+        
+        # Save keys
+        console.print(f"[cyan]Saving {len(keys)} key(s)...[/cyan]")
+        key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
+        success_count, skipped_count, failed_count = ShareKeysUtil.save_private_keys(keys, key_folder)
+        
+        console.print(f"\n[green]✓[/green] Keys fetched successfully!")
+        console.print(f"[cyan]Saved:[/cyan] {success_count} key(s)")
+        if skipped_count > 0:
+            console.print(f"[yellow]Skipped:[/yellow] {skipped_count} key(s) (duplicates)")
+        if failed_count > 0:
+            console.print(f"[red]Failed:[/red] {failed_count} key(s)")
+        console.print(f"[cyan]Location:[/cyan] {key_folder}\n")
+        
+        return True
+        
+    except json.JSONDecodeError as e:
+        console.print(f"\n[red]✗[/red] Error parsing decrypted data: {str(e)}\n")
+        return False
+    except Exception as e:
+        console.print(f"\n[red]✗[/red] Error fetching keys: {str(e)}\n")
+        return False
+
+
+
+# Delete Old Subfolders in Automationlog folder.
+
+def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
+    subfolder_paths = []
+    current_time = time.time()
+    interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
+
+    for dir_name in os.listdir(folder_path):
+        dir_path = os.path.join(folder_path, dir_name)
+        if os.path.isdir(dir_path):
+            created_time = os.path.getctime(dir_path)
+
+            if current_time - created_time > interval_days_in_sec:
+                subfolder_paths.append(dir_path)
+
+    return subfolder_paths
+
+
+async def delete_old_automationlog_folders():
+    folder_path = (
+        os.path.dirname(os.path.abspath(__file__)).replace(
+            os.sep + "Framework", os.sep + ""
+        )
+        + os.sep
+        + "AutomationLog"
+    )
+    log_delete_interval = ConfigModule.get_config_value(
+        "Advanced Options", "log_delete_interval"
+    )
+
+    # By default set the automation log delete interval to 7 days
+    if not isinstance(log_delete_interval, int):
+        log_delete_interval = 7
+    else:
+        if log_delete_interval <= 0:
+            log_delete_interval = 7
+    while True:
+        auto_log_subfolders = get_subfolders_created_before_n_days(
+            folder_path, int(log_delete_interval)
+        )
+        auto_log_subfolders = [
+            subfolder
+            for subfolder in auto_log_subfolders
+            if subfolder
+            not in [
+                "attachments",
+                "attachments_db",
+                "outdated_modules.json",
+                "temp_config.ini",
+                "failed_reports",
+            ]
+        ]
+
+        for subfolder in auto_log_subfolders:
+            shutil.rmtree(subfolder)
+        if auto_log_subfolders:
+            print(
+                f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
+            )
+
+        # Check every 5 hours for old automation logs
+        await asyncio.sleep(60 * 60 * 5)
+
+
+async def command_line_args() -> Path | None:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
 
@@ -716,8 +933,6 @@ def command_line_args() -> Path | None:
     Example 5 - Custom log directory:
     python node_cli.py -d /path/to/logs
 
-    Example 6 - Local run:
-    python node_cli.py -r
 
     Example 7 - Logout:
     python node_cli.py -l
@@ -727,6 +942,21 @@ def command_line_args() -> Path | None:
 
     Example 9 - Advanced options:
     python node_cli.py -spu -sbl -slg
+
+    Example 10 - Generate RSA private key:
+    python node_cli.py -gpk
+
+    Example 11 - Add existing RSA private key:
+    python node_cli.py -apk /path/to/private_key.pem
+
+    Example 12 - Show existing RSA keys and their public keys:
+    python node_cli.py -spk
+
+    Example 13 - Share all RSA private keys (generates a share code):
+    python node_cli.py -sh
+
+    Example 14 - Fetch shared RSA private keys using a share code:
+    python node_cli.py -fe AkEf-B910
 
     Use -h or --help to see full documentation of all available arguments.
     """
@@ -750,15 +980,6 @@ def command_line_args() -> Path | None:
     )
     parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
-    )
-    parser_object.add_argument(
-        "-r", "--local_run", action="store_true", help="Performs a local run"
-    )
-    parser_object.add_argument(
-        "-o",
-        "--once",
-        action="store_true",
-        help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately",
     )
     parser_object.add_argument(
         "-d",
@@ -796,6 +1017,60 @@ def command_line_args() -> Path | None:
         help="Disables log in live server",
     )
 
+    # modification here to add parsers to change chrome download settings
+    parser_object.add_argument(
+        "-cf",
+        "--chrome-fetch",
+        type=int,
+        action="store",
+        help="Days before fetching new Chrome version (default: 15)",
+        metavar="",
+    )
+    parser_object.add_argument(
+        "-cc",
+        "--chrome-cleanup",
+        type=int,
+        action="store",
+        help="Days before cleaning up old Chrome versions (default: 50)",
+        metavar="",
+    )
+
+    # RSA key management arguments
+    parser_object.add_argument(
+        "-gpk",
+        "--generate-private-key",
+        action="store_true",
+        help="Generate a new RSA private key for encrypting secrets",
+    )
+    parser_object.add_argument(
+        "-apk",
+        "--add-private-key",
+        action="store",
+        help="Add an existing RSA private key (provide content of the .pem file)",
+        metavar="",
+    )
+    parser_object.add_argument(
+        "-spk",
+        "--show-private-keys",
+        action="store_true",
+        help="Show all existing RSA private keys and their public keys",
+    )
+
+    # Share and fetch keys arguments
+    parser_object.add_argument(
+        "-sh",
+        "--share",
+        action="store_true",
+        help="Share all RSA private keys - generates a single code for encryption and retrieval",
+    )
+    parser_object.add_argument(
+        "-fe",
+        "--fetch",
+        action="store",
+        help="Fetch shared RSA private keys using the share code (format: AkEf-B910)",
+        metavar="",
+    )
+
     all_arguments = parser_object.parse_args()
 
     server = all_arguments.server
@@ -807,6 +1082,58 @@ def command_line_args() -> Path | None:
     stop_pip_auto_update = all_arguments.stop_pip_auto_update
     show_browser_log = all_arguments.show_browser_log
     stop_live_log = all_arguments.stop_live_log
+
+    # RSA key management options
+    generate_key = all_arguments.generate_private_key
+    add_key = all_arguments.add_private_key
+    show_keys = all_arguments.show_private_keys
+
+    # get the chrome extension download settings
+    chrome_fetch = all_arguments.chrome_fetch
+    chrome_cleanup = all_arguments.chrome_cleanup
+
+    # Share and fetch keys options
+    share_keys = all_arguments.share
+    fetch_code = all_arguments.fetch
+
+    # Handle RSA key management commands
+    if generate_key:
+        generate_rsa_key()
+        sys.exit(0)
+    
+    if add_key:
+        if add_existing_rsa_key(add_key):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    
+    if show_keys:
+        show_existing_rsa_keys()
+        sys.exit(0)
+
+    # Handle share/fetch commands
+    if share_keys:
+        share_private_keys()
+        sys.exit(0)
+    
+    if fetch_code:
+        if fetch_private_keys(fetch_code):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    # Update chrome extension download settings if specified
+    if chrome_fetch is not None:
+        os.environ["CHROME_DAYS_BEFORE_FETCH"] = str(chrome_fetch)
+
+        print(f"Set days_before_fetch to {os.environ.get('CHROME_DAYS_BEFORE_FETCH')}")
+
+    if chrome_cleanup is not None:
+        os.environ["CHROME_DAYS_BEFORE_CLEANUP"] = str(chrome_cleanup)
+
+        print(
+            f"Set days_before_cleanup to {os.environ.get('CHROME_DAYS_BEFORE_CLEANUP')}"
+        )
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -829,129 +1156,6 @@ def command_line_args() -> Path | None:
             f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}"
         )
 
-    global local_run
-    local_run = all_arguments.local_run
-
-    global RUN_ONCE
-    RUN_ONCE = all_arguments.once
-
-    settings_conf_path = (
-        os.path.dirname(os.path.abspath(__file__)).replace(
-            os.sep + "Framework", os.sep + ""
-        )
-        + os.sep
-        + "Framework"
-        + os.sep
-        + "settings.conf"
-    )
-    config = ConfigObj(settings_conf_path)
-    date_str = config.get("Advanced Options", {}).get("last_module_update_date", "")
-    module_update_interval = config.get("Advanced Options", {}).get(
-        "module_update_interval", ""
-    )
-    if date_str:
-        # Parse the date from the configuration file
-        config_date = date.fromisoformat(date_str)
-        current_date = datetime.date.today()
-        time_difference = (current_date - config_date).days
-        CommonUtil.ai_module_update_flag = stop_pip_auto_update
-        CommonUtil.ai_module_update_time_difference = time_difference
-        # Check if the time difference is greater than one month
-        if (
-            not stop_pip_auto_update
-            and CommonUtil.ws_ss_log
-            and time_difference > int(module_update_interval)
-        ):
-            update_outdated_modules()
-            config_date = date.today()
-            config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
-                config_date
-            )
-            config.write()
-            # print("module_updater: Module Updated..")
-        else:
-            # TODO: remove these print statements
-            # print("module_updater: All modules are already up to date.")
-            pass
-    else:
-        # Assign the current date
-        config_date = date.today()
-        config.setdefault("Advanced Options", {})["last_module_update_date"] = str(
-            config_date
-        )
-        # Save the updated configuration file
-        config.write()
-        if not stop_pip_auto_update and CommonUtil.ws_ss_log:
-            update_outdated_modules()
-        print("module_updater: Module Updated..")
-
-    # Delete Old Subfolders in Automationlog folder.
-
-    def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
-        subfolder_paths = []
-        current_time = time.time()
-        interval_days_in_sec = int(log_delete_interval) * 24 * 60 * 60
-
-        for dir_name in os.listdir(folder_path):
-            dir_path = os.path.join(folder_path, dir_name)
-            if os.path.isdir(dir_path):
-                created_time = os.path.getctime(dir_path)
-
-                if current_time - created_time > interval_days_in_sec:
-                    subfolder_paths.append(dir_path)
-
-        return subfolder_paths
-
-    folder_path = (
-        os.path.dirname(os.path.abspath(__file__)).replace(
-            os.sep + "Framework", os.sep + ""
-        )
-        + os.sep
-        + "AutomationLog"
-    )
-    log_delete_interval = ConfigModule.get_config_value(
-        "Advanced Options", "log_delete_interval"
-    )
-
-    # By default set the automation log delete interval to 7 days
-    if not isinstance(log_delete_interval, int):
-        log_delete_interval = 7
-    else:
-        if log_delete_interval <= 0:
-            log_delete_interval = 7
-
-    def delete_old_automationlog_folders():
-        while True:
-            auto_log_subfolders = get_subfolders_created_before_n_days(
-                folder_path, int(log_delete_interval)
-            )
-            auto_log_subfolders = [
-                subfolder
-                for subfolder in auto_log_subfolders
-                if subfolder
-                not in [
-                    "attachments",
-                    "attachments_db",
-                    "outdated_modules.json",
-                    "temp_config.ini",
-                    "failed_reports",
-                ]
-            ]
-
-            for subfolder in auto_log_subfolders:
-                shutil.rmtree(subfolder)
-            if auto_log_subfolders:
-                print(
-                    f"automation_log_cleanup: deleted {len(auto_log_subfolders)} that are older than {log_delete_interval} days"
-                )
-
-            # Check every 5 hours for old automation logs
-            time.sleep(60 * 60 * 5)
-
-    # Create a background thread for deleting automation log
-    thread = threading.Thread(target=delete_old_automationlog_folders, daemon=True)
-    thread.start()
-
     if show_browser_log:
         CommonUtil.show_browser_log = True
 
@@ -961,10 +1165,10 @@ def command_line_args() -> Path | None:
     if server or logout or api:
         # destroy_session()
         if api and server:
-            set_new_credentials(server=server, api_key=api)
+            await set_new_credentials(server=server, api_key=api)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
-            set_new_credentials(server="", api_key="")
+            await set_new_credentials(server="", api_key="")
             # zeuz_authentication_prompts_for_cli()
         else:
             CommonUtil.ExecLog(
@@ -995,55 +1199,113 @@ def command_line_args() -> Path | None:
     return log_dir
 
 
-def set_new_credentials(server, api_key):
+async def set_new_credentials(server, api_key):
     """Store new credentials in the settings file."""
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api_key)
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
+def print_system_info_version():
+    """Prints the system information and version of the Node"""
+    print(
+        f"Python {platform.python_version()} ({platform.architecture()[0]}) @ {sys.executable}"
+    )
+    print(f"Current file path: {os.path.abspath(__file__)}")
 
-def Bypass():
-    while True:
-        oLocalInfo = CommonUtil.MachineInfo()
-        testerid = (oLocalInfo.getLocalUser()).lower()
-        print("[Bypass] Zeuz Node is online: %s" % testerid)
-        RunProcess(testerid)
 
+def create_temp_ini_automation_log():
+    global TMP_INI_FILE
 
-if __name__ == "__main__":
+    root_dir = Path(__file__).parent
+    automation_log_dir = root_dir / "AutomationLog"
+    automation_log_dir.mkdir(exist_ok=True)
+    print(f"Created AutomationLog directory at {automation_log_dir}")
+
+    TMP_INI_FILE = automation_log_dir / ConfigModule.get_config_value("Advanced Options", "_file")
+
+async def main():
+    print_system_info_version()
+    load_dotenv()
+    adjust_python_path()
+    ConfigModule.remove_settings_lock_file()
+    ConfigModule.create_settings_config_file()
+    create_temp_ini_automation_log()
+
+    extension_downloader = ChromeExtensionDownloader()
+    extension_downloader.cleanup_extensions()
+
+    rich_traceback.install(show_locals=True, max_frames=1)
+
+    # Suppress the InsecureRequestWarning since we use verify=False parameter.
+    requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
+
+    # Disable WebdriverManager SSL verification.
+    os.environ["WDM_SSL_VERIFY"] = "0"
+
+    colorama_init(autoreset=True)
+
+    kill_old_process(Path.cwd().parent / "pid.txt")
+    check_min_python_version(min_python_version="3.11", show_warning=True)
+
+    # Setup Node.js and Appium before other operations
+    setup_nodejs_appium()
+
+    update_outdated_modules()
+    asyncio.create_task(start_server())
+    asyncio.create_task(upload_android_ui_dump())
+    asyncio.create_task(delete_old_automationlog_folders())
+    await destroy_session()
+
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
     console = Console()
 
     try:
-        log_dir = command_line_args()
+        log_dir = await command_line_args()
     except Exception as e:
-        from colorama import Fore
-
         print(Fore.RED + str(e))
         print("Exiting...")
         os._exit(1)
 
-    if local_run:
-        Local_run(log_dir=log_dir)
+    server_name = (
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+        .strip('"')
+        .strip()
+    )
+    api = (
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+        .strip('"')
+        .strip()
+    )
+
+    if len(server_name) == 0 and len(api) == 0:
+        console.print(
+            "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+            style="bold red",
+        )
+        console.print("Please log in to ZeuZ server and connect.")
+        await asyncio.sleep(1)
+
     else:
-        # Bypass()
+        asyncio.create_task(Login(
+            server_name=server_name,
+            log_dir=log_dir,
+        ))
+    while True:
+        if STATE.reconnect_with_credentials is not None:
+            await destroy_session()
+            server_name = STATE.reconnect_with_credentials.server
+            api_key = STATE.reconnect_with_credentials.api_key
+            await set_new_credentials(server=server_name, api_key=api_key)
 
-        print_login_information = True
-        while True:
-            if STATE.reconnect_with_credentials is not None:
-                destroy_session()
-                server_name = STATE.reconnect_with_credentials.server
-                api_key = STATE.reconnect_with_credentials.api_key
-                set_new_credentials(server=server_name, api_key=api_key)
-
-                STATE.reconnect_with_credentials = None
-
-            server_name = ConfigModule.get_config_value(
-                AUTHENTICATION_TAG, "server_address"
-            ).strip('""').strip()
+            STATE.reconnect_with_credentials = None
+            server_name = (
+                ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+                .strip('"')
+                .strip()
+            )
             api = (
                 ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
                 .strip('"')
@@ -1051,29 +1313,16 @@ if __name__ == "__main__":
             )
 
             if len(server_name) == 0 and len(api) == 0:
-                if print_login_information:
-                    console.print("\n" + ":red_circle: " + "Zeuz Node is disconnected.", style="bold red")
-                    console.print("Please log in to ZeuZ server and connect.")
-
-                    print_login_information = False
-                # If server_name and api are not set, then wait for the user to
-                # connect via the ZeuZ server.
-                time.sleep(1)
-                continue
-
-            Login(
-                server_name=server_name,
-                run_once=RUN_ONCE,
-                log_dir=log_dir,
-            )
-
-            if RUN_ONCE:
                 console.print(
-                    ":yellow_circle: " +
-                    "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.",
-                    style="bold cyan",
+                    "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+                    style="bold red",
                 )
-                os._exit(0)
+                console.print("Please log in to ZeuZ server and connect.")
 
-            print_login_information = True
-            time.sleep(1)
+            asyncio.create_task(Login(
+                server_name=server_name,
+                log_dir=log_dir,
+            ))
+        await asyncio.sleep(1)
+
+asyncio.run(main())
