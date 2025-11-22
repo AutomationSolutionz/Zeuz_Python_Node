@@ -10,6 +10,7 @@ APT_PACKAGES=(
   libgirepository1.0-dev
   libcairo2-dev
   xdotool
+  scrot
 )
 
 DNF_PACKAGES=(
@@ -20,6 +21,7 @@ DNF_PACKAGES=(
   xdotool
   python3-devel
   cairo-gobject-devel
+  scrot
 )
 
 PACMAN_PACKAGES=(
@@ -30,6 +32,7 @@ PACMAN_PACKAGES=(
   cairo
   xdotool
   gobject-introspection
+  scrot
 )
 
 BREW_PACKAGES=(
@@ -38,6 +41,7 @@ BREW_PACKAGES=(
   cairo
   xdotool
   gobject-introspection
+  scrot
 )
 
 # Function to join array into space-separated string

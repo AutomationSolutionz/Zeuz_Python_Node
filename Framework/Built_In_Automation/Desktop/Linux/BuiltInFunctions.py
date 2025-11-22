@@ -101,6 +101,47 @@ class Accessible:
 
 MODULE_NAME = inspect.getmodulename(__file__) or "BuiltInFunctions"
 ui_xml_strings = [] # needed for generating XML tree
+LATEST_APP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "latest_app.txt")
+
+
+def save_latest_app_name(app_name: str):
+    """Save the latest used application name to a file."""
+    try:
+        with open(LATEST_APP_FILE, "w") as f:
+            f.write(app_name)
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Failed to save latest app name: {e}", 3)
+
+
+def get_latest_app_name() -> str | None:
+    """Get the latest used application name from the file."""
+    try:
+        if os.path.exists(LATEST_APP_FILE):
+            with open(LATEST_APP_FILE, "r") as f:
+                return f.read().strip()
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Failed to get latest app name: {e}", 3)
+    return None
+
+
+def capture_screenshot(file_path: str) -> bool:
+    """Capture screenshot using available tools (scrot, gnome-screenshot, import)."""
+    tools = [
+        ["scrot", file_path],
+        ["gnome-screenshot", "-f", file_path],
+        ["import", "-window", "root", file_path]
+    ]
+
+    for cmd in tools:
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+    
+    CommonUtil.ExecLog(MODULE_NAME, "Failed to capture screenshot. Ensure scrot, gnome-screenshot, or imagemagick is installed.", 3)
+    return False
 
 
 def convert_data_set_to_dict(data_set: DataSet) -> dict[str, str]:
@@ -597,6 +638,7 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
             exit_code = os.system(command)
             if exit_code == 0:
                 CommonUtil.ExecLog(sModuleInfo, f"Successfully launched '{app_name}' with command: {command}", 1)
+                save_latest_app_name(app_name)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, f"Failed to launch '{app_name}' (exit code: {exit_code})", 3)
@@ -611,6 +653,7 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
             exit_code = os.system(command)
             if exit_code == 0:
                 CommonUtil.ExecLog(sModuleInfo, f"Successfully launched '{app_name}' with command: {command}", 1)
+                save_latest_app_name(app_name)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, f"Failed to launch '{app_name}' (exit code: {exit_code})", 3)

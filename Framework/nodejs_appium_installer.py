@@ -4,6 +4,7 @@ import platform
 import subprocess
 import tarfile
 import zipfile
+import shutil
 from pathlib import Path
 import json
 import requests
@@ -99,7 +100,7 @@ def install_nodejs():
     print("Downloading Node.js...")
     response = requests.get(url, verify=False)
     response.raise_for_status()
-    with open(archive_path, 'wb') as out_file:
+    with open(archive_path, "wb") as out_file:
         out_file.write(response.content)
 
     try:
@@ -196,7 +197,9 @@ def check_appium_drivers():
             text=True,
         )
         drivers_data = json.loads(result.stdout)
-        return [name for name, info in drivers_data.items() if info.get("installed", False)]
+        return [
+            name for name, info in drivers_data.items() if info.get("installed", False)
+        ]
     except:  # noqa: E722
         return []
 
@@ -213,7 +216,9 @@ def check_installations():
     if npm_path.exists():
         try:
             result = subprocess.run(
-                [str(npm_path), "list", "-g", "--json", "appium"], capture_output=True, text=True
+                [str(npm_path), "list", "-g", "--json", "appium"],
+                capture_output=True,
+                text=True,
             )
             npm_data = json.loads(result.stdout)
             appium_installed = "appium" in npm_data.get("dependencies", {})
@@ -234,9 +239,73 @@ def install_missing_drivers(missing_drivers):
     install_drivers(missing_drivers)
 
 
+def check_and_remove_global_appium():
+    """Check for and remove existing global Appium installations not managed by us."""
+    print("Checking for conflicting global Appium installations...")
+
+    # Method 1: Check using 'which appium'
+    appium_bin = shutil.which("appium")
+    if appium_bin:
+        appium_path = Path(appium_bin).resolve()
+        node_dir = get_node_dir().resolve()
+
+        try:
+            # Check if appium is within our node directory
+            appium_path.relative_to(node_dir)
+            # If it is, we are good
+        except ValueError:
+            print(f"Found conflicting Appium at {appium_path}")
+            print("Uninstalling old Appium version...")
+            try:
+                is_windows = platform.system() == "Windows"
+                subprocess.run(
+                    ["npm", "uninstall", "-g", "appium"], check=True, shell=is_windows
+                )
+                print("Successfully uninstalled conflicting Appium")
+            except Exception as e:
+                print(f"Warning: Failed to uninstall conflicting Appium: {e}")
+            return
+
+    # Method 2: Check using 'npm list -g appium' (if npm is available in system path)
+    # This catches cases where appium is installed but not in PATH
+    npm_bin = shutil.which("npm")
+    if npm_bin:
+        try:
+            # Check if this npm is ours
+            npm_path = Path(npm_bin).resolve()
+            node_dir = get_node_dir().resolve()
+            try:
+                npm_path.relative_to(node_dir)
+                # If it is our npm, skip this check as we handle our own appium
+                return
+            except ValueError:
+                pass
+
+            # Check for global appium using system npm
+            is_windows = platform.system() == "Windows"
+            result = subprocess.run(
+                ["npm", "list", "-g", "--json", "appium"],
+                capture_output=True,
+                text=True,
+                shell=is_windows,
+            )
+            npm_data = json.loads(result.stdout)
+            if "appium" in npm_data.get("dependencies", {}):
+                print("Found conflicting Appium in global npm modules")
+                print("Uninstalling old Appium version...")
+                subprocess.run(
+                    ["npm", "uninstall", "-g", "appium"], check=True, shell=is_windows
+                )
+                print("Successfully uninstalled conflicting Appium")
+        except Exception as e:
+            # Don't fail if npm check fails, just log warning
+            print(f"Warning: Failed to check/uninstall global Appium via npm: {e}")
+
+
 def setup_nodejs_appium():
     """Main setup function."""
     try:
+        check_and_remove_global_appium()
         update_path()  # Ensure Node.js is in PATH from the start
 
         print("Checking Node.js and Appium installation...")
