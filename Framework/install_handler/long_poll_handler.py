@@ -4,12 +4,14 @@ import traceback
 import random
 import platform
 import httpx
+import inspect
 from colorama import Fore
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import send_response, debug, read_node_id
 from pydantic import BaseModel
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
+from Framework.install_handler.android.emulator import create_avd_from_system_image
 
 if debug:
     print(f"[installer] Debug mode enabled")
@@ -47,7 +49,8 @@ class InstallHandler:
                             "status": service["status"],
                             "comment": service["comment"],
                             "install_text": service["install_text"],
-                            "os": service["os"]
+                            "os": service["os"],
+                            "user_password": service["user_password"]
                         }
                         filtered_category["services"].append(filtered_service)
                     
@@ -61,17 +64,78 @@ class InstallHandler:
             elif action in ["install", "status"]:
                 if debug: print(f"[installer] Installing {message}")
 
+                # Extract user_password only for install actions (not for status)
+                user_password = ""
+                if action == "install" and message.value.item:
+                    user_password = getattr(message.value.item, 'user_password', "") or ""
+
                 category = [i for i in services if i["category"] == message.value.item.category][0]
+                
+                # Handle AndroidEmulator category
+                if category["category"] == "AndroidEmulator":
+                    service_name = message.value.item.name
+                    
+                    # Case 1: No service name or empty - get system images list
+                    if not service_name or service_name is None or service_name.strip() == "":
+                        if action == "install" and "install_function" in category and category["install_function"]:
+                            func = category["install_function"]
+                            await func()
+                            return
+                        else:
+                            print(f"[installer] No install_function found for AndroidEmulator category")
+                            return
+                    
+                    # Case 2: Service name is a system image (starts with "system-images;")
+                    if service_name.startswith("system-images;"):
+                        if action == "install":
+                            await create_avd_from_system_image(service_name)
+                            return
+                        else:
+                            print(f"[installer] Status check not supported for system images")
+                            return
+                    
+                    # Case 3: Service name is an existing AVD - find it in services list
+                    service = None
+                    for s in category["services"]:
+                        if s["name"] == service_name:
+                            service = s
+                            break
+                    
+                    if service:
+                        if action == "install":
+                            func = service.get("install_function")
+                        elif action == "status":
+                            func = service.get("status_function")
+                        
+                        if func is None:
+                            print(f"[installer] Function not found for {service_name}")
+                            return
+                        await func()
+                    else:
+                        print(f"[installer] Service '{service_name}' not found in AndroidEmulator category")
+                    return
+                
+                # Normal service-level install for other categories
                 service = [i for i in category["services"] if i["name"] == message.value.item.name][0]
                 if action == "install":
                     func = service["install_function"]
+                    if func is None:
+                        print(f"[installer] Function not found for {message.value.item.name}")
+                        return
+                    # Check if function accepts parameters
+                    sig = inspect.signature(func)
+                    if len(sig.parameters) > 0:
+                        # Function accepts parameters, pass user_password
+                        await func(user_password)
+                    else:
+                        # Function doesn't accept parameters, call without (backward compatibility)
+                        await func()
                 elif action == "status":
                     func = service["status_function"]
-                
-                if func is None:
-                    print(f"[installer] Function not found for {message.value.item.name}")
-                    return
-                await func()
+                    if func is None:
+                        print(f"[installer] Function not found for {message.value.item.name}")
+                        return
+                    await func()
 
         except Exception as e:
             traceback.print_exc()
