@@ -1,13 +1,12 @@
-from Framework.install_handler.utils import check_package_available, install_package, send_response
-import asyncio
+from Framework.install_handler.utils import send_response
+from Framework.install_handler.installer_tools import InstallerTools
+
+tools = InstallerTools()
 
 async def check_status():
     """Checks if mariadb Python library is installed."""
 
-    print("[database][mariadb] Checking status...")
-
-    if await check_package_available("mariadb"):
-        print(f"[database][MariaDB] MariaDB connector is installed.")
+    if await tools.check_python_module_available("mariadb"):
         await send_response({
             "action": "status",
             "data": {
@@ -19,7 +18,6 @@ async def check_status():
         })
         return True
     else:
-        print("[database][mariadb] MariaDB connector is not installed.")
         await send_response({
             "action": "status",
             "data": {
@@ -33,11 +31,10 @@ async def check_status():
 
 
 
-async def install():
+async def install(user_password: str = ""):
     is_already_installed = await check_status()
 
     if not is_already_installed:
-        print("[database][mariadb] Installing...")
         await send_response({
             "action": "status",
             "data": {
@@ -47,20 +44,47 @@ async def install():
                 "comment": "Downloading and installing, please wait...",
             }
         })
-        install_mariadb, msg = await install_package('mariadb')
-        if install_mariadb:
-            print("[database][mariadb] Installed successfully")
-            await send_response({
-                "action": "status",
-                "data": {
-                    "category": "Database",
-                    "name": "MariaDB",
-                    "status": "installed",
-                    "comment": "MariaDB connector has been installed successfully.",
-                }
-            })
-            return True
+
+        # MariaDB dependencies installation required if on Linux (sudo password required)
+        if tools.os_name == 'Linux':
+            install_libmariadb, msg = await tools.install_linux_packages(
+                packages=['libmariadb3', 'libmariadb-dev'], 
+                password=user_password
+            )
         else:
+            # If not Linux, bypass dependency installation as it's not required
+            install_libmariadb, msg = True, ""
+
+        # If dependency installation was successful (or bypassed)
+        if install_libmariadb:
+            # Install Python MariaDB connector
+            install_mariadb, msg = await tools.add_python_package('mariadb')
+            if install_mariadb:
+                # If MariaDB connector installation is successful
+                await send_response({
+                    "action": "status",
+                    "data": {
+                        "category": "Database",
+                        "name": "MariaDB",
+                        "status": "installed",
+                        "comment": "MariaDB connector has been installed successfully.",
+                    }
+                })
+                return True
+            else:
+                # If MariaDB connector installation failed
+                await send_response({
+                    "action": "status",
+                    "data": {
+                        "category": "Database",
+                        "name": "MariaDB",
+                        "status": "error",
+                        "comment": msg,
+                    }
+                })
+                return False
+        else:
+            # If MariaDB dependency installation failed
             await send_response({
                 "action": "status",
                 "data": {
@@ -71,10 +95,8 @@ async def install():
                 }
             })
             return False
+        
 
     else:
+        # If already installed, bypass entire installation procedure
         return True
-
-
-if __name__ == "__main__":
-    asyncio.run(check_status())
