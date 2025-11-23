@@ -15,16 +15,12 @@ import (
 	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
 )
 
-const (
-	zeuzDir = "ZeuZ_Node"
-)
-
 var (
 	version = "dev"
 	branch  = flag.String("branch", "", "Branch to download (defaults to tagged version)")
+	cleanFlag = flag.Bool("clean", false, "Remove ZeuZ Node directory and $HOME/.zeuz and exit")
 )
 
-// downloadFile downloads a file from URL to a local path
 func downloadFile(url, destPath string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -135,8 +131,19 @@ func getZeuZNodeURL() string {
 	return "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
 }
 
+func getZeuZPostfix() string {
+	if *branch != "" {
+		return *branch
+	}
+	if version != "dev" && !strings.HasPrefix(version, "dev-") {
+		return version
+	}
+	return "dev"
+}
+
 // setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
 func setupZeuzNode() error {
+	zeuzDir := fmt.Sprintf("Zeuz_Python_Node-%s", getZeuZPostfix())
 	// Check if ZeuZ Node directory already exists and contains files
 	if info, err := os.Stat(zeuzDir); err == nil && info.IsDir() {
 		// Check if directory is not empty
@@ -264,6 +271,37 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("✅ ZeuZ Node %s\n", version)
+
+	zeuzDir := fmt.Sprintf("Zeuz_Python_Node-%s", getZeuZPostfix())
+
+	if *cleanFlag {
+		var removedAny bool
+		if err := os.RemoveAll(zeuzDir); err == nil {
+			fmt.Printf("Removed %s\n", zeuzDir)
+			removedAny = true
+		} else if !os.IsNotExist(err) {
+			fmt.Printf("Failed to remove %s: %v\n", zeuzDir, err)
+		}
+
+		home, err := os.UserHomeDir()
+		if err == nil {
+			zeuzHome := filepath.Join(home, ".zeuz")
+			if err := os.RemoveAll(zeuzHome); err == nil {
+				fmt.Printf("Removed %s\n", zeuzHome)
+				removedAny = true
+			} else if !os.IsNotExist(err) {
+				fmt.Printf("Failed to remove %s: %v\n", zeuzHome, err)
+			}
+		} else {
+			fmt.Printf("Could not determine user home dir: %v\n", err)
+		}
+
+		if !removedAny {
+			fmt.Println("Nothing removed. No matching directories found.")
+		} else {
+			fmt.Println("Cleanup complete — proceeding to download & install a fresh copy.")
+		}
+	}
 
 	// Setup ZeuZ Node directory and change into it
 	if err := setupZeuzNode(); err != nil {

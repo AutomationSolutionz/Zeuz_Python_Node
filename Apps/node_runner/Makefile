@@ -4,7 +4,7 @@
 BUILD_DIR=build
 
 # Version info
-VERSION?=dev
+VERSION ?= v$(shell if [ -f ../../Framework/Version.txt ]; then grep -Eo "version[[:space:]]*=[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+" ../../Framework/Version.txt | head -n1 | sed 's/.*=//; s/ //g'; else echo dev; fi)
 APPNAME=ZeuZ_Node
 LDFLAGS=-X main.version=$(VERSION)
 
