@@ -77,7 +77,7 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": node_js_22.check_status,
-               "install_function": node_js_22.install,
+               "install_function": node_js_22.check_status, #on purpose. Node 22 is installed when node starts.
                "user_password": "no",
            },
            {
@@ -87,7 +87,7 @@ services = [
                "install_text": "install",
                "os": ["windows", "linux", "darwin"],
                "status_function": appium.check_status,
-               "install_function": appium.install,
+               "install_function": appium.check_status, #on purpose. Appium is installed when node starts.
                "user_password": "no",
            },
            {
