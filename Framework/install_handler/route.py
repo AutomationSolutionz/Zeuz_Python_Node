@@ -168,7 +168,7 @@ services = [
                "os": ["windows", "linux", "darwin"],
                "status_function": mariadb.check_status,
                "install_function": mariadb.install,
-               "user_password": "no"
+               "user_password": "yes"
            },
            {
                "name": "Oracle",
