@@ -121,29 +121,27 @@ class InstallerTools:
             tuple: (bool, str) - (success_status, error_message)
         """
         self.logger.debug(f"{packages=}")
-        # self.logger.debug(f"{password=}") # Displaying password is not recommended
 
         if not packages:
             self.logger.warning("Empty package list received, no packages installed.")
             return True, "No packages to install"
         
         try:
-            #TODO [server]: Handle incorrect password attempts
-            #TODO: Do apt-get update before attempting installation
-
             # Installation command
             package_manager = self._get_linux_package_manager()
-            cmd = ["sudo", "-S", package_manager, "install", "-y"] + packages
+            # -p '' to suppress the "[sudo] password for user:" prompt from stdout
+            cmd = ["sudo", "-S", "-p", "", package_manager, "install", "-y"] + packages
             
-            # If password is provided, use it, otherwise rely on system sudo config
+            # Prepare the password input. newline to simulate the user pressing 'Enter'.
             if password:
-                sudo_input = password
+                sudo_input = password + "\n"
             else:
-                self.logger.warning("No password received. Continuing with no password...")
-                sudo_input = ""
+                self.logger.warning("No password received. Attempting passwordless sudo...")
+                sudo_input = "\n" 
             
             self.logger.info(f"Installing packages...")
             self.logger.debug(f"{cmd = }")
+            
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdin=asyncio.subprocess.PIPE,
@@ -151,8 +149,7 @@ class InstallerTools:
                 stderr=asyncio.subprocess.PIPE
             )
             
-            # Enter password and capture output
-            stdout, stderr = await process.communicate(input=sudo_input.encode() if sudo_input else None)
+            stdout, stderr = await process.communicate(input=sudo_input.encode())
             
             # Decode output
             stdout_str = stdout.decode('utf-8') if stdout else ""
@@ -163,8 +160,8 @@ class InstallerTools:
                 self.logger.info(f"Successfully installed: {', '.join(packages)}")
                 return True, ""
             else:
-                error_msg = stderr_str if stderr_str else stdout_str
-                self.logger.error(f"Installation failed\n[stdout]\n{stdout}\n\n[stderr]\n{stderr}")
+                error_msg = f"{stderr_str}\n{stdout_str}".strip()
+                self.logger.error(f"Installation failed: {error_msg}")
                 return False, error_msg
                 
         except FileNotFoundError:
@@ -175,7 +172,7 @@ class InstallerTools:
         except Exception as e:
             self.logger.exception("Unexpected exception")
             return False, f"Unexpected error: {str(e)}"
-        
+
 
     class ValidationError(Exception):
         """Input validation exception"""
