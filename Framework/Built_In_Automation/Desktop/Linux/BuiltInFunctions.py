@@ -124,8 +124,123 @@ def get_latest_app_name() -> str | None:
     return None
 
 
-def capture_screenshot(file_path: str) -> bool:
-    """Capture screenshot using available tools (scrot, gnome-screenshot, import)."""
+def _get_window_id_for_app(app_name: str | None) -> str | None:
+    """Return a window id for the requested app name, or None if not found.
+
+    - If app_name is provided, tries to find the first visible window with that name using xdotool.
+    - Falls back to the active window using xdotool if no app_name was resolved or found.
+    """
+    try:
+        if app_name:
+            # search for visible window by name (use substring regex match)
+            # use case-insensitive matching in regex
+            pattern = f"(?i).*{re.escape(app_name)}.*"
+            res = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', pattern], capture_output=True, text=True)
+            win_lines = [l for l in res.stdout.splitlines() if l.strip()]
+            if win_lines:
+                return win_lines[0].strip()
+            # try class match
+            res = subprocess.run(['xdotool', 'search', '--onlyvisible', '--class', pattern], capture_output=True, text=True)
+            win_lines = [l for l in res.stdout.splitlines() if l.strip()]
+            if win_lines:
+                return win_lines[0].strip()
+            # try matching by exec command (from desktop file) or by process name (pgrep)
+            try:
+                app_key, matched_name, exec_cmd = find_best_app_match(app_name) or (None, None, None)
+            except Exception:
+                app_key, matched_name, exec_cmd = (None, None, None)
+
+            if exec_cmd:
+                # try to find processes using exec_cmd
+                for pid in get_process_ids(exec_cmd):
+                    res = subprocess.run(['xdotool', 'search', '--onlyvisible', '--pid', str(pid)], capture_output=True, text=True)
+                    win_lines = [l for l in res.stdout.splitlines() if l.strip()]
+                    if win_lines:
+                        return win_lines[0].strip()
+
+            # try matching by pid for processes that match app_name
+            for pid in get_process_ids(app_name):
+                res = subprocess.run(['xdotool', 'search', '--onlyvisible', '--pid', str(pid)], capture_output=True, text=True)
+                win_lines = [l for l in res.stdout.splitlines() if l.strip()]
+                if win_lines:
+                    return win_lines[0].strip()
+            # as a last resort, iterate visible windows and check names for substring match
+            res = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '.*'], capture_output=True, text=True)
+            win_lines = [l for l in res.stdout.splitlines() if l.strip()]
+            for wid in win_lines:
+                try:
+                    name = subprocess.run(['xdotool', 'getwindowname', wid], capture_output=True, text=True).stdout.strip()
+                    if app_name.lower() in name.lower():
+                        return wid.strip()
+                except Exception:
+                    continue
+        # fallback to active window
+        res = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
+        winid = res.stdout.strip()
+        if winid:
+            CommonUtil.ExecLog(MODULE_NAME, f"Selected window id {winid} for app '{app_name}'", 1)
+            CommonUtil.ExecLog(MODULE_NAME, f"Trying xwd/convert capture for window id: {winid}", 1)
+            return winid
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Window lookup error: {e}", 3)
+    return None
+
+
+def capture_screenshot(file_path: str, app_name: str | None = None) -> bool:
+    """Capture screenshot of the desired window using xwd (and ImageMagick convert),
+    falling back to scrot/gnome-screenshot/import if necessary.
+
+    The function will try to capture the latest opened application window if available
+    (via `get_latest_app_name()`); otherwise it will capture the currently active window.
+    """
+    desired_app = app_name or get_latest_app_name()
+    # Attempt xwd + convert flow first (capture only the target window)
+    try:
+        winid = _get_window_id_for_app(desired_app)
+        if winid:
+            # Try to use xwd + convert (ImageMagick) to create the requested file
+            # If convert is not available, xwd will produce an .xwd output (which may not be desired)
+            # We'll attempt convert and if it fails fall back to writing xwd file then try to convert
+            convert_available = subprocess.run(['which', 'convert'], capture_output=True, text=True).returncode == 0
+            if convert_available:
+                # Run xwd and pipe to convert which will write the final file
+                p1 = subprocess.Popen(['xwd', '-silent', '-id', winid], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                p2 = subprocess.Popen(['convert', 'xwd:-', file_path], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if p1.stdout:
+                    p1.stdout.close()
+                out, err = p2.communicate()
+                if p2.returncode == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                    return True
+            else:
+                # convert not available, write xwd to file and then optionally convert using import
+                tmp_xwd = file_path if file_path.endswith('.xwd') else f"{file_path}.xwd"
+                exit_code = subprocess.run(['xwd', '-silent', '-id', winid, '-out', tmp_xwd], capture_output=True).returncode
+                if exit_code == 0 and os.path.exists(tmp_xwd) and os.path.getsize(tmp_xwd) > 0:
+                    # If desired output wasn't .xwd and ImageMagick 'convert' exists, try to convert
+                    if not file_path.endswith('.xwd') and subprocess.run(['which', 'convert'], capture_output=True).returncode == 0:
+                        conv_exit = subprocess.run(['convert', tmp_xwd, file_path], capture_output=True).returncode
+                        if conv_exit == 0 and os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                            # remove the temporary xwd file
+                            try:
+                                os.remove(tmp_xwd)
+                            except Exception:
+                                pass
+                            return True
+                    # If the caller wanted .xwd (or conversion not possible), move or rename temporary file
+                    if tmp_xwd != file_path:
+                        try:
+                            os.replace(tmp_xwd, file_path)
+                        except Exception:
+                            pass
+                    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                        return True
+    except FileNotFoundError:
+        # xwd not present; fallback to previously supported tools
+        pass
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"xwd/convert screenshot failed: {e}", 3)
+
+    # Fallback: try scrot / gnome-screenshot / import (root window capture) like before
     tools = [
         ["scrot", file_path],
         ["gnome-screenshot", "-f", file_path],
@@ -139,8 +254,8 @@ def capture_screenshot(file_path: str) -> bool:
                 return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             continue
-    
-    CommonUtil.ExecLog(MODULE_NAME, "Failed to capture screenshot. Ensure scrot, gnome-screenshot, or imagemagick is installed.", 3)
+
+    CommonUtil.ExecLog(MODULE_NAME, "Failed to capture screenshot. Ensure xwd/xdotool and at least one screenshot tool like scrot, gnome-screenshot, or imagemagick are installed.", 3)
     return False
 
 
@@ -218,13 +333,23 @@ def get_extended_info(accessible):
     return info_str
 
 def get_position_info(accessible):
+    """Return position string for XML with coordinates relative to:
+    - 'desktop' (default): absolute coordinates using DESKTOP_COORDS
+    - 'app': relative to the application's window origin
+    - 'parent': relative to the immediate parent's origin
+
+    If computing a relative coordinate fails, falls back to desktop coordinates.
+    """
     position_str = ''
     try:
         component_iface = accessible.queryComponent()
         if component_iface:
-            x, y = component_iface.getPosition(pyatspi.DESKTOP_COORDS)
-            position_str += f' x="{x}" y="{y}"'
+            # Get absolute (desktop) position first
+            x_abs, y_abs = component_iface.getPosition(pyatspi.DESKTOP_COORDS)
             width, height = component_iface.getSize()
+            x, y = x_abs, y_abs
+
+            position_str += f' x="{x}" y="{y}"'
             position_str += f' width="{width}" height="{height}"'
     except Exception:
         pass
@@ -283,7 +408,7 @@ def dump_node(node: Accessible, indent_level=0, path=[], recursive=True) -> list
         for i in range(child_count):
             child = node.get_child_at_index(i)
             if recursive:
-                dump_node(child, indent_level + 1, path + [i])
+                dump_node(child, indent_level + 1, path + [i], recursive=recursive)
         ui_xml_strings.append(f'{indent}</{role}>')
     else:
         ui_xml_strings.append(f'{indent}<{role} name="{safe_name}"{attributes}{path_attr}{position_info}{iface_attrs}{text_content_attr}/>')
@@ -446,6 +571,11 @@ def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_fa
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
+    original_node = node
+    # Use module-level helper get_node_center_coords
+
+    # Use module-level helper click_coords_with_xdotool
+
     while node:
         try:
             action_iface = node.queryAction()
@@ -463,8 +593,24 @@ def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_fa
                     CommonUtil.ExecLog(sModuleInfo, f"Clicked element using action: {action_name}", 1)
                     return "passed"
                 else:
-                    node = node.parent
-                    continue
+                    # No action found on this node: consider clicking via xdotool using node coordinates
+                    # Attempt to compute center coords for the current node
+                    coords = get_node_center_coords(node)
+                    if coords:
+                        # Attempt to get the application name if available
+                        app_name = None
+                        try:
+                            app_acc = node.get_application()
+                            if app_acc and getattr(app_acc, 'name', None):
+                                app_name = app_acc.name
+                        except Exception:
+                            app_name = None
+                        if click_coords_with_xdotool(coords, app_name=app_name):
+                            CommonUtil.ExecLog(sModuleInfo, f"Clicked element using xdotool at: {coords}", 1)
+                            return "passed"
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, f"xdotool could not activate the application '{app_name}', aborting click", 3)
+                            return "zeuz_failed"
             else:
                 node = node.parent
                 continue
@@ -473,7 +619,135 @@ def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_fa
             continue
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to click element: {e}", 3)
+    # try a final attempt using xdotool on the original node
+    coords = get_node_center_coords(original_node)
+    if coords:
+        app_name = None
+        try:
+            app_acc = original_node.get_application()
+            if app_acc and getattr(app_acc, 'name', None):
+                app_name = app_acc.name
+        except Exception:
+            app_name = None
+        if click_coords_with_xdotool(coords, app_name=app_name):
+            CommonUtil.ExecLog(sModuleInfo, f"Clicked element using xdotool at: {coords}", 1)
+            return "passed"
     return "zeuz_failed"
+
+
+def get_node_center_coords(node: Accessible) -> tuple[int, int] | None:
+    """Module-level helper to compute center coordinates of a node in desktop coords."""
+    try:
+        comp = node.queryComponent()
+        if comp:
+            pos_func = getattr(comp, 'getPosition', None)
+            size_func = getattr(comp, 'getSize', None)
+            if pos_func and size_func:
+                x, y = pos_func(pyatspi.DESKTOP_COORDS)
+                w, h = size_func()
+                cx = int(x + (w / 2))
+                cy = int(y + (h / 2))
+                return cx, cy
+    except Exception:
+        return None
+    return None
+
+
+def click_coords_with_xdotool(coords: tuple[int, int], app_name: str | None = None) -> bool:
+    """Module-level helper to click coordinates via xdotool and optionally activate the app window."""
+    try:
+        x, y = coords
+        if app_name:
+            try:
+                winid = _get_window_id_for_app(app_name)
+                # If we couldn't find the desired window id for the app, do not click
+                if not winid:
+                    CommonUtil.ExecLog(MODULE_NAME, f"Could not find a window for app '{app_name}'", 3)
+                    return False
+                # Try a few methods to activate/raise the window so it's on top
+                activated = False
+                try:
+                    # Prefer --sync if available
+                    subprocess.run(['xdotool', 'windowactivate', '--sync', winid], capture_output=True)
+                    activated = True
+                except Exception:
+                    try:
+                        subprocess.run(['xdotool', 'windowactivate', winid], capture_output=True)
+                        activated = True
+                    except Exception:
+                        activated = False
+
+                try:
+                    subprocess.run(['xdotool', 'windowraise', winid], capture_output=True)
+                except Exception:
+                    # Not critical
+                    pass
+
+                # If wmctrl is available, try using it to activate the window (more reliable on some WMs)
+                try:
+                    if subprocess.run(['which', 'wmctrl'], capture_output=True, text=True).returncode == 0:
+                        subprocess.run(['wmctrl', '-i', '-a', winid], capture_output=True)
+                        activated = True
+                except Exception:
+                    pass
+
+                # Verify that the requested window is now active; retry a few times
+                for _ in range(5):
+                    try:
+                        active = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True).stdout.strip()
+                        if active and active == winid:
+                            activated = True
+                            break
+                    except Exception:
+                        pass
+                    time.sleep(0.1)
+                if not activated:
+                    CommonUtil.ExecLog(MODULE_NAME, f"Failed to activate/raise window {winid} for app '{app_name}'", 3)
+                    return False
+            except Exception:
+                pass
+        subprocess.run(['xdotool', 'mousemove', '--sync', str(x), str(y)], check=True, capture_output=True)
+        time.sleep(0.05)
+        subprocess.run(['xdotool', 'click', '1'], check=True, capture_output=True)
+        return True
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"xdotool click failed: {e}", 3)
+        return False
+
+
+@logger
+def click_element_xdotool(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Click an element using xdotool by computing coordinates from the node in the dataset."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    data_dict = convert_data_set_to_dict(data_set)
+    node = get_node(data_dict)
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        return "zeuz_failed"
+
+    coords = get_node_center_coords(node)
+    if not coords:
+        CommonUtil.ExecLog(sModuleInfo, "Could not determine coordinates for node", 3)
+        return "zeuz_failed"
+
+    app_name = None
+    try:
+        app_acc = node.get_application()
+        if app_acc and getattr(app_acc, 'name', None):
+            app_name = app_acc.name
+    except Exception:
+        app_name = None
+
+    # Require app_name to bring it to front before clicking; if we can't determine it, fail
+    if not app_name:
+        CommonUtil.ExecLog(sModuleInfo, "No application context found for xdotool click; aborting", 3)
+        return "zeuz_failed"
+    if click_coords_with_xdotool(coords, app_name=app_name):
+        CommonUtil.ExecLog(sModuleInfo, f"Clicked element using xdotool at: {coords}", 1)
+        return "passed"
+    else:
+        return "zeuz_failed"
 
 
 @logger
@@ -483,12 +757,22 @@ def click_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     data_dict = convert_data_set_to_dict(data_set)
+    # Check for explicit xdotool method in the dataset
+    use_xdotool = False
+    for left, mid, right in data_set:
+        try:
+            if mid.strip().lower() == "action" and left.strip().lower() in ("click method", "method", "click using") and right.strip().lower() == "xdotool":
+                use_xdotool = True
+        except Exception:
+            continue
     node = get_node(data_dict)
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
     try:
+        if use_xdotool:
+            return click_element_xdotool(data_set)
         return click_element_by_node(node)
     except NotImplementedError:
         CommonUtil.ExecLog(sModuleInfo, "This node does not support the Action interface.", 3)

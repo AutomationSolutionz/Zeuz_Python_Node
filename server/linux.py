@@ -50,7 +50,7 @@ def inspect(app_name: str | None = None):
         full_screenshot_path = os.path.abspath(SCREENSHOT_PATH)
         
         screenshot_base64 = None
-        if BuiltInFunctions.capture_screenshot(full_screenshot_path):
+        if BuiltInFunctions.capture_screenshot(full_screenshot_path, target_app):
             try:
                 with open(full_screenshot_path, 'rb') as img_file:
                     screenshot_bytes = img_file.read()
