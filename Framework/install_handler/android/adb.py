@@ -62,7 +62,25 @@ async def check_status() -> bool:
 
 
 async def install():
-   print("[adb] Installing...")
+   """Install ADB - checks if already installed, otherwise prompts to install Android SDK."""
+   print("[installer][android-adb] Installing...")
+   
+   # Check if ADB is already installed
+   if await check_status():
+       print("[installer][android-adb] ADB is already installed")
+       return
+   
+   # ADB is not installed, send response to install Android SDK
+   print("[installer][android-adb] ADB is not installed. Install Android SDK to get ADB.")
+   await send_response({
+       "action": "status",
+       "data": {
+           "category": "Android",
+           "name": "ADB",
+           "status": "not installed",
+           "comment": "Install the Android SDK, it will automatically install ADB.",
+       }
+   })
 
 
 
