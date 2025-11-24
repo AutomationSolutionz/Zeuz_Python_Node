@@ -10,7 +10,9 @@ APT_PACKAGES=(
   libgirepository1.0-dev
   libcairo2-dev
   xdotool
-  scrot
+  x11-apps            # provides xwd
+  imagemagick         # provides convert, import
+  wmctrl
 )
 
 DNF_PACKAGES=(
@@ -19,9 +21,11 @@ DNF_PACKAGES=(
   gobject-introspection-devel
   cairo-devel
   xdotool
+  xorg-x11-utils      # provides xwd on some distros
+  ImageMagick
+  wmctrl
   python3-devel
   cairo-gobject-devel
-  scrot
 )
 
 PACMAN_PACKAGES=(
@@ -32,7 +36,8 @@ PACMAN_PACKAGES=(
   cairo
   xdotool
   gobject-introspection
-  scrot
+  imagemagick
+  wmctrl
 )
 
 BREW_PACKAGES=(
@@ -41,7 +46,7 @@ BREW_PACKAGES=(
   cairo
   xdotool
   gobject-introspection
-  scrot
+  imagemagick
 )
 
 # Function to join array into space-separated string
@@ -74,3 +79,16 @@ else
 fi
 
 echo "✅ Installation complete."
+
+# Post-install sanity checks for screenshot/capture utilities
+echo "\nChecking availability of key utilities:" 
+REQUIRED_TOOLS=(xdotool xwd convert import wmctrl)
+for t in "${REQUIRED_TOOLS[@]}"; do
+  if command -v "$t" >/dev/null 2>&1; then
+    echo " - $t: available"
+  else
+    echo " - $t: NOT FOUND"
+  fi
+done
+
+echo "If any of the above are missing, please install them for full Linux inspector functionality."

@@ -235,27 +235,12 @@ def capture_screenshot(file_path: str, app_name: str | None = None) -> bool:
                     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
                         return True
     except FileNotFoundError:
-        # xwd not present; fallback to previously supported tools
-        pass
+        # xwd not present
+        CommonUtil.ExecLog(MODULE_NAME, "xwd command not found", 3)
     except Exception as e:
         CommonUtil.ExecLog(MODULE_NAME, f"xwd/convert screenshot failed: {e}", 3)
 
-    # Fallback: try scrot / gnome-screenshot / import (root window capture) like before
-    tools = [
-        ["scrot", file_path],
-        ["gnome-screenshot", "-f", file_path],
-        ["import", "-window", "root", file_path]
-    ]
-
-    for cmd in tools:
-        try:
-            subprocess.run(cmd, check=True, capture_output=True)
-            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            continue
-
-    CommonUtil.ExecLog(MODULE_NAME, "Failed to capture screenshot. Ensure xwd/xdotool and at least one screenshot tool like scrot, gnome-screenshot, or imagemagick are installed.", 3)
+    CommonUtil.ExecLog(MODULE_NAME, "Failed to capture screenshot. Ensure xwd, xdotool, and ImageMagick (convert) are installed.", 3)
     return False
 
 

@@ -1173,8 +1173,6 @@ async def command_line_args() -> Path | None:
 
     # Desktop automation and UI inspection options
     install_linux_deps = all_arguments.install_linux_deps
-    list_apps = all_arguments.list_apps
-    dump_ui = all_arguments.dump_ui
 
     # Handle RSA key management commands
     if generate_key:
@@ -1198,6 +1196,11 @@ async def command_line_args() -> Path | None:
 
     if fetch_code:
         if fetch_private_keys(fetch_code):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    if install_linux_deps:
+        if install_linux_inspector_deps():
             sys.exit(0)
         else:
             sys.exit(1)
