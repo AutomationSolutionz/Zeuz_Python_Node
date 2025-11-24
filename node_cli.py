@@ -1202,21 +1202,6 @@ async def command_line_args() -> Path | None:
         else:
             sys.exit(1)
 
-    # Handle Linux desktop automation dependency installation
-    if install_linux_deps:
-        install_linux_inspector_deps()
-        sys.exit(0)
-
-    # Handle listing available apps
-    if list_apps:
-        list_available_apps()
-        sys.exit(0)
-
-    # Handle UI dump generation
-    if dump_ui:
-        generate_ui_dump(dump_ui)
-        sys.exit(0)
-
     # Update chrome extension download settings if specified
     if chrome_fetch is not None:
         os.environ["CHROME_DAYS_BEFORE_FETCH"] = str(chrome_fetch)

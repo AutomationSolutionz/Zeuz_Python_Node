@@ -9,10 +9,6 @@ from pydantic import BaseModel
 
 from Framework.Utilities import ConfigModule, CommonUtil
 
-try:
-    from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
-except ImportError:
-    BuiltInFunctions = None
 
 router = APIRouter(prefix="/linux", tags=["linux"])
 
@@ -29,6 +25,7 @@ class InspectorResponse(BaseModel):
 @router.get("/inspect")
 def inspect(app_name: str | None = None):
     """Get the Linux UI DOM and screenshot."""
+    from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
     if BuiltInFunctions is None:
         return InspectorResponse(status="error", error="Linux automation module not available")
 
@@ -72,6 +69,7 @@ def inspect(app_name: str | None = None):
 
 async def upload_linux_ui_dump():
     """Continuously upload Linux UI dump if changed."""
+    from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
     if BuiltInFunctions is None:
         return
 
