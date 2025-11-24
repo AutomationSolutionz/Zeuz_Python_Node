@@ -837,120 +837,6 @@ def install_linux_inspector_deps():
         return False
 
 
-def list_available_apps():
-    """List all available applications for UI inspection."""
-    console = Console()
-
-    console.print("\n[cyan]Scanning for available applications...[/cyan]\n")
-
-    try:
-        # Import the Linux BuiltInFunctions module
-        sys.path.insert(
-            0,
-            str(
-                Path(__file__).parent
-                / "Framework"
-                / "Built_In_Automation"
-                / "Desktop"
-                / "Linux"
-            ),
-        )
-        try:
-            import pyatspi
-        except ImportError:
-            install_missing_modules(["python3-pyatspi==1.19.0", "pygobject==3.50.1"])
-            try:
-                import pyatspi
-            except ImportError:
-                sys.stderr.write(
-                    "Error: system dependency is not installed. Install them by running Installer/setup_linux_inspector.sh.\n"
-                )
-                sys.exit(1)
-
-        desktop = pyatspi.Registry.getDesktop(0)
-        apps = []
-
-        for app in desktop:
-            if app and app.name:
-                apps.append(app.name)
-
-        if apps:
-            console.print(f"[green]✓[/green] Found {len(apps)} application(s):\n")
-            for idx, app_name in enumerate(apps, 1):
-                console.print(f"  {idx}. {app_name}")
-            console.print()
-            return True
-        else:
-            console.print("[yellow]No applications found[/yellow]\n")
-            return False
-
-    except Exception as e:
-        console.print(f"\n[red]✗[/red] Error listing applications: {str(e)}\n")
-        import traceback as tb
-
-        tb.print_exc()
-        return False
-
-
-def generate_ui_dump(app_keyword: str):
-    """Generate UI dump for a specific application."""
-    console = Console()
-
-    console.print(
-        f"\n[cyan]Generating UI dump for application: '{app_keyword}'[/cyan]\n"
-    )
-
-    try:
-        # Import the Linux BuiltInFunctions module
-        sys.path.insert(
-            0,
-            str(
-                Path(__file__).parent
-                / "Framework"
-                / "Built_In_Automation"
-                / "Desktop"
-                / "Linux"
-            ),
-        )
-        from BuiltInFunctions import get_ui_tree
-
-        ui_tree = get_ui_tree(app_keyword)
-
-        if ui_tree:
-            # Save to file
-            timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
-            output_file = (
-                Path(__file__).parent
-                / "AutomationLog"
-                / f"ui_dump_{app_keyword}_{timestamp}.xml"
-            )
-            output_file.parent.mkdir(exist_ok=True)
-
-            with open(output_file, "w", encoding="utf-8") as f:
-                f.write(ui_tree)
-
-            console.print(f"[green]✓[/green] UI dump generated successfully!")
-            console.print(f"[cyan]Location:[/cyan] {output_file}\n")
-
-            # Also print to console
-            console.print("[cyan]UI Tree:[/cyan]")
-            print(ui_tree)
-
-            return True
-        else:
-            console.print(
-                f"\n[red]✗[/red] Failed to generate UI dump. Application '{app_keyword}' not found or no UI tree available.\n"
-            )
-            return False
-
-    except Exception as e:
-        console.print(f"\n[red]✗[/red] Error generating UI dump: {str(e)}\n")
-        import traceback as tb
-
-        tb.print_exc()
-        return False
-
-
 def fetch_private_keys(share_code: str):
     """Fetch and decrypt shared RSA private keys from server."""
     console = Console()
@@ -1139,12 +1025,6 @@ async def command_line_args() -> Path | None:
     Example 15 - Install Linux desktop automation dependencies:
     python node_cli.py -ild
 
-    Example 16 - List all available applications:
-    python node_cli.py -lsa
-
-    Example 17 - Generate UI dump for an application:
-    python node_cli.py -dui firefox
-
     Use -h or --help to see full documentation of all available arguments.
     """
     # try:
@@ -1264,19 +1144,6 @@ async def command_line_args() -> Path | None:
         "--install-linux-deps",
         action="store_true",
         help="Install Linux desktop automation dependencies (runs Installer/setup_linux_inspector.sh)",
-    )
-    parser_object.add_argument(
-        "-lsa",
-        "--list-apps",
-        action="store_true",
-        help="List all available applications for UI inspection",
-    )
-    parser_object.add_argument(
-        "-dui",
-        "--dump-ui",
-        action="store",
-        help="Generate UI dump for a specific application (provide app name or keyword)",
-        metavar="",
     )
 
     all_arguments = parser_object.parse_args()
@@ -1559,26 +1426,5 @@ async def main():
             )
         await asyncio.sleep(1)
 
-
-def handle_inspection_commands():
-    """Handle inspection commands that should not kill existing node processes."""
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-lsa", "--list-apps", action="store_true")
-    parser.add_argument("-dui", "--dump-ui", action="store")
-
-    # Parse only known args to avoid errors from other arguments
-    args, _ = parser.parse_known_args()
-
-    if args.list_apps:
-        list_available_apps()
-        sys.exit(0)
-
-    if args.dump_ui:
-        generate_ui_dump(args.dump_ui)
-        sys.exit(0)
-
-
-# Handle inspection commands before starting main process
-handle_inspection_commands()
 
 asyncio.run(main())
