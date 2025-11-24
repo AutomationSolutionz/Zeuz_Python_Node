@@ -246,11 +246,20 @@ def capture_screenshot(file_path: str, app_name: str | None = None) -> bool:
 
 def convert_data_set_to_dict(data_set: DataSet) -> dict[str, str]:
     """ Convert data set to dictionary for easier access """
+    # ToDo: handle * and ** properly
     data_dict = {}
     for item in data_set:
         if len(item) == 3:
             key, _, value = item
-            data_dict[key.strip()] = value
+            if key.startswith('**'):
+                data_dict[key[2:].strip()] = value
+                data_dict['exact_' + key[2:].strip()] = 'false'
+                data_dict['case_sensitive_' + key[2:].strip()] = 'false'
+            elif key.startswith('*'):
+                data_dict[key[1:].strip()] = value
+                data_dict['exact_' + key[1:].strip()] = 'false'
+            else:
+                data_dict[key.strip()] = value
         else:
             CommonUtil.ExecLog(MODULE_NAME, f"Invalid item in data set: {item}", 3)
     return data_dict
@@ -444,25 +453,39 @@ def get_paths_by_text(xml_content: str, search_text: str, exact_match=True, case
         if path and path not in paths:
             paths.append(path)
     
-    return paths
+    return sorted(paths)
 
 
-def get_parent_path_from_paths(paths: list[str]) -> str | None:
+def get_parent_path_from_paths(paths: list[str]) -> list[str]:
     """
     Sometimes multiple paths are returned for the same element. 
-    They may have parent child relation. It is good idea to use 
-    the parent. Parents path is always shorter and it is prefix 
-    of child's path If they are not related, then return None.
+    They may have parent-child relations. This function identifies 
+    all parent paths by removing children whose parent exists in the list.
+    
+    Returns a list of parent paths (paths that are not prefixes of any other path).
     """
     if not paths:
-        return None
+        return []
     
-    paths.sort(key=lambda x: len(x))
-    parent_path = paths[0]
-    for path in paths[1:]:
-        if not path.startswith(parent_path):
-            return None
-    return parent_path
+    # Sort by length to process shorter (potential parent) paths first
+    sorted_paths = sorted(set(paths), key=lambda x: len(x))
+    parents = []
+    
+    for i, path in enumerate(sorted_paths):
+        # Check if this path is a parent of any other path
+        is_parent = False
+        for j in range(i + 1, len(sorted_paths)):
+            # Check if sorted_paths[j] starts with path followed by a dot
+            # This ensures "0.0.0" doesn't match "0.0.0.1" incorrectly
+            if sorted_paths[j].startswith(path + "."):
+                is_parent = True
+                break
+        
+        # If this path is not a parent of any remaining path, it's a leaf or standalone parent
+        if not is_parent:
+            parents.append(path)
+    
+    return parents
 
 
 def get_path_appname_from_dataset(
@@ -471,7 +494,14 @@ def get_path_appname_from_dataset(
     ) -> tuple[str | None, str | None]:
     path, app_name = data_dict.get("path"), data_dict.get("app_name")
     wait_time = float(data_dict.get("wait", wait_time) or str(wait_time or 10))
+    index = data_dict.get("index") or "0"
+    if index.isdigit():
+        index = int(index)
+    else:
+        raise ValueError("Index must be an integer.")
     text = data_dict.get("text", "").strip()
+    exact_text_match = data_dict.get("exact_text", "true").lower() == "true"
+    text_case_sensitive = data_dict.get("case_sensitive_text", "true").lower() == "true"
     start_time = time.time()
     if not path and text:
         while True:
@@ -479,8 +509,8 @@ def get_path_appname_from_dataset(
             if not ui_tree:
                 CommonUtil.ExecLog("", "UI tree not found for app_name: %s" % app_name, 3)
                 return None, app_name
-            paths = get_paths_by_text(ui_tree, text)
-            CommonUtil.ExecLog("", "Found paths: %s" % paths, 1)
+            paths = get_paths_by_text(ui_tree, text, exact_match=exact_text_match, case_sensitive=text_case_sensitive)
+            
             if len(paths) == 0:
                 if time.time() < start_time + wait_time:
                     time.sleep(0.5)
@@ -491,8 +521,9 @@ def get_path_appname_from_dataset(
             if len(paths) == 1:
                 return paths[0], app_name
             else:
-                path = get_parent_path_from_paths(paths)
-                return path, app_name
+                parent_paths = get_parent_path_from_paths(paths)
+                CommonUtil.ExecLog("", "Found paths: %s" % parent_paths, 1)
+                return parent_paths[index] if parent_paths else None, app_name
     return path, app_name
 
 
@@ -864,7 +895,6 @@ def find_best_app_match(user_input: str) -> Optional[Tuple[str, str, str]]:
         desktop_files = glob.glob("/usr/share/applications/*.desktop")
         for desktop_file in desktop_files:
             name, exec_cmd = parse_desktop_file(desktop_file)
-            print(f"Found desktop file: {desktop_file}, Name: {name}, Exec: {exec_cmd}")
             if name and exec_cmd:
                 # Use the desktop file basename as the key for matching
                 key = os.path.basename(desktop_file).replace('.desktop', '')
