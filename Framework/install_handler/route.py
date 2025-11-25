@@ -175,8 +175,7 @@ services = [
                "status": "none",
                "comment": "Oracle driver is required to connect to Oracle database.",
                "install_text": "install",
-                # "os": ["windows", "linux", "darwin"],
-                "os": ["linux", "darwin"], # TODO: add windows after migrating to python-oracledb
+                "os": ["windows", "linux", "darwin"],
                "status_function": oracle.check_status,
                "install_function": oracle.install,
                "user_password": "no"
