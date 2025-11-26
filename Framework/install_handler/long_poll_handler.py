@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import create_avd_from_system_image
+from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
     print(f"[installer] Debug mode enabled")
@@ -61,6 +62,17 @@ class InstallHandler:
                     "action": "services_list",
                     "data": filtered_services
                 })
+            elif action == "system_info":
+                if debug: print(f"[installer] Received system_info request")
+                try:
+                    # Get formatted system info
+                    system_info_response = await get_formatted_system_info()
+                    # Send the response to server
+                    await send_response(system_info_response)
+                    if debug: print(f"[installer] System info sent successfully")
+                except Exception as e:
+                    print(f"[installer] Error getting/sending system info: {e}")
+                    traceback.print_exc()
             elif action in ["install", "status"]:
                 if debug: print(f"[installer] Installing {message}")
 
