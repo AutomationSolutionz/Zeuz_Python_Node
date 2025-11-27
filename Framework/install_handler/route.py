@@ -269,7 +269,7 @@ class Item(BaseModel):
 class Value(BaseModel):
    model_config = ConfigDict(extra='forbid')
   
-   action: Literal["services_list", "install", "status","install_category"]
+   action: Literal["services_list", "install", "status", "install_category", "system_info"]
    item: Item | None = None
 
 
