@@ -230,6 +230,14 @@ def check_installations():
             appium_installed = "appium" in npm_data.get("dependencies", {})
         except:  # noqa: E722
             pass
+    if appium_installed and not get_appium_path().exists():
+        # uninstall appium as it is corrupted
+        try:
+            subprocess.run([str(npm_path), "uninstall", "-g", "appium"], check=True)
+            print("Uninstalled corrupted Appium installation")
+        except subprocess.CalledProcessError:
+            print("Warning: Failed to uninstall Appium")
+        appium_installed = False
 
     # Check drivers
     required_drivers = get_required_drivers()
