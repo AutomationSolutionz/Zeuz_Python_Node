@@ -253,6 +253,11 @@ def setup_nodejs_appium():
         os.environ["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
         os.environ["npm_config_strict_ssl"] = "false"
 
+        # Set APPIUM_HOME to use local directory
+        appium_home = Path.home() / ".zeuz" / "appium"
+        appium_home.mkdir(parents=True, exist_ok=True)
+        os.environ["APPIUM_HOME"] = str(appium_home)
+
         print("Checking Node.js and Appium installation...")
         node_installed, appium_installed, missing_drivers = check_installations()
 
