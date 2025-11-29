@@ -6,6 +6,7 @@ from .android import adb, node_js_22, appium, java, android_emulator
 from .ios import xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
+from .linux import atspi, xwd
 
 services = [
     {
@@ -18,9 +19,9 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": chrome_for_testing.check_status,
-                "install_function": chrome_for_testing.install
+                "install_function": chrome_for_testing.install,
             }
-        ]
+        ],
     },
     {
         "category": "Android",
@@ -32,7 +33,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": adb.check_status,
-                "install_function": adb.install
+                "install_function": adb.install,
             },
             {
                 "name": "Node js 22",
@@ -41,7 +42,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": node_js_22.check_status,
-                "install_function": node_js_22.install
+                "install_function": node_js_22.install,
             },
             {
                 "name": "Appium",
@@ -50,7 +51,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": appium.check_status,
-                "install_function": appium.install
+                "install_function": appium.install,
             },
             {
                 "name": "Java",
@@ -59,7 +60,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": java.check_status,
-                "install_function": java.install
+                "install_function": java.install,
             },
             {
                 "name": "Android Emulator",
@@ -68,9 +69,9 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": android_emulator.check_status,
-                "install_function": android_emulator.install
-            }
-        ]
+                "install_function": android_emulator.install,
+            },
+        ],
     },
     {
         "category": "iOS",
@@ -82,9 +83,9 @@ services = [
                 "install_text": "install",
                 "os": ["darwin"],
                 "status_function": xcode.check_status,
-                "install_function": xcode.install
+                "install_function": xcode.install,
             }
-        ]
+        ],
     },
     {
         "category": "Database",
@@ -96,7 +97,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": postgresql.check_status,
-                "install_function": postgresql.install
+                "install_function": postgresql.install,
             },
             {
                 "name": "MySQL",
@@ -105,7 +106,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": mysql.check_status,
-                "install_function": mysql.install
+                "install_function": mysql.install,
             },
             {
                 "name": "MariaDB",
@@ -114,7 +115,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": mariadb.check_status,
-                "install_function": mariadb.install
+                "install_function": mariadb.install,
             },
             {
                 "name": "Oracle",
@@ -123,9 +124,9 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": oracle.check_status,
-                "install_function": oracle.install
-            }
-        ]
+                "install_function": oracle.install,
+            },
+        ],
     },
     {
         "category": "Windows",
@@ -137,23 +138,51 @@ services = [
                 "install_text": "install",
                 "os": ["windows"],
                 "status_function": inspector.check_status,
-                "install_function": inspector.install
+                "install_function": inspector.install,
             }
-        ]
-    }
+        ],
+    },
+    {
+        "category": "Linux",
+        "services": [
+            {
+                "name": "AT-SPI Packages",
+                "status": "none",
+                "comment": "AT-SPI development packages for Linux accessibility automation.",
+                "install_text": "install",
+                "os": ["linux"],
+                "status_function": atspi.check_status,
+                "install_function": atspi.install,
+                "user_password": "yes",
+            },
+            {
+                "name": "X Window Utilities",
+                "status": "none",
+                "comment": "X Window utilities including xwd, imagemagick, and wmctrl.",
+                "install_text": "install",
+                "os": ["linux"],
+                "status_function": xwd.check_status,
+                "install_function": xwd.install,
+                "user_password": "yes",
+            },
+        ],
+    },
 ]
+
 
 class Item(BaseModel):
     name: str
     category: str
 
+
 class Value(BaseModel):
-    model_config = ConfigDict(extra='forbid')
-    
+    model_config = ConfigDict(extra="forbid")
+
     action: Literal["services_list", "install", "status"]
     item: Item | None = None
 
+
 class Response(BaseModel):
-    model_config = ConfigDict(extra='forbid')
-    
+    model_config = ConfigDict(extra="forbid")
+
     value: Value | None
