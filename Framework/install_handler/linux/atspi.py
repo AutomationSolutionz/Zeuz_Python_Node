@@ -39,6 +39,7 @@ PACKAGES = {
 
 async def check_status():
     """Checks if AT-SPI development packages are installed."""
+    print("Checking AT-SPI development packages status...")
 
     package_manager, _ = detect_package_manager()
 
@@ -47,7 +48,7 @@ async def check_status():
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Accessibility",
+                    "category": "Linux",
                     "name": "AT-SPI Packages",
                     "status": "error",
                     "comment": "Unsupported package manager. Only apt, dnf, and pacman are supported.",
@@ -62,7 +63,7 @@ async def check_status():
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Accessibility",
+                    "category": "Linux",
                     "name": "AT-SPI Packages",
                     "status": "installed",
                     "comment": "AT-SPI development packages are installed.",
@@ -75,7 +76,7 @@ async def check_status():
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Accessibility",
+                    "category": "Linux",
                     "name": "AT-SPI Packages",
                     "status": "not installed",
                     "comment": f"Install AT-SPI packages using {package_manager}.",
@@ -87,6 +88,7 @@ async def check_status():
 
 async def install(user_password: str = ""):
     """Install AT-SPI development packages using the system package manager."""
+    print("Installing AT-SPI development packages...")
 
     is_already_installed = await check_status()
 
@@ -98,7 +100,7 @@ async def install(user_password: str = ""):
                 {
                     "action": "status",
                     "data": {
-                        "category": "Linux Accessibility",
+                        "category": "Linux",
                         "name": "AT-SPI Packages",
                         "status": "error",
                         "comment": "Unsupported package manager. Only apt, dnf, and pacman are supported.",
@@ -112,7 +114,7 @@ async def install(user_password: str = ""):
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Accessibility",
+                    "category": "Linux",
                     "name": "AT-SPI Packages",
                     "status": "installing",
                     "comment": f"Installing packages using {package_manager}, please wait...",
@@ -129,7 +131,7 @@ async def install(user_password: str = ""):
                 {
                     "action": "status",
                     "data": {
-                        "category": "Linux Accessibility",
+                        "category": "Linux",
                         "name": "AT-SPI Packages",
                         "status": "installed",
                         "comment": "AT-SPI packages have been installed successfully.",
@@ -142,7 +144,7 @@ async def install(user_password: str = ""):
                 {
                     "action": "status",
                     "data": {
-                        "category": "Linux Accessibility",
+                        "category": "Linux",
                         "name": "AT-SPI Packages",
                         "status": "error",
                         "comment": f"Installation failed. Error: {error_msg}",

@@ -26,7 +26,7 @@ PACKAGES = {
 
 
 async def check_status():
-    """Checks if X Window utilities are installed."""
+    """Checks if Screen Capture Utilities are installed."""
 
     package_manager, _ = detect_package_manager()
 
@@ -35,8 +35,8 @@ async def check_status():
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Desktop",
-                    "name": "X Window Utilities",
+                    "category": "Linux",
+                    "name": "Screen Capture Utilities",
                     "status": "error",
                     "comment": "Unsupported package manager. Only apt, dnf, and pacman are supported.",
                 },
@@ -50,10 +50,10 @@ async def check_status():
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Desktop",
-                    "name": "X Window Utilities",
+                    "category": "Linux",
+                    "name": "Screen Capture Utilities",
                     "status": "installed",
-                    "comment": "X Window utilities are installed.",
+                    "comment": "Screen Capture Utilities are installed.",
                 },
             }
         )
@@ -63,10 +63,10 @@ async def check_status():
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Desktop",
-                    "name": "X Window Utilities",
+                    "category": "Linux",
+                    "name": "Screen Capture Utilities",
                     "status": "not installed",
-                    "comment": f"Install X Window utilities using {package_manager}.",
+                    "comment": f"Install Screen Capture Utilities using {package_manager}.",
                 },
             }
         )
@@ -74,7 +74,7 @@ async def check_status():
 
 
 async def install(user_password: str = ""):
-    """Install X Window utilities using the system package manager."""
+    """Install Screen Capture Utilities using the system package manager."""
 
     is_already_installed = await check_status()
 
@@ -86,8 +86,8 @@ async def install(user_password: str = ""):
                 {
                     "action": "status",
                     "data": {
-                        "category": "Linux Desktop",
-                        "name": "X Window Utilities",
+                        "category": "Linux",
+                        "name": "Screen Capture Utilities",
                         "status": "error",
                         "comment": "Unsupported package manager. Only apt, dnf, and pacman are supported.",
                     },
@@ -100,8 +100,8 @@ async def install(user_password: str = ""):
             {
                 "action": "status",
                 "data": {
-                    "category": "Linux Desktop",
-                    "name": "X Window Utilities",
+                    "category": "Linux",
+                    "name": "Screen Capture Utilities",
                     "status": "installing",
                     "comment": f"Installing packages using {package_manager}, please wait...",
                 },
@@ -117,10 +117,10 @@ async def install(user_password: str = ""):
                 {
                     "action": "status",
                     "data": {
-                        "category": "Linux Desktop",
-                        "name": "X Window Utilities",
+                        "category": "Linux",
+                        "name": "Screen Capture Utilities",
                         "status": "installed",
-                        "comment": "X Window utilities have been installed successfully.",
+                        "comment": "Screen Capture Utilities have been installed successfully.",
                     },
                 }
             )
@@ -130,8 +130,8 @@ async def install(user_password: str = ""):
                 {
                     "action": "status",
                     "data": {
-                        "category": "Linux Desktop",
-                        "name": "X Window Utilities",
+                        "category": "Linux",
+                        "name": "Screen Capture Utilities",
                         "status": "error",
                         "comment": f"Installation failed. Error: {error_msg}",
                     },

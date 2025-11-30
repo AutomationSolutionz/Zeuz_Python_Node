@@ -156,9 +156,9 @@ services = [
                 "user_password": "yes",
             },
             {
-                "name": "X Window Utilities",
+                "name": "Screen Capture Utilities",
                 "status": "none",
-                "comment": "X Window utilities including xwd, imagemagick, and wmctrl.",
+                "comment": "Screen Capture Utilities including xwd, imagemagick, and wmctrl.",
                 "install_text": "install",
                 "os": ["linux"],
                 "status_function": xwd.check_status,
