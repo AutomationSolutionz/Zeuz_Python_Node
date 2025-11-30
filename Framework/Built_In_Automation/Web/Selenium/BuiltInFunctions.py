@@ -205,7 +205,7 @@ po.observe({ type: 'largest-contentful-paint', buffered: true });
 # Recall dependency, if not already set
 dependency = None
 if Shared_Resources.Test_Shared_Variables(
-    "dependency"
+        "dependency"
 ):  # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables(
         "dependency"
@@ -336,11 +336,11 @@ def start_appium_server():
         try:
             appium_server = None
             if (
-                sys.platform == "win32"
+                    sys.platform == "win32"
             ):  # We need to open appium in it's own command dos box on Windows
                 cmd = (
-                    'start "Appium Server" /wait /min cmd /c %s --allow-insecure chromedriver_autodownload -p %d'
-                    % (appium_binary, appium_port)
+                        'start "Appium Server" /wait /min cmd /c %s --allow-insecure chromedriver_autodownload -p %d'
+                        % (appium_binary, appium_port)
                 )  # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(
                     cmd, shell=True
@@ -546,7 +546,7 @@ def set_extension_variables():
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
             json.dump(metaData, file, indent=4)
         with open(
-            Path(ai_recorder_public_path) / "background" / "data.json", "w"
+                Path(ai_recorder_public_path) / "background" / "data.json", "w"
         ) as file:
             json.dump(metaData, file, indent=4)
 
@@ -624,7 +624,6 @@ def generate_options(browser: str, browser_options: BrowserOptions):
         return ArgOptions()
 
     if "headless" in browser:
-
         def headless():
             arg = "--headless=new" if "chrome" in browser else "--headless"
             options.add_argument(arg)
@@ -636,10 +635,10 @@ def generate_options(browser: str, browser_options: BrowserOptions):
 
     # On Debug run open inspector with credentials
     if (
-        CommonUtil.debug_status
-        and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower()
-        in ("true", "on", "enable", "yes", "on_debug")
-        and browser in ("chrome", "microsoft edge chromium")
+            CommonUtil.debug_status
+            and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower()
+            in ("true", "on", "enable", "yes", "on_debug")
+            and browser in ("chrome", "microsoft edge chromium")
     ):
         set_extension_variables()
         options.add_argument("--disable-features=DisableLoadExtensionCommandLineSwitch")
@@ -648,9 +647,9 @@ def generate_options(browser: str, browser_options: BrowserOptions):
         options.add_argument("--allow-running-insecure-content")
 
     msg += (
-        f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n"
-        + f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
-        + f"Page load strategy: {options.page_load_strategy}\n"
+            f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n"
+            + f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
+            + f"Page load strategy: {options.page_load_strategy}\n"
     )
     CommonUtil.ExecLog(sModuleInfo, msg, 5)
     return options
@@ -832,8 +831,8 @@ def Go_To_Link_V2(step_data):
 
         # Handle headless mode window maximize
         if (
-            "--headless" in options.arguments
-            and "--start-maximized" in options.arguments
+                "--headless" in options.arguments
+                and "--start-maximized" in options.arguments
         ):
             selenium_driver.set_window_size(default_x, default_y)
 
@@ -1006,9 +1005,9 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 )
             # Options are browser specific.
             elif browser is not None and (
-                mid.strip().lower() == "chromium option"
-                and browser in ("chrome", "edge")
-                or browser == mid.split(" ")[0].strip().lower()
+                    mid.strip().lower() == "chromium option"
+                    and browser in ("chrome", "edge")
+                    or browser == mid.split(" ")[0].strip().lower()
             ):
                 if left == "addargument":
                     browser_options[browser]["add_argument"] = (
@@ -1039,15 +1038,15 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
         if browser in browser_options:
             for arg in browser_options[browser]["add_argument"]:
                 if any(arg.startswith(prefix) for prefix in [
-                        "--remote-debugging-port=",
-                        "--webkit-remote-debugging-port="
+                    "--remote-debugging-port=",
+                    "--webkit-remote-debugging-port="
                 ]):
                     debug_port = int(arg.split("=")[1])
                     break
 
         if dependency["Browser"] in (
-            "Chrome",
-            "ChromeHeadless",
+                "Chrome",
+                "ChromeHeadless",
         ) and not browser_options["chrome"].get("debugger_address", ""):
             cft = ChromeForTesting()
 
@@ -1086,20 +1085,20 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 driver_id = list(selenium_details.keys())[0]
 
         if (
-            driver_id not in selenium_details
-            or selenium_details[driver_id]["driver"]
-            .capabilities["browserName"]
-            .strip()
-            .lower()
-            != browser_map[dependency["Browser"]]
-        ):
-            if (
-                driver_id in selenium_details
-                and selenium_details[driver_id]["driver"]
+                driver_id not in selenium_details
+                or selenium_details[driver_id]["driver"]
                 .capabilities["browserName"]
                 .strip()
                 .lower()
                 != browser_map[dependency["Browser"]]
+        ):
+            if (
+                    driver_id in selenium_details
+                    and selenium_details[driver_id]["driver"]
+                    .capabilities["browserName"]
+                    .strip()
+                    .lower()
+                    != browser_map[dependency["Browser"]]
             ):
                 Tear_Down_Selenium()  # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(
@@ -1110,7 +1109,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 return "zeuz_failed"
 
             if ConfigModule.get_config_value(
-                "RunDefinition", "window_size_x"
+                    "RunDefinition", "window_size_x"
             ) and ConfigModule.get_config_value("RunDefinition", "window_size_y"):
                 window_size_X = ConfigModule.get_config_value(
                     "RunDefinition", "window_size_x"
@@ -1166,13 +1165,13 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
     except WebDriverException as e:
         browser = selenium_driver.capabilities["browserName"].strip().lower()
         if (
-            browser in ("chrome", "edge")
-            and e.msg.lower().startswith("chrome not reachable")
+                browser in ("chrome", "edge")
+                and e.msg.lower().startswith("chrome not reachable")
         ) or (
-            browser == "firefox"
-            and e.msg.lower().startswith(
-                "tried to run command without establishing a connection"
-            )
+                browser == "firefox"
+                and e.msg.lower().startswith(
+            "tried to run command without establishing a connection"
+        )
         ):
             CommonUtil.ExecLog(
                 sModuleInfo, "Browser not found. trying to restart the browser", 2
@@ -1397,8 +1396,10 @@ def capture_network_log(step_data):
     include status code         input parameter         201, 400-504
     include request method      input parameter         GET, POST
     include response body       input parameter         false
+    include headers             input parameter         false
     capture network log         selenium action 	    stop
     """
+    import datetime
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
@@ -1422,6 +1423,7 @@ def capture_network_log(step_data):
             "status_filter": [],
             "method_filter": [],
             "include_body": False,
+            "include_headers": False,
         }
 
         # Parse
@@ -1439,6 +1441,8 @@ def capture_network_log(step_data):
                 params["method_filter"] = [m.strip().upper() for m in right.split(",")]
             elif left == "include response body":
                 params["include_body"] = right.strip().lower() == "true"
+            elif left == "include headers":
+                params["include_headers"] = right.strip().lower() == "true"
 
         # Start/stop handling
         if params["mode"] == "start":
@@ -1487,7 +1491,10 @@ def capture_network_log(step_data):
                     request_id = log_params.get("requestId")
 
                     if method == "Network.requestWillBeSent":
-                        requests[request_id] = log_params.get("request", {})
+                        requests[request_id] = {
+                            "request": log_params.get("request", {}),
+                            "timestamp": entry.get("timestamp"),
+                        }
 
                     elif method == "Network.responseReceived":
                         response = log_params.get("response", {})
@@ -1499,12 +1506,24 @@ def capture_network_log(step_data):
                         if any(url.endswith(ext) for ext in EXCLUDED_EXTENSIONS):
                             continue
                         if any(
-                            mime_type.startswith(prefix)
-                            for prefix in EXCLUDED_MIME_PREFIXES
+                                mime_type.startswith(prefix)
+                                for prefix in EXCLUDED_MIME_PREFIXES
                         ):
                             continue
 
-                        request = requests.get(request_id, {})
+                        request_info = requests.get(request_id, {})
+                        request = request_info.get("request", {})
+
+                        # Calculate execution time
+                        start_time = request_info.get("timestamp")
+                        end_time = entry.get("timestamp")
+                        execution_time = -1
+                        if start_time and end_time:
+                            execution_time = (end_time - start_time)
+
+                        # Format timestamp as string date-time
+                        dt = datetime.datetime.fromtimestamp(entry.get("timestamp") / 1000)
+                        dt_str = dt.strftime("%Y-%m-%d %H:%M:%S")
 
                         # Apply filters
                         if params["filter_domains"]:
@@ -1528,8 +1547,14 @@ def capture_network_log(step_data):
                             "method": request.get("method", ""),
                             "mimeType": mime_type,
                             "type": log_params.get("type", ""),
-                            "timestamp": entry.get("timestamp"),
+                            "executionTimeMs": execution_time,
+                            "timestamp": dt_str,
                         }
+
+                        # Add request/response headers if requested
+                        if params["include_headers"]:
+                            log_entry["requestHeaders"] = request.get("headers", {})
+                            log_entry["responseHeaders"] = response.get("headers", {})
 
                         # Add response body if requested
                         if params["include_body"]:
@@ -1665,7 +1690,7 @@ def Keystroke_For_Element(data_set):
     # Parse the data set
     try:
         stype = ""  # keys/chars
-        paste_image = False # identifiying image paste
+        paste_image = False  # identifiying image paste
         get_element = False  # Use element
         key_count = 1  # Default number of button presses
         for row in data_set:
@@ -1725,14 +1750,14 @@ def Keystroke_For_Element(data_set):
                 keystroke_value.replace(" ", "").replace("_", "").lower()
             )
             if normalized_keystroke in (
-                "ctrl+v",
-                "control+v",
-                "ctrlv",
-                "controlv",
-                "cmd+v",
-                "cmdv",
-                "command+v",
-                "commandv",
+                    "ctrl+v",
+                    "control+v",
+                    "ctrlv",
+                    "controlv",
+                    "cmd+v",
+                    "cmdv",
+                    "command+v",
+                    "commandv",
             ):
                 capabilities = selenium_driver.capabilities
                 platform_name = capabilities.get("platformName", "").lower()
@@ -1746,7 +1771,7 @@ def Keystroke_For_Element(data_set):
                     paste_key = Keys.CONTROL
 
                 if browser_name == "firefox" and (
-                    "linux" in platform_name or platform.system().lower() == "linux"
+                        "linux" in platform_name or platform.system().lower() == "linux"
                 ):
                     paste_key = Keys.CONTROL
 
@@ -1944,7 +1969,7 @@ def execute_javascript(data_set):
 
 
 def handle_clickability_and_click(
-    dataset, Element: selenium.webdriver.remote.webelement.WebElement
+        dataset, Element: selenium.webdriver.remote.webelement.WebElement
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     wait_clickable = Shared_Resources.Get_Shared_Variables("element_wait")
@@ -2109,9 +2134,9 @@ def Click_and_Download(data_set):
     global selenium_driver
 
     if selenium_driver.capabilities["browserName"].strip().lower() not in (
-        "chrome",
-        "microsoftedge",
-        "firefox",
+            "chrome",
+            "microsoftedge",
+            "firefox",
     ):
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -2132,16 +2157,16 @@ def Click_and_Download(data_set):
             if l == "waitfordownload":
                 wait_download = float(right.strip())
             elif l in (
-                "folderpath",
-                "directory",
-                "filepath",
-                "file",
-                "folder",
+                    "folderpath",
+                    "directory",
+                    "filepath",
+                    "file",
+                    "folder",
             ) and mid.strip().lower() in ("optional parameter"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
             elif l == "automatefirefoxsavewindow" and mid.strip().lower() in (
-                "optional parameter"
+                    "optional parameter"
             ):
                 automate_firefox = right.strip().lower() in (
                     "accept",
@@ -2163,8 +2188,8 @@ def Click_and_Download(data_set):
         if Click_Element(click_dataset) == "zeuz_failed":
             return "zeuz_failed"
         if (
-            selenium_driver.capabilities["browserName"].strip().lower() == "firefox"
-            and automate_firefox
+                selenium_driver.capabilities["browserName"].strip().lower() == "firefox"
+                and automate_firefox
         ):
             if platform.system() == "Windows":
                 try:
@@ -2250,9 +2275,9 @@ def Click_and_Download(data_set):
                 pyautogui.hotkey("enter")
 
         if selenium_driver.capabilities["browserName"].strip().lower() in (
-            "chrome",
-            "microsoftedge",
-            "firefox",
+                "chrome",
+                "microsoftedge",
+                "firefox",
         ):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2271,15 +2296,15 @@ def Click_and_Download(data_set):
                 try:
                     ld = os.listdir(initial_download_folder)
                     if all(
-                        [
-                            len(ld) > 0,
-                            all(
-                                [
-                                    not i.endswith(".tmp") and not i.endswith(ext)
-                                    for i in ld
-                                ]
-                            ),
-                        ]
+                            [
+                                len(ld) > 0,
+                                all(
+                                    [
+                                        not i.endswith(".tmp") and not i.endswith(ext)
+                                        for i in ld
+                                    ]
+                                ),
+                            ]
                     ):
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -2318,7 +2343,7 @@ def Click_and_Download(data_set):
             for file_to_be_moved in all_source_dir:
                 file_name = Path(file_to_be_moved).name
                 if "." not in os.path.basename(new_path) and not os.path.exists(
-                    new_path
+                        new_path
                 ):
                     # if the path is a directory and does not exist then create the directory
                     Path(new_path).mkdir(parents=True, exist_ok=True)
@@ -2621,8 +2646,8 @@ def save_attribute_values_in_list(step_data):
                         elif Left == "return_does_not_contain":
                             target[target_index][3].append(Right)
                         elif Left.replace(" ", "").replace("_", "") in (
-                            "allowhidden",
-                            "allowdisable",
+                                "allowhidden",
+                                "allowdisable",
                         ):
                             target[target_index][0].append(
                                 ("allow hidden", "optional parameter", Right)
@@ -2675,9 +2700,9 @@ def save_attribute_values_in_list(step_data):
                 try:
                     for search_contain in target[i][2]:
                         if (
-                            not isinstance(search_contain, type(Attribute_value))
-                            or search_contain in Attribute_value
-                            or len(search_contain) == 0
+                                not isinstance(search_contain, type(Attribute_value))
+                                or search_contain in Attribute_value
+                                or len(search_contain) == 0
                         ):
                             break
                     else:
@@ -2686,9 +2711,9 @@ def save_attribute_values_in_list(step_data):
 
                     for search_doesnt_contain in target[i][3]:
                         if (
-                            isinstance(search_doesnt_contain, type(Attribute_value))
-                            and search_doesnt_contain in Attribute_value
-                            and len(search_doesnt_contain) != 0
+                                isinstance(search_doesnt_contain, type(Attribute_value))
+                                and search_doesnt_contain in Attribute_value
+                                and len(search_doesnt_contain) != 0
                         ):
                             Attribute_value = None
                 except:
@@ -2790,11 +2815,11 @@ def save_web_elements_in_list(step_data):
                 mid = mid.strip().lower()
                 right = right.strip()
                 if not has_element and mid in (
-                    "element parameter",
-                    "parent parameter",
-                    "unique parameter",
-                    "child parameter",
-                    "sibling parameter",
+                        "element parameter",
+                        "parent parameter",
+                        "unique parameter",
+                        "child parameter",
+                        "sibling parameter",
                 ):
                     has_element = True
                 elif "target parameter" in mid:
@@ -2890,8 +2915,8 @@ def save_web_elements_in_list(step_data):
                         else:
                             for each in target[cnt][2]:
                                 if (
-                                    each[0] not in ("text", "tag")
-                                    and elem.get_attribute(each[0]) is None
+                                        each[0] not in ("text", "tag")
+                                        and elem.get_attribute(each[0]) is None
                                 ):
                                     break
                             else:
@@ -2922,8 +2947,8 @@ def save_web_elements_in_list(step_data):
                         else:
                             for each in target[cnt][3]:
                                 if (
-                                    each[0] not in ("text", "tag")
-                                    and elem.get_attribute(each[0]) is None
+                                        each[0] not in ("text", "tag")
+                                        and elem.get_attribute(each[0]) is None
                                 ):
                                     to_del.append(count)
                                     break
@@ -2970,8 +2995,8 @@ def Validate_Text(step_data):
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
             elif (
-                each_step_data_item[1].strip().lower() in ("optional parameter")
-                and each_step_data_item[0] == "ignore case"
+                    each_step_data_item[1].strip().lower() in ("optional parameter")
+                    and each_step_data_item[0] == "ignore case"
             ):
                 ignore_case = (
                     True
@@ -3119,7 +3144,7 @@ def scroll_to_element(step_data):
 
     true: If alignToTop  is set to  true, the browser will scroll the element so that it is positioned at the
     top of the visible area of the window. In other words, the top of the element will be aligned with the top of the viewport.
-    
+
     false (or omitted): If alignToTop is set to false or omitted, the browser will scroll the element into the
     visible area of the window, but it will try to align the bottom of the element with the bottom of the viewport.
     This means that the element will be positioned at the bottom of the visible area.
@@ -3170,10 +3195,10 @@ def scroll_to_element(step_data):
         )
 
         if (
-            not direction
-            and additional_scroll > 0
-            and top is not None
-            and left is not None
+                not direction
+                and additional_scroll > 0
+                and top is not None
+                and left is not None
         ):
             try:
                 newTop, newLeft = selenium_driver.execute_script(retur_ntop_left_script)
@@ -3191,9 +3216,9 @@ def scroll_to_element(step_data):
                 direction = ""
 
             if (
-                (method in ["js", "webdriver"])
-                and (alignToTop == "true" and direction in ["down", "right"])
-                or (alignToTop == "false" and direction in ["up", "left"])
+                    (method in ["js", "webdriver"])
+                    and (alignToTop == "true" and direction in ["down", "right"])
+                    or (alignToTop == "false" and direction in ["up", "left"])
             ):
                 # No need of default additional scroll
                 direction = ""
@@ -3371,8 +3396,8 @@ def Tear_Down_Selenium(step_data=[]):
                     )
                 except:
                     errMsg = (
-                        "Unable to tear down driver_id='%s'. may already been killed"
-                        % driver
+                            "Unable to tear down driver_id='%s'. may already been killed"
+                            % driver
                     )
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                     CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -3518,9 +3543,9 @@ def open_new_tab(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 @logger
 def switch_window_or_tab(step_data):
-    
     """
     This action will switch tab/window in browser using Selenium or Playwright (via CDP) based on the 'playwright' flag.
         Example 1:
@@ -3597,11 +3622,11 @@ def switch_window_or_tab(step_data):
                     for i, page in enumerate(pages):
                         page_title = page.title()
                         if (
-                            partial_match
-                            and switch_by_title.lower() in page_title.lower()
+                                partial_match
+                                and switch_by_title.lower() in page_title.lower()
                         ) or (
-                            not partial_match
-                            and switch_by_title.lower() == page_title.lower()
+                                not partial_match
+                                and switch_by_title.lower() == page_title.lower()
                         ):
                             # Step 1: Use Playwright to switch tabs
                             page.bring_to_front()
@@ -3612,8 +3637,8 @@ def switch_window_or_tab(step_data):
                             for handle in selenium_driver.window_handles:
                                 selenium_driver.switch_to.window(handle)
                                 if (
-                                    selenium_driver.current_url == target_url
-                                    or target_url in selenium_driver.title
+                                        selenium_driver.current_url == target_url
+                                        or target_url in selenium_driver.title
                                 ):
                                     CommonUtil.ExecLog(
                                         sModuleInfo,
@@ -3656,11 +3681,11 @@ def switch_window_or_tab(step_data):
                     for handle in all_windows:
                         selenium_driver.switch_to.window(handle)
                         if (
-                            partial_match
-                            and switch_by_title.lower() in selenium_driver.title.lower()
+                                partial_match
+                                and switch_by_title.lower() in selenium_driver.title.lower()
                         ) or (
-                            not partial_match
-                            and switch_by_title.lower() == selenium_driver.title.lower()
+                                not partial_match
+                                and switch_by_title.lower() == selenium_driver.title.lower()
                         ):
                             window_handles_found = True
                             CommonUtil.ExecLog(
@@ -3805,7 +3830,7 @@ def close_tab(step_data):
                             import json
 
                             with urllib.request.urlopen(
-                                f"http://localhost:{debug_port}/json"
+                                    f"http://localhost:{debug_port}/json"
                             ) as response:
                                 tabs = json.load(response)
                                 # Filter only 'page' type tabs for clean left-to-right order
@@ -3877,7 +3902,7 @@ def close_tab(step_data):
                                     import json
 
                                     with urllib.request.urlopen(
-                                        f"http://localhost:{debug_port}/json"
+                                            f"http://localhost:{debug_port}/json"
                                     ) as response:
                                         tabs = json.load(response)
 
@@ -4393,14 +4418,14 @@ def drag_and_drop(dataset):
                     if param == mid:
                         destination.append((left, param_dict[param], right))
             elif (
-                left.strip().lower() in ("wait", "allow disable", "allow hidden")
-                and mid == "option"
+                    left.strip().lower() in ("wait", "allow disable", "allow hidden")
+                    and mid == "option"
             ):
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
             elif (
-                left.strip().lower() == "destination offset"
-                and mid.strip().lower() == "optional parameter"
+                    left.strip().lower() == "destination offset"
+                    and mid.strip().lower() == "optional parameter"
             ):
                 destination_offset = right
             elif left.strip().lower() == "delay":
@@ -4479,8 +4504,8 @@ def playwright(dataset):
         from playwright.sync_api import sync_playwright
 
         devtools_url = (
-            selenium_driver.command_executor._url.replace("http://", "ws://")
-            + "/devtools/browser"
+                selenium_driver.command_executor._url.replace("http://", "ws://")
+                + "/devtools/browser"
         )
         with sync_playwright() as p:
             # browser = p.chromium.connect(browserURL=devtools_url)
@@ -5140,21 +5165,21 @@ def copy_image_into_browser(data_set):
             const [base64Data, mimeType, callback] = arguments;
             const byteCharacters = atob(base64Data);
             const byteArrays = [];
-            
+
             for (let offset = 0; offset < byteCharacters.length; offset += 512) {
                 const slice = byteCharacters.slice(offset, offset + 512);
                 const byteNumbers = new Array(slice.length);
-                
+
                 for (let i = 0; i < slice.length; i++) {
                     byteNumbers[i] = slice.charCodeAt(i);
                 }
-                
+
                 byteArrays.push(new Uint8Array(byteNumbers));
             }
-            
+
             const blob = new Blob(byteArrays, {type: mimeType});
             const item = new ClipboardItem({ [mimeType]: blob });
-            
+
             window.focus();
             navigator.clipboard.write([item])
                 .then(() => {
