@@ -84,6 +84,22 @@ services = [
                 "os": ["darwin"],
                 "status_function": xcode.check_status,
                 "install_function": xcode.install,
+                "user_password": "yes",
+            }
+        ],
+    },
+    {
+        "category": "MacOS",
+        "services": [
+            {
+                "name": "Xcode",
+                "status": "none",
+                "comment": "Xcode is a tool for managing Xcode devices.",
+                "install_text": "install",
+                "os": ["darwin"],
+                "status_function": xcode.check_status,
+                "install_function": xcode.install,
+                "user_password": "yes",
             }
         ],
     },
