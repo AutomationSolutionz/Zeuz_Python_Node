@@ -4,6 +4,7 @@ from typing import Literal
 from .web import chrome_for_testing
 from .android import adb, node_js_22, appium, java, android_emulator
 from .ios import xcode
+from .macos import xcode as macos_xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
 from .linux import atspi, xwd
@@ -97,8 +98,8 @@ services = [
                 "comment": "Xcode is a tool for managing Xcode devices.",
                 "install_text": "install",
                 "os": ["darwin"],
-                "status_function": xcode.check_status,
-                "install_function": xcode.install,
+                "status_function": macos_xcode.check_status,
+                "install_function": macos_xcode.install,
                 "user_password": "yes",
             }
         ],
