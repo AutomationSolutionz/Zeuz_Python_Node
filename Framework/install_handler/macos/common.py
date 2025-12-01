@@ -12,7 +12,7 @@ async def _send_status(category, status: str, comment: str):
         {
             "action": "status",
             "data": {
-                "category": "MacOS",
+                "category": category,
                 "name": "Xcode",
                 "status": status,
                 "comment": comment,
