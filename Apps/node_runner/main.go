@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	version = "dev"
-	branch  = flag.String("branch", "", "Branch to download (defaults to tagged version)")
+	version   = "dev"
+	branch    = flag.String("branch", "", "Branch to download (defaults to tagged version)")
 	cleanFlag = flag.Bool("clean", false, "Remove ZeuZ Node directory and $HOME/.zeuz and exit")
 )
 
@@ -131,19 +131,21 @@ func getZeuZNodeURL() string {
 	return "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/dev.zip"
 }
 
-func getZeuZPostfix() string {
+func getZeuZNodeDir() string {
+	selectedVersion := ""
 	if *branch != "" {
-		return *branch
+		selectedVersion = *branch
 	}
 	if version != "dev" && !strings.HasPrefix(version, "dev-") {
-		return version
+		selectedVersion = version
 	}
-	return "dev"
+
+	return fmt.Sprintf("ZeuZ_Node-%s", selectedVersion)
 }
 
 // setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
 func setupZeuzNode() error {
-	zeuzDir := fmt.Sprintf("Zeuz_Node-%s", getZeuZPostfix())
+	zeuzDir := getZeuZNodeDir()
 	// Check if ZeuZ Node directory already exists and contains files
 	if info, err := os.Stat(zeuzDir); err == nil && info.IsDir() {
 		// Check if directory is not empty
@@ -272,7 +274,7 @@ func main() {
 
 	fmt.Printf("✅ ZeuZ Node %s\n", version)
 
-	zeuzDir := fmt.Sprintf("Zeuz_Python_Node-%s", getZeuZPostfix())
+	zeuzDir := getZeuZNodeDir()
 
 	if *cleanFlag {
 		var removedAny bool
