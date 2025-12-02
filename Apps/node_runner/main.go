@@ -143,7 +143,7 @@ func getZeuZPostfix() string {
 
 // setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
 func setupZeuzNode() error {
-	zeuzDir := fmt.Sprintf("Zeuz_Python_Node-%s", getZeuZPostfix())
+	zeuzDir := fmt.Sprintf("Zeuz_Node-%s", getZeuZPostfix())
 	// Check if ZeuZ Node directory already exists and contains files
 	if info, err := os.Stat(zeuzDir); err == nil && info.IsDir() {
 		// Check if directory is not empty
