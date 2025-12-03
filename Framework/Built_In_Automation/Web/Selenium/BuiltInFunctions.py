@@ -3569,6 +3569,15 @@ def switch_window_or_tab(step_data):
             elif left == "playwright":
                 playwright_enabled = right.lower() == "true"
 
+        # Validate that at least one switching condition was provided
+        if not window_title_condition and not window_index_condition:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Unable to switch window/tab: Neither 'window title'/'tab title' nor 'window index'/'tab index' was provided. Please provide either a title (exact or partial with *) or an index to switch to.",
+                3,
+            )
+            return "zeuz_failed"
+
     except Exception:
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -3581,70 +3590,121 @@ def switch_window_or_tab(step_data):
         import time  # Import time for both Playwright and Selenium paths
 
         if playwright_enabled:
-            CommonUtil.ExecLog(sModuleInfo, "Playwright is enabled", 1)
-            from playwright.sync_api import sync_playwright
+            CommonUtil.ExecLog(sModuleInfo, "Playwright is enabled (using async API)", 1)
+            import asyncio
+            from playwright.async_api import async_playwright
 
-            with sync_playwright() as p:
-                debug_port = selenium_details[current_driver_id][
-                    "remote-debugging-port"
-                ]
-                browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
-                context = browser.contexts[0]
-                pages = context.pages
+            # Async function to handle Playwright operations
+            async def run_playwright_switch():
+                async with async_playwright() as p:
+                    debug_port = selenium_details[current_driver_id][
+                        "remote-debugging-port"
+                    ]
+                    browser = await p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
+                    context = browser.contexts[0]
+                    pages = context.pages
 
-                # Handle title-based tab switch
-                if window_title_condition:
-                    for i, page in enumerate(pages):
-                        page_title = page.title()
+                    result_data = {"status": None, "target_url": None, "error": None}
+
+                    # Handle title-based tab switch
+                    if window_title_condition:
+                        for page in pages:
+                            page_title = await page.title()
+                            if (
+                                partial_match
+                                and switch_by_title.lower() in page_title.lower()
+                            ) or (
+                                not partial_match
+                                and switch_by_title.lower() == page_title.lower()
+                            ):
+                                # Step 1: Use Playwright to switch tabs
+                                await page.bring_to_front()
+                                await asyncio.sleep(1)
+
+                                # Store target URL for Selenium alignment
+                                result_data["target_url"] = page.url
+                                result_data["status"] = "found"
+                                return result_data
+                        
+                        result_data["status"] = "not_found"
+                        result_data["error"] = f"Playwright: No tab with title '{switch_by_title}' found"
+                        return result_data
+
+                    # Index-based switching not supported with Playwright due to CDP ordering inconsistency
+                    elif window_index_condition:
+                        result_data["status"] = "not_supported"
+                        result_data["error"] = "Index-based tab switching is not supported with Playwright. Use title-based switching instead."
+                        return result_data
+                    
+                    return result_data
+
+            # Run async Playwright code from sync context
+            try:
+                # We're always called from async context, so we need to run in a new thread with new event loop
+                loop = asyncio.get_running_loop()
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def run_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(run_playwright_switch())
+                    finally:
+                        new_loop.close()
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_in_thread)
+                    playwright_result = future.result(timeout=30)
+                
+                if playwright_result["status"] == "found":
+                    # Step 3: Re-align Selenium to match the target tab
+                    target_url = playwright_result["target_url"]
+                    for handle in selenium_driver.window_handles:
+                        selenium_driver.switch_to.window(handle)
                         if (
-                            partial_match
-                            and switch_by_title.lower() in page_title.lower()
-                        ) or (
-                            not partial_match
-                            and switch_by_title.lower() == page_title.lower()
+                            selenium_driver.current_url == target_url
+                            or target_url in selenium_driver.title
                         ):
-                            # Step 1: Use Playwright to switch tabs
-                            page.bring_to_front()
-                            time.sleep(1)
-
-                            # Step 3: Re-align Selenium to match the target tab
-                            target_url = page.url
-                            for handle in selenium_driver.window_handles:
-                                selenium_driver.switch_to.window(handle)
-                                if (
-                                    selenium_driver.current_url == target_url
-                                    or target_url in selenium_driver.title
-                                ):
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo,
-                                        f"Selenium aligned to: {selenium_driver.title}",
-                                        1,
-                                    )
-                                    return "passed"
-
                             CommonUtil.ExecLog(
                                 sModuleInfo,
-                                "Failed to align Selenium with target tab",
-                                3,
+                                f"Selenium aligned to: {selenium_driver.title}",
+                                1,
                             )
-                            return "zeuz_failed"
+                            return "passed"
+
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        f"Playwright: No tab with title '{switch_by_title}' found",
+                        "Failed to align Selenium with target tab",
                         3,
                     )
                     return "zeuz_failed"
-
-                # Index-based switching not supported with Playwright due to CDP ordering inconsistency
-                elif window_index_condition:
+                
+                elif playwright_result["status"] == "not_found":
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Index-based tab switching is not supported with Playwright. Use title-based switching instead.",
+                        playwright_result["error"],
                         3,
                     )
                     return "zeuz_failed"
+                
+                elif playwright_result["status"] == "not_supported":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        playwright_result["error"],
+                        3,
+                    )
+                    return "zeuz_failed"
+                    
+            except Exception as e:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Playwright tab switching failed: {e}. Falling back to Selenium",
+                    2,
+                )
+                playwright_enabled = False
+                # Continue with Selenium fallback
 
-        else:
+        if not playwright_enabled:
             # --- Selenium tab switching ---
             CommonUtil.ExecLog(sModuleInfo, "Using Selenium for tab switching", 1)
             if window_title_condition:
@@ -3735,6 +3795,8 @@ def close_tab(step_data):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    global selenium_details
+    global current_driver_id
     try:
         close_tabs = []
         playwright_enabled = False
@@ -3766,34 +3828,33 @@ def close_tab(step_data):
     try:
         if playwright_enabled:
             # --- Playwright tab closing ---
-            print("Using Playwright for tab closing")
-            from playwright.sync_api import sync_playwright
+            CommonUtil.ExecLog(sModuleInfo, "Using Playwright for tab closing (async API)", 1)
+            import asyncio
+            from playwright.async_api import async_playwright
 
-            try:
-                with sync_playwright() as p:
+            # Async function to handle Playwright operations
+            async def run_playwright_close():
+                async with async_playwright() as p:
                     debug_port = selenium_details[current_driver_id]["remote-debugging-port"]
-                    browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
+                    browser = await p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
                     context = browser.contexts[0]
                     pages = context.pages
+
+                    result_data = {"status": None, "error": None, "page_title": None}
 
                     if tab_title:
                         # Close tab by title
                         for page in pages:
-                            page_title = page.title()
+                            page_title = await page.title()
                             if tab_title.lower() in page_title.lower():
-                                page.close()
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    f"Playwright: Tab closed '{page_title}'",
-                                    1,
-                                )
-                                return "passed"
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            f"Playwright: No tab with title '{tab_title}' found",
-                            3,
-                        )
-                        return "zeuz_failed"
+                                await page.close()
+                                result_data["status"] = "closed"
+                                result_data["page_title"] = page_title
+                                return result_data
+                        
+                        result_data["status"] = "not_found"
+                        result_data["error"] = f"Playwright: No tab with title '{tab_title}' found"
+                        return result_data
 
                     elif tab_index is not None:
                         # Close tab by index using visual order
@@ -3820,41 +3881,26 @@ def close_tab(step_data):
                                 # Find the page with matching URL
                                 for page in pages:
                                     if page.url == desired_url:
-                                        page.close()
-                                        CommonUtil.ExecLog(
-                                            sModuleInfo,
-                                            f"Playwright: Tab closed at  index {idx}",
-                                            1,
-                                        )
-                                        return "passed"
+                                        await page.close()
+                                        result_data["status"] = "closed"
+                                        result_data["page_title"] = f"Tab at index {idx}"
+                                        return result_data
 
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    f"Playwright: Tab at visual index {idx} not found in context",
-                                    3,
-                                )
-                                return "zeuz_failed"
+                                result_data["status"] = "not_found"
+                                result_data["error"] = f"Playwright: Tab at visual index {idx} not found in context"
+                                return result_data
                             else:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    f"Playwright: Invalid index {idx}. Only {len(target_urls)} tabs open.",
-                                    3,
-                                )
-                                return "zeuz_failed"
+                                result_data["status"] = "invalid_index"
+                                result_data["error"] = f"Playwright: Invalid index {idx}. Only {len(target_urls)} tabs open."
+                                return result_data
                         except ValueError:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                f"Playwright: Invalid tab index '{tab_index}'",
-                                3,
-                            )
-                            return "zeuz_failed"
+                            result_data["status"] = "invalid_index"
+                            result_data["error"] = f"Playwright: Invalid tab index '{tab_index}'"
+                            return result_data
                         except Exception as e:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                f"Playwright: Failed to get visual tab order: {e}",
-                                3,
-                            )
-                            return "zeuz_failed"
+                            result_data["status"] = "error"
+                            result_data["error"] = f"Playwright: Failed to get visual tab order: {e}"
+                            return result_data
 
                     else:
                         # Close current active tab
@@ -3864,7 +3910,8 @@ def close_tab(step_data):
                             for page in pages:
                                 try:
                                     # Check if this page is currently active
-                                    if page.evaluate("document.hasFocus()"):
+                                    has_focus = await page.evaluate("document.hasFocus()")
+                                    if has_focus:
                                         current_page = page
                                         break
                                 except Exception:
@@ -3903,20 +3950,54 @@ def close_tab(step_data):
                                     # Ultimate fallback to first page in context
                                     current_page = pages[0]
 
-                            page_title = current_page.title()
-                            current_page.close()
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                f"Playwright: Current tab closed '{page_title}'",
-                                1,
-                            )
-                            return "passed"
+                            page_title = await current_page.title()
+                            await current_page.close()
+                            result_data["status"] = "closed"
+                            result_data["page_title"] = page_title
+                            return result_data
                         else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "Playwright: No tabs found to close", 3
-                            )
-                            return "zeuz_failed"
+                            result_data["status"] = "no_tabs"
+                            result_data["error"] = "Playwright: No tabs found to close"
+                            return result_data
 
+            # Run async Playwright code from sync context
+            try:
+                # We're always called from async context, so we need to run in a new thread with new event loop
+                loop = asyncio.get_running_loop()
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def run_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(run_playwright_close())
+                    finally:
+                        new_loop.close()
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_in_thread)
+                    playwright_result = future.result(timeout=30)
+                
+                if playwright_result["status"] == "closed":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"Playwright: Tab closed '{playwright_result['page_title']}'",
+                        1,
+                    )
+                    return "passed"
+                else:
+                    # For errors that should fall back to Selenium, don't return yet
+                    if playwright_result["status"] in ["not_found", "invalid_index", "error", "no_tabs"]:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            playwright_result["error"],
+                            3,
+                        )
+                        # Don't return here - let it fall back to Selenium
+                        playwright_enabled = False
+                    else:
+                        return "zeuz_failed"
+                    
             except Exception as e:
                 CommonUtil.ExecLog(
                     sModuleInfo,
