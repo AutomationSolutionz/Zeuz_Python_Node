@@ -5,6 +5,7 @@ import httpx
 import asyncio
 import os
 import json
+import tarfile
 from pathlib import Path
 from Framework.install_handler.utils import send_response
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
@@ -444,8 +445,6 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
    })
    
    try:
-       pkg_manager = _get_linux_package_manager()
-       
        # Helper function to run sudo commands with password if provided
        def run_sudo(cmd_list):
            if user_password:
@@ -455,146 +454,207 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
            else:
                return subprocess.run(cmd_list, capture_output=True, text=True, check=False)
        
-       if pkg_manager == "apt":
-           # Try installing via apt (if repository is configured)
-           # Update package list (optional - install will work without it, but update ensures latest package info)
-           apt_result = run_sudo(["sudo", "apt-get", "update"])
+       # First, try to install from downloaded .tar.xz file (ensures Selenium can find binary)
+       # Find any .tar.xz file in the download directory (filename may vary: firefox-145.0.2.tar.xz, firefox-latest.tar.xz, etc.)
+       download_dir = ZEUZ_NODE_DOWNLOADS_DIR / "firefox"
+       tar_file = None
+       
+       # If installer_path exists and is a .tar.xz file, use it
+       if installer_path and installer_path.exists() and installer_path.suffix == '.xz':
+           tar_file = installer_path
+       else:
+           # Otherwise, find any .tar.xz file in the download directory (there should be only one)
+           if download_dir.exists():
+               tar_files = list(download_dir.glob("*.tar.xz"))
+               if tar_files:
+                   tar_file = tar_files[0]  # Use the first .tar.xz file found
+                   print(f"[installer][web-mozilla] Found Firefox installer: {tar_file.name}")
+       
+       if tar_file and tar_file.exists():
+           print("[installer][web-mozilla] Attempting to install from downloaded .tar.xz file...")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "installing",
+                   "comment": "Extracting Firefox from archive...",
+               }
+           })
            
-           # If update failed, continue anyway - install can work without update
-           if apt_result.returncode != 0:
-               print(f"[installer][web-mozilla] apt-get update failed, continuing with install anyway: {apt_result.stderr}")
-           
-           apt_install_result = run_sudo(["sudo", "apt-get", "install", "-y", "firefox"])
-           
-           # Check if apt-get install failed
-           if apt_install_result.returncode != 0:
-               print(f"[installer][web-mozilla] Installation failed. Error: {apt_install_result.stderr}")
+           try:
+               extract_dir = ZEUZ_NODE_DOWNLOADS_DIR / "firefox"
+               extract_dir.mkdir(parents=True, exist_ok=True)
+               
+               print("[installer][web-mozilla] Extracting Firefox from archive...")
+               await send_response({
+                   "action": "status",
+                   "data": {
+                       "category": "Web",
+                       "name": "Mozilla",
+                       "status": "installing",
+                       "comment": "Extracting Firefox from archive...",
+                   }
+               })
+               
+               # Extract the tar.xz file directly to download directory (works with any filename)
+               with tarfile.open(tar_file, 'r:xz') as tar:
+                   tar.extractall(extract_dir)
+               
+               # Find the firefox directory (usually named firefox/)
+               firefox_dir = None
+               for item in extract_dir.iterdir():
+                   if item.is_dir() and item.name.startswith('firefox'):
+                       firefox_dir = item
+                       break
+               
+               if firefox_dir and (firefox_dir / "firefox").exists():
+                   # Keep files in download directory - no copying needed
+                   # Binary path: ~/.zeuz/zeuz_node_downloads/firefox/firefox/firefox
+                   firefox_binary_path = firefox_dir / "firefox"
+                   
+                   print(f"[installer][web-mozilla] Creating symlink to Firefox binary...")
+                   await send_response({
+                       "action": "status",
+                       "data": {
+                           "category": "Web",
+                           "name": "Mozilla",
+                           "status": "installing",
+                           "comment": "Creating symlink to Firefox...",
+                       }
+                   })
+                   
+                   # Create symlink in /usr/local/bin or /usr/bin (prefer /usr/local/bin)
+                   symlink_paths = [
+                       Path("/usr/local/bin/firefox"),
+                       Path("/usr/bin/firefox")
+                   ]
+                   
+                   symlink_created = False
+                   for symlink_path in symlink_paths:
+                       # Remove existing symlink or file if it exists
+                       if symlink_path.exists() or symlink_path.is_symlink():
+                           remove_result = run_sudo(["sudo", "rm", "-f", str(symlink_path)])
+                           if remove_result.returncode != 0:
+                               print(f"[installer][web-mozilla] Warning: Failed to remove existing {symlink_path}: {remove_result.stderr}")
+                       
+                       # Create new symlink pointing directly to the binary in download directory
+                       symlink_result = run_sudo([
+                           "sudo", "ln", "-s", str(firefox_binary_path), str(symlink_path)
+                       ])
+                       
+                       if symlink_result.returncode == 0:
+                           print(f"[installer][web-mozilla] Created symlink: {symlink_path} -> {firefox_binary_path}")
+                           run_sudo(["sudo", "chmod", "+x", str(symlink_path)])
+                           symlink_created = True
+                           break
+                       else:
+                           print(f"[installer][web-mozilla] Failed to create symlink at {symlink_path}: {symlink_result.stderr}")
+                   
+                   if not symlink_created:
+                       print("[installer][web-mozilla] Failed to create symlink in any location")
+                   else:
+                       # Create .desktop file to appear in application menu
+                       desktop_dir = Path.home() / ".local" / "share" / "applications"
+                       desktop_dir.mkdir(parents=True, exist_ok=True)
+                       desktop_file = desktop_dir / "firefox.desktop"
+                       
+                       # Find icon path (default128.png or fallback to any icon)
+                       icon_path = firefox_dir / "browser" / "chrome" / "icons" / "default" / "default128.png"
+                       if not icon_path.exists():
+                           # Try to find any icon file
+                           icon_dir = firefox_dir / "browser" / "chrome" / "icons" / "default"
+                           if icon_dir.exists():
+                               icon_files = list(icon_dir.glob("*.png"))
+                               if icon_files:
+                                   icon_path = icon_files[0]
+                       
+                       # Create .desktop file content
+                       desktop_content = f"""[Desktop Entry]
+Version=1.0
+Name=Firefox (Custom)
+Comment=Mozilla Firefox Web Browser
+Exec={firefox_binary_path}
+Icon={icon_path if icon_path.exists() else ''}
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
+StartupNotify=true
+"""
+                       
+                       try:
+                           with open(desktop_file, "w") as f:
+                               f.write(desktop_content)
+                           # Make .desktop file executable
+                           os.chmod(desktop_file, 0o755)
+                           print(f"[installer][web-mozilla] Created .desktop file: {desktop_file}")
+                       except Exception as e:
+                           print(f"[installer][web-mozilla] Warning: Failed to create .desktop file: {e}")
+                       
+                       # Verify installation by testing firefox command (uses symlink)
+                       test_result = subprocess.run(
+                           ["firefox", "--version"],
+                           capture_output=True,
+                           text=True,
+                           check=False
+                       )
+                       if test_result.returncode == 0:
+                           print(f"[installer][web-mozilla] Firefox successfully installed")
+                           print(f"[installer][web-mozilla] Binary location: {firefox_binary_path}")
+                           print(f"[installer][web-mozilla] Symlink: {symlink_path} -> {firefox_binary_path}")
+                           return True
+                       else:
+                           error_msg = f"Firefox verification failed: {test_result.stderr}"
+                           print(f"[installer][web-mozilla] {error_msg}")
+                           await send_response({
+                               "action": "status",
+                               "data": {
+                                   "category": "Web",
+                                   "name": "Mozilla",
+                                   "status": "not installed",
+                                   "comment": error_msg,
+                               }
+                           })
+                           return False
+               else:
+                   error_msg = "Could not find Firefox directory or binary after extraction"
+                   print(f"[installer][web-mozilla] {error_msg}")
+                   await send_response({
+                       "action": "status",
+                       "data": {
+                           "category": "Web",
+                           "name": "Mozilla",
+                           "status": "not installed",
+                           "comment": error_msg,
+                       }
+                   })
+                   return False
+           except Exception as e:
+               error_msg = f"Installation from .tar.xz failed: {str(e)}"
+               print(f"[installer][web-mozilla] {error_msg}")
+               import traceback
+               traceback.print_exc()
                await send_response({
                    "action": "status",
                    "data": {
                        "category": "Web",
                        "name": "Mozilla",
                        "status": "not installed",
-                       "comment": "Installation failed. Please ensure you have provided the correct password.",
+                       "comment": error_msg,
                    }
                })
                return False
-           
-           if apt_install_result.returncode == 0:
-               # Check if apt installed a transitional package that requires snap
-               # Test if firefox command works
-               test_result = subprocess.run(
-                   ["firefox", "--version"],
-                   capture_output=True,
-                   text=True,
-                   check=False
-               )
-               
-               # If Firefox requires snap, install it via snap
-               # Note: snap install doesn't require sudo or password for user installations
-               if test_result.returncode != 0 and test_result.stderr and "requires the firefox snap" in test_result.stderr.lower():
-                   print("[installer][web-mozilla] Detected transitional package, installing Firefox via snap...")
-                   # snap install doesn't need sudo or password (runs as user)
-                   snap_result = subprocess.run(
-                       ["snap", "install", "firefox"],
-                       capture_output=True,
-                       text=True,
-                       check=False
-                   )
-                   
-                   if snap_result.returncode == 0:
-                       print("[installer][web-mozilla] Mozilla Firefox installed via snap")
-                       return True
-                   else:
-                       print(f"[installer][web-mozilla] Snap installation failed: {snap_result.stderr}")
-               else:
-                   # Firefox works directly (not a transitional package)
-                   print("[installer][web-mozilla] Mozilla Firefox installed via apt")
-                   return True
-           
-           # apt/snap installation failed - no fallback
-           print("[installer][web-mozilla] apt/snap installation failed, no fallback available")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Web",
-                   "name": "Mozilla",
-                   "status": "not installed",
-                   "comment": "Installation failed. Please ensure you have provided the correct password.",
-               }
-           })
-           return False
        
-       elif pkg_manager == "yum":
-           # Try installing via yum
-           yum_result = run_sudo(["sudo", "yum", "install", "-y", "firefox"])
-           
-           if yum_result.returncode == 0:
-               print("[installer][web-mozilla] Mozilla Firefox installed via yum")
-               return True
-           
-           # Installation failed
-           print(f"[installer][web-mozilla] Installation failed. Error: {yum_result.stderr}")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Web",
-                   "name": "Mozilla",
-                   "status": "not installed",
-                   "comment": "Installation failed. Please ensure you have provided the correct password.",
-               }
-           })
-           return False
-       
-       elif pkg_manager == "dnf":
-           # Try installing via dnf
-           dnf_result = run_sudo(["sudo", "dnf", "install", "-y", "firefox"])
-           
-           if dnf_result.returncode == 0:
-               print("[installer][web-mozilla] Mozilla Firefox installed via dnf")
-               return True
-           
-           # Installation failed
-           print(f"[installer][web-mozilla] Installation failed. Error: {dnf_result.stderr}")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Web",
-                   "name": "Mozilla",
-                   "status": "not installed",
-                   "comment": "Installation failed. Please ensure you have provided the correct password.",
-               }
-           })
-           return False
-       
-       elif pkg_manager == "pacman":
-           # Try installing via pacman
-           pacman_result = run_sudo(["sudo", "pacman", "-S", "--noconfirm", "firefox"])
-           
-           if pacman_result.returncode == 0:
-               print("[installer][web-mozilla] Mozilla Firefox installed via pacman")
-               return True
-           
-           # Installation failed
-           print(f"[installer][web-mozilla] Installation failed. Error: {pacman_result.stderr}")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Web",
-                   "name": "Mozilla",
-                   "status": "not installed",
-                   "comment": "Installation failed. Please ensure you have provided the correct password.",
-               }
-           })
-           return False
-       
+       # If no installer file was downloaded or tar.xz installation not attempted
+       error_msg = "Firefox installer file not found or invalid. Cannot proceed with installation."
+       print(f"[installer][web-mozilla] {error_msg}")
        await send_response({
            "action": "status",
            "data": {
                "category": "Web",
                "name": "Mozilla",
                "status": "not installed",
-               "comment": "Mozilla Firefox installation failed. Please install manually or configure repository.",
+               "comment": error_msg,
            }
        })
        return False
