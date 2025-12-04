@@ -6,6 +6,7 @@ import asyncio
 import os
 import json
 import tarfile
+import re
 from pathlib import Path
 from Framework.install_handler.utils import send_response
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
@@ -253,6 +254,8 @@ async def _download_firefox_installer():
            # Windows: Download .exe installer
            # Firefox provides direct download links for Windows
            installer_url = "https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
+           # The actual filename will be determined from the download (may include version number)
+           # We'll find any .exe file in the download directory after download
            installer_path = download_dir / "FirefoxSetup.exe"
        elif system == "linux":
            # Linux: Download .tar.xz package (Mozilla now uses xz instead of bz2)
@@ -277,6 +280,19 @@ async def _download_firefox_installer():
        async with httpx.AsyncClient(timeout=900.0, follow_redirects=True) as client:
            async with client.stream("GET", installer_url) as response:
                response.raise_for_status()
+               
+               # Try to get actual filename from Content-Disposition header or URL
+               content_disposition = response.headers.get("content-disposition", "")
+               actual_filename = None
+               if content_disposition and "filename=" in content_disposition:
+                   # Extract filename from Content-Disposition header
+                   match = re.search(r'filename[^;=\n]*=(([\'"]).*?\2|[^;\n]*)', content_disposition)
+                   if match:
+                       actual_filename = match.group(1).strip('"\'')
+               
+               # Use actual filename if found, otherwise use default
+               if system == "windows" and actual_filename:
+                   installer_path = download_dir / actual_filename
                
                total_size = int(response.headers.get("content-length", 0))
                chunk_size = 8192
@@ -312,6 +328,14 @@ async def _download_firefox_installer():
                                    }
                                }))
        
+       # For Windows, if we couldn't get filename from header, find any .exe file in download directory
+       if system == "windows":
+           if not installer_path.exists():
+               exe_files = list(download_dir.glob("*.exe"))
+               if exe_files:
+                   installer_path = exe_files[0]  # Use the first .exe file found
+                   print(f"[installer][web-mozilla] Found installer file: {installer_path.name}")
+       
        print()
        print(f"[installer][web-mozilla] Download complete: {installer_path}")
        return installer_path
@@ -343,89 +367,77 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
    })
    
    try:
-       # Helper function to run commands with elevation if password provided
-       def run_elevated(cmd_list):
-           if user_password:
-               import getpass
-               username = getpass.getuser()
-               escaped_args = []
-               for arg in cmd_list[1:]:
-                   escaped_arg = arg.replace('"', '`"').replace('$', '`$')
-                   escaped_args.append(f'"{escaped_arg}"')
-               args_str = ','.join(escaped_args)
-               ps_script = f'''
-               $password = ConvertTo-SecureString -String "{user_password}" -AsPlainText -Force
-               $credential = New-Object System.Management.Automation.PSCredential("{username}", $password)
-               Start-Process -FilePath "{cmd_list[0]}" -ArgumentList {args_str} -Credential $credential -Wait -NoNewWindow
-               '''
-               return subprocess.run(
-                   ["powershell", "-Command", ps_script],
-                   capture_output=True,
-                   text=True,
-                   check=False
-               )
-           else:
-               # Use RunAs elevation prompt
-               args_str = ' '.join([f'"{arg}"' for arg in cmd_list[1:]])
-               ps_script = f'Start-Process -FilePath "{cmd_list[0]}" -ArgumentList {args_str} -Verb RunAs -Wait -NoNewWindow'
-               return subprocess.run(
-                   ["powershell", "-Command", ps_script],
-                   capture_output=True,
-                   text=True,
-                   check=False
-               )
+       download_dir = ZEUZ_NODE_DOWNLOADS_DIR / "firefox"
        
-       # Install to custom directory in downloads folder
-       install_dir = ZEUZ_NODE_DOWNLOADS_DIR / "firefox" / "installation"
-       install_dir.mkdir(parents=True, exist_ok=True)
-       
-       # Use .exe installer with custom installation directory
+       # Find the installer .exe file (may have versioned name like "Firefox Setup 145.0.2.exe")
+       installer_exe = None
        if installer_path and installer_path.exists():
-           # Firefox installer supports /D parameter for custom directory
-           # /S for silent installation
-           install_dir_str = str(install_dir).replace('/', '\\')
-           exe_result = run_elevated([str(installer_path), "/S", f"/D={install_dir_str}"])
-           
-           if exe_result.returncode == 0:
-               print("[installer][web-mozilla] Mozilla Firefox installed via .exe")
-               return True
-           else:
-               print(f"[installer][web-mozilla] .exe installation failed: {exe_result.stderr}")
-               return False
+           installer_exe = installer_path
        else:
-           print("[installer][web-mozilla] Installer not found, trying direct download")
-           # Try direct download URL
-           if user_password:
-               import getpass
-               username = getpass.getuser()
-               ps_script = f'''
-               $password = ConvertTo-SecureString -String "{user_password}" -AsPlainText -Force
-               $credential = New-Object System.Management.Automation.PSCredential("{username}", $password)
-               Start-Process "https://www.mozilla.org/firefox/download/thanks/" -Credential $credential -Wait
-               '''
-               download_result = subprocess.run(
-                   ["powershell", "-Command", ps_script],
-                   capture_output=True,
-                   text=True,
-                   check=False
-               )
-           else:
-               download_result = subprocess.run(
-                   ["powershell", "-Command", "Start-Process", "https://www.mozilla.org/firefox/download/thanks/", "-Wait"],
-                   capture_output=True,
-                   text=True,
-                   check=False
-               )
-           return download_result.returncode == 0
+           # Look for any .exe file in the firefox download directory
+           if download_dir.exists():
+               exe_files = list(download_dir.glob("*.exe"))
+               if exe_files:
+                   installer_exe = exe_files[0]
+                   print(f"[installer][web-mozilla] Found installer: {installer_exe.name}")
+       
+       if not installer_exe or not installer_exe.exists():
+           error_msg = "Firefox installer not found in download directory"
+           print(f"[installer][web-mozilla] {error_msg}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "not installed",
+                   "comment": error_msg,
+               }
+           })
+           return False
+       
+       # Use simple PowerShell Start-Process command with /S flag for silent installation
+       # This installs to default location (Program Files) which works better for automation
+       installer_path_str = str(installer_exe).replace('/', '\\')
+       ps_command = f'Start-Process "{installer_path_str}" -ArgumentList "/S" -Wait'
+       
+       print(f"[installer][web-mozilla] Running installer: {installer_exe.name}")
+       print(f"[installer][web-mozilla] Command: {ps_command}")
+       
+       # Run the command (UAC prompt will appear if needed for elevation)
+       result = subprocess.run(
+           ["powershell", "-Command", ps_command],
+           capture_output=True,
+           text=True,
+           check=False
+       )
+       
+       if result.returncode == 0:
+           print("[installer][web-mozilla] Mozilla Firefox installed successfully")
+           return True
+       else:
+           error_msg = f"Installation failed: {result.stderr or result.stdout}"
+           print(f"[installer][web-mozilla] {error_msg}")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Web",
+                   "name": "Mozilla",
+                   "status": "not installed",
+                   "comment": f"Installation failed. Please check if you have administrator privileges.",
+               }
+           })
+           return False
    except Exception as e:
        print(f"[installer][web-mozilla] Windows installation failed: {e}")
+       import traceback
+       traceback.print_exc()
        await send_response({
            "action": "status",
            "data": {
                "category": "Web",
                "name": "Mozilla",
                "status": "not installed",
-               "comment": "Installation failed. Please ensure you have provided the correct password.",
+               "comment": f"Mozilla Firefox installation failed: {str(e)}",
            }
        })
        return False
