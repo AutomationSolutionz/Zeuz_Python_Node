@@ -1260,6 +1260,7 @@ def send_dom_variables():
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid, **kwargs):
     # Need to set device_info for browserstack here
     global device_info
+    device_order = [[i, i] for i in range(1, len(device_dict) + 1)]  # overriding zsvc return device order. zsvc only returns [[1,1]] without considering the number of devices available
     shared.Set_Shared_Variables("device_order", device_order)
     if isinstance(device_order, list):
         try:
