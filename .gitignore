@@ -62,3 +62,5 @@ custom_profiles/
 Apps/Windows/inspector.exe
 Apps/Windows/Element.xml
 Framework/settings.conf.lock
+Framework/Built_In_Automation/Desktop/Linux/latest_app.txt
+**/linux_screen.png

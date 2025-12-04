@@ -10,6 +10,7 @@ from server.evaluator import router as evaluator_router
 from server.node_operator import router as operator_router
 from server.mobile import router as mobile_router, upload_android_ui_dump
 from server.mac import router as mac_router
+from server.linux import router as linux_router
 import asyncio
 
 class EndpointFilter(logging.Filter):
@@ -40,6 +41,7 @@ def main() -> FastAPI:
     v1router.include_router(evaluator_router)
     v1router.include_router(mobile_router)
     v1router.include_router(mac_router)
+    v1router.include_router(linux_router)
     app = FastAPI()
     app.include_router(v1router)
 
