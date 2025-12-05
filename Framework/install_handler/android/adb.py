@@ -1,11 +1,55 @@
 import subprocess
 import asyncio
+import platform
+import os
 from Framework.install_handler.utils import send_response
 
 
 async def check_status() -> bool:
    """Check if ADB (Android Debug Bridge) is installed."""
    print("[installer][android-adb] Checking status...")
+  
+   # Dynamically refresh ANDROID_HOME and PATH from registry on Windows
+   system = platform.system()
+   if system == "Windows":
+       try:
+           import winreg
+           with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
+               try:
+                   android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
+                   if android_home_reg:
+                       # Expand environment variables before checking if path exists
+                       android_home_expanded = os.path.expandvars(android_home_reg)
+                       if os.path.exists(android_home_expanded):
+                           os.environ['ANDROID_HOME'] = android_home_expanded
+                           # Update PATH with platform-tools (where ADB is located)
+                           platform_tools = os.path.join(android_home_expanded, "platform-tools")
+                           current_path = os.environ.get('PATH', '')
+                           if platform_tools not in current_path:
+                               os.environ['PATH'] = f"{platform_tools};{current_path}"
+                           print(f"[installer][android-adb] Refreshed ANDROID_HOME from registry: {android_home_expanded}")
+               except FileNotFoundError:
+                   pass
+               
+               # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
+               if 'ANDROID_HOME' not in os.environ or not os.path.exists(os.environ.get('ANDROID_HOME', '')):
+                   try:
+                       android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
+                       if android_sdk_root_reg:
+                           # Expand environment variables before checking if path exists
+                           android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
+                           if os.path.exists(android_sdk_root_expanded):
+                               os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
+                               # Update PATH with platform-tools (where ADB is located)
+                               platform_tools = os.path.join(android_sdk_root_expanded, "platform-tools")
+                               current_path = os.environ.get('PATH', '')
+                               if platform_tools not in current_path:
+                                   os.environ['PATH'] = f"{platform_tools};{current_path}"
+                               print(f"[installer][android-adb] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
+                   except FileNotFoundError:
+                       pass
+       except Exception as e:
+           print(f"[installer][android-adb] Failed to refresh from registry: {e}")
   
    try:
        loop = asyncio.get_event_loop()

@@ -15,11 +15,50 @@ async def check_status() -> bool:
    print("[installer][android-sdk] Checking status...")
   
    try:
-       # Check if ANDROID_HOME is set
+       # Check if ANDROID_HOME is set in current process environment
        android_home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
 
-
-       print(android_home)
+       
+       # Dynamically refresh ANDROID_HOME from registry on Windows
+       system = platform.system()
+       if system == "Windows":
+           try:
+               import winreg
+               with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
+                   try:
+                       android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
+                       if android_home_reg:
+                           # Expand environment variables before checking if path exists
+                           android_home_expanded = os.path.expandvars(android_home_reg)
+                           if os.path.exists(android_home_expanded):
+                               os.environ['ANDROID_HOME'] = android_home_expanded
+                               android_home = android_home_expanded
+                               print(f"[installer][android-sdk] Refreshed ANDROID_HOME from registry: {android_home_expanded}")
+                   except FileNotFoundError:
+                       pass
+                   
+                   # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
+                   if not android_home:
+                       try:
+                           android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
+                           if android_sdk_root_reg:
+                               # Expand environment variables before checking if path exists
+                               android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
+                               if os.path.exists(android_sdk_root_expanded):
+                                   os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
+                                   android_home = android_sdk_root_expanded
+                                   print(f"[installer][android-sdk] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
+                       except FileNotFoundError:
+                           pass
+           except Exception as e:
+               print(f"[installer][android-sdk] Failed to refresh from registry: {e}")
+       
+       # Expand environment variables in the path on Windows (e.g., %USERPROFILE% -> C:\Users\Username)
+       # Linux/macOS don't need this as os.environ.get() already returns expanded paths
+       if android_home and system == "Windows":
+           android_home = os.path.expandvars(android_home)
+       
+       print(f"[installer][android-sdk] ANDROID_HOME value: {android_home}")
        if not android_home:
            print("[installer][android-sdk] Not installed (ANDROID_HOME not set)")
            await send_response({
@@ -708,14 +747,31 @@ async def install() -> bool:
                try:
                    android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
                    if android_home_reg:
-                       os.environ['ANDROID_HOME'] = android_home_reg
+                       # Expand environment variables before setting
+                       android_home_expanded = os.path.expandvars(android_home_reg)
+                       os.environ['ANDROID_HOME'] = android_home_expanded
                except FileNotFoundError:
                    pass
+               
+               # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
+               if 'ANDROID_HOME' not in os.environ or not os.environ.get('ANDROID_HOME'):
+                   try:
+                       android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
+                       if android_sdk_root_reg:
+                           # Expand environment variables before setting
+                           android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
+                           os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
+                   except FileNotFoundError:
+                       pass
        except Exception:
            pass
    
    # Check if ANDROID_HOME is set
    android_home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
+   
+   # Expand environment variables in the path (e.g., %USERPROFILE% -> C:\Users\Username)
+   if android_home:
+       android_home = os.path.expandvars(android_home)
    
    if android_home:
        # ANDROID_HOME is set - check if directory exists

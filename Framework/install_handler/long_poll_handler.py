@@ -11,7 +11,7 @@ from Framework.install_handler.utils import send_response, debug, read_node_id
 from pydantic import BaseModel
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
-from Framework.install_handler.android.emulator import create_avd_from_system_image
+from Framework.install_handler.android.emulator import create_avd_from_system_image, get_available_avds
 from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
@@ -33,6 +33,18 @@ class InstallHandler:
             if action == "services_list":
                 current_os = platform.system().lower()
                 if debug: print(f"[installer] Current OS: {current_os}")
+                
+                # Populate AndroidEmulator services with available AVDs
+                try:
+                    avds = await get_available_avds()
+                    for category in services:
+                        if category["category"] == "AndroidEmulator":
+                            category["services"] = avds
+                            if debug: print(f"[installer] Populated AndroidEmulator with {len(avds)} AVDs")
+                            break
+                except Exception as e:
+                    if debug: print(f"[installer] Error populating AVDs: {e}")
+                    # Continue with empty services list if AVD population fails
                 
                 filtered_services = []
                 for category in services:
@@ -98,13 +110,13 @@ class InstallHandler:
                             print(f"[installer] No install_function found for AndroidEmulator category")
                             return
                     
-                    # Case 2: Service name is a system image (starts with "system-images;")
-                    if service_name.startswith("system-images;"):
+                    # Case 2: Service name is a device installation request (starts with "install device;")
+                    if service_name.startswith("install device;"):
                         if action == "install":
                             await create_avd_from_system_image(service_name)
                             return
                         else:
-                            print(f"[installer] Status check not supported for system images")
+                            print(f"[installer] Status check not supported for device installation")
                             return
                     
                     # Case 3: Service name is an existing AVD - find it in services list
