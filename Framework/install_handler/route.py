@@ -10,66 +10,11 @@ from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
 from .android.emulator import android_emulator_install
 
-
+version = "2.0.0"
 services = [
-   {
-       "category": "Web",
-
-       "services": [
-           {
-               "name": "Chrome For Testing",
-               "status": "none",
-               "comment": "Chrome for Testing is required to run web automation in Chrome browser.",
-               "install_text": "install",
-               "os": ["windows", "linux", "darwin"],
-               "status_function": chrome_for_testing.check_status,
-               "install_function": chrome_for_testing.install,
-               "user_password": "no",
-           },
-           {
-               "name": "Mozilla",
-               "status": "none",
-               "comment": "Mozilla Firefox is required to run web automation in Mozilla Firefox browser.",
-               "install_text": "install",
-               "os": ["windows", "linux", "darwin"],
-               "status_function": mozilla.check_status,
-               "install_function": mozilla.install,
-               "user_password": "yes",
-           },
-           {
-               "name": "Edge",
-               "status": "none",
-               "comment": "Microsoft Edge is required to run web automation in Microsoft Edge browser.",
-               "install_text": "install",
-               "os": ["windows", "linux", "darwin"],
-               "status_function": edge.check_status,
-               "install_function": edge.install,
-               "user_password": "yes",
-           }
-           
-       ]
-   },
-   {
-        "category": "AndroidEmulator",
-        "name" : "System Images",
-        "install_text": "install",
-        "install_function": android_emulator_install,
-        "installables": [],
-        "services": [],
-    },
     {
        "category": "Android",
        "services": [
-           {
-               "name": "ADB",
-               "status": "none",
-               "comment": "ADB is a tool for managing Android devices.",
-               "install_text": "install",
-               "os": ["windows", "linux", "darwin"],
-               "status_function": adb.check_status,
-               "install_function": adb.install,
-               "user_password": "no",
-           },
            {
                "name": "Node js 22",
                "status": "none",
@@ -119,7 +64,62 @@ services = [
                "status_function": android_sdk.check_status,
                "install_function": android_sdk.install,
                "user_password": "no"
+           },
+           {
+               "name": "ADB",
+               "status": "none",
+               "comment": "ADB is a tool for managing Android devices.",
+               "install_text": "install",
+               "os": ["windows", "linux", "darwin"],
+               "status_function": adb.check_status,
+               "install_function": adb.install,
+               "user_password": "no",
+           },
+       ]
+   },
+   {
+        "category": "AndroidEmulator",
+        "name" : "System Images",
+        "install_text": "install",
+        "install_function": android_emulator_install,
+        "installables": [],
+        "services": [],
+    },
+   {
+       "category": "Web",
+
+       "services": [
+           {
+               "name": "Chrome For Testing",
+               "status": "none",
+               "comment": "Chrome for Testing is required to run web automation in Chrome browser.",
+               "install_text": "install",
+               "os": ["windows", "linux", "darwin"],
+               "status_function": chrome_for_testing.check_status,
+               "install_function": chrome_for_testing.install,
+               "user_password": "no",
+           },
+           {
+               "name": "Mozilla",
+               "status": "none",
+               "comment": "Mozilla Firefox is required to run web automation in Mozilla Firefox browser.",
+               "install_text": "install",
+               "os": ["windows", "linux", "darwin"],
+               "status_function": mozilla.check_status,
+               "install_function": mozilla.install,
+               "user_password": "yes",
+           },
+           {
+               "name": "Edge",
+               "status": "none",
+               "comment": "Microsoft Edge is required to run web automation in Microsoft Edge browser.",
+               "install_text": "install",
+               "os": ["windows", "linux", "darwin"],
+               "status_function": edge.check_status,
+               "install_function": edge.install,
+               "user_password": "yes",
            }
+           
        ]
    },
    {

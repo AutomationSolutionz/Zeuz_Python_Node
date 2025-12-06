@@ -1,17 +1,17 @@
 import asyncio
-import json
+import datetime
 import traceback
 import random
 import platform
 import httpx
 import inspect
 from colorama import Fore
-from Framework.install_handler.route import Response, services
+from Framework.install_handler.route import Response, services, version
 from Framework.install_handler.utils import send_response, debug, read_node_id
 from pydantic import BaseModel
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
-from Framework.install_handler.android.emulator import create_avd_from_system_image, get_available_avds
+from Framework.install_handler.android.emulator import create_avd_from_system_image
 from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
@@ -29,22 +29,11 @@ class InstallHandler:
             if debug: print(f"[installer] Received message:\n {message.model_dump_json(indent=4)}")
             if message.value is None:
                 return
+            now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
             action = message.value.action
             if action == "services_list":
                 current_os = platform.system().lower()
                 if debug: print(f"[installer] Current OS: {current_os}")
-                
-                # Populate AndroidEmulator services with available AVDs
-                try:
-                    avds = await get_available_avds()
-                    for category in services:
-                        if category["category"] == "AndroidEmulator":
-                            category["services"] = avds
-                            if debug: print(f"[installer] Populated AndroidEmulator with {len(avds)} AVDs")
-                            break
-                except Exception as e:
-                    if debug: print(f"[installer] Error populating AVDs: {e}")
-                    # Continue with empty services list if AVD population fails
                 
                 filtered_services = []
                 for category in services:
@@ -70,9 +59,17 @@ class InstallHandler:
                     if filtered_category["services"]:
                         filtered_services.append(filtered_category)
                 
+                services_list = {
+                    "timestamp": now,
+                    "version": version,
+                    "services": {
+                        "system_info": None,
+                        "categories": filtered_services
+                    }
+                }
                 await send_response({
                     "action": "services_list",
-                    "data": filtered_services
+                    "data": services_list
                 })
             elif action == "system_info":
                 if debug: print(f"[installer] Received system_info request")
@@ -81,7 +78,12 @@ class InstallHandler:
                     print("system info")
                     system_info_response = await get_formatted_system_info()
                     # Send the response to server
-                    await send_response(system_info_response)
+                    await send_response({
+                        "timestamp": now,
+                        "version": version,
+                        "action": "system_info",
+                        "data": system_info_response
+                    })
                     if debug: print(f"[installer] System info sent successfully")
                 except Exception as e:
                     print(f"[installer] Error getting/sending system info: {e}")
@@ -110,13 +112,13 @@ class InstallHandler:
                             print(f"[installer] No install_function found for AndroidEmulator category")
                             return
                     
-                    # Case 2: Service name is a device installation request (starts with "install device;")
-                    if service_name.startswith("install device;"):
+                    # Case 2: Service name is a system image (starts with "system-images;")
+                    if service_name.startswith("system-images;"):
                         if action == "install":
                             await create_avd_from_system_image(service_name)
                             return
                         else:
-                            print(f"[installer] Status check not supported for device installation")
+                            print(f"[installer] Status check not supported for system images")
                             return
                     
                     # Case 3: Service name is an existing AVD - find it in services list
