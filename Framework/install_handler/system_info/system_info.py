@@ -1082,37 +1082,34 @@ async def get_formatted_system_info() -> Dict[str, Any]:
     
     Returns:
         {
-            "action": "system_info",
-            "data": {
-                "os": {
-                    "name": "Ubuntu",
-                    "version": "22.04",
-                    "release": "22.04.3 LTS"
-                },
-                "cpu": {
-                    "cores": 8,
-                    "model": "Intel Core i7",
-                    "architecture": "x86_64"
-                },
-                "memory": {
-                    "total_ram": "16 GB",
-                    "swap": {
-                        "total": "4 GB",
-                        "used": "0.5 GB",
-                        "free": "3.5 GB",
-                        "percent": 12.5
-                    }
-                },
-                "disk": {
-                    "total_space": "500 GB",
-                    "mount_points": [
-                        {
-                            "path": "/",
-                            "total": "500 GB",
-                            "available": "200 GB"
-                        }
-                    ]
+            "os": {
+                "name": "Ubuntu",
+                "version": "22.04",
+                "release": "22.04.3 LTS"
+            },
+            "cpu": {
+                "cores": 8,
+                "model": "Intel Core i7",
+                "architecture": "x86_64"
+            },
+            "memory": {
+                "total_ram": "16 GB",
+                "swap": {
+                    "total": "4 GB",
+                    "used": "0.5 GB",
+                    "free": "3.5 GB",
+                    "percent": 12.5
                 }
+            },
+            "disk": {
+                "total_space": "500 GB",
+                "mount_points": [
+                    {
+                        "path": "/",
+                        "total": "500 GB",
+                        "available": "200 GB"
+                    }
+                ]
             }
         }
     """
@@ -1208,23 +1205,18 @@ async def get_formatted_system_info() -> Dict[str, Any]:
         
         # Return formatted response
         return {
-            "action": "system_info",
-            "data": {
-                "os": os_data,
-                "cpu": cpu_data,
-                "memory": memory_data,
-                "disk": disk_data
-            }
+            "os": os_data,
+            "cpu": cpu_data,
+            "memory": memory_data,
+            "disk": disk_data
         }
     except Exception as e:
         print(f"[installer][system-info] Error formatting system info: {e}")
         # Return minimal error response
         return {
-            "action": "system_info",
-            "data": {
-                "os": {"name": "Unknown", "version": "Unknown", "release": "Unknown"},
-                "cpu": {"cores": None, "model": "Unknown", "architecture": "Unknown"},
-                "memory": {"total_ram": "Unknown"},
-                "disk": {"total_space": "Unknown", "mount_points": []}
-            }
+            "os": {"name": "Unknown", "version": "Unknown", "release": "Unknown"},
+            "cpu": {"cores": None, "model": "Unknown", "architecture": "Unknown"},
+            "memory": {"total_ram": "Unknown"},
+            "disk": {"total_space": "Unknown", "mount_points": []}
         }
+        
