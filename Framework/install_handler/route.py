@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Literal
-import asyncio
-
+import platform
 
 from .web import chrome_for_testing, edge, mozilla
 from .android import adb, node_js_22, appium, java, android_emulator, android_sdk, jdk, emulator
@@ -9,6 +8,11 @@ from .ios import xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
 from .android.emulator import android_emulator_install
+
+import httpx
+from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
+import datetime
+from Framework.install_handler.utils import debug
 
 version = "2.0.0"
 services = [
@@ -201,64 +205,6 @@ services = [
 ]
 
 
-
-# try:
-#     avds = asyncio.run(emulator.get_available_avds())
-# except RuntimeError:
-#     # Event loop already running, use a different approach
-#     try:
-#         loop = asyncio.get_event_loop()
-#         if loop.is_running():
-#             # If loop is running, initialize empty and populate later
-#             avds = []
-#         else:
-#             avds = loop.run_until_complete(emulator.get_available_avds())
-#     except RuntimeError:
-#         avds = []
-
-# def _populate_avds():
-#     """Populate the AndroidEmulator category with available AVDs"""
-#     try:
-#         loop = asyncio.get_event_loop()
-#         if loop.is_running():
-#             # If loop is running, we need to schedule it
-#             async def refresh():
-#                 avds = await emulator.get_available_avds()
-#                 for category in services:
-#                     if category["category"] == "AndroidEmulator":
-#                         category["services"] = avds
-#                         break
-#             # Schedule the refresh
-#             asyncio.create_task(refresh())
-#         else:
-#             avds = loop.run_until_complete(emulator.get_available_avds())
-#             for category in services:
-#                 if category["category"] == "AndroidEmulator":
-#                     category["services"] = avds
-#                     break
-#     except Exception as e:
-#         print(f"[installer][route] Error refreshing AVD list: {e}")
-
-
-# async def refresh_avd_list():
-#     """Refresh the AVD list in the AndroidEmulator category"""
-#     try:
-#         avds = await emulator.get_available_avds()
-#         for category in services:
-#             if category["category"] == "AndroidEmulator":
-#                 category["services"] = avds
-#                 break
-#         print(f"[installer][route] Refreshed AVD list: {len(avds)} AVDs found")
-#     except Exception as e:
-#         print(f"[installer][route] Error refreshing AVD list: {e}")
-
-
-# for category in services:
-#     if category["category"] == "AndroidEmulator":
-#         category["services"] = avds
-#         break
-
-
 class Item(BaseModel):
    name: str | None = None
    category: str
@@ -276,3 +222,4 @@ class Response(BaseModel):
    model_config = ConfigDict(extra='forbid')
   
    value: Value | None
+

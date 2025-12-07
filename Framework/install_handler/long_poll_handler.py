@@ -1,14 +1,11 @@
 import asyncio
-import datetime
 import traceback
 import random
-import platform
 import httpx
 import inspect
 from colorama import Fore
-from Framework.install_handler.route import Response, services, version
-from Framework.install_handler.utils import send_response, debug, read_node_id
-from pydantic import BaseModel
+from Framework.install_handler.route import Response, services
+from Framework.install_handler.utils import debug, send_response, read_node_id, generate_services_list
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import create_avd_from_system_image
@@ -29,47 +26,15 @@ class InstallHandler:
             if debug: print(f"[installer] Received message:\n {message.model_dump_json(indent=4)}")
             if message.value is None:
                 return
-            now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
             action = message.value.action
             if action == "services_list":
-                current_os = platform.system().lower()
-                if debug: print(f"[installer] Current OS: {current_os}")
-                
-                filtered_services = []
-                for category in services:
-                    filtered_category = {
-                        "category": category["category"],
-                        "services": []
-                    }
-                    for service in category["services"]:
-                        if current_os not in service["os"]:
-                            if debug: print(f"[installer] Skipping {service['name']} - not compatible with {current_os}")
-                            continue
-                        
-                        filtered_service = {
-                            "name": service["name"],
-                            "status": service["status"],
-                            "comment": service["comment"],
-                            "install_text": service["install_text"],
-                            "os": service["os"],
-                            "user_password": service["user_password"]
-                        }
-                        filtered_category["services"].append(filtered_service)
-                    
-                    if filtered_category["services"]:
-                        filtered_services.append(filtered_category)
-                
-                services_list = {
-                    "timestamp": now,
-                    "version": version,
-                    "services": {
-                        "system_info": None,
-                        "categories": filtered_services
-                    }
-                }
+                services_list = generate_services_list(services)
                 await send_response({
                     "action": "services_list",
-                    "data": services_list
+                    "data": {
+                        "system_info": None,
+                        "services": services_list
+                    }
                 })
             elif action == "system_info":
                 if debug: print(f"[installer] Received system_info request")
@@ -79,8 +44,6 @@ class InstallHandler:
                     system_info_response = await get_formatted_system_info()
                     # Send the response to server
                     await send_response({
-                        "timestamp": now,
-                        "version": version,
                         "action": "system_info",
                         "data": system_info_response
                     })
