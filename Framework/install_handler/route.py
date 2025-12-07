@@ -3,7 +3,7 @@ from typing import Literal
 
 from .web import chrome_for_testing
 from .android import adb, node_js_22, appium, java, android_emulator
-from .ios import xcode
+from .ios import xcode, simulator, webdriver
 from .macos import xcode as macos_xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
@@ -86,6 +86,25 @@ services = [
                 "status_function": xcode.check_status,
                 "install_function": xcode.install,
                 "user_password": "yes",
+            },
+            {
+                "name": "Simulator",
+                "status": "none",
+                "comment": "Simulator is a tool for managing Simulator devices.",
+                "install_text": "install",
+                "os": ["darwin"],
+                "status_function": simulator.check_status,
+                "install_function": simulator.install,
+                "user_password": "yes",
+            },
+            {
+                "name": "WebDriver",
+                "status": "none",
+                "comment": "WebDriverAgent is required for iOS automation testing.",
+                "install_text": "install",
+                "os": ["darwin"],
+                "status_function": webdriver.check_status,
+                "install_function": webdriver.install,
             }
         ],
     },
