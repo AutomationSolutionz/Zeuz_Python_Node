@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Literal
+from typing import Literal, Optional
 import platform
 
 from .web import chrome_for_testing, edge, mozilla
@@ -85,6 +85,10 @@ services = [
         ]
     },
     {
+        "group":{
+            "check_text": "",
+            "install_text": "",
+        },
         "category": "AndroidEmulator",
         "name" : "System Images",
         "install_text": "install",
@@ -95,8 +99,8 @@ services = [
     {
         "category": "Web",
         "group":{
-            "check_text": "",
-            "install_text": "",
+            "check_text": "check all",
+            "install_text": "install all",
         },
         "services": [
             {
@@ -154,8 +158,8 @@ services = [
     {
         "category": "Database",
         "group":{
-            "check_text": "",
-            "install_text": "",
+            "check_text": "check all",
+            "install_text": "install all",
         },
         "services": [
             {
@@ -224,7 +228,7 @@ services = [
 
 
 class Item(BaseModel):
-   name: str | None = None
+   name: Optional[str] = None
    category: str
    user_password: str = ""  # Optional user password for installations requiring sudo/admin
 
@@ -232,7 +236,7 @@ class Item(BaseModel):
 class Value(BaseModel):
    model_config = ConfigDict(extra='forbid')
   
-   action: Literal["services_list", "install", "status", "install_category", "system_info"]
+   action: Literal["services_list", "install", "status", "system_info", "group_status", "group_install"]
    item: Item | None = None
 
 

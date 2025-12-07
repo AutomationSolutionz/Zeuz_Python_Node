@@ -125,7 +125,16 @@ class InstallHandler:
                         print(f"[installer] Function not found for {message.value.item.name}")
                         return
                     await func()
-
+            elif action == "group_status":
+                services_list = [i for i in services if i["category"] == message.value.item.category][0]['services']
+                functions = [i["status_function"] for i in services_list if i["status_function"]]
+                for func in functions:
+                    await func()
+            elif action == "group_install":
+                services_list = [i for i in services if i["category"] == message.value.item.category][0]['services']
+                functions = [i["install_function"] for i in services_list if i["install_function"]]
+                for func in functions:
+                    await func()
         except Exception as e:
             traceback.print_exc()
 
