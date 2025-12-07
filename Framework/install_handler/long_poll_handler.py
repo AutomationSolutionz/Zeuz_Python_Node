@@ -3,6 +3,7 @@ import traceback
 import random
 import httpx
 import inspect
+import platform
 from colorama import Fore
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import debug, send_response, read_node_id, generate_services_list
@@ -39,8 +40,6 @@ class InstallHandler:
             elif action == "system_info":
                 if debug: print(f"[installer] Received system_info request")
                 try:
-                    # Get formatted system info
-                    print("system info")
                     system_info_response = await get_formatted_system_info()
                     # Send the response to server
                     await send_response({
