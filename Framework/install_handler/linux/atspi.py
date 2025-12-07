@@ -1,3 +1,4 @@
+import os
 from Framework.install_handler.utils import send_response
 from .linux_utils import (
     detect_package_manager,
@@ -40,6 +41,22 @@ PACKAGES = {
 async def check_status():
     """Checks if AT-SPI development packages are installed."""
     print("Checking AT-SPI development packages status...")
+
+    # Check if session type is X11
+    session_type = os.environ.get("XDG_SESSION_TYPE", "unknown")
+    if session_type != "x11":
+        await send_response(
+            {
+                "action": "status",
+                "data": {
+                    "category": "Linux",
+                    "name": "AT-SPI Packages",
+                    "status": "error",
+                    "comment": f"Only X11 is supported. Current session type: {session_type}.",
+                },
+            }
+        )
+        return False
 
     package_manager, _ = detect_package_manager()
 
@@ -89,6 +106,22 @@ async def check_status():
 async def install(user_password: str = ""):
     """Install AT-SPI development packages using the system package manager."""
     print("Installing AT-SPI development packages...")
+
+    # Check if session type is X11
+    session_type = os.environ.get("XDG_SESSION_TYPE", "unknown")
+    if session_type != "x11":
+        await send_response(
+            {
+                "action": "status",
+                "data": {
+                    "category": "Linux",
+                    "name": "AT-SPI Packages",
+                    "status": "error",
+                    "comment": f"Only X11 is supported. Current session type: {session_type}.",
+                },
+            }
+        )
+        return False
 
     is_already_installed = await check_status()
 
