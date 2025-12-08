@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import json
 import tempfile
+import asyncio
 from pathlib import Path
 from Framework.install_handler.utils import send_response
 
@@ -63,9 +64,47 @@ async def _get_best_simulator() -> tuple[str, str] | None:
         print(f"Error listing simulators: {e}")
         return None
 
+async def _boot_simulator_if_needed(device_uuid: str) -> bool:
+    """Boots the simulator ONLY if it is currently shutdown."""
+    try:
+        # 1. Check current state
+        list_res = subprocess.run(
+            ["xcrun", "simctl", "list", "devices", "-j"],
+            capture_output=True, text=True
+        )
+        if list_res.returncode == 0:
+            data = json.loads(list_res.stdout)
+            for runtime, devices in data.get("devices", {}).items():
+                for device in devices:
+                    if device.get("udid") == device_uuid:
+                        if device.get("state") == "Booted":
+                            # Already booted
+                            return True
+
+        # 2. Boot if needed
+        await _send_status("installing", "Booting simulator to perform check/install...")
+        subprocess.run(["open", "-a", "Simulator"], capture_output=True)
+        
+        # Give the app a moment to launch
+        await asyncio.sleep(2)
+        
+        subprocess.run(["xcrun", "simctl", "boot", device_uuid], capture_output=True)
+        
+        # 3. Wait for 'Booted' status
+        res = subprocess.run(
+            ["xcrun", "simctl", "bootstatus", device_uuid],
+            capture_output=True, timeout=120
+        )
+        return res.returncode == 0
+    except Exception as e:
+        print(f"Boot exception: {e}")
+        # We return True here to attempt the next step anyway, 
+        # as sometimes bootstatus fails even if the device works.
+        return True
+
 async def check_status() -> bool:
-    """Checks if WebDriverAgent is installed (Passive Check)."""
-    print("[webdriver] Checking status (passive)...")
+    """Checks if WebDriverAgent is installed (Ensures Simulator is ON)."""
+    print("[webdriver] Checking status...")
 
     if platform.system().lower() != "darwin":
         await _send_status("error", "Unsupported OS.")
@@ -87,7 +126,11 @@ async def check_status() -> bool:
         
     name, uuid = sim_info
 
-    # Check if app container exists on the device's disk
+    if not await _boot_simulator_if_needed(uuid):
+        await _send_status("error", f"Failed to boot {name} for verification.")
+        return False
+
+    # Check if app container exists
     cmd = ["xcrun", "simctl", "get_app_container", uuid, "com.facebook.WebDriverAgentRunner.xctrunner"]
     check_res = subprocess.run(cmd, capture_output=True, text=True)
     
@@ -98,47 +141,20 @@ async def check_status() -> bool:
         await _send_status("not installed", f"WebDriverAgent not found on {name} ({uuid}).")
         return False
 
-async def _boot_simulator_if_needed(device_uuid: str) -> bool:
-    """Boots the simulator ONLY if it is currently shutdown."""
-    try:
-        list_res = subprocess.run(
-            ["xcrun", "simctl", "list", "devices", "-j"],
-            capture_output=True, text=True
-        )
-        if list_res.returncode == 0:
-            data = json.loads(list_res.stdout)
-            for runtime, devices in data.get("devices", {}).items():
-                for device in devices:
-                    if device.get("udid") == device_uuid:
-                        if device.get("state") == "Booted":
-                            await _send_status("installing", "Simulator is already booted.")
-                            return True
-
-        await _send_status("installing", "Booting simulator for installation...")
-        subprocess.run(["open", "-a", "Simulator"], capture_output=True)
-        subprocess.run(["xcrun", "simctl", "boot", device_uuid], capture_output=True)
-        
-        res = subprocess.run(
-            ["xcrun", "simctl", "bootstatus", device_uuid],
-            capture_output=True, timeout=120
-        )
-        return res.returncode == 0
-    except Exception:
-        return True
-
 async def _build_and_install_webdriver(webdriver_path: Path) -> bool:
     try:
         sim_info = await _get_best_simulator()
         if not sim_info: return False
         name, uuid = sim_info
 
+        # Ensure booted (check_status might have done this, but good to double check)
         if not await _boot_simulator_if_needed(uuid):
             await _send_status("error", "Failed to boot simulator.")
             return False
 
         await _send_status("installing", f"Building WebDriverAgent for {name}...")
 
-        # Create a temp directory to store build artifacts so we can find the .app later
+        # Create a temp directory to store build artifacts
         with tempfile.TemporaryDirectory() as derived_data_path:
             cmd = [
                 "xcodebuild",
@@ -163,7 +179,6 @@ async def _build_and_install_webdriver(webdriver_path: Path) -> bool:
             # Explicitly Install the Built App
             await _send_status("installing", "Installing WebDriverAgentRunner-Runner.app...")
             
-            # The standard path inside derived data for the simulator build
             app_path = Path(derived_data_path) / "Build" / "Products" / "Debug-iphonesimulator" / "WebDriverAgentRunner-Runner.app"
             
             if not app_path.exists():
