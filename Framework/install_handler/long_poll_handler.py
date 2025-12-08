@@ -3,6 +3,7 @@ import traceback
 import random
 import httpx
 import inspect
+import platform
 from colorama import Fore
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import debug, send_response, read_node_id, generate_services_list
@@ -39,8 +40,6 @@ class InstallHandler:
             elif action == "system_info":
                 if debug: print(f"[installer] Received system_info request")
                 try:
-                    # Get formatted system info
-                    print("system info")
                     system_info_response = await get_formatted_system_info()
                     # Send the response to server
                     await send_response({
@@ -126,7 +125,16 @@ class InstallHandler:
                         print(f"[installer] Function not found for {message.value.item.name}")
                         return
                     await func()
-
+            elif action == "group_status":
+                services_list = [i for i in services if i["category"] == message.value.item.category][0]['services']
+                functions = [i["status_function"] for i in services_list if i["status_function"]]
+                for func in functions:
+                    await func()
+            elif action == "group_install":
+                services_list = [i for i in services if i["category"] == message.value.item.category][0]['services']
+                functions = [i["install_function"] for i in services_list if i["install_function"]]
+                for func in functions:
+                    await func()
         except Exception as e:
             traceback.print_exc()
 

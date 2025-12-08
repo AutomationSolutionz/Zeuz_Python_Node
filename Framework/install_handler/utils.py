@@ -17,6 +17,7 @@ def generate_services_list(services):
     filtered_services = []
     for category in services:
         filtered_category = {
+            "group": category["group"],
             "category": category["category"],
             "services": []
         }

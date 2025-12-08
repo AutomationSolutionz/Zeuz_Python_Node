@@ -16,6 +16,7 @@ async def check_status() -> bool:
                 "name": "Inspector",
                 "status": "installed",
                 "comment": f"Open the inspector here: {inspector_path}",
+                "install_text": "installed",
             }
         })
         return True
@@ -28,6 +29,7 @@ async def check_status() -> bool:
                 "name": "Inspector",
                 "status": "not installed",
                 "comment": f"Install the inspector to use it.",
+                "install_text": "install",
             }
         })
         return False
@@ -45,6 +47,7 @@ async def install() -> bool:
                 "name": "Inspector",
                 "status": "installed",
                 "comment": f"Open the inspector here: {inspector_path}",
+                "install_text": "installed",
             }
         })
         print("[installer][windows-inspector] Already installed")
@@ -89,6 +92,7 @@ async def install() -> bool:
                                     "name": "Inspector",
                                     "status": "installing",
                                     "comment": f"Downloading inspector... {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)",
+                                    "install_text": "installing",
                                 }
                             }))
             
@@ -102,6 +106,7 @@ async def install() -> bool:
                     "name": "Inspector",
                     "status": "installed",
                     "comment": f"Open the inspector here: {inspector_path}",
+                    "install_text": "installed",
                 }
             })
             return True
