@@ -2,6 +2,7 @@ import hashlib
 import os
 import subprocess
 import base64
+import json
 from typing import Literal
 import asyncio
 
@@ -14,6 +15,7 @@ from Framework.Utilities import ConfigModule, CommonUtil
 ADB_PATH = "adb"  # Ensure ADB is in PATH
 UI_XML_PATH = "ui.xml"
 SCREENSHOT_PATH = "screen.png"
+IOS_SCREENSHOT_PATH = "ios_screen.png"
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
 
@@ -32,8 +34,15 @@ class DeviceInfo(BaseModel):
     serial: str
     status: str
     name: str | None = None
-    # model: str | None = None
-    # product: str | None = None
+
+
+class IOSDeviceInfo(BaseModel):
+    """Model for iOS device information."""
+    udid: str
+    name: str
+    state: str
+    runtime: str
+    device_type: str
 
 @router.get("/devices", response_model=list[DeviceInfo])
 def get_devices():
@@ -63,6 +72,34 @@ def get_devices():
         return []
 
 
+@router.get("/ios/devices", response_model=list[IOSDeviceInfo])
+def get_ios_devices():
+    """Get list of available iOS simulators."""
+    try:
+        result = subprocess.run(
+            ["xcrun", "simctl", "list", "devices", "-j"],
+            capture_output=True, text=True, check=True
+        )
+        
+        devices_data = json.loads(result.stdout)
+        ios_devices = []
+        
+        for runtime, devices in devices_data.get("devices", {}).items():
+            for device in devices:
+                if device.get("isAvailable", False):
+                    ios_devices.append(IOSDeviceInfo(
+                        udid=device["udid"],
+                        name=device["name"],
+                        state=device["state"],
+                        runtime=runtime,
+                        device_type=device.get("deviceTypeIdentifier", "Unknown")
+                    ))
+        
+        return ios_devices
+    except Exception as e:
+        return []
+
+
 @router.get("/inspect")
 def inspect(device_serial: str | None = None):
     """Get the Mobile DOM and screenshot."""
@@ -83,6 +120,40 @@ def inspect(device_serial: str | None = None):
         return InspectorResponse(
             status="ok",
             ui_xml=xml_content,
+            screenshot=screenshot_base64
+        )
+    except Exception as e:
+        return InspectorResponse(
+            status="error",
+            error=str(e)
+        )
+
+
+@router.get("/ios/inspect")
+def inspect_ios(device_udid: str | None = None):
+    """Get iOS simulator screenshot and XML hierarchy."""
+    try:
+        # Get first available device if none specified
+        if not device_udid:
+            ios_devices = get_ios_devices()
+            if not ios_devices:
+                return InspectorResponse(
+                    status="error",
+                    error="No iOS simulators available"
+                )
+            device_udid = ios_devices[0].udid
+        
+        # Capture screenshot
+        capture_ios_screenshot(device_udid)
+        
+        # Read and encode screenshot
+        with open(IOS_SCREENSHOT_PATH, 'rb') as img_file:
+            screenshot_bytes = img_file.read()
+            screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
+            
+        return InspectorResponse(
+            status="ok",
+            ui_xml=None,  # XML hierarchy will be implemented later
             screenshot=screenshot_base64
         )
     except Exception as e:
@@ -148,6 +219,27 @@ def capture_screenshot(device_serial: str | None = None):
         )
         if out.startswith("Error:"):
             return
+
+
+def capture_ios_screenshot(device_udid: str):
+    """Capture screenshot from iOS simulator."""
+    try:
+        result = subprocess.run(
+            ["xcrun", "simctl", "io", device_udid, "screenshot", IOS_SCREENSHOT_PATH],
+            capture_output=True, text=True, check=True
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"Failed to capture iOS screenshot: {e.stderr}")
+
+
+def run_xcrun_command(command):
+    """Run an xcrun command and return the output."""
+    try:
+        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        return f"Error: {e.stderr.strip()}"
 
 
 async def upload_android_ui_dump():
