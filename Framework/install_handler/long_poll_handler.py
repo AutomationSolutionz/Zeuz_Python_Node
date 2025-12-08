@@ -75,7 +75,7 @@ class InstallHandler:
                     service_name = message.value.item.name
                     
                     # Case 1: No service name or empty - get system images list
-                    if not service_name or service_name is None or service_name.strip() == "":
+                    if not service_name:
                         if action == "install" and "install_function" in category and category["install_function"]:
                             func = category["install_function"]
                             await func()

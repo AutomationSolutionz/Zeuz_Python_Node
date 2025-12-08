@@ -76,7 +76,7 @@ services = [
                 "name": "ADB",
                 "status": "none",
                 "comment": "ADB is a tool for managing Android devices.",
-                "install_text": "install",
+                "install_text": "",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": adb.check_status,
                 "install_function": adb.install,

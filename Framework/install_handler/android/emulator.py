@@ -684,7 +684,7 @@ async def android_emulator_install():
                     "name": "Available Devices",
                     "status": "Not Found",
                     "comment": "Download and install Android SDK first",
-                    "devices": []
+                    "installables": []
                 }
             })
             return False
@@ -696,6 +696,7 @@ async def android_emulator_install():
                 "name": "Devices",
                 "status": "Fetching",
                 "comment": "Fetching available devices...",
+                "installables": []
             }
         })
         
@@ -707,10 +708,10 @@ async def android_emulator_install():
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": "System Images",
-                "status": "Found",
-                "comment": f"Available devices ({len(devices)} total)",
-                "system_images": devices,  # Send the full list with details
+                # "name": "System Images",
+                # "status": "Found",
+                # "comment": f"Available devices ({len(devices)} total)",
+                "installables": devices,  # Send the full list with details
             }
         })
         return True
@@ -726,6 +727,7 @@ async def android_emulator_install():
                 "name": "Devices",
                 "status": "not installed",
                 "comment": f"Error getting devices: {str(e)}",
+                "installables": []
             }
         })
         return False

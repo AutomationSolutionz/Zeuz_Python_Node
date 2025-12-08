@@ -35,8 +35,7 @@ def generate_services_list(services):
             }
             filtered_category["services"].append(filtered_service)
         
-        if filtered_category["services"]:
-            filtered_services.append(filtered_category)
+        filtered_services.append(filtered_category)
     
     return filtered_services
 
