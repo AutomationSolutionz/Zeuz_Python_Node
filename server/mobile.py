@@ -2,7 +2,6 @@ import hashlib
 import os
 import subprocess
 import base64
-import time
 from typing import Literal
 import asyncio
 
@@ -32,6 +31,7 @@ class DeviceInfo(BaseModel):
     """Model for device information."""
     serial: str
     status: str
+    name: str | None = None
     # model: str | None = None
     # product: str | None = None
 
@@ -42,33 +42,34 @@ def get_devices():
         # Get list of devices
         devices_output = run_adb_command(f"{ADB_PATH} devices -l")
         devices = []
-        
+
         # Parse adb devices output
-        for line in devices_output.split('\n')[1:]:  # Skip first line (header)
+        index = 1
+        for line in devices_output.split("\n")[1:]:  # Skip first line (header)
             if line.strip():
                 parts = line.split()
                 if len(parts) >= 2:
                     serial = parts[0]
                     status = parts[1]
+                    name = f"device {index}"
+                    index += 1
                     # model = run_adb_command(f"{ADB_PATH} -s {serial} shell getprop ro.product.model")
                     # product = run_adb_command(f"{ADB_PATH} -s {serial} shell getprop ro.product.name")
 
-                    devices.append(DeviceInfo(
-                        serial=serial,
-                        status=status
-                    ))
-                        
+                    devices.append(DeviceInfo(serial=serial, status=status, name=name))
+
         return devices
     except Exception as e:
         return []
 
+
 @router.get("/inspect")
-def inspect():
+def inspect(device_serial: str | None = None):
     """Get the Mobile DOM and screenshot."""
     try:
         # Capture UI and screenshot
-        capture_ui_dump()
-        capture_screenshot()
+        capture_ui_dump(device_serial=device_serial)
+        capture_screenshot(device_serial=device_serial)
 
         # Read XML file
         with open(UI_XML_PATH, 'r') as xml_file:
@@ -108,9 +109,12 @@ def run_adb_command(command):
         return f"Error: {e.stderr.strip()}"
 
 
-def capture_ui_dump():
+def capture_ui_dump(device_serial: str | None = None):
     """Capture the current UI hierarchy from the device"""
-    out = run_adb_command(f"{ADB_PATH} shell uiautomator dump /sdcard/ui.xml")
+    device_flag = f"-s {device_serial}" if device_serial else ""
+    out = run_adb_command(
+        f"{ADB_PATH} {device_flag} shell uiautomator dump /sdcard/ui.xml".strip()
+    )
     if out.startswith("Error:"):
         from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
         if appium_driver is None:
@@ -119,14 +123,19 @@ def capture_ui_dump():
         with open(UI_XML_PATH, 'w') as xml_file:
             xml_file.write(page_src)
     else:
-        out = run_adb_command(f"{ADB_PATH} pull /sdcard/ui.xml {UI_XML_PATH}")
+        out = run_adb_command(
+            f"{ADB_PATH} {device_flag} pull /sdcard/ui.xml {UI_XML_PATH}"
+        )
         if out.startswith("Error:"):
             return
 
 
-def capture_screenshot():
+def capture_screenshot(device_serial: str | None = None):
     """Capture the current UI hierarchy from the device"""
-    out = run_adb_command(f"{ADB_PATH} shell screencap -p /sdcard/screen.png")
+    device_flag = f"-s {device_serial}" if device_serial else ""
+    out = run_adb_command(
+        f"{ADB_PATH} {device_flag} shell screencap -p /sdcard/screen.png".strip()
+    )
     if out.startswith("Error:"):
         from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
         if appium_driver is None:
@@ -134,7 +143,9 @@ def capture_screenshot():
         full_screenshot_path = os.path.join(os.getcwd(), SCREENSHOT_PATH)
         appium_driver.save_screenshot(full_screenshot_path)
     else:
-        out = run_adb_command(f"{ADB_PATH} pull /sdcard/screen.png {SCREENSHOT_PATH}")
+        out = run_adb_command(
+            f"{ADB_PATH} {device_flag} pull /sdcard/screen.png {SCREENSHOT_PATH}"
+        )
         if out.startswith("Error:"):
             return
 

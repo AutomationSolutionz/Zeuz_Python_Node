@@ -142,6 +142,11 @@ def load_sa_modules(
             from Framework.Built_In_Automation.Desktop.Windows import (
                 BuiltInFunctions as windows,
             )
+        elif module == "linux":
+            global linux
+            from Framework.Built_In_Automation.Desktop.Linux import (
+                BuiltInFunctions as linux,
+            )
         elif module == "performance":
             global performance
             from Framework.Built_In_Automation.Performance_Testing import (

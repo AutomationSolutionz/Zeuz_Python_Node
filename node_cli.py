@@ -3,6 +3,7 @@ import os
 import socket
 import sys
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -38,6 +39,7 @@ from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
 from server.mobile import upload_android_ui_dump
 
+
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
     root_dir = Path(__file__).parent
@@ -50,9 +52,9 @@ def adjust_python_path():
     os.chdir(framework_dir)
 
 
-
 from Framework.module_installer import (  # noqa: E402
     check_min_python_version,
+    install_missing_modules,
     update_outdated_modules,
     # install_missing_modules,
 )
@@ -68,10 +70,10 @@ from server import main as node_server  # noqa: E402
 
 
 async def start_server():
-    
     def is_port_in_use(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("127.0.0.1", port)) == 0
+
     try:
         node_server_port = 18100
         tries = 0
@@ -80,7 +82,7 @@ async def start_server():
             tries += 1
         ConfigModule.add_config_value("server", "port", str(node_server_port))
         print(f"Launching node-server on port {node_server_port}")
-        
+
         app = node_server.main()
         config = uvicorn.Config(
             app,
@@ -94,6 +96,7 @@ async def start_server():
     except Exception as e:
         traceback.print_exc()
         print(f"[WARN] Failed to launch node-server: {str(e)}")
+
 
 def kill_old_process(pid_file_path: os.PathLike):
     """kill any process that is running  from the same node folder."""
@@ -122,6 +125,7 @@ def setup_nodejs_appium():
     """Setup Node.js and Appium if not already installed."""
     try:
         import nodejs_appium_installer
+
         nodejs_appium_installer.setup_nodejs_appium()
     except Exception as e:
         print(f"Warning: Failed to setup Node.js and Appium: {e}")
@@ -146,6 +150,7 @@ PROJECT_TAG = "project"
 TEAM_TAG = "team"
 device_dict: dict[str, Any] = {}
 
+
 def kill_child_processes():
     try:
         parent = psutil.Process()
@@ -165,9 +170,6 @@ def signal_handler(sig, frame):
     CommonUtil.ShutdownExecutor()
     kill_child_processes()
     os._exit(0)
-
-
-
 
 
 async def destroy_session():
@@ -472,11 +474,11 @@ async def RunProcess(node_id, log_dir=None):
             cancel_callback=cancel_callback,
             done_callback=done_callback,
         )
-        
+
         deploy_task = asyncio.create_task(deploy_handler.run(deploy_srv_addr()))
-        
+
         await asyncio.gather(install_task, deploy_task, return_exceptions=True)
-        
+
         return False
 
     except Exception:
@@ -618,34 +620,37 @@ def get_folder_creation_time(folder_path):
 def generate_rsa_key():
     """Generate a new RSA private key and save it to the rsa_private_keys folder."""
     console = Console()
-    
-    from Framework.Utilities.RSAKeyUtil import save_private_key as save_key_util, get_public_key_pem
+
+    from Framework.Utilities.RSAKeyUtil import (
+        save_private_key as save_key_util,
+        get_public_key_pem,
+    )
 
     key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-    
+
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
     )
-    
+
     timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
     key_filename = f"private_key_{timestamp}.pem"
-    
+
     success, _, saved_path = save_key_util(
         private_key=private_key,
         key_folder=key_folder,
         filename=key_filename,
         format_type="pkcs8",
-        check_duplicate=False  # New keys shouldn't have duplicates
+        check_duplicate=False,  # New keys shouldn't have duplicates
     )
-    
+
     if not success:
         console.print(f"[red]Error:[/red] Failed to save generated private key.")
         return
-    
+
     # Generate public key
     public_key_pem = get_public_key_pem(private_key)
-    
+
     console.print(f"\n[green]✓[/green] RSA private key generated successfully!")
     console.print(f"[cyan]Location:[/cyan] {saved_path}")
     console.print(f"\n[cyan]Public Key:[/cyan]")
@@ -656,45 +661,52 @@ def add_existing_rsa_key(key_content: str):
     """Copy an existing RSA private key to the rsa_private_keys folder."""
     console = Console()
 
-    from Framework.Utilities.RSAKeyUtil import load_private_key_from_pem, save_private_key as save_key_util, get_public_key_pem, check_duplicate_key
+    from Framework.Utilities.RSAKeyUtil import (
+        load_private_key_from_pem,
+        save_private_key as save_key_util,
+        get_public_key_pem,
+        check_duplicate_key,
+    )
 
     key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-    
+
     private_key = load_private_key_from_pem(key_content)
     if private_key is None:
         console.print(f"[red]Error:[/red] Invalid PEM private key.")
         return False
-    
+
     # Check for duplicates
     duplicate = check_duplicate_key(private_key, key_folder)
     if duplicate:
-        console.print(f"[yellow]Warning:[/yellow] This private key already exists as {duplicate}. Not adding duplicate.")
+        console.print(
+            f"[yellow]Warning:[/yellow] This private key already exists as {duplicate}. Not adding duplicate."
+        )
         return False
-    
+
     # Copy the key with a timestamp
     timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
     new_filename = f"imported_key_{timestamp}.pem"
-    
+
     success, _, saved_path = save_key_util(
         private_key=private_key,
         key_folder=key_folder,
         filename=new_filename,
         format_type="pkcs8",
-        check_duplicate=False  # Already checked above
+        check_duplicate=False,  # Already checked above
     )
-    
+
     if not success:
         console.print(f"[red]Error:[/red] Failed to save private key.")
         return False
-    
+
     console.print(f"\n[green]✓[/green] Private key imported successfully!")
     console.print(f"[cyan]To:[/cyan] {saved_path}")
-    
+
     # Show the public key
     public_key_pem = get_public_key_pem(private_key)
     console.print(f"\n[cyan]Public Key:[/cyan]")
     console.print(public_key_pem)
-    
+
     return True
 
 
@@ -707,137 +719,189 @@ def show_existing_rsa_keys():
     key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 
     keys_info = list_existing_keys(key_folder)
-    
+
     if not keys_info:
         console.print(f"\n[yellow]No private keys found in:[/yellow] {key_folder}")
         console.print("[cyan]Use -gpk to generate a new key[/cyan]\n")
         return
-    
-    console.print(f"\n[cyan]Found {len(keys_info)} private key(s) in:[/cyan] {key_folder}\n")
-    
+
+    console.print(
+        f"\n[cyan]Found {len(keys_info)} private key(s) in:[/cyan] {key_folder}\n"
+    )
+
     for idx, key_info in enumerate(keys_info, 1):
         console.print(f"[green]Key #{idx}:[/green] {key_info['filename']}")
         console.print(f"[cyan]Path:[/cyan] {key_info['path']}")
-        if 'error' in key_info:
+        if "error" in key_info:
             console.print(f"[red]Error:[/red] {key_info['error']}\n")
         else:
             console.print(f"[cyan]Public Key:[/cyan]")
-            console.print(key_info['public_key'])
+            console.print(key_info["public_key"])
 
 
 def share_private_keys():
     """Share all RSA private keys by encrypting and uploading to server."""
     console = Console()
-    
+
     try:
         from Framework.Utilities import ShareKeysUtil
         from Framework.Utilities import RequestFormatter, ConfigModule
-        
+
         key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-        
+
         # Collect all private keys
         keys = ShareKeysUtil.collect_private_keys(key_folder)
-        
+
         if not keys:
             console.print(f"\n[red]✗[/red] No private keys found in: {key_folder}")
             console.print("[cyan]Use -gpk to generate a new key first[/cyan]\n")
             return False
-        
+
         console.print(f"\n[cyan]Found {len(keys)} private key(s) to share[/cyan]")
-        
+
         # Generate share code
         share_code = ShareKeysUtil.generate_share_code()
-        
+
         # Encrypt all keys
         console.print("[cyan]Encrypting keys...[/cyan]")
         keys_json = json.dumps(keys)
         encrypted_data = ShareKeysUtil.encrypt_data(keys_json, share_code)
-        
+
         # Send to server
         console.print("[cyan]Uploading to server...[/cyan]")
-        
-        payload = {
-            "code": share_code,
-            "encrypted_data": encrypted_data
-        }
-        
+
+        payload = {"code": share_code, "encrypted_data": encrypted_data}
+
         console.print(f"[dim]Endpoint: /zsvc/deploy/v1/share-keys[/dim]")
         response = RequestFormatter.Post("zsvc/deploy/v1/share-keys", payload)
-        
+
         if response and response.get("success"):
             console.print(f"\n[green]✓[/green] Keys shared successfully!")
             console.print(f"\n[yellow]═══════════════════════════════════[/yellow]")
             console.print(f"[yellow]  Share Code: [bold]{share_code}[/bold][/yellow]")
             console.print(f"[yellow]═══════════════════════════════════[/yellow]")
             console.print(f"\n[cyan]This code will expire in 30 minutes.[/cyan]")
-            console.print(f"[cyan]Use this code with -fe option to fetch keys on another machine.[/cyan]\n")
+            console.print(
+                f"[cyan]Use this code with -fe option to fetch keys on another machine.[/cyan]\n"
+            )
             console.print(f"[dim]Example: uv run node_cli.py -fe {share_code}[/dim]\n")
             return True
         else:
-            error_msg = response.get("message", "Unknown error") if response else "No response from server"
+            error_msg = (
+                response.get("message", "Unknown error")
+                if response
+                else "No response from server"
+            )
             console.print(f"\n[red]✗[/red] Failed to share keys: {error_msg}\n")
             return False
-            
+
     except Exception as e:
         import traceback as tb
+
         console.print(f"\n[red]✗[/red] Error sharing keys: {str(e)}\n")
         tb.print_exc()
+        return False
+
+
+def install_linux_inspector_deps():
+    """Install Linux inspector dependencies by running setup script."""
+    console = Console()
+
+    script_path = Path(__file__).parent / "Installer" / "setup_linux_inspector.sh"
+
+    if not script_path.exists():
+        console.print(f"\n[red]✗[/red] Setup script not found at: {script_path}\n")
+        return False
+
+    console.print(f"\n[cyan]Installing Linux inspector dependencies...\n[/cyan]")
+    console.print(f"[dim]Running: {script_path}[/dim]\n")
+
+    try:
+        result = subprocess.run(
+            ["bash", str(script_path)], capture_output=False, text=True, check=False
+        )
+
+        if result.returncode == 0:
+            console.print(
+                f"\n[green]✓[/green] Linux inspector dependencies installed successfully!\n"
+            )
+            return True
+        else:
+            console.print(
+                f"\n[red]✗[/red] Installation failed with exit code: {result.returncode}\n"
+            )
+            return False
+
+    except Exception as e:
+        console.print(f"\n[red]✗[/red] Error running installation script: {str(e)}\n")
         return False
 
 
 def fetch_private_keys(share_code: str):
     """Fetch and decrypt shared RSA private keys from server."""
     console = Console()
-    
+
     from Framework.Utilities import ShareKeysUtil
     from Framework.Utilities import RequestFormatter
-    
+
     # Validate code format
-    if len(share_code) != 9 or share_code[4] != '-':
-        console.print(f"\n[red]✗[/red] Invalid share code format. Expected format: AkEf-B910 (9 characters with dash)\n")
+    if len(share_code) != 9 or share_code[4] != "-":
+        console.print(
+            f"\n[red]✗[/red] Invalid share code format. Expected format: AkEf-B910 (9 characters with dash)\n"
+        )
         return False
-    
+
     console.print(f"\n[cyan]Fetching keys from server...[/cyan]")
-    
+
     try:
         # Fetch from server
         response = RequestFormatter.Get(f"zsvc/deploy/v1/fetch-keys/{share_code}")
-        
+
         if not response or not response.get("success"):
-            error_msg = response.get("message", "Keys not found or expired") if response else "No response from server"
+            error_msg = (
+                response.get("message", "Keys not found or expired")
+                if response
+                else "No response from server"
+            )
             console.print(f"\n[red]✗[/red] Failed to fetch keys: {error_msg}\n")
             return False
-        
+
         encrypted_data = response.get("encrypted_data")
         if not encrypted_data:
             console.print(f"\n[red]✗[/red] No encrypted data received from server\n")
             return False
-        
+
         # Decrypt data
         console.print("[cyan]Decrypting keys...[/cyan]")
         decrypted_json = ShareKeysUtil.decrypt_data(encrypted_data, share_code)
-        
+
         if not decrypted_json:
-            console.print(f"\n[red]✗[/red] Failed to decrypt keys. Invalid share code or corrupted data.\n")
+            console.print(
+                f"\n[red]✗[/red] Failed to decrypt keys. Invalid share code or corrupted data.\n"
+            )
             return False
-        
+
         keys = json.loads(decrypted_json)
-        
+
         # Save keys
         console.print(f"[cyan]Saving {len(keys)} key(s)...[/cyan]")
         key_folder = ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
-        success_count, skipped_count, failed_count = ShareKeysUtil.save_private_keys(keys, key_folder)
-        
+        success_count, skipped_count, failed_count = ShareKeysUtil.save_private_keys(
+            keys, key_folder
+        )
+
         console.print(f"\n[green]✓[/green] Keys fetched successfully!")
         console.print(f"[cyan]Saved:[/cyan] {success_count} key(s)")
         if skipped_count > 0:
-            console.print(f"[yellow]Skipped:[/yellow] {skipped_count} key(s) (duplicates)")
+            console.print(
+                f"[yellow]Skipped:[/yellow] {skipped_count} key(s) (duplicates)"
+            )
         if failed_count > 0:
             console.print(f"[red]Failed:[/red] {failed_count} key(s)")
         console.print(f"[cyan]Location:[/cyan] {key_folder}\n")
-        
+
         return True
-        
+
     except json.JSONDecodeError as e:
         console.print(f"\n[red]✗[/red] Error parsing decrypted data: {str(e)}\n")
         return False
@@ -846,8 +910,8 @@ def fetch_private_keys(share_code: str):
         return False
 
 
-
 # Delete Old Subfolders in Automationlog folder.
+
 
 def get_subfolders_created_before_n_days(folder_path, log_delete_interval):
     subfolder_paths = []
@@ -957,6 +1021,9 @@ async def command_line_args() -> Path | None:
 
     Example 14 - Fetch shared RSA private keys using a share code:
     python node_cli.py -fe AkEf-B910
+
+    Example 15 - Install Linux desktop automation dependencies:
+    python node_cli.py -ild
 
     Use -h or --help to see full documentation of all available arguments.
     """
@@ -1071,6 +1138,14 @@ async def command_line_args() -> Path | None:
         metavar="",
     )
 
+    # Desktop automation setup and UI inspection arguments
+    parser_object.add_argument(
+        "-ild",
+        "--install-linux-deps",
+        action="store_true",
+        help="Install Linux desktop automation dependencies (runs Installer/setup_linux_inspector.sh)",
+    )
+
     all_arguments = parser_object.parse_args()
 
     server = all_arguments.server
@@ -1096,17 +1171,20 @@ async def command_line_args() -> Path | None:
     share_keys = all_arguments.share
     fetch_code = all_arguments.fetch
 
+    # Desktop automation and UI inspection options
+    install_linux_deps = all_arguments.install_linux_deps
+
     # Handle RSA key management commands
     if generate_key:
         generate_rsa_key()
         sys.exit(0)
-    
+
     if add_key:
         if add_existing_rsa_key(add_key):
             sys.exit(0)
         else:
             sys.exit(1)
-    
+
     if show_keys:
         show_existing_rsa_keys()
         sys.exit(0)
@@ -1115,9 +1193,14 @@ async def command_line_args() -> Path | None:
     if share_keys:
         share_private_keys()
         sys.exit(0)
-    
+
     if fetch_code:
         if fetch_private_keys(fetch_code):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    if install_linux_deps:
+        if install_linux_inspector_deps():
             sys.exit(0)
         else:
             sys.exit(1)
@@ -1206,6 +1289,7 @@ async def set_new_credentials(server, api_key):
     ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
     ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
 
+
 def print_system_info_version():
     """Prints the system information and version of the Node"""
     print(
@@ -1222,7 +1306,10 @@ def create_temp_ini_automation_log():
     automation_log_dir.mkdir(exist_ok=True)
     print(f"Created AutomationLog directory at {automation_log_dir}")
 
-    TMP_INI_FILE = automation_log_dir / ConfigModule.get_config_value("Advanced Options", "_file")
+    TMP_INI_FILE = automation_log_dir / ConfigModule.get_config_value(
+        "Advanced Options", "_file"
+    )
+
 
 async def main():
     print_system_info_version()
@@ -1275,9 +1362,7 @@ async def main():
         .strip()
     )
     api = (
-        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
-        .strip('"')
-        .strip()
+        ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"').strip()
     )
 
     if len(server_name) == 0 and len(api) == 0:
@@ -1289,10 +1374,12 @@ async def main():
         await asyncio.sleep(1)
 
     else:
-        asyncio.create_task(Login(
-            server_name=server_name,
-            log_dir=log_dir,
-        ))
+        asyncio.create_task(
+            Login(
+                server_name=server_name,
+                log_dir=log_dir,
+            )
+        )
     while True:
         if STATE.reconnect_with_credentials is not None:
             await destroy_session()
@@ -1319,10 +1406,13 @@ async def main():
                 )
                 console.print("Please log in to ZeuZ server and connect.")
 
-            asyncio.create_task(Login(
-                server_name=server_name,
-                log_dir=log_dir,
-            ))
+            asyncio.create_task(
+                Login(
+                    server_name=server_name,
+                    log_dir=log_dir,
+                )
+            )
         await asyncio.sleep(1)
+
 
 asyncio.run(main())

@@ -5900,15 +5900,63 @@ def data_store_read(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
+    import logging
+    from datetime import datetime
+    from settings import ZEUZ_NODE_ARTIFACTS_DIR
+    
+    log_dir = ZEUZ_NODE_ARTIFACTS_DIR / "data_store_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    current_time = datetime.now()
+    log_filename = f"data_store_read_{current_time.strftime('%Y-%m-%d_%H')}.log"
+    log_file = log_dir / log_filename
+    
+    logger = logging.getLogger(f"data_store_read_{current_time.strftime('%Y%m%d%H')}")
+    logger.setLevel(logging.DEBUG)
+    
+    # Remove existing handlers to avoid duplicate logs
+    if logger.handlers:
+        logger.handlers.clear()
+    
+    handler = logging.FileHandler(str(log_file), mode='a')
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    logger.addHandler(handler)
+    
+    logger.info("="*80)
+    logger.info(f"Function data_store_read called")
+    logger.info(f"Module Info: {sModuleInfo}")
+    logger.info(f"Received data_set: {data_set}")
+
+
+
     try:
+        test_id = None
+        node_id = sr.Get_Shared_Variables("node_id") or None
+        action_no = CommonUtil.current_action_no
+        step_no = CommonUtil.current_step_no
+        if sr.Test_Shared_Variables("zeuz_current_tc"):
+            current_tc = sr.Get_Shared_Variables("zeuz_current_tc")
+            if isinstance(current_tc, dict) and "testcase_no" in current_tc:
+                test_id = current_tc["testcase_no"]
         table_name = columns = var_name = ""
-        params = {}
+        params = {
+            'test_id': test_id,
+            'node_id': node_id,
+            'action_no': action_no,
+            'step_no': step_no
+        }
+        logger.debug("Starting to parse data_set")
         for left, mid, right in data_set:
+            logger.debug(f"Processing row: left='{left}', mid='{mid}', right='{right}'")
             if left.strip() == 'table name':
                 table_name = right.strip()
                 params['table_name'] = table_name
+                logger.info(f"Table name set to: {table_name}")
             if left.strip() == 'where':
                 q = right.strip()
+                logger.info(f"Processing WHERE clause: {q}")
                 # q = re.sub(r"\band\b",",",q)
                 # q = re.sub(r"\bor\b",",",q)
                 logic=[]
@@ -5917,10 +5965,12 @@ def data_store_read(data_set):
                         logic.append('and')
                     elif s=='or':
                         logic.append('or')
+                logger.debug(f"Detected logic operators: {logic}")
                 q = right.strip()
                 q = re.sub(r"\band\b",",",q)
                 q = re.sub(r"\bor\b",",",q)
                 temp= q.split(',')
+                logger.debug(f"Split WHERE clause into: {temp}")
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
@@ -5941,26 +5991,54 @@ def data_store_read(data_set):
 
                         i += 1
                         j+=1
+                logger.info(f"Final WHERE params: {params}")
             if mid.strip() == "action":
                 var_name = right.strip()
+                logger.info(f"Variable name set to: {var_name}")
+        
+        logger.info(f"Final table_name: {table_name}")
+        logger.info(f"Final params: {params}")
+        logger.info(f"Final var_name: {var_name}")
+        
+        logger.debug("Preparing request headers")
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        logger.debug(f"Headers prepared (API key masked)")
+        
+        logger.info(f"Making GET request to data_store/data_store/custom_operation/")
+        logger.debug(f"Request params: {json.dumps(params)}")
+        
         res = RequestFormatter.request("get",
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
             verify=False,
             **headers
         )
+        
+        logger.info(f"Response status code: {res.status_code}")
+        logger.debug(f"Response text: {res.text}")
+        
         if res.status_code == 200:
             response_json = json.loads(res.text)
             response_json = response_json["data"]
-            return sr.Set_Shared_Variables(var_name, response_json, pretty=True)
+            logger.info(f"Successfully retrieved {len(response_json) if isinstance(response_json, (list, dict)) else 'N/A'} items from datastore")
+            logger.debug(f"Response data: {response_json}")
+            result = sr.Set_Shared_Variables(var_name, response_json, pretty=True)
+            logger.info(f"Data stored in variable '{var_name}' successfully")
+            logger.info("="*80)
+            return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "No data found, please check your dataset", 1)
+            logger.warning("No data found in datastore, please check your dataset")
+            logger.info("="*80)
+            return "zeuz_failed"
         return "passed"
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}", exc_info=True)
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.info("="*80)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def data_store_get_data(data_set):
@@ -6063,16 +6141,62 @@ def data_store_write(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
+    import logging
+    from datetime import datetime
+    from settings import ZEUZ_NODE_ARTIFACTS_DIR
+    
+    log_dir = ZEUZ_NODE_ARTIFACTS_DIR / "data_store_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    current_time = datetime.now()
+    log_filename = f"data_store_write_{current_time.strftime('%Y-%m-%d_%H')}.log"
+    log_file = log_dir / log_filename
+    
+    logger = logging.getLogger(f"data_store_write_{current_time.strftime('%Y%m%d%H')}")
+    logger.setLevel(logging.DEBUG)
+    
+    # Remove existing handlers to avoid duplicate logs
+    if logger.handlers:
+        logger.handlers.clear()
+    
+    handler = logging.FileHandler(str(log_file), mode='a')
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    logger.addHandler(handler)
+    
+    logger.info("="*80)
+    logger.info("Function data_store_write called")
+    logger.info(f"Module Info: {sModuleInfo}")
+    logger.info(f"Received data_set: {data_set}")
+
     try:
+        test_id = None
+        node_id = sr.Get_Shared_Variables("node_id") or None
+        action_no = CommonUtil.current_action_no
+        step_no = CommonUtil.current_step_no
+        if sr.Test_Shared_Variables("zeuz_current_tc"):
+            current_tc = sr.Get_Shared_Variables("zeuz_current_tc")
+            if isinstance(current_tc, dict) and "testcase_no" in current_tc:
+                test_id = current_tc["testcase_no"]
         table_name = columns = var_name = ""
-        params = {}
+        params = {
+            'test_id': test_id,
+            'node_id': node_id,
+            'action_no': action_no,
+            'step_no': step_no
+        }
         data={}
+        logger.debug("Starting to parse data_set")
         for left, mid, right in data_set:
+            logger.debug(f"Processing row: left='{left}', mid='{mid}', right='{right}'")
             if left.strip() == 'table name':
                 table_name = right.strip()
                 params['table_name'] = table_name
+                logger.info(f"Table name set to: {table_name}")
             if left.strip() == 'where':
                 q = right.strip()
+                logger.info(f"Processing WHERE clause: {q}")
                 # q = re.sub(r"\band\b",",",q)
                 # q = re.sub(r"\bor\b",",",q)
                 logic=[]
@@ -6081,10 +6205,12 @@ def data_store_write(data_set):
                         logic.append('and')
                     elif s=='or':
                         logic.append('or')
+                logger.debug(f"Detected logic operators: {logic}")
                 q = right.strip()
                 q = re.sub(r"\band\b",",",q)
                 q = re.sub(r"\bor\b",",",q)
                 temp= q.split(',')
+                logger.debug(f"Split WHERE clause into: {temp}")
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
@@ -6105,21 +6231,38 @@ def data_store_write(data_set):
 
                         i += 1
                         j+=1
+                logger.info(f"Final WHERE params: {params}")
             if left.strip() == 'data':
                 temp = [right.strip()]
+                logger.debug(f"Processing data field: {temp}")
                 print(temp)
                 for t in temp:
                     tt = t.split('=', 1)
+                    logger.debug(f"Split data into: {tt}")
                     print(tt)
                     data[tt[0].strip()]=tt[1].strip()
+                    logger.debug(f"Data field '{tt[0].strip()}' = '{tt[1].strip()}'")
                     print(data[tt[0].strip()])
+                logger.info(f"Complete data dict: {data}")
             if mid.strip() == "action":
                 var_name = right.strip()
+                logger.info(f"Variable name set to: {var_name}")
 
+        logger.info(f"Final table_name: {table_name}")
+        logger.info(f"Final params: {params}")
+        logger.info(f"Final data: {data}")
+        logger.info(f"Final var_name: {var_name}")
 
+        logger.debug("Preparing request headers")
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        logger.debug("Headers prepared (API key masked)")
+        
+        logger.info("Making PATCH request to data_store/data_store/custom_operation/")
+        logger.debug(f"Request params: {json.dumps(params)}")
+        logger.debug(f"Request data: {json.dumps(data)}")
+        
         res = requests.patch(
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
@@ -6127,18 +6270,32 @@ def data_store_write(data_set):
             verify=False,
             **headers
         )
+        
+        logger.info(f"Response status code: {res.status_code}")
+        logger.debug(f"Response text: {res.text}")
         #
 
         # print(res.text)
         if res.status_code == 200:
             # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
-
-            return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+            response_json = json.loads(res.text)
+            logger.info(f"Successfully updated datastore")
+            logger.debug(f"Response data: {response_json}")
+            result = sr.Set_Shared_Variables(var_name, response_json, pretty=True)
+            logger.info(f"Response stored in variable '{var_name}' successfully")
+            logger.info("="*80)
+            return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "No data found to update , please check your dataset", 1)
+            logger.warning("No data found to update in datastore, please check your dataset")
+            logger.info("="*80)
+            return "zeuz_failed"
         return "passed"
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}", exc_info=True)
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.info("="*80)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
