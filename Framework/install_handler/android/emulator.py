@@ -333,6 +333,55 @@ async def launch_avd(avd_name: str) -> bool:
         })
         return False
 
+async def get_filtered_avd_services():
+   """
+   Get available AVDs and filter them by OS, returning a formatted category dictionary.
+   Uses the same filtering logic as generate_services_list in utils.py.
+  
+   Returns:
+       Dictionary with category "AndroidEmulator" and filtered services, or None if no AVDs match
+   """
+   current_os = platform.system().lower()
+  
+   try:
+       avds = await get_available_avds()
+      
+       if not avds:
+           return None
+      
+       # Filter AVDs by OS (same logic as generate_services_list)
+       filtered_services = []
+       for avd in avds:
+           # Check if AVD supports current OS
+           if "os" in avd and current_os not in avd["os"]:
+               continue
+          
+           # Create filtered service with only the fields needed (matching generate_services_list format)
+           filtered_service = {
+               "name": avd.get("name", ""),
+               "status": avd.get("status", "installed"),
+               "comment": avd.get("comment", ""),
+               "install_text": avd.get("install_text", ""),
+               "os": avd.get("os", []),
+               "user_password": avd.get("user_password", "no")
+           }
+           filtered_services.append(filtered_service)
+      
+       # Return None if no services match, otherwise return category dict
+       if not filtered_services:
+           return None
+      
+       return {
+           "category": "AndroidEmulator",
+           "services": filtered_services
+       }
+  
+   except Exception as e:
+       print(f"[installer][emulator] Error getting filtered AVD services: {e}")
+       import traceback
+       traceback.print_exc()
+       return None
+
 def _run_sdkmanager_list(sdkmanager: Path, sdk_root: Path) -> str:
     """Run sdkmanager --list with shell piping to filter system-images (OS-agnostic, synchronous)"""
     try:
@@ -571,7 +620,7 @@ async def get_available_devices() -> list[dict]:
                 "action": "status",
                 "data": {
                     "category": "Android Emulator",
-                    "name": "Devices",
+                    "name": "System Images",
                     "status": "Not Found",
                     "comment": "No devices found. Please make sure you have installed the ANDROID SDK components.",
                 }
@@ -652,12 +701,13 @@ async def android_emulator_install():
         
         # Get available devices
         devices = await get_available_devices()
+        print(f"[installer][emulator] Available devices: {devices}")
         
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": "Devices",
+                "name": "System Images",
                 "status": "Found",
                 "comment": f"Available devices ({len(devices)} total)",
                 "system_images": devices,  # Send the full list with details

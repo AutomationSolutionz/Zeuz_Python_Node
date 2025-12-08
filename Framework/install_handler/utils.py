@@ -4,7 +4,7 @@ import platform
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
 debug = False
-version = "2.0.0"
+version = "3.0.0"
 
 
 def read_node_id():
@@ -51,10 +51,23 @@ async def send_response(data=None) -> None:
         data['version'] = version
         data['node_id'] = read_node_id()
 
+        services_list = generate_services_list(services)
+        #Lazy import to avoid circular dependency
+        # android_emulator -> emulator -> utils (circular if imported at top level)
+        try:
+            from Framework.install_handler.android.emulator import get_filtered_avd_services
+            avd_list = await get_filtered_avd_services()
+            if avd_list:
+                services_list.insert(1, avd_list)
+        except Exception as e:
+            if debug:
+                print(f"[installer] Error getting AVD services: {e}")
+        
+
         if data['action'] == "status":
             data['all_data'] = {
                 "system_info": None,
-                "services": generate_services_list(services)
+                "services": services_list
             }
         
         if debug: 

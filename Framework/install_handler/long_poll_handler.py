@@ -9,7 +9,7 @@ from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import debug, send_response, read_node_id, generate_services_list
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
-from Framework.install_handler.android.emulator import create_avd_from_system_image
+from Framework.install_handler.android.emulator import create_avd_from_system_image, get_filtered_avd_services, get_available_avds, launch_avd
 from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
@@ -30,6 +30,11 @@ class InstallHandler:
             action = message.value.action
             if action == "services_list":
                 services_list = generate_services_list(services)
+
+                avd_list = await get_filtered_avd_services()
+                if avd_list:
+                    services_list.insert(1, avd_list)
+
                 await send_response({
                     "action": "services_list",
                     "data": {
@@ -62,6 +67,11 @@ class InstallHandler:
                 
                 # Handle AndroidEmulator category
                 if category["category"] == "AndroidEmulator":
+                    # Print the entire services list
+                    print(f"[installer] All services: {services}")
+                    print(f"[installer] AndroidEmulator category: {category}")
+                    print(f"[installer] AndroidEmulator services: {category['services']}")
+                    print(f"[installer] Requested service name: {message.value.item.name}")
                     service_name = message.value.item.name
                     
                     # Case 1: No service name or empty - get system images list
@@ -83,25 +93,14 @@ class InstallHandler:
                             print(f"[installer] Status check not supported for system images")
                             return
                     
-                    # Case 3: Service name is an existing AVD - find it in services list
-                    service = None
-                    for s in category["services"]:
-                        if s["name"] == service_name:
-                            service = s
-                            break
-                    
-                    if service:
-                        if action == "install":
-                            func = service.get("install_function")
-                        elif action == "status":
-                            func = service.get("status_function")
-                        
-                        if func is None:
-                            print(f"[installer] Function not found for {service_name}")
-                            return
-                        await func()
+                    # Case 3: This is a request to launch an existing AVD
                     else:
-                        print(f"[installer] Service '{service_name}' not found in AndroidEmulator category")
+                        try:
+                            await launch_avd(service_name)
+                        except Exception as e:
+                            print(f"[installer] Error launching AVD '{service_name}': {e}")
+                            traceback.print_exc()
+                            return
                     return
                 
                 # Normal service-level install for other categories
