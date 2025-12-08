@@ -933,6 +933,7 @@ def start_appium_driver(
         if str(appium_details[device_id]["type"]).lower() == "android":
             # All Desired caps = https://appium.io/docs/en/writing-running-appium/caps/
             desired_caps["platformName"] = appium_details[device_id]["type"]  # Set platform name
+            desired_caps["udid"] = appium_details[device_id]["serial"]
             desired_caps["autoLaunch"] = "false"  # Do not launch application
             desired_caps["fullReset"] = "false"  # Do not reinstall application
             if no_reset:
