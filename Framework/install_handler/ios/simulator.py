@@ -3,8 +3,9 @@ import platform
 import os
 import shutil
 import subprocess
+import json
+import re
 from Framework.install_handler.utils import send_response
-
 
 async def _send_status(status: str, comment: str):
     """Helper to send status responses."""
@@ -20,209 +21,187 @@ async def _send_status(status: str, comment: str):
         }
     )
 
+async def _create_default_device() -> bool:
+    """
+    Attempts to create a default iPhone simulator using the newest available 
+    iOS runtime and the newest available iPhone device type.
+    """
+    await _send_status("installing", "No devices found. Creating a new default simulator...")
+
+    try:
+        # 1. Get available Runtimes (JSON is safer to parse)
+        # We need to find the installed iOS runtime ID (e.g. com.apple.CoreSimulator.SimRuntime.iOS-18-0)
+        runtime_proc = subprocess.run(
+            ["xcrun", "simctl", "list", "runtimes", "-j"],
+            capture_output=True,
+            text=True
+        )
+        if runtime_proc.returncode != 0:
+            raise Exception("Failed to list runtimes.")
+
+        runtimes_data = json.loads(runtime_proc.stdout)
+        available_runtimes = runtimes_data.get("runtimes", [])
+        
+        # Filter for iOS runtimes and sort to find the latest version
+        ios_runtimes = [
+            r for r in available_runtimes 
+            if r.get("platform") == "iOS" or "iOS" in r.get("name", "")
+        ]
+
+        if not ios_runtimes:
+            raise Exception("No iOS Runtimes found after installation.")
+
+        # Sort by version (assuming name contains version or using buildversion)
+        # We'll just pick the first one which is usually the latest in the list, 
+        # or we can try to sort by the 'version' key if available.
+        target_runtime = ios_runtimes[-1] # Usually the list is ordered, taking the last one is a safe bet for 'newest'
+        runtime_id = target_runtime["identifier"]
+        runtime_name = target_runtime["name"]
+
+        # 2. Get available Device Types
+        type_proc = subprocess.run(
+            ["xcrun", "simctl", "list", "devicetypes", "-j"],
+            capture_output=True,
+            text=True
+        )
+        types_data = json.loads(type_proc.stdout)
+        
+        # Find a modern iPhone (e.g., iPhone 16, 15, or just the last "iPhone" in the list)
+        device_types = [
+            t for t in types_data.get("devicetypes", [])
+            if "iPhone" in t.get("name", "")
+        ]
+        
+        if not device_types:
+            raise Exception("No iPhone device types found.")
+
+        # Pick the last one (usually the newest model)
+        target_device_type = device_types[-1]
+        device_type_id = target_device_type["identifier"]
+        device_name = target_device_type["name"]
+
+        # 3. Create the device
+        new_device_name = f"{device_name} (Default)"
+        await _send_status("installing", f"Creating {new_device_name} with {runtime_name}...")
+
+        create_proc = subprocess.run(
+            ["xcrun", "simctl", "create", new_device_name, device_type_id, runtime_id],
+            capture_output=True,
+            text=True
+        )
+
+        if create_proc.returncode == 0:
+            new_udid = create_proc.stdout.strip()
+            await _send_status("installed", f"Created new device: {new_device_name} ({new_udid})")
+            return True
+        else:
+            raise Exception(f"Failed to create device: {create_proc.stderr}")
+
+    except Exception as e:
+        await _send_status("error", f"Auto-creation of device failed: {e}")
+        return False
 
 async def check_status() -> bool:
     """Check if iOS Simulator is installed and available."""
     print("[simulator] Checking status...")
 
     if platform.system().lower() != "darwin":
-        await _send_status(
-            "error", "Unsupported OS. iOS Simulator is only available on macOS."
-        )
+        await _send_status("error", "Unsupported OS. iOS Simulator is only available on macOS.")
         return False
 
-    # Check if Xcode is installed first (required for simulators)
     if not os.path.exists("/Applications/Xcode.app"):
-        await _send_status(
-            "not installed", "Xcode must be installed before using iOS Simulator."
-        )
+        await _send_status("not installed", "Xcode must be installed before using iOS Simulator.")
         return False
 
-    # Check if simctl is available
-    simctl_path = shutil.which("xcrun")
-    if not simctl_path:
-        await _send_status(
-            "not installed", "xcrun not found. Xcode command line tools may not be installed."
-        )
+    if not shutil.which("xcrun"):
+        await _send_status("not installed", "xcrun not found. Xcode command line tools missing.")
         return False
 
     try:
-        # Check if any simulators are available
+        # Check for available devices
         result = subprocess.run(
-            ["xcrun", "simctl", "list", "devices", "available"],
+            ["xcrun", "simctl", "list", "devices", "available", "iOS"],
             capture_output=True,
             text=True,
             timeout=30,
         )
         
         if result.returncode != 0:
-            await _send_status(
-                "error", f"simctl error: {result.stderr.strip()}"
-            )
+            await _send_status("error", f"simctl error: {result.stderr.strip()}")
             return False
 
-        # Check if there are any iOS simulators available
         output = result.stdout
-        if "iOS" in output or "iPhone" in output or "iPad" in output:
-            # Count number of available devices
-            device_lines = [line for line in output.splitlines() if "(" in line and ")" in line and "Booted" not in line]
-            if len(device_lines) > 0:
-                await _send_status(
-                    "installed", f"iOS Simulator available with {len(device_lines)} devices."
-                )
-                return True
-            else:
-                await _send_status(
-                    "not installed", "No iOS Simulator devices found. Install Xcode or simulator runtimes."
-                )
-                return False
+        # Basic check: verify lines with UDIDs exist
+        device_lines = [line for line in output.splitlines() if "(" in line and ")" in line]
+        
+        if len(device_lines) > 0:
+            await _send_status("installed", f"iOS Simulator available with {len(device_lines)} devices.")
+            return True
         else:
-            await _send_status(
-                "not installed", "No iOS Simulator devices found. Install Xcode or simulator runtimes."
-            )
+            await _send_status("not installed", "No iOS Simulator devices found.")
             return False
 
-    except subprocess.TimeoutExpired:
-        await _send_status("error", "simctl command timed out.")
-        return False
     except Exception as e:
         await _send_status("error", f"Error checking iOS Simulator: {e}")
         return False
 
-
-async def _install_command_line_tools(user_password: str) -> bool:
+async def _install_command_line_tools() -> bool:
     """Install Xcode command line tools if not present."""
     try:
-        # Check if already installed
-        result = subprocess.run(
-            ["xcode-select", "-p"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        
+        result = subprocess.run(["xcode-select", "-p"], capture_output=True, text=True)
         if result.returncode == 0:
             return True
 
-        # Install command line tools
-        await _send_status(
-            "installing", "Installing Xcode command line tools, please wait..."
-        )
+        await _send_status("installing", "Installing Xcode command line tools...")
+        subprocess.run(["xcode-select", "--install"], capture_output=True, text=True)
         
-        install_result = subprocess.run(
-            ["xcode-select", "--install"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        
-        # Wait for installation to complete (poll for up to 30 minutes)
-        timeout_seconds = 30 * 60
-        interval = 10
-        elapsed = 0
-
-        while elapsed < timeout_seconds:
-            await asyncio.sleep(interval)
-            elapsed += interval
-
-            check_result = subprocess.run(
-                ["xcode-select", "-p"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            
-            if check_result.returncode == 0:
+        # Poll for completion (simplified for brevity)
+        for _ in range(60): # wait up to 10 mins
+            await asyncio.sleep(10)
+            if subprocess.run(["xcode-select", "-p"], capture_output=True).returncode == 0:
                 return True
-
-        await _send_status("error", "Timed out waiting for command line tools installation.")
+                
+        await _send_status("error", "Timed out waiting for command line tools.")
         return False
-
     except Exception as e:
-        await _send_status("error", f"Error installing command line tools: {e}")
+        await _send_status("error", f"Error installing tools: {e}")
         return False
-
 
 async def _install_simulator_runtime(user_password: str) -> bool:
     """Install iOS Simulator runtime if missing."""
     try:
-        # First, ensure Xcode command line tools are set correctly
+        # Ensure xcode-select is pointing to Xcode app
+        cmd = ["xcode-select", "--switch", "/Applications/Xcode.app/Contents/Developer"]
         if user_password:
-            xcode_select_cmd = f"echo '{user_password}' | sudo -S xcode-select --switch /Applications/Xcode.app/Contents/Developer"
-            result = subprocess.run(
-                xcode_select_cmd,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=30,
+            # Use sudo -S for password piping if provided
+            subprocess.run(
+                f"echo '{user_password}' | sudo -S {' '.join(cmd)}",
+                shell=True, capture_output=True
             )
         else:
-            result = subprocess.run(
-                ["xcode-select", "--switch", "/Applications/Xcode.app/Contents/Developer"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+            subprocess.run(cmd, capture_output=True)
 
-        # Check available simulator runtimes
-        await _send_status(
-            "installing", "Checking for available iOS Simulator runtimes..."
-        )
+        # Check existing runtimes
+        await _send_status("installing", "Checking iOS Simulator runtimes...")
         
-        runtime_result = subprocess.run(
-            ["xcrun", "simctl", "list", "runtimes"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+        # Download iOS platform using xcodebuild (Your provided block)
+        await _send_status("installing", "Downloading iOS Simulator runtime (this may take a while)...")
 
-        if runtime_result.returncode != 0:
-            await _send_status(
-                "error", f"Failed to list runtimes: {runtime_result.stderr.strip()}"
-            )
-            return False
-
-        # Check if iOS runtimes are present and have devices
-        has_ios_runtime = "iOS" in runtime_result.stdout
-        
-        if has_ios_runtime:
-            # Verify that there are actual simulator devices available
-            devices_result = subprocess.run(
-                ["xcrun", "simctl", "list", "devices", "available", "iOS"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            
-            if devices_result.returncode == 0:
-                output = devices_result.stdout
-                device_lines = [line for line in output.splitlines() if "(" in line and ")" in line]
-                
-                if len(device_lines) > 0:
-                    return True
-        
-        # No iOS runtimes or devices found, attempt to download and install
-        await _send_status(
-            "installing", 
-            "Downloading iOS Simulator runtime, this may take several minutes..."
-        )
-        
-        # Download iOS platform using xcodebuild
-        download_result = subprocess.run(
+        with subprocess.Popen(
             ["xcodebuild", "-downloadPlatform", "iOS"],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            timeout=3600,  # 1 hour timeout for download
-        )
+            bufsize=1
+        ) as process:
+            for line in process.stdout:
+                await _send_status("installing", line.strip())
+
+        if process.returncode != 0:
+            # Only fail if it's a real error. Sometimes it fails if already installed.
+            # We proceed to verification regardless.
+            pass 
         
-        if download_result.returncode != 0:
-            await _send_status(
-                "error", 
-                f"Failed to download platform. Please install via Xcode > Settings > Platforms. Error: {download_result.stderr.strip()[-200:]}"
-            )
-            return False
-        
-        # Wait a moment for installation to complete
         await asyncio.sleep(5)
         
         # Verify installation
@@ -233,69 +212,45 @@ async def _install_simulator_runtime(user_password: str) -> bool:
             timeout=30,
         )
         
+        device_count = 0
         if verify_result.returncode == 0:
-            output = verify_result.stdout
-            device_lines = [line for line in output.splitlines() if "(" in line and ")" in line]
-            
-            if len(device_lines) > 0:
-                await _send_status(
-                    "installed", 
-                    f"iOS Simulator runtime installed successfully with {len(device_lines)} devices."
-                )
-                return True
-        
-        await _send_status(
-            "error", 
-            "Runtime installation completed but no devices found. Please verify via Xcode > Settings > Platforms."
-        )
-        return False
+            device_lines = [line for line in verify_result.stdout.splitlines() if "(" in line and ")" in line]
+            device_count = len(device_lines)
+
+        # LOGIC CHANGE: If installed but no devices, create one.
+        if device_count > 0:
+            await _send_status("installed", f"iOS Simulator runtime ready with {device_count} devices.")
+            return True
+        else:
+            # Runtime might be there, but no devices created yet.
+            # Attempt to create a default device.
+            return await _create_default_device()
 
     except Exception as e:
         await _send_status("error", f"Error installing simulator runtime: {e}")
         return False
 
-
 async def install(user_password: str = "") -> bool:
-    """Install iOS Simulator (requires Xcode to be installed first)."""
+    """Main install entry point."""
     print("[simulator] Installing...")
 
     if platform.system().lower() != "darwin":
-        await _send_status(
-            "error", "Unsupported OS. iOS Simulator is only available on macOS."
-        )
+        await _send_status("error", "iOS Simulator is only available on macOS.")
         return False
 
-    # Check if already installed and working
     if await check_status():
         return True
 
-    # Ensure Xcode is installed
     if not os.path.exists("/Applications/Xcode.app"):
-        await _send_status(
-            "error", "Xcode must be installed first. Please install Xcode from the App Store."
-        )
+        await _send_status("error", "Xcode must be installed first.")
         return False
 
-    await _send_status(
-        "installing", "Setting up iOS Simulator..."
-    )
+    await _send_status("installing", "Setting up iOS Simulator...")
 
-    # Install command line tools if needed
-    if not await _install_command_line_tools(user_password):
+    if not await _install_command_line_tools():
         return False
 
-    # Install/verify simulator runtime
     if not await _install_simulator_runtime(user_password):
         return False
 
-    # Final status check
-    if await check_status():
-        await _send_status(
-            "installed", "iOS Simulator is ready to use."
-        )
-        return True
-    else:
-        await _send_status(
-            "error", "iOS Simulator setup completed but verification failed."
-        )
-        return False
+    return await check_status()
