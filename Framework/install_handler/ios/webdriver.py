@@ -48,8 +48,12 @@ async def _check_xcode_installed() -> bool:
         return False
 
 
-async def _get_available_simulator() -> str | None:
-    """Get the first available iOS simulator device name."""
+async def _get_available_simulator() -> tuple[str, str] | None:
+    """Get the first available iOS simulator device name and UUID.
+    
+    Returns:
+        Tuple of (device_name, device_uuid) or None if not found.
+    """
     try:
         result = subprocess.run(
             ["xcrun", "simctl", "list", "devices", "available", "iOS"],
@@ -65,15 +69,63 @@ async def _get_available_simulator() -> str | None:
         for line in result.stdout.splitlines():
             line = line.strip()
             # Look for device lines like "iPhone 16 Pro (UUID) (Shutdown)"
-            if "iPhone" in line  and "(" in line:
+            if "iPhone" in line and "(" in line:
                 # Extract device name (everything before first parenthesis)
                 device_name = line.split("(")[0].strip()
-                if device_name:
-                    return device_name
+                # Extract UUID (between first and second parenthesis)
+                parts = line.split("(")
+                if len(parts) >= 2:
+                    uuid = parts[1].split(")")[0].strip()
+                    if device_name and uuid:
+                        return device_name, uuid
         
         return None
     except Exception:
         return None
+
+
+async def _boot_simulator(device_uuid: str) -> bool:
+    """Boot the iOS simulator with the given UUID.
+    
+    Args:
+        device_uuid: The UUID of the simulator to boot.
+        
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        # Check if already booted
+        result = subprocess.run(
+            ["xcrun", "simctl", "list", "devices"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        
+        if result.returncode == 0 and device_uuid in result.stdout:
+            # Check if already booted
+            for line in result.stdout.splitlines():
+                if device_uuid in line and "(Booted)" in line:
+                    return True  # Already booted
+        
+        # Boot the simulator
+        result = subprocess.run(
+            ["xcrun", "simctl", "boot", device_uuid],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        
+        if result.returncode != 0:
+            # Check if error is because it's already booted
+            if "Unable to boot device in current state: Booted" in result.stderr:
+                return True
+            return False
+        
+        return True
+        
+    except Exception:
+        return False
 
 
 async def check_status() -> bool:
@@ -122,16 +174,57 @@ async def check_status() -> bool:
             return False
 
         # Check if WebDriverAgentRunner scheme exists
-        if "WebDriverAgentRunner" in result.stdout:
-            await _send_status(
-                "installed", f"WebDriverAgent is installed at {webdriver_path}"
-            )
-            return True
-        else:
+        if "WebDriverAgentRunner" not in result.stdout:
             await _send_status(
                 "not installed", "WebDriverAgentRunner scheme not found in project."
             )
             return False
+        
+        # Check if WebDriverAgent is installed on any booted simulator
+        simulator_info = await _get_available_simulator()
+        if simulator_info:
+            simulator_name, simulator_uuid = simulator_info
+            
+            # Check if simulator is booted
+            list_result = subprocess.run(
+                ["xcrun", "simctl", "list", "devices"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            
+            is_booted = False
+            if list_result.returncode == 0:
+                for line in list_result.stdout.splitlines():
+                    if simulator_uuid in line and "(Booted)" in line:
+                        is_booted = True
+                        break
+            
+            if is_booted:
+                # Check if WebDriverAgentRunner is installed on the booted simulator
+                app_check = subprocess.run(
+                    ["xcrun", "simctl", "get_app_container", simulator_uuid, "com.facebook.WebDriverAgentRunner.xctrunner"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                
+                if app_check.returncode == 0 and app_check.stdout.strip():
+                    await _send_status(
+                        "installed", f"WebDriverAgent is installed on {simulator_name}"
+                    )
+                    return True
+                else:
+                    await _send_status(
+                        "not installed", f"WebDriverAgent is built but not installed on {simulator_name}"
+                    )
+                    return False
+        
+        # If no simulator is booted, just verify the project is valid
+        await _send_status(
+            "installed", f"WebDriverAgent is built at {webdriver_path} (no simulator booted to verify installation)"
+        )
+        return True
 
     except subprocess.TimeoutExpired:
         await _send_status("error", "xcodebuild command timed out.")
@@ -228,10 +321,23 @@ async def _build_webdriver(webdriver_path: Path) -> bool:
         project_path = webdriver_path / "WebDriverAgent.xcodeproj"
         
         # Get available simulator
-        simulator_name = await _get_available_simulator()
-        if not simulator_name:
+        simulator_info = await _get_available_simulator()
+        if not simulator_info:
             await _send_status(
                 "error", "No iOS Simulator found. Please install iOS Simulator first."
+            )
+            return False
+        
+        simulator_name, simulator_uuid = simulator_info
+
+        # Boot the simulator first
+        await _send_status(
+            "installing", f"Booting {simulator_name} simulator..."
+        )
+        
+        if not await _boot_simulator(simulator_uuid):
+            await _send_status(
+                "error", f"Failed to boot {simulator_name} simulator."
             )
             return False
 
