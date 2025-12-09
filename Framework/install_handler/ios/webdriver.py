@@ -225,7 +225,7 @@ async def _bootstrap_webdriver(webdriver_path: Path):
             subprocess.run(["bash", str(script)], cwd=str(webdriver_path), capture_output=True)
         except: pass
 
-async def install(user_password: str = "") -> bool:
+async def install() -> bool:
     print("[webdriver] Starting installation...")
     
     if await check_status():

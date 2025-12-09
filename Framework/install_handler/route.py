@@ -180,6 +180,7 @@ services = [
                 "os": ["darwin"],
                 "status_function": webdriver.check_status,
                 "install_function": webdriver.install,
+                "user_password": "no",
             }
         ],
     },
