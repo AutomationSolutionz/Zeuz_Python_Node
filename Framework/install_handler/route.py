@@ -147,6 +147,10 @@ services = [
     },
     {
         "category": "iOS",
+        "group": {
+            "check_text": "check all",
+            "install_text": "install all",
+        },
         "services": [
             {
                 "name": "Xcode",
@@ -181,6 +185,10 @@ services = [
     },
     {
         "category": "MacOS",
+        "group": {
+            "check_text": "",
+            "install_text": "",
+        },
         "services": [
             {
                 "name": "Xcode",
