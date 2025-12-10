@@ -8,8 +8,8 @@ from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import debug, send_response, read_node_id, generate_services_list
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
-from Framework.install_handler.android.emulator import create_avd_from_system_image, get_filtered_avd_services, get_available_avds, launch_avd
-from Framework.install_handler.ios.simulator import create_simulator_from_device_type, get_filtered_simulator_services, get_available_simulators, get_available_device_types, launch_simulator
+from Framework.install_handler.android.emulator import create_avd_from_system_image, get_filtered_avd_services, launch_avd
+from Framework.install_handler.ios.simulator import create_simulator_from_device_type, delete_simulator, get_filtered_simulator_services, launch_simulator
 from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
@@ -138,8 +138,11 @@ class InstallHandler:
                         else:
                             print(f"[installer] Status check not supported for device types")
                             return
-                    
-                    # Case 3: This is a request to launch an existing simulator (UDID format)
+                    # Case 3: This is a request to delete an existing simulator
+                    if action == "install" or action == "delete":
+                        await delete_simulator(service_name)
+                        return
+                    # Case 4: This is a request to launch an existing simulator (UDID format)
                     else:
                         try:
                             await launch_simulator(service_name)
