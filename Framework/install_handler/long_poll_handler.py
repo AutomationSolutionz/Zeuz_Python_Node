@@ -77,11 +77,7 @@ class InstallHandler:
                 
                 # Handle AndroidEmulator category
                 if category["category"] == "AndroidEmulator":
-                    # Print the entire services list
-                    print(f"[installer] All services: {services}")
-                    print(f"[installer] AndroidEmulator category: {category}")
-                    print(f"[installer] AndroidEmulator services: {category['services']}")
-                    print(f"[installer] Requested service name: {message.value.item.name}")
+
                     service_name = message.value.item.name
                     
                     # Case 1: No service name or empty - get system images list
@@ -95,7 +91,7 @@ class InstallHandler:
                             return
                     
                     # Case 2: Service name is a system image (starts with "system-images;")
-                    if service_name.startswith("system-images;"):
+                    if service_name.startswith("install device;"):
                         if action == "install":
                             await create_avd_from_system_image(service_name)
                             return

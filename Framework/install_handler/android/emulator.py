@@ -253,6 +253,7 @@ async def get_available_avds() -> list[dict]:
                     "comment": "",
                     "install_text": "",
                     "os": ["windows", "linux", "darwin"],
+                    "check_text": "Launch",
                     "status_function": lambda avd=name: launch_avd(avd),
                     "user_password": "no",
                 }
@@ -376,6 +377,7 @@ async def get_filtered_avd_services():
                "status": avd.get("status", "installed"),
                "comment": avd.get("comment", ""),
                "install_text": avd.get("install_text", ""),
+               "check_text": "Launch",
                "os": avd.get("os", []),
                "user_password": avd.get("user_password", "no")
            }
@@ -483,7 +485,9 @@ def _parse_system_image_details(output: str) -> list[dict]:
             system_images.append({
                 "package": package,
                 "version": version,
-                "description": description
+                "description": description,
+                "status" : "not installed",
+                "comment" : ""
             })
     
     return system_images
@@ -594,6 +598,9 @@ def _parse_device_list(output: str) -> list[dict]:
         if stripped.startswith("-") and all(c == "-" for c in stripped):
             # Save previous device if exists
             if current_device.get("package"):
+                # Add status and comment fields before appending
+                current_device["status"] = "Not installed"
+                current_device["comment"] = ""
                 devices.append(current_device)
                 current_device = {}
             continue
@@ -626,6 +633,9 @@ def _parse_device_list(output: str) -> list[dict]:
     
     # Don't forget the last device
     if current_device.get("package"):
+        # Add status and comment fields before appending
+        current_device["status"] = "Not installed"
+        current_device["comment"] = ""
         devices.append(current_device)
     
     return devices
@@ -715,7 +725,7 @@ async def android_emulator_install():
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": "Available Devices",
+                    "name": "System Images",
                     "status": "Not Found",
                     "comment": "Download and install Android SDK first",
                     "installables": []
@@ -738,13 +748,14 @@ async def android_emulator_install():
         devices = await get_available_devices()
         if debug:
             print(f"[installer][emulator] Available devices: {devices}")
+
         
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                # "name": "System Images",
-                # "status": "Found",
+                ##"name": "System Images",
+                #"status": "Found",
                 # "comment": f"Available devices ({len(devices)} total)",
                 "installables": devices,  # Send the full list with details
             }
@@ -878,17 +889,34 @@ def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_ima
         # Close stdin - PowerShell piping will provide input
         process.stdin.close()
         
-        # Print output in real-time as it comes
+        # Print output in real-time as it comes, showing progress on single line
         output_lines = []
+        last_progress = ""
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    if debug:
-                        print(line.rstrip())  # Print immediately
-                    output_lines.append(line.strip())
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        print(f"\n[installer][emulator] {stripped}")
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
         except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Output reading error: {e}")
+            print(f"\n[installer][emulator] Output reading error: {e}")
+        finally:
+            print()  # New line after progress completes
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -919,17 +947,34 @@ def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image
             bufsize=1  # Line buffered
         )
         
-        # Print output in real-time as it comes
+        # Print output in real-time as it comes, showing progress on single line
         output_lines = []
+        last_progress = ""
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    if debug:
-                        print(line.rstrip())  # Print immediately
-                    output_lines.append(line.strip())
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        print(f"\n[installer][emulator] {stripped}")
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
         except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Output reading error: {e}")
+            print(f"\n[installer][emulator] Output reading error: {e}")
+        finally:
+            print()  # New line after progress completes
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -960,17 +1005,34 @@ def _run_sdkmanager_install_darwin(sdkmanager: Path, sdk_root: Path, system_imag
             bufsize=1  # Line buffered
         )
         
-        # Print output in real-time as it comes
+        # Print output in real-time as it comes, showing progress on single line
         output_lines = []
+        last_progress = ""
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    if debug:
-                        print(line.rstrip())  # Print immediately
-                    output_lines.append(line.strip())
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        print(f"\n[installer][emulator] {stripped}")
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
         except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Output reading error: {e}")
+            print(f"\n[installer][emulator] Output reading error: {e}")
+        finally:
+            print()  # New line after progress completes
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -1004,17 +1066,34 @@ def _run_avdmanager_create_windows(avdmanager: Path, sdk_root: Path, avd_name: s
         process.stdin.write("no\n")
         process.stdin.close()
         
-        # Print output in real-time as it comes
+        # Print output in real-time as it comes, showing progress on single line
         output_lines = []
+        last_progress = ""
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    if debug:
-                        print(line.rstrip())  # Print immediately
-                    output_lines.append(line.strip())
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        print(f"\n[installer][emulator] {stripped}")
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
         except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Output reading error: {e}")
+            print(f"\n[installer][emulator] Output reading error: {e}")
+        finally:
+            print()  # New line after progress completes
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1048,17 +1127,34 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
         process.stdin.write("no\n")
         process.stdin.close()
         
-        # Print output in real-time as it comes
+        # Print output in real-time as it comes, showing progress on single line
         output_lines = []
+        last_progress = ""
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    if debug:
-                        print(line.rstrip())  # Print immediately
-                    output_lines.append(line.strip())
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        print(f"\n[installer][emulator] {stripped}")
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
         except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Output reading error: {e}")
+            print(f"\n[installer][emulator] Output reading error: {e}")
+        finally:
+            print()  # New line after progress completes
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1092,17 +1188,34 @@ def _run_avdmanager_create_darwin(avdmanager: Path, sdk_root: Path, avd_name: st
         process.stdin.write("no\n")
         process.stdin.close()
         
-        # Print output in real-time as it comes
+        # Print output in real-time as it comes, showing progress on single line
         output_lines = []
+        last_progress = ""
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    if debug:
-                        print(line.rstrip())  # Print immediately
-                    output_lines.append(line.strip())
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        print(f"\n[installer][emulator] {stripped}")
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
         except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Output reading error: {e}")
+            print(f"\n[installer][emulator] Output reading error: {e}")
+        finally:
+            print()  # New line after progress completes
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1223,13 +1336,12 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         parts = device_param.split(";")
         if len(parts) < 3:
             error_msg = f"Invalid device parameter format. Expected 'install device;device_id;device_name', got: {device_param}"
-            if debug:
-                print(f"[installer][emulator] {error_msg}")
+            print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "Not Found",
                     "comment": error_msg,
                 }
@@ -1242,19 +1354,17 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         # Sanitize device name for AVD (AVD names can only contain: a-z A-Z 0-9 . _ -)
         avd_name = _sanitize_avd_name(device_name)
         
-        if debug:
-            print(f"[installer][emulator] Creating AVD '{avd_name}' (from device name '{device_name}') with device ID '{device_id}'")
+        print(f"[installer][emulator] Creating AVD '{avd_name}' (from device name '{device_name}') with device ID '{device_id}'")
         
         # Check if Android SDK is installed
         sdk_root = _get_sdk_root()
         if sdk_root is None:
-            if debug:
-                print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "not installed",
                     "comment": "Download and install Android SDK first",
                 }
@@ -1272,7 +1382,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "Not Found",
                     "comment": "sdkmanager not found. Please check Android SDK installation.",
                 }
@@ -1286,7 +1396,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "Not Found",
                     "comment": "avdmanager not found. Please check Android SDK installation.",
                 }
@@ -1294,13 +1404,12 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             return False
         
         # Step 0: Get available system images and select highest API level
-        if debug:
-            print(f"[installer][emulator] Getting available system images with Android Version 16")
+        print(f"[installer][emulator] Getting available system images with Android Version 16")
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": device_id,
+                "package": device_id,
                 "status": "installing",
                 "comment": "Finding system image with Android Version 16",
             }
@@ -1309,13 +1418,12 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         system_images = await get_available_system_images()
         if not system_images:
             error_msg = "No system images found. Please install Android SDK components first."
-            if debug:
-                print(f"[installer][emulator] {error_msg}")
+            print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "not installed",
                     "comment": error_msg,
                 }
@@ -1326,31 +1434,28 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         system_image_name = _get_highest_api_system_image(system_images)
         if not system_image_name:
             error_msg = "Could not find a suitable system image."
-            if debug:
-                print(f"[installer][emulator] {error_msg}")
+            print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "not installed",
                     "comment": error_msg,
                 }
             })
             return False
         
-        if debug:
-            print(f"[installer][emulator] Selected system image: {system_image_name}")
-            print(f"[installer][emulator] Creating AVD '{device_name}' with device ID '{device_id}' and system image '{system_image_name}'")
+        print(f"[installer][emulator] Selected system image: {system_image_name}")
+        print(f"[installer][emulator] Creating AVD '{device_name}' with device ID '{device_id}' and system image '{system_image_name}'")
         
         # Step 1: Install system image
-        if debug:
-            print(f"[installer][emulator] Installing system image: {system_image_name}")
+        print(f"[installer][emulator] Installing system image: {system_image_name}")
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": device_id,
+                "package": device_id,
                 "status": "installing",
                 "comment": "Download started. Check the terminal on which ZeuZ Node is open for updates",
             }
@@ -1393,30 +1498,27 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         
         if not success:
             error_msg = f"Failed to install Android Version 16: {output}"
-            if debug:
-                print(f"[installer][emulator] {error_msg}")
+            print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "Not Found",
                     "comment": error_msg,
                 }
             })
             return False
         
-        if debug:
-            print(f"[installer][emulator] System image installed successfully")
+        print(f"[installer][emulator] System image installed successfully")
         
         # Step 2: Create AVD with device_id and device_name
-        if debug:
-            print(f"[installer][emulator] Creating AVD: {avd_name} with device ID: {device_id}")
+        print(f"[installer][emulator] Creating AVD: {avd_name} with device ID: {device_id}")
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": device_id,
+                "package": device_id,
                 "status": "installing",
                 "comment": f"Creating AVD '{avd_name}'...",
             }
@@ -1466,21 +1568,19 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         
         if not success:
             error_msg = f"Failed to create AVD: {output}"
-            if debug:
-                print(f"[installer][emulator] {error_msg}")
+            print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "AndroidEmulator",
-                    "name": device_id,
+                    "package": device_id,
                     "status": "not installed",
                     "comment": error_msg,
                 }
             })
             return False
         
-        if debug:
-            print(f"[installer][emulator] AVD '{avd_name}' created successfully")
+        print(f"[installer][emulator] AVD '{avd_name}' created successfully")
         
         # Note: AVD list will be automatically refreshed when services_list is requested
         # in long_poll_handler.py, so no manual refresh is needed here
@@ -1490,7 +1590,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": device_id,
+                "package": device_id,
                 "status": "installed",
                 "comment": f"Installation of AVD '{avd_name}' completed",
             }
@@ -1500,14 +1600,13 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         
     except ValueError as e:
         error_msg = f"Invalid device parameter: {e}"
-        if debug:
-            print(f"[installer][emulator] {error_msg}")
+        print(f"[installer][emulator] {error_msg}")
         device_name = device_param.split(";")[2].strip() if len(device_param.split(";")) > 2 else device_param
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": device_id,
+                "package": device_id,
                 "status": "not installed",
                 "comment": error_msg,
             }
@@ -1515,8 +1614,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Error creating AVD: {e}"
-        if debug:
-            print(f"[installer][emulator] {error_msg}")
+        print(f"[installer][emulator] {error_msg}")
         import traceback
         traceback.print_exc()
         device_name = device_param.split(";")[2].strip() if len(device_param.split(";")) > 2 else device_param
@@ -1524,7 +1622,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
-                "name": device_id,
+                "package": device_id,
                 "status": "not installed",
                 "comment": error_msg,
             }
