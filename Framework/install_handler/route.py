@@ -1,22 +1,25 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Literal, Optional
-import platform
 
 from .web import chrome_for_testing, edge, mozilla
-from .android import adb, node_js_22, appium, java, android_emulator, android_sdk, jdk, emulator
-from .ios import xcode
+from .android import (
+    adb,
+    node_js_22,
+    appium,
+    java,
+    android_sdk,
+    jdk,
+)
+from .ios import xcode, simulator
+from .macos import xcode as macos_xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
 from .android.emulator import android_emulator_install
-
-import httpx
-from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
-import datetime
-from Framework.install_handler.utils import debug
+from .ios.simulator import ios_simulator_install
 
 services = [
     {
-        "group":{
+        "group": {
             "check_text": "check all",
             "install_text": "install all",
         },
@@ -29,7 +32,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": node_js_22.check_status,
-                "install_function": node_js_22.check_status, #on purpose. Node 22 is installed when node starts.
+                "install_function": node_js_22.check_status,  # on purpose. Node 22 is installed when node starts.
                 "user_password": "no",
             },
             {
@@ -39,7 +42,7 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": appium.check_status,
-                "install_function": appium.check_status, #on purpose. Appium is installed when node starts.
+                "install_function": appium.check_status,  # on purpose. Appium is installed when node starts.
                 "user_password": "no",
             },
             {
@@ -49,8 +52,8 @@ services = [
                 "install_text": "install",
                 "os": ["windows", "linux", "darwin"],
                 "status_function": java.check_status,
-                "install_function": java.install, #install jdk here also. jdk.install will install java also.
-                "user_password": "no"
+                "install_function": java.install,  # install jdk here also. jdk.install will install java also.
+                "user_password": "no",
             },
             {
                 "name": "JDK",
@@ -60,7 +63,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": jdk.check_status,
                 "install_function": jdk.install,
-                "user_password": "no"
+                "user_password": "no",
             },
             {
                 "name": "Android SDK",
@@ -70,7 +73,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": android_sdk.check_status,
                 "install_function": android_sdk.install,
-                "user_password": "no"
+                "user_password": "no",
             },
             {
                 "name": "ADB",
@@ -82,23 +85,35 @@ services = [
                 "install_function": adb.install,
                 "user_password": "no",
             },
-        ]
+        ],
     },
     {
-        "group":{
+        "group": {
             "check_text": "",
             "install_text": "",
         },
         "category": "AndroidEmulator",
-        "name" : "System Images",
+        "name": "System Images",
         "install_text": "install",
         "install_function": android_emulator_install,
         "installables": [],
         "services": [],
     },
     {
+        "group": {
+            "check_text": "",
+            "install_text": "",
+        },
+        "category": "iOSSimulator",
+        "name": "Device Types",
+        "install_text": "install",
+        "install_function": ios_simulator_install,
+        "installables": [],
+        "services": [],
+    },
+    {
         "category": "Web",
-        "group":{
+        "group": {
             "check_text": "check all",
             "install_text": "install all",
         },
@@ -132,15 +147,14 @@ services = [
                 "status_function": edge.check_status,
                 "install_function": edge.install,
                 "user_password": "yes",
-            }
-            
-        ]
+            },
+        ],
     },
     {
         "category": "iOS",
-        "group":{
-            "check_text": "",
-            "install_text": "",
+        "group": {
+            "check_text": "check all",
+            "install_text": "install all",
         },
         "services": [
             {
@@ -151,13 +165,42 @@ services = [
                 "os": ["darwin"],
                 "status_function": xcode.check_status,
                 "install_function": xcode.install,
-                "user_password": "no"
+                "user_password": "yes",
+            },
+            {
+                "name": "Simulator",
+                "status": "none",
+                "comment": "Simulator is a tool for managing Simulator devices.",
+                "install_text": "install",
+                "os": ["darwin"],
+                "status_function": simulator.check_status,
+                "install_function": simulator.install,
+                "user_password": "yes",
+            },
+        ],
+    },
+    {
+        "category": "MacOS",
+        "group": {
+            "check_text": "",
+            "install_text": "",
+        },
+        "services": [
+            {
+                "name": "Xcode",
+                "status": "none",
+                "comment": "Xcode is a tool for managing Xcode devices.",
+                "install_text": "install",
+                "os": ["darwin"],
+                "status_function": macos_xcode.check_status,
+                "install_function": macos_xcode.install,
+                "user_password": "yes",
             }
-        ]
+        ],
     },
     {
         "category": "Database",
-        "group":{
+        "group": {
             "check_text": "check all",
             "install_text": "install all",
         },
@@ -170,7 +213,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": postgresql.check_status,
                 "install_function": postgresql.install,
-                "user_password": "no"
+                "user_password": "no",
             },
             {
                 "name": "MySQL",
@@ -180,7 +223,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": mysql.check_status,
                 "install_function": mysql.install,
-                "user_password": "no"
+                "user_password": "no",
             },
             {
                 "name": "MariaDB",
@@ -190,7 +233,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": mariadb.check_status,
                 "install_function": mariadb.install,
-                "user_password": "yes"
+                "user_password": "yes",
             },
             {
                 "name": "Oracle",
@@ -200,13 +243,13 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": oracle.check_status,
                 "install_function": oracle.install,
-                "user_password": "no"
-            }
-        ]
+                "user_password": "no",
+            },
+        ],
     },
     {
         "category": "Windows",
-        "group":{
+        "group": {
             "check_text": "",
             "install_text": "",
         },
@@ -220,28 +263,36 @@ services = [
                 "os": ["windows"],
                 "status_function": inspector.check_status,
                 "install_function": inspector.install,
-                "user_password": "no"
+                "user_password": "no",
             }
-        ]
-    }
+        ],
+    },
 ]
 
 
 class Item(BaseModel):
-   name: Optional[str] = None
-   category: str
-   user_password: str = ""  # Optional user password for installations requiring sudo/admin
+    name: Optional[str] = None
+    category: str
+    user_password: str = (
+        ""  # Optional user password for installations requiring sudo/admin
+    )
 
 
 class Value(BaseModel):
-   model_config = ConfigDict(extra='forbid')
-  
-   action: Literal["services_list", "install", "status", "system_info", "group_status", "group_install"]
-   item: Item | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal[
+        "services_list",
+        "install",
+        "status",
+        "system_info",
+        "group_status",
+        "group_install",
+    ]
+    item: Item | None = None
 
 
 class Response(BaseModel):
-   model_config = ConfigDict(extra='forbid')
-  
-   value: Value | None
+    model_config = ConfigDict(extra="forbid")
 
+    value: Value | None
