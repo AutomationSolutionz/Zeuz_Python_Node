@@ -4,7 +4,7 @@ import platform
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
 debug = False
-version = "3.0.0"
+version = "2.0.0"
 
 
 def read_node_id():
@@ -30,7 +30,7 @@ def generate_services_list(services):
                 "status": service["status"],
                 "comment": service["comment"],
                 "install_text": service["install_text"],
-                "os": service["os"],
+                "check_text": service["check_text"],
                 "user_password": service["user_password"]
             }
             filtered_category["services"].append(filtered_service)
