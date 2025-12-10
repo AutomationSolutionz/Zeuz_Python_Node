@@ -754,7 +754,11 @@ async def launch_simulator(udid: str) -> bool:
                             app_path = Path(derived_data_path) / "Build" / "Products" / "Debug-iphonesimulator" / "WebDriverAgentRunner-Runner.app"
                             
                             if app_path.exists():
-                                app_path_to_install = app_path
+                                # Copy to standard location before temp directory is deleted
+                                standard_build_path.parent.mkdir(parents=True, exist_ok=True)
+                                shutil.copytree(app_path, standard_build_path, dirs_exist_ok=True)
+                                print(f"[simulator] Copied built app to {standard_build_path}")
+                                app_path_to_install = standard_build_path
                             else:
                                 print(f"[simulator] WebDriverAgent app not found at {app_path}")
                         else:
