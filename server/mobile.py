@@ -15,7 +15,7 @@ from Framework.Utilities import ConfigModule, CommonUtil
 ADB_PATH = "adb"  # Ensure ADB is in PATH
 UI_XML_PATH = "ui.xml"
 SCREENSHOT_PATH = "screen.png"
-IOS_SCREENSHOT_PATH = "ios_screen.png"
+IOS_SCREENSHOT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ios_screen.png")
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
 
@@ -133,7 +133,7 @@ def inspect(device_serial: str | None = None):
 def inspect_ios(device_udid: str | None = None):
     """Get iOS simulator screenshot and XML hierarchy."""
     try:
-        # Get first available device if none specified
+        # Get first booted device if none specified
         if not device_udid:
             ios_devices = get_ios_devices()
             if not ios_devices:
@@ -141,7 +141,15 @@ def inspect_ios(device_udid: str | None = None):
                     status="error",
                     error="No iOS simulators available"
                 )
-            device_udid = ios_devices[0].udid
+            
+            # Find first booted device
+            booted_devices = [d for d in ios_devices if d.state == "Booted"]
+            if not booted_devices:
+                return InspectorResponse(
+                    status="error",
+                    error="No booted iOS simulators found. Please start an iOS simulator."
+                )
+            device_udid = booted_devices[0].udid
         
         # Capture screenshot
         capture_ios_screenshot(device_udid)
@@ -224,13 +232,27 @@ def capture_screenshot(device_serial: str | None = None):
 def capture_ios_screenshot(device_udid: str):
     """Capture screenshot from iOS simulator."""
     try:
+        # Use absolute path
+        screenshot_path = os.path.abspath(IOS_SCREENSHOT_PATH)
+        
+        # Remove existing file if it exists
+        if os.path.exists(screenshot_path):
+            os.remove(screenshot_path)
+            
         result = subprocess.run(
-            ["xcrun", "simctl", "io", device_udid, "screenshot", IOS_SCREENSHOT_PATH],
+            ["xcrun", "simctl", "io", device_udid, "screenshot", "--type=png", screenshot_path],
             capture_output=True, text=True, check=True
         )
+        
+        # Verify file was created
+        if not os.path.exists(screenshot_path):
+            raise Exception("Screenshot file was not created")
+            
         return True
     except subprocess.CalledProcessError as e:
         raise Exception(f"Failed to capture iOS screenshot: {e.stderr}")
+    except Exception as e:
+        raise Exception(f"Failed to capture iOS screenshot: {str(e)}")
 
 
 def run_xcrun_command(command):

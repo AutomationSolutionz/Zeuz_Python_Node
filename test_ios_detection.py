@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-Test script to verify iOS device detection functionality
-"""
 import subprocess
 import json
 import sys
@@ -10,11 +6,11 @@ def test_xcrun_availability():
     """Test if xcrun command is available"""
     try:
         result = subprocess.run(["xcrun", "--version"], capture_output=True, text=True, check=True)
-        print("✅ xcrun is available")
+        print("xcrun is available")
         print(f"Version: {result.stdout.strip()}")
         return True
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print("❌ xcrun is not available")
+        print("xcrun is not available")
         print(f"Error: {e}")
         return False
 
@@ -25,7 +21,7 @@ def test_simctl_list():
             ["xcrun", "simctl", "list", "devices", "-j"],
             capture_output=True, text=True, check=True
         )
-        print("✅ simctl list devices works")
+        print("simctl list devices works")
         
         devices_data = json.loads(result.stdout)
         print(f"Found {len(devices_data.get('devices', {}))} runtime categories")
@@ -50,7 +46,7 @@ def test_simctl_list():
         return available_devices > 0
         
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as e:
-        print("❌ simctl list devices failed")
+        print("simctl list devices failed")
         print(f"Error: {e}")
         return False
 
@@ -75,7 +71,7 @@ def test_screenshot_capability():
                 break
         
         if not first_device:
-            print("⚠️  No booted iOS simulators found. Please start an iOS simulator first.")
+            print("No booted iOS simulators found. Please start an iOS simulator first.")
             return False
         
         print(f"Testing screenshot with device: {first_device['name']} ({first_device['udid']})")
@@ -86,12 +82,12 @@ def test_screenshot_capability():
             capture_output=True, text=True, check=True
         )
         
-        print("✅ Screenshot capability works")
+        print("Screenshot capability works")
         print("Screenshot saved as test_screenshot.png")
         return True
         
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as e:
-        print("❌ Screenshot test failed")
+        print("Screenshot test failed")
         print(f"Error: {e}")
         return False
 
@@ -119,10 +115,10 @@ def main():
     print(f"Tests passed: {passed}/{total}")
     
     if passed == total:
-        print("🎉 All tests passed! iOS device detection should work.")
+        print("All tests passed! iOS device detection should work.")
         return 0
     else:
-        print("⚠️  Some tests failed. Please check the requirements.")
+        print("Some tests failed. Please check the requirements.")
         return 1
 
 if __name__ == "__main__":
