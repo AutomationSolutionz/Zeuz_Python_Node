@@ -1,6 +1,5 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Literal, Optional
-import platform
 
 from .web import chrome_for_testing, edge, mozilla
 from .android import (
@@ -8,21 +7,15 @@ from .android import (
     node_js_22,
     appium,
     java,
-    android_emulator,
     android_sdk,
     jdk,
-    emulator,
 )
-from .ios import xcode, simulator, webdriver
+from .ios import xcode, simulator
 from .macos import xcode as macos_xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
 from .android.emulator import android_emulator_install
-
-import httpx
-from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
-import datetime
-from Framework.install_handler.utils import debug
+from .ios.simulator import ios_simulator_install
 
 services = [
     {
@@ -107,6 +100,18 @@ services = [
         "services": [],
     },
     {
+        "group": {
+            "check_text": "",
+            "install_text": "",
+        },
+        "category": "iOSSimulator",
+        "name": "Device Types",
+        "install_text": "install",
+        "install_function": ios_simulator_install,
+        "installables": [],
+        "services": [],
+    },
+    {
         "category": "Web",
         "group": {
             "check_text": "check all",
@@ -172,16 +177,6 @@ services = [
                 "install_function": simulator.install,
                 "user_password": "yes",
             },
-            {
-                "name": "WebDriver",
-                "status": "none",
-                "comment": "WebDriverAgent is required for iOS automation testing.",
-                "install_text": "install",
-                "os": ["darwin"],
-                "status_function": webdriver.check_status,
-                "install_function": webdriver.install,
-                "user_password": "no",
-            }
         ],
     },
     {

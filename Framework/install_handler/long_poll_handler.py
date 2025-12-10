@@ -3,13 +3,13 @@ import traceback
 import random
 import httpx
 import inspect
-import platform
 from colorama import Fore
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import debug, send_response, read_node_id, generate_services_list
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import create_avd_from_system_image, get_filtered_avd_services, get_available_avds, launch_avd
+from Framework.install_handler.ios.simulator import create_simulator_from_device_type, get_filtered_simulator_services, launch_simulator
 from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
@@ -31,9 +31,16 @@ class InstallHandler:
             if action == "services_list":
                 services_list = generate_services_list(services)
 
+                # Add Android AVD list
                 avd_list = await get_filtered_avd_services()
                 if avd_list:
                     services_list.insert(1, avd_list)
+
+                # Add iOS Simulator list (insert after AVD list if present, or at index 1)
+                simulator_list = await get_filtered_simulator_services()
+                if simulator_list:
+                    insert_index = 2 if avd_list else 1
+                    services_list.insert(insert_index, simulator_list)
 
                 await send_response({
                     "action": "services_list",
@@ -99,6 +106,42 @@ class InstallHandler:
                             await launch_avd(service_name)
                         except Exception as e:
                             print(f"[installer] Error launching AVD '{service_name}': {e}")
+                            traceback.print_exc()
+                            return
+                    return
+                
+                # Handle iOSSimulator category
+                if category["category"] == "iOSSimulator":
+                    print(f"[installer] iOSSimulator category: {category}")
+                    print(f"[installer] iOSSimulator services: {category['services']}")
+                    print(f"[installer] Requested service name: {message.value.item.name}")
+                    service_name = message.value.item.name
+                    
+                    # Case 1: No service name or empty - get device types list
+                    if not service_name:
+                        if action == "install" and "install_function" in category and category["install_function"]:
+                            func = category["install_function"]
+                            await func()
+                            return
+                        else:
+                            print(f"[installer] No install_function found for iOSSimulator category")
+                            return
+                    
+                    # Case 2: Service name is a device type (starts with "install device;")
+                    if service_name.startswith("install device;"):
+                        if action == "install":
+                            await create_simulator_from_device_type(service_name)
+                            return
+                        else:
+                            print(f"[installer] Status check not supported for device types")
+                            return
+                    
+                    # Case 3: This is a request to launch an existing simulator (UDID format)
+                    else:
+                        try:
+                            await launch_simulator(service_name)
+                        except Exception as e:
+                            print(f"[installer] Error launching simulator '{service_name}': {e}")
                             traceback.print_exc()
                             return
                     return
