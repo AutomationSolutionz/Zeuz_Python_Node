@@ -23,6 +23,20 @@ async def _send_status(status: str, comment: str):
         }
     )
 
+async def _send_status_emulator(status: str, comment: str):
+    """Helper to send status responses for emulator category."""
+    await send_response(
+        {
+            "action": "status",
+            "data": {
+                "category": "iOSSimulator",
+                "name": "Simulator",
+                "status": status,
+                "comment": comment,
+            },
+        }
+    )
+
 async def _create_default_device() -> bool:
     """
     Attempts to create a default iPhone simulator using the newest available 
@@ -637,6 +651,7 @@ async def launch_simulator(udid: str) -> bool:
         
         # Boot simulator if not already booted
         if not is_already_booted:
+            await _send_status_emulator("installed", f"Launching simulator {simulator_name}...")
             # Open Simulator app
             subprocess.Popen(
                 ["open", "-a", "Simulator"],
@@ -668,15 +683,15 @@ async def launch_simulator(udid: str) -> bool:
                 })
                 return False
             
-            print(f"[simulator] Booting simulator: {simulator_name}...")
+            await _send_status_emulator("installed", f"Booting simulator: {simulator_name}...")
             
             # Wait for boot to complete
             await asyncio.sleep(3)
         else:
-            print(f"[simulator] Simulator {simulator_name} already running")
+            await _send_status_emulator("installed", f"Simulator {simulator_name} already running")
         
         # Check if WebDriverAgent is installed on this simulator
-        print(f"[simulator] Checking WebDriverAgent installation on {simulator_name}...")
+        await _send_status_emulator("installed", f"Checking WebDriverAgent installation on {simulator_name}...")
         check_wda = subprocess.run(
             ["xcrun", "simctl", "get_app_container", udid, "com.facebook.WebDriverAgentRunner.xctrunner"],
             capture_output=True,
@@ -686,7 +701,7 @@ async def launch_simulator(udid: str) -> bool:
         wda_installed = check_wda.returncode == 0 and check_wda.stdout.strip()
         
         if not wda_installed:
-            print(f"[simulator] WebDriverAgent not found on {simulator_name}, installing...")
+            await _send_status_emulator("installing", f"WebDriverAgent not found on {simulator_name}, installing...")
             await send_response({
                 "action": "status",
                 "data": {
@@ -703,7 +718,7 @@ async def launch_simulator(udid: str) -> bool:
             
             # Check if WebDriverAgent repo exists
             if not (webdriver_path / "WebDriverAgent.xcodeproj").exists():
-                print(f"[simulator] Cloning WebDriverAgent repository...")
+                await _send_status_emulator("installing", "Cloning WebDriverAgent repository...")
                 if webdriver_path.exists():
                     shutil.rmtree(webdriver_path)
                 webdriver_path.parent.mkdir(parents=True, exist_ok=True)
@@ -716,7 +731,7 @@ async def launch_simulator(udid: str) -> bool:
                 
                 if clone_result.returncode != 0:
                     error_msg = f"Failed to clone WebDriverAgent: {clone_result.stderr}"
-                    print(f"[simulator] {error_msg}")
+                    await _send_status_emulator("installed", error_msg)
                     # Continue with launching simulator even if WDA install fails
             
             # Build and install WebDriverAgent for this simulator
@@ -726,11 +741,11 @@ async def launch_simulator(udid: str) -> bool:
                 app_path_to_install = None
                 
                 if standard_build_path.exists():
-                    print(f"[simulator] Found pre-built WebDriverAgent at {standard_build_path}")
+                    await _send_status_emulator("installed", f"Found pre-built WebDriverAgent at {standard_build_path}")
                     app_path_to_install = standard_build_path
                 else:
                     # Need to build
-                    print(f"[simulator] Building WebDriverAgent for {simulator_name}...")
+                    await _send_status_emulator("installing", f"Building WebDriverAgent for {simulator_name}...")
                     
                     with tempfile.TemporaryDirectory() as derived_data_path:
                         build_cmd = [
@@ -761,13 +776,13 @@ async def launch_simulator(udid: str) -> bool:
                                 print(f"[simulator] Copied built app to {standard_build_path}")
                                 app_path_to_install = standard_build_path
                             else:
-                                print(f"[simulator] WebDriverAgent app not found at {app_path}")
+                                await _send_status_emulator("installed", f"WebDriverAgent app not found at {app_path}")
                         else:
-                            print(f"[simulator] WebDriverAgent build failed: {build_result.stderr[-500:]}")
+                            await _send_status_emulator("installed", f"WebDriverAgent build failed: {build_result.stderr[-500:]}")
                 
                 # Install the app if we have it
                 if app_path_to_install:
-                    print(f"[simulator] Installing WebDriverAgent on {simulator_name}...")
+                    await _send_status_emulator("installing", f"Installing WebDriverAgent on {simulator_name}...")
                     install_result = subprocess.run(
                         ["xcrun", "simctl", "install", udid, str(app_path_to_install)],
                         capture_output=True,
@@ -784,13 +799,13 @@ async def launch_simulator(udid: str) -> bool:
         
         # Launch WebDriverAgent if installed
         if wda_installed:
-            print(f"[simulator] Launching WebDriverAgent on {simulator_name}...")
+            await _send_status_emulator("installed", f"Launching WebDriverAgent on {simulator_name}...")
             await send_response({
                 "action": "status",
                 "data": {
                     "category": "iOSSimulator",
                     "name": udid,
-                    "status": "installing",
+                    "status": "installed",
                     "comment": f"Launching WebDriverAgent on {simulator_name}...",
                 }
             })
