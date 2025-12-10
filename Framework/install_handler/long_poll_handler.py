@@ -168,15 +168,43 @@ class InstallHandler:
                         return
                     await func()
             elif action == "group_status":
+                await send_response({
+                    "action": "group_status",
+                    "data": {
+                        "category": message.value.item.category,
+                        "check_text": "Checking",
+                    }
+                })
                 services_list = [i for i in services if i["category"] == message.value.item.category][0]['services']
                 functions = [i["status_function"] for i in services_list if i["status_function"]]
                 for func in functions:
                     await func()
+                await send_response({
+                    "action": "group_status",
+                    "data": {
+                        "category": message.value.item.category,
+                        "check_text": "Check all",
+                    }
+                })
             elif action == "group_install":
+                await send_response({
+                    "action": "group_install",
+                    "data": {
+                        "category": message.value.item.category,
+                        "install_text": "Installing",
+                    }
+                })
                 services_list = [i for i in services if i["category"] == message.value.item.category][0]['services']
                 functions = [i["install_function"] for i in services_list if i["install_function"]]
                 for func in functions:
                     await func()
+                await send_response({
+                    "action": "group_install",
+                    "data": {
+                        "category": message.value.item.category,
+                        "install_text": "Install all",
+                    }
+                })
         except Exception as e:
             traceback.print_exc()
 

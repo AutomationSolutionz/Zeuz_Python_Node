@@ -20,8 +20,8 @@ from .ios.simulator import ios_simulator_install
 services = [
     {
         "group": {
-            "check_text": "check all",
-            "install_text": "install all",
+            "check_text": "Check all",
+            "install_text": "Install all",
         },
         "category": "Android",
         "services": [
@@ -122,8 +122,8 @@ services = [
     {
         "category": "Web",
         "group": {
-            "check_text": "check all",
-            "install_text": "install all",
+            "check_text": "Check all",
+            "install_text": "Install all",
         },
         "services": [
             {
@@ -164,8 +164,8 @@ services = [
     {
         "category": "iOS",
         "group": {
-            "check_text": "check all",
-            "install_text": "install all",
+            "check_text": "Check all",
+            "install_text": "Install all",
         },
         "services": [
             {
@@ -215,8 +215,8 @@ services = [
     {
         "category": "Database",
         "group": {
-            "check_text": "check all",
-            "install_text": "install all",
+            "check_text": "Check all",
+            "install_text": "Install all",
         },
         "services": [
             {
