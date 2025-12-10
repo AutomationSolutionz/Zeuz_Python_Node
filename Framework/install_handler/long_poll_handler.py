@@ -9,7 +9,7 @@ from Framework.install_handler.utils import debug, send_response, read_node_id, 
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import create_avd_from_system_image, get_filtered_avd_services, get_available_avds, launch_avd
-from Framework.install_handler.ios.simulator import create_simulator_from_device_type, get_filtered_simulator_services, launch_simulator
+from Framework.install_handler.ios.simulator import create_simulator_from_device_type, get_filtered_simulator_services, get_available_simulators, get_available_device_types, launch_simulator
 from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 if debug:
@@ -34,13 +34,16 @@ class InstallHandler:
                 # Add Android AVD list
                 avd_list = await get_filtered_avd_services()
                 if avd_list:
-                    services_list[1] = avd_list
+                    for idx, service in enumerate(services_list):
+                        if service["category"] == "AndroidEmulator":
+                            services_list[idx] = avd_list
 
                 # Add iOS Simulator list (insert after AVD list if present, or at index 1)
                 simulator_list = await get_filtered_simulator_services()
                 if simulator_list:
-                    insert_index = 2 if avd_list else 1
-                    services_list.insert(insert_index, simulator_list)
+                    for idx, service in enumerate(services_list):
+                        if service["category"] == "iOSSimulator":
+                            services_list[idx] = simulator_list
 
                 await send_response({
                     "action": "services_list",

@@ -476,6 +476,7 @@ async def get_filtered_simulator_services():
                 "comment": sim["comment"],
                 "install_text": "delete",
                 "install_function": "delete_simulator",
+                "check_text": "Launch",
                 "os": ["darwin"],
                 "user_password": "no",
             })
