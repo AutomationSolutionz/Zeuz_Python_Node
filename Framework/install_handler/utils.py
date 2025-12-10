@@ -46,14 +46,13 @@ async def send_response(data=None) -> None:
         
         api_key = ConfigModule.get_config_value("Authentication", "api-key")
         url = RequestFormatter.form_uri("d/nodes/install/server/push")
-        data['last_updated'] = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        data['last_updated'] = datetime.datetime.now(datetime.timezone.utc).timestamp()
         data['version'] = version
         data['node_id'] = read_node_id()
 
         services_list = generate_services_list(services)
-        
 
-        if data['action'] == "status":
+        if data['action'] in ["status", "group_status"]:
             data['all_data'] = {
                 "system_info": None,
                 "services": services_list
