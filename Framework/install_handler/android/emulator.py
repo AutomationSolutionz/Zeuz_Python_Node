@@ -6,7 +6,7 @@ import re
 import random
 from pathlib import Path
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
-from Framework.install_handler.utils import send_response
+from Framework.install_handler.utils import send_response, debug
 
 
 def _get_sdk_root() -> Path | None:
@@ -37,11 +37,13 @@ def _get_sdk_root() -> Path | None:
                             android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
                             if os.path.exists(android_sdk_root_expanded):
                                 os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
-                                print(f"[installer][emulator] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
+                                if debug:
+                                    print(f"[installer][emulator] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
                     except FileNotFoundError:
                         pass
         except Exception as e:
-            print(f"[installer][emulator] Failed to refresh from registry: {e}")
+            if debug:
+                print(f"[installer][emulator] Failed to refresh from registry: {e}")
     
     # First try environment variable
     android_home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
@@ -124,7 +126,8 @@ def get_emulator_command():
                         android_home_expanded = os.path.expandvars(android_home_reg)
                         if os.path.exists(android_home_expanded):
                             os.environ['ANDROID_HOME'] = android_home_expanded
-                            print(f"[installer][emulator] Refreshed ANDROID_HOME from registry: {android_home_expanded}")
+                            if debug:
+                                print(f"[installer][emulator] Refreshed ANDROID_HOME from registry: {android_home_expanded}")
                 except FileNotFoundError:
                     pass
                 
@@ -137,18 +140,21 @@ def get_emulator_command():
                             android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
                             if os.path.exists(android_sdk_root_expanded):
                                 os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
-                                print(f"[installer][emulator] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
+                                if debug:
+                                    print(f"[installer][emulator] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
                     except FileNotFoundError:
                         pass
         except Exception as e:
-            print(f"[installer][emulator] Failed to refresh from registry: {e}")
+            if debug:
+                print(f"[installer][emulator] Failed to refresh from registry: {e}")
     
     sdk_root = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
     if sdk_root:
         # Expand environment variables in the path
         sdk_root = os.path.expandvars(sdk_root)
 
-    print("Launch avd: ", sdk_root)
+    if debug:
+        print("Launch avd: ", sdk_root)
     if not sdk_root:
         raise EnvironmentError("ANDROID_HOME or ANDROID_SDK_ROOT is not set.")
 
@@ -175,13 +181,15 @@ async def get_available_avds() -> list[dict]:
         
         # Check if Android SDK is installed
         if sdk_root is None:
-            print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            if debug:
+                print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
             return []
         
         avdmanager = _find_avdmanager(sdk_root)
         
         if not avdmanager:
-            print("[installer][emulator] avdmanager not found")
+            if debug:
+                print("[installer][emulator] avdmanager not found")
             return []
         
         # Run avdmanager list avd command using async executor
@@ -197,7 +205,8 @@ async def get_available_avds() -> list[dict]:
         )
         
         if result.returncode != 0:
-            print(f"[installer][emulator] avdmanager list avd failed: {result.stderr}")
+            if debug:
+                print(f"[installer][emulator] avdmanager list avd failed: {result.stderr}")
             return []
         
         output = result.stdout
@@ -262,10 +271,12 @@ async def get_available_avds() -> list[dict]:
         return avds
     
     except subprocess.TimeoutExpired:
-        print("[installer][emulator] avdmanager list avd timed out")
+        if debug:
+            print("[installer][emulator] avdmanager list avd timed out")
         return []
     except Exception as e:
-        print(f"[installer][emulator] Error listing AVDs: {e}")
+        if debug:
+            print(f"[installer][emulator] Error listing AVDs: {e}")
         import traceback
         traceback.print_exc()
         return []
@@ -290,7 +301,8 @@ async def launch_avd(avd_name: str) -> bool:
         )
         
         # Popen returns immediately - the process runs in background
-        print(f"[installer][emulator] Launching AVD: {avd_name}... (PID: {process.pid})")
+        if debug:
+            print(f"[installer][emulator] Launching AVD: {avd_name}... (PID: {process.pid})")
         
         # Send success response to server
         await send_response({
@@ -306,7 +318,8 @@ async def launch_avd(avd_name: str) -> bool:
 
     except FileNotFoundError:
         error_msg = f"Emulator executable not found"
-        print(f"[installer][emulator] {error_msg}")
+        if debug:
+            print(f"[installer][emulator] {error_msg}")
         await send_response({
             "action": "status",
             "data": {
@@ -319,7 +332,8 @@ async def launch_avd(avd_name: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Failed to launch AVD {avd_name}: {e}"
-        print(f"[installer][emulator] {error_msg}")
+        if debug:
+            print(f"[installer][emulator] {error_msg}")
         import traceback
         traceback.print_exc()
         await send_response({
@@ -377,7 +391,8 @@ async def get_filtered_avd_services():
        }
   
    except Exception as e:
-       print(f"[installer][emulator] Error getting filtered AVD services: {e}")
+       if debug:
+           print(f"[installer][emulator] Error getting filtered AVD services: {e}")
        import traceback
        traceback.print_exc()
        return None
@@ -420,19 +435,23 @@ def _run_sdkmanager_list(sdkmanager: Path, sdk_root: Path) -> str:
                 filtered = [line for line in lines if 'system-images' in line]
                 return '\n'.join(filtered)
             else:
-                print(f"[installer][emulator] sdkmanager --list failed: {result.stderr}")
+                if debug:
+                    print(f"[installer][emulator] sdkmanager --list failed: {result.stderr}")
                 return ""
         
         if result.returncode == 0:
             return result.stdout
         else:
-            print(f"[installer][emulator] sdkmanager --list failed: {result.stderr}")
+            if debug:
+                print(f"[installer][emulator] sdkmanager --list failed: {result.stderr}")
             return ""
     except subprocess.TimeoutExpired:
-        print("[installer][emulator] sdkmanager --list timed out")
+        if debug:
+            print("[installer][emulator] sdkmanager --list timed out")
         return ""
     except Exception as e:
-        print(f"[installer][emulator] Error running sdkmanager --list: {e}")
+        if debug:
+            print(f"[installer][emulator] Error running sdkmanager --list: {e}")
         return ""
 
 
@@ -481,7 +500,8 @@ async def get_available_system_images() -> list[dict]:
         
         # Check if Android SDK is installed
         if sdk_root is None:
-            print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            if debug:
+                print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
             await send_response({
                 "action": "status",
                 "data": {
@@ -496,12 +516,14 @@ async def get_available_system_images() -> list[dict]:
         sdkmanager = _find_sdkmanager(sdk_root)
         
         if not sdkmanager:
-            print("[installer][emulator] sdkmanager not found")
+            if debug:
+                print("[installer][emulator] sdkmanager not found")
             return []
         
         # Check platform support
         if not (_is_windows() or _is_linux() or _is_darwin()):
-            print(f"[installer][emulator] Unsupported platform: {platform.system()}")
+            if debug:
+                print(f"[installer][emulator] Unsupported platform: {platform.system()}")
             return []
         
         # Run sdkmanager --list using async executor
@@ -514,7 +536,8 @@ async def get_available_system_images() -> list[dict]:
         )
         
         if not output:
-            print("[installer][emulator] sdkmanager --list returned empty output")
+            if debug:
+                print("[installer][emulator] sdkmanager --list returned empty output")
             return []
         
         # Parse system image details from output
@@ -531,14 +554,17 @@ async def get_available_system_images() -> list[dict]:
         # Sort by package name
         system_images = sorted(unique_images, key=lambda x: x["package"])
         
-        print(f"[installer][emulator] Found {len(system_images)} available system images")
+        if debug:
+            print(f"[installer][emulator] Found {len(system_images)} available system images")
         return system_images
     
     except subprocess.TimeoutExpired:
-        print("[installer][emulator] sdkmanager --list timed out")
+        if debug:
+            print("[installer][emulator] sdkmanager --list timed out")
         return []
     except Exception as e:
-        print(f"[installer][emulator] Error getting available system images: {e}")
+        if debug:
+            print(f"[installer][emulator] Error getting available system images: {e}")
         import traceback
         traceback.print_exc()
         return []
@@ -615,7 +641,8 @@ async def get_available_devices() -> list[dict]:
         
         # Check if Android SDK is installed
         if sdk_root is None:
-            print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            if debug:
+                print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
             await send_response({
                 "action": "status",
                 "data": {
@@ -630,7 +657,8 @@ async def get_available_devices() -> list[dict]:
         avdmanager = _find_avdmanager(sdk_root)
         
         if not avdmanager:
-            print("[installer][emulator] avdmanager not found")
+            if debug:
+                print("[installer][emulator] avdmanager not found")
             return []
         
         # Run avdmanager list device using async executor
@@ -646,20 +674,24 @@ async def get_available_devices() -> list[dict]:
         )
         
         if result.returncode != 0:
-            print(f"[installer][emulator] avdmanager list device failed: {result.stderr}")
+            if debug:
+                print(f"[installer][emulator] avdmanager list device failed: {result.stderr}")
             return []
         
         # Parse device details from output
         devices = _parse_device_list(result.stdout)
         
-        print(f"[installer][emulator] Found {len(devices)} available devices")
+        if debug:
+            print(f"[installer][emulator] Found {len(devices)} available devices")
         return devices
     
     except subprocess.TimeoutExpired:
-        print("[installer][emulator] avdmanager list device timed out")
+        if debug:
+            print("[installer][emulator] avdmanager list device timed out")
         return []
     except Exception as e:
-        print(f"[installer][emulator] Error getting available devices: {e}")
+        if debug:
+            print(f"[installer][emulator] Error getting available devices: {e}")
         import traceback
         traceback.print_exc()
         return []
@@ -670,13 +702,15 @@ async def android_emulator_install():
     Get available devices when install button is clicked.
     Returns list of available devices for emulator installation.
     """
-    print("[installer][emulator] Getting available devices...")
+    if debug:
+        print("[installer][emulator] Getting available devices...")
     
     try:
         # Check if Android SDK is installed first
         sdk_root = _get_sdk_root()
         if sdk_root is None:
-            print("[installer][emulator] Android SDK not found")
+            if debug:
+                print("[installer][emulator] Android SDK not found")
             await send_response({
                 "action": "status",
                 "data": {
@@ -702,7 +736,8 @@ async def android_emulator_install():
         
         # Get available devices
         devices = await get_available_devices()
-        print(f"[installer][emulator] Available devices: {devices}")
+        if debug:
+            print(f"[installer][emulator] Available devices: {devices}")
         
         await send_response({
             "action": "status",
@@ -717,7 +752,8 @@ async def android_emulator_install():
         return True
         
     except Exception as e:
-        print(f"[installer][emulator] Error getting devices: {e}")
+        if debug:
+            print(f"[installer][emulator] Error getting devices: {e}")
         import traceback
         traceback.print_exc()
         await send_response({
@@ -826,8 +862,9 @@ def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_ima
         quoted_image = f"'{system_image}'"
         shell_cmd = f'powershell -Command "{yes_responses} | &\\"{str(sdkmanager)}\\" --sdk_root={sdk_root} {quoted_image}"'
         
-        print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
-        print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
+        if debug:
+            print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
+            print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
         
         process = subprocess.Popen(
             shell_cmd,
@@ -846,10 +883,12 @@ def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_ima
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    print(line.rstrip())  # Print immediately
+                    if debug:
+                        print(line.rstrip())  # Print immediately
                     output_lines.append(line.strip())
         except Exception as e:
-            print(f"[installer][emulator] Output reading error: {e}")
+            if debug:
+                print(f"[installer][emulator] Output reading error: {e}")
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -868,8 +907,9 @@ def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_ima
 def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image: str) -> tuple[bool, str]:
     """Install system image on Linux with real-time output"""
     try:
-        print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
-        print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
+        if debug:
+            print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
+            print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
         
         process = subprocess.Popen(
             [str(sdkmanager), f"--sdk_root={sdk_root}", system_image],
@@ -884,10 +924,12 @@ def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    print(line.rstrip())  # Print immediately
+                    if debug:
+                        print(line.rstrip())  # Print immediately
                     output_lines.append(line.strip())
         except Exception as e:
-            print(f"[installer][emulator] Output reading error: {e}")
+            if debug:
+                print(f"[installer][emulator] Output reading error: {e}")
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -906,8 +948,9 @@ def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image
 def _run_sdkmanager_install_darwin(sdkmanager: Path, sdk_root: Path, system_image: str) -> tuple[bool, str]:
     """Install system image on macOS with real-time output"""
     try:
-        print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
-        print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
+        if debug:
+            print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
+            print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
         
         process = subprocess.Popen(
             [str(sdkmanager), f"--sdk_root={sdk_root}", system_image],
@@ -922,10 +965,12 @@ def _run_sdkmanager_install_darwin(sdkmanager: Path, sdk_root: Path, system_imag
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    print(line.rstrip())  # Print immediately
+                    if debug:
+                        print(line.rstrip())  # Print immediately
                     output_lines.append(line.strip())
         except Exception as e:
-            print(f"[installer][emulator] Output reading error: {e}")
+            if debug:
+                print(f"[installer][emulator] Output reading error: {e}")
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -964,10 +1009,12 @@ def _run_avdmanager_create_windows(avdmanager: Path, sdk_root: Path, avd_name: s
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    print(line.rstrip())  # Print immediately
+                    if debug:
+                        print(line.rstrip())  # Print immediately
                     output_lines.append(line.strip())
         except Exception as e:
-            print(f"[installer][emulator] Output reading error: {e}")
+            if debug:
+                print(f"[installer][emulator] Output reading error: {e}")
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1006,10 +1053,12 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    print(line.rstrip())  # Print immediately
+                    if debug:
+                        print(line.rstrip())  # Print immediately
                     output_lines.append(line.strip())
         except Exception as e:
-            print(f"[installer][emulator] Output reading error: {e}")
+            if debug:
+                print(f"[installer][emulator] Output reading error: {e}")
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1048,10 +1097,12 @@ def _run_avdmanager_create_darwin(avdmanager: Path, sdk_root: Path, avd_name: st
         try:
             for line in iter(process.stdout.readline, ''):
                 if line:
-                    print(line.rstrip())  # Print immediately
+                    if debug:
+                        print(line.rstrip())  # Print immediately
                     output_lines.append(line.strip())
         except Exception as e:
-            print(f"[installer][emulator] Output reading error: {e}")
+            if debug:
+                print(f"[installer][emulator] Output reading error: {e}")
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1172,7 +1223,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         parts = device_param.split(";")
         if len(parts) < 3:
             error_msg = f"Invalid device parameter format. Expected 'install device;device_id;device_name', got: {device_param}"
-            print(f"[installer][emulator] {error_msg}")
+            if debug:
+                print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1190,12 +1242,14 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         # Sanitize device name for AVD (AVD names can only contain: a-z A-Z 0-9 . _ -)
         avd_name = _sanitize_avd_name(device_name)
         
-        print(f"[installer][emulator] Creating AVD '{avd_name}' (from device name '{device_name}') with device ID '{device_id}'")
+        if debug:
+            print(f"[installer][emulator] Creating AVD '{avd_name}' (from device name '{device_name}') with device ID '{device_id}'")
         
         # Check if Android SDK is installed
         sdk_root = _get_sdk_root()
         if sdk_root is None:
-            print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            if debug:
+                print("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1212,7 +1266,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         avdmanager = _find_avdmanager(sdk_root)
         
         if not sdkmanager:
-            print("[installer][emulator] sdkmanager not found")
+            if debug:
+                print("[installer][emulator] sdkmanager not found")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1225,7 +1280,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             return False
         
         if not avdmanager:
-            print("[installer][emulator] avdmanager not found")
+            if debug:
+                print("[installer][emulator] avdmanager not found")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1238,7 +1294,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             return False
         
         # Step 0: Get available system images and select highest API level
-        print(f"[installer][emulator] Getting available system images with Android Version 16")
+        if debug:
+            print(f"[installer][emulator] Getting available system images with Android Version 16")
         await send_response({
             "action": "status",
             "data": {
@@ -1252,7 +1309,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         system_images = await get_available_system_images()
         if not system_images:
             error_msg = "No system images found. Please install Android SDK components first."
-            print(f"[installer][emulator] {error_msg}")
+            if debug:
+                print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1268,7 +1326,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         system_image_name = _get_highest_api_system_image(system_images)
         if not system_image_name:
             error_msg = "Could not find a suitable system image."
-            print(f"[installer][emulator] {error_msg}")
+            if debug:
+                print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1280,11 +1339,13 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             })
             return False
         
-        print(f"[installer][emulator] Selected system image: {system_image_name}")
-        print(f"[installer][emulator] Creating AVD '{device_name}' with device ID '{device_id}' and system image '{system_image_name}'")
+        if debug:
+            print(f"[installer][emulator] Selected system image: {system_image_name}")
+            print(f"[installer][emulator] Creating AVD '{device_name}' with device ID '{device_id}' and system image '{system_image_name}'")
         
         # Step 1: Install system image
-        print(f"[installer][emulator] Installing system image: {system_image_name}")
+        if debug:
+            print(f"[installer][emulator] Installing system image: {system_image_name}")
         await send_response({
             "action": "status",
             "data": {
@@ -1332,7 +1393,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         
         if not success:
             error_msg = f"Failed to install Android Version 16: {output}"
-            print(f"[installer][emulator] {error_msg}")
+            if debug:
+                print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1344,10 +1406,12 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             })
             return False
         
-        print(f"[installer][emulator] System image installed successfully")
+        if debug:
+            print(f"[installer][emulator] System image installed successfully")
         
         # Step 2: Create AVD with device_id and device_name
-        print(f"[installer][emulator] Creating AVD: {avd_name} with device ID: {device_id}")
+        if debug:
+            print(f"[installer][emulator] Creating AVD: {avd_name} with device ID: {device_id}")
         await send_response({
             "action": "status",
             "data": {
@@ -1402,7 +1466,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         
         if not success:
             error_msg = f"Failed to create AVD: {output}"
-            print(f"[installer][emulator] {error_msg}")
+            if debug:
+                print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1414,7 +1479,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             })
             return False
         
-        print(f"[installer][emulator] AVD '{avd_name}' created successfully")
+        if debug:
+            print(f"[installer][emulator] AVD '{avd_name}' created successfully")
         
         # Note: AVD list will be automatically refreshed when services_list is requested
         # in long_poll_handler.py, so no manual refresh is needed here
@@ -1434,7 +1500,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         
     except ValueError as e:
         error_msg = f"Invalid device parameter: {e}"
-        print(f"[installer][emulator] {error_msg}")
+        if debug:
+            print(f"[installer][emulator] {error_msg}")
         device_name = device_param.split(";")[2].strip() if len(device_param.split(";")) > 2 else device_param
         await send_response({
             "action": "status",
@@ -1448,7 +1515,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Error creating AVD: {e}"
-        print(f"[installer][emulator] {error_msg}")
+        if debug:
+            print(f"[installer][emulator] {error_msg}")
         import traceback
         traceback.print_exc()
         device_name = device_param.split(";")[2].strip() if len(device_param.split(";")) > 2 else device_param
