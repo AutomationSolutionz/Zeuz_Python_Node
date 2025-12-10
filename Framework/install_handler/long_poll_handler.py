@@ -34,7 +34,7 @@ class InstallHandler:
                 # Add Android AVD list
                 avd_list = await get_filtered_avd_services()
                 if avd_list:
-                    services_list.insert(1, avd_list)
+                    services_list[1] = avd_list
 
                 # Add iOS Simulator list (insert after AVD list if present, or at index 1)
                 simulator_list = await get_filtered_simulator_services()
