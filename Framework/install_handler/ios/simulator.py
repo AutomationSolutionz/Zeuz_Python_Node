@@ -23,14 +23,14 @@ async def _send_status(status: str, comment: str):
         }
     )
 
-async def _send_status_emulator(status: str, comment: str):
+async def _send_status_emulator(udid: str, status: str, comment: str):
     """Helper to send status responses for emulator category."""
     await send_response(
         {
             "action": "status",
             "data": {
                 "category": "iOSSimulator",
-                "name": "Simulator",
+                "name": udid,
                 "status": status,
                 "comment": comment,
             },
@@ -321,11 +321,11 @@ async def get_available_device_types() -> list[dict]:
         
         data = json.loads(result.stdout)
         device_types = []
-        
+
         for device_type in data.get("devicetypes", []):
             name = device_type.get("name", "")
             identifier = device_type.get("identifier", "")
-            
+
             # Filter for iPhone and iPad devices only
             if "iPhone" in name or "iPad" in name:
                 device_types.append({
@@ -333,6 +333,25 @@ async def get_available_device_types() -> list[dict]:
                     "version": name,         # device name
                     "description": "Apple"   # OEM
                 })
+
+        # Remove device types that already have a simulator created (don't show installed ones)
+        try:
+            simulators = await get_available_simulators()
+            installed_names = set()
+            for sim in simulators:
+                sim_name = sim.get("name", "")
+                # Normalize by removing trailing parentheses (eg. "iPhone 16 (1)", "iPhone 16 (Default)")
+                base_name = re.sub(r"\s*\(.*\)$", "", sim_name).strip()
+                if base_name:
+                    installed_names.add(base_name)
+
+            # Compare using case-insensitive matching for robustness
+            installed_names_lower = {n.lower() for n in installed_names}
+            filtered_device_types = [dt for dt in device_types if dt.get("version", "").strip().lower() not in installed_names_lower]
+            device_types = filtered_device_types
+        except Exception:
+            # If any error happens while checking simulators, fall back to showing all device types
+            pass
         
         return device_types
     
@@ -651,7 +670,7 @@ async def launch_simulator(udid: str) -> bool:
         
         # Boot simulator if not already booted
         if not is_already_booted:
-            await _send_status_emulator("installed", f"Launching simulator {simulator_name}...")
+            await _send_status_emulator(udid, "installed", f"Launching simulator {simulator_name}...")
             # Open Simulator app
             subprocess.Popen(
                 ["open", "-a", "Simulator"],
@@ -683,15 +702,15 @@ async def launch_simulator(udid: str) -> bool:
                 })
                 return False
             
-            await _send_status_emulator("installed", f"Booting simulator: {simulator_name}...")
+            await _send_status_emulator(udid, "installed", f"Booting simulator: {simulator_name}...")
             
             # Wait for boot to complete
             await asyncio.sleep(3)
         else:
-            await _send_status_emulator("installed", f"Simulator {simulator_name} already running")
+            await _send_status_emulator(udid, "installed", f"Simulator {simulator_name} already running")
         
         # Check if WebDriverAgent is installed on this simulator
-        await _send_status_emulator("installed", f"Checking WebDriverAgent installation on {simulator_name}...")
+        await _send_status_emulator(udid, "installed", f"Checking WebDriverAgent installation on {simulator_name}...")
         check_wda = subprocess.run(
             ["xcrun", "simctl", "get_app_container", udid, "com.facebook.WebDriverAgentRunner.xctrunner"],
             capture_output=True,
@@ -701,7 +720,7 @@ async def launch_simulator(udid: str) -> bool:
         wda_installed = check_wda.returncode == 0 and check_wda.stdout.strip()
         
         if not wda_installed:
-            await _send_status_emulator("installing", f"WebDriverAgent not found on {simulator_name}, installing...")
+            await _send_status_emulator(udid, "installing", f"WebDriverAgent not found on {simulator_name}, installing...")
             await send_response({
                 "action": "status",
                 "data": {
@@ -718,7 +737,7 @@ async def launch_simulator(udid: str) -> bool:
             
             # Check if WebDriverAgent repo exists
             if not (webdriver_path / "WebDriverAgent.xcodeproj").exists():
-                await _send_status_emulator("installing", "Cloning WebDriverAgent repository...")
+                await _send_status_emulator(udid, "installing", "Cloning WebDriverAgent repository...")
                 if webdriver_path.exists():
                     shutil.rmtree(webdriver_path)
                 webdriver_path.parent.mkdir(parents=True, exist_ok=True)
@@ -731,7 +750,7 @@ async def launch_simulator(udid: str) -> bool:
                 
                 if clone_result.returncode != 0:
                     error_msg = f"Failed to clone WebDriverAgent: {clone_result.stderr}"
-                    await _send_status_emulator("installed", error_msg)
+                    await _send_status_emulator(udid, "installed", error_msg)
                     # Continue with launching simulator even if WDA install fails
             
             # Build and install WebDriverAgent for this simulator
@@ -741,11 +760,11 @@ async def launch_simulator(udid: str) -> bool:
                 app_path_to_install = None
                 
                 if standard_build_path.exists():
-                    await _send_status_emulator("installed", f"Found pre-built WebDriverAgent at {standard_build_path}")
+                    await _send_status_emulator(udid, "installed", f"Found pre-built WebDriverAgent at {standard_build_path}")
                     app_path_to_install = standard_build_path
                 else:
                     # Need to build
-                    await _send_status_emulator("installing", f"Building WebDriverAgent for {simulator_name}...")
+                    await _send_status_emulator(udid, "installing", f"Building WebDriverAgent for {simulator_name}...")
                     
                     with tempfile.TemporaryDirectory() as derived_data_path:
                         build_cmd = [
@@ -776,13 +795,13 @@ async def launch_simulator(udid: str) -> bool:
                                 print(f"[simulator] Copied built app to {standard_build_path}")
                                 app_path_to_install = standard_build_path
                             else:
-                                await _send_status_emulator("installed", f"WebDriverAgent app not found at {app_path}")
+                                await _send_status_emulator(udid, "installed", f"WebDriverAgent app not found at {app_path}")
                         else:
-                            await _send_status_emulator("installed", f"WebDriverAgent build failed: {build_result.stderr[-500:]}")
+                            await _send_status_emulator(udid, "installed", f"WebDriverAgent build failed: {build_result.stderr[-500:]}")
                 
                 # Install the app if we have it
                 if app_path_to_install:
-                    await _send_status_emulator("installing", f"Installing WebDriverAgent on {simulator_name}...")
+                    await _send_status_emulator(udid, "installing", f"Installing WebDriverAgent on {simulator_name}...")
                     install_result = subprocess.run(
                         ["xcrun", "simctl", "install", udid, str(app_path_to_install)],
                         capture_output=True,
@@ -799,7 +818,7 @@ async def launch_simulator(udid: str) -> bool:
         
         # Launch WebDriverAgent if installed
         if wda_installed:
-            await _send_status_emulator("installed", f"Launching WebDriverAgent on {simulator_name}...")
+            await _send_status_emulator(udid, "installed", f"Launching WebDriverAgent on {simulator_name}...")
             await send_response({
                 "action": "status",
                 "data": {
@@ -926,7 +945,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
                 "action": "status",
                 "data": {
                     "category": "iOSSimulator",
-                    "name": device_name,
+                    "package": device_type_id,
                     "status": "not installed",
                     "comment": error_msg,
                 }
@@ -942,7 +961,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
                 "action": "status",
                 "data": {
                     "category": "iOSSimulator",
-                    "name": device_name,
+                    "package": device_type_id,
                     "status": "not installed",
                     "comment": error_msg,
                 }
@@ -972,7 +991,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
             "action": "status",
             "data": {
                 "category": "iOSSimulator",
-                "name": device_name,
+                "package": device_type_id,
                 "status": "installing",
                 "comment": f"Creating {simulator_name} with {runtime_name}...",
             }
@@ -993,7 +1012,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
                 "action": "status",
                 "data": {
                     "category": "iOSSimulator",
-                    "name": device_name,
+                    "package": device_type_id,
                     "status": "not installed",
                     "comment": error_msg,
                 }
@@ -1008,7 +1027,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
             "action": "status",
             "data": {
                 "category": "iOSSimulator",
-                "name": device_name,
+                "package": device_type_id,
                 "status": "installed",
                 "comment": f"Simulator '{simulator_name}' created successfully ({new_udid})",
             }
@@ -1023,7 +1042,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
             "action": "status",
             "data": {
                 "category": "iOSSimulator",
-                "name": device_name if 'device_name' in locals() else "Unknown",
+                "package": device_type_id,
                 "status": "error",
                 "comment": error_msg,
             }
@@ -1038,7 +1057,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
             "action": "status",
             "data": {
                 "category": "iOSSimulator",
-                "name": device_name if 'device_name' in locals() else "Unknown",
+                "package": device_type_id,
                 "status": "error",
                 "comment": error_msg,
             }
