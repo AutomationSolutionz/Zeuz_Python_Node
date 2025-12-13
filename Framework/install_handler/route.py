@@ -148,7 +148,7 @@ services = [
         "check_text":"Check status",
         "install_text": "Install",
         "os": ["darwin"],
-        "status_function": None,
+        "status_function": simulator.check_simulator_list,
         "install_function": simulator.ios_simulator_install,
         "installables": [],
         "services": [],
