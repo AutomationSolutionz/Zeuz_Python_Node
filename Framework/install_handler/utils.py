@@ -52,7 +52,7 @@ async def send_response(data=None) -> None:
 
         services_list = generate_services_list(services)
 
-        if data['action'] in ["status", "group_status"]:
+        if data['action'] in ["status", "group_status", "services_update"]:
             data['all_data'] = {
                 "system_info": None,
                 "services": services_list

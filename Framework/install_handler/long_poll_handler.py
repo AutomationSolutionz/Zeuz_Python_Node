@@ -36,24 +36,6 @@ class InstallHandler:
         self.running = False
         self.client = None
 
-    async def generate_full_services_list(self):
-        services_list = generate_services_list(services)
-
-        # Add Android AVD list
-        avd_list = await get_filtered_avd_services()
-        if avd_list:
-            for idx, service in enumerate(services_list):
-                if service["category"] == "AndroidEmulator":
-                    services_list[idx] = avd_list
-
-        # Add iOS Simulator list (insert after AVD list if present, or at index 1)
-        simulator_list = await get_filtered_simulator_services()
-        if simulator_list:
-            for idx, service in enumerate(services_list):
-                if service["category"] == "iOSSimulator":
-                    services_list[idx] = simulator_list
-        return services_list
-
     async def on_message(self, message: Response) -> None:
         try:
             if debug:
@@ -64,15 +46,40 @@ class InstallHandler:
                 return
             action = message.value.action
             if action == "services_list":
+                services_list = generate_services_list(services)
                 await send_response(
                     {
                         "action": "services_list",
                         "data": {
                             "system_info": None,
-                            "services": await self.generate_full_services_list(),
+                            "services": services_list,
                         },
                     }
                 )
+
+                avd_list = await get_filtered_avd_services()
+                if avd_list:
+                    await send_response(
+                        {
+                            "action": "services_update",
+                            "data": {
+                                'category': 'AndroidEmulator',
+                                "services": avd_list['services'],
+                            },
+                        }
+                    )
+
+                simulator_list = await get_filtered_simulator_services()
+                if simulator_list:
+                    await send_response(
+                        {
+                            "action": "services_update",
+                            "data": {
+                                'category': 'iOSSimulator',
+                                "services": simulator_list['services'],
+                            },
+                        }
+                    )
             elif action == "system_info":
                 if debug:
                     print(f"[installer] Received system_info request")
@@ -127,15 +134,18 @@ class InstallHandler:
                         if action == "install":
                             res = await create_avd_from_system_image(service_name)
                             if res:
-                                await send_response(
-                                    {
-                                        "action": "services_list",
-                                        "data": {
-                                            "system_info": None,
-                                            "services": await self.generate_full_services_list(),
-                                        },
-                                    }
-                                )
+                                avd_list = await get_filtered_avd_services()
+                                if avd_list:
+                                    await send_response(
+                                        {
+                                            "action": "services_update",
+                                            "data": {
+                                                'category': 'AndroidEmulator',
+                                                "services": avd_list['services'],
+                                            },
+                                        }
+                                    )
+
                                 func = category["install_function"]
                                 await func()
                             return
@@ -181,15 +191,17 @@ class InstallHandler:
                         if action == "install":
                             res = await create_simulator_from_device_type(service_name)
                             if res:
-                                await send_response(
-                                    {
-                                        "action": "services_list",
-                                        "data": {
-                                            "system_info": None,
-                                            "services": await self.generate_full_services_list(),
-                                        },
-                                    }
-                                )
+                                simulator_list = await get_filtered_simulator_services()
+                                if simulator_list:
+                                    await send_response(
+                                        {
+                                            "action": "services_update",
+                                            "data": {
+                                                'category': 'iOSSimulator',
+                                                "services": simulator_list['services'],
+                                            },
+                                        }
+                                    )
                                 func = category["install_function"]
                                 await func()
                             return
