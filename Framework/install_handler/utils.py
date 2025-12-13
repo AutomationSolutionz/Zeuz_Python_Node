@@ -5,6 +5,7 @@ from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
 debug = False
 version = "2.0.0"
+current_os = platform.system().lower()
 
 
 def read_node_id():
@@ -12,8 +13,6 @@ def read_node_id():
 
 
 def generate_services_list(services):
-    current_os = platform.system().lower()
-    
     filtered_services = []
     for category in services:
         filtered_category = {

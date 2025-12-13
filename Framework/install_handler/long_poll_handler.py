@@ -7,6 +7,7 @@ from colorama import Fore
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import (
     debug,
+    current_os,
     send_response,
     read_node_id,
     generate_services_list,
@@ -57,29 +58,6 @@ class InstallHandler:
                     }
                 )
 
-                avd_list = await get_filtered_avd_services()
-                if avd_list:
-                    await send_response(
-                        {
-                            "action": "services_update",
-                            "data": {
-                                'category': 'AndroidEmulator',
-                                "services": avd_list['services'],
-                            },
-                        }
-                    )
-
-                simulator_list = await get_filtered_simulator_services()
-                if simulator_list:
-                    await send_response(
-                        {
-                            "action": "services_update",
-                            "data": {
-                                'category': 'iOSSimulator',
-                                "services": simulator_list['services'],
-                            },
-                        }
-                    )
             elif action == "system_info":
                 if debug:
                     print(f"[installer] Received system_info request")
@@ -112,6 +90,21 @@ class InstallHandler:
                 # Handle AndroidEmulator category
                 if category["category"] == "AndroidEmulator":
                     service_name = message.value.item.name
+
+                    # Case 0: If list of emulators needed to be sent
+                    if service_name == 'emulator_list':
+                        avd_list = await get_filtered_avd_services()
+                        if avd_list:
+                            await send_response(
+                                {
+                                    "action": "services_update",
+                                    "data": {
+                                        'category': 'AndroidEmulator',
+                                        "services": avd_list['services'],
+                                    },
+                                }
+                            )
+                            return
 
                     # Case 1: No service name or empty - get system images list
                     if not service_name:
@@ -175,6 +168,21 @@ class InstallHandler:
                         f"[installer] Requested service name: {message.value.item.name}"
                     )
                     service_name = message.value.item.name
+
+                    # Case 0: If list of simulators needed to be sent
+                    if service_name == 'simulator_list':
+                        simulator_list = await get_filtered_simulator_services()
+                        if simulator_list:
+                            await send_response(
+                                {
+                                    "action": "services_update",
+                                    "data": {
+                                        'category': 'iOSSimulator',
+                                        "services": simulator_list['services'],
+                                    },
+                                }
+                            )
+                            return
 
                     # Case 1: No service name or empty - get device types list
                     if not service_name:
@@ -269,7 +277,7 @@ class InstallHandler:
                     i for i in services if i["category"] == message.value.item.category
                 ][0]["services"]
                 functions = [
-                    i["status_function"] for i in services_list if i["status_function"]
+                    i["status_function"] for i in services_list if i["status_function"] and current_os in i["os"]
                 ]
                 for func in functions:
                     await func()

@@ -195,8 +195,8 @@ services = [
     {
         "category": "MacOS",
         "group": {
-            "check_text": "",
-            "install_text": "",
+            "check_text": "Check all",
+            "install_text": "Install all",
         },
         "services": [
             {
@@ -268,8 +268,8 @@ services = [
     {
         "category": "Windows",
         "group": {
-            "check_text": "",
-            "install_text": "",
+            "check_text": "Check all",
+            "install_text": "Install all",
         },
         "install_function": inspector.install,
         "services": [
