@@ -91,21 +91,6 @@ class InstallHandler:
                 if category["category"] == "AndroidEmulator":
                     service_name = message.value.item.name
 
-                    # Case 0: If list of emulators needed to be sent
-                    if service_name == 'emulator_list':
-                        avd_list = await get_filtered_avd_services()
-                        if avd_list:
-                            await send_response(
-                                {
-                                    "action": "services_update",
-                                    "data": {
-                                        'category': 'AndroidEmulator',
-                                        "services": avd_list['services'],
-                                    },
-                                }
-                            )
-                            return
-
                     # Case 1: No service name or empty - get system images list
                     if not service_name:
                         if (
@@ -168,21 +153,6 @@ class InstallHandler:
                         f"[installer] Requested service name: {message.value.item.name}"
                     )
                     service_name = message.value.item.name
-
-                    # Case 0: If list of simulators needed to be sent
-                    if service_name == 'simulator_list':
-                        simulator_list = await get_filtered_simulator_services()
-                        if simulator_list:
-                            await send_response(
-                                {
-                                    "action": "services_update",
-                                    "data": {
-                                        'category': 'iOSSimulator',
-                                        "services": simulator_list['services'],
-                                    },
-                                }
-                            )
-                            return
 
                     # Case 1: No service name or empty - get device types list
                     if not service_name:
@@ -273,14 +243,23 @@ class InstallHandler:
                         },
                     }
                 )
-                services_list = [
+                category = [
                     i for i in services if i["category"] == message.value.item.category
-                ][0]["services"]
-                functions = [
-                    i["status_function"] for i in services_list if i["status_function"] and current_os in i["os"]
-                ]
-                for func in functions:
-                    await func()
+                ][0]
+
+                if message.value.item.category == "AndroidEmulator" and current_os in category["os"]:
+                    await category["status_function"]()
+                    
+                if message.value.item.category == "iOSSimulator" and current_os in category["os"]:
+                    await category["status_function"]()
+                    
+                else:
+                    services_list = category["services"]
+                    functions = [
+                        i["status_function"] for i in services_list if i["status_function"] and current_os in i["os"]
+                    ]
+                    for func in functions:
+                        await func()
                 await send_response(
                     {
                         "action": "group_status",

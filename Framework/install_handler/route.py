@@ -14,8 +14,7 @@ from .ios import xcode, simulator
 from .macos import xcode as macos_xcode
 from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
-from .android.emulator import android_emulator_install
-from .ios.simulator import ios_simulator_install
+from .android import emulator
 
 services = [
     {
@@ -95,14 +94,16 @@ services = [
     },
     {
         "group": {
-            "check_text": "",
+            "check_text": "Check all",
             "install_text": "",
         },
         "category": "AndroidEmulator",
         "name": "System Images",
         "check_text":"Check status",
         "install_text": "Install",
-        "install_function": android_emulator_install,
+        "os": ["windows", "linux", "darwin"],
+        "status_function": emulator.check_emulator_list,
+        "install_function": emulator.android_emulator_install,
         "installables": [],
         "services": [],
     },
@@ -139,14 +140,16 @@ services = [
     },
     {
         "group": {
-            "check_text": "",
+            "check_text": "Check all",
             "install_text": "",
         },
         "category": "iOSSimulator",
         "name": "Device Types",
         "check_text":"Check status",
         "install_text": "Install",
-        "install_function": ios_simulator_install,
+        "os": ["darwin"],
+        "status_function": None,
+        "install_function": simulator.ios_simulator_install,
         "installables": [],
         "services": [],
     },

@@ -706,6 +706,23 @@ async def get_available_devices() -> list[dict]:
         traceback.print_exc()
         return []
 
+async def check_emulator_list():
+    """
+    Sends response to server with list of installed emulators for Android.
+    """
+    avd_list = await get_filtered_avd_services()
+    if avd_list:
+        await send_response(
+            {
+                "action": "services_update",
+                "data": {
+                    'category': 'AndroidEmulator',
+                    "services": avd_list['services'],
+                },
+            }
+        )
+        return True
+    return False
 
 async def android_emulator_install():
     """

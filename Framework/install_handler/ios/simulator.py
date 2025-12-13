@@ -405,6 +405,24 @@ async def get_available_runtimes() -> list[dict]:
         return []
 
 
+async def check_simulator_list():
+    """
+    Sends response to server with list of installed simulators for iOS Simulator.
+    """
+    simulator_list = await get_filtered_simulator_services()
+    if simulator_list:
+        await send_response(
+            {
+                "action": "services_update",
+                "data": {
+                    'category': 'iOSSimulator',
+                    "services": simulator_list['services'],
+                },
+            }
+        )
+        return True
+    return False
+
 async def ios_simulator_install():
     """
     Get available device types when install button is clicked.
