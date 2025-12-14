@@ -15,7 +15,8 @@ from Framework.Utilities import ConfigModule, CommonUtil
 ADB_PATH = "adb"  # Ensure ADB is in PATH
 UI_XML_PATH = "ui.xml"
 SCREENSHOT_PATH = "screen.png"
-IOS_SCREENSHOT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ios_screen.png")
+IOS_SCREENSHOT_PATH = "ios_screen.png"
+IOS_XML_PATH = "ios_ui.xml"
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
 
@@ -74,7 +75,7 @@ def get_devices():
 
 @router.get("/ios/devices", response_model=list[IOSDeviceInfo])
 def get_ios_devices():
-    """Get list of available iOS simulators."""
+    """Get list of booted iOS simulators only."""
     try:
         result = subprocess.run(
             ["xcrun", "simctl", "list", "devices", "-j"],
@@ -86,7 +87,8 @@ def get_ios_devices():
         
         for runtime, devices in devices_data.get("devices", {}).items():
             for device in devices:
-                if device.get("isAvailable", False):
+                # Only return booted devices
+                if device.get("isAvailable", False) and device.get("state") == "Booted":
                     ios_devices.append(IOSDeviceInfo(
                         udid=device["udid"],
                         name=device["name"],
@@ -151,9 +153,14 @@ def inspect_ios(device_udid: str | None = None):
                 )
             device_udid = booted_devices[0].udid
         
-        # Capture screenshot
+        # Capture UI and screenshot (same pattern as Android)
+        capture_ios_ui_dump(device_udid)
         capture_ios_screenshot(device_udid)
         
+        # Read XML file (same pattern as Android)
+        with open(IOS_XML_PATH, 'r', encoding='utf-8') as xml_file:
+            xml_content = xml_file.read()
+            
         # Read and encode screenshot
         with open(IOS_SCREENSHOT_PATH, 'rb') as img_file:
             screenshot_bytes = img_file.read()
@@ -161,7 +168,7 @@ def inspect_ios(device_udid: str | None = None):
             
         return InspectorResponse(
             status="ok",
-            ui_xml=None,  # XML hierarchy will be implemented later
+            ui_xml=xml_content,
             screenshot=screenshot_base64
         )
     except Exception as e:
@@ -255,13 +262,75 @@ def capture_ios_screenshot(device_udid: str):
         raise Exception(f"Failed to capture iOS screenshot: {str(e)}")
 
 
-def run_xcrun_command(command):
-    """Run an xcrun command and return the output."""
+def get_real_ios_hierarchy(device_udid: str):
+    """Try to get real iOS hierarchy using Appium/WebDriverAgent."""
     try:
-        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        return f"Error: {e.stderr.strip()}"
+        import requests
+        wda_ports = [8100, 8101, 8102]
+        
+        for port in wda_ports:
+            try:
+                wda_url = f"http://localhost:{port}"
+                
+                # Quick status check
+                status_response = requests.get(f"{wda_url}/status", timeout=1)
+                if status_response.status_code != 200:
+                    continue
+                
+                # Try existing sessions first
+                sessions_response = requests.get(f"{wda_url}/sessions", timeout=1)
+                if sessions_response.status_code == 200:
+                    sessions = sessions_response.json()
+                    if sessions and len(sessions) > 0:
+                        session_id = sessions[0]['id']
+                        source_response = requests.get(f"{wda_url}/session/{session_id}/source", timeout=3)
+                        if source_response.status_code == 200:
+                            return source_response.text
+                
+                # Try direct source
+                source_response = requests.get(f"{wda_url}/source", timeout=2)
+                if source_response.status_code == 200:
+                    return source_response.text
+                    
+            except:
+                continue
+                
+    except:
+        pass
+        
+    return None
+
+
+def capture_ios_ui_dump(device_udid: str):
+    """Capture the current UI hierarchy from iOS device (same pattern as Android)"""
+    # Try WebDriverAgent first (real hierarchy like Android's uiautomator)
+    real_hierarchy = get_real_ios_hierarchy(device_udid)
+    if real_hierarchy:
+        # Extract XML from JSON wrapper if needed
+        try:
+            import json
+            json_data = json.loads(real_hierarchy)
+            xml_content = json_data.get("value", real_hierarchy)
+        except:
+            xml_content = real_hierarchy
+            
+        with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
+            xml_file.write(xml_content)
+        return
+    
+    # Fallback to Appium driver (same as Android fallback)
+    try:
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+        if appium_driver is not None:
+            page_src = appium_driver.page_source
+            with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
+                xml_file.write(page_src)
+            return
+    except:
+        pass
+        
+    # No real source available
+    raise Exception("No iOS UI hierarchy source available. Please start WebDriverAgent (port 8100) or Appium server (port 4723).")
 
 
 async def upload_android_ui_dump():
@@ -296,4 +365,47 @@ async def upload_android_ui_dump():
                 CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
         except Exception as e:
             CommonUtil.ExecLog("", f"Error uploading UI dump: {str(e)}", iLogLevel=3)
+        await asyncio.sleep(5)
+
+
+async def upload_ios_ui_dump():
+    prev_xml_hash = ""
+    while True:
+        try:
+            ios_devices = get_ios_devices()
+            if not ios_devices:
+                await asyncio.sleep(5)
+                continue
+            
+            device_udid = ios_devices[0].udid
+            capture_ios_ui_dump(device_udid)
+            
+            try:
+                with open(IOS_XML_PATH, 'r', encoding='utf-8') as xml_file:
+                    xml_content = xml_file.read()
+                    xml_content = xml_content.replace("<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>", "", 1)
+                    new_xml_hash = hashlib.sha256(xml_content.encode('utf-8')).hexdigest()
+                    # Don't upload if the content hasn't changed
+                    if prev_xml_hash == new_xml_hash:
+                        await asyncio.sleep(5)
+                        continue
+                    prev_xml_hash = new_xml_hash
+
+            except FileNotFoundError:
+                await asyncio.sleep(5)
+                continue
+            
+            url = ConfigModule.get_config_value("Authentication", "server_address").strip() + "/node_ai_contents/"
+            apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
+            res = requests.post(
+                url,
+                headers={"X-Api-Key": apiKey},
+                json={
+                    "dom_mob": {"dom": xml_content},
+                    "node_id": CommonUtil.MachineInfo().getLocalUser().lower()
+                })
+            if res.ok:
+                CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
+        except Exception as e:
+            CommonUtil.ExecLog("", f"Error uploading iOS UI dump: {str(e)}", iLogLevel=3)
         await asyncio.sleep(5)

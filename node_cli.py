@@ -37,7 +37,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
-from server.mobile import upload_android_ui_dump
+from server.mobile import upload_android_ui_dump, upload_ios_ui_dump
 
 
 def adjust_python_path():
@@ -1341,6 +1341,7 @@ async def main():
     update_outdated_modules()
     asyncio.create_task(start_server())
     asyncio.create_task(upload_android_ui_dump())
+    asyncio.create_task(upload_ios_ui_dump())
     asyncio.create_task(delete_old_automationlog_folders())
     await destroy_session()
 
