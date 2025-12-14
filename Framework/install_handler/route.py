@@ -8,7 +8,6 @@ from .android import (
     appium,
     java,
     android_sdk,
-    jdk,
 )
 from .ios import xcode, simulator
 from .macos import xcode as macos_xcode
@@ -55,17 +54,6 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": java.check_status,
                 "install_function": java.install,  # install jdk here also. jdk.install will install java also.
-                "user_password": False,
-            },
-            {
-                "name": "JDK",
-                "status": "none",
-                "comment": "JDK is a tool for managing JDK devices.",
-                "check_text":"Check status",
-                "install_text": "Install",
-                "os": ["windows", "linux", "darwin"],
-                "status_function": jdk.check_status,
-                "install_function": jdk.install,
                 "user_password": False,
             },
             {
