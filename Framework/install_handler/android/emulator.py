@@ -691,9 +691,28 @@ async def get_available_devices() -> list[dict]:
         # Parse device details from output
         devices = _parse_device_list(result.stdout)
         
+        # Filter out devices that already have AVDs created
+        existing_avds = await get_available_avds()
+        existing_avd_names = {avd["name"] for avd in existing_avds}
+        
+        filtered_devices = []
+        for device in devices:
+            device_name = device.get("version", "")  # version field contains device name
+            if device_name:
+                # Sanitize device name to match how AVD names are created
+                sanitized_name = _sanitize_avd_name(device_name)
+                # Check if an AVD with this name already exists
+                if sanitized_name not in existing_avd_names:
+                    filtered_devices.append(device)
+                elif debug:
+                    print(f"[installer][emulator] Filtering out device '{device_name}' (AVD '{sanitized_name}' already exists)")
+            else:
+                # If no device name, include it (shouldn't happen, but safe fallback)
+                filtered_devices.append(device)
+        
         if debug:
-            print(f"[installer][emulator] Found {len(devices)} available devices")
-        return devices
+            print(f"[installer][emulator] Found {len(devices)} available devices, {len(filtered_devices)} not yet installed")
+        return filtered_devices
     
     except subprocess.TimeoutExpired:
         if debug:
