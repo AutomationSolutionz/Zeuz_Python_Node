@@ -15,11 +15,13 @@ from Framework.install_handler.utils import (
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import (
+    check_emulator_list,
     create_avd_from_system_image,
     get_filtered_avd_services,
     launch_avd,
 )
 from Framework.install_handler.ios.simulator import (
+    check_simulator_list,
     create_simulator_from_device_type,
     delete_simulator,
     get_filtered_simulator_services,
@@ -57,6 +59,10 @@ class InstallHandler:
                         },
                     }
                 )
+
+                # Send Android Emulator list and iOS Simulator list to server
+                await check_emulator_list()
+                await check_simulator_list()
 
             elif action == "system_info":
                 if debug:
