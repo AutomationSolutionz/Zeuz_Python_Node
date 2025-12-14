@@ -111,7 +111,7 @@ services = [
         "category": "iOS",
         "group": {
             "check_text": "Check all",
-            "install_text": "Install all",
+            "install_text": "",
         },
         "services": [
             {
@@ -199,7 +199,7 @@ services = [
         "category": "MacOS",
         "group": {
             "check_text": "Check all",
-            "install_text": "Install all",
+            "install_text": "",
         },
         "services": [
             {
@@ -219,7 +219,7 @@ services = [
         "category": "Database",
         "group": {
             "check_text": "Check all",
-            "install_text": "Install all",
+            "install_text": "",
         },
         "services": [
             {
