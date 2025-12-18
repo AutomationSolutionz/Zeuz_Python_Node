@@ -1809,13 +1809,15 @@ def Keystroke_For_Element(data_set):
                     try:
                         if get_element:
                             selenium_driver.execute_script(
-                                "arguments[0].focus();", Element
-                            )
-                            selenium_driver.execute_script(
                                 """
-                                arguments[0].value = arguments[1];
-                                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
-                                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+                                var el = arguments[0];
+                                var text = arguments[1];
+                                var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeInputValueSetter.call(el, text);
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
                                 """,
                                 Element,
                                 pyperclip.paste(),
@@ -1823,10 +1825,14 @@ def Keystroke_For_Element(data_set):
                         else:
                             selenium_driver.execute_script(
                                 """
+                                var el = document.activeElement;
                                 var text = arguments[0];
-                                document.activeElement.value += text;
-                                document.activeElement.dispatchEvent(new Event('input', { bubbles: true }));
-                                document.activeElement.dispatchEvent(new Event('change', { bubbles: true }));
+                                var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeInputValueSetter.call(el, text);
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
                                 """,
                                 pyperclip.paste(),
                             )
