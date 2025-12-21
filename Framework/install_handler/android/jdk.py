@@ -2,10 +2,8 @@ import subprocess
 import re
 import httpx
 import asyncio
-import os
 import platform
 import shutil
-import tempfile
 import zipfile
 import tarfile
 import stat
@@ -205,160 +203,6 @@ async def _extract_jdk(jdk_archive):
        return None
 
 
-async def _set_java_env_vars(jdk_home):
-   """Set JAVA_HOME and add Java to PATH"""
-   if not jdk_home or not jdk_home.exists():
-       return False
-  
-   print("[installer][android-jdk] Setting Java environment variables...")
-   await send_response({
-       "action": "status",
-       "data": {
-           "category": "Android",
-           "name": "JDK",
-           "status": "installing",
-           "comment": "Setting Java environment variables...",
-       }
-   })
-  
-   system = platform.system()
-  
-   if system == "Windows":
-       try:
-           import winreg
-           # Set JAVA_HOME in user environment variables
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                              r"Environment",
-                              0, winreg.KEY_ALL_ACCESS) as key:
-               winreg.SetValueEx(key, "JAVA_HOME", 0, winreg.REG_EXPAND_SZ, str(jdk_home))
-               print("[installer][android-jdk] JAVA_HOME set in Windows user environment")
-          
-           # Update PATH in user environment variables
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                              r"Environment",
-                              0, winreg.KEY_ALL_ACCESS) as key:
-               try:
-                   current_path, _ = winreg.QueryValueEx(key, "Path")
-               except FileNotFoundError:
-                   # Path doesn't exist in user environment, create it
-                   current_path = ""
-               
-               path_parts = current_path.split(";") if current_path else []
-              
-               java_bin = str(jdk_home / "bin")
-               if java_bin not in path_parts:
-                   path_parts.append(java_bin)
-                   new_path = ";".join(path_parts)
-                   winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
-                   print("[installer][android-jdk] Java added to PATH in Windows user environment")
-           
-           # CRITICAL: Update current process environment so subprocess can find Java immediately
-           os.environ['JAVA_HOME'] = str(jdk_home)
-           current_process_path = os.environ.get('PATH', '')
-           java_bin = str(jdk_home / "bin")
-           if java_bin not in current_process_path:
-               os.environ['PATH'] = f"{java_bin};{current_process_path}"
-               print("[installer][android-jdk] Java added to current process PATH")
-       except Exception as e:
-           print(f"[installer][android-jdk] Failed to update Windows user environment: {e}")
-           return False
-           
-   elif system == "Linux":
-       # Linux - determine if system-wide or user installation
-       is_system_wide = str(jdk_home).startswith('/opt/')
-      
-       # Use current user's home directory
-       user_home = Path.home()
-       print("[installer][android-jdk] Setting Java environment variables for current user")
-      
-       if is_system_wide:
-           print("[installer][android-jdk] System-wide Java installation detected")
-       else:
-           print("[installer][android-jdk] User-specific Java installation detected")
-      
-       shell_configs = [
-           user_home / ".bashrc",
-           user_home / ".zshrc",
-           user_home / ".profile"
-       ]
-      
-       export_lines = [
-           f"export JAVA_HOME={jdk_home}",
-           f"export PATH=$JAVA_HOME/bin:$PATH"
-       ]
-      
-       # Set environment variables in current session
-       os.environ['JAVA_HOME'] = str(jdk_home)
-       current_path = os.environ.get('PATH', '')
-       java_bin_path = str(jdk_home / "bin")
-       if java_bin_path not in current_path:
-           os.environ['PATH'] = f"{java_bin_path}:{current_path}"
-      
-       updated = False
-       for config_file in shell_configs:
-           if config_file.exists():
-               try:
-                   with open(config_file, 'r+') as f:
-                       content = f.read()
-                       needs_update = any(export not in content for export in export_lines)
-                      
-                       if needs_update:
-                           f.write("\n# Java environment variables\n" + "\n".join(export_lines) + "\n")
-                           print(f"[installer][android-jdk] Updated {config_file} with Java paths")
-                           updated = True
-               except Exception as e:
-                   print(f"[installer][android-jdk] Failed to update {config_file}: {e}")
-      
-       if updated:
-           print("[!] Please restart your terminal or run 'source ~/.bashrc' (or your shell config)")
-           
-   elif system == "Darwin":
-       # macOS - user installation
-       user_home = Path.home()
-       print("[installer][android-jdk] Setting Java environment variables for current user")
-      
-       shell_configs = [
-           user_home / ".bash_profile",
-           user_home / ".zshrc",
-           user_home / ".profile"
-       ]
-      
-       export_lines = [
-           f"export JAVA_HOME={jdk_home}",
-           f"export PATH=$JAVA_HOME/bin:$PATH"
-       ]
-      
-       # Set environment variables in current session
-       os.environ['JAVA_HOME'] = str(jdk_home)
-       current_path = os.environ.get('PATH', '')
-       java_bin_path = str(jdk_home / "bin")
-       if java_bin_path not in current_path:
-           os.environ['PATH'] = f"{java_bin_path}:{current_path}"
-      
-       updated = False
-       for config_file in shell_configs:
-           if config_file.exists():
-               try:
-                   with open(config_file, 'r+') as f:
-                       content = f.read()
-                       needs_update = any(export not in content for export in export_lines)
-                      
-                       if needs_update:
-                           f.write("\n# Java environment variables\n" + "\n".join(export_lines) + "\n")
-                           print(f"[installer][android-jdk] Updated {config_file} with Java paths")
-                           updated = True
-               except Exception as e:
-                   print(f"[installer][android-jdk] Failed to update {config_file}: {e}")
-      
-       if updated:
-           print("[!] Please restart your terminal or run 'source ~/.zshrc' (or your shell config)")
-   else:
-       print(f"[installer][android-jdk] Unsupported platform: {system}")
-       return False
-  
-   return True
-
-
 async def _verify_java_installation(jdk_home):
    """Verify that Java is properly installed and working"""
    print("[installer][android-jdk] Verifying Java installation...")
@@ -504,27 +348,6 @@ async def check_status() -> bool:
    """Check if JDK 21 is installed."""
    print("[installer][android-jdk] Checking status...")
   
-   # Dynamically refresh JAVA_HOME and PATH from registry on Windows
-   system = platform.system()
-   if system == "Windows":
-       try:
-           import winreg
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-               try:
-                   java_home_reg, _ = winreg.QueryValueEx(key, "JAVA_HOME")
-                   if java_home_reg and os.path.exists(java_home_reg):
-                       os.environ['JAVA_HOME'] = java_home_reg
-                       # Update PATH with Java bin
-                       java_bin = os.path.join(java_home_reg, "bin")
-                       current_path = os.environ.get('PATH', '')
-                       if java_bin not in current_path:
-                           os.environ['PATH'] = f"{java_bin};{current_path}"
-                       print(f"[installer][android-jdk] Refreshed JAVA_HOME from registry: {java_home_reg}")
-               except FileNotFoundError:
-                   pass
-       except Exception as e:
-           print(f"[installer][android-jdk] Failed to refresh from registry: {e}")
-  
    try:
        loop = asyncio.get_event_loop()
        result = await loop.run_in_executor(
@@ -669,10 +492,6 @@ async def install() -> bool:
    # Verify installation
    if not await _verify_java_installation(jdk_home):
        print("[installer][android-jdk] Java installation verification failed")
-       return False
-  
-   # Set environment variables
-   if not await _set_java_env_vars(jdk_home):
        return False
   
    print("[installer][android-jdk] JDK 21 LTS setup complete")
