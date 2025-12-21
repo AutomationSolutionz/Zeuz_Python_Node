@@ -137,9 +137,9 @@ async def _download_jdk():
        "action": "status",
        "data": {
            "category": "Android",
-           "name": "JDK",
+           "name": "Java",
            "status": "installing",
-           "comment": "Downloading JDK 21...",
+           "comment": "Downloading Java 21...",
        }
    })
   
@@ -192,9 +192,9 @@ async def _download_jdk():
                                    "action": "status",
                                    "data": {
                                        "category": "Android",
-                                       "name": "JDK",
+                                       "name": "Java",
                                        "status": "installing",
-                                       "comment": f"Downloading JDK 21... {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)",
+                                       "comment": f"Downloading Java 21... {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)",
                                    }
                                }))
       
@@ -207,9 +207,9 @@ async def _download_jdk():
            "action": "status",
            "data": {
                "category": "Android",
-               "name": "JDK",
+               "name": "Java",
                "status": "not installed",
-               "comment": f"JDK download failed: {str(e)}",
+               "comment": f"Java download failed: {str(e)}",
            }
        })
        return None
@@ -225,9 +225,9 @@ async def _extract_jdk(jdk_archive):
        "action": "status",
        "data": {
            "category": "Android",
-           "name": "JDK",
+           "name": "Java",
            "status": "installing",
-           "comment": "Extracting JDK...",
+           "comment": "Extracting Java...",
        }
    })
   
@@ -272,9 +272,9 @@ async def _extract_jdk(jdk_archive):
                "action": "status",
                "data": {
                    "category": "Android",
-                   "name": "JDK",
+                   "name": "Java",
                    "status": "not installed",
-                   "comment": "Could not find JDK directory after extraction.",
+                   "comment": "Could not find Java directory after extraction.",
                }
            })
            return None
@@ -287,9 +287,9 @@ async def _extract_jdk(jdk_archive):
            "action": "status",
            "data": {
                "category": "Android",
-               "name": "JDK",
+               "name": "Java",
                "status": "not installed",
-               "comment": f"JDK extraction failed: {str(e)}",
+               "comment": f"Java extraction failed: {str(e)}",
            }
        })
        return None
@@ -302,7 +302,7 @@ async def _verify_java_installation(jdk_home):
        "action": "status",
        "data": {
            "category": "Android",
-           "name": "JDK",
+           "name": "Java",
            "status": "installing",
            "comment": "Verifying Java installation...",
        }
@@ -327,7 +327,7 @@ async def _verify_java_installation(jdk_home):
            "action": "status",
            "data": {
                "category": "Android",
-               "name": "JDK",
+               "name": "Java",
                "status": "not installed",
                "comment": f"Java executable not found at {java_exe}",
            }
@@ -365,7 +365,7 @@ async def _verify_java_installation(jdk_home):
                "action": "status",
                "data": {
                    "category": "Android",
-                   "name": "JDK",
+                   "name": "Java",
                    "status": "not installed",
                    "comment": "Java version check failed.",
                }
@@ -387,7 +387,7 @@ async def _verify_java_installation(jdk_home):
                "action": "status",
                "data": {
                    "category": "Android",
-                   "name": "JDK",
+                   "name": "Java",
                    "status": "not installed",
                    "comment": f"Java compiler not found at {javac_exe}",
                }
@@ -413,7 +413,7 @@ async def _verify_java_installation(jdk_home):
                "action": "status",
                "data": {
                    "category": "Android",
-                   "name": "JDK",
+                   "name": "Java",
                    "status": "not installed",
                    "comment": "Java compiler version check failed.",
                }
@@ -428,7 +428,7 @@ async def _verify_java_installation(jdk_home):
            "action": "status",
            "data": {
                "category": "Android",
-               "name": "JDK",
+               "name": "Java",
                "status": "not installed",
                "comment": f"Java verification failed: {str(e)}",
            }
@@ -474,9 +474,9 @@ async def install() -> bool:
        "action": "status",
        "data": {
            "category": "Android",
-           "name": "JDK",
+           "name": "Java",
            "status": "installed",
-           "comment": f"JDK is installed at {jdk_home}",
+           "comment": f"Java is installed at {jdk_home}",
        }
    })
    return True
