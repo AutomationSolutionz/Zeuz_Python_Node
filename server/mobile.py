@@ -11,6 +11,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from Framework.Utilities import ConfigModule, CommonUtil
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Framework', 'Built_In_Automation', 'Mobile', 'CrossPlatform', 'Appium'))
 
 ADB_PATH = "adb"  # Ensure ADB is in PATH
 UI_XML_PATH = "ui.xml"
@@ -129,6 +132,53 @@ def inspect(device_serial: str | None = None):
             status="error",
             error=str(e)
         )
+
+
+@router.post("/ios/start-services")
+def start_ios_services():
+    """Start iOS services by calling launch_application function."""
+    try:
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import launch_application
+        from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+        
+        # Get first booted iOS simulator
+        ios_devices = get_ios_devices()
+        if not ios_devices:
+            return {"status": "error", "error": "No iOS simulators available"}
+        
+        device_udid = ios_devices[0].udid
+        device_name = ios_devices[0].name
+        
+        # Set up device_info with simulator details (this is what the server normally sends)
+        device_info = {
+            "device 1": {
+                "id": device_udid,
+                "type": "ios",
+                "imei": "Simulated",
+                "model": device_name,
+                "osver": "17.0"
+            }
+        }
+        
+        # Set required shared variables
+        Shared_Resources.Set_Shared_Variables("device_order", None)
+        Shared_Resources.Set_Shared_Variables("device_info", device_info)
+        
+        # Minimal dataset to trigger iOS launch
+        data_set = [
+            ("ios", "element parameter", "com.apple.Preferences"),
+            ("action", "action", "launch")
+        ]
+        
+        result = launch_application(data_set)
+        
+        if result == "passed":
+            return {"status": "ok", "message": "iOS services started successfully"}
+        else:
+            return {"status": "error", "error": "Failed to start iOS services"}
+            
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 
 @router.get("/ios/inspect")
