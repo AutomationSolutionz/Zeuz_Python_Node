@@ -5,6 +5,7 @@ import base64
 import json
 from typing import Literal
 import asyncio
+import socket
 
 import requests
 from fastapi import APIRouter
@@ -24,9 +25,17 @@ IOS_XML_PATH = "ios_ui.xml"
 router = APIRouter(prefix="/mobile", tags=["mobile"])
 
 
+def is_wda_running(port: int) -> bool:
+    """Check if WebDriverAgent is running on given port."""
+    try:
+        response = requests.get(f"http://localhost:{port}/status", timeout=1)
+        return response.status_code == 200
+    except:
+        return False
+
+
 class InspectorResponse(BaseModel):
     """Response model for the /inspector endpoint."""
-
     status: Literal["ok", "error"] = "ok"
     ui_xml: str | None = None
     screenshot: str | None = None  # Base64 encoded image
@@ -136,46 +145,34 @@ def inspect(device_serial: str | None = None):
 
 @router.post("/ios/start-services")
 def start_ios_services():
-    """Start iOS services by calling launch_application function."""
     try:
-        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import launch_application
-        from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
-        
-        # Get first booted iOS simulator
         ios_devices = get_ios_devices()
         if not ios_devices:
-            return {"status": "error", "error": "No iOS simulators available"}
+            return {"status": "error", "error": "No booted iOS simulators"}
         
         device_udid = ios_devices[0].udid
-        device_name = ios_devices[0].name
         
-        # Set up device_info with simulator details (this is what the server normally sends)
-        device_info = {
-            "device 1": {
-                "id": device_udid,
-                "type": "ios",
-                "imei": "Simulated",
-                "model": device_name,
-                "osver": "17.0"
-            }
-        }
+        # Check if WDA is already running
+        wda_port = 8100
+        tries = 0
+        while tries < 20:
+            if not is_wda_running(wda_port):
+                break
+            wda_port += 2
+            tries += 1
         
-        # Set required shared variables
-        Shared_Resources.Set_Shared_Variables("device_order", None)
-        Shared_Resources.Set_Shared_Variables("device_info", device_info)
+        if tries >= 20:
+            return {"status": "error", "error": "No available WDA ports"}
         
-        # Minimal dataset to trigger iOS launch
-        data_set = [
-            ("ios", "element parameter", "com.apple.Preferences"),
-            ("action", "action", "launch")
-        ]
+        result = subprocess.run(
+            ["xcrun", "simctl", "launch", device_udid, "com.facebook.WebDriverAgentRunner.xctrunner"],
+            capture_output=True, text=True
+        )
         
-        result = launch_application(data_set)
+        if result.returncode != 0:
+            return {"status": "error", "error": f"Failed to launch WDA: {result.stderr}"}
         
-        if result == "passed":
-            return {"status": "ok", "message": "iOS services started successfully"}
-        else:
-            return {"status": "error", "error": "Failed to start iOS services"}
+        return {"status": "ok", "port": wda_port}
             
     except Exception as e:
         return {"status": "error", "error": str(e)}
@@ -185,7 +182,6 @@ def start_ios_services():
 def inspect_ios(device_udid: str | None = None):
     """Get iOS simulator screenshot and XML hierarchy."""
     try:
-        # Get first booted device if none specified
         if not device_udid:
             ios_devices = get_ios_devices()
             if not ios_devices:
@@ -203,15 +199,12 @@ def inspect_ios(device_udid: str | None = None):
                 )
             device_udid = booted_devices[0].udid
         
-        # Capture UI and screenshot (same pattern as Android)
         capture_ios_ui_dump(device_udid)
         capture_ios_screenshot(device_udid)
         
-        # Read XML file (same pattern as Android)
         with open(IOS_XML_PATH, 'r', encoding='utf-8') as xml_file:
             xml_content = xml_file.read()
             
-        # Read and encode screenshot
         with open(IOS_SCREENSHOT_PATH, 'rb') as img_file:
             screenshot_bytes = img_file.read()
             screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
@@ -226,6 +219,7 @@ def inspect_ios(device_udid: str | None = None):
             status="error",
             error=str(e)
         )
+
 
 @router.get("/dump/driver")
 def dump_driver():
@@ -287,12 +281,9 @@ def capture_screenshot(device_serial: str | None = None):
 
 
 def capture_ios_screenshot(device_udid: str):
-    """Capture screenshot from iOS simulator."""
     try:
-        # Use absolute path
         screenshot_path = os.path.abspath(IOS_SCREENSHOT_PATH)
         
-        # Remove existing file if it exists
         if os.path.exists(screenshot_path):
             os.remove(screenshot_path)
             
@@ -301,7 +292,6 @@ def capture_ios_screenshot(device_udid: str):
             capture_output=True, text=True, check=True
         )
         
-        # Verify file was created
         if not os.path.exists(screenshot_path):
             raise Exception("Screenshot file was not created")
             
@@ -313,21 +303,24 @@ def capture_ios_screenshot(device_udid: str):
 
 
 def get_real_ios_hierarchy(device_udid: str):
-    """Try to get real iOS hierarchy using Appium/WebDriverAgent."""
     try:
         import requests
-        wda_ports = [8100, 8101, 8102]
         
-        for port in wda_ports:
+        wda_port = 8100
+        tries = 0
+        
+        while tries < 20:
             try:
-                wda_url = f"http://localhost:{port}"
+                wda_url = f"http://localhost:{wda_port}"
                 
                 # Quick status check
                 status_response = requests.get(f"{wda_url}/status", timeout=1)
                 if status_response.status_code != 200:
+                    wda_port += 2
+                    tries += 1
                     continue
                 
-                # Try existing sessions first
+                # existing sessions first
                 sessions_response = requests.get(f"{wda_url}/sessions", timeout=1)
                 if sessions_response.status_code == 200:
                     sessions = sessions_response.json()
@@ -337,12 +330,14 @@ def get_real_ios_hierarchy(device_udid: str):
                         if source_response.status_code == 200:
                             return source_response.text
                 
-                # Try direct source
+                # direct source
                 source_response = requests.get(f"{wda_url}/source", timeout=2)
                 if source_response.status_code == 200:
                     return source_response.text
                     
             except:
+                wda_port += 2
+                tries += 1
                 continue
                 
     except:
@@ -352,11 +347,8 @@ def get_real_ios_hierarchy(device_udid: str):
 
 
 def capture_ios_ui_dump(device_udid: str):
-    """Capture the current UI hierarchy from iOS device (same pattern as Android)"""
-    # Try WebDriverAgent first (real hierarchy like Android's uiautomator)
     real_hierarchy = get_real_ios_hierarchy(device_udid)
     if real_hierarchy:
-        # Extract XML from JSON wrapper if needed
         try:
             import json
             json_data = json.loads(real_hierarchy)
@@ -368,7 +360,7 @@ def capture_ios_ui_dump(device_udid: str):
             xml_file.write(xml_content)
         return
     
-    # Fallback to Appium driver (same as Android fallback)
+    # Fallback to Appium driver
     try:
         from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
         if appium_driver is not None:
@@ -380,7 +372,7 @@ def capture_ios_ui_dump(device_udid: str):
         pass
         
     # No real source available
-    raise Exception("No iOS UI hierarchy source available. Please start WebDriverAgent (port 8100) or Appium server (port 4723).")
+    raise Exception("iOS service error. Please reload the iOS inspector page or run a test case.")
 
 
 async def upload_android_ui_dump():
