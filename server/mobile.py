@@ -14,9 +14,9 @@ from pydantic import BaseModel
 
 from Framework.Utilities import ConfigModule, CommonUtil
 import sys
+import logging
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Framework', 'Built_In_Automation', 'Mobile', 'CrossPlatform', 'Appium'))
-
 ADB_PATH = "adb"  # Ensure ADB is in PATH
 UI_XML_PATH = "ui.xml"
 SCREENSHOT_PATH = "screen.png"
@@ -172,12 +172,13 @@ def start_ios_services():
         )
         
         if result.returncode != 0:
-            return {"status": "error", "error": f"Failed to launch WDA: {result.stderr}"}
+            return {"status": "error", "error": f"Failed to launch WDA."}
         
         return {"status": "ok", "port": wda_port}
             
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        logging.exception("Failed to start iOS services")
+        return {"status": "error", "error": "Failed to start iOS services"}
 
 
 def extract_bundle_id_from_xml(xml_content: str) -> str | None:
