@@ -6,6 +6,7 @@ import json
 from typing import Literal
 import asyncio
 import socket
+import xml.etree.ElementTree as ET
 
 import requests
 from fastapi import APIRouter
@@ -39,6 +40,7 @@ class InspectorResponse(BaseModel):
     status: Literal["ok", "error"] = "ok"
     ui_xml: str | None = None
     screenshot: str | None = None  # Base64 encoded image
+    bundle_identifier: str | None = None
     error: str | None = None
 
 
@@ -178,6 +180,14 @@ def start_ios_services():
         return {"status": "error", "error": str(e)}
 
 
+def extract_bundle_id_from_xml(xml_content: str) -> str | None:
+    try:
+        root = ET.fromstring(xml_content)
+        return root.get('bundleId')
+    except Exception:
+        return None
+
+
 @router.get("/ios/inspect")
 def inspect_ios(device_udid: str | None = None):
     """Get iOS simulator screenshot and XML hierarchy."""
@@ -204,6 +214,9 @@ def inspect_ios(device_udid: str | None = None):
         
         with open(IOS_XML_PATH, 'r', encoding='utf-8') as xml_file:
             xml_content = xml_file.read()
+        
+        # Extract bundle identifier from XML content
+        bundle_id = extract_bundle_id_from_xml(xml_content)
             
         with open(IOS_SCREENSHOT_PATH, 'rb') as img_file:
             screenshot_bytes = img_file.read()
@@ -212,7 +225,8 @@ def inspect_ios(device_udid: str | None = None):
         return InspectorResponse(
             status="ok",
             ui_xml=xml_content,
-            screenshot=screenshot_base64
+            screenshot=screenshot_base64,
+            bundle_identifier=bundle_id
         )
     except Exception as e:
         return InspectorResponse(
@@ -372,7 +386,7 @@ def capture_ios_ui_dump(device_udid: str):
         pass
         
     # No real source available
-    raise Exception("iOS service error. Please reload the iOS inspector page or run a test case.")
+    raise Exception("iOS service error. Make sure simulator is running.")
 
 
 async def upload_android_ui_dump():
