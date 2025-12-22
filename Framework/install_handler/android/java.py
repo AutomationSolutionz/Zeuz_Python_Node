@@ -75,7 +75,7 @@ def update_java_path():
     """Add Java binaries to PATH and set JAVA_HOME for the current process (following Node.js pattern)."""
     java_path = get_java_path()
     
-    print("Updating java path for")
+    print("Updating java path for the current session")
     # Check if java exists
     if not java_path.exists():
         print("Java not found for PATH update.")

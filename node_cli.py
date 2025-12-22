@@ -35,6 +35,7 @@ import uvicorn
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from Framework.install_handler.android.java import update_java_path
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
 from server.mobile import upload_android_ui_dump
@@ -1337,6 +1338,7 @@ async def main():
 
     # Setup Node.js and Appium before other operations
     setup_nodejs_appium()
+    update_java_path()
 
     update_outdated_modules()
     asyncio.create_task(start_server())
