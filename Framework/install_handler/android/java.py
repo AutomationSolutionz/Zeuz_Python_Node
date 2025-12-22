@@ -71,6 +71,33 @@ async def check_status() -> bool:
     return False
 
 
+def update_java_path():
+    """Add Java binaries to PATH and set JAVA_HOME for the current process (following Node.js pattern)."""
+    java_path = get_java_path()
+    
+    print("Updating java path for")
+    # Check if java exists
+    if not java_path.exists():
+        print("Java not found for PATH update.")
+        return
+    
+    # Get JDK home directory (parent of bin directory)
+    # java_path is like: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x/bin/java
+    # jdk_home should be: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x
+    jdk_home = java_path.parent.parent
+    
+    # Set JAVA_HOME for the current process
+    os.environ['JAVA_HOME'] = str(jdk_home)
+    print(f"JAVA_HOME set for current process: {jdk_home}")
+    
+    # Add Java bin to PATH for the current process (prepend so it takes precedence)
+    java_bin_path = str(java_path.parent)
+    current_path = os.environ.get('PATH', '')
+    if java_bin_path not in current_path:
+        os.environ['PATH'] = f"{java_bin_path}{os.pathsep}{current_path}"
+        print(f"Java added to current process PATH: {java_bin_path}")
+    else:
+        print(f"Java already in PATH: {java_bin_path}")
 
 
 async def install():
