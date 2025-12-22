@@ -277,32 +277,29 @@ def db_get_connection(session_name):
             )
             CommonUtil.ExecLog(sModuleInfo, "Connected to Snowflake.", 1)
         elif "oracle" in db_type:
-            import cx_Oracle
-
-            # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.makedsn
-            if db_sid != 'zeuz_failed':
-                dsn = cx_Oracle.makedsn(
-                    host=db_host,
-                    port=db_port,
-                    sid=db_sid
-                )
-            elif db_service_name != 'zeuz_failed':
-                dsn = cx_Oracle.makedsn(
-                    host=db_host,
-                    port=db_port,
-                    service_name=db_service_name
-                )
+            import oracledb
+            
+            # Construct the DSN (Data Source Name) using the Easy Connect syntax
+            dsn = None
+            if db_service_name and db_service_name != 'zeuz_failed':
+                # Use Service Name for connection: host:port/service_name
+                dsn = f"{db_host}:{db_port}/{db_service_name}"
+            elif db_sid and db_sid != 'zeuz_failed':
+                # Use SID for connection: host:port:sid
+                dsn = f"{db_host}:{db_port}:{db_sid}" 
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Either db_sid or db_service must be provide.", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Either db_sid or db_service must be provided.", 3)
                 return "zeuz_failed"
+            
+            CommonUtil.ExecLog(sModuleInfo, f"Attempting Oracle connection using DSN: {dsn}", 1)
 
             # Connect to db
-            # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.connect
-            db_con = cx_Oracle.connect(
+            db_con = oracledb.connect(
                 user=db_user_id,
                 password=db_password,
                 dsn=dsn,
             )
+            CommonUtil.ExecLog(sModuleInfo, "Connected to Oracle using python-oracledb.", 1)
         else:
             import pyodbc
 
