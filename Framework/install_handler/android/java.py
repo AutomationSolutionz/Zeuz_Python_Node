@@ -432,34 +432,49 @@ async def _verify_java_installation(jdk_home):
        return False
 
 
-async def install():
-   """Install Java by calling JDK installation function"""
+async def install() -> bool:
+   """Main function to setup JDK 21 LTS"""
    print("[installer][android-java] Installing...")
-   
-   # Call JDK installation function
-   success = await install_jdk()
-   
-   if success:
-       print("[installer][android-java] Java installation successful")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Java",
-               "status": "installed",
-               "comment": "Java is installed",
-           }
-       })
+  
+   # Check if JDK 21 is already installed
+   if await check_status():
+       print("[installer][android-java] JDK 21 is already installed")
        return True
-   else:
-       print("[installer][android-java] Java installation failed")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Java",
-               "status": "not installed",
-               "comment": "Failed to install Java",
-           }
-       })
+   
+   jdk_home = None
+  
+   # If JDK is not installed, download and install it
+   if not jdk_home:
+       # Download and extract JDK
+       jdk_archive = await _download_jdk()
+       if not jdk_archive:
+           return False
+      
+       jdk_home = await _extract_jdk(jdk_archive)
+       if not jdk_home:
+           return False
+      
+       # Clean up archive
+       try:
+           jdk_archive.unlink()
+       except:
+           pass
+  
+   # Verify installation
+   if not await _verify_java_installation(jdk_home):
+       print("[installer][android-jdk] Java installation verification failed")
        return False
+  
+   print("[installer][android-jdk] JDK 21 LTS setup complete")
+   await send_response({
+       "action": "status",
+       "data": {
+           "category": "Android",
+           "name": "Java",
+           "status": "installed",
+           "comment": f"Java is installed at {jdk_home}",
+       }
+   })
+
+   update_java_path()
+   return True
