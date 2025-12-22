@@ -46,6 +46,7 @@ async def check_status() -> bool:
     """Check if Java 21 is installed (following Node.js installer pattern - simple file existence check)."""
     print("[installer][android-java] Checking status...")
     
+    
     # Simple file existence check in isolated directory (like Node.js installer)
     java_path = get_java_path()
     
@@ -80,9 +81,10 @@ def update_java_path():
     """Add Java binaries to PATH and set JAVA_HOME for the current process (following Node.js pattern)."""
     java_path = get_java_path()
     
+    print("Updating java path for")
     # Check if java exists
     if not java_path.exists():
-        print("[installer][android-java] Warning: Java not found for PATH update.")
+        print("Java not found for PATH update.")
         return
     
     # Get JDK home directory (parent of bin directory)
@@ -92,16 +94,16 @@ def update_java_path():
     
     # Set JAVA_HOME for the current process
     os.environ['JAVA_HOME'] = str(jdk_home)
-    print(f"[installer][android-java] JAVA_HOME set for current process: {jdk_home}")
+    print(f"JAVA_HOME set for current process: {jdk_home}")
     
     # Add Java bin to PATH for the current process (prepend so it takes precedence)
     java_bin_path = str(java_path.parent)
     current_path = os.environ.get('PATH', '')
     if java_bin_path not in current_path:
         os.environ['PATH'] = f"{java_bin_path}{os.pathsep}{current_path}"
-        print(f"[installer][android-java] Java added to current process PATH: {java_bin_path}")
+        print(f"Java added to current process PATH: {java_bin_path}")
     else:
-        print(f"[installer][android-java] Java already in PATH: {java_bin_path}")
+        print(f"Java already in PATH: {java_bin_path}")
 
 
 async def _get_jdk_download_url():
@@ -479,4 +481,6 @@ async def install() -> bool:
            "comment": f"Java is installed at {jdk_home}",
        }
    })
+
+   update_java_path()
    return True
