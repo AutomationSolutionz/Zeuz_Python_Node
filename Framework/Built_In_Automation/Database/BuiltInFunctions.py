@@ -246,10 +246,10 @@ def db_get_connection(session_name):
                 port=db_port
             )
         elif "mariadb" in db_type:
-            import mariadb
+            import pymysql
 
             # Connect to db
-            db_con = mariadb.connect(
+            db_con = pymysql.connect(
                 user=db_user_id,
                 password=db_password,
                 database=db_name,
