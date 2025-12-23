@@ -63,6 +63,39 @@ def get_adb_path():
     else:
         return sdk_root / "platform-tools" / "adb"
 
+
+def update_android_sdk_path():
+    """Add Android SDK paths to PATH and set ANDROID_HOME for the current process (following Node.js pattern)."""
+    sdk_root = _get_sdk_root()
+    
+    # Check if SDK exists
+    adb_path = get_adb_path()
+    if not adb_path.exists():
+        print("[installer][android-sdk] Warning: Android SDK not found for PATH update.")
+        return
+    
+    # Set ANDROID_HOME and ANDROID_SDK_ROOT for current process
+    os.environ['ANDROID_HOME'] = str(sdk_root)
+    os.environ['ANDROID_SDK_ROOT'] = str(sdk_root)
+    print(f"[installer][android-sdk] ANDROID_HOME set for current process: {sdk_root}")
+    
+    # Add SDK paths to PATH for current process (prepend so they take precedence)
+    sdk_paths = [
+        str(sdk_root / "platform-tools"),
+        str(sdk_root / "emulator"),
+        str(sdk_root / "cmdline-tools" / "latest" / "bin"),
+    ]
+    
+    current_path = os.environ.get('PATH', '')
+    for sdk_path in sdk_paths:
+        if sdk_path not in current_path:
+            os.environ['PATH'] = f"{sdk_path}{os.pathsep}{current_path}"
+            current_path = os.environ['PATH']
+            print(f"[installer][android-sdk] Added to current process PATH: {sdk_path}")
+        else:
+            print(f"[installer][android-sdk] Already in PATH: {sdk_path}")
+
+
 def _get_cmdline_tools_url() -> str:
    version = "10406996_latest"
    system = platform.system()
