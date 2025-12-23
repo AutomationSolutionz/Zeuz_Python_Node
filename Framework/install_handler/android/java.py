@@ -52,6 +52,7 @@ async def check_status() -> bool:
     
     if java_path.exists():
         print("[installer][android-java] Already installed")
+        
         await send_response({
             "action": "status",
             "data": {
@@ -107,29 +108,59 @@ def update_java_path():
 
 
 async def _get_jdk_download_url():
-   """Get the appropriate JDK 21 LTS download URL based on platform"""
+   """Get the appropriate JDK 21 LTS download URL from Eclipse Temurin (Adoptium) based on platform"""
    system = platform.system()
    
+   # Map platform to Temurin API format
    if system == "Windows":
-       return "https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.zip"
+       os_name = "windows"
    elif system == "Linux":
-       return "https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz"
+       os_name = "linux"
    elif system == "Darwin":
-       # macOS - use ARM64 for Apple Silicon or x64 for Intel
-       import subprocess
-       try:
-           # Check if running on Apple Silicon
-           result = subprocess.run(["uname", "-m"], capture_output=True, text=True)
-           arch = result.stdout.strip()
-           if arch == "arm64":
-               return "https://download.oracle.com/java/21/latest/jdk-21_macos-aarch64_bin.tar.gz"
-           else:
-               return "https://download.oracle.com/java/21/latest/jdk-21_macos-x64_bin.tar.gz"
-       except:
-           # Default to x64 if detection fails
-           return "https://download.oracle.com/java/21/latest/jdk-21_macos-x64_bin.tar.gz"
+       os_name = "mac"
    else:
        raise OSError(f"Unsupported platform: {system}")
+   
+   # Detect machine architecture dynamically (Temurin supports: x64, aarch64, ppc64, ppc64le, riscv64, s390x)
+   machine = platform.machine().lower()
+   
+   # Map common architecture names to Temurin format
+   if machine in ["x86_64", "amd64", "x64"]:
+       arch = "x64"
+   elif machine in ["aarch64", "arm64"]:
+       arch = "aarch64"
+   elif machine in ["ppc64le"]:
+       arch = "ppc64le"
+   elif machine in ["ppc64"]:
+       arch = "ppc64"
+   elif machine in ["riscv64"]:
+       arch = "riscv64"
+   elif machine in ["s390x"]:
+       arch = "s390x"
+   else:
+       # Default to x64 for unknown architectures
+       print(f"[installer][android-java] Warning: Unknown architecture '{machine}', defaulting to x64")
+       arch = "x64"
+   
+   # Use Temurin metadata API to get latest JDK 21 download URL
+   api_url = f"https://api.adoptium.net/v3/assets/latest/21/hotspot?os={os_name}&architecture={arch}&image_type=jdk&vendor=eclipse"
+   
+   try:
+       async with httpx.AsyncClient(timeout=30.0) as client:
+           response = await client.get(api_url)
+           response.raise_for_status()
+           data = response.json()
+           
+           # Extract download URL from API response
+           if data and len(data) > 0:
+               download_url = data[0]["binary"]["package"]["link"]
+               print(f"[installer][android-java] Found Temurin JDK 21 download URL: {download_url}")
+               return download_url
+           else:
+               raise Exception("No download URL found in API response")
+   except Exception as e:
+       print(f"[installer][android-java] Error fetching Temurin download URL: {e}")
+       raise Exception(f"Failed to get JDK download URL from Temurin API: {e}")
 
 
 async def _download_jdk():
@@ -162,7 +193,7 @@ async def _download_jdk():
    try:
        jdk_archive.parent.mkdir(parents=True, exist_ok=True)
       
-       async with httpx.AsyncClient(timeout=900.0) as client:
+       async with httpx.AsyncClient(timeout=900.0, follow_redirects=True) as client:
            async with client.stream("GET", jdk_url) as response:
                response.raise_for_status()
               
