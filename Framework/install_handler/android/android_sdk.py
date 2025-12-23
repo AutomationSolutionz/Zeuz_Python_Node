@@ -486,6 +486,11 @@ async def _accept_licenses(sdk_root: Path) -> bool:
 async def install() -> bool:
    print("[installer][android-sdk] Installing...")
    
+   # Check if Android SDK is already installed
+   if await check_status():
+       print("[installer][android-sdk] Android SDK is already installed")
+       return True
+   
    sdk_root = _get_sdk_root()
 
 
@@ -539,6 +544,10 @@ async def install() -> bool:
    if not await _run_sdkmanager(sdk_root, core_components):
        print("[installer][android-sdk] Failed installing one or more SDK components")
        return False
+
+
+   # Update PATH after successful installation
+   update_android_sdk_path()
 
 
    print(f"[installer][android-sdk] Installation successful at {sdk_root}")

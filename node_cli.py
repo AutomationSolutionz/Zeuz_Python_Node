@@ -38,7 +38,7 @@ from cryptography.hazmat.primitives import serialization
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
 from server.mobile import upload_android_ui_dump
-
+from Framework.install_handler.android.android_sdk import update_android_sdk_path
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -1338,6 +1338,7 @@ async def main():
     # Setup Node.js and Appium before other operations
     setup_nodejs_appium()
 
+    update_android_sdk_path()
     update_outdated_modules()
     asyncio.create_task(start_server())
     asyncio.create_task(upload_android_ui_dump())
