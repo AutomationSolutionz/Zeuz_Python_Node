@@ -20,6 +20,8 @@ async def check_status() -> bool:
     if adb_path.exists():
         sdk_root = _get_sdk_root()
         print(f"[installer][android-sdk] Already installed at {sdk_root}")
+        
+        
         await send_response({
             "action": "status",
             "data": {
@@ -88,12 +90,10 @@ def update_android_sdk_path():
     
     current_path = os.environ.get('PATH', '')
     for sdk_path in sdk_paths:
-        if sdk_path not in current_path:
-            os.environ['PATH'] = f"{sdk_path}{os.pathsep}{current_path}"
-            current_path = os.environ['PATH']
-            print(f"[installer][android-sdk] Added to current process PATH: {sdk_path}")
-        else:
-            print(f"[installer][android-sdk] Already in PATH: {sdk_path}")
+        # Always prepend to ensure isolated SDK takes precedence (even if path already exists)
+        os.environ['PATH'] = f"{sdk_path}{os.pathsep}{current_path}"
+        current_path = os.environ['PATH']
+        print(f"[installer][android-sdk] Prepended to current process PATH: {sdk_path}")
 
 
 def _get_cmdline_tools_url() -> str:
