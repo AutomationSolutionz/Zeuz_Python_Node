@@ -3,163 +3,513 @@ import re
 import asyncio
 import platform
 import os
+import shutil
+import zipfile
+import tarfile
+import stat
+import httpx
+from pathlib import Path
 from Framework.install_handler.utils import send_response
 from Framework.install_handler.android.jdk import install as install_jdk
+from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
+def get_jdk_dir():
+    """Get JDK installation directory (in downloads directory, matching jdk.py extraction location)."""
+    jdk_dir = ZEUZ_NODE_DOWNLOADS_DIR / "jdk" / "jdk-21"
+    jdk_dir.mkdir(parents=True, exist_ok=True)
+    return jdk_dir
+
+
+def get_java_path():
+    """Get java binary path (handles JDK subdirectory structure)."""
+    jdk_dir = get_jdk_dir()
+    system = platform.system()
+    
+    # JDK is typically extracted to a subdirectory like jdk-21.0.x
+    # Check for any jdk-* subdirectory first
+    for item in jdk_dir.iterdir():
+        if item.is_dir() and "jdk" in item.name.lower():
+            if system == "Windows":
+                java_exe = item / "bin" / "java.exe"
+            else:
+                java_exe = item / "bin" / "java"
+            if java_exe.exists():
+                return java_exe
+    
+    # Fallback to direct bin path (if JDK was extracted directly)
+    if system == "Windows":
+        return jdk_dir / "bin" / "java.exe"
+    else:
+        return jdk_dir / "bin" / "java"
 
 async def check_status() -> bool:
-   """Check if Java 21 is installed."""
-   print("[installer][android-java] Checking status...")
-  
-   # Dynamically refresh JAVA_HOME and PATH from registry on Windows
+    """Check if Java 21 is installed (following Node.js installer pattern - simple file existence check)."""
+    print("[installer][android-java] Checking status...")
+    
+    
+    # Simple file existence check in isolated directory (like Node.js installer)
+    java_path = get_java_path()
+    
+    if java_path.exists():
+        print("[installer][android-java] Already installed")
+        
+        await send_response({
+            "action": "status",
+            "data": {
+                "category": "Android",
+                "name": "Java",
+                "status": "installed",
+                "comment": "Java is installed (version : 21)",
+            }
+        })
+        return True
+    
+    # Not installed
+    print("[installer][android-java] Not installed")
+    await send_response({
+        "action": "status",
+        "data": {
+            "category": "Android",
+            "name": "Java",
+            "status": "not installed",
+            "comment": "Install Java 21 to use it.",
+        }
+    })
+    return False
+
+
+def update_java_path():
+    """Add Java binaries to PATH and set JAVA_HOME for the current process (following Node.js pattern)."""
+    java_path = get_java_path()
+    
+    print("Updating java path for the current session")
+    # Check if java exists
+    if not java_path.exists():
+        print("Java not found for PATH update.")
+        return
+    
+    # Get JDK home directory (parent of bin directory)
+    # java_path is like: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x/bin/java
+    # jdk_home should be: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x
+    jdk_home = java_path.parent.parent
+    
+    # Set JAVA_HOME for the current process
+    os.environ['JAVA_HOME'] = str(jdk_home)
+    print(f"JAVA_HOME set for current process: {jdk_home}")
+    
+    # Add Java bin to PATH for the current process (always prepend so it takes precedence)
+    java_bin_path = str(java_path.parent)
+    current_path = os.environ.get('PATH', '')
+    # Always prepend to ensure isolated Java takes precedence (even if path already exists)
+    os.environ['PATH'] = f"{java_bin_path}{os.pathsep}{current_path}"
+    print(f"Java prepended to current process PATH: {java_bin_path}")
+
+
+async def _get_jdk_download_url():
+   """Get the appropriate JDK 21 LTS download URL from Eclipse Temurin (Adoptium) based on platform"""
    system = platform.system()
+   
+   # Map platform to Temurin API format
    if system == "Windows":
-       try:
-           import winreg
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-               try:
-                   java_home_reg, _ = winreg.QueryValueEx(key, "JAVA_HOME")
-                   if java_home_reg and os.path.exists(java_home_reg):
-                       os.environ['JAVA_HOME'] = java_home_reg
-                       # Update PATH with Java bin
-                       java_bin = os.path.join(java_home_reg, "bin")
-                       current_path = os.environ.get('PATH', '')
-                       if java_bin not in current_path:
-                           os.environ['PATH'] = f"{java_bin};{current_path}"
-                       print(f"[installer][android-java] Refreshed JAVA_HOME from registry: {java_home_reg}")
-               except FileNotFoundError:
-                   pass
-       except Exception as e:
-           print(f"[installer][android-java] Failed to refresh from registry: {e}")
+       os_name = "windows"
+   elif system == "Linux":
+       os_name = "linux"
+   elif system == "Darwin":
+       os_name = "mac"
+   else:
+       raise OSError(f"Unsupported platform: {system}")
+   
+   # Detect machine architecture dynamically (Temurin supports: x64, aarch64, ppc64, ppc64le, riscv64, s390x)
+   machine = platform.machine().lower()
+   
+   # Map common architecture names to Temurin format
+   if machine in ["x86_64", "amd64", "x64"]:
+       arch = "x64"
+   elif machine in ["aarch64", "arm64"]:
+       arch = "aarch64"
+   elif machine in ["ppc64le"]:
+       arch = "ppc64le"
+   elif machine in ["ppc64"]:
+       arch = "ppc64"
+   elif machine in ["riscv64"]:
+       arch = "riscv64"
+   elif machine in ["s390x"]:
+       arch = "s390x"
+   else:
+       # Default to x64 for unknown architectures
+       print(f"[installer][android-java] Warning: Unknown architecture '{machine}', defaulting to x64")
+       arch = "x64"
+   
+   # Use Temurin metadata API to get latest JDK 21 download URL
+   api_url = f"https://api.adoptium.net/v3/assets/latest/21/hotspot?os={os_name}&architecture={arch}&image_type=jdk&vendor=eclipse"
+   
+   try:
+       async with httpx.AsyncClient(timeout=30.0) as client:
+           response = await client.get(api_url)
+           response.raise_for_status()
+           data = response.json()
+           
+           # Extract download URL from API response
+           if data and len(data) > 0:
+               download_url = data[0]["binary"]["package"]["link"]
+               print(f"[installer][android-java] Found Temurin JDK 21 download URL: {download_url}")
+               return download_url
+           else:
+               raise Exception("No download URL found in API response")
+   except Exception as e:
+       print(f"[installer][android-java] Error fetching Temurin download URL: {e}")
+       raise Exception(f"Failed to get JDK download URL from Temurin API: {e}")
+
+
+async def _download_jdk():
+   """Download JDK 21 LTS with progress reporting"""
+   print("[installer][android-jdk] Downloading JDK 21 LTS...")
+   await send_response({
+       "action": "status",
+       "data": {
+           "category": "Android",
+           "name": "Java",
+           "status": "installing",
+           "comment": "Downloading Java 21...",
+       }
+   })
   
+   jdk_url = await _get_jdk_download_url()
+  
+   download_dir = ZEUZ_NODE_DOWNLOADS_DIR / "jdk"
+   system = platform.system()
+   
+   if system == "Windows":
+       jdk_archive = download_dir / "jdk21.zip"
+   elif system == "Linux":
+       jdk_archive = download_dir / "jdk21.tar.gz"
+   elif system == "Darwin":
+       jdk_archive = download_dir / "jdk21.tar.gz"
+   else:
+       raise OSError(f"Unsupported platform: {system}")
+  
+   try:
+       jdk_archive.parent.mkdir(parents=True, exist_ok=True)
+      
+       async with httpx.AsyncClient(timeout=900.0, follow_redirects=True) as client:
+           async with client.stream("GET", jdk_url) as response:
+               response.raise_for_status()
+              
+               total_size = int(response.headers.get("content-length", 0))
+               chunk_size = 8192
+               downloaded = 0
+              
+               count = []
+               with open(jdk_archive, "wb") as f:
+                   async for chunk in response.aiter_bytes(chunk_size):
+                       f.write(chunk)
+                       downloaded += len(chunk)
+                      
+                       if total_size > 0:
+                           progress = (downloaded / total_size) * 100
+                           bar_length = 50
+                           filled_length = int(bar_length * downloaded // total_size)
+                           bar = '█' * filled_length + '-' * (bar_length - filled_length)
+                          
+                           mb_downloaded = downloaded / (1024 * 1024)
+                           mb_total = total_size / (1024 * 1024)
+                          
+                           print(f"\r[installer][android-jdk] |{bar}| {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)", end='', flush=True)
+                          
+                           p = round(mb_downloaded/mb_total, 1)
+                           if p not in count:
+                               count.append(p)
+                               asyncio.create_task(send_response({
+                                   "action": "status",
+                                   "data": {
+                                       "category": "Android",
+                                       "name": "Java",
+                                       "status": "installing",
+                                       "comment": f"Downloading Java 21... {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)",
+                                   }
+                               }))
+      
+       print()
+       print(f"[installer][android-jdk] JDK download complete: {jdk_archive}")
+       return jdk_archive
+   except Exception as e:
+       print(f"\n[installer][android-jdk] JDK download failed: {e}")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Java",
+               "status": "not installed",
+               "comment": f"Java download failed: {str(e)}",
+           }
+       })
+       return None
+
+
+async def _extract_jdk(jdk_archive):
+   """Extract JDK to the appropriate location"""
+   if not jdk_archive or not jdk_archive.exists():
+       return None
+  
+   print("[installer][android-jdk] Extracting JDK...")
+   await send_response({
+       "action": "status",
+       "data": {
+           "category": "Android",
+           "name": "Java",
+           "status": "installing",
+           "comment": "Extracting Java...",
+       }
+   })
+  
+   system = platform.system()
+   
+   # Extract to ZEUZ downloads directory
+   jdk_dir = ZEUZ_NODE_DOWNLOADS_DIR / "jdk" / "jdk-21"
+   if jdk_dir.exists():
+       shutil.rmtree(jdk_dir)
+   jdk_dir.mkdir(parents=True, exist_ok=True)
+   
+   if system == "Windows":
+       print(f"[installer][android-jdk] Extracting JDK to {jdk_dir}")
+   elif system == "Linux":
+       print(f"[installer][android-jdk] Extracting JDK to {jdk_dir}")
+   elif system == "Darwin":
+       print(f"[installer][android-jdk] Extracting JDK to {jdk_dir}")
+  
+   try:
+       if system == "Windows":
+           with zipfile.ZipFile(jdk_archive, 'r') as zip_ref:
+               zip_ref.extractall(jdk_dir)
+       elif system == "Linux":
+           with tarfile.open(jdk_archive, 'r:gz') as tar_ref:
+               tar_ref.extractall(jdk_dir)
+       elif system == "Darwin":
+           with tarfile.open(jdk_archive, 'r:gz') as tar_ref:
+               tar_ref.extractall(jdk_dir)
+       else:
+           raise OSError(f"Unsupported platform: {system}")
+      
+       # Find the actual JDK directory (it might be nested)
+       jdk_home = None
+       for item in jdk_dir.iterdir():
+           if item.is_dir() and "jdk" in item.name.lower():
+               jdk_home = item
+               break
+      
+       if not jdk_home:
+           print("[installer][android-jdk] Could not find JDK directory after extraction")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Android",
+                   "name": "Java",
+                   "status": "not installed",
+                   "comment": "Could not find Java directory after extraction.",
+               }
+           })
+           return None
+      
+       print(f"[installer][android-jdk] JDK extracted to {jdk_home}")
+       return jdk_home
+   except Exception as e:
+       print(f"[installer][android-jdk] JDK extraction failed: {e}")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Java",
+               "status": "not installed",
+               "comment": f"Java extraction failed: {str(e)}",
+           }
+       })
+       return None
+
+
+async def _verify_java_installation(jdk_home):
+   """Verify that Java is properly installed and working"""
+   print("[installer][android-jdk] Verifying Java installation...")
+   await send_response({
+       "action": "status",
+       "data": {
+           "category": "Android",
+           "name": "Java",
+           "status": "installing",
+           "comment": "Verifying Java installation...",
+       }
+   })
+  
+   system = platform.system()
+   
+   # Check if java executable exists
+   if system == "Windows":
+       java_exe = jdk_home / "bin" / "java.exe"
+   elif system == "Linux":
+       java_exe = jdk_home / "bin" / "java"
+   elif system == "Darwin":
+       java_exe = jdk_home / "bin" / "java"
+   else:
+       print(f"[installer][android-jdk] Unsupported platform: {system}")
+       return False
+       
+   if not java_exe.exists():
+       print(f"[installer][android-jdk] Java executable not found at {java_exe}")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Java",
+               "status": "not installed",
+               "comment": f"Java executable not found at {java_exe}",
+           }
+       })
+       return False
+  
+   # Make executable on Linux and macOS
+   if system == "Linux":
+       try:
+           java_exe.chmod(java_exe.stat().st_mode | stat.S_IEXEC)
+       except Exception as e:
+           print(f"[installer][android-jdk] Failed to make Java executable: {e}")
+           return False
+   elif system == "Darwin":
+       try:
+           java_exe.chmod(java_exe.stat().st_mode | stat.S_IEXEC)
+       except Exception as e:
+           print(f"[installer][android-jdk] Failed to make Java executable: {e}")
+           return False
+  
+   # Test Java version (async)
    try:
        loop = asyncio.get_event_loop()
        result = await loop.run_in_executor(
            None,
            lambda: subprocess.run(
-               ["java", "-version"],
+               [str(java_exe), "-version"],
                capture_output=True,
-               text=True,
-               check=False
+               text=True
            )
        )
-         
-       if result.returncode != 0:
-           print("[installer][android-java] Not installed")
+       if "version \"21" not in result.stderr:
+           print("[installer][android-jdk] Java version check failed")
            await send_response({
                "action": "status",
                "data": {
                    "category": "Android",
                    "name": "Java",
                    "status": "not installed",
-                   "comment": "Install Java 21 to use it.",
+                   "comment": "Java version check failed.",
                }
            })
            return False
+       print("[installer][android-jdk] Java version verified")
       
-       # java -version prints to stderr typically
-       version_text = (result.stderr or result.stdout).strip()
-       if not version_text:
-           print("[installer][android-java] Not installed")
+       # Test Java compiler
+       if system == "Windows":
+           javac_exe = jdk_home / "bin" / "javac.exe"
+       elif system == "Linux":
+           javac_exe = jdk_home / "bin" / "javac"
+       elif system == "Darwin":
+           javac_exe = jdk_home / "bin" / "javac"
+           
+       if not javac_exe.exists():
+           print(f"[installer][android-jdk] Java compiler not found at {javac_exe}")
            await send_response({
                "action": "status",
                "data": {
                    "category": "Android",
                    "name": "Java",
                    "status": "not installed",
-                   "comment": "Install Java 21 to use it.",
+                   "comment": f"Java compiler not found at {javac_exe}",
                }
            })
            return False
       
-       # Extract version number from output like "openjdk version \"21.0.1\"" or "java version \"1.8.0_291\""
-       version_match = re.search(r'version\s+"?(\d+)\.(\d+)', version_text)
-       if version_match:
-           major_version = int(version_match.group(1))
-           minor_version = int(version_match.group(2))
+       if system == "Linux":
+           javac_exe.chmod(javac_exe.stat().st_mode | stat.S_IEXEC)
+       elif system == "Darwin":
+           javac_exe.chmod(javac_exe.stat().st_mode | stat.S_IEXEC)
           
-           # Check if it's Java 21
-           if major_version == 21:
-               print(f"[installer][android-java] Already installed (version: {major_version}.{minor_version})")
-               await send_response({
-                   "action": "status",
-                   "data": {
-                       "category": "Android",
-                       "name": "Java",
-                       "status": "installed",
-                       "comment": f"Java is installed (version: {major_version}.{minor_version})",
-                   }
-               })
-               return True
-           # Handle old versioning like "1.8.0" where major=1, minor=8
-           elif major_version == 1 and minor_version >= 8:
-               print(f"[installer][android-java] Wrong version installed (found: {major_version}.{minor_version})")
-               await send_response({
-                   "action": "status",
-                   "data": {
-                       "category": "Android",
-                       "name": "Java",
-                       "status": "not installed",
-                       "comment": f"Install Java 21 to use it (found version: {major_version}.{minor_version}).",
-                   }
-               })
-               return False
+       result = await loop.run_in_executor(
+           None,
+           lambda: subprocess.run(
+               [str(javac_exe), "-version"],
+               capture_output=True,
+               text=True
+           )
+       )
+       if "javac 21" not in (result.stdout or result.stderr):
+           print("[installer][android-jdk] Java compiler version check failed")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Android",
+                   "name": "Java",
+                   "status": "not installed",
+                   "comment": "Java compiler version check failed.",
+               }
+           })
+           return False
+       print("[installer][android-jdk] Java compiler verified")
       
-       print(f"[installer][android-java] Not installed (found version: {version_text})")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Java",
-               "status": "not installed",
-               "comment": f"Install Java 21 to use it (found version: {version_text[:50]}).",
-           }
-       })
-       return False
-   except Exception as e:
-       print(f"[installer][android-java] Error checking status: {e}")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Java",
-               "status": "not installed",
-               "comment": "Unable to check Java status.",
-           }
-       })
-       return False
-
-
-
-
-async def install():
-   """Install Java by calling JDK installation function"""
-   print("[installer][android-java] Installing...")
-   
-   # Call JDK installation function
-   success = await install_jdk()
-   
-   if success:
-       print("[installer][android-java] Java installation successful")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Java",
-               "status": "installed",
-               "comment": "Java is installed",
-           }
-       })
        return True
-   else:
-       print("[installer][android-java] Java installation failed")
+   except Exception as e:
+       print(f"[installer][android-jdk] Java verification failed: {e}")
        await send_response({
            "action": "status",
            "data": {
                "category": "Android",
                "name": "Java",
                "status": "not installed",
-               "comment": "Failed to install Java",
+               "comment": f"Java verification failed: {str(e)}",
            }
        })
        return False
+
+
+async def install() -> bool:
+   """Main function to setup JDK 21 LTS"""
+   print("[installer][android-java] Installing...")
+  
+   # Check if JDK 21 is already installed
+   if await check_status():
+       print("[installer][android-java] JDK 21 is already installed")
+       return True
+   
+   jdk_home = None
+  
+   # If JDK is not installed, download and install it
+   if not jdk_home:
+       # Download and extract JDK
+       jdk_archive = await _download_jdk()
+       if not jdk_archive:
+           return False
+      
+       jdk_home = await _extract_jdk(jdk_archive)
+       if not jdk_home:
+           return False
+      
+       # Clean up archive
+       try:
+           jdk_archive.unlink()
+       except:
+           pass
+  
+   # Verify installation
+   if not await _verify_java_installation(jdk_home):
+       print("[installer][android-jdk] Java installation verification failed")
+       return False
+  
+   print("[installer][android-jdk] JDK 21 LTS setup complete")
+   await send_response({
+       "action": "status",
+       "data": {
+           "category": "Android",
+           "name": "Java",
+           "status": "installed",
+           "comment": f"Java is installed at {jdk_home}",
+       }
+   })
+
+   update_java_path()
+   return True
