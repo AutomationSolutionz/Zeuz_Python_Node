@@ -679,6 +679,7 @@ async def _verify_edge_installation():
 
 
 async def install(user_password: str = "") -> bool:
+
    """Main function to install Microsoft Edge"""
    print("[installer][web-edge] Installing Microsoft Edge...")
    

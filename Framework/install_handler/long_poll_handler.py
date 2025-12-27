@@ -276,6 +276,12 @@ class InstallHandler:
                     }
                 )
             elif action == "group_install":
+
+                user_password = ""
+                if message.value.item:
+                    user_password = (
+                        getattr(message.value.item, "user_password", "") or ""
+                    )
                 await send_response(
                     {
                         "action": "group_install",
@@ -294,7 +300,14 @@ class InstallHandler:
                     if i["install_function"]
                 ]
                 for func in functions:
-                    await func()
+                    # Check if function accepts parameters
+                    sig = inspect.signature(func)
+                    if len(sig.parameters) > 0:
+                        # Function accepts parameters, pass user_password
+                        await func(user_password)
+                    else:
+                        # Function doesn't accept parameters, call without (backward compatibility)
+                        await func()
                 await send_response(
                     {
                         "action": "group_install",

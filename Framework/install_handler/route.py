@@ -110,7 +110,7 @@ services = [
                 "os": ["darwin"],
                 "status_function": xcode.check_status,
                 "install_function": xcode.install,
-                "user_password": "yes",
+                "user_password": True,
             },
             {
                 "name": "Simulator",
@@ -121,7 +121,7 @@ services = [
                 "os": ["darwin"],
                 "status_function": simulator.check_status,
                 "install_function": simulator.install,
-                "user_password": "yes",
+                "user_password": True,
             },
         ],
     },
@@ -167,7 +167,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": mozilla.check_status,
                 "install_function": mozilla.install,
-                "user_password": False,
+                "user_password": True,
             },
             {
                 "name": "Edge",
@@ -178,7 +178,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": edge.check_status,
                 "install_function": edge.install,
-                "user_password": "yes",
+                "user_password": True,
             },
         ],
     },
@@ -198,7 +198,7 @@ services = [
                 "os": ["darwin"],
                 "status_function": macos_xcode.check_status,
                 "install_function": macos_xcode.install,
-                "user_password": "yes",
+                "user_password": True,
             }
         ],
     },
@@ -219,7 +219,7 @@ services = [
                 "os": ["windows"],
                 "status_function": inspector.check_status,
                 "install_function": inspector.install,
-                "user_password": "no",
+                "user_password": False,
             }
         ],
     },
