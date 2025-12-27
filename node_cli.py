@@ -565,7 +565,7 @@ def update_machine(dependency, should_print=True):
         resp = RequestFormatter.request("post", url, json=update_object)
 
         if resp.status_code != 200:
-            CommonUtil.ExecLog("", "Machine is not registered as online", 4)
+            # CommonUtil.ExecLog("", "Machine is not registered as online", 4)
             return
 
         data = resp.json()

@@ -9,6 +9,7 @@ import httpx
 from colorama import Fore
 from pathlib import Path
 from urllib.parse import urlparse
+import requests
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
@@ -253,80 +254,74 @@ class DeployHandler:
 
     async def run(self, host: str) -> None:
         reconnect = False
-        server_online = False
-        async with httpx.AsyncClient(timeout=httpx.Timeout(70.0), verify=False) as client:
-            while True:
-                if STATE.reconnect_with_credentials is not None:
+        print_online = False
+        while True:
+            if STATE.reconnect_with_credentials is not None:
+                break
+
+            if reconnect:
+                await asyncio.sleep(random.randint(1, 3))
+
+            await self.on_connect_callback(reconnect)
+
+            try:
+                reconnect = True
+                resp = RequestFormatter.request("get", host, verify=False, timeout=70)
+                if resp is None:
                     break
 
-                if reconnect:
-                    if server_online:
-                        await asyncio.sleep(0.1)
-                    else:
-                        await asyncio.sleep(random.randint(1, 3))
+                if resp.content.startswith(self.ERROR_PREFIX):
+                    self.on_error(resp.content)
+                    continue
 
-                await self.on_connect_callback(reconnect)
+                if resp.ok and print_online:
+                    print_online = False
+                    node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+                    print(f"🟢 {node_id} back to online")
 
-                try:
-                    reconnect = True
-                    resp = await self.fetch(host, client)
-                    if resp is None:
-                        break
+                if resp.status_code == httpx.codes.NO_CONTENT:
+                    continue
 
-                    if resp.content.startswith(self.ERROR_PREFIX):
-                        server_online = False
-                        self.on_error(resp.content)
-                        continue
+                if resp.status_code == httpx.codes.BAD_GATEWAY:
+                    print_online = True
+                    print(Fore.YELLOW + "Server offline. Retrying after 20s")
+                    await asyncio.sleep(20)
+                    continue
 
-                    if resp.status_code == httpx.codes.NO_CONTENT:
-                        server_online = False
-                        continue
+                if not resp.ok:
+                    print(
+                        "[deploy] facing difficulty communicating with the server, status code:",
+                        resp.status_code,
+                        " | reconnecting",
+                    )
 
-                    if not resp.is_success:
-                        server_online = False
-                        print(
-                            "[deploy] facing difficulty communicating with the server, status code:",
-                            resp.status_code,
-                            " | reconnecting",
-                        )
-                        try:
-                            print(Fore.YELLOW + str(resp.content))
-                        except Exception:
-                            pass
+                    # Encountered a server error, retry.
+                    await asyncio.sleep(random.randint(1, 3))
+                    continue
 
-                        # Encountered a server error, retry.
-                        await asyncio.sleep(random.randint(1, 3))
-                        return
+                should_quit = await self.on_message(resp.content)
+                if should_quit:
+                    break
 
-                    should_quit = await self.on_message(resp.content)
-                    if should_quit:
-                        break
-
-                    reconnect = False
-                    server_online = True
-                except httpx.ReadTimeout:
-                    pass
-                except Exception:
-                    traceback.print_exc()
-                    print("[deploy] RETRYING...")
-
-    async def fetch(self, host: str, client: httpx.AsyncClient) -> httpx.Response | None:
-        try:
-            api_key = ConfigModule.get_config_value("Authentication", "api-key")
-            headers = {"X-API-KEY": api_key}
-            
-            while True:
+                reconnect = False
+            except (
+                requests.exceptions.ConnectTimeout,
+                requests.exceptions.ReadTimeout,
+                requests.exceptions.ConnectionError,
+            ) as e:
+                # Nginx down, VM down, network issue, docker-compose stopped
                 if STATE.reconnect_with_credentials is not None:
                     return None
-                
-                try:
-                    resp = await client.get(host, headers=headers)
-                    return resp
-                except asyncio.CancelledError:
+                print_online = True
+                print(e)
+                print(Fore.YELLOW + "Retrying after 30s")
+                await asyncio.sleep(30)
+
+            except Exception as e:
+                if STATE.reconnect_with_credentials is not None:
                     return None
-                except Exception:
-                    if STATE.reconnect_with_credentials is not None:
-                        return None
-                    await asyncio.sleep(0.1)
-        except Exception:
-            return None
+                print_online = True
+                print(e)
+                print(Fore.YELLOW + "Retrying after 30s")
+                await asyncio.sleep(30)
+
