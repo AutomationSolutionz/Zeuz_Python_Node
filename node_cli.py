@@ -66,7 +66,7 @@ from Framework.deploy_handler import (  # noqa: E402
 )
 from Framework.Utilities import ConfigModule  # noqa: E402
 from Framework.Utilities import live_log_service  # noqa: E402
-from Framework.node_server_state import STATE  # noqa: E402
+from Framework.node_server_state import STATE, LoginCredentials  # noqa: E402
 from server import main as node_server  # noqa: E402
 
 
@@ -279,6 +279,10 @@ async def Login(
         elif status_code == 502:
             print(Fore.YELLOW + "Server offline. Retrying after 60s")
             await asyncio.sleep(60)
+            STATE.reconnect_with_credentials = LoginCredentials(
+                server=ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address").strip('"').strip(),
+                api_key=ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"').strip(),
+            )
             return
         else:
             line_color = Fore.RED
