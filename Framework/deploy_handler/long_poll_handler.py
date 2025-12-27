@@ -284,8 +284,8 @@ class DeployHandler:
 
                 if resp.status_code == httpx.codes.BAD_GATEWAY:
                     print_online = True
-                    print(Fore.YELLOW + "Server offline. Retrying after 20s")
-                    await asyncio.sleep(20)
+                    print(Fore.YELLOW + "Server offline. Retrying after 30s")
+                    await asyncio.sleep(30)
                     continue
 
                 if not resp.ok:

@@ -277,8 +277,8 @@ async def Login(
 
             console.print(table)
         elif status_code == 502:
-            print(Fore.YELLOW + "Server offline. Retrying after 60s")
-            await asyncio.sleep(60)
+            print(Fore.YELLOW + "Server offline. Retrying after 30s")
+            await asyncio.sleep(30)
             STATE.reconnect_with_credentials = LoginCredentials(
                 server=ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address").strip('"').strip(),
                 api_key=ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"').strip(),
