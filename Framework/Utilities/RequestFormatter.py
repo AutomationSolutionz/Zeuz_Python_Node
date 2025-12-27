@@ -210,16 +210,12 @@ def Get(resource_path, payload=None, **kwargs):
             **kwargs
         ).json()
 
-    except requests.exceptions.RequestException:
-        print(
-            "Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
-            "Please include full server name. Example: https://zeuz.zeuz.ai.\n"
-            "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6"
-        )
+    except requests.exceptions.RequestException as e:
+        print(e)
         return ""
 
     except Exception as e:
-        print("Get Exception: {}".format(e))
+        print(e)
         return {}
 
 

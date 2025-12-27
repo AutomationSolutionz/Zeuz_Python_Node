@@ -37,7 +37,7 @@ class StatusResponse(BaseModel):
 def status():
     try:
         node_id = CommonUtil.MachineInfo().getLocalUser().lower()
-        username, id = node_id.split("_")
+        username, id = node_id.split("_", 1)
         if len(username) == 0:
             node_id = id
     except Exception:
