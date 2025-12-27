@@ -7,61 +7,7 @@ import random
 from pathlib import Path
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 from Framework.install_handler.utils import send_response, debug
-
-
-def _get_sdk_root() -> Path | None:
-    """Get the Android SDK root path, following the pattern from android_sdk.py"""
-    # Dynamically refresh ANDROID_HOME from registry on Windows
-    system = platform.system()
-    if system == "Windows":
-        try:
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-                try:
-                    android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
-                    if android_home_reg:
-                        # Expand environment variables before checking if path exists
-                        android_home_expanded = os.path.expandvars(android_home_reg)
-                        if os.path.exists(android_home_expanded):
-                            os.environ['ANDROID_HOME'] = android_home_expanded
-                           
-                except FileNotFoundError:
-                    pass
-                
-                # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
-                if 'ANDROID_HOME' not in os.environ or not os.path.exists(os.environ.get('ANDROID_HOME', '')):
-                    try:
-                        android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
-                        if android_sdk_root_reg:
-                            # Expand environment variables before checking if path exists
-                            android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
-                            if os.path.exists(android_sdk_root_expanded):
-                                os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
-                                if debug:
-                                    print(f"[installer][emulator] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
-                    except FileNotFoundError:
-                        pass
-        except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Failed to refresh from registry: {e}")
-    
-    # First try environment variable
-    android_home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
-    if android_home:
-        # Expand environment variables in the path on Windows (e.g., %USERPROFILE% -> C:\Users\Username)
-        # Linux/macOS don't need this as os.environ.get() already returns expanded paths
-        if system == "Windows":
-            android_home = os.path.expandvars(android_home)
-        if os.path.exists(android_home):
-            return Path(android_home)
-    
-    # Fallback to ZeuZ downloads directory
-    sdk_root = ZEUZ_NODE_DOWNLOADS_DIR / "android_sdk" / "sdk"
-    if sdk_root.exists():
-        return sdk_root
-    
-    # If neither exists, return None (SDK not installed)
-    return None
+from Framework.install_handler.android.android_sdk import _get_sdk_root
 
 
 def _find_executable(base_path: Path, base_name: str) -> Path | None:
@@ -111,61 +57,22 @@ def _is_darwin():
 def get_emulator_command():
     """
     Returns the correct emulator executable path depending on OS.
-    Assumes ANDROID_HOME or ANDROID_SDK_ROOT is already set.
+    Uses isolated SDK installation from android_sdk.py
     """
-    # Dynamically refresh ANDROID_HOME from registry on Windows
     system = platform.system()
-    if system == "Windows":
-        try:
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-                try:
-                    android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
-                    if android_home_reg:
-                        # Expand environment variables before checking if path exists
-                        android_home_expanded = os.path.expandvars(android_home_reg)
-                        if os.path.exists(android_home_expanded):
-                            os.environ['ANDROID_HOME'] = android_home_expanded
-                            if debug:
-                                print(f"[installer][emulator] Refreshed ANDROID_HOME from registry: {android_home_expanded}")
-                except FileNotFoundError:
-                    pass
-                
-                # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
-                if 'ANDROID_HOME' not in os.environ or not os.path.exists(os.environ.get('ANDROID_HOME', '')):
-                    try:
-                        android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
-                        if android_sdk_root_reg:
-                            # Expand environment variables before checking if path exists
-                            android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
-                            if os.path.exists(android_sdk_root_expanded):
-                                os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
-                                if debug:
-                                    print(f"[installer][emulator] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
-                    except FileNotFoundError:
-                        pass
-        except Exception as e:
-            if debug:
-                print(f"[installer][emulator] Failed to refresh from registry: {e}")
+    sdk_root = _get_sdk_root()
     
-    sdk_root = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
-    if sdk_root:
-        # Expand environment variables in the path
-        sdk_root = os.path.expandvars(sdk_root)
-
     if debug:
         print("Launch avd: ", sdk_root)
-    if not sdk_root:
-        raise EnvironmentError("ANDROID_HOME or ANDROID_SDK_ROOT is not set.")
 
     if system == "Windows":
-        return os.path.join(sdk_root, "emulator", "emulator.exe")
+        return os.path.join(str(sdk_root), "emulator", "emulator.exe")
 
     elif system == "Darwin":  # macOS
-        return os.path.join(sdk_root, "emulator", "emulator")
+        return os.path.join(str(sdk_root), "emulator", "emulator")
 
     elif system == "Linux":
-        return os.path.join(sdk_root, "emulator", "emulator")
+        return os.path.join(str(sdk_root), "emulator", "emulator")
 
     else:
         raise RuntimeError(f"Unsupported OS: {system}")
@@ -301,9 +208,7 @@ async def launch_avd(avd_name: str) -> bool:
             start_new_session=True  # Detach from parent process
         )
         
-        # Popen returns immediately - the process runs in background
-        if debug:
-            print(f"[installer][emulator] Launching AVD: {avd_name}... (PID: {process.pid})")
+        print(f"[installer][emulator] Launching AVD: {avd_name}... (PID: {process.pid})")
         
         # Send success response to server
         await send_response({
@@ -319,8 +224,8 @@ async def launch_avd(avd_name: str) -> bool:
 
     except FileNotFoundError:
         error_msg = f"Emulator executable not found"
-        if debug:
-            print(f"[installer][emulator] {error_msg}")
+
+        print(f"[installer][emulator] {error_msg}")
         await send_response({
             "action": "status",
             "data": {
@@ -333,8 +238,8 @@ async def launch_avd(avd_name: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Failed to launch AVD {avd_name}: {e}"
-        if debug:
-            print(f"[installer][emulator] {error_msg}")
+    
+        print(f"[installer][emulator] {error_msg}")
         import traceback
         traceback.print_exc()
         await send_response({

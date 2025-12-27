@@ -11,104 +11,40 @@ from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 
 async def check_status() -> bool:
-   """Check if ANDROID_HOME environment variable is set and valid."""
-   print("[installer][android-sdk] Checking status...")
-  
-   try:
-       # Check if ANDROID_HOME is set in current process environment
-       android_home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
-
-       
-       # Dynamically refresh ANDROID_HOME from registry on Windows
-       system = platform.system()
-       if system == "Windows":
-           try:
-               import winreg
-               with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-                   try:
-                       android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
-                       if android_home_reg:
-                           # Expand environment variables before checking if path exists
-                           android_home_expanded = os.path.expandvars(android_home_reg)
-                           if os.path.exists(android_home_expanded):
-                               os.environ['ANDROID_HOME'] = android_home_expanded
-                               android_home = android_home_expanded
-                               print(f"[installer][android-sdk] Refreshed ANDROID_HOME from registry: {android_home_expanded}")
-                   except FileNotFoundError:
-                       pass
-                   
-                   # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
-                   if not android_home:
-                       try:
-                           android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
-                           if android_sdk_root_reg:
-                               # Expand environment variables before checking if path exists
-                               android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
-                               if os.path.exists(android_sdk_root_expanded):
-                                   os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
-                                   android_home = android_sdk_root_expanded
-                                   print(f"[installer][android-sdk] Refreshed ANDROID_SDK_ROOT from registry: {android_sdk_root_expanded}")
-                       except FileNotFoundError:
-                           pass
-           except Exception as e:
-               print(f"[installer][android-sdk] Failed to refresh from registry: {e}")
-       
-       # Expand environment variables in the path on Windows (e.g., %USERPROFILE% -> C:\Users\Username)
-       # Linux/macOS don't need this as os.environ.get() already returns expanded paths
-       if android_home and system == "Windows":
-           android_home = os.path.expandvars(android_home)
-       
-       print(f"[installer][android-sdk] ANDROID_HOME value: {android_home}")
-       if not android_home:
-           print("[installer][android-sdk] Not installed (ANDROID_HOME not set)")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Android",
-                   "name": "Android SDK",
-                   "status": "not installed",
-                   "comment": "Install Android SDK and set ANDROID_HOME environment variable.",
-               }
-           })
-           return False
-      
-       # Check if the path exists
-       if not os.path.exists(android_home):
-           print(f"[installer][android-sdk] Not installed (ANDROID_HOME path does not exist: {android_home})")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Android",
-                   "name": "Android SDK",
-                   "status": "not installed",
-                   "comment": f"ANDROID_HOME is set but path does not exist: {android_home}",
-               }
-           })
-           return False
-      
-       print(f"[installer][android-sdk] Already installed")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Android SDK",
-               "status": "installed",
-               "comment": f"Android SDK is installed at {android_home}",
-           }
-       })
-       return True
-   except Exception as e:
-       print(f"[installer][android-sdk] Error checking status: {e}")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Android SDK",
-               "status": "not installed",
-               "comment": "Unable to check Android SDK status.",
-           }
-       })
-       return False
+    """Check if Android SDK is installed in isolated directory (following Node.js installer pattern)."""
+    print("[installer][android-sdk] Checking status...")
+    
+    # Simple file existence check in isolated directory (like Node.js installer)
+    adb_path = get_adb_path()
+    
+    if adb_path.exists():
+        sdk_root = _get_sdk_root()
+        print(f"[installer][android-sdk] Already installed at {sdk_root}")
+        
+        
+        await send_response({
+            "action": "status",
+            "data": {
+                "category": "Android",
+                "name": "Android SDK",
+                "status": "installed",
+                "comment": f"Android SDK is installed at {sdk_root}",
+            }
+        })
+        return True
+    
+    # Not installed
+    print("[installer][android-sdk] Not installed")
+    await send_response({
+        "action": "status",
+        "data": {
+            "category": "Android",
+            "name": "Android SDK",
+            "status": "not installed",
+            "comment": "Install Android SDK to use it.",
+        }
+    })
+    return False
 
 
 
@@ -120,6 +56,44 @@ def _get_sdk_root() -> Path:
    return sdk_root
 
 
+def get_adb_path():
+    """Get adb binary path (following Node.js/Java installer pattern)."""
+    sdk_root = _get_sdk_root()
+    
+    if platform.system() == "Windows":
+        return sdk_root / "platform-tools" / "adb.exe"
+    else:
+        return sdk_root / "platform-tools" / "adb"
+
+
+def update_android_sdk_path():
+    """Add Android SDK paths to PATH and set ANDROID_HOME for the current process (following Node.js pattern)."""
+    sdk_root = _get_sdk_root()
+    
+    # Check if SDK exists
+    adb_path = get_adb_path()
+    if not adb_path.exists():
+        print("[installer][android-sdk] Warning: Android SDK not found for PATH update.")
+        return
+    
+    # Set ANDROID_HOME and ANDROID_SDK_ROOT for current process
+    os.environ['ANDROID_HOME'] = str(sdk_root)
+    os.environ['ANDROID_SDK_ROOT'] = str(sdk_root)
+    print(f"[installer][android-sdk] ANDROID_HOME set for current process: {sdk_root}")
+    
+    # Add SDK paths to PATH for current process (prepend so they take precedence)
+    sdk_paths = [
+        str(sdk_root / "platform-tools"),
+        str(sdk_root / "emulator"),
+        str(sdk_root / "cmdline-tools" / "latest" / "bin"),
+    ]
+    
+    current_path = os.environ.get('PATH', '')
+    for sdk_path in sdk_paths:
+        # Always prepend to ensure isolated SDK takes precedence (even if path already exists)
+        os.environ['PATH'] = f"{sdk_path}{os.pathsep}{current_path}"
+        current_path = os.environ['PATH']
+        print(f"[installer][android-sdk] Prepended to current process PATH: {sdk_path}")
 
 
 def _get_cmdline_tools_url() -> str:
@@ -305,145 +279,6 @@ async def _extract_cmdline_tools(archive_path: Path, sdk_root: Path) -> bool:
            }
        })
        return False
-
-
-
-
-async def _set_env_vars(sdk_root: Path) -> None:
-   print("[installer][android-sdk] Setting environment variables...")
-   await send_response({
-       "action": "status",
-       "data": {
-           "category": "Android",
-           "name": "Android SDK",
-           "status": "installing",
-           "comment": "Setting ANDROID_HOME and PATH...",
-       }
-   })
-
-
-   env_paths = [
-       str(sdk_root / "platform-tools"),
-       str(sdk_root / "emulator"),
-       str(sdk_root / "cmdline-tools" / "latest" / "bin"),
-   ]
-
-
-   if platform.system() == "Windows":
-       try:
-           import winreg
-           # Set ANDROID_HOME in user environment variables (no admin needed)
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                              r"Environment",
-                              0, winreg.KEY_ALL_ACCESS) as key:
-               winreg.SetValueEx(key, "ANDROID_HOME", 0, winreg.REG_EXPAND_SZ, str(sdk_root))
-               print("[installer][android-sdk] ANDROID_HOME set in Windows user environment")
-               
-           # Update PATH in user environment variables
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                              r"Environment",
-                              0, winreg.KEY_ALL_ACCESS) as key:
-               try:
-                   current_path, _ = winreg.QueryValueEx(key, "Path")
-               except FileNotFoundError:
-                   current_path = ""
-               
-               parts = current_path.split(";") if current_path else []
-               updated = False
-               for p in env_paths:
-                   if p not in parts:
-                       parts.append(p)
-                       updated = True
-               if updated:
-                   winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, ";".join(parts))
-                   print("[installer][android-sdk] Android SDK paths added to Windows user environment")
-       except Exception as e:
-           print(f"[installer][android-sdk] Windows env update failed (continuing for user session): {e}")
-   elif platform.system() == "Linux":
-       # Linux - update shell configuration files
-       user_home = Path.home()
-       shell_configs = [
-           user_home / ".bashrc",
-           user_home / ".zshrc",
-           user_home / ".profile"
-       ]
-       
-       export_lines = [
-           f"export ANDROID_HOME={sdk_root}",
-           f"export ANDROID_SDK_ROOT={sdk_root}",
-           f"export PATH={':'.join(env_paths)}:$PATH"
-       ]
-       
-       updated = False
-       for config_file in shell_configs:
-           if config_file.exists():
-               try:
-                   with open(config_file, 'r') as f:
-                       content = f.read()
-                   needs_update = any(export not in content for export in export_lines)
-                   
-                   if needs_update:
-                       with open(config_file, 'a') as f:
-                           f.write("\n# Android SDK environment variables\n" + "\n".join(export_lines) + "\n")
-                       print(f"[installer][android-sdk] Updated {config_file} with Android SDK paths")
-                       updated = True
-               except Exception as e:
-                   print(f"[installer][android-sdk] Failed to update {config_file}: {e}")
-       
-       if updated:
-           print("[!] Please restart your terminal or run 'source ~/.bashrc' (or your shell config)")
-   elif platform.system() == "Darwin":  # iOS/macOS
-       # iOS/macOS - update shell configuration files
-       user_home = Path.home()
-       shell_configs = [
-           user_home / ".bash_profile",
-           user_home / ".zshrc",
-           user_home / ".profile"
-       ]
-       
-       export_lines = [
-           f"export ANDROID_HOME={sdk_root}",
-           f"export ANDROID_SDK_ROOT={sdk_root}",
-           f"export PATH={':'.join(env_paths)}:$PATH"
-       ]
-       
-       updated = False
-       for config_file in shell_configs:
-           if config_file.exists():
-               try:
-                   with open(config_file, 'r') as f:
-                       content = f.read()
-                   needs_update = any(export not in content for export in export_lines)
-                   
-                   if needs_update:
-                       with open(config_file, 'a') as f:
-                           f.write("\n# Android SDK environment variables\n" + "\n".join(export_lines) + "\n")
-                       print(f"[installer][android-sdk] Updated {config_file} with Android SDK paths")
-                       updated = True
-               except Exception as e:
-                   print(f"[installer][android-sdk] Failed to update {config_file}: {e}")
-       
-       if updated:
-           print("[!] Please restart your terminal or run 'source ~/.zshrc' (or your shell config)")
-
-
-   # Always set for current session (works on all platforms)
-   os.environ['ANDROID_HOME'] = str(sdk_root)
-   os.environ['ANDROID_SDK_ROOT'] = str(sdk_root)
-   current_path = os.environ.get('PATH', '')
-   
-   if platform.system() == "Windows":
-       sep = ';'
-   elif platform.system() == "Linux":
-       sep = ':'
-   elif platform.system() == "Darwin":  # iOS/macOS
-       sep = ':'
-   
-   # Prepend to PATH to ensure sdk tools are found first
-   for p in reversed(env_paths):
-       if p not in current_path:
-           current_path = f"{p}{sep}{current_path}" if current_path else p
-   os.environ['PATH'] = current_path
 
 
 
@@ -648,150 +483,13 @@ async def _accept_licenses(sdk_root: Path) -> bool:
 
 
 
-def _refresh_java_home() -> bool:
-   """
-   Dynamically refresh JAVA_HOME from Windows Registry to current process.
-   Returns True if JAVA_HOME is available, False otherwise.
-   """
-   system = platform.system()
-   
-   if system == "Windows":
-       try:
-           import winreg
-           # Try to read JAVA_HOME from user registry
-           try:
-               with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-                   java_home, _ = winreg.QueryValueEx(key, "JAVA_HOME")
-                   if java_home and os.path.exists(java_home):
-                       os.environ['JAVA_HOME'] = java_home
-                       print(f"[installer][android-sdk] Refreshed JAVA_HOME from registry: {java_home}")
-                       
-                       # Add JAVA_HOME/bin to PATH (so java.exe and javac.exe are accessible)
-                       java_bin = os.path.join(java_home, "bin")
-                       current_path = os.environ.get('PATH', '')
-                       if java_bin not in current_path:
-                           os.environ['PATH'] = f"{java_bin};{current_path}"
-                           print(f"[installer][android-sdk] Added Java bin to PATH: {java_bin}")
-                       return True
-           except FileNotFoundError:
-               pass
-           
-           # Fallback: Try system registry
-           try:
-               with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 
-                                  r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
-                                  0, winreg.KEY_READ) as key:
-                   java_home, _ = winreg.QueryValueEx(key, "JAVA_HOME")
-                   if java_home and os.path.exists(java_home):
-                       os.environ['JAVA_HOME'] = java_home
-                       print(f"[installer][android-sdk] Refreshed JAVA_HOME from system registry: {java_home}")
-                       
-                       # Add JAVA_HOME/bin to PATH
-                       java_bin = os.path.join(java_home, "bin")
-                       current_path = os.environ.get('PATH', '')
-                       if java_bin not in current_path:
-                           os.environ['PATH'] = f"{java_bin};{current_path}"
-                       return True
-           except FileNotFoundError:
-               pass
-               
-           print("[installer][android-sdk] WARNING: JAVA_HOME not found in registry")
-           return False
-       except Exception as e:
-           print(f"[installer][android-sdk] Failed to refresh JAVA_HOME: {e}")
-           return False
-   elif system == "Linux":
-       # On Linux, JAVA_HOME should already be in os.environ if set
-       java_home = os.environ.get('JAVA_HOME')
-       if java_home:
-           print(f"[installer][android-sdk] JAVA_HOME={java_home}")
-           return True
-       else:
-           print("[installer][android-sdk] WARNING: JAVA_HOME not set")
-           return False
-   elif system == "Darwin":
-       # On macOS, JAVA_HOME should already be in os.environ if set
-       java_home = os.environ.get('JAVA_HOME')
-       if java_home:
-           print(f"[installer][android-sdk] JAVA_HOME={java_home}")
-           return True
-       else:
-           print("[installer][android-sdk] WARNING: JAVA_HOME not set")
-           return False
-   
-   return False
-
-
 async def install() -> bool:
    print("[installer][android-sdk] Installing...")
    
-   # Dynamically refresh JAVA_HOME before installation (critical for sdkmanager)
-   if not _refresh_java_home():
-       print("[installer][android-sdk] ERROR: Java/JDK is required to install Android SDK")
-       await send_response({
-           "action": "status",
-           "data": {
-               "category": "Android",
-               "name": "Android SDK",
-               "status": "not installed",
-               "comment": "Java/JDK is required. Please install Java or JDK first.",
-           }
-       })
-       return False
-   
-   # Dynamically refresh ANDROID_HOME from registry on Windows
-   if platform.system() == "Windows":
-       try:
-           import winreg
-           with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-               try:
-                   android_home_reg, _ = winreg.QueryValueEx(key, "ANDROID_HOME")
-                   if android_home_reg:
-                       # Expand environment variables before setting
-                       android_home_expanded = os.path.expandvars(android_home_reg)
-                       os.environ['ANDROID_HOME'] = android_home_expanded
-               except FileNotFoundError:
-                   pass
-               
-               # Also check ANDROID_SDK_ROOT if ANDROID_HOME not found
-               if 'ANDROID_HOME' not in os.environ or not os.environ.get('ANDROID_HOME'):
-                   try:
-                       android_sdk_root_reg, _ = winreg.QueryValueEx(key, "ANDROID_SDK_ROOT")
-                       if android_sdk_root_reg:
-                           # Expand environment variables before setting
-                           android_sdk_root_expanded = os.path.expandvars(android_sdk_root_reg)
-                           os.environ['ANDROID_SDK_ROOT'] = android_sdk_root_expanded
-                   except FileNotFoundError:
-                       pass
-       except Exception:
-           pass
-   
-   # Check if ANDROID_HOME is set
-   android_home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
-   
-   # Expand environment variables in the path (e.g., %USERPROFILE% -> C:\Users\Username)
-   if android_home:
-       android_home = os.path.expandvars(android_home)
-   
-   if android_home:
-       # ANDROID_HOME is set - check if directory exists
-       if os.path.exists(android_home):
-           print(f"[installer][android-sdk] SDK already installed at {android_home}")
-           await send_response({
-               "action": "status",
-               "data": {
-                   "category": "Android",
-                   "name": "Android SDK",
-                   "status": "installed",
-                   "comment": f"Android SDK available at {android_home}",
-               }
-           })
-           return True
-       else:
-           print(f"[installer][android-sdk] ANDROID_HOME is set but directory does not exist: {android_home}")
-           print("[installer][android-sdk] Proceeding with fresh installation...")
-   else:
-       print("[installer][android-sdk] ANDROID_HOME not set, proceeding with installation...")
+   # Check if Android SDK is already installed
+   if await check_status():
+       print("[installer][android-sdk] Android SDK is already installed")
+       return True
    
    sdk_root = _get_sdk_root()
 
@@ -809,9 +507,6 @@ async def install() -> bool:
    ok = await _extract_cmdline_tools(archive_path, sdk_root)
    if not ok:
        return False
-
-
-   await _set_env_vars(sdk_root)
 
 
    # Accept licenses
@@ -849,6 +544,10 @@ async def install() -> bool:
    if not await _run_sdkmanager(sdk_root, core_components):
        print("[installer][android-sdk] Failed installing one or more SDK components")
        return False
+
+
+   # Update PATH after successful installation
+   update_android_sdk_path()
 
 
    print(f"[installer][android-sdk] Installation successful at {sdk_root}")
