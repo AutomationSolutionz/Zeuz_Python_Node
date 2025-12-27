@@ -1310,6 +1310,93 @@ def _sanitize_avd_name(device_name: str) -> str:
     return sanitized
 
 
+def _configure_avd_hardware(avd_name: str) -> bool:
+    """
+    Configure AVD hardware settings to ensure buttons work properly.
+    Sets hw.keyboard=yes in config.ini so hardware buttons are functional.
+    
+    Args:
+        avd_name: Name of the AVD
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Find AVD config directory
+        # AVDs are stored in ~/.android/avd/{avd_name}.avd/ on Linux/macOS
+        # or %USERPROFILE%\.android\avd\{avd_name}.avd\ on Windows
+        system = platform.system()
+        
+        if system == "Windows":
+            avd_home = os.environ.get('ANDROID_AVD_HOME')
+            if not avd_home:
+                user_profile = os.environ.get('USERPROFILE', os.environ.get('HOME', ''))
+                avd_home = os.path.join(user_profile, '.android', 'avd')
+            avd_home = os.path.expandvars(avd_home)
+        else:
+            # Linux/macOS
+            avd_home = os.environ.get('ANDROID_AVD_HOME')
+            if not avd_home:
+                avd_home = os.path.join(os.path.expanduser('~'), '.android', 'avd')
+        
+        config_path = Path(avd_home) / f"{avd_name}.avd" / "config.ini"
+        
+        if not config_path.exists():
+            print(f"[installer][emulator] AVD config file not found: {config_path}")
+            return False
+        
+        # Read current config
+        with open(config_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Modify or add hw.keyboard setting
+        # hw.keyboard=yes enables hardware input so buttons work
+        modified = False
+        new_lines = []
+        hw_keyboard_found = False
+        
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith('hw.keyboard='):
+                # Replace existing setting
+                new_lines.append('hw.keyboard=yes\n')
+                hw_keyboard_found = True
+                if 'no' in stripped.lower():
+                    modified = True
+            else:
+                new_lines.append(line)
+        
+        # Add setting if not found
+        if not hw_keyboard_found:
+            # Add after other hw.* settings if any, otherwise at the end
+            insert_pos = len(new_lines)
+            for i, line in enumerate(new_lines):
+                if line.strip().startswith('hw.') and i < len(new_lines) - 1:
+                    # Check if next line doesn't start with hw.
+                    if i + 1 < len(new_lines) and not new_lines[i + 1].strip().startswith('hw.'):
+                        insert_pos = i + 1
+                        break
+            
+            new_lines.insert(insert_pos, 'hw.keyboard=yes\n')
+            modified = True
+        
+        # Write back if modified
+        if modified:
+            with open(config_path, 'w', encoding='utf-8') as f:
+                f.writelines(new_lines)
+            print(f"[installer][emulator] Configured hardware settings (hw.keyboard=yes) for AVD '{avd_name}'")
+            return True
+        else:
+            print(f"[installer][emulator] Hardware settings already configured for AVD '{avd_name}'")
+            return True
+        
+    except Exception as e:
+        print(f"[installer][emulator] Failed to configure hardware settings for AVD '{avd_name}': {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def _get_highest_api_system_image(system_images: list[dict]) -> str | None:
     """
     Get the system image with the highest API level.
@@ -1636,6 +1723,9 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             return False
         
         print(f"[installer][emulator] AVD '{avd_name}' created successfully")
+        
+        # Configure hardware settings so buttons work properly
+        _configure_avd_hardware(avd_name)
         
         # Note: AVD list will be automatically refreshed when services_list is requested
         # in long_poll_handler.py, so no manual refresh is needed here
