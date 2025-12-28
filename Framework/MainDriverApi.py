@@ -1246,7 +1246,7 @@ def send_dom_variables():
         res = RequestFormatter.request("post",
             RequestFormatter.form_uri("node_ai_contents/"),
             data=json.dumps(data),
-            verify=False
+            timeout=600
         )
         if res.status_code == 500:
             CommonUtil.ExecLog(sModuleInfo, res.json()["info"], 2)
@@ -1465,7 +1465,7 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
                     "execution_detail": execution_detail,
                 })
             },
-            verify=False
+            timeout=600
         )
         duration = round(res.elapsed.total_seconds(), 2)
         # if res.status_code == 200:
@@ -1506,17 +1506,18 @@ def upload_reports_and_zips(temp_ini_file, run_id):
                             "post",
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": json.dumps(tc_report)},
-                            verify=False
+                            timeout=600
                         )
                     else:
                         res = RequestFormatter.request("post",
-                        RequestFormatter.form_uri("create_report_log_api/"),
-                        data={
-                            "execution_report": json.dumps(tc_report),
-                            "processed_tc_id":processed_tc_id
-                        },
-                        files=[("file",perf_report_html)],
-                        verify=False)
+                            RequestFormatter.form_uri("create_report_log_api/"),
+                            data={
+                                "execution_report": json.dumps(tc_report),
+                                "processed_tc_id": processed_tc_id
+                            },
+                            files=[("file", perf_report_html)],
+                            timeout=600
+                        )
 
                     if res.status_code == 200:
                         CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {run_id}", 1)
@@ -1582,10 +1583,11 @@ def upload_reports_and_zips(temp_ini_file, run_id):
                     for zips in opened_zips:
                         files_list.append(("file",zips))
                     res = RequestFormatter.request("post",
-                        RequestFormatter.form_uri("save_log_and_attachment_api/"),
-                        files=files_list,
-                        data={"machine_name": Userid},
-                        verify=False)
+                            RequestFormatter.form_uri("save_log_and_attachment_api/"),
+                            files=files_list,
+                            data={"machine_name": Userid},
+                            timeout=600
+                        )
                     if res.status_code == 200:
                         try:
                             res_json = res.json()
@@ -1629,19 +1631,21 @@ def retry_failed_report_upload():
                     report_json_path = failed_report_dir / folder / 'report.json'
                     report_json = json.load(open(report_json_path))
                     if not report_json.get('perf_filepath'):
-                        res = RequestFormatter.request("post",
+                        res = RequestFormatter.request(
+                            "post",
                             RequestFormatter.form_uri("create_report_log_api/"),
                             data={"execution_report": report_json.get('execution_report')},
-                            verify=False)
+                            timeout=600
+                        )
                     else:
                         res = RequestFormatter.request("post",
                                     RequestFormatter.form_uri("create_report_log_api/"),
                                     data={"execution_report": report_json.get('execution_report'),
                                         "processed_tc_id":report_json.get('processed_tc_id')
-
-                                        },
+                                    },
                                     files=[("file",open(failed_report_dir / folder / 'files' /report_json.get('perf_filepath'),'rb'))],
-                                    verify=False)
+                                    timeout=600
+                                )
 
                         if res.status_code == 200:
                             CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {report_json.get('run_id')}", 1)
@@ -1705,7 +1709,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
     file_name = url[file_name_start_pos:]
     file_path = attachment_info["download_dir"] / file_name
 
-    r = RequestFormatter.request("get", url, stream=True)
+    r = RequestFormatter.request("get", url, stream=True, timeout=600)
     if r.status_code == requests.codes.ok:
         with open(file_path, 'wb') as f:
             for data in r.iter_content(chunk_size=512*1024):
