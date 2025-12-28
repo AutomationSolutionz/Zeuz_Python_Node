@@ -169,10 +169,16 @@ def request(*args, **kwargs):
     """
     request() is a wrapper for requests.request which handles automatic session
     management.
+    Default values:
+        verify = False
+        timeout = 70 sec
     """
     renew_token_with_expiry_check()
     if "verify" not in kwargs:
         kwargs["verify"] = False
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = 70
+    
 
     return session.request(*args, **kwargs)
 
