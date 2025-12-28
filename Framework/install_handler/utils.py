@@ -1,5 +1,5 @@
 import datetime
-import httpx
+import asyncio
 import platform
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 
@@ -42,9 +42,7 @@ def generate_services_list(services):
 async def send_response(data=None) -> None:
     try:
         from Framework.install_handler.route import services
-        
-        api_key = ConfigModule.get_config_value("Authentication", "api-key")
-        url = RequestFormatter.form_uri("d/nodes/install/server/push")
+        host = RequestFormatter.form_uri("d/nodes/install/server/push")
         data['last_updated'] = datetime.datetime.now(datetime.timezone.utc).timestamp()
         data['version'] = version
         data['node_id'] = read_node_id()
@@ -60,13 +58,20 @@ async def send_response(data=None) -> None:
         if debug: 
             print(f"[installer] Sending response to server: {data}")
         
-        async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
-            resp = await client.post(url, json=data, headers={"X-API-KEY": api_key})
-            if debug: 
-                print(f"[installer] Response status: {resp.status_code}")
-                print(f"[installer] Response content: {resp.content}")
-            if not resp.is_success:
+        for _ in range(3):
+            try:
+                resp = await RequestFormatter.request("post", host, json=data, timeout=70)
                 if debug: 
-                    print(f"[installer] Failed to send response: {resp.status_code}")
+                    print(f"[installer] Response status: {resp.status_code}")
+                    print(f"[installer] Response content: {resp.content}")
+                if not resp.ok:
+                    if debug: 
+                        print(f"[installer] Failed to send response: {resp.status_code}")
+                    await asyncio.sleep(3,5)
+                else:
+                    break
+            except Exception as e:
+                if debug: print(e)
+                await asyncio.sleep(3,5)
     except Exception as e:
         print(f"[installer] Error sending response: {e}")
