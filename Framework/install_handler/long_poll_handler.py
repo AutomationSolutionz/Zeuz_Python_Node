@@ -339,7 +339,7 @@ class InstallHandler:
                     f"d/nodes/install/node/listen?node_id={read_node_id()}"
                 )
 
-                resp = resp = RequestFormatter.request("get", host, timeout=70)
+                resp = await RequestFormatter.async_request("get", host, timeout=70)
 
                 if not resp.ok:
                     if debug:
@@ -368,5 +368,5 @@ class InstallHandler:
                     print("[installer] RETRYING...")
                 await asyncio.sleep(random.randint(1, 3))
 
-            self.running = False
-            print("[installer] Stopped running")
+        self.running = False
+        print("[installer] Stopped running")

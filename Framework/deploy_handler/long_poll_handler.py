@@ -265,7 +265,7 @@ class DeployHandler:
 
             try:
                 reconnect = True
-                resp = RequestFormatter.request("get", host, timeout=70)
+                resp = await RequestFormatter.async_request("get", host, timeout=70)
                 if resp is None:
                     break
 

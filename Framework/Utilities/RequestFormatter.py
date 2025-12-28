@@ -1,6 +1,6 @@
 # -- coding: utf-8 --
 # -- coding: cp1252 --
-
+import asyncio
 from . import ConfigModule
 import os
 import requests
@@ -181,6 +181,14 @@ def request(*args, **kwargs):
     
 
     return session.request(*args, **kwargs)
+
+# async wrapper
+async def async_request(*args, **kwargs):
+    """
+    Runs the blocking request() in a worker thread
+    so the event loop is not blocked.
+    """
+    return await asyncio.to_thread(request, *args, **kwargs)
 
 
 def Post(resource_path, payload=None, **kwargs):

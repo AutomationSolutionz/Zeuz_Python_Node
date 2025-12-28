@@ -60,7 +60,7 @@ async def send_response(data=None) -> None:
         
         for _ in range(3):
             try:
-                resp = RequestFormatter.request("post", host, json=data, timeout=70)
+                resp = await RequestFormatter.request("post", host, json=data, timeout=70)
                 if debug: 
                     print(f"[installer] Response status: {resp.status_code}")
                     print(f"[installer] Response content: {resp.content}")
