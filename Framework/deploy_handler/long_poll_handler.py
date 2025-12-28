@@ -238,7 +238,6 @@ class DeployHandler:
                     "donor_node_id": node_id,
                     "private_key": private_key_pem
                 },
-                verify=False
             )
             
             if response.ok:
@@ -266,7 +265,7 @@ class DeployHandler:
 
             try:
                 reconnect = True
-                resp = RequestFormatter.request("get", host, verify=False, timeout=70)
+                resp = RequestFormatter.request("get", host, timeout=70)
                 if resp is None:
                     break
 
@@ -290,9 +289,9 @@ class DeployHandler:
 
                 if not resp.ok:
                     print(
-                        "[deploy] facing difficulty communicating with the server, status code:",
+                        "[deploy] Request Error, status code:",
                         resp.status_code,
-                        " | reconnecting",
+                        "| reconnecting",
                     )
 
                     # Encountered a server error, retry.
