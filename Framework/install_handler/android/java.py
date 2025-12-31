@@ -31,14 +31,29 @@ def get_java_path():
         if item.is_dir() and "jdk" in item.name.lower():
             if system == "Windows":
                 java_exe = item / "bin" / "java.exe"
+            elif system == "Linux":
+                java_exe = item / "bin" / "java"
+            elif system == "Darwin":
+                # macOS: Check for bundle structure first (Contents/Home)
+                contents_home = item / "Contents" / "Home"
+                if contents_home.exists() and (contents_home / "bin" / "java").exists():
+                    java_exe = contents_home / "bin" / "java"
+                else:
+                    # Fallback: regular directory structure
+                    java_exe = item / "bin" / "java"
             else:
                 java_exe = item / "bin" / "java"
+            
             if java_exe.exists():
                 return java_exe
     
     # Fallback to direct bin path (if JDK was extracted directly)
     if system == "Windows":
         return jdk_dir / "bin" / "java.exe"
+    elif system == "Linux":
+        return jdk_dir / "bin" / "java"
+    elif system == "Darwin":
+        return jdk_dir / "bin" / "java"
     else:
         return jdk_dir / "bin" / "java"
 
@@ -89,8 +104,12 @@ def update_java_path():
         return
     
     # Get JDK home directory (parent of bin directory)
-    # java_path is like: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x/bin/java
-    # jdk_home should be: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x
+    # java_path is like:
+    #   Linux/Windows: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x/bin/java
+    #   macOS (bundle): ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x/Contents/Home/bin/java
+    # jdk_home should be:
+    #   Linux/Windows: ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x
+    #   macOS (bundle): ~/.zeuz/zeuz_node_downloads/jdk/jdk-21/jdk-21.0.x/Contents/Home
     jdk_home = java_path.parent.parent
     
     # Set JAVA_HOME for the current process
@@ -292,11 +311,35 @@ async def _extract_jdk(jdk_archive):
       
        # Find the actual JDK directory (it might be nested)
        jdk_home = None
-       for item in jdk_dir.iterdir():
-           if item.is_dir() and "jdk" in item.name.lower():
-               jdk_home = item
-               break
-      
+       
+       if system == "Windows":
+           # Windows: Find JDK directory directly
+           for item in jdk_dir.iterdir():
+               if item.is_dir() and "jdk" in item.name.lower():
+                   jdk_home = item
+                   break
+       elif system == "Linux":
+           # Linux: Find JDK directory directly
+           for item in jdk_dir.iterdir():
+               if item.is_dir() and "jdk" in item.name.lower():
+                   jdk_home = item
+                   break
+       elif system == "Darwin":
+           # macOS: Handle bundle structure (Contents/Home)
+           for item in jdk_dir.iterdir():
+               if item.is_dir() and "jdk" in item.name.lower():
+                   # Check for macOS bundle structure: jdk_dir/Contents/Home
+                   contents_home = item / "Contents" / "Home"
+                   if contents_home.exists() and (contents_home / "bin" / "java").exists():
+                       jdk_home = contents_home
+                       break
+                   # Fallback: regular directory structure (like Linux)
+                   elif (item / "bin" / "java").exists():
+                       jdk_home = item
+                       break
+       else:
+           raise OSError(f"Unsupported platform: {system}")
+       
        if not jdk_home:
            print("[installer][android-jdk] Could not find JDK directory after extraction")
            await send_response({
@@ -309,7 +352,7 @@ async def _extract_jdk(jdk_archive):
                }
            })
            return None
-      
+       
        print(f"[installer][android-jdk] JDK extracted to {jdk_home}")
        return jdk_home
    except Exception as e:
