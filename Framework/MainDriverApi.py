@@ -1147,6 +1147,76 @@ def run_test_case(
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         return "passed"
 
+# for sending variables without dom after command execution
+def send_new_variables():
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        variables = []
+        max_threshold = 50000
+        for var_name in shared.shared_variables:
+            if var_name.startswith("__") and var_name.endswith("__"):
+                continue
+            var_value = shared.shared_variables[var_name]
+            try:
+                if len(json.dumps(var_value)) > max_threshold:
+                    builder = SchemaBuilder()
+                    builder.add_object(var_value)
+                    schema = builder.to_schema()
+                    if len(json.dumps(schema)) <= max_threshold:
+                        variables.append({
+                            "type": "json_schema",
+                            "variable_name": var_name,
+                            "variable_value": schema,
+                            "description": "",
+                        })
+                else:
+                    variables.append({
+                        "type": "json_object",
+                        "variable_name": var_name,
+                        "variable_value": var_value,
+                        "description": "",
+                    })
+            except (json.decoder.JSONDecodeError, TypeError):
+                try:
+                    dir_ = {}
+                    for attr_name in dir(var_value):
+                        if attr_name.startswith('__'):
+                            continue
+                        try:
+                            attr_value = getattr(var_value, attr_name)
+                            dir_[attr_name] = str(type(attr_value))
+                        except Exception:  # ignore getattr errors
+                            pass
+                    variables.append({
+                        "type": f"non_json: {str(var_value)}",
+                        "variable_name": var_name,
+                        "variable_value": dir_,
+                        "description": "",
+                    })
+                except Exception as e:
+                    CommonUtil.ExecLog(sModuleInfo, str(e), 2)
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, str(e), 2)
+
+        dom = None
+
+        data = {
+            "variables": variables,
+            "dom_web": {"dom": dom},
+            "node_id": shared.Get_Shared_Variables('node_id').lower()
+        }
+        res = RequestFormatter.request("post",
+            RequestFormatter.form_uri("node_ai_contents/"),
+            data=json.dumps(data),
+            verify=False
+        )
+        if res.status_code == 500:
+            CommonUtil.ExecLog(sModuleInfo, res.json()["info"], 2)
+        elif res.status_code == 404:
+            CommonUtil.ExecLog(sModuleInfo, 'The chatbot API does not exist, server upgrade needed', 2)
+        return
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, str(e), 2)
 
 def send_dom_variables():
     try:
@@ -1949,7 +2019,7 @@ def main(device_dict, all_run_id_info):
                 shared.Set_Shared_Variables("zeuz_enable_variable_logging", "False")
 
             shared.Set_Shared_Variables("run_id", run_id)
-            shared.Set_Shared_Variables("node_id", CommonUtil.MachineInfo().getLocalUser())
+            shared.Set_Shared_Variables("node_id", CommonUtil.MachineInfo().getLocalUser(), True) # so node id can't be changed and variable updates are in sync
 
             send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
             send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
