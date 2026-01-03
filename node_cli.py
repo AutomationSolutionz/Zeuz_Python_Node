@@ -66,6 +66,9 @@ from Framework.deploy_handler import (  # noqa: E402
 )
 from Framework.Utilities import ConfigModule  # noqa: E402
 from Framework.Utilities import live_log_service  # noqa: E402
+
+from Framework.Utilities import repl_service  # noqa: E402
+
 from Framework.node_server_state import STATE, LoginCredentials  # noqa: E402
 from server import main as node_server  # noqa: E402
 
@@ -382,6 +385,17 @@ async def RunProcess(node_id, log_dir=None):
                 protocol = "ws"
             server_addr = f"{protocol}://{server_url.netloc}"
             return f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
+        
+        def repl_service_addr():
+            server_url = urlparse(
+                ConfigModule.get_config_value("Authentication", "server_address")
+            )
+            if server_url.scheme == "https":
+                protocol = "wss"
+            else:
+                protocol = "ws"
+            server_addr = f"{protocol}://{server_url.netloc}"
+            return f"{server_addr}/faster/v1/ws/repl/send/{node_id}"
 
         def deploy_srv_addr():
             server_url = urlparse(
@@ -391,6 +405,9 @@ async def RunProcess(node_id, log_dir=None):
 
         # Connect to the live log service.
         live_log_service.connect(live_log_service_addr())
+
+        # Connect to the REPL service.
+        repl_service.connect(repl_service_addr())
 
         # WARNING: For local development only.
         # if "localhost" in host:
