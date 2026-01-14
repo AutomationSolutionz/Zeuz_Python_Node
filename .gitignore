@@ -64,3 +64,6 @@ Apps/Windows/Element.xml
 Framework/settings.conf.lock
 Framework/Built_In_Automation/Desktop/Linux/latest_app.txt
 **/linux_screen.png
+**/ios_screen.png
+**/ios_ui.xml
+**/ui.xml
