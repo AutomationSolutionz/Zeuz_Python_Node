@@ -35,10 +35,11 @@ import uvicorn
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeExtensionDownloader
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from Framework.install_handler.android.java import update_java_path
 from settings import ZEUZ_NODE_PRIVATE_RSA_KEYS_DIR
 from Framework.install_handler.long_poll_handler import InstallHandler
 from server.mobile import upload_android_ui_dump, upload_ios_ui_dump
-
+from Framework.install_handler.android.android_sdk import update_android_sdk_path
 
 def adjust_python_path():
     """Adjusts the Python path to include the Framework directory."""
@@ -65,7 +66,7 @@ from Framework.deploy_handler import (  # noqa: E402
 )
 from Framework.Utilities import ConfigModule  # noqa: E402
 from Framework.Utilities import live_log_service  # noqa: E402
-from Framework.node_server_state import STATE  # noqa: E402
+from Framework.node_server_state import STATE, LoginCredentials  # noqa: E402
 from server import main as node_server  # noqa: E402
 
 
@@ -276,8 +277,12 @@ async def Login(
 
             console.print(table)
         elif status_code == 502:
-            print(Fore.YELLOW + "Server offline. Retrying after 60s")
-            await asyncio.sleep(60)
+            print(Fore.YELLOW + "Server offline. Retrying after 30s")
+            await asyncio.sleep(30)
+            STATE.reconnect_with_credentials = LoginCredentials(
+                server=ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address").strip('"').strip(),
+                api_key=ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key").strip('"').strip(),
+            )
             return
         else:
             line_color = Fore.RED
@@ -560,7 +565,7 @@ def update_machine(dependency, should_print=True):
         resp = RequestFormatter.request("post", url, json=update_object)
 
         if resp.status_code != 200:
-            CommonUtil.ExecLog("", "Machine is not registered as online", 4)
+            # CommonUtil.ExecLog("", "Machine is not registered as online", 4)
             return
 
         data = resp.json()
@@ -1337,7 +1342,9 @@ async def main():
 
     # Setup Node.js and Appium before other operations
     setup_nodejs_appium()
+    update_java_path()
 
+    update_android_sdk_path()
     update_outdated_modules()
     asyncio.create_task(start_server())
     asyncio.create_task(upload_android_ui_dump())

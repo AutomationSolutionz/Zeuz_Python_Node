@@ -1,6 +1,6 @@
 # -- coding: utf-8 --
 # -- coding: cp1252 --
-
+import asyncio
 from . import ConfigModule
 import os
 import requests
@@ -169,12 +169,26 @@ def request(*args, **kwargs):
     """
     request() is a wrapper for requests.request which handles automatic session
     management.
+    Default values:
+        verify = False
+        timeout = 70 sec
     """
     renew_token_with_expiry_check()
     if "verify" not in kwargs:
         kwargs["verify"] = False
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = 70
+    
 
     return session.request(*args, **kwargs)
+
+# async wrapper
+async def async_request(*args, **kwargs):
+    """
+    Runs the blocking request() in a worker thread
+    so the event loop is not blocked.
+    """
+    return await asyncio.to_thread(request, *args, **kwargs)
 
 
 def Post(resource_path, payload=None, **kwargs):
@@ -210,16 +224,12 @@ def Get(resource_path, payload=None, **kwargs):
             **kwargs
         ).json()
 
-    except requests.exceptions.RequestException:
-        print(
-            "Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
-            "Please include full server name. Example: https://zeuz.zeuz.ai.\n"
-            "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6"
-        )
+    except requests.exceptions.RequestException as e:
+        print(e)
         return ""
 
     except Exception as e:
-        print("Get Exception: {}".format(e))
+        print(e)
         return {}
 
 

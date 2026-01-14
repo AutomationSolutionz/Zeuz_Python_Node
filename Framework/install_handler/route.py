@@ -11,7 +11,6 @@ from .android import (
 )
 from .ios import xcode, simulator
 from .macos import xcode as macos_xcode
-from .database import postgresql, mysql, mariadb, oracle
 from .windows import inspector
 from .android import emulator
 
@@ -111,7 +110,7 @@ services = [
                 "os": ["darwin"],
                 "status_function": xcode.check_status,
                 "install_function": xcode.install,
-                "user_password": "yes",
+                "user_password": True,
             },
             {
                 "name": "Simulator",
@@ -122,7 +121,7 @@ services = [
                 "os": ["darwin"],
                 "status_function": simulator.check_status,
                 "install_function": simulator.install,
-                "user_password": "yes",
+                "user_password": True,
             },
         ],
     },
@@ -168,7 +167,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": mozilla.check_status,
                 "install_function": mozilla.install,
-                "user_password": False,
+                "user_password": True,
             },
             {
                 "name": "Edge",
@@ -179,7 +178,7 @@ services = [
                 "os": ["windows", "linux", "darwin"],
                 "status_function": edge.check_status,
                 "install_function": edge.install,
-                "user_password": "yes",
+                "user_password": True,
             },
         ],
     },
@@ -199,61 +198,8 @@ services = [
                 "os": ["darwin"],
                 "status_function": macos_xcode.check_status,
                 "install_function": macos_xcode.install,
-                "user_password": "yes",
+                "user_password": True,
             }
-        ],
-    },
-    {
-        "category": "Database",
-        "group": {
-            "check_text": "Check all",
-            "install_text": "",
-        },
-        "services": [
-            {
-                "name": "PostgreSQL",
-                "status": "none",
-                "comment": "PostgreSQL driver is required to connect to PostgreSQL database.",
-                "check_text":"Check status",
-                "install_text": "Install",
-                "os": ["windows", "linux", "darwin"],
-                "status_function": postgresql.check_status,
-                "install_function": postgresql.install,
-                "user_password": "no",
-            },
-            {
-                "name": "MySQL",
-                "status": "none",
-                "comment": "MySQL driver is required to connect to MySQL database.",
-                "check_text":"Check status",
-                "install_text": "Install",
-                "os": ["windows", "linux", "darwin"],
-                "status_function": mysql.check_status,
-                "install_function": mysql.install,
-                "user_password": "no",
-            },
-            {
-                "name": "MariaDB",
-                "status": "none",
-                "comment": "MariaDB driver is required to connect to MariaDB database.",
-                "check_text":"Check status",
-                "install_text": "Install",
-                "os": ["windows", "linux", "darwin"],
-                "status_function": mariadb.check_status,
-                "install_function": mariadb.install,
-                "user_password": "yes",
-            },
-            {
-                "name": "Oracle",
-                "status": "none",
-                "comment": "Oracle driver is required to connect to Oracle database.",
-                "check_text":"Check status",
-                "install_text": "Install",
-                "os": ["windows", "linux", "darwin"],
-                "status_function": oracle.check_status,
-                "install_function": oracle.install,
-                "user_password": "no",
-            },
         ],
     },
     {
@@ -273,7 +219,7 @@ services = [
                 "os": ["windows"],
                 "status_function": inspector.check_status,
                 "install_function": inspector.install,
-                "user_password": "no",
+                "user_password": False,
             }
         ],
     },

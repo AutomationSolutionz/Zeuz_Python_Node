@@ -276,6 +276,12 @@ class InstallHandler:
                     }
                 )
             elif action == "group_install":
+
+                user_password = ""
+                if message.value.item:
+                    user_password = (
+                        getattr(message.value.item, "user_password", "") or ""
+                    )
                 await send_response(
                     {
                         "action": "group_install",
@@ -294,7 +300,14 @@ class InstallHandler:
                     if i["install_function"]
                 ]
                 for func in functions:
-                    await func()
+                    # Check if function accepts parameters
+                    sig = inspect.signature(func)
+                    if len(sig.parameters) > 0:
+                        # Function accepts parameters, pass user_password
+                        await func(user_password)
+                    else:
+                        # Function doesn't accept parameters, call without (backward compatibility)
+                        await func()
                 await send_response(
                     {
                         "action": "group_install",
@@ -324,62 +337,49 @@ class InstallHandler:
             return
         if debug:
             print(f"[installer] Started running")
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(70.0), verify=False
-        ) as client:
-            self.client = client
-            while not self.cancel_:
-                if STATE.reconnect_with_credentials is not None:
-                    if debug:
-                        print("[installer] Reconnection requested, stopping...")
-                    break
+        
+        while not self.cancel_:
+            if STATE.reconnect_with_credentials is not None:
+                if debug:
+                    print("[installer] Reconnection requested, stopping...")
+                break
 
-                self.running = True
+            self.running = True
+            try:
+                if debug:
+                    print("[installer] Active")
+                host = RequestFormatter.form_uri(
+                    f"d/nodes/install/node/listen?node_id={read_node_id()}"
+                )
+
+                resp = await RequestFormatter.async_request("get", host, timeout=70)
+
+                if not resp.ok:
+                    if debug:
+                        print(
+                            "[installer] Request Error, status code:",
+                            resp.status_code,
+                            "| retrying after 15 sec",
+                        )
+                        print(Fore.YELLOW + str(resp.content))
+
+                    await asyncio.sleep(15)
+                    continue
+
                 try:
-                    if debug:
-                        print("[installer] Active")
-                    api_key = ConfigModule.get_config_value("Authentication", "api-key")
-                    url = RequestFormatter.form_uri(
-                        f"d/nodes/install/node/listen?node_id={read_node_id()}"
-                    )
+                    data = resp.json()
+                    if data:
+                        validated_data = Response(**data)
+                        await self.on_message(validated_data)
+                except Exception as e:
+                    print(f"[installer] Type Error in parsing response: {e}")
+                    continue
 
-                    resp = await client.get(url, headers={"X-API-KEY": api_key})
-                    if resp.status_code == httpx.codes.NO_CONTENT:
-                        continue
+            except Exception:
+                if debug:
+                    traceback.print_exc()
+                    print("[installer] RETRYING...")
+                await asyncio.sleep(random.randint(1, 3))
 
-                    if not resp.is_success:
-                        if debug:
-                            print(
-                                "[installer] facing difficulty communicating with the server, status code:",
-                                resp.status_code,
-                                " | reconnecting",
-                            )
-                            print(Fore.YELLOW + str(resp.content))
-
-                        await asyncio.sleep(random.randint(1, 3))
-                        continue
-
-                    try:
-                        data = resp.json()
-                        if data:
-                            validated_data = Response(**data)
-                            await self.on_message(validated_data)
-                    except Exception as e:
-                        print(f"[installer] Error parsing response: {e}")
-                        continue
-
-                except httpx.ReadTimeout:
-                    pass
-                except httpx.ConnectError:
-                    if debug:
-                        print("[installer] Connection error, retrying...")
-                    await asyncio.sleep(random.randint(3, 5))
-                except Exception:
-                    if debug:
-                        traceback.print_exc()
-                    if debug:
-                        print("[installer] RETRYING...")
-                    await asyncio.sleep(random.randint(1, 3))
-
-            self.running = False
-            print("[installer] Stopped running")
+        self.running = False
+        print("[installer] Stopped running")
