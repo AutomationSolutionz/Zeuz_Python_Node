@@ -36,6 +36,7 @@ class ChromeForTesting:
             self.platform_key = "mac-arm64" if self.arch == "arm64" else "mac-x64"
         elif self.system == "linux":
             self.platform_key = "linux64"
+            self._install_linux_dependencies()
         else:
             raise OSError(f"Unsupported platform: {self.system}/{self.arch}")
         
@@ -44,6 +45,36 @@ class ChromeForTesting:
         
         if not self.CHROME_INFO_FILE.exists():
             self._init_info_file()
+
+    def _install_linux_dependencies(self):
+        """Install Chrome dependencies for Ubuntu 24.04 LTS"""
+        try:
+            # Check if running on Ubuntu
+            with open('/etc/os-release', 'r') as f:
+                os_info = f.read()
+            
+            if 'ubuntu' in os_info.lower() and '24.04' in os_info.lower():
+                # some cft dependencies for Ubuntu 24.04
+                deps = [
+                    'libnss3', 'libxss1', 'libappindicator3-1', 'fonts-liberation',
+                    'libasound2t64', 'libnspr4', 'libx11-xcb1', 'libxcomposite1',
+                    'libxcursor1', 'libxdamage1', 'libxi6', 'libxtst6', 'libglib2.0-0t64',
+                    'libgtk-3-0t64', 'libgdk-pixbuf2.0-0', 'libxrandr2', 'libpangocairo-1.0-0',
+                    'libatk1.0-0t64', 'libcairo-gobject2', 'xvfb', 'ca-certificates',
+                    'libatk-bridge2.0-0', 'libdrm2', 'libxkbcommon0', 'lsb-release',
+                    'wget', 'xdg-utils'
+                ]
+                
+                print("Installing Chrome dependencies for Ubuntu...")
+                subprocess.run(['sudo', 'apt-get', 'update', '-qq'], check=True)
+                subprocess.run(['sudo', 'apt-get', 'install', '-y'] + deps, check=True)
+                print("Dependencies installed successfully.")
+            else:
+                return
+            
+        except Exception as e:
+            print(f"Warning: Could not install dependencies: {e}")
+            print("You may need to install Chrome dependencies manually.")
 
     def _init_info_file(self):
         #modification here to add settings to default structure
