@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -e
 
 REPO="AutomationSolutionz/Zeuz_Python_Node"
@@ -8,13 +8,13 @@ API_URL="https://api.github.com/repos/$REPO/releases/latest"
 # Downloader helper
 # ---------------------------
 download() {
-  local url="$1"
-  local output="$2"
+  local_url="$1"
+  local_output="$2"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url" -o "$output"
+    curl -fsSL "$local_url" -o "$local_output"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO "$output" "$url"
+    wget -qO "$local_output" "$local_url"
   else
     echo "❌ Neither curl nor wget is available"
     exit 1
@@ -22,12 +22,12 @@ download() {
 }
 
 fetch() {
-  local url="$1"
+  local_url="$1"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url"
+    curl -fsSL "$local_url"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO- "$url"
+    wget -qO- "$local_url"
   else
     echo "❌ Neither curl nor wget is available"
     exit 1
@@ -37,15 +37,15 @@ fetch() {
 # ---------------------------
 # Detect platform
 # ---------------------------
-OS="$(uname -s)"
-ARCH="$(uname -m)"
+OS=$(uname -s)
+ARCH=$(uname -m)
 BINARY=""
 
 case "$OS" in
   Linux)
-    if [[ "$ARCH" == "x86_64" ]]; then
+    if [ "$ARCH" = "x86_64" ]; then
       BINARY="ZeuZ_Node_linux"
-    elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
       BINARY="ZeuZ_Node_linux_arm64"
     else
       echo "❌ Unsupported Linux architecture: $ARCH"
@@ -53,9 +53,9 @@ case "$OS" in
     fi
     ;;
   Darwin)
-    if [[ "$ARCH" == "x86_64" ]]; then
+    if [ "$ARCH" = "x86_64" ]; then
       BINARY="ZeuZ_Node_macos"
-    elif [[ "$ARCH" == "arm64" ]]; then
+    elif [ "$ARCH" = "arm64" ]; then
       BINARY="ZeuZ_Node_macos_amd64"
     else
       echo "❌ Unsupported macOS architecture: $ARCH"
@@ -75,14 +75,15 @@ echo "➡️  Binary: $BINARY"
 # ---------------------------
 # Resolve latest release URL
 # ---------------------------
+# Using grep and cut for compatibility across different environments
 DOWNLOAD_URL=$(
   fetch "$API_URL" |
-  grep browser_download_url |
+  grep "browser_download_url" |
   grep "$BINARY\"" |
   cut -d '"' -f 4
 )
 
-if [[ -z "$DOWNLOAD_URL" ]]; then
+if [ -z "$DOWNLOAD_URL" ]; then
   echo "❌ Could not find binary in latest release"
   exit 1
 fi
