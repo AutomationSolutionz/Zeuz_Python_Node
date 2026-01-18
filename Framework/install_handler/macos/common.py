@@ -21,6 +21,20 @@ async def _send_status(category, status: str, comment: str):
     )
 
 
+def fallback_is_xcode_installed() -> bool:
+    try:
+        result = subprocess.run(
+            ["xcode-select", "-p"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        return bool(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 async def xcode_check_status(category) -> bool:
     """Check if Xcode is installed and license is accepted."""
     print("[xcode] Checking status...")
@@ -32,7 +46,7 @@ async def xcode_check_status(category) -> bool:
         return False
 
     xcodebuild_path = shutil.which("xcodebuild")
-    if not xcodebuild_path or not os.path.exists("/Applications/Xcode.app"):
+    if not xcodebuild_path and not os.path.exists("/Applications/Xcode.app") and not fallback_is_xcode_installed():
         await _send_status(category, "not installed", "Xcode is not installed.")
         return False
 
