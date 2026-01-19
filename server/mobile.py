@@ -6,10 +6,12 @@ import shutil
 import subprocess
 import base64
 import json
-from typing import Literal
+from typing import Literal, Optional
 import asyncio
 import socket
 import xml.etree.ElementTree as ET
+import zipfile
+import plistlib
 
 import requests
 from androguard.core.apk import APK
@@ -533,3 +535,131 @@ def handle_apk_install(filename: str, serial: str):
     except Exception as e:
         return {"message": f"Error installing APK: {str(e)}", "filename": filename, "package_name": package_name}
 
+
+@router.get("/package-installed")
+def check_package_installed(package_name: str, serial: str | None = None):
+    """Check if an android package is installed on the device."""
+    try:
+        device_flag = f"-s {serial}" if serial else ""
+        result = run_adb_command(
+            f"{ADB_PATH} {device_flag} shell pm list packages {package_name}".strip()
+        )
+        if result.startswith("Error:"):
+            return {"installed": False, "package_name": package_name, "error": result}
+        
+        # pm list packages returns lines like "package:com.example.app"
+        # Check if the exact package is in the output
+        installed_packages = [line.replace("package:", "") for line in result.split("\n") if line.startswith("package:")]
+        is_installed = package_name in installed_packages
+        
+        return {"installed": is_installed, "package_name": package_name}
+    except Exception as e:
+        return {"installed": False, "package_name": package_name, "error": str(e)}
+
+
+@router.post("/ios/app-upload")
+def handle_ios_app_upload(file: UploadFile = File(...)):
+    dir_path = f"{ZEUZ_NODE_DOWNLOADS_DIR}/ios-app"
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        
+    filename = file.filename or "uploaded.app"
+    filepath = os.path.join(dir_path, filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"message": "App uploaded successfully", "filename": filename}
+
+
+def normalized_ios_app_path(file_path: str) -> Optional[str]:
+    """
+    ensure that we ended up with a .app directory even if user provided .ipa
+    """
+    if not os.path.exists(file_path):
+        return None
+    
+    # if already .app
+    if file_path.endswith(".app") and os.path.isdir(file_path):
+        return file_path
+    
+    # .ipa, so we have to extract to get .app
+    if file_path.endswith(".ipa"):
+        extract_dir = file_path.replace(".ipa", "_extracted")
+        zip_path = file_path.replace(".ipa", ".zip")
+
+        # copy instead of rename to avoid breaking original file
+        shutil.copy(file_path, zip_path)
+        
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+            
+        payload_dir = os.path.join(extract_dir, "Payload")
+        if not os.path.isdir(payload_dir):
+            return None
+        
+        for item in os.listdir(payload_dir):
+            if item.endswith(".app"):
+                return os.path.join(payload_dir, item)
+        
+        return None
+
+def extract_bundle_id_from_app(app_path: str) -> Optional[str]:
+    """
+    Reads CFBundleIdentifier from Info.plist inside .app bundle
+    """
+    info_plist_path = os.path.join(app_path, "Info.plist")
+
+    if not os.path.exists(info_plist_path):
+        return None
+    
+    try:
+        with open(info_plist_path, "rb") as f:
+            plist_data = plistlib.load(f)
+            return plist_data.get("CFBundleIdentifier")
+    except Exception:
+        return None
+
+
+@router.post("/ios/app-install")
+def handle_ios_app_install(filename: str, sim_udid: str):
+    """
+    handling the ios app installation in the simolator
+    """
+    dirpath = f"{ZEUZ_NODE_DOWNLOADS_DIR}/ios-app"
+    filepath = os.path.join(dirpath, filename)
+    if not os.path.exists(dirpath):
+        return {"message": "App not found", "filename": filename}
+    
+    app_path = normalized_ios_app_path(filepath)
+    if not app_path:
+        return {"message": "Failed to normalize .app", "filename": filename}
+    
+    bundle_id = extract_bundle_id_from_app(app_path)
+    
+    try:
+        subprocess.run(
+            ["xcrun", "simctl", "install", sim_udid, app_path],
+            check=True
+        )
+        return {
+            "message": "App installed successfully",
+            "filename": filename,
+            "bundle_id": bundle_id,
+        }
+    except subprocess.CalledProcessError as e:
+        return {
+            "message": f"Error installing app: {str(e)}",
+            "filename": filename,
+            "bundle_id": bundle_id,
+        }
+
+
+@router.get("/ios/bundle-installed")
+def is_ios_app_installed(sim_udid: str, bundle_id: str) -> bool:
+    result = subprocess.run(
+        ["xcrun", "simctl", "get_app_container", sim_udid, bundle_id],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    return result.returncode == 0
