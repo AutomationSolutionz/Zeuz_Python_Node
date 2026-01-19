@@ -406,9 +406,6 @@ def capture_ios_ui_dump(device_udid: str):
             return
     except:
         pass
-        
-    # No real source available
-    raise Exception("iOS service error. Make sure simulator is running.")
 
 
 async def upload_android_ui_dump():
@@ -602,6 +599,25 @@ def normalized_ios_app_path(file_path: str) -> Optional[str]:
                 return os.path.join(payload_dir, item)
         
         return None
+    
+    # extract zip because 'test.app' is not a file, so browser zip that before send to me
+    if file_path.endswith(".app.zip") or file_path.endswith(".zip"):
+        extract_dir = file_path + "_extracted"
+        os.makedirs(extract_dir, exist_ok=True)
+
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(extract_dir)
+
+        # search recursively for .app folder so it will pick very first .app folder
+        for root, dirs, files in os.walk(extract_dir):
+            for d in dirs:
+                if d.endswith(".app") and os.path.isdir(os.path.join(root, d)):
+                    return os.path.join(root, d)
+
+        return None
+
+    return None
+
 
 def extract_bundle_id_from_app(app_path: str) -> Optional[str]:
     """
