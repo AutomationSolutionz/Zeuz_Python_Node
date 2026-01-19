@@ -627,7 +627,7 @@ def handle_ios_app_install(filename: str, sim_udid: str):
     """
     dirpath = f"{ZEUZ_NODE_DOWNLOADS_DIR}/ios-app"
     filepath = os.path.join(dirpath, filename)
-    if not os.path.exists(dirpath):
+    if not os.path.exists(filepath):
         return {"message": "App not found", "filename": filename}
     
     app_path = normalized_ios_app_path(filepath)
@@ -637,10 +637,34 @@ def handle_ios_app_install(filename: str, sim_udid: str):
     bundle_id = extract_bundle_id_from_app(app_path)
     
     try:
-        subprocess.run(
+        # uninstall if already exists
+        try:
+            subprocess.run(
+                ["xcrun", "simctl", "uninstall", sim_udid, bundle_id],
+                capture_output=True, text=True, timeout=30
+            )
+        except:
+            pass  # Ignore uninstall errors
+        
+        # Install the app
+        result = subprocess.run(
             ["xcrun", "simctl", "install", sim_udid, app_path],
-            check=True
+            capture_output=True, text=True, check=True, timeout=120
         )
+        
+        # Verify installation
+        verify_result = subprocess.run(
+            ["xcrun", "simctl", "get_app_container", sim_udid, bundle_id],
+            capture_output=True, text=True, timeout=30
+        )
+        
+        if verify_result.returncode != 0:
+            return {
+                "message": f"App installed but verification failed: {verify_result.stderr}",
+                "filename": filename,
+                "bundle_id": bundle_id,
+            }
+        
         return {
             "message": "App installed successfully",
             "filename": filename,
@@ -648,7 +672,7 @@ def handle_ios_app_install(filename: str, sim_udid: str):
         }
     except subprocess.CalledProcessError as e:
         return {
-            "message": f"Error installing app: {str(e)}",
+            "message": f"Error installing app: {e.stderr or str(e)}",
             "filename": filename,
             "bundle_id": bundle_id,
         }
@@ -659,10 +683,20 @@ def is_ios_app_installed(sim_udid: str, bundle_id: str):
     try:
         result = subprocess.run(
             ["xcrun", "simctl", "get_app_container", sim_udid, bundle_id],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+            capture_output=True, text=True, timeout=10
         )
-        return {"installed": result.returncode == 0}
+        
+        if result.returncode == 0 and result.stdout.strip():
+            list_result = subprocess.run(
+                ["xcrun", "simctl", "listapps", sim_udid],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if list_result.returncode == 0:
+                return {"installed": bundle_id in list_result.stdout}
+            
+            return {"installed": True}
+        
+        return {"installed": False}
     except Exception as e:
         return {"installed": False, "error": str(e)}
