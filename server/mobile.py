@@ -655,11 +655,14 @@ def handle_ios_app_install(filename: str, sim_udid: str):
 
 
 @router.get("/ios/bundle-installed")
-def is_ios_app_installed(sim_udid: str, bundle_id: str) -> bool:
-    result = subprocess.run(
-        ["xcrun", "simctl", "get_app_container", sim_udid, bundle_id],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    return result.returncode == 0
+def is_ios_app_installed(sim_udid: str, bundle_id: str):
+    try:
+        result = subprocess.run(
+            ["xcrun", "simctl", "get_app_container", sim_udid, bundle_id],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        return {"installed": result.returncode == 0}
+    except Exception as e:
+        return {"installed": False, "error": str(e)}
