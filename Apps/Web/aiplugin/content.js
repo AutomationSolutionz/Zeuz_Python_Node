@@ -45,7 +45,7 @@ function injectInspectorUI() {
     .ai-fab {
       width: 56px;
       height: 56px;
-      background: #1500ffff;
+      background: #d3a8ffff;
       border-radius: 50%;
       border: 2px solid #fff;
       display: flex;
@@ -54,12 +54,18 @@ function injectInspectorUI() {
       font-size: 28px;
       color: white;
       transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .ai-fab img {
+      pointer-events: none;
     }
     
     /* Active State */
     .ai-fab.active {
-      background: #ff0000ff;
+      background: #ff8d8dff;
       animation: pulse 2s infinite;
+      cursor: default;
     }
     
     /* Hover Effect */
@@ -108,8 +114,10 @@ function injectInspectorUI() {
   const btn = document.createElement('div');
   btn.className = 'ai-fab';
   const btnImg = document.createElement('img');
-  btnImg.src = 'zeuz.png'
-  btn.innerHTML = btnImg;
+  btnImg.src = chrome.runtime.getURL('zeuz.png');
+  btnImg.style.width = '32px';
+  btnImg.style.height = '32px';
+  btn.appendChild(btnImg);
 
   // close btn
   const closeBtn = document.createElement('div');
@@ -128,9 +136,12 @@ function injectInspectorUI() {
   // drag
   let isDragging = false;
   let hasMoved = false;
-  let startX, startY, initialRight, initialBottom;
+  let startX, startY;
 
   const onMouseDown = (e) => {
+    // don't drag if inspector is active
+    if (btn.classList.contains('active')) return;
+    
     isDragging = true;
     hasMoved = false;
     
@@ -143,6 +154,8 @@ function injectInspectorUI() {
 
     startX = e.clientX;
     startY = e.clientY;
+    
+    e.preventDefault();
   };
 
   const onMouseMove = (e) => {
@@ -171,8 +184,17 @@ function injectInspectorUI() {
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
   
-  btn.addEventListener('click', () => {
-    if (!hasMoved) {
+  btn.addEventListener('click', (e) => {
+    if (!hasMoved && !btn.classList.contains('active')) {
+      chrome.runtime.sendMessage({ action: 'toggle_from_content_script' });
+    }
+    hasMoved = false; // Reset after click
+  });
+
+  // right-click context menu for deactivation when inspector is active
+  btn.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (btn.classList.contains('active')) {
       chrome.runtime.sendMessage({ action: 'toggle_from_content_script' });
     }
   });
@@ -180,8 +202,10 @@ function injectInspectorUI() {
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === 'activate') {
       btn.classList.add('active');
+      btnImg.src = chrome.runtime.getURL('zeuz-active.png');
     } else if (request.action === 'deactivate') {
       btn.classList.remove('active');
+      btnImg.src = chrome.runtime.getURL('zeuz.png');
     }
   });
 }
