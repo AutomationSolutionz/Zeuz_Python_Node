@@ -135,6 +135,13 @@ if (navigator.userAgentData.platform.toLowerCase().includes('mac')) {
 }
 browserAppData.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
+        
+        if (request.action === 'toggle_from_content_script') {
+            // allows the floating button to trigger the toggle logic
+            toggle(sender.tab);
+            return;
+        }
+
         if (request.apiName == 'ai_record_single_action') {
             var url = `${zeuz_url}/ai_record_single_action/`
             fetch(url, {
@@ -182,3 +189,18 @@ browserAppData.runtime.onMessage.addListener(
         }
     }
 );
+
+// add AI Inspector to the right click menu
+browserAppData.runtime.onInstalled.addListener(() => {
+  browserAppData.contextMenus.create({
+    id: "toggle-ai-inspect",
+    title: "Inspect with AI",
+    contexts: ["all"]
+  });
+});
+
+browserAppData.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "toggle-ai-inspect" && tab) {
+    toggle(tab);
+  }
+});

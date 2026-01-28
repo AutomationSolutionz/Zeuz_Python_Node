@@ -29,6 +29,16 @@
             "js": [
                 "inspect.js"
             ]
+        },
+        {
+            "all_frames": false, 
+            "matches": [
+                "http://*/*",
+                "https://*/*"
+            ],
+            "js": [
+                "content.js" 
+            ]
         }
     ],
     "commands": {
@@ -50,5 +60,11 @@
     "host_permissions": [
         "http://*/",
         "https://*/"
-    ]
+    ],
+    "web_accessible_resources": [
+    {
+        "resources": ["zeuz.png", "zeuz-active.png"],
+        "matches": ["<all_urls>"]
+    }
+]
 }
