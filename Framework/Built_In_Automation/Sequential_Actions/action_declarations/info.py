@@ -1,5 +1,6 @@
 import regex as re
 from . import (
+    ai,
     appium,
     common,
     desktop,
@@ -15,6 +16,7 @@ from . import (
 )
 
 modules = (
+    ai,
     appium,
     common,
     desktop,
@@ -43,6 +45,7 @@ action_support = (
     "action",
     "optional action",
     "loop action",
+    "ai action",
     "element parameter",
     "child parameter",
     "sibling parameter",

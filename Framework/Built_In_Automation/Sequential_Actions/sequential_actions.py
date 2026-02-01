@@ -157,6 +157,11 @@ def load_sa_modules(
             from Framework.Built_In_Automation.Security import (
                 BuiltInFunctions as security
             )
+        elif module == "ai":
+            global ai
+            from Framework.Built_In_Automation.AI import (
+                BuiltInFunctions as ai
+            )
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Invalid sequential actions module: %s" % module, 3
