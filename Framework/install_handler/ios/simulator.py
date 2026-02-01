@@ -117,6 +117,21 @@ async def _create_default_device() -> bool:
         await _send_status("error", f"Auto-creation of device failed: {e}")
         return False
 
+
+def fallback_is_xcode_installed() -> bool:
+    try:
+        result = subprocess.run(
+            ["xcode-select", "-p"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        return bool(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 async def check_status() -> bool:
     """Check if iOS Simulator is installed and available."""
     print("[simulator] Checking status...")
@@ -125,7 +140,7 @@ async def check_status() -> bool:
         await _send_status("error", "Unsupported OS. iOS Simulator is only available on macOS.")
         return False
 
-    if not os.path.exists("/Applications/Xcode.app"):
+    if not os.path.exists("/Applications/Xcode.app") and not fallback_is_xcode_installed():
         await _send_status("not installed", "Xcode must be installed before using iOS Simulator.")
         return False
 
