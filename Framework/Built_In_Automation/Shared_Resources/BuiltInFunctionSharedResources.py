@@ -1476,3 +1476,44 @@ def Hide_Secretive_Text(text_value):
                         break
           
     return text_value
+
+
+def get_cleaned_selenium_dom(selenium_driver):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        import selenium.common.exceptions
+        dom = selenium_driver.execute_script("""
+            var html = document.createElement('html');
+            html.setAttribute('zeuz','aiplugin');
+            var myString = document.documentElement.outerHTML;
+            html.innerHTML = myString;
+
+            var elements = html.getElementsByTagName('head');
+            while (elements[0])
+                elements[0].parentNode.removeChild(elements[0])
+
+            var elements = html.getElementsByTagName('link');
+            while (elements[0])
+                elements[0].parentNode.removeChild(elements[0])
+
+            var elements = html.getElementsByTagName('script');
+            while (elements[0])
+                elements[0].parentNode.removeChild(elements[0])
+
+            var elements = html.getElementsByTagName('style');
+            while (elements[0])
+                elements[0].parentNode.removeChild(elements[0])
+
+            // AI model works better on indented dom, so not removing indentation.
+            // var result = html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
+
+            //The following code removes non-unicode characters except newline and tab
+            var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
+            return result;""")
+        return dom
+    except selenium.common.exceptions.JavascriptException as e:
+        CommonUtil.ExecLog(sModuleInfo, sys.exc_info(), 2)
+        return None
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, sys.exc_info(), 2)
+        return None
