@@ -747,6 +747,11 @@ def for_loop_action(step_data, data_set_no):
                     inner_skip = list(set(inner_skip + skip))
                     outer_skip = list(set(outer_skip + inner_skip))
 
+                    if step_exit_pass_called or step_exit_fail_called:
+                        step_exit_pass_called = False
+                        step_exit_fail_called = False
+                        break
+
                     if result == "passed" and data_set_index in exit_loop_and_cont["pass"][step_cnt]:
                         step_exit_fail_called = False
                         step_exit_pass_called = False
@@ -818,10 +823,6 @@ def for_loop_action(step_data, data_set_no):
                             CommonUtil.ExecLog(sModuleInfo, "Condition matched. Continuing to next iteration", 1)
                             cont_break = True
                             break
-
-                    if step_exit_fail_called or step_exit_pass_called:
-                        die = True
-                        break
 
                 if die or cont_break:
                     break
