@@ -34,6 +34,7 @@ import sys
 import time
 import json
 import subprocess
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 from datetime import datetime
@@ -2417,6 +2418,20 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
             time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
         result = run_function(data_set)  # Execute function, providing all rows in the data set
+        
+        # Handle async functions
+        if asyncio.iscoroutine(result):
+            # If result is a coroutine, run it in a separate thread
+            import concurrent.futures
+            import threading
+            
+            def run_async_in_thread(coro):
+                """Run coroutine in a new thread with its own event loop"""
+                return asyncio.run(coro)
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(run_async_in_thread, result)
+                result = future.result()
         if post_sleep:
             time.sleep(post_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:

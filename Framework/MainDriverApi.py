@@ -7,6 +7,7 @@ import inspect
 import os
 import time
 import sys
+import asyncio
 from typing import Any, Dict
 from urllib.parse import urlparse
 import urllib.request, urllib.error, urllib.parse
@@ -312,6 +313,13 @@ def call_driver_function_of_test_step(
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
+                
+                # Debug: Check if function is async immediately
+                CommonUtil.ExecLog(sModuleInfo, f"Function: {functionTocall}", 5)
+                CommonUtil.ExecLog(sModuleInfo, f"Function type: {type(functionTocall)}", 5)
+                CommonUtil.ExecLog(sModuleInfo, f"Is coroutine function: {asyncio.iscoroutinefunction(functionTocall)}", 5)
+                CommonUtil.ExecLog(sModuleInfo, f"Function name: {getattr(functionTocall, '__name__', 'unknown')}", 5)
+                
             except Exception as e:
                 CommonUtil.Exception_Handler(
                     sys.exc_info(),
@@ -321,88 +329,127 @@ def call_driver_function_of_test_step(
                 )
                 return "zeuz_failed"
 
-            try:
-                simple_queue = queue.Queue()
-                screen_capture = "Desktop"      # No need of screen capture. Need to delete this
+        except Exception as e:
+            CommonUtil.Exception_Handler(
+                sys.exc_info(),
+                None,
+                "Could not find driver file: %s. Perhaps you need to add a custom driver."
+                % (step_name, current_driver),
+            )
+            return "zeuz_failed"
 
-                # run in thread
-                if ConfigModule.get_config_value("RunDefinition", "threading") in passed_tag_list:
-                    stepThread = threading.Thread(
-                        target=functionTocall,
-                        args=(
-                            test_steps_data,
-                            test_action_info,
-                            simple_queue,
-                            debug_actions,
-                        ),
-                    )  # start step thread
+        try:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Executing step: %s from driver: %s"
+                % (step_name, current_driver),
+            )
+        except:
+            pass
 
+        try:
+            simple_queue = queue.Queue()
+            screen_capture = "Desktop"      # No need of screen capture. Need to delete this
 
-                    CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)  # add log
-
-                    # start thread
-                    stepThread.start()
-
-                    # Wait for the Thread to finish or until timeout
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Waiting for Test Step Thread to finish..for (seconds) :%d"
-                        % step_time,
-                        1,
-                    )
-                    stepThread.join(float(step_time))
-
-                    try:
-                        sStepResult = simple_queue.get_nowait()
-                        # Get the return value from the ExecuteTestStep
-                        # fn via Queue
-                        q.put(sStepResult)
-                        CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
-                    except queue.Empty:
-                        # Global.DefaultTestStepTimeout
-                        ErrorMessage = "Test Step didn't return after %d seconds" % step_time
-                        CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-                        sStepResult = "zeuz_failed"
-                        q.put(sStepResult)
-
-                        # Clean up
-                        if stepThread.is_alive():
-                            CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
-                            # stepThread.__stop()
-                            try:
-                                # stepThread._Thread__stop()
-                                terminate_thread(stepThread)
-                                while stepThread.is_alive():
-                                    time.sleep(1)
-                                    CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 2)
-                            except:
-                                CommonUtil.Exception_Handler(sys.exc_info())
+            def thread_wrapper(*args):
+                """Wrapper function to handle async functions in threading context"""
+                if asyncio.iscoroutinefunction(functionTocall):
+                    # If function is async, run it in new event loop
+                    return asyncio.run(functionTocall(*args))
                 else:
-                    # run sequentially
+                    # If function is sync, call it normally
+                    return functionTocall(*args)
+
+            # run in thread
+            if ConfigModule.get_config_value("RunDefinition", "threading") in passed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Using threading path", 5)
+                stepThread = threading.Thread(
+                    target=thread_wrapper,
+                    args=(
+                        test_steps_data,
+                        test_action_info,
+                        simple_queue,
+                        debug_actions,
+                    ),
+                )  # start step thread
+
+                CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)  # add log
+
+                # start thread
+                stepThread.start()
+
+                # Wait for the Thread to finish or until timeout
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Waiting for Test Step Thread to finish..for (seconds) :%d"
+                    % step_time,
+                    1,
+                )
+                stepThread.join(float(step_time))
+
+                try:
+                    sStepResult = simple_queue.get_nowait()
+                    # Get the return value from the ExecuteTestStep
+                    # fn via Queue
+                    q.put(sStepResult)
+                    CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
+                except queue.Empty:
+                    # Global.DefaultTestStepTimeout
+                    ErrorMessage = "Test Step didn't return after %d seconds" % step_time
+                    CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+                    sStepResult = "zeuz_failed"
+                    q.put(sStepResult)
+
+                    # Clean up
+                    if stepThread.is_alive():
+                        CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
+                        # stepThread.__stop()
+                        try:
+                            # stepThread._Thread__stop()
+                            terminate_thread(stepThread)
+                            while stepThread.is_alive():
+                                time.sleep(1)
+                                CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 2)
+                        except:
+                            CommonUtil.Exception_Handler(sys.exc_info())
+            else:
+                # run sequentially
+                CommonUtil.ExecLog(sModuleInfo, f"Function type: {type(functionTocall)}", 5)
+                CommonUtil.ExecLog(sModuleInfo, f"Is coroutine function: {asyncio.iscoroutinefunction(functionTocall)}", 5)
+                
+                if asyncio.iscoroutinefunction(functionTocall):
+                    # If function is async, await it
+                    CommonUtil.ExecLog(sModuleInfo, "Detected async function, using asyncio.run", 5)
+                    sStepResult = asyncio.run(functionTocall(
+                        test_steps_data,
+                        test_action_info,
+                        simple_queue,
+                        debug_actions,
+                    ))
+                else:
+                    # If function is sync, call it normally
+                    CommonUtil.ExecLog(sModuleInfo, "Detected sync function, calling directly", 5)
                     sStepResult = functionTocall(
                         test_steps_data,
                         test_action_info,
                         simple_queue,
                         debug_actions,
                     )
-            except:
-                CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
-                sStepResult = "zeuz_failed"
-
-            # get step result
-            if sStepResult in passed_tag_list:
-                sStepResult = "PASSED"
-            elif sStepResult in failed_tag_list:
-                sStepResult = "zeuz_failed".upper()
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
-                CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" % passed_tag_list, 3)
-                CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" % failed_tag_list, 3)
-                sStepResult = "zeuz_failed"
-            q.put(sStepResult)
-        except Exception as e:
-            CommonUtil.Exception_Handler(sys.exc_info())
+        except:
+            CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
             sStepResult = "zeuz_failed"
+
+        # get step result
+        if sStepResult in passed_tag_list:
+            sStepResult = "PASSED"
+        elif sStepResult in failed_tag_list:
+            sStepResult = "zeuz_failed".upper()
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" % passed_tag_list, 3)
+            CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" % failed_tag_list, 3)
+            sStepResult = "zeuz_failed"
+        q.put(sStepResult)
 
         return sStepResult
     except Exception:

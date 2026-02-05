@@ -26,7 +26,6 @@ import inspect
 import time
 import re
 import asyncio
-import threading
 from pathlib import Path
 
 from playwright.sync_api import (
@@ -47,42 +46,6 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from . import locator as PlaywrightLocator
-
-#########################
-#                       #
-#   Async/Sync Bridge    #
-#                       #
-#########################
-
-def run_async(coro):
-    """Run async coroutine in sync context, handling asyncio loop detection"""
-    try:
-        # Try to get current event loop
-        loop = asyncio.get_running_loop()
-        # If we're in a loop, create a new thread to run the coroutine
-        result = None
-        exception = None
-        
-        def run_in_thread():
-            nonlocal result, exception
-            try:
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-                result = new_loop.run_until_complete(coro)
-                new_loop.close()
-            except Exception as e:
-                exception = e
-        
-        thread = threading.Thread(target=run_in_thread)
-        thread.start()
-        thread.join()
-        
-        if exception:
-            raise exception
-        return result
-    except RuntimeError:
-        # No running loop, can run directly
-        return asyncio.run(coro)
 
 #########################
 #                       #
@@ -146,7 +109,7 @@ async def _async_open_browser(browser_name, launch_options, context_options):
 #########################
 
 @logger
-def Open_Browser(step_data):
+async def Open_Browser(step_data):
     """
     Launch a new browser instance with Playwright.
 
@@ -263,14 +226,12 @@ def Open_Browser(step_data):
         if color_scheme:
             context_options["color_scheme"] = color_scheme
 
-        # Launch Playwright using async bridge
+        # Launch Playwright using async API
         CommonUtil.ExecLog(sModuleInfo, f"Launching Playwright with {browser_name} browser", 1)
         
         try:
-            # Use async bridge to handle asyncio loop context
-            playwright_instance, browser, context, current_page = run_async(
-                _async_open_browser(browser_name, launch_options, context_options)
-            )
+            # Use async API directly
+            playwright_instance, browser, context, current_page = await _async_open_browser(browser_name, launch_options, context_options)
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to launch Playwright: {e}", 3)
             return "zeuz_failed"
@@ -287,7 +248,7 @@ def Open_Browser(step_data):
 
         # Navigate if URL provided
         if url:
-            current_page.goto(url, wait_until="domcontentloaded")
+            await current_page.goto(url, wait_until="domcontentloaded")
             CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
 
         # Save to shared variables for compatibility
@@ -304,7 +265,7 @@ def Open_Browser(step_data):
 
 
 @logger
-def Go_To_Link(step_data):
+async def Go_To_Link(step_data):
     """
     Navigate to a URL.
 
@@ -359,7 +320,18 @@ def Go_To_Link(step_data):
                 ]
             
             # Open browser
-            if Open_Browser(browser_step_data) == "zeuz_failed":
+            browser_result = Open_Browser(browser_step_data)
+            # Handle async result if needed
+            if asyncio.iscoroutine(browser_result):
+                # Run in a separate thread with its own event loop
+                import concurrent.futures
+                def run_async_in_thread(coro):
+                    return asyncio.run(coro)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_async_in_thread, browser_result)
+                    browser_result = future.result()
+            
+            if browser_result == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically.", 3)
                 return "zeuz_failed"
 
@@ -388,7 +360,8 @@ def Go_To_Link(step_data):
         if timeout:
             goto_options["timeout"] = timeout
 
-        current_page.goto(url, **goto_options)
+        # Use async API for navigation
+        await current_page.goto(url, **goto_options)
         CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
         return "passed"
 
