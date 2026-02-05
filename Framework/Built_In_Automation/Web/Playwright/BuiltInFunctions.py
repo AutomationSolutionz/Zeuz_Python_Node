@@ -25,6 +25,8 @@ import os
 import inspect
 import time
 import re
+import asyncio
+import threading
 from pathlib import Path
 
 from playwright.sync_api import (
@@ -36,6 +38,7 @@ from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
     Error as PlaywrightError,
 )
+from playwright.async_api import async_playwright
 
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
@@ -44,6 +47,42 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from . import locator as PlaywrightLocator
+
+#########################
+#                       #
+#   Async/Sync Bridge    #
+#                       #
+#########################
+
+def run_async(coro):
+    """Run async coroutine in sync context, handling asyncio loop detection"""
+    try:
+        # Try to get current event loop
+        loop = asyncio.get_running_loop()
+        # If we're in a loop, create a new thread to run the coroutine
+        result = None
+        exception = None
+        
+        def run_in_thread():
+            nonlocal result, exception
+            try:
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                result = new_loop.run_until_complete(coro)
+                new_loop.close()
+            except Exception as e:
+                exception = e
+        
+        thread = threading.Thread(target=run_in_thread)
+        thread.start()
+        thread.join()
+        
+        if exception:
+            raise exception
+        return result
+    except RuntimeError:
+        # No running loop, can run directly
+        return asyncio.run(coro)
 
 #########################
 #                       #
@@ -67,6 +106,38 @@ current_page_id = None
 default_timeout = 30000  # 30 seconds
 default_viewport = {"width": 1920, "height": 1080}
 
+
+#########################
+#                       #
+#   Async Browser Setup  #
+#                       #
+#########################
+
+async def _async_open_browser(browser_name, launch_options, context_options):
+    """Async version of browser setup"""
+    playwright = await async_playwright().start()
+    
+    # Select and launch browser
+    if browser_name in ("chrome", "chromium"):
+        browser = await playwright.chromium.launch(**launch_options)
+    elif browser_name == "firefox":
+        browser = await playwright.firefox.launch(**launch_options)
+    elif browser_name in ("webkit", "safari"):
+        browser = await playwright.webkit.launch(**launch_options)
+    elif browser_name in ("edge", "msedge", "microsoft edge"):
+        launch_options["channel"] = "msedge"
+        browser = await playwright.chromium.launch(**launch_options)
+    elif browser_name == "chrome-beta":
+        launch_options["channel"] = "chrome-beta"
+        browser = await playwright.chromium.launch(**launch_options)
+    else:
+        browser = await playwright.chromium.launch(**launch_options)
+    
+    # Create context and page
+    context = await browser.new_context(**context_options)
+    page = await context.new_page()
+    
+    return playwright, browser, context, page
 
 #########################
 #                       #
@@ -166,10 +237,6 @@ def Open_Browser(step_data):
                 # Handle Selenium-style capabilities where possible
                 pass
 
-        # Launch Playwright
-        CommonUtil.ExecLog(sModuleInfo, f"Launching Playwright with {browser_name} browser", 1)
-        playwright_instance = sync_playwright().start()
-
         # Browser launch options
         launch_options = {
             "headless": headless,
@@ -180,23 +247,6 @@ def Open_Browser(step_data):
             launch_options["args"] = args
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
-
-        # Select and launch browser
-        if browser_name in ("chrome", "chromium"):
-            browser = playwright_instance.chromium.launch(**launch_options)
-        elif browser_name == "firefox":
-            browser = playwright_instance.firefox.launch(**launch_options)
-        elif browser_name in ("webkit", "safari"):
-            browser = playwright_instance.webkit.launch(**launch_options)
-        elif browser_name in ("edge", "msedge", "microsoft edge"):
-            launch_options["channel"] = "msedge"
-            browser = playwright_instance.chromium.launch(**launch_options)
-        elif browser_name == "chrome-beta":
-            launch_options["channel"] = "chrome-beta"
-            browser = playwright_instance.chromium.launch(**launch_options)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, f"Unknown browser '{browser_name}', using chromium", 2)
-            browser = playwright_instance.chromium.launch(**launch_options)
 
         # Context options
         context_options = {"viewport": viewport}
@@ -213,10 +263,18 @@ def Open_Browser(step_data):
         if color_scheme:
             context_options["color_scheme"] = color_scheme
 
-        # Create context and page
-        context = browser.new_context(**context_options)
-        context.set_default_timeout(timeout)
-        current_page = context.new_page()
+        # Launch Playwright using async bridge
+        CommonUtil.ExecLog(sModuleInfo, f"Launching Playwright with {browser_name} browser", 1)
+        
+        try:
+            # Use async bridge to handle asyncio loop context
+            playwright_instance, browser, context, current_page = run_async(
+                _async_open_browser(browser_name, launch_options, context_options)
+            )
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to launch Playwright: {e}", 3)
+            return "zeuz_failed"
+
         current_page_id = page_id
 
         # Store in details
@@ -262,9 +320,48 @@ def Go_To_Link(step_data):
     global current_page
 
     try:
+        # Auto-open browser if none exists (similar to Selenium implementation)
         if current_page is None:
-            CommonUtil.ExecLog(sModuleInfo, "No browser open. Use 'open browser' first.", 3)
-            return "zeuz_failed"
+            CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser automatically.", 1)
+            
+            # Check if dependency is available for browser configuration
+            if sr.Test_Shared_Variables("dependency"):
+                dependency = sr.Get_Shared_Variables("dependency")
+                browser_name = dependency.get("Browser", "Chrome").lower()
+                
+                # Map browser names to Playwright browser names
+                browser_map = {
+                    "chrome": "chromium",
+                    "chromeheadless": "chromium", 
+                    "firefox": "firefox",
+                    "firefoxheadless": "firefox",
+                    "microsoft edge chromium": "chromium",
+                    "edgechromiumheadless": "chromium",
+                    "safari": "webkit",
+                    "edge": "chromium"
+                }
+                
+                playwright_browser = browser_map.get(browser_name, "chromium")
+                headless = "headless" in browser_name.lower()
+                
+                # Create step_data for Open_Browser
+                browser_step_data = [
+                    ("browser", "input parameter", playwright_browser),
+                    ("headless", "optional parameter", str(headless).lower()),
+                    ("open browser", "playwright action", "open browser")
+                ]
+            else:
+                # Default browser configuration
+                browser_step_data = [
+                    ("browser", "input parameter", "chromium"),
+                    ("headless", "optional parameter", "true"),
+                    ("open browser", "playwright action", "open browser")
+                ]
+            
+            # Open browser
+            if Open_Browser(browser_step_data) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically.", 3)
+                return "zeuz_failed"
 
         url = None
         wait_until = "domcontentloaded"
