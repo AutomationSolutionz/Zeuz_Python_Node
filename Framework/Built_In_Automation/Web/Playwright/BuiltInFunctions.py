@@ -562,11 +562,14 @@ async def Click_Element(step_data):
                 elif "right" in left_l:
                     right_click = True
 
-        # Get element
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
-        if locator == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        # Get element using simple locator
+        locator_string = get_simple_locator(step_data)
+        if not locator_string:
+            CommonUtil.ExecLog(sModuleInfo, "Could not extract element locator from step_data", 3)
             return "zeuz_failed"
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Click_Element - Using locator: {locator_string}", 1)
+        locator = current_page.locator(locator_string)
 
         # Build click options
         click_options = {}
@@ -801,42 +804,57 @@ async def Enter_Text_In_Text_Box(step_data):
                     timeout = int(float(right.strip()) * 1000)
 
         print(step_data)
+        CommonUtil.ExecLog(sModuleInfo, "About to get simple locator", 1)
         locator_string = get_simple_locator(step_data)
         if not locator_string:
             CommonUtil.ExecLog(sModuleInfo, "Could not extract element locator from step_data", 3)
             return "zeuz_failed"
         
         CommonUtil.ExecLog(sModuleInfo, f"Using locator: {locator_string}", 1)
+        CommonUtil.ExecLog(sModuleInfo, "About to create locator object", 1)
         locator = current_page.locator(locator_string)
-        if locator == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
-            return "zeuz_failed"
+        CommonUtil.ExecLog(sModuleInfo, f"Locator object created: {type(locator)}", 1)
+        
+        CommonUtil.ExecLog(sModuleInfo, "About to start text entry", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Current page type: {type(current_page)}", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Current page is sync: {hasattr(current_page, 'fill')}", 1)
 
         # Enter text based on options
         if use_js:
+            CommonUtil.ExecLog(sModuleInfo, "Using JavaScript method", 1)
             # Use JavaScript to set value directly
             await locator.evaluate(f"el => {{ el.value = `{text_value}`; }}")
+            CommonUtil.ExecLog(sModuleInfo, "JavaScript evaluation completed", 1)
             # Trigger events
             await locator.dispatch_event("input")
+            CommonUtil.ExecLog(sModuleInfo, "Input event dispatched", 1)
             await locator.dispatch_event("change")
+            CommonUtil.ExecLog(sModuleInfo, "Change event dispatched", 1)
             CommonUtil.ExecLog(sModuleInfo, f"Text entered via JS: {text_value[:50]}{'...' if len(text_value) > 50 else ''}", 1)
         elif clear:
+            CommonUtil.ExecLog(sModuleInfo, "Using fill method", 1)
             # fill() clears and sets value - recommended approach
             fill_options = {}
             if timeout:
                 fill_options["timeout"] = timeout
+            CommonUtil.ExecLog(sModuleInfo, f"About to call fill with options: {fill_options}", 1)
             await locator.fill(text_value, **fill_options)
+            CommonUtil.ExecLog(sModuleInfo, "Fill operation completed", 1)
             CommonUtil.ExecLog(sModuleInfo, f"Text filled: {text_value[:50]}{'...' if len(text_value) > 50 else ''}", 1)
         else:
+            CommonUtil.ExecLog(sModuleInfo, "Using type method", 1)
             # type() appends to existing value
             type_options = {}
             if delay > 0:
                 type_options["delay"] = int(delay * 1000)
             if timeout:
                 type_options["timeout"] = timeout
+            CommonUtil.ExecLog(sModuleInfo, f"About to call type with options: {type_options}", 1)
             await locator.type(text_value, **type_options)
+            CommonUtil.ExecLog(sModuleInfo, "Type operation completed", 1)
             CommonUtil.ExecLog(sModuleInfo, f"Text typed: {text_value[:50]}{'...' if len(text_value) > 50 else ''}", 1)
 
+        CommonUtil.ExecLog(sModuleInfo, "About to return 'passed'", 1)
         return "passed"
 
     except Exception:
