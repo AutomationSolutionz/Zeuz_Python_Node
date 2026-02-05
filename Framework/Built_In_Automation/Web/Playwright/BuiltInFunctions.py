@@ -372,13 +372,12 @@ def Go_To_Link(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
-                if left_l in ("go to link", "url", "link"):
-                    url = right_v
+            if left_l in ("go to link", "url", "link"):
+                url = right_v
             elif mid_l == "optional parameter":
-                if left_l in ("wait until", "wait_until", "waituntil"):
+                if "wait" in left_l:
                     wait_until = right_v.lower()
-                elif left_l == "timeout":
+                elif "timeout" in left_l:
                     timeout = int(float(right_v) * 1000)
 
         if not url:
