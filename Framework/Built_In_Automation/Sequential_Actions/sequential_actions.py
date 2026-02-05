@@ -2419,19 +2419,42 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
         result = run_function(data_set)  # Execute function, providing all rows in the data set
         
-        # Handle async functions
+        CommonUtil.ExecLog(sModuleInfo, f"Function result type: {type(result)}", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Is coroutine: {asyncio.iscoroutine(result)}", 1)
+        
+        # Handle async functions properly
         if asyncio.iscoroutine(result):
-            # If result is a coroutine, run it in a separate thread
-            import concurrent.futures
-            import threading
-            
-            def run_async_in_thread(coro):
-                """Run coroutine in a new thread with its own event loop"""
-                return asyncio.run(coro)
-            
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(run_async_in_thread, result)
-                result = future.result()
+            # If result is a coroutine, execute it properly
+            CommonUtil.ExecLog(sModuleInfo, "Detected coroutine, executing with threading", 1)
+            try:
+                # Try to get the current running loop
+                loop = asyncio.get_running_loop()
+                CommonUtil.ExecLog(sModuleInfo, f"Found running loop: {loop}", 1)
+                
+                # Use the existing loop to run the coroutine
+                import concurrent.futures
+                def run_coroutine_in_thread():
+                    # Create a new event loop in the thread
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(result)
+                    finally:
+                        new_loop.close()
+                
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    CommonUtil.ExecLog(sModuleInfo, "Submitting coroutine to thread", 1)
+                    future = executor.submit(run_coroutine_in_thread)
+                    result = future.result()
+                    CommonUtil.ExecLog(sModuleInfo, f"Thread execution result: {result}", 1)
+                    
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Error executing coroutine: {e}", 3)
+                import traceback
+                CommonUtil.ExecLog(sModuleInfo, f"Traceback: {traceback.format_exc()}", 3)
+                result = "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Not a coroutine, using result directly", 1)
         if post_sleep:
             time.sleep(post_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:

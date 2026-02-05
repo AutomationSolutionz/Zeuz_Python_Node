@@ -320,24 +320,19 @@ async def Go_To_Link(step_data):
                 ]
             
             # Open browser
-            browser_result = Open_Browser(browser_step_data)
-            # Handle async result if needed
-            if asyncio.iscoroutine(browser_result):
-                # Run in a separate thread with its own event loop
-                import concurrent.futures
-                def run_async_in_thread(coro):
-                    return asyncio.run(coro)
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(run_async_in_thread, browser_result)
-                    browser_result = future.result()
+            browser_result = await Open_Browser(browser_step_data)
             
             if browser_result == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically.", 3)
                 return "zeuz_failed"
+            
+            CommonUtil.ExecLog(sModuleInfo, "Browser opened successfully, continuing to navigation", 1)
 
         url = None
         wait_until = "domcontentloaded"
         timeout = None
+
+        CommonUtil.ExecLog(sModuleInfo, "Starting URL parsing", 1)
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -347,19 +342,26 @@ async def Go_To_Link(step_data):
             if left_l in ("go to link", "url", "link"):
                 url = right_v
             elif mid_l == "optional parameter":
-                if "wait" in left_l:
+                if "wait until" in left_l:
                     wait_until = right_v.lower()
-                elif "timeout" in left_l:
+                elif "wait time" in left_l or "timeout" in left_l:
                     timeout = int(float(right_v) * 1000)
 
         if not url:
             CommonUtil.ExecLog(sModuleInfo, "No URL provided", 3)
             return "zeuz_failed"
 
+        CommonUtil.ExecLog(sModuleInfo, f"URL found: {url}", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Current page: {current_page}", 1)
+
         goto_options = {"wait_until": wait_until}
         if timeout:
             goto_options["timeout"] = timeout
 
+        CommonUtil.ExecLog(sModuleInfo, f"goto_options: {goto_options}", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"wait_until value: '{wait_until}'", 1)
+
+        CommonUtil.ExecLog(sModuleInfo, f"Starting navigation to {url}", 1)
         # Use async API for navigation
         await current_page.goto(url, **goto_options)
         CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
@@ -490,7 +492,7 @@ def Switch_Browser(step_data):
 #########################
 
 @logger
-def Click_Element(step_data):
+async def Click_Element(step_data):
     """
     Click an element.
 
@@ -561,7 +563,7 @@ def Click_Element(step_data):
                     right_click = True
 
         # Get element
-        locator = PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -583,14 +585,14 @@ def Click_Element(step_data):
 
         # Perform click
         if double_click:
-            locator.dblclick(**{k: v for k, v in click_options.items() if k != "click_count"})
+            await locator.dblclick(**{k: v for k, v in click_options.items() if k != "click_count"})
             CommonUtil.ExecLog(sModuleInfo, "Double click performed", 1)
         elif right_click:
             click_options["button"] = "right"
-            locator.click(**click_options)
+            await locator.click(**click_options)
             CommonUtil.ExecLog(sModuleInfo, "Right click performed", 1)
         else:
-            locator.click(**click_options)
+            await locator.click(**click_options)
             CommonUtil.ExecLog(sModuleInfo, "Click performed", 1)
 
         return "passed"
@@ -702,8 +704,54 @@ def Hover_Over_Element(step_data):
 #                       #
 #########################
 
+def get_simple_locator(step_data):
+    """
+    Simple locator function that extracts element selector from step_data.
+    Returns CSS selector string for direct use with page.locator().
+    """
+    try:
+        element_id = None
+        element_name = None
+        element_class = None
+        element_tag = None
+        element_xpath = None
+        
+        for left, mid, right in step_data:
+            left_l = left.strip().lower()
+            mid_l = mid.strip().lower()
+            right_v = right.strip()
+            
+            if mid_l == "element parameter":
+                if left_l == "id":
+                    element_id = right_v
+                elif left_l == "name":
+                    element_name = right_v
+                elif left_l == "class":
+                    element_class = right_v
+                elif left_l == "tag":
+                    element_tag = right_v
+                elif left_l == "xpath":
+                    element_xpath = right_v
+        
+        # Build CSS selector based on what we found
+        if element_id:
+            return f"#{element_id}"
+        elif element_name:
+            return f"[name='{element_name}']"
+        elif element_class:
+            return f".{element_class}"
+        elif element_tag:
+            return element_tag
+        elif element_xpath:
+            return element_xpath
+        else:
+            return None
+            
+    except Exception:
+        return None
+
 @logger
-def Enter_Text_In_Text_Box(step_data):
+async def Enter_Text_In_Text_Box(step_data):
     """
     Enter text in a text field.
 
@@ -752,7 +800,14 @@ def Enter_Text_In_Text_Box(step_data):
                 elif left_l == "timeout":
                     timeout = int(float(right.strip()) * 1000)
 
-        locator = PlaywrightLocator.Get_Element(step_data, current_page)
+        print(step_data)
+        locator_string = get_simple_locator(step_data)
+        if not locator_string:
+            CommonUtil.ExecLog(sModuleInfo, "Could not extract element locator from step_data", 3)
+            return "zeuz_failed"
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Using locator: {locator_string}", 1)
+        locator = current_page.locator(locator_string)
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -760,17 +815,17 @@ def Enter_Text_In_Text_Box(step_data):
         # Enter text based on options
         if use_js:
             # Use JavaScript to set value directly
-            locator.evaluate(f"el => {{ el.value = `{text_value}`; }}")
+            await locator.evaluate(f"el => {{ el.value = `{text_value}`; }}")
             # Trigger events
-            locator.dispatch_event("input")
-            locator.dispatch_event("change")
+            await locator.dispatch_event("input")
+            await locator.dispatch_event("change")
             CommonUtil.ExecLog(sModuleInfo, f"Text entered via JS: {text_value[:50]}{'...' if len(text_value) > 50 else ''}", 1)
         elif clear:
             # fill() clears and sets value - recommended approach
             fill_options = {}
             if timeout:
                 fill_options["timeout"] = timeout
-            locator.fill(text_value, **fill_options)
+            await locator.fill(text_value, **fill_options)
             CommonUtil.ExecLog(sModuleInfo, f"Text filled: {text_value[:50]}{'...' if len(text_value) > 50 else ''}", 1)
         else:
             # type() appends to existing value
@@ -779,7 +834,7 @@ def Enter_Text_In_Text_Box(step_data):
                 type_options["delay"] = int(delay * 1000)
             if timeout:
                 type_options["timeout"] = timeout
-            locator.type(text_value, **type_options)
+            await locator.type(text_value, **type_options)
             CommonUtil.ExecLog(sModuleInfo, f"Text typed: {text_value[:50]}{'...' if len(text_value) > 50 else ''}", 1)
 
         return "passed"
