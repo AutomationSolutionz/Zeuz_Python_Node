@@ -27,8 +27,8 @@ import time
 import re
 from pathlib import Path
 
-from playwright.sync_api import (
-    sync_playwright,
+from playwright.async_api import (
+    async_playwright,
     Page,
     Browser,
     BrowserContext,
@@ -75,7 +75,7 @@ default_viewport = {"width": 1920, "height": 1080}
 #########################
 
 @logger
-def Open_Browser(step_data):
+async def Open_Browser(step_data):
     """
     Launch a new browser instance with Playwright.
 
@@ -104,7 +104,7 @@ def Open_Browser(step_data):
         # Parse parameters
         url = None
         browser_name = "chromium"
-        headless = True
+        headless = False
         viewport = default_viewport.copy()
         args = []
         timeout = default_timeout
@@ -168,7 +168,7 @@ def Open_Browser(step_data):
 
         # Launch Playwright
         CommonUtil.ExecLog(sModuleInfo, f"Launching Playwright with {browser_name} browser", 1)
-        playwright_instance = sync_playwright().start()
+        playwright_instance = await async_playwright().start()
 
         # Browser launch options
         launch_options = {
@@ -183,20 +183,20 @@ def Open_Browser(step_data):
 
         # Select and launch browser
         if browser_name in ("chrome", "chromium"):
-            browser = playwright_instance.chromium.launch(**launch_options)
+            browser = await playwright_instance.chromium.launch(**launch_options)
         elif browser_name == "firefox":
-            browser = playwright_instance.firefox.launch(**launch_options)
+            browser = await playwright_instance.firefox.launch(**launch_options)
         elif browser_name in ("webkit", "safari"):
-            browser = playwright_instance.webkit.launch(**launch_options)
+            browser = await playwright_instance.webkit.launch(**launch_options)
         elif browser_name in ("edge", "msedge", "microsoft edge"):
             launch_options["channel"] = "msedge"
-            browser = playwright_instance.chromium.launch(**launch_options)
+            browser = await playwright_instance.chromium.launch(**launch_options)
         elif browser_name == "chrome-beta":
             launch_options["channel"] = "chrome-beta"
-            browser = playwright_instance.chromium.launch(**launch_options)
+            browser = await playwright_instance.chromium.launch(**launch_options)
         else:
             CommonUtil.ExecLog(sModuleInfo, f"Unknown browser '{browser_name}', using chromium", 2)
-            browser = playwright_instance.chromium.launch(**launch_options)
+            browser = await playwright_instance.chromium.launch(**launch_options)
 
         # Context options
         context_options = {"viewport": viewport}
@@ -214,9 +214,9 @@ def Open_Browser(step_data):
             context_options["color_scheme"] = color_scheme
 
         # Create context and page
-        context = browser.new_context(**context_options)
+        context = await browser.new_context(**context_options)
         context.set_default_timeout(timeout)
-        current_page = context.new_page()
+        current_page = await context.new_page()
         current_page_id = page_id
 
         # Store in details
@@ -229,7 +229,7 @@ def Open_Browser(step_data):
 
         # Navigate if URL provided
         if url:
-            current_page.goto(url, wait_until="domcontentloaded")
+            await current_page.goto(url, wait_until="domcontentloaded")
             CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
 
         # Save to shared variables for compatibility
@@ -246,7 +246,7 @@ def Open_Browser(step_data):
 
 
 @logger
-def Go_To_Link(step_data):
+async def Go_To_Link(step_data):
     """
     Navigate to a URL.
 
@@ -263,8 +263,11 @@ def Go_To_Link(step_data):
 
     try:
         if current_page is None:
-            CommonUtil.ExecLog(sModuleInfo, "No browser open. Use 'open browser' first.", 3)
-            return "zeuz_failed"
+            CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
+            result = await Open_Browser(step_data)
+            if result == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically", 3)
+                return "zeuz_failed"
 
         url = None
         wait_until = "domcontentloaded"
@@ -275,11 +278,10 @@ def Go_To_Link(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
-                if left_l in ("go to link", "url", "link"):
+            if left_l in ("go to link", "url", "link"):
                     url = right_v
             elif mid_l == "optional parameter":
-                if left_l in ("wait until", "wait_until", "waituntil"):
+                if left_l in ("wait until", "wait_until", "waituntil", "wait time"):
                     wait_until = right_v.lower()
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
@@ -292,7 +294,7 @@ def Go_To_Link(step_data):
         if timeout:
             goto_options["timeout"] = timeout
 
-        current_page.goto(url, **goto_options)
+        await current_page.goto(url, **goto_options)
         CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
         return "passed"
 
