@@ -25,7 +25,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-def Get_Element(step_data, page, return_all=False, element_wait=None):
+async def Get_Element(step_data, page, return_all=False, element_wait=None):
     """
     Get element using Playwright's native Locator API.
 
@@ -119,7 +119,7 @@ def Get_Element(step_data, page, return_all=False, element_wait=None):
         # Return all elements if requested
         if return_all:
             try:
-                elements = locator.all()
+                elements = await locator.all()
                 CommonUtil.ExecLog(sModuleInfo, f"Found {len(elements)} elements", 1)
                 return elements
             except Exception as e:
@@ -128,7 +128,7 @@ def Get_Element(step_data, page, return_all=False, element_wait=None):
 
         # Check if element exists (with timeout)
         try:
-            count = locator.count()
+            count = await locator.count()
             if count == 0:
                 CommonUtil.ExecLog(sModuleInfo, "No elements found matching locator", 3)
                 return "zeuz_failed"
@@ -471,7 +471,7 @@ def _extract_sr_index(mid_value):
     return 1
 
 
-def wait_for_element(step_data, page, state="visible", timeout=None):
+async def wait_for_element(step_data, page, state="visible", timeout=None):
     """
     Wait for element to reach a specific state.
 
@@ -487,7 +487,7 @@ def wait_for_element(step_data, page, state="visible", timeout=None):
     sModuleInfo = "wait_for_element"
 
     try:
-        locator = Get_Element(step_data, page)
+        locator = await Get_Element(step_data, page)
         if locator == "zeuz_failed":
             return "zeuz_failed"
 
