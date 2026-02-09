@@ -440,7 +440,7 @@ async def RunProcess(node_id, log_dir=None):
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
             await install_handler.cancel_run()
-            MainDriverApi.main(
+            await MainDriverApi.main(
                 device_dict=device_info,
                 all_run_id_info=node_json,
             )

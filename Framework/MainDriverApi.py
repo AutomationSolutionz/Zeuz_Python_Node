@@ -281,7 +281,7 @@ def terminate_thread(thread):   # To kill running thread
         raise SystemError("PyThreadState_SetAsyncExc failed")
 
 # call the function of a test step that is in its driver file
-def call_driver_function_of_test_step(
+async def call_driver_function_of_test_step(
     sModuleInfo,
     all_step_info,
     StepSeq,
@@ -312,6 +312,7 @@ def call_driver_function_of_test_step(
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
+                print(functionTocall)
             except Exception as e:
                 CommonUtil.Exception_Handler(
                     sys.exc_info(),
@@ -379,12 +380,20 @@ def call_driver_function_of_test_step(
                                 CommonUtil.Exception_Handler(sys.exc_info())
                 else:
                     # run sequentially
-                    sStepResult = functionTocall(
-                        test_steps_data,
-                        test_action_info,
-                        simple_queue,
-                        debug_actions,
-                    )
+                    if inspect.iscoroutinefunction(functionTocall):
+                        sStepResult = await functionTocall(
+                            test_steps_data,
+                            test_action_info,
+                            simple_queue,
+                            debug_actions,
+                        )
+                    else:
+                        sStepResult = functionTocall(
+                            test_steps_data,
+                            test_action_info,
+                            simple_queue,
+                            debug_actions,
+                        )
             except:
                 CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
                 sStepResult = "zeuz_failed"
@@ -411,7 +420,7 @@ def call_driver_function_of_test_step(
 
 
 # runs all test steps of a test case
-def run_all_test_steps_in_a_test_case(
+async def run_all_test_steps_in_a_test_case(
     testcase_info,
     test_case,
     sModuleInfo,
@@ -606,7 +615,7 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.ExecLog(sModuleInfo, "STEP-%s is skipped" % StepSeq, 2)
                 sStepResult = "skipped"
             else:
-                sStepResult = call_driver_function_of_test_step(
+                sStepResult = await call_driver_function_of_test_step(
                     sModuleInfo,
                     all_step_info,
                     StepSeq,
@@ -936,7 +945,7 @@ def check_test_skip(run_id, tc_num, skip_remaining=True) -> bool:
     return False
 
 
-def run_test_case(
+async def run_test_case(
     TestCaseID,
     sModuleInfo,
     run_id,
@@ -994,7 +1003,7 @@ def run_test_case(
         if check_test_skip(run_id, tc_num):
             sTestStepResultList = ['SKIPPED' for i in range(len(testcase_info['steps']))]
         else:
-            sTestStepResultList = run_all_test_steps_in_a_test_case(
+            sTestStepResultList = await run_all_test_steps_in_a_test_case(
                 testcase_info,
                 test_case,
                 sModuleInfo,
@@ -1806,7 +1815,7 @@ def download_attachments(testcase_info):
 
 
 # main function
-def main(device_dict, all_run_id_info):
+async def main(device_dict, all_run_id_info):
     try:
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2093,7 +2102,7 @@ def main(device_dict, all_run_id_info):
                             )
                         except Exception as e:
                             CommonUtil.ExecLog(sModuleInfo, str(e), 3)
-                            run_test_case(
+                            await run_test_case(
                                 test_case_no,
                                 sModuleInfo,
                                 run_id,
@@ -2111,7 +2120,7 @@ def main(device_dict, all_run_id_info):
 
 
                     else:
-                        run_test_case(
+                        await run_test_case(
                             test_case_no,
                             sModuleInfo,
                             run_id,
