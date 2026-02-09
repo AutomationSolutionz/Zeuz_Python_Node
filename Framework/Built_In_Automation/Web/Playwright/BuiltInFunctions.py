@@ -921,6 +921,8 @@ async def Validate_Text(step_data):
                     case_insensitive = True
                 elif left_l.startswith("*"):
                     partial_match = True
+                elif "partial" in left_l:
+                    partial_match = True
                 expected_text = right_v
 
             elif mid_l == "optional parameter":
