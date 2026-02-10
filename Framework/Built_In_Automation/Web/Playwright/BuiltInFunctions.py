@@ -1047,16 +1047,18 @@ async def Save_Attribute(step_data):
 
         attribute_name = None
         save_variable = None
+        save_attribute = None
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
+            if mid_l in ["input parameter", "element parameter"]:
                 attribute_name = left.strip()  # Keep original case
             elif mid_l == "save parameter":
-                save_variable = left.strip()
+                save_variable = right_v
+                save_attribute = left_l
 
         if not attribute_name:
             CommonUtil.ExecLog(sModuleInfo, "No attribute name specified", 3)
@@ -1094,10 +1096,10 @@ async def Save_Attribute(step_data):
         elif attr_lower == "disabled":
             value = await locator.is_disabled()
         else:
-            value = await locator.get_attribute(attribute_name)
+            value = await locator.get_attribute(save_attribute)
 
         sr.Set_Shared_Variables(save_variable, value)
-        CommonUtil.ExecLog(sModuleInfo, f"Saved '{attribute_name}' = '{value}' to '{save_variable}'", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"Saved '{save_attribute}' = '{value}' to '{save_variable}'", 1)
         return "passed"
 
     except Exception:
