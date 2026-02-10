@@ -6,7 +6,7 @@ import zipfile
 import subprocess
 from pathlib import Path
 import httpx
-from Framework.install_handler.utils import send_response
+from Framework.install_handler.utils import send_response, pty_stream
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 
@@ -289,116 +289,110 @@ def _find_sdkmanager(sdk_root: Path) -> Path | None:
 
 
 
-async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
+async def _run_sdkmanager(sdk_root: Path, args: list[str], component_label: str | None = None) -> bool:
+   """Run sdkmanager with the given args, streaming output lines to send_response in real-time."""
    try:
        sdkmanager = _find_sdkmanager(sdk_root)
        if not sdkmanager:
            print("[installer][android-sdk] sdkmanager not found")
            return False
-       
+
        import asyncio
-       import subprocess
-       
+
+       label = component_label or " ".join(args)
        system = platform.system()
-       output = None  # Initialize for later use
-       
+
+       async def _send_line(line: str):
+           """Send a single output line as a progress event."""
+           stripped = line.strip()
+           if not stripped:
+               return
+           print(stripped)
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Android",
+                   "name": "Android SDK",
+                   "status": "installing",
+                   "comment": f"[{label}] {stripped}",
+               }
+           })
+
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Android SDK",
+               "status": "installing",
+               "comment": f"Installing {label}...",
+           }
+       })
+
        if system == "Windows":
-           # Windows - use PowerShell to pipe 'y' responses for auto-accepting licenses
-           # Quote each argument individually to prevent PowerShell from interpreting semicolons
            yes_responses = ";".join(["echo y"] * 20)
-           # Wrap each arg in single quotes to preserve semicolons in package names like "platforms;android-36"
            quoted_args = " ".join([f"'{arg}'" for arg in args])
            shell_cmd = f'powershell -Command "{yes_responses} | &\\"{str(sdkmanager)}\\" --sdk_root={sdk_root} {quoted_args}"'
            print(f"[installer][android-sdk] Running: sdkmanager {' '.join(args)}")
-           print(f"[installer][android-sdk] This may take 5-15 minutes to download ~450MB of components...")
-           
-           loop = asyncio.get_event_loop()
-           
-           # Use Popen and print output in real-time
-           def run_sdkmanager():
-               process = subprocess.Popen(
-                   shell_cmd,
-                   shell=True,
-                   stdin=subprocess.PIPE,
-                   stdout=subprocess.PIPE,
-                   stderr=subprocess.STDOUT,
-                   text=True,
-                   bufsize=1  # Line buffered
-               )
-               # Close stdin - PowerShell piping will provide input
-               process.stdin.close()
-               
-               # Print output in real-time as it comes
-               output_lines = []
-               try:
-                   for line in iter(process.stdout.readline, ''):
-                       if line:
-                           print(line.rstrip())  # Print immediately
-                           output_lines.append(line.strip())
-               except Exception as e:
-                   print(f"[installer][android-sdk] Output reading error: {e}")
-               
-               process.stdout.close()
-               returncode = process.wait(timeout=1800)
-               
-               # Return last 50 lines for debugging
-               return returncode, "\n".join(output_lines[-50:]) if output_lines else ""
-           
-           returncode, output = await loop.run_in_executor(None, run_sdkmanager)
-           
-           class Result:
-               pass
-           result = Result()
-           result.returncode = returncode
-       elif system == "Linux":
-           # Linux can execute directly
+
+           output_lines: list[str] = []
+
+           async def _win_stream(proc: asyncio.subprocess.Process) -> int:
+               while True:
+                   raw = await proc.stdout.readline()
+                   if not raw:
+                       break
+                   line = raw.decode("utf-8", errors="replace").rstrip()
+                   if not line:
+                       continue
+                   output_lines.append(line)
+                   await _send_line(line)
+               return await proc.wait()
+
+           proc = await asyncio.create_subprocess_shell(
+               shell_cmd,
+               stdin=asyncio.subprocess.DEVNULL,
+               stdout=asyncio.subprocess.PIPE,
+               stderr=asyncio.subprocess.STDOUT,
+           )
+           returncode = await _win_stream(proc)
+       elif system in ("Linux", "Darwin"):
            cmd = [str(sdkmanager), f"--sdk_root={sdk_root}"] + args
            print(f"[installer][android-sdk] Running: {' '.join(cmd)}")
-           
-           loop = asyncio.get_event_loop()
-           result = await loop.run_in_executor(
-               None,
-               lambda: subprocess.run(
-                   cmd,
-                   capture_output=True,
-                   text=True,
-                   timeout=1800  # 30 minutes timeout
-               )
+
+           returncode, output_lines = await pty_stream(
+               cmd,
+               stdin_data="y\n" * 20,
+               on_line=_send_line,
+               timeout_s=1800,
            )
-           output = (result.stdout or "") + (result.stderr or "")
-       elif system == "Darwin":
-           # macOS can execute directly
-           cmd = [str(sdkmanager), f"--sdk_root={sdk_root}"] + args
-           print(f"[installer][android-sdk] Running: {' '.join(cmd)}")
-           
-           loop = asyncio.get_event_loop()
-           result = await loop.run_in_executor(
-               None,
-               lambda: subprocess.run(
-                   cmd,
-                   capture_output=True,
-                   text=True,
-                   timeout=1800  # 30 minutes timeout
-               )
-           )
-           output = (result.stdout or "") + (result.stderr or "")
        else:
            print(f"[installer][android-sdk] Unsupported platform: {system}")
            return False
-       
-       if result.returncode != 0:
-           print(f"[installer][android-sdk] sdkmanager failed (returncode={result.returncode})")
-           if output:
-               print(f"[installer][android-sdk] Last output:\n{output}")
+
+       if returncode != 0:
+           print(f"[installer][android-sdk] sdkmanager failed (returncode={returncode})")
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Android",
+                   "name": "Android SDK",
+                   "status": "installing",
+                   "comment": f"Failed to install {label} (exit code {returncode})",
+               }
+           })
            return False
-       
-       print(f"[installer][android-sdk] sdkmanager completed successfully")
-       if output:
-           print(f"[installer][android-sdk] Final output:\n{output[-500:]}")  # Last 500 chars
+
+       print(f"[installer][android-sdk] sdkmanager completed successfully for {label}")
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Android SDK",
+               "status": "installing",
+               "comment": f"{label} installed successfully",
+           }
+       })
        return True
-   except subprocess.TimeoutExpired:
-       print("[installer][android-sdk] sdkmanager timed out after 30 minutes")
-       return False
    except Exception as e:
        print(f"[installer][android-sdk] sdkmanager error: {e}")
        import traceback
@@ -524,26 +518,27 @@ async def install() -> bool:
        # Continue; some environments prompt-less acceptance may not be required
 
 
-   # Install core components
+   # Install core components one at a time for per-component progress
    core_components = [
-       "platform-tools",
-       "emulator",
-       # A recent platform and build-tools; adjust if needed
-       "platforms;android-36",
-       "build-tools;34.0.0",
+       ("platform-tools", "platform-tools"),
+       ("emulator", "emulator"),
+       ("platforms;android-36", "platforms (Android 36)"),
+       ("build-tools;34.0.0", "build-tools 34.0.0"),
    ]
-   await send_response({
-       "action": "status",
-       "data": {
-           "category": "Android",
-           "name": "Android SDK",
-           "status": "installing",
-           "comment": "Installing SDK components (platform-tools, emulator, platforms, build-tools)...",
-       }
-   })
-   if not await _run_sdkmanager(sdk_root, core_components):
-       print("[installer][android-sdk] Failed installing one or more SDK components")
-       return False
+
+   for i, (pkg, label) in enumerate(core_components, 1):
+       await send_response({
+           "action": "status",
+           "data": {
+               "category": "Android",
+               "name": "Android SDK",
+               "status": "installing",
+               "comment": f"Installing component {i}/{len(core_components)}: {label}...",
+           }
+       })
+       if not await _run_sdkmanager(sdk_root, [pkg], component_label=label):
+           print(f"[installer][android-sdk] Failed installing {label}")
+           return False
 
 
    # Update PATH after successful installation

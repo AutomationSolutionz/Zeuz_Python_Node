@@ -6,7 +6,7 @@ import re
 import random
 from pathlib import Path
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
-from Framework.install_handler.utils import send_response, debug
+from Framework.install_handler.utils import send_response, debug, pty_stream
 from Framework.install_handler.android.android_sdk import _get_sdk_root
 
 
@@ -805,483 +805,161 @@ def _generate_avd_name(android_version: str, existing_avds: list[str]) -> str:
     return f"{android_version}-{word1}-{word2}-{random_num}"
 
 
-def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_image: str, loop=None, device_id: str = None) -> tuple[bool, str]:
-    """Install system image on Windows with real-time output"""
+async def _run_sdkmanager_install(sdkmanager: Path, sdk_root: Path, system_image: str, device_id: str | None = None) -> tuple[bool, str]:
+    """Install system image with real-time output streamed via send_response."""
     try:
-        # Use PowerShell to handle the command properly and auto-accept licenses
-        # This approach pipes 'y' responses to automatically accept licenses
-        yes_responses = ";".join(["echo y"] * 20)
-        quoted_image = f"'{system_image}'"
-        shell_cmd = f'powershell -Command "{yes_responses} | &\\"{str(sdkmanager)}\\" --sdk_root={sdk_root} {quoted_image}"'
-        
-        if debug:
-            print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
-            print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
-        
-        process = subprocess.Popen(
-            shell_cmd,
-            shell=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1  # Line buffered
-        )
-        # Close stdin - PowerShell piping will provide input
-        process.stdin.close()
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        progress_count = []
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = int(progress_match.group(1))
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                            
-                            if loop and device_id:
-                                rounded_percent = round(percent / 10) * 10
-                                if rounded_percent not in progress_count:
-                                    progress_count.append(rounded_percent)
-                                    asyncio.run_coroutine_threadsafe(
-                                        send_response({
-                                            "action": "status",
-                                            "data": {
-                                                "category": "AndroidEmulator",
-                                                "package": device_id,
-                                                "status": "installing",
-                                                "comment": f"Downloading system image... {percent}% {status}",
-                                            }
-                                        }),
-                                        loop
-                                    )
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        percent_match = re.search(r'(\d+)%', stripped)
-                        if percent_match:
-                            percent = int(percent_match.group(1))
-                            print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-                            
-                            if loop and device_id:
-                                rounded_percent = round(percent / 10) * 10
-                                if rounded_percent not in progress_count:
-                                    progress_count.append(rounded_percent)
-                                    asyncio.run_coroutine_threadsafe(
-                                        send_response({
-                                            "action": "status",
-                                            "data": {
-                                                "category": "AndroidEmulator",
-                                                "package": device_id,
-                                                "status": "installing",
-                                                "comment": f"Downloading system image... {percent}%",
-                                            }
-                                        }),
-                                        loop
-                                    )
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
-        
+        system = platform.system()
+        pkg_label = device_id or system_image
+
+        print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
+        print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
+
+        await send_response({
+            "action": "status",
+            "data": {
+                "category": "AndroidEmulator",
+                "package": pkg_label,
+                "status": "installing",
+                "comment": f"Downloading system image {system_image}...",
+            }
+        })
+
+        async def _on_line(stripped: str):
+            progress_match = re.search(r'(\d+)%', stripped)
+            if progress_match:
+                percent = int(progress_match.group(1))
+                comment = f"Downloading system image... {percent}% {stripped}"
+            else:
+                comment = stripped
+            print(f"[installer][emulator] {stripped}")
+            await send_response({
+                "action": "status",
+                "data": {
+                    "category": "AndroidEmulator",
+                    "package": pkg_label,
+                    "status": "installing",
+                    "comment": comment,
+                }
+            })
+
+        if system == "Windows":
+            # Windows: use PowerShell piping (PTY not available)
+            yes_responses = ";".join(["echo y"] * 20)
+            quoted_image = f"'{system_image}'"
+            shell_cmd = f'powershell -Command "{yes_responses} | &\\"{str(sdkmanager)}\\" --sdk_root={sdk_root} {quoted_image}"'
+
+            output_lines: list[str] = []
+
+            async def _win_stream(proc: asyncio.subprocess.Process) -> int:
+                while True:
+                    raw = await proc.stdout.readline()
+                    if not raw:
+                        break
+                    line = raw.decode("utf-8", errors="replace").rstrip()
+                    if not line:
+                        continue
+                    output_lines.append(line)
+                    await _on_line(line.strip())
+                return await proc.wait()
+
+            proc = await asyncio.create_subprocess_shell(
+                shell_cmd,
+                stdin=asyncio.subprocess.DEVNULL,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            returncode = await _win_stream(proc)
+        else:
+            # Linux / macOS: use PTY for unbuffered, \r-aware output
+            cmd = [str(sdkmanager), f"--sdk_root={sdk_root}", system_image]
+            returncode, output_lines = await pty_stream(
+                cmd,
+                stdin_data="y\n" * 20,  # auto-accept licenses
+                on_line=_on_line,
+                timeout_s=1800,
+            )
+
         output = "\n".join(output_lines)
         if returncode == 0:
             return True, output
         else:
             return False, output
-    except subprocess.TimeoutExpired:
-        return False, "Installation timed out after 30 minutes"
     except Exception as e:
         return False, str(e)
 
 
-def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image: str, loop=None, device_id: str = None) -> tuple[bool, str]:
-    """Install system image on Linux with real-time output"""
+async def _run_avdmanager_create(avdmanager: Path, sdk_root: Path, avd_name: str, system_image: str, device_id: str) -> tuple[bool, str]:
+    """Create AVD with real-time output streamed via send_response."""
     try:
-        if debug:
-            print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
-            print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
-        
-        process = subprocess.Popen(
-            [str(sdkmanager), f"--sdk_root={sdk_root}", system_image],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1  # Line buffered
-        )
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        progress_count = []
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = int(progress_match.group(1))
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                            
-                            if loop and device_id:
-                                rounded_percent = round(percent / 10) * 10
-                                if rounded_percent not in progress_count:
-                                    progress_count.append(rounded_percent)
-                                    asyncio.run_coroutine_threadsafe(
-                                        send_response({
-                                            "action": "status",
-                                            "data": {
-                                                "category": "AndroidEmulator",
-                                                "package": device_id,
-                                                "status": "installing",
-                                                "comment": f"Downloading system image... {percent}% {status}",
-                                            }
-                                        }),
-                                        loop
-                                    )
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        percent_match = re.search(r'(\d+)%', stripped)
-                        if percent_match:
-                            percent = int(percent_match.group(1))
-                            print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-                            
-                            if loop and device_id:
-                                rounded_percent = round(percent / 10) * 10
-                                if rounded_percent not in progress_count:
-                                    progress_count.append(rounded_percent)
-                                    asyncio.run_coroutine_threadsafe(
-                                        send_response({
-                                            "action": "status",
-                                            "data": {
-                                                "category": "AndroidEmulator",
-                                                "package": device_id,
-                                                "status": "installing",
-                                                "comment": f"Downloading system image... {percent}%",
-                                            }
-                                        }),
-                                        loop
-                                    )
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
-        
+        cmd = [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id]
+
+        print(f"[installer][emulator] Running: {' '.join(cmd)}")
+
+        await send_response({
+            "action": "status",
+            "data": {
+                "category": "AndroidEmulator",
+                "package": device_id,
+                "status": "installing",
+                "comment": f"Creating AVD '{avd_name}'...",
+            }
+        })
+
+        async def _on_line(stripped: str):
+            print(f"[installer][emulator] {stripped}")
+            await send_response({
+                "action": "status",
+                "data": {
+                    "category": "AndroidEmulator",
+                    "package": device_id,
+                    "status": "installing",
+                    "comment": stripped,
+                }
+            })
+
+        if platform.system() == "Windows":
+            # Windows: no PTY
+            output_lines: list[str] = []
+
+            async def _win_stream(proc: asyncio.subprocess.Process) -> int:
+                while True:
+                    raw = await proc.stdout.readline()
+                    if not raw:
+                        break
+                    line = raw.decode("utf-8", errors="replace").rstrip()
+                    if not line:
+                        continue
+                    output_lines.append(line)
+                    await _on_line(line.strip())
+                return await proc.wait()
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            try:
+                proc.stdin.write(b"no\n")
+                await proc.stdin.drain()
+                proc.stdin.close()
+            except Exception:
+                pass
+            returncode = await _win_stream(proc)
+        else:
+            # Linux / macOS: use PTY
+            returncode, output_lines = await pty_stream(
+                cmd,
+                stdin_data="no\n",
+                on_line=_on_line,
+                timeout_s=120,
+            )
+
         output = "\n".join(output_lines)
         if returncode == 0:
             return True, output
         else:
             return False, output
-    except subprocess.TimeoutExpired:
-        return False, "Installation timed out after 30 minutes"
-    except Exception as e:
-        return False, str(e)
-
-
-def _run_sdkmanager_install_darwin(sdkmanager: Path, sdk_root: Path, system_image: str, loop=None, device_id: str = None) -> tuple[bool, str]:
-    """Install system image on macOS with real-time output"""
-    try:
-        if debug:
-            print(f"[installer][emulator] Running: sdkmanager --sdk_root={sdk_root} {system_image}")
-            print(f"[installer][emulator] This may take 10-30 minutes to download system image...")
-        
-        process = subprocess.Popen(
-            [str(sdkmanager), f"--sdk_root={sdk_root}", system_image],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1  # Line buffered
-        )
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        progress_count = []
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = int(progress_match.group(1))
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                            
-                            if loop and device_id:
-                                rounded_percent = round(percent / 10) * 10
-                                if rounded_percent not in progress_count:
-                                    progress_count.append(rounded_percent)
-                                    asyncio.run_coroutine_threadsafe(
-                                        send_response({
-                                            "action": "status",
-                                            "data": {
-                                                "category": "AndroidEmulator",
-                                                "package": device_id,
-                                                "status": "installing",
-                                                "comment": f"Downloading system image... {percent}% {status}",
-                                            }
-                                        }),
-                                        loop
-                                    )
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        percent_match = re.search(r'(\d+)%', stripped)
-                        if percent_match:
-                            percent = int(percent_match.group(1))
-                            print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-                            
-                            if loop and device_id:
-                                rounded_percent = round(percent / 10) * 10
-                                if rounded_percent not in progress_count:
-                                    progress_count.append(rounded_percent)
-                                    asyncio.run_coroutine_threadsafe(
-                                        send_response({
-                                            "action": "status",
-                                            "data": {
-                                                "category": "AndroidEmulator",
-                                                "package": device_id,
-                                                "status": "installing",
-                                                "comment": f"Downloading system image... {percent}%",
-                                            }
-                                        }),
-                                        loop
-                                    )
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
-        
-        output = "\n".join(output_lines)
-        if returncode == 0:
-            return True, output
-        else:
-            return False, output
-    except subprocess.TimeoutExpired:
-        return False, "Installation timed out after 30 minutes"
-    except Exception as e:
-        return False, str(e)
-
-
-def _run_avdmanager_create_windows(avdmanager: Path, sdk_root: Path, avd_name: str, system_image: str, device_id: str) -> tuple[bool, str]:
-    """Create AVD on Windows with real-time output"""
-    try:
-        # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
-        # Answer "no" to custom hardware profile prompt
-        process = subprocess.Popen(
-            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1  # Line buffered
-        )
-        
-        # Send "no" to custom hardware profile prompt
-        process.stdin.write("no\n")
-        process.stdin.close()
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = progress_match.group(1)
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=120)
-        
-        output = "\n".join(output_lines)
-        if returncode == 0:
-            return True, output
-        else:
-            return False, output
-    except subprocess.TimeoutExpired:
-        return False, "AVD creation timed out"
-    except Exception as e:
-        return False, str(e)
-
-
-def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str, system_image: str, device_id: str) -> tuple[bool, str]:
-    """Create AVD on Linux with real-time output"""
-    try:
-        # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
-        # Answer "no" to custom hardware profile prompt
-        process = subprocess.Popen(
-            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1  # Line buffered
-        )
-        
-        # Send "no" to custom hardware profile prompt
-        process.stdin.write("no\n")
-        process.stdin.close()
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = progress_match.group(1)
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=120)
-        
-        output = "\n".join(output_lines)
-        if returncode == 0:
-            return True, output
-        else:
-            return False, output
-    except subprocess.TimeoutExpired:
-        return False, "AVD creation timed out"
-    except Exception as e:
-        return False, str(e)
-
-
-def _run_avdmanager_create_darwin(avdmanager: Path, sdk_root: Path, avd_name: str, system_image: str, device_id: str) -> tuple[bool, str]:
-    """Create AVD on macOS with real-time output"""
-    try:
-        # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
-        # Answer "no" to custom hardware profile prompt
-        process = subprocess.Popen(
-            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1  # Line buffered
-        )
-        
-        # Send "no" to custom hardware profile prompt
-        process.stdin.write("no\n")
-        process.stdin.close()
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = progress_match.group(1)
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=120)
-        
-        output = "\n".join(output_lines)
-        if returncode == 0:
-            return True, output
-        else:
-            return False, output
-    except subprocess.TimeoutExpired:
-        return False, "AVD creation timed out"
     except Exception as e:
         return False, str(e)
 
@@ -1595,48 +1273,9 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         # Step 1: Install system image
         print(f"[installer][emulator] Installing system image: {system_image_name}")
         
-        loop = asyncio.get_event_loop()
-        if _is_windows():
-            success, output = await loop.run_in_executor(
-                None,
-                _run_sdkmanager_install_windows,
-                sdkmanager,
-                sdk_root,
-                system_image_name,
-                loop,
-                device_id
-            )
-        elif _is_linux():
-            success, output = await loop.run_in_executor(
-                None,
-                _run_sdkmanager_install_linux,
-                sdkmanager,
-                sdk_root,
-                system_image_name,
-                loop,
-                device_id
-            )
-        elif _is_darwin():
-            success, output = await loop.run_in_executor(
-                None,
-                _run_sdkmanager_install_darwin,
-                sdkmanager,
-                sdk_root,
-                system_image_name,
-                loop,
-                device_id
-            )
-        else:
-            # Fallback to Linux for unknown platforms
-            success, output = await loop.run_in_executor(
-                None,
-                _run_sdkmanager_install_linux,
-                sdkmanager,
-                sdk_root,
-                system_image_name,
-                loop,
-                device_id
-            )
+        success, output = await _run_sdkmanager_install(
+            sdkmanager, sdk_root, system_image_name, device_id=device_id
+        )
         
         if not success:
             error_msg = f"Failed to install Android Version 16: {output}"
@@ -1666,47 +1305,9 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             }
         })
         
-        if _is_windows():
-            success, output = await loop.run_in_executor(
-                None,
-                _run_avdmanager_create_windows,
-                avdmanager,
-                sdk_root,
-                avd_name,
-                system_image_name,
-                device_id
-            )
-        elif _is_linux():
-            success, output = await loop.run_in_executor(
-                None,
-                _run_avdmanager_create_linux,
-                avdmanager,
-                sdk_root,
-                avd_name,
-                system_image_name,
-                device_id
-            )
-        elif _is_darwin():
-            success, output = await loop.run_in_executor(
-                None,
-                _run_avdmanager_create_darwin,
-                avdmanager,
-                sdk_root,
-                avd_name,
-                system_image_name,
-                device_id
-            )
-        else:
-            # Fallback to Linux for unknown platforms
-            success, output = await loop.run_in_executor(
-                None,
-                _run_avdmanager_create_linux,
-                avdmanager,
-                sdk_root,
-                avd_name,
-                system_image_name,
-                device_id
-            )
+        success, output = await _run_avdmanager_create(
+            avdmanager, sdk_root, avd_name, system_image_name, device_id
+        )
         
         if not success:
             error_msg = f"Failed to create AVD: {output}"
