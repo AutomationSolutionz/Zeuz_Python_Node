@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
 import selenium
@@ -147,7 +147,8 @@ custom_step_duration = ""
 jwt_token = ""
 run_cancel = ""
 run_cancelled = False
-disabled_step = []  # 1 based indexing
+disabled_step = []  # 1 based indexing (user requested step disable)
+loop_consumed_step = []  # 1 based indexing (steps executed via step loop)
 testcase_exit = ""
 max_char = 0
 compare_action_varnames = {"left":"Left", "right":"Right"}    # for labelling left and right variable names of compare action
