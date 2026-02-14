@@ -17,7 +17,6 @@ from pydantic import BaseModel
 
 from Framework.install_handler import utils as install_utils
 from Framework.install_handler.route import services as INSTALLER_SERVICES
-from Framework.install_handler.system_info.system_info import get_formatted_system_info
 from Framework.install_handler.android.emulator import (
     android_emulator_install,
     check_emulator_list,
@@ -38,6 +37,10 @@ FORWARD_TO_REMOTE = os.getenv("INSTALLER_FORWARD_REMOTE", "").lower() in (
     "yes",
 )
 ANDROID_CATEGORIES = {"Android", "AndroidEmulator"}
+WEB_CATEGORIES = {"Web"}
+
+# Combined categories for patching
+PATCH_CATEGORIES = ANDROID_CATEGORIES | WEB_CATEGORIES
 
 # --- Models --- #
 
@@ -58,6 +61,23 @@ class AndroidEmulatorCreateRequest(BaseModel):
 
 class AndroidEmulatorLaunchRequest(BaseModel):
     name: str
+    request_id: str | None = None
+
+
+class IOSSimulatorCreateRequest(BaseModel):
+    device_type: str
+    runtime: str | None = None
+    name: str | None = None
+    request_id: str | None = None
+
+
+class IOSSimulatorLaunchRequest(BaseModel):
+    udid: str
+    request_id: str | None = None
+
+
+class IOSSimulatorDeleteRequest(BaseModel):
+    udid: str
     request_id: str | None = None
 
 
@@ -123,7 +143,7 @@ class EventBus:
     def publish(self, event: dict) -> None:
         job_id = event.get("job_id")
         with self._lock:
-            targets = list(self._subscribers.get(job_id, set()))
+            targets = list(self._subscribers.get(job_id, set())) if job_id else []
             targets += list(self._subscribers.get("*", set()))
         for queue in targets:
             try:
@@ -239,9 +259,9 @@ async def send_response_proxy(data: dict | None = None) -> None:
 def _patch_send_response_targets() -> None:
     modules: set[str] = set()
 
-    # Collect modules from Android-only service registry
+    # Collect modules from Android and Web service registry
     for category in INSTALLER_SERVICES:
-        if category.get("category") not in ANDROID_CATEGORIES:
+        if category.get("category") not in PATCH_CATEGORIES:
             continue
         for key in ("install_function", "status_function"):
             func = category.get(key)
@@ -273,7 +293,7 @@ _patch_send_response_targets()
 
 
 def _find_category(category_name: str) -> dict:
-    if category_name not in ANDROID_CATEGORIES:
+    if category_name not in PATCH_CATEGORIES:
         raise KeyError(f"Unsupported category: {category_name}")
     for category in INSTALLER_SERVICES:
         if category.get("category") == category_name:
@@ -409,22 +429,12 @@ async def services_list():
     services = [
         svc
         for svc in install_utils.generate_services_list(INSTALLER_SERVICES)
-        if svc.get("category") in ANDROID_CATEGORIES
+        if svc.get("category") in PATCH_CATEGORIES
     ]
     return ServicesResponse(
         node_id=install_utils.read_node_id(),
         generated_at=time.time(),
         services=services,
-    )
-
-
-@router.get("/system-info", response_model=SystemInfoResponse)
-async def system_info():
-    info = await get_formatted_system_info()
-    return SystemInfoResponse(
-        node_id=install_utils.read_node_id(),
-        generated_at=time.time(),
-        data=info,
     )
 
 
@@ -494,8 +504,6 @@ async def status_service(req: ServiceRequest):
         request_id=job.request_id,
         submitted_at=job.created_at,
     )
-
-
 
 
 @router.post("/jobs/android-emulator/refresh-installed", response_model=JobCreateResponse)
