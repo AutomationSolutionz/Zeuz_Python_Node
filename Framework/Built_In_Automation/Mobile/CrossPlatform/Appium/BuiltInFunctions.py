@@ -3266,6 +3266,8 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
 
             if serial != "":
                 serial = "-s %s" % serial  # Prepare serial number with command line switch
+            else:
+                serial = f"-s {appium_details[device_id]['serial']}"
             # deleting existing text by going to end of line and clicking delete multiple times
             subprocess.check_output(
                 "adb %s shell input keyevent 123" % (serial),
@@ -5443,7 +5445,7 @@ def swipe_appium(data_set):
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
-            appium_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+            appium_driver.swipe(x1, y1, x2, y2, int(duration * 1000))  # duration seconds to milliseconds
             i = i+1
         return "passed"
 
@@ -5568,7 +5570,7 @@ def scroll_to_element(data_set):
             if Element != 'zeuz_failed':
                 CommonUtil.ExecLog(sModuleInfo, "Scrolled to the desired element successfully.", 1)
                 return "passed"
-            appium_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+            appium_driver.swipe(x1, y1, x2, y2, int(duration * 1000))  # duration seconds to milliseconds
             i = i+1
         CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." % max_try, 3)
         return "zeuz_failed"
