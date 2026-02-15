@@ -4,11 +4,8 @@ import hashlib
 import os
 import shutil
 import subprocess
-import base64
 import json
 from typing import Literal, Optional
-import asyncio
-import socket
 import xml.etree.ElementTree as ET
 import zipfile
 import plistlib
@@ -125,26 +122,91 @@ def get_ios_devices():
         return []
 
 
-@router.get("/inspect")
-def inspect(device_serial: str | None = None):
-    """Get the Mobile DOM and screenshot."""
+def run_adb_command_bytes(cmd: str, timeout: int = 30) -> bytes:
+    """
+    Run an adb command and return stdout as raw bytes.
+
+    - cmd: full command string (example: 'adb -s SERIAL exec-out screencap -p')
+    - timeout: seconds
+
+    Raises RuntimeError if adb fails.
+    """
     try:
-        # Capture UI and screenshot
-        capture_ui_dump(device_serial=device_serial)
-        capture_screenshot(device_serial=device_serial)
-
-        # Read XML file
-        with open(UI_XML_PATH, "r") as xml_file:
-            xml_content = xml_file.read()
-
-        # Read and encode screenshot
-        with open(SCREENSHOT_PATH, "rb") as img_file:
-            screenshot_bytes = img_file.read()
-            screenshot_base64 = base64.b64encode(screenshot_bytes).decode("utf-8")
-
-        return InspectorResponse(
-            status="ok", ui_xml=xml_content, screenshot=screenshot_base64
+        # Use shell=True ONLY if you are passing a full string with quotes
+        # (like the sh -c command). For normal adb commands, shell=False is better.
+        #
+        # Since your combined command uses quotes heavily, we keep shell=True.
+        p = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            shell=True,
         )
+
+        if p.returncode != 0:
+            err = p.stderr.decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"ADB command failed ({p.returncode}): {err}")
+
+        return p.stdout
+
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"ADB command timed out after {timeout}s: {cmd}")
+
+
+def fetch_xml_and_screenshot(device_serial: str | None = None) -> tuple[str, bytes]:
+    """
+    Single-function fetch. Primary path uses ONE adb exec-out command to capture
+    UI XML + PNG (base64) in a single stream. Falls back (still inside this function)
+    if markers or outputs are invalid.
+    """
+    device_flag = f"-s {device_serial}" if device_serial else ""
+
+    SPLIT = "__ZEUZ_SPLIT__"
+    END = "__ZEUZ_END__"
+
+    cmd = (
+        f'{ADB_PATH} {device_flag} exec-out sh -c '
+        f'"uiautomator dump /dev/tty; '
+        f'echo {SPLIT}; '
+        f'screencap -p | base64; '
+        f'echo {END}"'
+    ).strip()
+
+    out = run_adb_command_bytes(cmd)
+
+    text = out.decode("utf-8", errors="replace")
+    if SPLIT in text and END in text:
+        xml_part, rest = text.split(SPLIT, 1)
+        b64_part = rest.split(END, 1)[0]
+
+        # Extract real XML starting from <hierarchy
+        i = xml_part.find("<hierarchy")
+        xml = xml_part[i:] if i != -1 else ""
+
+        # Decode PNG (ignore newlines/spaces)
+        b64_compact = "".join(b64_part.split())
+        try:
+            png = base64.b64decode(b64_compact, validate=False)
+        except Exception:
+            png = b""
+
+        if "<hierarchy" in xml and png.startswith(b"\x89PNG"):
+            return xml, png
+
+
+@router.get("/inspect", response_model=InspectorResponse)
+async def inspect(device_serial: str | None = None):
+    """Get the Mobile DOM and screenshot (XML + screenshot fetched together)."""
+    global stop_android_ui_dump
+    try:
+        xml, png = await asyncio.to_thread(fetch_xml_and_screenshot, device_serial)
+        if not xml or not png:
+            return InspectorResponse(status="error", error="Failed to capture xml/screenshot")
+
+        screenshot_base64 = base64.b64encode(png).decode("utf-8")
+        return InspectorResponse(status="ok", ui_xml=xml, screenshot=screenshot_base64)
+
     except Exception as e:
         return InspectorResponse(status="error", error=str(e))
 
@@ -259,7 +321,6 @@ def run_adb_command(command):
         result = subprocess.run(
             command,
             shell=True,
-            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -412,7 +473,7 @@ async def upload_android_ui_dump():
     prev_xml_hash = ""
     while True:
         try:
-            capture_ui_dump()
+            await asyncio.to_thread(capture_ui_dump)
             try:
                 with open(UI_XML_PATH, "r") as xml_file:
                     xml_content = xml_file.read()
@@ -440,13 +501,15 @@ async def upload_android_ui_dump():
                 + "/node_ai_contents/"
             )
             apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
-            res = requests.post(
+            res = await asyncio.to_thread(
+                requests.post,
                 url,
                 headers={"X-Api-Key": apiKey},
                 json={
                     "dom_mob": {"dom": xml_content},
                     "node_id": CommonUtil.MachineInfo().getLocalUser().lower(),
                 },
+                timeout=10,
             )
             if res.ok:
                 CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
