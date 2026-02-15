@@ -20,6 +20,11 @@ import urllib.request
 from rich.progress import Progress
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
+try:
+    from .linux_system import LinuxSystemHelper
+except ImportError:
+    from linux_system import LinuxSystemHelper
+
 
 class ChromeForTesting:
     CHROME_BASE_DIR = ZEUZ_NODE_DOWNLOADS_DIR / "chrome_for_testing"
@@ -36,9 +41,13 @@ class ChromeForTesting:
             self.platform_key = "mac-arm64" if self.arch == "arm64" else "mac-x64"
         elif self.system == "linux":
             self.platform_key = "linux64"
+            self.linux_helper = LinuxSystemHelper()
             self._install_linux_dependencies()
         else:
             raise OSError(f"Unsupported platform: {self.system}/{self.arch}")
+
+        if self.system != "linux":
+            self.linux_helper = None
 
         self.CHROME_BASE_DIR.mkdir(parents=True, exist_ok=True)
         self.CHROME_VERSIONS_DIR.mkdir(exist_ok=True)
@@ -49,65 +58,32 @@ class ChromeForTesting:
     def _install_linux_dependencies(self):
         """Install Chrome dependencies for Ubuntu 24.04 and newer"""
         try:
-            os_release = {}
-            with open("/etc/os-release", "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or "=" not in line:
-                        continue
-                    key, value = line.split("=", 1)
-                    os_release[key] = value.strip().strip('"').strip("'")
+            if self.linux_helper and self.linux_helper.is_ubuntu_version_at_least(
+                24, 4
+            ):
+                deps = self.linux_helper.get_chrome_dependency_packages()
+                if not deps:
+                    print("Warning: No dependency packages resolved for Ubuntu.")
+                    return
 
-            distro_id = os_release.get("ID", "").lower()
-            version_id = os_release.get("VERSION_ID", "")
+                missing_deps = self.linux_helper.get_missing_packages(deps)
+                if not missing_deps:
+                    print(
+                        "Chrome dependencies already installed. Skipping apt install."
+                    )
+                    return
 
-            version_parts = version_id.split(".")
-            major = (
-                int(version_parts[0])
-                if len(version_parts) > 0 and version_parts[0].isdigit()
-                else 0
-            )
-            minor = (
-                int(version_parts[1])
-                if len(version_parts) > 1 and version_parts[1].isdigit()
-                else 0
-            )
-
-            if distro_id == "ubuntu" and (major, minor) >= (24, 4):
-                # some cft dependencies for Ubuntu 24.04+
-                deps = [
-                    "libnss3",
-                    "libxss1",
-                    "libappindicator3-1",
-                    "fonts-liberation",
-                    "libasound2t64",
-                    "libnspr4",
-                    "libx11-xcb1",
-                    "libxcomposite1",
-                    "libxcursor1",
-                    "libxdamage1",
-                    "libxi6",
-                    "libxtst6",
-                    "libglib2.0-0t64",
-                    "libgtk-3-0t64",
-                    "libgdk-pixbuf2.0-0",
-                    "libxrandr2",
-                    "libpangocairo-1.0-0",
-                    "libatk1.0-0t64",
-                    "libcairo-gobject2",
-                    "xvfb",
-                    "ca-certificates",
-                    "libatk-bridge2.0-0",
-                    "libdrm2",
-                    "libxkbcommon0",
-                    "lsb-release",
-                    "wget",
-                    "xdg-utils",
-                ]
-
-                print("Installing Chrome dependencies for Ubuntu...")
-                subprocess.run(["sudo", "apt-get", "update", "-qq"], check=True)
-                subprocess.run(["sudo", "apt-get", "install", "-y"] + deps, check=True)
+                privilege_cmd, privilege_mode = (
+                    self.linux_helper.get_privilege_escalation_command()
+                )
+                print(
+                    f"Installing Chrome dependencies for Ubuntu using {privilege_mode}..."
+                )
+                subprocess.run(privilege_cmd + ["apt-get", "update", "-qq"], check=True)
+                subprocess.run(
+                    privilege_cmd + ["apt-get", "install", "-y"] + missing_deps,
+                    check=True,
+                )
                 print("Dependencies installed successfully.")
             else:
                 return
