@@ -32,7 +32,7 @@ from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from selenium.webdriver.common.actions.action_builder import ActionBuilder
 from selenium.webdriver.common.actions.pointer_input import PointerInput
-# from appium.webdriver.common.touch_action import TouchAction
+from selenium.webdriver.common.actions import interaction
 # from appium.webdriver.common.multi_action import MultiAction
 from selenium.webdriver.common.action_chains import ActionChains
 from appium.webdriver.common.appiumby import AppiumBy
@@ -2674,16 +2674,27 @@ def Smart_Scroll_To_Element(data_set):
 
 
 
+def _tap_xy(driver, x, y, hold_sec=0.0):
+    actions = ActionChains(driver)
+
+    finger = PointerInput(interaction.POINTER_TOUCH, "finger")
+    actions.w3c_actions.devices = [finger]
+
+    finger.create_pointer_move(duration=0, x=int(x), y=int(y), origin="viewport")
+    finger.create_pointer_down(button=0)
+
+    if hold_sec and hold_sec > 0:
+        finger.create_pause(float(hold_sec))
+
+    finger.create_pointer_up(button=0)
+
+    actions.perform()
+
+
 @logger
 def Tap_Appium(data_set):
-    """ Execute "Tap" for an element
-      if optional parameter is provided for offset, we will take it from the center of the object and % center of the bound
-
-      Example:
-      below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
-
-      x_offset:y_offset             optional parameter           25:0
-
+    """Execute "Tap" for an element.
+    Optional offset: x_offset:y_offset in % from element center (e.g., 25:0).
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2693,10 +2704,10 @@ def Tap_Appium(data_set):
         return "passed"
 
     try:
-
-        x_offset = False
-        y_offset = False
         offset = False
+        x_offset = 0
+        y_offset = 0
+        hold_sec = 0
 
         for row in data_set:
             if (
@@ -2704,85 +2715,66 @@ def Tap_Appium(data_set):
                 and "x_offset:y_offset" in str(row[0]).lower().strip()
             ):
                 offset = True
-                x_offset = ((str(row[2]).lower().strip()).split(":")[0]).strip()
-                y_offset = ((str(row[2]).lower().strip()).split(":")[1]).strip()
+                parts = str(row[2]).strip().split(":")
+                x_offset = int(parts[0].strip())
+                y_offset = int(parts[1].strip())
+            if row[0].lower().strip() == "hold time":
+                hold_sec = float(row[2].strip())
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
-        else:
-            try:
-                if Element.is_enabled():
 
-                    if offset == True:
-                        try:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Tapping the element based on offset using TouchAction",
-                                1,
-                            )
-                            start_loc = Element.location
-                            height_width = Element.size
+        try:
+            if not Element.is_enabled():
+                CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                return "zeuz_failed"
 
-                            start_x = int((start_loc)["x"])
-                            start_y = int((start_loc)["y"])
+            if offset:
+                CommonUtil.ExecLog(sModuleInfo, "Tapping the element based on offset using W3C Actions", 1)
 
-                            ele_width = int((height_width)["width"])
-                            ele_height = int((height_width)["height"])
+                start_loc = Element.location
+                size = Element.size
 
-                            # calculate center of the elem
-                            center_x = start_x + (ele_width / 2)
-                            center_y = start_y + (ele_height / 2)
-                            # we need to divide the width and height by 2 as we are offseting from the center not the full
-                            total_x_offset = (int(x_offset) / 100) * (ele_width / 2)
-                            total_y_offset = (int(y_offset) / 100) * (ele_height / 2)
+                start_x = int(start_loc["x"])
+                start_y = int(start_loc["y"])
+                ele_width = int(size["width"])
+                ele_height = int(size["height"])
 
-                            x_cord_to_tap = center_x + total_x_offset
-                            y_cord_to_tap = center_y + total_y_offset
-                            TouchAction(appium_driver).tap(
-                                None, x_cord_to_tap, y_cord_to_tap, 1
-                            ).perform()
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Tapped on element by offset successfully",
-                                1,
-                            )
-                            return "passed"
+                center_x = start_x + (ele_width / 2)
+                center_y = start_y + (ele_height / 2)
 
-                        except:
-                            # CommonUtil.TakeScreenShot(sModuleInfo)
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Element is enabled. Unable to tap based on offset.",
-                                3,
-                            )
-                            return "zeuz_failed"
-                    else:
+                # Offset is from center; 100% means edge from center (half-width/half-height)
+                total_x_offset = (x_offset / 100.0) * (ele_width / 2.0)
+                total_y_offset = (y_offset / 100.0) * (ele_height / 2.0)
 
-                        action = TouchAction(appium_driver)
-                        action.tap(Element).perform()
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Tapped on element successfully", 1
-                        )
-                        return "passed"
-                else:
-                    # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Element not enabled. Unable to click.", 3
-                    )
-                    return "zeuz_failed"
-            except Exception:
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                x_cord_to_tap = center_x + total_x_offset
+                y_cord_to_tap = center_y + total_y_offset
+
+                _tap_xy(appium_driver, x_cord_to_tap, y_cord_to_tap, hold_sec=hold_sec)
+
+                CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)
+                return "passed"
+
+            # No offset: tap center of element (works cross-platform, no TouchAction)
+            CommonUtil.ExecLog(sModuleInfo, "Tapping the element using W3C Actions", 1)
+
+            rect = Element.rect  # {'x','y','width','height'}
+            x = rect["x"] + rect["width"] / 2
+            y = rect["y"] + rect["height"] / 2
+
+            _tap_xy(appium_driver, x, y, hold_sec=hold_sec)
+            CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
+            return "passed"
+
+        except Exception as e:
+            errMsg = "Could not select/click your element."
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
     except Exception:
         errMsg = "Unable to tap."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
 
 
 
