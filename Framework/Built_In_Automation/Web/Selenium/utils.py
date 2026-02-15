@@ -30,6 +30,7 @@ class ChromeForTesting:
     CHROME_BASE_DIR = ZEUZ_NODE_DOWNLOADS_DIR / "chrome_for_testing"
     CHROME_VERSIONS_DIR = CHROME_BASE_DIR / "versions"
     CHROME_INFO_FILE = CHROME_BASE_DIR / "info.json"
+    CHROME_LINUX_UNAVAILABLE_DEPS_FILE = CHROME_BASE_DIR / "unavailable_linux_deps.txt"
 
     def __init__(self):
         self.system = platform.system().lower()
@@ -41,7 +42,9 @@ class ChromeForTesting:
             self.platform_key = "mac-arm64" if self.arch == "arm64" else "mac-x64"
         elif self.system == "linux":
             self.platform_key = "linux64"
-            self.linux_helper = LinuxSystemHelper()
+            self.linux_helper = LinuxSystemHelper(
+                unavailable_cache_file=self.CHROME_LINUX_UNAVAILABLE_DEPS_FILE
+            )
             self._install_linux_dependencies()
         else:
             raise OSError(f"Unsupported platform: {self.system}/{self.arch}")
@@ -73,6 +76,22 @@ class ChromeForTesting:
                     )
                     return
 
+                install_deps, cached_unavailable = (
+                    self.linux_helper.filter_cached_unavailable_packages(missing_deps)
+                )
+                if cached_unavailable:
+                    print(
+                        "Warning: Skipping previously unavailable packages: "
+                        f"{', '.join(cached_unavailable)}"
+                    )
+
+                if not install_deps:
+                    print(
+                        "All missing dependencies are marked unavailable. "
+                        "Skipping apt install."
+                    )
+                    return
+
                 privilege_cmd, privilege_mode = (
                     self.linux_helper.get_privilege_escalation_command()
                 )
@@ -80,11 +99,71 @@ class ChromeForTesting:
                     f"Installing Chrome dependencies for Ubuntu using {privilege_mode}..."
                 )
                 subprocess.run(privilege_cmd + ["apt-get", "update", "-qq"], check=True)
-                subprocess.run(
-                    privilege_cmd + ["apt-get", "install", "-y"] + missing_deps,
-                    check=True,
+                install_result = subprocess.run(
+                    privilege_cmd + ["apt-get", "install", "-y"] + install_deps,
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
-                print("Dependencies installed successfully.")
+                install_ok = install_result.returncode == 0
+
+                if install_result.returncode != 0:
+                    apt_output = f"{install_result.stdout}\n{install_result.stderr}"
+                    unavailable_from_apt = (
+                        self.linux_helper.extract_unavailable_packages_from_apt_output(
+                            apt_output
+                        )
+                    )
+
+                    if unavailable_from_apt:
+                        newly_cached = self.linux_helper.add_unavailable_packages(
+                            unavailable_from_apt
+                        )
+                        if newly_cached:
+                            print(
+                                "Warning: Caching unavailable packages for future runs: "
+                                f"{', '.join(sorted(newly_cached))}"
+                            )
+
+                        retry_deps = [
+                            package
+                            for package in install_deps
+                            if package not in unavailable_from_apt
+                        ]
+
+                        if retry_deps:
+                            retry_result = subprocess.run(
+                                privilege_cmd
+                                + ["apt-get", "install", "-y"]
+                                + retry_deps,
+                                capture_output=True,
+                                text=True,
+                                check=False,
+                            )
+                            if retry_result.returncode != 0:
+                                print("Warning: Could not install all dependencies.")
+                                print(
+                                    retry_result.stderr.strip()
+                                    or retry_result.stdout.strip()
+                                )
+                            else:
+                                install_ok = True
+                        else:
+                            print(
+                                "Warning: All attempted packages were unavailable in apt. "
+                                "Continuing without interruption."
+                            )
+                    else:
+                        print("Warning: Could not install dependencies.")
+                        print(
+                            install_result.stderr.strip()
+                            or install_result.stdout.strip()
+                        )
+
+                if install_ok:
+                    print("Dependencies installed successfully.")
+                else:
+                    print("Dependency installation completed with warnings.")
             else:
                 return
 

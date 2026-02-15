@@ -1,12 +1,16 @@
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 
 
 class LinuxSystemHelper:
-    def __init__(self):
+    def __init__(self, unavailable_cache_file=None):
         self.os_release = self._load_os_release()
+        self.unavailable_cache_file = (
+            Path(unavailable_cache_file) if unavailable_cache_file else None
+        )
 
     def _load_os_release(self):
         data = {}
@@ -179,3 +183,59 @@ class LinuxSystemHelper:
         return [
             package for package in packages if not self._is_package_installed(package)
         ]
+
+    def _load_unavailable_packages(self):
+        if not self.unavailable_cache_file or not self.unavailable_cache_file.exists():
+            return set()
+
+        try:
+            with open(self.unavailable_cache_file, "r") as f:
+                return {line.strip() for line in f if line.strip()}
+        except Exception:
+            return set()
+
+    def _save_unavailable_packages(self, packages):
+        if not self.unavailable_cache_file:
+            return
+
+        try:
+            self.unavailable_cache_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.unavailable_cache_file, "w") as f:
+                for package in sorted(packages):
+                    f.write(f"{package}\n")
+        except Exception:
+            return
+
+    def add_unavailable_packages(self, packages):
+        package_set = {pkg for pkg in packages if pkg}
+        if not package_set:
+            return set()
+
+        existing = self._load_unavailable_packages()
+        updated = existing | package_set
+        newly_added = updated - existing
+        if newly_added:
+            self._save_unavailable_packages(updated)
+        return newly_added
+
+    def filter_cached_unavailable_packages(self, packages):
+        cached = self._load_unavailable_packages()
+        allowed = [package for package in packages if package not in cached]
+        skipped = [package for package in packages if package in cached]
+        return allowed, skipped
+
+    def get_cached_unavailable_packages(self):
+        return sorted(self._load_unavailable_packages())
+
+    def extract_unavailable_packages_from_apt_output(self, output):
+        patterns = [
+            r"E:\s+Package '([^']+)' has no installation candidate",
+            r"E:\s+Unable to locate package\s+(\S+)",
+            r"Package\s+(\S+)\s+is not available, but is referred to by another package",
+        ]
+
+        unavailable = set()
+        for pattern in patterns:
+            unavailable.update(re.findall(pattern, output))
+
+        return sorted(unavailable)
