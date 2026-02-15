@@ -5445,7 +5445,7 @@ def swipe_appium(data_set):
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
-            appium_driver.swipe(x1, y1, x2, y2, int(duration * 1000))  # duration seconds to milliseconds
+            appium_driver.swipe(x1, y1, x2, y2, int(duration) * 1000)  # duration seconds to milliseconds
             i = i+1
         return "passed"
 
@@ -5570,7 +5570,7 @@ def scroll_to_element(data_set):
             if Element != 'zeuz_failed':
                 CommonUtil.ExecLog(sModuleInfo, "Scrolled to the desired element successfully.", 1)
                 return "passed"
-            appium_driver.swipe(x1, y1, x2, y2, int(duration * 1000))  # duration seconds to milliseconds
+            appium_driver.swipe(x1, y1, x2, y2, int(duration) * 1000)  # duration seconds to milliseconds
             i = i+1
         CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." % max_try, 3)
         return "zeuz_failed"
