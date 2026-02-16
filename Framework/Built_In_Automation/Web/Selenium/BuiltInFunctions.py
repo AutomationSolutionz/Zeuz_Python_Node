@@ -702,10 +702,20 @@ def Open_Browser(browser, browser_options: BrowserOptions):
                 service = Service()
                 CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
 
-            selenium_driver = webdriver.Chrome(
-                service=service,
-                options=options,
-            )
+            try:
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
+            except SessionNotCreatedException as e:
+                if "user data directory" in str(e).lower() and "already in use" in str(e).lower():
+                    options.add_argument(f"--no-sandbox")
+                    selenium_driver = webdriver.Chrome(
+                        service=service,
+                        options=options,
+                    )
+                else:
+                    raise
 
             # service = Service()
             # selenium_driver = webdriver.Chrome(
