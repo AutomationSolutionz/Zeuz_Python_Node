@@ -20,6 +20,7 @@ Usage:
 Author: Zeuz/AutomationSolutionz
 """
 
+import asyncio
 import sys
 import os
 import inspect
@@ -2313,11 +2314,13 @@ async def Wait_For_Element(step_data):
             if mid_l == "input parameter":
                 if left_l in ("wait", "state"):
                     state = right_v.lower()
-            elif mid_l == "optional parameter":
-                if left_l == "timeout":
-                    timeout = int(float(right_v) * 1000)
+            elif left_l == "wait for element":
+                timeout = int(right_v)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, element_wait=0.1)
+        if timeout:
+            await asyncio.sleep(timeout)
+
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
 
         if locator == "zeuz_failed":
             # For hidden/detached states, element not found is actually success
@@ -2327,11 +2330,11 @@ async def Wait_For_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
 
-        wait_options = {"state": state}
-        if timeout:
-            wait_options["timeout"] = timeout
+        # wait_options = {"state": state}
+        # if timeout:
+        #     wait_options["timeout"] = timeout
 
-        locator.wait_for(**wait_options)
+        # locator.wait_for(**wait_options)
         CommonUtil.ExecLog(sModuleInfo, f"Element reached state: {state}", 1)
         return "passed"
 
