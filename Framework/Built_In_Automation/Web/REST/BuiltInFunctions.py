@@ -262,7 +262,7 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
                 field = each.strip()
                 Shared_Resources.Set_Shared_Variables(field, result_dict[field])
             CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
-        elif fields_to_be_saved[0].lower().strip() == "none":
+        elif fields_to_be_saved[0].lower().strip() in ("none", "http_response"):
             CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
             return
         else:
@@ -325,7 +325,7 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
                     list_name, field, result_dict[field]
                 )
             CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
-        elif fields_to_be_saved[0].lower().strip() == "none":
+        elif fields_to_be_saved[0].lower().strip() in ("none", "http_response"):
             CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
             return
         else:
@@ -808,6 +808,7 @@ def handle_rest_call(
                             method=method,
                             url=url,
                             json=body,
+                            data=payload,
                             headers=headers,
                             verify=False,
                             timeout=timeout,

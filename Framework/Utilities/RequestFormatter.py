@@ -1,7 +1,8 @@
 # -- coding: utf-8 --
 # -- coding: cp1252 --
-
+import asyncio
 from . import ConfigModule
+import os
 import requests
 import json
 import pickle
@@ -31,17 +32,18 @@ def save_cookies(session: requests.Session, filename: str):
     try:
         with open(filename, 'wb') as f:
             pickle.dump(session.cookies, f)
-    except:
+    except Exception:
         print("[RequestFormatter] ERROR saving cookies to disk.")
 
 
-import os
 def load_cookies(filename: os.PathLike):
     global session
     try:
         with open(filename, 'rb') as f:
             session.cookies.update(pickle.load(f))
-    except:
+    except FileNotFoundError:
+        print("[RequestFormatter] No cookies found on disk.")
+    except Exception:
         print("[RequestFormatter] ERROR loading cookies from disk.")
 
 
@@ -54,7 +56,7 @@ def set_access_token_expiration(date_string: str):
 def datestring_to_obj(date_string: str) -> datetime:
     try:
         date_obj = datetime.fromisoformat(date_string)
-    except:
+    except Exception:
         date_string = date_string[:date_string.index(".")]
         date_obj = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
         date_obj.replace(tzinfo=timezone.utc)
@@ -64,7 +66,13 @@ def datestring_to_obj(date_string: str) -> datetime:
 
 def is_less_than_N_minutes_away(target_datetime, n):
     # Get the current time
-    current_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+    # Handle both timezone-aware and timezone-naive datetimes
+    if target_datetime.tzinfo is None:
+        # Target is naive, use naive current time
+        current_time = datetime.now()
+    else:
+        # Target is aware, use aware current time in UTC
+        current_time = datetime.now(timezone.utc)
 
     # Calculate the difference between the target datetime and the current time
     time_difference = target_datetime - current_time
@@ -129,10 +137,10 @@ def login():
     return data, r.status_code
 
 
-def form_uri(resource_path):
+def form_uri(resource_path: str | None = None) -> str:
     web_server_address = ConfigModule.get_config_value(AUTHENTICATION_CATEGORY, SERVER_ADDRESS_TAG)
     base_server_address = web_server_address
-    if len(resource_path) > 0:
+    if resource_path and len(resource_path) > 0:
         if resource_path[0] == "/":
             resource_path = resource_path[1:]
         base_server_address += "/" + resource_path
@@ -161,12 +169,26 @@ def request(*args, **kwargs):
     """
     request() is a wrapper for requests.request which handles automatic session
     management.
+    Default values:
+        verify = False
+        timeout = 70 sec
     """
     renew_token_with_expiry_check()
     if "verify" not in kwargs:
         kwargs["verify"] = False
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = 70
+    
 
     return session.request(*args, **kwargs)
+
+# async wrapper
+async def async_request(*args, **kwargs):
+    """
+    Runs the blocking request() in a worker thread
+    so the event loop is not blocked.
+    """
+    return await asyncio.to_thread(request, *args, **kwargs)
 
 
 def Post(resource_path, payload=None, **kwargs):
@@ -202,16 +224,12 @@ def Get(resource_path, payload=None, **kwargs):
             **kwargs
         ).json()
 
-    except requests.exceptions.RequestException:
-        print(
-            "Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
-            "Please include full server name. Example: https://zeuz.zeuz.ai.\n"
-            "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6"
-        )
+    except requests.exceptions.RequestException as e:
+        print(e)
         return ""
 
     except Exception as e:
-        print("Get Exception: {}".format(e))
+        print(e)
         return {}
 
 

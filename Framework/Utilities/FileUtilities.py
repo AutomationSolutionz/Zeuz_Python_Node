@@ -25,7 +25,6 @@ def CreateFolder(folderPath, forced=True):
                 return True
             DeleteFolder(folderPath)
         os.makedirs(folderPath)
-        print(f"Folder created: {folderPath}")
         return True
     except Exception as e:
          print("Error from FileUtilities CreateFolder: %s" % e)

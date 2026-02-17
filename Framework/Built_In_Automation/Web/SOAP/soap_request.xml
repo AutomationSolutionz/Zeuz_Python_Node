@@ -1,0 +1,29 @@
+<se:Envelope xmlns:se="http://schemas.xmlsoap.org/soap/envelope/" xmlns="zeuz.ai.soap">
+    <se:Header/>
+    <se:Body>
+        <process_order>
+            <order>
+                <order_id>ORD-1234</order_id>
+                <customer_name>Shadow Purr</customer_name>
+                <items>
+                    <Item>
+                        <item_id>001</item_id>
+                        <quantity>1</quantity>
+                        <price>5.0</price>
+                    </Item>
+                    <Item>
+                        <item_id>002</item_id>
+                        <quantity>2</quantity>
+                        <price>10.0</price>
+                    </Item>
+                    <Item>
+                        <item_id>003</item_id>
+                        <quantity>3</quantity>
+                        <price>15.0</price>
+                    </Item>
+                </items>
+                <shipping_address>123 Main St, Cattie Residential area, Earth</shipping_address>
+            </order>
+        </process_order>
+    </se:Body>
+</se:Envelope>

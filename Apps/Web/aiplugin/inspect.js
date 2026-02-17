@@ -1,4 +1,38 @@
 const browserAppData = chrome || browser;
+setInterval(() => {
+	var html = document.createElement('html');
+	html.setAttribute('zeuz','aiplugin');
+	var myString = document.documentElement.outerHTML;
+	html.innerHTML = myString;
+	
+	var elements = html.getElementsByTagName('head');
+	while (elements[0])
+		elements[0].parentNode.removeChild(elements[0])
+
+	var elements = html.getElementsByTagName('link');
+	while (elements[0])
+		elements[0].parentNode.removeChild(elements[0])
+
+	var elements = html.getElementsByTagName('script');
+	while (elements[0])
+		elements[0].parentNode.removeChild(elements[0])
+
+	var elements = html.getElementsByTagName('style');
+	while (elements[0])
+		elements[0].parentNode.removeChild(elements[0])
+	
+	// AI model works better on indented dom, so not removing indentation.
+	// var result = html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
+
+	//The following code removes non-unicode characters except newline and tab
+	var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
+
+	browserAppData.runtime.sendMessage({
+		apiName: 'node_ai_contents',
+		dom: result,
+	})
+
+}, 5000);
 
 class Inspector {
 	constructor() {
@@ -29,25 +63,23 @@ class Inspector {
 			// message element
 			const modalNode = document.getElementById(this.modalNode);
 
-			function insert_modal_text(response, modal_id) {
+			const insert_modal_text = (response, modal_id) => {
 				console.log("insert_modal_text ..................")
 				if (response["info"] == "success") {
-					// show message about element
 					const modalText = 'Element data was recorded. Please Click "Add by AI"';
 					console.log(modalText);
-					if (modalNode) {
-						modalNode.innerText = modalText;
-					} else {
-						const modalHtml = document.createElement('div');
-						modalHtml.innerText = modalText;
-						modalHtml.id = modal_id;
-						document.body.appendChild(modalHtml);
+					
+					if (this.successContainer) {
+						this.successContainer.textContent = modalText;
+						this.successContainer.classList.add('show');
+						setTimeout(() => {
+							this.successContainer.classList.remove('show');
+						}, 3000);
 					}
 					return true;
 				}
 				console.error(response["info"]);
 				return false;
-
 			}
 
 			async function send_data(server_url, api_key, data, modal_id, refinedHtml) {
@@ -141,11 +173,9 @@ class Inspector {
 								var server_url = result.url;
 								var api_key = result.key;
 
-
-								// send data to zeuz server directly
-
-								refinedHtml = refinedHtml.replace(/[^\x00-\x7F]/g, '');
-								refinedHtml = refinedHtml.replace(/[\x00-\x1F\x7F]/g, '');
+								//The following code removes non-unicode characters (except \x09 and \x0A that are \t and \n), that causes issue in lxml tree
+								// Optionally remove control characters (0-31 and 127 in ASCII) except 9,10 \t and \n
+								refinedHtml = refinedHtml.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
 								var data = JSON.stringify({
 									"page_src": refinedHtml,
 									"action_type": "selenium"
@@ -263,23 +293,6 @@ class Inspector {
 
 	setOptions(options) {
 		this.options = options;
-		let position = 'bottom:0;left:0';
-		let positionParent = 'top:0;left:0';
-		let positionModal = 'top:50%;left:40%';
-		switch (options.position) {
-			case 'tl':
-				position = 'top:0;left:0';
-				break;
-			case 'tr':
-				position = 'top:0;right:0';
-				break;
-			case 'br':
-				position = 'bottom:0;right:0';
-				break;
-			default:
-				break;
-		}
-		this.styles = `*{cursor:crosshair!important;}#xpath-content{${position};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#xpath-parent-content{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}#${this.modalNode}{${position};cursor:initial!important;padding:10px;background:#F2F2F2;color:green;position:fixed;font-size:14px;z-index:10000001;}#${this.elementNode}{${positionParent};cursor:initial!important;padding:10px;background:gray;color:white;position:fixed;font-size:14px;z-index:10000001;}`;
 		this.activate();
 	}
 
@@ -322,6 +335,102 @@ class Inspector {
 		overlayHtml && overlayHtml.remove();
 	}
 
+	createAttributeDisplay() {
+		const host = document.createElement('div');
+		host.id = 'zeuz-attributes-host';
+		Object.assign(host.style, {
+			position: 'fixed',
+			top: '10px',
+			left: '10px',
+			zIndex: '2147483647',
+			pointerEvents: 'none'
+		});
+		document.body.appendChild(host);
+
+		const shadow = host.attachShadow({ mode: 'open' });
+		const style = document.createElement('style');
+		style.textContent = `
+			.attributes-container {
+				background: rgba(0, 0, 0, 0.8);
+				color: white;
+				padding: 6px 10px;
+				border-radius: 4px;
+				font-family: monospace;
+				font-size: 11px;
+				max-width: 300px;
+				word-break: break-all;
+				backdrop-filter: blur(4px);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+			}
+		`;
+		shadow.appendChild(style);
+
+		const container = document.createElement('div');
+		container.className = 'attributes-container';
+		shadow.appendChild(container);
+
+		this.attributesHost = host;
+		this.attributesContainer = container;
+	}
+
+	createSuccessMessage() {
+		const host = document.createElement('div');
+		host.id = 'zeuz-success-host';
+		Object.assign(host.style, {
+			position: 'fixed',
+			top: '20px',
+			left: '50%',
+			transform: 'translateX(-50%)',
+			zIndex: '2147483647',
+			pointerEvents: 'none'
+		});
+		document.body.appendChild(host);
+
+		const shadow = host.attachShadow({ mode: 'open' });
+		const style = document.createElement('style');
+		style.textContent = `
+			.success-message {
+				background: linear-gradient(135deg, #4ade80, #22c55e);
+				color: white;
+				padding: 12px 20px;
+				border-radius: 8px;
+				font-family: sans-serif;
+				font-size: 14px;
+				font-weight: 500;
+				box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				opacity: 0;
+				transform: translateY(-10px);
+				transition: all 0.3s ease;
+			}
+			.success-message.show {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		`;
+		shadow.appendChild(style);
+
+		const container = document.createElement('div');
+		container.className = 'success-message';
+		shadow.appendChild(container);
+
+		this.successHost = host;
+		this.successContainer = container;
+	}
+
+	updateAttributePosition(mouseY) {
+		if (this.attributesHost) {
+			const isTopHalf = mouseY < window.innerHeight / 2;
+			if (isTopHalf) {
+				this.attributesHost.style.top = 'auto';
+				this.attributesHost.style.bottom = '10px';
+			} else {
+				this.attributesHost.style.top = '10px';
+				this.attributesHost.style.bottom = 'auto';
+			}
+		}
+	}
+
 	copyText(XPath) {
 		const hdInp = document.createElement('textarea');
 		hdInp.textContent = XPath;
@@ -355,35 +464,32 @@ class Inspector {
 
 		this.doc.body.appendChild(this.container);
 
+		// attributes display if not exists
+		if (!this.attributesHost) {
+			this.createAttributeDisplay();
+		}
 
-		// show element attributes
-		const elementNode = document.getElementById(this.elementNode);
-		var elementText = "";
+		// position based on mouse location
+		this.updateAttributePosition(e.clientY);
+
+		let elementText = "";
 		for (let name of e.target.getAttributeNames()) {
 			let value = e.target.getAttribute(name);
-			var each = name + " = \"" + value + "\", ";
-			elementText += each;
+			elementText += `${name}="${value}" `;
 		}
-		if (elementNode) {
-			elementNode.innerText = elementText;
-		} else {
-			const elementHtml = document.createElement('div');
-			elementHtml.innerText = elementText;
-			elementHtml.id = this.elementNode;
-			document.body.appendChild(elementHtml);
-		}
-
+		
+		this.attributesContainer.textContent = elementText.trim();
 	}
 
 	activate() {
 		this.createOverlayElements();
-		// add styles
-		if (!document.getElementById(this.cssNode)) {
-			const styles = document.createElement('style');
-			styles.innerText = this.styles;
-			styles.id = this.cssNode;
-			document.getElementsByTagName('head')[0].appendChild(styles);
-		}
+		this.createSuccessMessage();
+		
+		const style = document.createElement('style');
+		style.id = this.cssNode;
+		style.textContent = '*{cursor:crosshair!important;}';
+		document.head.appendChild(style);
+		
 		// add listeners
 		document.addEventListener('click', this.getData, true);
 		this.options.inspector && (document.addEventListener('mouseover', this.draw));
@@ -393,30 +499,27 @@ class Inspector {
 		// remove overlay
 		this.removeOverlay();
 
-		this.cssNode = 'xpath-css';
-		this.overlayElement = 'xpath-overlay';
-		this.modalNode = 'zeuzMyModal';
-		this.elementNode = 'zeuzMyElement';
-
 		let Remove = [
 			this.cssNode,
 			this.overlayElement,
-			this.modalNode,
-			this.elementNode,
+			'zeuz-attributes-host',
+			'zeuz-success-host'
 		]
 
-		for (let elem of Remove){
-			elem = document.getElementById(elem);
+		for (let elemId of Remove){
+			const elem = document.getElementById(elemId);
 			elem && elem.remove();
 		}
-
-		// remove styles
-		const cssNode = document.getElementById(this.cssNode);
-		cssNode && cssNode.remove();
 
 		// remove listeners
 		document.removeEventListener('click', this.getData, true);
 		this.options && this.options.inspector && (document.removeEventListener('mouseover', this.draw));
+		
+		// reset
+		this.attributesHost = null;
+		this.attributesContainer = null;
+		this.successHost = null;
+		this.successContainer = null;
 	}
 
 	getXPath(el) {

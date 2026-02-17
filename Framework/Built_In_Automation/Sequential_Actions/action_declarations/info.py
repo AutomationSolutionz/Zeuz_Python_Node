@@ -5,11 +5,14 @@ from . import (
     desktop,
     rest,
     selenium,
+    playwright,
     utility,
     windows,
+    linux,
     xml,
     database,
-    performance
+    performance,
+    security,
 )
 
 modules = (
@@ -18,11 +21,14 @@ modules = (
     desktop,
     rest,
     selenium,
+    playwright,
     utility,
     windows,
+    linux,
     xml,
     database,
-    performance
+    performance,
+    security,
 )
 
 # This will be exported and contains all the actions.
@@ -83,30 +89,34 @@ action_support = (
     "attribute constrain",
     "optional option",
     "graphql",
-    "shared capability",
-    "chrome option", "chrome options", "chrome experimental option", "chrome experimental options",
+    "shared capability", "chrome option", "edge option", "chromium option", "firefox option", "safari option",
     "pre sleep", "post sleep", "pre post sleep", "post pre sleep",
     "zoom parameter", "optional zoom parameter", "pan parameter", "optional pan parameter",
     "profile option", "profile options",
     "text classifier offset"
     "fail message",
 )
+
+#Old one
+# patterns = [
+#     r'^sr *(src |source |dst |destination |desired )?(parent|sibling|child|next|following|previous|preceding) (\d+ )*parameter$',
+#     r'^sr *(src |source |dst |destination |desired )?element parameter$',
+# ]
+
+
+#New one 
 patterns = [
-    "^parent \d parameter$",
-    "^sibling \d parameter$",
-    "^child \d parameter$",
-    "^following \d parameter$",
-    "^next \d parameter$",
-    "^preceding \d parameter$",
-    "^previous \d parameter$",
+    r'^(sr\s+)?'  # Optional 'sr' prefix followed by one or more spaces
+    r'(src |source |dst |destination |desired )?'
+    r'(parent|sibling|child|next|following|previous|preceding)'
+    r'( \d+)? parameter$',  # Optional numeric index and ends with 'parameter'
 
-    "^src parent \d parameter$", "^src sibling \d parameter$", "^src child \d parameter$", "^src following \d parameter$", "^src next \d parameter$", "^src preceding \d parameter$", "^src previous \d parameter$",
-    "^dst parent \d parameter$", "^dst sibling \d parameter$", "^dst child \d parameter$", "^dst following \d parameter$", "^dst next \d parameter$", "^dst preceding \d parameter$", "^dst previous \d parameter$",
-    "^source parent \d parameter$", "^source sibling \d parameter$", "^source child \d parameter$", "^source following \d parameter$", "^source next \d parameter$", "^source preceding \d parameter$", "^source prevoius \d parameter$",
-    "^destination parent \d parameter$", "^destination sibling \d parameter$", "^destination child \d parameter$", "^destination following \d parameter$", "^destination next \d parameter$", "^destination preceding \d parameter$","^destination previous \d parameter$",
-    "^desired parent \d parameter$", "^desired sibling \d parameter$", "^desired child \d parameter$", "^desired following \d parameter$", "^desired next \d parameter$", "^desired preceding \d parameter$", "^desired previous \d parameter$",
-
+    r'^(sr\s+)?'  # Optional 'sr' prefix
+    r'(src |source |dst |destination |desired )?'
+    r'element parameter$',
+    r'^sr( \d+| \w+)? \w+ parameter$',
 ]
+
 # List of supported mobile platforms - must be lower case
 supported_platforms = ("android", "ios")
 

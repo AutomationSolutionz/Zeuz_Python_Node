@@ -1,8 +1,8 @@
 const browserAppData = chrome || browser;
 const tabs = {};
 const inspectFile = 'inspect.js';
-const activeIcon = 'active-64.png';
-const defaultIcon = 'small_logo.png';
+const activeIcon = 'zeuz-active.png';
+const defaultIcon = 'zeuz.png';
 var zeuz_url;
 var zeuz_key;
 var zeuz_node_id;
@@ -18,13 +18,13 @@ fetch("data.json")
             key: zeuz_key,
             nodeId: zeuz_node_id,
         },
-        function() {
-            console.log("Logged in successfully!");
-        });
+            function () {
+                console.log("Logged in successfully!");
+            });
     });
 
 function logout() {
-    browserAppData.storage.local.remove(['key'], function() {
+    browserAppData.storage.local.remove(['key'], function () {
         alert("Logged out successfully!");
     });
 }
@@ -40,18 +40,18 @@ const inspect = {
         //   files: [inspectFile]
         // });
         browserAppData.tabs.sendMessage(id, {
-                action: type
-            }).then((response) => {
-                console.log("Message from the content script:");
-                console.log(response);
-            })
+            action: type
+        }).then((response) => {
+            console.log("Message from the content script:");
+            console.log(response);
+        })
             .catch((error) => {
                 console.error(`Error: ${error}`)
             });
         browserAppData.action.setIcon({
             tabId: id,
             path: {
-                19: 'icons/' + icon
+                19: icon
             }
         });
     }
@@ -77,7 +77,7 @@ function toggle(tab) {
 
     if (!isSupportedProtocolAndFileType(tab.url)) return;
 
-    if (!tabs[tab.id]){
+    if (!tabs[tab.id]) {
         tabs[tab.id] = Object.create(inspect);
         inspect.toggleActivate(tab.id, 'activate', activeIcon);
     }
@@ -128,42 +128,79 @@ browserAppData.commands.onCommand.addListener(command => {
 browserAppData.tabs.onUpdated.addListener(getActiveTab);
 browserAppData.action.onClicked.addListener(toggle);
 console.log(navigator.userAgentData.platform);
-if (navigator.userAgentData.platform.toLowerCase().includes('mac')){
-  browserAppData.action.setTitle({
-    title: "Cmd + Shift + X"
-  });
+if (navigator.userAgentData.platform.toLowerCase().includes('mac')) {
+    browserAppData.action.setTitle({
+        title: "Cmd + Shift + X"
+    });
 }
 browserAppData.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-      if (request.apiName == 'ai_record_single_action') {
-        var url = `${zeuz_url}/ai_record_single_action/`
-        fetch(url, {
-            method: "POST",
-            headers: {
-                // "Content-Type": "application/json",
-                "X-Api-Key": zeuz_key,
-            },
-            body: request.data,
-        })
-        .then(response => response.json())
-        .then(text => {console.log(text);sendResponse(text);})
+    function (request, sender, sendResponse) {
+        
+        if (request.action === 'toggle_from_content_script') {
+            // allows the floating button to trigger the toggle logic
+            toggle(sender.tab);
+            return;
+        }
 
-        var url = `${zeuz_url}/node_ai_contents/`
-        fetch(url, {
-            method: "POST",
-            headers: {
-                // "Content-Type": "application/json",
-                "X-Api-Key": zeuz_key,
-            },
-            body: JSON.stringify({
-                "dom_web": {"dom": request.html},
-                "node_id": zeuz_node_id
-            }),
-        })
-        .then(response => response.json())
-        .then(text => {console.log(text);sendResponse(text);})
+        if (request.apiName == 'ai_record_single_action') {
+            var url = `${zeuz_url}/ai_record_single_action/`
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    // "Content-Type": "application/json",
+                    "X-Api-Key": zeuz_key,
+                },
+                body: request.data,
+            })
+                .then(response => response.json())
+                .then(text => { console.log(text); sendResponse(text); })
 
-        return true;  // Will respond asynchronously.
-      }
+            var url = `${zeuz_url}/node_ai_contents/`
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    // "Content-Type": "application/json",
+                    "X-Api-Key": zeuz_key,
+                },
+                body: JSON.stringify({
+                    "dom_web": { "dom": request.html },
+                    "node_id": zeuz_node_id.toLowerCase()
+                }),
+            })
+                .then(response => response.json())
+                .then(text => { console.log(text); sendResponse(text); })
+
+            return true;  // Will respond asynchronously.
+        } else if (request.apiName == 'node_ai_contents'){
+            var url = `${zeuz_url}/node_ai_contents/`;
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    // "Content-Type": "application/json",
+                    "X-Api-Key": zeuz_key,
+                },
+                body: JSON.stringify({
+                    "dom_web": { "dom": request.dom },
+                    "node_id": zeuz_node_id
+                }),
+            })
+                .then(response => response.json())
+                .then(text => { console.log(text); sendResponse(text); })
+        }
     }
-  );
+);
+
+// add AI Inspector to the right click menu
+browserAppData.runtime.onInstalled.addListener(() => {
+  browserAppData.contextMenus.create({
+    id: "toggle-ai-inspect",
+    title: "Inspect with AI",
+    contexts: ["all"]
+  });
+});
+
+browserAppData.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "toggle-ai-inspect" && tab) {
+    toggle(tab);
+  }
+});

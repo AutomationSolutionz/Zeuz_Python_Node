@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 """
-    Created on May 15, 2016
+Created on May 15, 2016
 
-    @author: Built_In_Automation Solutionz Inc.
-    Name: Built In Functions - Selenium
-    Description: Sequential Actions for controlling Web Browsers - All main Web Browsers supported on Linux/Windows/Mac
+@author: Built_In_Automation Solutionz Inc.
+Name: Built In Functions - Selenium
+Description: Sequential Actions for controlling Web Browsers - All main Web Browsers supported on Linux/Windows/Mac
 """
 
 #########################
@@ -14,13 +14,18 @@
 #                       #
 #########################
 import platform
-import sys, os, time, inspect, shutil, subprocess, json
+import sys, os, time, inspect, shutil, subprocess, json, re
 import socket
 import requests
 import psutil
+import pyperclip
+import base64, imghdr
 from pathlib import Path
+from urllib.parse import urlparse
+
 sys.path.append("..")
 from selenium import webdriver
+
 if "linux" in platform.system().lower():
     from xvfbwrapper import Xvfb
 from webdriver_manager.chrome import ChromeDriverManager
@@ -34,8 +39,15 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import ElementClickInterceptedException, WebDriverException,\
-    SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException, TimeoutException
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    WebDriverException,
+    SessionNotCreatedException,
+    TimeoutException,
+    NoSuchFrameException,
+    StaleElementReferenceException,
+    TimeoutException,
+)
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.alert import Alert
@@ -57,7 +69,7 @@ from Framework.Utilities.CommonUtil import (
     skipped_tag_list,
 )
 from Framework.AI.NLP import binary_classification
-from settings import temp_ini_file
+from .utils import ChromeForTesting, ChromeExtensionDownloader
 
 #########################
 #                       #
@@ -75,30 +87,100 @@ temp_config = os.path.join(
         ),
     )
 )
-temp_config = str(Path(os.path.abspath(__file__).split("Framework")[0])/"AutomationLog"/ConfigModule.get_config_value("Advanced Options", "_file"))
-aiplugin_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"aiplugin")
-ai_recorder_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"dist")
-ai_recorder_public_path = str(Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Web"/"AI_Recorder_2"/"public")
+temp_config = str(
+    Path(os.path.abspath(__file__).split("Framework")[0])
+    / "AutomationLog"
+    / ConfigModule.get_config_value("Advanced Options", "_file")
+)
+aiplugin_path = str(
+    Path(os.path.abspath(__file__).split("Framework")[0]) / "Apps" / "Web" / "aiplugin"
+)
+ai_recorder_path = str(
+    Path(os.path.abspath(__file__).split("Framework")[0])
+    / "Apps"
+    / "Web"
+    / "AI_Recorder_2"
+    / "dist"
+)
+ai_recorder_public_path = str(
+    Path(os.path.abspath(__file__).split("Framework")[0])
+    / "Apps"
+    / "Web"
+    / "AI_Recorder_2"
+    / "public"
+)
 
 # Disable WebdriverManager SSL verification.
-os.environ['WDM_SSL_VERIFY'] = '0'
-
-WebDriver_Wait = 1
-WebDriver_Wait_Short = 1
+os.environ["WDM_SSL_VERIFY"] = "0"
 
 current_driver_id = None
 selenium_driver = None
 selenium_details = {}
 default_x, default_y = 1920, 1080
 vdisplay = None
+initial_download_folder = None
+
+browser_map = {
+    "Microsoft Edge Chromium": "microsoftedge",
+    "Chrome": "chrome",
+    "FireFox": "firefox",
+    "Opera": "opera",
+    "ChromeHeadless": "chrome",
+    "FirefoxHeadless": "firefox",
+    "EdgeChromiumHeadless": "microsoftedge",
+    "Safari": "safari",
+}
+options_map = {
+    "Microsoft Edge Chromium": "edge",
+    "Chrome": "chrome",
+    "FireFox": "firefox",
+    "Opera": "opera",
+    "ChromeHeadless": "chrome",
+    "FirefoxHeadless": "firefox",
+    "EdgeChromiumHeadless": "edge",
+    "Safari": "safari",
+}
+
+from typing import Literal, TypedDict, Any, Union, NotRequired
+
+Dataset = list[tuple[str, str, str]]
+ReturnType = Literal["passed", "zeuz_failed"]
+
+
+class DefaultChromiumArguments(TypedDict):
+    add_argument: list[str]
+    add_experimental_option: dict[str, Any]
+    add_extension: list[str]
+    add_encoded_extension: list[str]
+    page_load_strategy: NotRequired[Literal["normal", "eager", "none"]]
+
+
+class FirefoxArguments(TypedDict):
+    add_argument: list[str]
+    set_preference: dict[str, Any]
+
+
+class SafariArguments(TypedDict):
+    add_argument: list[str]
+
+
+class BrowserOptions(TypedDict):
+    capabilities: dict[str, Any]
+    chrome: DefaultChromiumArguments
+    edge: DefaultChromiumArguments
+    firefox: FirefoxArguments
+    safari: SafariArguments
+
+
+from selenium.webdriver.common.options import ArgOptions
 
 # JavaScript for collecting First Contentful Paint value.
-JS_FCP = '''
+JS_FCP = """
 return performance.getEntriesByName("first-contentful-paint")[0].startTime
-'''
+"""
 
 # JavaScript for collecting Largest Contentful Paint value.
-JS_LCP = '''
+JS_LCP = """
 var args = arguments;
 const po = new PerformanceObserver(list => {
     const entries = list.getEntries();
@@ -115,22 +197,31 @@ const po = new PerformanceObserver(list => {
     args[0](largestPaintTime);
 });
 po.observe({ type: 'largest-contentful-paint', buffered: true });
-'''
+"""
 
 # if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
 #    selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables(
+    "dependency"
+):  # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables(
+        "dependency"
+    )  # Retreive appium driver
 else:
     raise ValueError("No dependency set - Cannot run")
 
 
 @logger
+def get_driver():
+    return selenium_driver
+
+
+@logger
 def find_exe_in_path(exe):
-    """ Search the path for an executable """
+    """Search the path for an executable"""
 
     try:
         path = os.getenv("PATH")  # Linux/Windows path
@@ -157,7 +248,7 @@ def find_exe_in_path(exe):
 
 @logger
 def find_appium():
-    """ Do our very best to find the appium executable """
+    """Do our very best to find the appium executable"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -268,18 +359,15 @@ def start_appium_server():
                 )
             else:
                 try:
-
                     appium_binary_path = os.path.normpath(appium_binary)
                     appium_binary_path = os.path.abspath(
                         os.path.join(appium_binary_path, os.pardir)
                     )
                     env = {"PATH": str(appium_binary_path)}
                     appium_server = subprocess.Popen(
-                        subprocess.Popen(
-                            "%s --allow-insecure chromedriver_autodownload -p %s"
-                            % (appium_binary, str(appium_port)),
-                            shell=True,
-                        ),
+                        "%s --allow-insecure chromedriver_autodownload -p %s"
+                        % (appium_binary, str(appium_port)),
+                        shell=True,
                         env=env,
                     )
                 except:
@@ -313,7 +401,7 @@ def start_appium_server():
                 if r.status_code:
                     break
             except:
-                time.sleep(0.1) # sleep for 0.1 sec before retrying.
+                time.sleep(0.1)  # sleep for 0.1 sec before retrying.
 
         if appium_server:
             CommonUtil.ExecLog(sModuleInfo, "Server started", 1)
@@ -337,6 +425,7 @@ def Open_Electron_App(data_set):
     try:
         desktop_app_path = ""
         driver_id = ""
+        chrome_version = ""
         for left, _, right in data_set:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if "windows" in left and platform.system() == "Windows":
@@ -347,83 +436,61 @@ def Open_Electron_App(data_set):
                 desktop_app_path = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
+            elif left == "chrome:version":
+                chrome_version = right.strip()
 
         if not desktop_app_path:
-            CommonUtil.ExecLog(sModuleInfo, "You did not provide an Electron app path for %s OS" % platform.system(), 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "You did not provide an Electron app path for %s OS"
+                % platform.system(),
+                3,
+            )
             return "zeuz_failed"
 
         if not driver_id:
             driver_id = "default"
 
         desktop_app_path = CommonUtil.path_parser(desktop_app_path)
-        electron_chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path")
+        electron_chrome_path = ConfigModule.get_config_value(
+            "Selenium_driver_paths", "electron_chrome_path"
+        )
         if not electron_chrome_path:
             electron_chrome_path = ChromeDriverManager().install()
 
         try:
             from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
+
             opts = Options()
             opts.binary_location = desktop_app_path
-            selenium_driver = webdriver.Chrome(executable_path=electron_chrome_path, chrome_options=opts)
-            selenium_driver.implicitly_wait(WebDriver_Wait)
+            opts.add_argument("--remote-debugging-port=9222")
+            # service = Service(executable_path=electron_chrome_path)
+            arch = platform.machine().lower()
+            if platform.system() == "Darwin" and arch == "arm64":
+                os.environ['WDM_ARCHITECTURE'] = 'arm64'
+            elif platform.system() == "Windows" and arch not in ("amd64", "x86_64"):
+                os.environ['WDM_ARCHITECTURE'] = 'x32'
+            else:
+                os.environ['WDM_ARCHITECTURE'] = 'x64'
+            
+            driver_bin_path = ChromeDriverManager(driver_version=chrome_version).install()
+
+            service = Service(driver_bin_path)
+            selenium_driver = webdriver.Chrome(options=opts, service=service)
+            selenium_driver.implicitly_wait(0.5)
             CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-        except SessionNotCreatedException as exc:
-            try:
-                major_version = exc.msg.split("\n")[1].split("is ", 1)[1].split(".")[0]
-                specific_version = requests.get("https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" + major_version).text
-                electron_chrome_path = ChromeDriverManager(version=specific_version).install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "electron_chrome_path", electron_chrome_path)
-                from selenium.webdriver.chrome.options import Options
-                opts = Options()
-                opts.binary_location = desktop_app_path
-                selenium_driver = webdriver.Chrome(executable_path=electron_chrome_path, chrome_options=opts)
-                selenium_driver.implicitly_wait(WebDriver_Wait)
-                CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
-                Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-                CommonUtil.teardown = True
-                CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            except:
-                CommonUtil.ExecLog(sModuleInfo, "To start an Electron app, you need to download a ChromeDriver with the version that your Electron app supports.\n" +
-                   "Visit this link to download specific version of Chrome driver: https://chromedriver.chromium.org/downloads\n" +
-                   'Then add the path of the ChromeDriver path into Framework/settings.conf file "Selenium_driver_paths" section with "electron_chrome_path" name', 3)
-                return "zeuz_failed"
+
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info())
 
         if driver_id in selenium_details:
-            pass    # we need to decide later based on the situation
+            pass  # we need to decide later based on the situation
         else:
             selenium_details[driver_id] = {"driver": selenium_driver}
         current_driver_id = driver_id
-        return "passed"
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def get_performance_metrics(dataset):
-    try:
-        label = driver_id = ""
-        for left, mid, right in dataset:
-            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
-            if left == "driverid":
-                driver_id = right.strip()
-            elif left == "getperformancemetrics":
-                var_name = right.strip()
-            elif left == "label":
-                label = right.strip()
-
-        if not driver_id:
-            driver_id = current_driver_id
-
-        # from selenium.webdriver.common.devtools.v101.performance import enable, disable, get_metrics
-        # from selenium.webdriver.chrome.webdriver import ChromiumDriver
-        # time.sleep(5)
-
-        perf_json_data = collect_browser_metrics(driver_id, label if label else CommonUtil.previous_action_name)
-        Shared_Resources.Set_Shared_Variables(var_name, perf_json_data)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -465,729 +532,239 @@ def set_extension_variables():
             "url": url,
             "apiKey": apiKey,
             "jwtKey": jwtKey,
-            "nodeId": Shared_Resources.Get_Shared_Variables('node_id'),
+            "nodeId": Shared_Resources.Get_Shared_Variables("node_id"),
         }
         with open(Path(aiplugin_path) / "data.json", "w") as file:
             json.dump(metaData, file, indent=4)
 
     except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load inspector extension")
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Could not load inspector extension"
+        )
 
     try:
         with open(Path(ai_recorder_path) / "background" / "data.json", "w") as file:
             json.dump(metaData, file, indent=4)
-        with open(Path(ai_recorder_public_path) / "background" / "data.json", "w") as file:
+        with open(
+            Path(ai_recorder_public_path) / "background" / "data.json", "w"
+        ) as file:
             json.dump(metaData, file, indent=4)
 
     except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not load recorder extension")
-
-
-def browser_process_status(browser:str):
-    list_process_command = ['tasklist']
-    seacrh_command = ['findstr', f'{browser}.exe']
-
-    list_process = subprocess.Popen(list_process_command, stdout=subprocess.PIPE)
-    search_process = subprocess.Popen(seacrh_command, stdin=list_process.stdout, stdout=subprocess.PIPE, text=True)
-
-    output,_ = search_process.communicate()
-
-    if output:
-        return True
-    else:
-        return False
-
-initial_download_folder = None
-@logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None, profile_options=None):
-    """ Launch browser and create instance """
-
-    global selenium_driver
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    try:
-        browser = dependency["Browser"]
-    except Exception:
-        ErrorMessage = (
-            "Dependency not set for browser. Please set the Apply Filter value to YES."
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Could not load recorder extension"
         )
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    remote_host = None
-    remote_browser_version = None
 
-    if browser_options is None:
-        browser_options = []
-    for i in range(len(browser_options)):
-        if '--user-data-dir' in browser_options[i][1]:
-            custom_profile_folder_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir,'custom_profiles'))
-            custom_profile_path = os.path.join(custom_profile_folder_path,browser_options[i][1].split('=')[-1].strip())
+def generate_options(browser: str, browser_options: BrowserOptions):
+    """Adds capabilities and options for Browser/WebDriver"""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    chromium_condition = browser in (
+        "android",
+        "chrome",
+        "chromeheadless",
+        "microsoft edge chromium",
+        "edgechromiumheadless",
+    )
+    msg = ""
+    if chromium_condition:
+        b = "edge" if "edge" in browser else "chrome"
+        from selenium.webdriver.chrome.options import Options as ChromeOptions
+        from selenium.webdriver.edge.options import Options as EdgeOptions
 
-            os.makedirs(custom_profile_folder_path, exist_ok=True)
-            browser_options[i][1] = f'--user-data-dir={custom_profile_path}'
-    
-    if Shared_Resources.Test_Shared_Variables('run_time_params'): # Look for remote config in runtime params
-        run_time_params = Shared_Resources.Get_Shared_Variables('run_time_params')
-        remote_config = run_time_params.get("remote_config")
-        if(remote_config):
-            remote_host = remote_config.get('host')
-            remote_browser_version = remote_config.get('browser_version')
-            if(remote_host):
-                try:
-                    if requests.get(remote_host).status_code != 200:
-                        remote_host = None
-                except requests.exceptions.RequestException as e:
-                    remote_host = None
-                if remote_host == None:
-                    CommonUtil.ExecLog(
-                    sModuleInfo, "Remote host: %s is not up. Running the browser locally " % remote_config.get('host'), 3
-                )
-    
-    is_browserstack = 'browserstack' in browser
-    if is_browserstack:
-        try:
-            browerstack_config = json.loads(browser)
-            browser = 'browserstack'
-            remote_host = browerstack_config['remote_host']
-            desired_cap = browerstack_config['desired_cap']
-            remote_desired_cap = {
-                'bstack:options' : {
-                "os" : desired_cap["os"],
-                "osVersion" : desired_cap['os_version'],
-                "browserVersion" : desired_cap['browser_version'],
-                "local" : "false",
-                "seleniumVersion" : "4.8.0",
-                },
-                "browserName" : desired_cap['browser'],
-                }
-        except ValueError as e:
-            is_browserstack = False
-            CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to parse browserstack config. Running the browser locally", 3
-                )
+        options = ChromeOptions() if b == "chrome" else EdgeOptions()
+        # from selenium.webdriver.chromium.options import ChromiumOptions
+        # options = ChromiumOptions()
+        if browser == "android":
+            mobile_emulation = {"deviceName": "Pixel 2 XL"}
+            options.add_experimental_option("mobileEmulation", mobile_emulation)
+        for argument in browser_options[b]["add_argument"]:
+            options.add_argument(argument)
+        for key, val in browser_options[b]["add_experimental_option"].items():
+            options.add_experimental_option(key, val)
+        for extension in browser_options[b]["add_extension"]:
+            options.add_extension(extension)
+        for extension in browser_options[b]["add_encoded_extension"]:
+            options.add_encoded_extension(extension)
+        if "page_load_strategy" in browser_options[b]:
+            options.page_load_strategy = browser_options[b]["page_load_strategy"]
+        if "debugger_address" in browser_options[b]:
+            # When debugger_address is mentioned, the Service() object should be ignored by default
+            # Users need to remove experimental options by setting it to {}
+            options.debugger_address = browser_options[b]["debugger_address"]
+            msg += f"Debugger address: {options.debugger_address}\n"
+        msg += (
+            f"Experimental_options: {json.dumps(options.experimental_options, indent=2)}\n"
+            f"Extensions: {len(options.extensions)} added\n"
+        )
+    elif browser in ("firefox", "firefoxheadless"):
+        from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
+        options = FirefoxOptions()
+        for argument in browser_options["firefox"]["add_argument"]:
+            options.add_argument(argument)
+        for key, val in browser_options["firefox"]["set_preference"].items():
+            options.set_preference(key, val)
+        if "page_load_strategy" in browser_options["firefox"]:
+            options.page_load_strategy = browser_options["firefox"][
+                "page_load_strategy"
+            ]
+        msg += f"Preferences: {json.dumps(options.preferences, indent=2)}\n"
+    elif "safari" in browser:
+        from selenium.webdriver.safari.options import Options as SafariOptions
+
+        options = SafariOptions()
+        for argument in browser_options["safari"]["add_argument"]:
+            options.add_argument(argument)
+        if "page_load_strategy" in browser_options["safari"]:
+            options.page_load_strategy = browser_options["safari"]["page_load_strategy"]
+    else:
+        from selenium.webdriver.common.options import ArgOptions
+
+        return ArgOptions()
+
+    if "headless" in browser:
+
+        def headless():
+            arg = "--headless=new" if "chrome" in browser else "--headless"
+            options.add_argument(arg)
+
+        use_xvfb_or_headless(headless)
+
+    for key, value in browser_options["capabilities"].items():
+        options.set_capability(key, value)
+
+    # On Debug run open inspector with credentials
+    if (
+        CommonUtil.debug_status
+        and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower()
+        in ("true", "on", "enable", "yes", "on_debug")
+        and browser in ("chrome", "microsoft edge chromium")
+    ):
+        set_extension_variables()
+        options.add_argument("--disable-features=DisableLoadExtensionCommandLineSwitch")
+        options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
+        # This is for running extension on a http server to call a https request
+        options.add_argument("--allow-running-insecure-content")
+
+    msg += (
+        f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n"
+        + f"Arguments: {json.dumps(options.arguments, indent=2)}\n"
+        + f"Page load strategy: {options.page_load_strategy}\n"
+    )
+    CommonUtil.ExecLog(sModuleInfo, msg, 5)
+    return options
+
+
+@logger
+def Open_Browser(browser, browser_options: BrowserOptions):
+    """Launch browser from options and service object"""
     try:
-        CommonUtil.teardown = True
-        browser = browser.lower().strip() 
-        import selenium
-        selenium_version = selenium.__version__
-
-        kill_process = False
-
-        browser_map = {
-            "microsoft edge chromium": 'msedge',
-            "chrome": "chrome",
-            "firefox": "firefox",
-            "chromeheadless": "chrome",
-            "firefoxheadless": "firefox",
-            "edgechromiumheadless": "msedge",
-        }
-
-        if profile_options:
-            if browser.strip().lower() in browser_map.keys():
-                browser_short_form = browser_map[browser] 
-                process_status = browser_process_status(browser_short_form)
-                for options in profile_options:
-                    if options[0] == "autokillforprofile" and options[1] == "True":
-                        kill_process = True
-
-                if process_status == True and kill_process == False:
-                    err_msg = f'''
-                    Please close all the {browser} browser instance.
-                    Or, use the following optional parameter to do it automatically:
-                    ( auto kill for profile | browser option | True )
-                    '''
-                    CommonUtil.ExecLog(
-                        sModuleInfo, err_msg, 3
-                    )
-                    raise Exception
-                elif process_status == True and kill_process == True:
-                    task_kill_command = ['taskkill', '/IM', f'{browser_short_form}.exe', '/F']
-                    task_kill_process = subprocess.Popen(task_kill_command, stdout=subprocess.PIPE, text=True)
-                    kill_output,err = task_kill_process.communicate()
-                    kill_output_status = kill_output.split()[0]
-                    if kill_output_status == "SUCCESS:":
-                        CommonUtil.ExecLog(
-                            sModuleInfo, f"Successfully terminated all the {browser_short_form}.exe processes", 1
-                        )
-                    else:
-                        CommonUtil.ExecLog(
-                            sModuleInfo, f"Could not terminate the {browser_short_form}.exe processes", 3
-                        )
-            else:
-                CommonUtil.ExecLog(
-                        sModuleInfo, f"ZeuZ does not support browser profile for {browser} browser", 3
-                    )
-                raise Exception
-                
-        if browser in ("ios",):
+        global selenium_driver
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        browser = browser.lower().strip()
+        if browser == "ios":
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
 
             if appium_port == "zeuz_failed":
                 return "zeuz_failed"
 
-            if browser == "android":
-                capabilities = {
-                    "platformName": "Android",
-                    "automationName": "UIAutomator2",
-                    "browserName": "Chrome"
-
-                    # Platform specific details may later be fetched from the device
-                    # list sent by zeuz server.
-                    # "platformVersion": "9.0",
-                    # "deviceName": "Android Emulator",
-                }
-            elif browser == "ios":
-                capabilities = {
-                    "platformName": "iOS",
-                    "automationName": "XCUITest",
-                    "browserName": "Safari"
-
-                    # Platform specific details may later be fetched from the device
-                    # list sent by zeuz server.
-                }
+            capabilities = {
+                "platformName": "iOS",
+                "automationName": "XCUITest",
+                "browserName": "Safari",
+            }
 
             from appium import webdriver as appiumdriver
+            from appium.options.android import UiAutomator2Options
 
-            selenium_driver = appiumdriver.Remote("http://localhost:%d" % appium_port, capabilities)
-            selenium_driver.implicitly_wait(WebDriver_Wait)
+            capabilities_options = UiAutomator2Options().load_capabilities(capabilities)
+            selenium_driver = appiumdriver.Remote(
+                "http://localhost:%d" % appium_port, options=capabilities_options
+            )
+            return "passed"
 
-        elif browser in ("android", "chrome", "chromeheadless"):
-            from selenium.webdriver.chrome.options import Options
+        options = generate_options(browser, browser_options)
+        if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
-            chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
-            try:
-                if not chrome_path:
-                    chrome_path = ChromeDriverManager().install()
-                    ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
-            except:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to download chromedriver using ChromedriverManager", 2)
-            options = Options()
 
-            if remote_browser_version:
-                options.set_capability("browserVersion",remote_browser_version)
-            # capability
-            if capability:
-                for key, value in capability.items():
-                    # options.set_capability('unhandledPromptBehavior', 'ignore')
-                    options.set_capability(key, value)
+            chrome_bin = browser_options["chrome"].get("binary_location", None)
+            driver_bin = browser_options["chrome"].get("driver_path", None)
 
-            # argument
-            if not browser_options:
-                # options.add_argument("--no-sandbox")
-                # options.add_argument("--disable-extensions")
-                options.add_argument('--ignore-certificate-errors')
-                options.add_argument('--ignore-ssl-errors')
-                options.add_argument('--zeuz_pid_finder')
-                options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
-
-                # Turn this on while experimenting with playwright
-                # options.add_argument('--remote-debugging-port=9222')
-
-            # Todo: profile, add_argument => open_browser
-            _prefs = {}
-            if browser_options:
-                for left, right in browser_options:
-                    if left in ("addargument", "addarguments"):
-                        options.add_argument(right.strip())
-                        print(left, right)
-                    if "pageloadstrategy" in left:
-                        options.page_load_strategy = right.strip()
-                    elif left in ("addextension", "addextensions"):
-                        options.add_extension(CommonUtil.path_parser(right.strip()))
-                    elif left in ("addexperimentaloption"):
-                        if "prefs" in right:
-                            _prefs = right["prefs"]
-                        else:
-                            options.add_experimental_option(list(right.items())[0][0], list(right.items())[0][1])
-
-            if profile_options:
-                for left, right in profile_options:
-                    if left in ("addargument", "addarguments"):
-                        options.add_argument(right.strip())
-                        print(left, right)
-
-            if browser == "android":
-                mobile_emulation = {"deviceName": "Pixel 2 XL"}
-                options.add_experimental_option("mobileEmulation", mobile_emulation)
+            if chrome_bin and driver_bin:
+                # Use Chrome for Testing binaries
+                service = Service(executable_path=driver_bin)
+                options.binary_location = chrome_bin
+                CommonUtil.ExecLog(sModuleInfo, "Using Chrome for Testing binaries", 1)
             else:
-                options.add_experimental_option("useAutomationExtension", False)
-
-                # On Debug run open inspector with credentials
-                if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
-                    set_extension_variables()
-                    options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
-
-            if "chromeheadless" in browser:
-                def chromeheadless():
-                    options.add_argument(
-                        "--headless=new"
-                    )
-                use_xvfb_or_headless(chromeheadless)
-
-            global initial_download_folder
-            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            prefs = {
-                "profile.default_content_settings.popups": 0,
-                "download.default_directory": download_dir,
-                "download.prompt_for_download": False,
-                "download.directory_upgrade": True,
-                'safebrowsing.enabled': 'false'
-            }
-            for key in _prefs:
-                prefs[key] = _prefs[key]
-            options.add_experimental_option('prefs', prefs)
-            
-            options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
-
-            if remote_host:
-                selenium_driver = webdriver.Remote(
-                    command_executor= remote_host + "wd/hub",
-                    options=options,
-                )
-            else:
-                import selenium
+                # Use standard ChromeDriverManager
                 service = Service()
-                selenium_driver = webdriver.Chrome(
-                    service=service,
-                    options=options,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
 
+            selenium_driver = webdriver.Chrome(
+                service=service,
+                options=options,
+            )
 
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if not window_size_X:
-                    window_size_X = 1000
-                if not window_size_Y:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
-
-        elif browser in ("firefox", "firefoxheadless"):
-            firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
-            from selenium.webdriver.firefox.service import Service
-            from selenium.webdriver import FirefoxOptions
-
-            if not firefox_path:
-                firefox_path = GeckoDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", firefox_path)
-            from sys import platform as _platform
-            options = FirefoxOptions()
-
-            if profile_options:
-                for left, right in profile_options:
-                    if left in ("addargument", "addarguments"):
-                        options.add_argument(right.strip())
-                        print(left, right)
-
-            if remote_browser_version:
-                options.set_capability("browserVersion",remote_browser_version)
-
-            if "headless" in browser:
-                #firefox headless mode needs add_argument
-                options.add_argument("-headless")
-                # options.headless = True
-                
-                '''
-                # commenting out as this is not working.  Make sure 
-                # whoever implemented this it is tested with latest firefox version
-                def firefoxheadless():
-                    options.headless = True
-                use_xvfb_or_headless(firefoxheadless)
-                '''
-
-            if _platform == "win32":
-                try:
-                    import winreg
-                except ImportError:
-                    import _winreg as winreg
-                handle = winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe",
-                )
-                num_values = winreg.QueryInfoKey(handle)[1]
-                path = False
-                for i in range(num_values):
-                    path = winreg.EnumValue(handle, i)
-                    if path != False:
-                        Firefox_path = path[1]
-                        binary = FirefoxBinary(Firefox_path)
-                        break
-
-            profile = webdriver.FirefoxProfile()
-            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            profile.set_preference("browser.download.folderList", 2)
-            profile.set_preference("browser.download.manager.showWhenStarting", False)
-            profile.set_preference("browser.download.dir", download_dir)
-            #text/plain;charset=UTF-8
-            # Allowing txt, pdf, xlsx, xml, csv, zip files to be directly downloaded without save prompt
-            apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
-            profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
-            profile.accept_untrusted_certs = True
-
-            options.set_preference("browser.download.folderList", 2)
-            options.set_preference("browser.download.manager.showWhenStarting", False)
-            options.set_preference("browser.download.dir", download_dir)
-            options.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
-            options.accept_untrusted_certs = True
-            
-            if(remote_host):
-                capabilities = webdriver.DesiredCapabilities().FIREFOX
-                capabilities['acceptSslCerts'] = True
-                selenium_driver = webdriver.Remote(
-                    command_executor= remote_host + "wd/hub",
-                    options=options,
-                    desired_capabilities=capabilities,
-                    browser_profile=profile
-                )
-            else:
-                if selenium_version.startswith('4.'):
-                    service = Service()
-                    selenium_driver = webdriver.Firefox(
-                        service=service,
-                        options=options,
-                    )
-                elif selenium_version.startswith('3.'):
-                    capabilities = webdriver.DesiredCapabilities().FIREFOX
-                    capabilities['acceptSslCerts'] = True
-                    selenium_driver = webdriver.Firefox(
-                        executable_path=firefox_path,
-                        capabilities=capabilities,
-                        options=options,
-                        firefox_profile=profile
-                    )
-                else:
-                    print("Please update selenium & rerun node_cli file again.")
-
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if window_size_X is None:
-                    window_size_X = 1000
-                if window_size_Y is None:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
+            # service = Service()
+            # selenium_driver = webdriver.Chrome(
+            #     service=service,
+            #     options=options,
+            # )
 
         elif browser in ("microsoft edge chromium", "edgechromiumheadless"):
-            edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
-            if not edge_path:
-                edge_path = EdgeChromiumDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", edge_path)
+            from selenium.webdriver.edge.service import Service
 
-            """We are using a Custom module from Microsoft which inherits Selenium class and provides additional supports which we need.
-            Since this module inherits Selenium module so all updates will be inherited as well
-            """
-            from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
-            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            options = webdriver.EdgeOptions()
+            service = Service()
+            selenium_driver = webdriver.Edge(
+                service=service,
+                options=options,
+            )
 
-            if remote_browser_version:
-                options.set_capability("browserVersion",remote_browser_version)
+        elif browser in ("firefox", "firefoxheadless"):
+            from selenium.webdriver.firefox.service import Service
 
-            options.use_chromium = True
-
-            if profile_options:
-                for left, right in profile_options:
-                    if left in ("addargument", "addarguments"):
-                        options.add_argument(right.strip())
-                        print(left, right)
-
-            if "headless" in browser:
-                def edgeheadless():
-                    options.headless = True
-                use_xvfb_or_headless(edgeheadless)
-
-            options.add_experimental_option("prefs", {"download.default_directory": download_dir})
-            options.add_argument('--zeuz_pid_finder')
-            # options.add_argument("--no-sandbox")
-            # options.add_argument("--disable-extensions")
-            options.add_argument('--ignore-certificate-errors')
-            options.add_argument('--ignore-ssl-errors')
-            options.add_argument('--allow-running-insecure-content')    # This is for running extension on a http server to call a https request
-            if CommonUtil.debug_status and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in ("true", "on", "enable", "yes", "on_debug"):
-                set_extension_variables()
-                options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
-            if(remote_host):
-                capabilities = webdriver.EdgeOptions().capabilities
-                capabilities['acceptSslCerts'] = True
-                selenium_driver = webdriver.Remote(
-                    command_executor= remote_host + "wd/hub",
-                    options=options,
-                    desired_capabilities=capabilities
-                )
-            else:
-                if selenium_version.startswith('4.'):
-                    selenium_driver = webdriver.Edge(
-                        options=options,
-                    )
-                elif selenium_version.startswith('3.'):
-                    capabilities = webdriver.EdgeOptions().capabilities
-                    capabilities['acceptSslCerts'] = True
-                    selenium_driver = Edge(
-                        executable_path=edge_path,
-                        options=options,
-                        capabilities=capabilities
-                    )
-                else:
-                    print("Please update selenium & rerun node_cli file again.")
-
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if not window_size_X:
-                    window_size_X = 1000
-                if not window_size_Y:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Microsoft Edge Browser", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
-
-        elif browser == "opera":
-            opera_path = ConfigModule.get_config_value("Selenium_driver_paths", "opera_path")
-            if not opera_path:
-                opera_path = OperaDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", opera_path)
-            capabilities = webdriver.DesiredCapabilities().OPERA
-            capabilities['acceptSslCerts'] = True
-
-            from selenium.webdriver.opera.options import Options
-            options = Options()
-            options.add_argument("--zeuz_pid_finder")
-            initial_download_folder = download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-            options.add_experimental_option("prefs", {"download.default_directory": download_dir})  # This does not work
-            # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
-
-            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if not window_size_X:
-                    window_size_X = 1000
-                if not window_size_Y:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Opera Browser", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
-
-        elif browser == "ie":
-            ie_path = ConfigModule.get_config_value("Selenium_driver_paths", "ie_path")
-            if not ie_path:
-                ie_path = IEDriverManager().install()
-                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", ie_path)
-            capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
-            # capabilities['acceptSslCerts'] = True     # It does not work for internet explorer
-            selenium_driver = webdriver.Ie(executable_path=ie_path, capabilities=capabilities)
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if not window_size_X:
-                    window_size_X = 1000
-                if not window_size_Y:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
+            service = Service()
+            selenium_driver = webdriver.Firefox(
+                service=service,
+                options=options,
+            )
 
         elif "safari" in browser:
-            CommonUtil.ExecLog(sModuleInfo, "Restart computer after following ... https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari ", 1)
-            '''
-            os.environ["SELENIUM_SERVER_JAR"] = (
-                    os.sys.prefix
-                    + os.sep
-                    + "Scripts"
-                    + os.sep
-                    + "selenium-server-standalone-2.45.0.jar"
-            )'''
+            from selenium.webdriver.safari.service import Service
 
-            desired_capabilities = DesiredCapabilities.SAFARI
-
-            if "ios" in browser:
-                desired_capabilities["platformName"] = "ios"
-
-                if "simulator" in browser:
-                    desired_capabilities["safari:useSimulator"] = True
-
-            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if not window_size_X:
-                    window_size_X = 1000
-                if not window_size_Y:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
-        elif 'browserstack' in browser:
-            selenium_driver = webdriver.Remote(
-                command_executor= remote_host,
-                desired_capabilities=remote_desired_cap)
-            selenium_driver.implicitly_wait(WebDriver_Wait)
-            if not window_size_X and not window_size_Y:
-                selenium_driver.maximize_window()
-            else:
-                if not window_size_X:
-                    window_size_X = 1000
-                if not window_size_Y:
-                    window_size_Y = 1000
-                selenium_driver.set_window_size(window_size_X, window_size_Y)
-            CommonUtil.ExecLog(sModuleInfo, f"Started {remote_desired_cap['browserName']} on Browserstack", 1)
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-            return "passed"
-
+            service = Service()
+            selenium_driver = webdriver.Safari(
+                service=service,
+                options=options,
+            )
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "You did not select a valid browser: %s" % browser, 3
             )
             return "zeuz_failed"
-        # time.sleep(3)
 
-    except SessionNotCreatedException as exc:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-    except WebDriverException as exc:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-    except Exception:
-        CommonUtil.teardown = False
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@deprecated
-@logger
-def Open_Browser_Wrapper(step_data):
-    """ Temporary wrapper for open_browser() until that function can be updated to use only data_set """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    try:
-        global dependency
-        # Get the dependency again in case it was missed
-        if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
-            dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retrieve selenium driver
-
-        cmd = step_data[0][2]  # Expected "open" or "close" for current method. May contain other strings for old method of Field="open browser"
-        if cmd.lower().strip() == "close":  # User issued close command
-            try:
-                selenium_driver.close()
-            except:
-                pass
-            return "passed"
-        else:  # User issued "open" command or used old method of "open browser"
-            return Open_Browser(dependency)
-    except Exception:
-        ErrorMessage = "failed to open browser"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-
-@logger
-def Open_Empty_Browser(step_data):
-    """Open Empty Browser.
-
-       Args:
-       data_set:
-       open browser       | selenium action    | open
-
-       Returns:
-       "passed" if browser open is successful.
-       "zeuz_failed" otherwise.
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    window_size_X = ConfigModule.get_config_value("", "window_size_x")
-    window_size_Y = ConfigModule.get_config_value("", "window_size_y")
-    # Open browser and create driver if user has not already done so
-    global dependency
-    global selenium_driver
-    global selenium_details
-    global current_driver_id
-
-    if Shared_Resources.Test_Shared_Variables("dependency"):
-        dependency = Shared_Resources.Get_Shared_Variables("dependency")
-    else:
-        raise ValueError("No dependency set - Cannot run")
-
-    try:
-        driver_id = ""
-        for left, mid, right in step_data:
-            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
-            if left == "driverid":
-                driver_id = right.strip()
-
-        if not driver_id:
-            driver_id = "default"
-
-        browser_map = {
-            "Microsoft Edge Chromium": 'msedge',
-            "Chrome": "chrome",
-            "FireFox": "firefox",
-            "Opera": "opera",
-            "ChromeHeadless": "chrome",
-            "FirefoxHeadless": "firefox",
-            "EdgeChromiumHeadless": "msedge",
-        }
-
-        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
-            if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
-                Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
-            CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
-            if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency)
-            elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y)
-            elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X)
-            else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y)
-
-            if result == "zeuz_failed":
-                return "zeuz_failed"
-
-            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
-
-        else:
-            selenium_driver = selenium_details[driver_id]["driver"]
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-
+        CommonUtil.ExecLog(sModuleInfo, f"Started {browser} browser", 1)
+        Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
         return "passed"
+
     except Exception:
-        ErrorMessage = "failed to open browser"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 @logger
 def Go_To_Link_V2(step_data):
     from selenium.webdriver.chrome.options import Options
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    
+
     global dependency
     global selenium_driver
     global selenium_details
     global current_driver_id
-    
+
     url = None
     driver_tag = "default"
     page_load_timeout_sec = 120
@@ -1195,27 +772,39 @@ def Go_To_Link_V2(step_data):
     page_load_strategy = "normal"
 
     for left, _, right in step_data:
-        if "add argument" in left.lower():
+        left = left.strip().lower()
+        if "add argument" == left:
             options.add_argument(right.strip())
             CommonUtil.ExecLog(sModuleInfo, "Added argument: " + right.strip(), 1)
-        elif 'add experimental option' in left.lower():
-            options.add_experimental_option(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
-            CommonUtil.ExecLog(sModuleInfo, "Added experimental option: " + right.strip(), 1)
-        elif "set capability" in left.lower():
-            options.set_capability(eval(right.split(",",1)[0].strip()),eval(right.split(",",1)[1].strip()))
+        elif "add extension" == left:
+            filepath = CommonUtil.path_parser(right.strip())
+            options.add_extension(filepath)
+            CommonUtil.ExecLog(sModuleInfo, "Added extension: " + filepath, 1)
+        elif "add experimental option" in left:
+            options.add_experimental_option(
+                eval(right.split(",", 1)[0].strip()),
+                eval(right.split(",", 1)[1].strip()),
+            )
+            CommonUtil.ExecLog(
+                sModuleInfo, "Added experimental option: " + right.strip(), 1
+            )
+        elif "set capability" in left:
+            options.set_capability(
+                eval(right.split(",", 1)[0].strip()),
+                eval(right.split(",", 1)[1].strip()),
+            )
             CommonUtil.ExecLog(sModuleInfo, "Added capability: " + right.strip(), 1)
-        elif "go to link v2" in left.lower():
+        elif "go to link v2" == left:
             url = right.strip() if right.strip() != "" else None
-        elif "driver tag" in left.lower():
+        elif "driver tag" == left:
             driver_tag = right.strip()
-        elif "wait for element" in left.lower():
+        elif "wait for element" == left:
             Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
-        elif "page load timeout" in left.lower():
+        elif "page load timeout" == left:
             page_load_timeout_sec = float(right.strip())
-        elif "page load strategy" in left.lower():
+        elif "page load strategy" == left:
             page_load_strategy = right.strip()
             options.page_load_strategy = page_load_strategy
-
 
     if driver_tag in selenium_details.keys():
         selenium_driver = selenium_details[driver_tag]["driver"]
@@ -1224,9 +813,9 @@ def Go_To_Link_V2(step_data):
             dependency = Shared_Resources.Get_Shared_Variables("dependency")
         else:
             raise ValueError("No dependency set - Cannot run")
-        
+
         dependency_browser = dependency["Browser"].lower()
-        if 'headless' in dependency_browser:
+        if "headless" in dependency_browser:
             options.add_argument("--headless")
             CommonUtil.ExecLog(sModuleInfo, "Added headless argument", 1)
 
@@ -1234,88 +823,259 @@ def Go_To_Link_V2(step_data):
             selenium_driver = webdriver.Chrome(options=options)
         elif "firefox" in dependency_browser:
             selenium_driver = webdriver.Firefox(options=options)
-        
+
         selenium_driver.set_page_load_timeout(page_load_timeout_sec)
         selenium_details[driver_tag] = dict()
         selenium_details[driver_tag]["driver"] = selenium_driver
         current_driver_id = selenium_driver
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-        
+
         # Handle headless mode window maximize
-        if '--headless' in options.arguments and '--start-maximized' in options.arguments:
+        if (
+            "--headless" in options.arguments
+            and "--start-maximized" in options.arguments
+        ):
             selenium_driver.set_window_size(default_x, default_y)
 
     if url:
         selenium_driver.get(url)
 
     selenium_driver.maximize_window()
-        
+    Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
     CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
     return "passed"
-    
+
+
+def parse_and_verify_datatype(left: str, right: str, chrome_version=None):
+    val = CommonUtil.parse_value_into_object(right)
+    if left == "addargument":
+        if isinstance(val, list) and all(isinstance(item, str) for item in val):
+            return val
+        raise ValueError(
+            "Argument must be list of strings. Example: ['--ignore-ssl-errors', '--no-sandbox']"
+        )
+
+    if left == "addextension":
+        if isinstance(val, list) and all(isinstance(item, str) for item in val):
+            extension_ids = []
+            extension_crxs = []
+            for item in val:
+                if item.lower().endswith(".crx") or os.path.isfile(item):
+                    extension_crxs.append(item)
+                elif re.match(r"^[a-p]{32}$", item):
+                    extension_ids.append(item)
+                else:
+                    raise ValueError(
+                        f"Invalid extension: {item}. Must be .crx file path or Chrome extension ID."
+                    )
+
+            # download all extensions from ids
+            for ext_id in extension_ids:
+                downloader = ChromeExtensionDownloader(chrome_version=chrome_version)
+                result = downloader.setup_chrome_extension_download(extension_id=ext_id)
+                if result.get("crx_path"):
+                    extension_crxs.append(result["crx_path"])
+
+            return extension_crxs
+        raise ValueError(
+            "Extensions must be list of strings. Example: ['path/to/ex1.crx', 'path/to/ex2.crx']"
+        )
+
+    if left == "addencodedextension":
+        if isinstance(val, list) and all(isinstance(item, str) for item in val):
+            return val
+        raise ValueError(
+            "Encoded_extenions must be list of strings. Example: ['ex1_encoded_str', 'ex2_encoded_str']"
+        )
+
+    elif left == "addexperimentaloption":
+        if isinstance(val, dict):
+            return val
+        raise ValueError(
+            'Experimental_option must be dictionary. Example: {"mobileEmulation":{"deviceName": "Pixel 2 XL"}}'
+        )
+
+    elif left == "setpreference":
+        if isinstance(val, dict):
+            return val
+        raise ValueError(
+            'Preference must be dictionary. Example: {"security.mixed_content.block_active_content": False}'
+        )
+
+
 @logger
-def Go_To_Link(step_data, page_title=False):
-    # this function needs work with validating page title.  We need to check if user entered any title.
-    # if not then we don't do the validation
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    window_size_X = ConfigModule.get_config_value("", "window_size_x")
-    window_size_Y = ConfigModule.get_config_value("", "window_size_y")
-
-    # default capabilities
-    capabilities = {"unhandledPromptBehavior": "ignore"}
-
-    # options for add_argument or add_extension etc
-    browser_options = []
-    profile_options = []
-
-    # Open browser and create driver if user has not already done so
-    global dependency
-    global selenium_driver
-    global selenium_details
-    global current_driver_id
-    if Shared_Resources.Test_Shared_Variables("dependency"):
-        dependency = Shared_Resources.Get_Shared_Variables("dependency")
-    else:
-        raise ValueError("No dependency set - Cannot run")
-
-    page_load_timeout_sec = 120
-    page_load_strategy = "normal"
-
+def Go_To_Link(dataset: Dataset) -> ReturnType:
     try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        window_size_X = None
+        window_size_Y = None
+
+        global initial_download_folder
+        initial_download_folder = download_dir = ConfigModule.get_config_value(
+            "sectionOne", "initial_download_folder", temp_config
+        )
+        apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
+        default_chromium_arguments = {
+            "add_argument": [
+                "--ignore-certificate-errors",
+                "--ignore-ssl-errors",
+                "--zeuz_pid_finder",
+                # "--remote-debugging-port=9222",  # Required for playright
+                # "--no-sandbox"
+            ],
+            "add_experimental_option": {
+                "prefs": {
+                    # "profile.default_content_settings.popups": 0,
+                    "download.default_directory": download_dir,
+                    "download.prompt_for_download": False,
+                    # "download.directory_upgrade": True,
+                    # 'safebrowsing.enabled': 'false'
+                }
+            },
+            "add_extension": [],
+            "add_encoded_extension": [],
+            # "page_load_strategy": "normal"
+        }
+        browser_options: BrowserOptions = {
+            "capabilities": {
+                "unhandledPromptBehavior": "ignore",
+                # "goog:loggingPrefs": {"performance": "ALL"},
+            },
+            "chrome": default_chromium_arguments,
+            "edge": default_chromium_arguments,
+            "firefox": {
+                "add_argument": [],
+                "set_preference": {
+                    "browser.download.folderList": 2,
+                    "browser.download.manager.showWhenStarting": False,
+                    "browser.download.dir": download_dir,
+                    "browser.helperApps.neverAsk.saveToDisk": apps,
+                    "browser.download.useDownloadDir": True,
+                    "browser.download.manager.closeWhenDone": True,
+                    "security.mixed_content.block_active_content": False,
+                },
+            },
+            "safari": {
+                "add_argument": [],
+            },
+        }
+        # Open browser and create driver if user has not already done so
+        global dependency
+        global selenium_driver
+        global selenium_details
+        global current_driver_id
+        if Shared_Resources.Test_Shared_Variables("dependency"):
+            dependency = Shared_Resources.Get_Shared_Variables("dependency")
+        else:
+            raise ValueError("No dependency set - Cannot run")
+
+        page_load_timeout_sec = 120
+        web_link = None  # None is for Open_Empty_Browser
+        if dependency["Browser"] in options_map:
+            browser = options_map[dependency["Browser"]]
+        else:
+            browser = None
         driver_id = ""
-        for left, mid, right in step_data:
+        chrome_version = None
+        chrome_channel = None
+        debug_port = False
+
+        for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "gotolink":
                 web_link = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
-            elif left == "waittimetoappearelement":
-                Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
+            elif left in ("waittimetoappearelement", "waitforelement"):
+                Shared_Resources.Set_Shared_Variables(
+                    "element_wait", float(right.strip())
+                )
             elif left == "waittimetopageload":
                 page_load_timeout_sec = int(right.strip())
-            # checks for capabilities and modifies them by the given step_data
+            elif left == "resolution":
+                resolution = right.split(",")
+                window_size_X = int(resolution[0])
+                window_size_Y = int(resolution[1])
+            elif left == "chrome:version":
+                chrome_version = right.strip()
+
+            # Capabilities are WebDriver attribute common across different browser
             elif mid.strip().lower() == "shared capability":
-                if left.strip().lower() in ("promptbehavior", "alertbehavior"):
-                    if right.strip().lower() in ("accept", "yes", "ok"):
-                        capabilities["unhandledPromptBehavior"] = "accept"
+                browser_options["capabilities"] = CommonUtil.parse_value_into_object(
+                    right
+                )
+            # Options are browser specific.
+            elif browser is not None and (
+                mid.strip().lower() == "chromium option"
+                and browser in ("chrome", "edge")
+                or browser == mid.split(" ")[0].strip().lower()
+            ):
+                if left == "addargument":
+                    browser_options[browser]["add_argument"] = (
+                        parse_and_verify_datatype(left, right)
+                    )
+                elif left == "addexperimentaloption":
+                    browser_options[browser]["add_experimental_option"] = (
+                        parse_and_verify_datatype(left, right)
+                    )
+                elif left == "addextension":
+                    browser_options[browser]["add_extension"] = (
+                        parse_and_verify_datatype(left, right, chrome_version)
+                    )
+                elif left == "addencodedextension":
+                    browser_options[browser]["add_encoded_extension"] = (
+                        parse_and_verify_datatype(left, right)
+                    )
+                elif left == "setpreference":
+                    browser_options[browser]["set_preference"] = (
+                        parse_and_verify_datatype(left, right)
+                    )
+                elif left == "pageloadstrategy":
+                    browser_options[browser]["page_load_strategy"] = right.strip()
+                elif left == "debuggeraddress":
+                    browser_options[browser]["debugger_address"] = right.strip()
 
-                    elif right.strip().lower() in ("dismiss", "no", "cancel"):
-                        capabilities["unhandledPromptBehavior"] = "dismiss"
+        debug_port = None
+        if browser in browser_options:
+            for arg in browser_options[browser]["add_argument"]:
+                if any(arg.startswith(prefix) for prefix in [
+                        "--remote-debugging-port=",
+                        "--webkit-remote-debugging-port="
+                ]):
+                    debug_port = int(arg.split("=")[1])
+                    break
 
+        if dependency["Browser"] in (
+            "Chrome",
+            "ChromeHeadless",
+        ) and not browser_options["chrome"].get("debugger_address", ""):
+            cft = ChromeForTesting()
+
+            if chrome_version:
+                if chrome_version.strip().lower() in ("beta", "dev", "canary"):
+                    chrome_channel = chrome_version.strip().capitalize()
+                    chrome_version = None
                 else:
-                    # any other shared capabilities can be added from the selenium document
-                    capabilities[left.strip()] = right.strip()
+                    chrome_version = chrome_version.strip()
 
-            # Todo: profile, argument, extension, chrome option => go_to_link
-            elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
-                browser_options.append([left, right.strip()])
-            elif mid.strip().lower() in ("chrome experimental option", "chrome experimental options") and dependency["Browser"].lower() == "chrome":
-                browser_options.append(["addexperimentaloption", {left.strip():CommonUtil.parse_value_into_object(right.strip())}])
-            elif mid.strip().lower() in ("profile option", "profile options"):
-                profile_options.append([left, right.strip()])
+            chrome_bin, driver_bin = cft.setup_chrome_for_testing(
+                chrome_version, chrome_channel
+            )
 
-        if browser_options:
-            CommonUtil.ExecLog(sModuleInfo, f"Got these browser_options\n{browser_options}", 1)
+            if chrome_bin and driver_bin:
+                browser_options["chrome"]["binary_location"] = str(chrome_bin)
+                browser_options["chrome"]["driver_path"] = str(driver_bin)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Using Chrome for Testing {chrome_version or 'latest'}",
+                    1,
+                )
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Failed to get Chrome for Testing binaries. Using system Chrome",
+                    2,
+                )
 
         if not driver_id:
             if len(selenium_details.keys()) == 0:
@@ -1323,49 +1083,55 @@ def Go_To_Link(step_data, page_title=False):
             elif current_driver_id is not None:
                 driver_id = current_driver_id
             else:
-                driver_id = selenium_details.keys()[0]
+                driver_id = list(selenium_details.keys())[0]
 
-        browser_map = {
-            "Microsoft Edge Chromium": 'msedge',
-            "Chrome": "chrome",
-            "FireFox": "firefox",
-            "Opera": "opera",
-            "ChromeHeadless": "chrome",
-            "FirefoxHeadless": "firefox",
-            "EdgeChromiumHeadless": "msedge",
-        }
+        if (
+            driver_id not in selenium_details
+            or selenium_details[driver_id]["driver"]
+            .capabilities["browserName"]
+            .strip()
+            .lower()
+            != browser_map[dependency["Browser"]]
+        ):
+            if (
+                driver_id in selenium_details
+                and selenium_details[driver_id]["driver"]
+                .capabilities["browserName"]
+                .strip()
+                .lower()
+                != browser_map[dependency["Browser"]]
+            ):
+                Tear_Down_Selenium()  # If dependency is changed then teardown and relaunch selenium driver
+            CommonUtil.ExecLog(
+                sModuleInfo, "Browser not previously opened, doing so now", 1
+            )
 
-        
-        is_browserstack = 'browserstack' in dependency["Browser"]
-        if is_browserstack and driver_id in selenium_details:
-            selenium_driver = selenium_details[driver_id]["driver"]
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-
-        elif driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
-            if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
-                Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
-            CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
-            if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-            elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-            elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-            else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-
-            if result == "zeuz_failed":
+            if Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
                 return "zeuz_failed"
 
-            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
-            if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                try:
-                    selenium_driver.execute_cdp_cmd("Performance.enable", {})
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
-                    )
+            if ConfigModule.get_config_value(
+                "RunDefinition", "window_size_x"
+            ) and ConfigModule.get_config_value("RunDefinition", "window_size_y"):
+                window_size_X = ConfigModule.get_config_value(
+                    "RunDefinition", "window_size_x"
+                )
+                window_size_Y = ConfigModule.get_config_value(
+                    "RunDefinition", "window_size_y"
+                )
 
+            if not window_size_X and not window_size_Y:
+                if dependency["Browser"] == "ChromeHeadless":
+                    window_size_X, window_size_Y = 1920, 1080
+                    selenium_driver.set_window_size(window_size_X, window_size_Y)
+                else:
+                    selenium_driver.maximize_window()
+            else:
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
+
+            selenium_details[driver_id] = {
+                "driver": Shared_Resources.Get_Shared_Variables("selenium_driver"),
+                "remote-debugging-port": debug_port
+            }
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
@@ -1379,41 +1145,60 @@ def Go_To_Link(step_data, page_title=False):
 
     # Open URL in browser
     try:
-        try:
-            selenium_driver.get(web_link)
-        except TimeoutException as e:
-            CommonUtil.ExecLog(sModuleInfo, "Maximum page load time reached. Loading and proceeding", 2)
+        if web_link is not None:
+            try:
+                selenium_driver.get(web_link)
+            except TimeoutException as e:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Maximum page load time reached. Loading and proceeding",
+                    2,
+                )
 
-        selenium_driver.implicitly_wait(0.5)  # Wait for page to load
-        CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
+            selenium_driver.implicitly_wait(0.5)  # Wait for page to load
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Successfully opened your link with driver_id='%s': %s"
+                % (driver_id, web_link),
+                1,
+            )
+
     except WebDriverException as e:
         browser = selenium_driver.capabilities["browserName"].strip().lower()
-        if (browser in ("chrome", "msedge", "opera") and e.msg.lower().startswith("chrome not reachable")) or (browser == "firefox" and e.msg.lower().startswith("tried to run command without establishing a connection")):
-            CommonUtil.ExecLog(sModuleInfo, "Browser not found. trying to restart the browser", 2)
+        if (
+            browser in ("chrome", "edge")
+            and e.msg.lower().startswith("chrome not reachable")
+        ) or (
+            browser == "firefox"
+            and e.msg.lower().startswith(
+                "tried to run command without establishing a connection"
+            )
+        ):
+            CommonUtil.ExecLog(
+                sModuleInfo, "Browser not found. trying to restart the browser", 2
+            )
             # If the browser is closed but selenium instance is on, relaunch selenium_driver
             if Shared_Resources.Test_Shared_Variables("dependency"):
                 dependency = Shared_Resources.Get_Shared_Variables("dependency")
-            else:
-                return CommonUtil.Exception_Handler(sys.exc_info())
-            if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-            elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-            elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
-            else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options, profile_options=profile_options)
+            result = Open_Browser(dependency["Browser"], browser_options)
         else:
             result = "zeuz_failed"
 
         if result == "zeuz_failed":
-            ErrorMessage = "failed to open your link with driver_id='%s: %s" % (driver_id, web_link)
+            ErrorMessage = "failed to open your link with driver_id='%s: %s" % (
+                driver_id,
+                web_link,
+            )
             return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
         try:
-            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
             selenium_driver.get(web_link)
             selenium_driver.implicitly_wait(0.5)
-            CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Successfully opened your link with driver_id='%s': %s"
+                % (driver_id, web_link),
+                1,
+            )
         except Exception:
             ErrorMessage = "failed to open your link: %s" % (web_link)
             return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
@@ -1421,44 +1206,7 @@ def Go_To_Link(step_data, page_title=False):
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
-    # collect_browser_metrics(current_driver_id, CommonUtil.current_action_name)
     return "passed"
-
-
-def collect_browser_metrics(driver_id, label):
-    # Collect custom performance metrics
-    try:
-        if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge"):
-            return {}
-
-        metrics = selenium_driver.execute_cdp_cmd('Performance.getMetrics', {})
-        metrics_dict = {}
-        # FCP - First Contentful Paint
-        try: metrics_dict["first_contentful_paint"] = selenium_driver.execute_script(JS_FCP)
-        except: metrics_dict["first_contentful_paint"] = 0
-        # LCP - Largest Contenful Paint
-        try: metrics_dict["largest_contentful_paint"] = selenium_driver.execute_async_script(JS_LCP)
-        except: metrics_dict["largest_contentful_paint"] = 0
-        metrics_dict.update({data["name"]: data["value"] for data in metrics["metrics"]})
-
-        # Collect identifying information
-        metrics_dict["label"] = label
-        metrics_dict["tc_id"] = CommonUtil.current_tc_no
-        metrics_dict["step_name"] = CommonUtil.current_step_name
-        metrics_dict["step_sequence"] = CommonUtil.current_step_sequence
-        metrics_dict["step_id"] = CommonUtil.current_step_id
-        metrics_dict["time_stamp"] = CommonUtil.get_timestamp()
-
-        if driver_id not in CommonUtil.browser_perf:
-            CommonUtil.browser_perf[driver_id] = [metrics_dict]
-        else:
-            CommonUtil.browser_perf[driver_id].append(metrics_dict)
-
-            # CommonUtil.prettify(key="metrics", val=metrics_dict)
-        return metrics_dict
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
 
 
 @logger
@@ -1489,11 +1237,15 @@ def Handle_Browser_Alert(step_data):
         return "zeuz_failed"
 
     try:
-        CommonUtil.ExecLog("", "Waiting %s seconds max for the alert box to appear" % str(wait), 1)
+        CommonUtil.ExecLog(
+            "", "Waiting %s seconds max for the alert box to appear" % str(wait), 1
+        )
         WebDriverWait(selenium_driver, wait).until(EC.alert_is_present())
         time.sleep(2)
     except TimeoutException:
-        CommonUtil.ExecLog(sModuleInfo, "Waited %s seconds but no alert box appeared" % str(wait), 3)
+        CommonUtil.ExecLog(
+            sModuleInfo, "Waited %s seconds but no alert box appeared" % str(wait), 3
+        )
         return "zeuz_failed"
 
     try:
@@ -1522,11 +1274,11 @@ def Handle_Browser_Alert(step_data):
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Wrong Step Data. The following are valid data --\n" +
-                "1. (handle alert, selenium action, ok)" +
-                "2. (handle alert, selenium action, cancel)" +
-                "3. (handle alert, selenium action, get text = var_name)" +
-                "4. (handle alert, selenium action, send text = some text)",
+                "Wrong Step Data. The following are valid data --\n"
+                + "1. (handle alert, selenium action, ok)"
+                + "2. (handle alert, selenium action, cancel)"
+                + "3. (handle alert, selenium action, get text = var_name)"
+                + "4. (handle alert, selenium action, send text = some text)",
                 3,
             )
             return "zeuz_failed"
@@ -1534,13 +1286,6 @@ def Handle_Browser_Alert(step_data):
     except Exception:
         ErrorMessage = "Failed to handle alert"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-
-
-@logger
-@deprecated
-def Initialize_List(data_set):
-    """ Temporary wrapper until we can convert everything to use just data_set and not need the extra [] """
-    return Shared_Resources.Initialize_List([data_set])
 
 
 @logger
@@ -1564,7 +1309,7 @@ def save_screenshot(driver, path):
     driver.set_window_size(required_width, required_height)
     time.sleep(2)
     # driver.save_screenshot(path)  # has scrollbar
-    driver.find_element("xpath","//body").screenshot(path)  # avoids scrollbar
+    driver.find_element("xpath", "//body").screenshot(path)  # avoids scrollbar
     time.sleep(2)
     driver.set_window_size(original_size["width"], original_size["height"])
 
@@ -1597,9 +1342,11 @@ def take_screenshot_selenium(data_set):
 
         # Save the screenshot's name into a variable
         Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
+        return 'passed'
     except Exception:
         errMsg = "Failed to take screenshot"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 def Change_Attribute_Value(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1609,7 +1356,9 @@ def Change_Attribute_Value(step_data):
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
             return "zeuz_failed"
         for left, mid, right in step_data:
             mid = mid.strip().lower()
@@ -1618,46 +1367,202 @@ def Change_Attribute_Value(step_data):
                 attribute_name = left
                 change_value = right
 
-        selenium_driver.execute_script(f"arguments[0].{attribute_name} = `{change_value}`;", Element)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of the attribute to: %s" % change_value, 1)
+        selenium_driver.execute_script(
+            f"arguments[0].{attribute_name} = `{change_value}`;", Element
+        )
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Successfully set the value of the attribute to: %s" % change_value,
+            1,
+        )
         return "passed"
     except Exception:
         errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+
 @logger
 def capture_network_log(step_data):
+    """
+    This action captures network activity (API requests, responses, status codes, etc.) from a Chromium-based browser using Selenium. The logs can be filtered and saved to a variable for further validation or analysis.
+
+    Example 1:
+    Field	                    Sub Field	            Value
+    capture network log         selenium action 	    start
+
+    Example 2:
+    Field	                    Sub Field	            Value
+    save                        input parameter         variable_name
+    filter domain               input parameter         zeuz.ai
+    include status code         input parameter         201, 400-504
+    include request method      input parameter         GET, POST
+    include response body       input parameter         false
+    capture network log         selenium action 	    stop
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
     try:
-        global selenium_driver
+        # Helper function to parse status code
+        def parse_status_codes(code_str):
+            result = []
+            for part in code_str.split(","):
+                part = part.strip()
+                if "-" in part:
+                    start, end = map(int, part.split("-"))
+                    result.extend(range(start, end + 1))
+                else:
+                    result.append(int(part))
+            return result
 
-        def process_browser_log_entry(entry):
-            response = json.loads(entry["message"])["message"]
-            return response
+        params = {
+            "variable_name": None,
+            "mode": None,
+            "filter_domains": [],
+            "status_filter": [],
+            "method_filter": [],
+            "include_body": False,
+        }
 
-        variable_name = None
-        mode = None
-        for left, _, right in step_data:
-            if left.lower().strip() == "capture network log":
-                mode = right.lower().strip()
-            if left.lower().strip() == "save":
-                variable_name = right.lower().strip()
-        if not mode or ( mode == 'stop' and variable_name == None):
-            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided.", 3)
-            return "zeuz_failed"
+        # Parse
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left == "capture network log":
+                params["mode"] = right.lower().strip()
+            elif left == "save":
+                params["variable_name"] = right.strip()
+            elif left == "filter domain":
+                params["filter_domains"] = [d.strip() for d in right.split(",")]
+            elif left == "include status code":
+                params["status_filter"] = parse_status_codes(right.strip())
+            elif left == "include request method":
+                params["method_filter"] = [m.strip().upper() for m in right.split(",")]
+            elif left == "include response body":
+                params["include_body"] = right.strip().lower() == "true"
 
-        if mode == 'start':
+        # Start/stop handling
+        if params["mode"] == "start":
             selenium_driver.get_log("performance")
-            CommonUtil.ExecLog(sModuleInfo, "Started collecting network logs", 1    )
-        if mode == 'stop':
-            browser_log = selenium_driver.get_log("performance")
-            events = [process_browser_log_entry(entry) for entry in browser_log]
-            Shared_Resources.Set_Shared_Variables(variable_name, events)
+            CommonUtil.ExecLog(sModuleInfo, "Started collecting network logs...", 1)
             return "passed"
+
+        if params["mode"] == "stop":
+            EXCLUDED_EXTENSIONS = {
+                ".js",
+                ".css",
+                ".png",
+                ".jpg",
+                ".jpeg",
+                ".gif",
+                ".svg",
+                ".ico",
+                ".woff",
+                ".woff2",
+                ".ttf",
+                ".eot",
+                ".webp",
+                ".map",
+                ".txt",
+            }
+            EXCLUDED_MIME_PREFIXES = {
+                "image/",
+                "font/",
+                "text/css",
+                "application/javascript",
+                "text/javascript",
+                "application/font-",
+                "application/x-font-",
+            }
+
+            browser_log = selenium_driver.get_log("performance")
+            api_logs = []
+            requests = {}
+
+            for entry in browser_log:
+                try:
+                    outer = json.loads(entry["message"])
+                    message_data = outer.get("message", {})
+                    method = message_data.get("method")
+                    log_params = message_data.get("params", {})
+                    request_id = log_params.get("requestId")
+
+                    if method == "Network.requestWillBeSent":
+                        requests[request_id] = log_params.get("request", {})
+
+                    elif method == "Network.responseReceived":
+                        response = log_params.get("response", {})
+                        url = response.get("url", "")
+                        mime_type = response.get("mimeType", "")
+                        status = response.get("status", 0)
+
+                        # Skip static resources
+                        if any(url.endswith(ext) for ext in EXCLUDED_EXTENSIONS):
+                            continue
+                        if any(
+                            mime_type.startswith(prefix)
+                            for prefix in EXCLUDED_MIME_PREFIXES
+                        ):
+                            continue
+
+                        request = requests.get(request_id, {})
+
+                        # Apply filters
+                        if params["filter_domains"]:
+                            domain = urlparse(url).netloc
+                            if not any(d in domain for d in params["filter_domains"]):
+                                continue
+
+                        if params["method_filter"]:
+                            request_method = request.get("method", "").upper()
+                            if request_method not in params["method_filter"]:
+                                continue
+
+                        if params["status_filter"]:
+                            if status not in params["status_filter"]:
+                                continue
+
+                        # Build log entry
+                        log_entry = {
+                            "url": url,
+                            "status": status,
+                            "method": request.get("method", ""),
+                            "mimeType": mime_type,
+                            "type": log_params.get("type", ""),
+                            "timestamp": entry.get("timestamp"),
+                        }
+
+                        # Add response body if requested
+                        if params["include_body"]:
+                            try:
+                                body = selenium_driver.execute_cdp_cmd(
+                                    "Network.getResponseBody", {"requestId": request_id}
+                                )
+                                log_entry["body"] = body.get("body", "Unavailable")
+                            except:
+                                log_entry["body"] = "Unavailable"
+
+                        api_logs.append(log_entry)
+
+                except Exception as e:
+                    err = f"Error processing log entry: {str(e)}"
+                    CommonUtil.ExecLog(sModuleInfo, err, 3)
+                    continue
+
+            # Save results
+            if params["variable_name"]:
+                Shared_Resources.Set_Shared_Variables(params["variable_name"], api_logs)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Saved {len(api_logs)} network events to '{params['variable_name']}'",
+                    1,
+                )
+            return "passed"
+
     except Exception:
-        errMsg = "Could not collect network logs. Make sure logging is enabled at browser startup"
+        errMsg = "Could not collect network logs. Ensure performance logging is enabled in browser options"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-    
+
+
 # Method to enter texts in a text box; step data passed on by the user
 @logger
 def Enter_Text_In_Text_Box(step_data):
@@ -1670,7 +1575,9 @@ def Enter_Text_In_Text_Box(step_data):
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
             return "zeuz_failed"
         for left, mid, right in step_data:
             mid = mid.strip().lower()
@@ -1687,36 +1594,46 @@ def Enter_Text_In_Text_Box(step_data):
             try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
             except:
-                CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Entering text without clicking the element", 2
+                )
             # Fill up the value.
-            selenium_driver.execute_script(f"arguments[0].value = `{text_value}`;", Element)
+            selenium_driver.execute_script(
+                f"arguments[0].value = `{text_value}`;", Element
+            )
             # Trigger change events
             # - input: Fired when the value of the text field changes (after each keystroke, paste, etc.).
             # - change: Fired when the value of the text field changes and the element loses focus.
-            selenium_driver.execute_script("arguments[0].dispatchEvent(new Event('input', {'bubbles': true}))", Element)
-            selenium_driver.execute_script("arguments[0].dispatchEvent(new Event('change', {'bubbles': true}))", Element)
+            selenium_driver.execute_script(
+                "arguments[0].dispatchEvent(new Event('input', {'bubbles': true}))",
+                Element,
+            )
+            selenium_driver.execute_script(
+                "arguments[0].dispatchEvent(new Event('change', {'bubbles': true}))",
+                Element,
+            )
             # Sometimes text field becomes unclickable after entering text?
             selenium_driver.execute_script("arguments[0].click();", Element)
         else:
             try:
                 Element = handle_clickability_and_click(step_data, Element)
             except:
-                CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Entering text without clicking the element", 2
+                )
             if clear:
-                # Element.clear()
-                # Safari Keys are extremely slow and not working
-                if selenium_driver.capabilities['browserName'] == "Safari":
-                    Element.clear()
-                else:
-                    if sys.platform == "darwin":
-                        Element.send_keys(Keys.COMMAND, "a")
+                try:
+                    if selenium_driver.capabilities["browserName"] == "Safari":
+                        Element.clear()
                     else:
-                        Element.send_keys(Keys.CONTROL, "a")
-                    Element.send_keys(Keys.DELETE)
-                    try:
-                        Element.clear() #some cases it works .. so adding it here just incase
-                    except:
-                        pass
+                        if sys.platform == "darwin":
+                            Element.send_keys(Keys.COMMAND, "a")
+                        else:
+                            Element.send_keys(Keys.CONTROL, "a")
+                        Element.send_keys(Keys.DELETE)
+                        Element.clear()  # some cases it works .. so adding it here just incase
+                except:
+                    pass
             if delay == 0:
                 Element.send_keys(text_value)
             else:
@@ -1727,16 +1644,18 @@ def Enter_Text_In_Text_Box(step_data):
                 Element.click()
             except:  # sometimes text field can be unclickable after entering text
                 pass
-        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+        CommonUtil.ExecLog(
+            sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1
+        )
         return "passed"
     except Exception:
         errMsg = "Could not select/click your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None)
 
 
 @logger
 def Keystroke_For_Element(data_set):
-    """ Send a key stroke or string to an element or wherever the cursor is located """
+    """Send a key stroke or string to an element or wherever the cursor is located"""
     # Keystroke Keys: Any key. Eg: Tab, Escape, etc
     # Keystroke Chars: Any string. Eg: The quick brown...
     # If no element parameter is provided, it will enter the keystroke wherever the cursor is located
@@ -1746,6 +1665,7 @@ def Keystroke_For_Element(data_set):
     # Parse the data set
     try:
         stype = ""  # keys/chars
+        paste_image = False # identifiying image paste
         get_element = False  # Use element
         key_count = 1  # Default number of button presses
         for row in data_set:
@@ -1764,6 +1684,9 @@ def Keystroke_For_Element(data_set):
                     keystroke_value = row[2]
             elif row[1] == "element parameter":
                 get_element = True
+            elif row[1] == "optional parameter":
+                if row[0] == "paste image":
+                    paste_image = row[2].strip().lower() == "true"
 
         if stype == "":
             CommonUtil.ExecLog(sModuleInfo, "Field contains incorrect data", 3)
@@ -1796,7 +1719,133 @@ def Keystroke_For_Element(data_set):
             }
             for key in convert:
                 keystroke_value = keystroke_value.replace(key, convert[key])
-            if "+" in keystroke_value:
+
+            # Special handling for paste command (Ctrl+V / Command+V)
+            normalized_keystroke = (
+                keystroke_value.replace(" ", "").replace("_", "").lower()
+            )
+            if normalized_keystroke in (
+                "ctrl+v",
+                "control+v",
+                "ctrlv",
+                "controlv",
+                "cmd+v",
+                "cmdv",
+                "command+v",
+                "commandv",
+            ):
+                capabilities = selenium_driver.capabilities
+                platform_name = capabilities.get("platformName", "").lower()
+                browser_name = capabilities.get("browserName", "").lower()
+
+                if "mac" in platform_name or "os x" in platform_name:
+                    paste_key = Keys.COMMAND
+                elif platform.system().lower() in ("darwin", "macos"):
+                    paste_key = Keys.COMMAND
+                else:
+                    paste_key = Keys.CONTROL
+
+                if browser_name == "firefox" and (
+                    "linux" in platform_name or platform.system().lower() == "linux"
+                ):
+                    paste_key = Keys.CONTROL
+
+                if paste_image:
+                    try:
+                        if get_element:
+                            selenium_driver.execute_script("arguments[0].focus();", Element)
+                            time.sleep(0.1)
+
+                            # Perform paste using ActionChains
+                            actions = ActionChains(selenium_driver)
+                            actions.key_down(paste_key, element=Element)
+                            actions.send_keys_to_element(Element, "v")
+                            actions.key_up(paste_key, element=Element)
+                            actions.perform()
+                        else:
+                            actions = ActionChains(selenium_driver)
+                            actions.key_down(paste_key)
+                            actions.send_keys("v")
+                            actions.key_up(paste_key)
+                            actions.perform()
+
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Copied image is successfully pasted", 1
+                        )
+                        return "passed"
+                    except Exception as e:
+                        # Fallback to JavaScript if ActionChains fails
+                        try:
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Standard paste failed. Trying JavaScript fallback...",
+                                2,
+                            )
+                            if get_element:
+                                selenium_driver.execute_script(
+                                    "arguments[0].focus();", Element
+                                )
+                                selenium_driver.execute_script(
+                                    "arguments[0].value = arguments[1];",
+                                    Element,
+                                    pyperclip.paste(),
+                                )
+                            else:
+                                selenium_driver.execute_script(
+                                    f"document.activeElement.value += '{pyperclip.paste()}';"
+                                )
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Successfully image paste executed via JavaScript fallback", 1
+                            )
+                            return "passed"
+                        except Exception as js_e:
+                            return CommonUtil.Exception_Handler(
+                                sys.exc_info(),
+                                None,
+                                f"Both methods failed for paste the image: {str(js_e)}",
+                            )
+                else:
+                    # simple text paste
+                    try:
+                        if get_element:
+                            selenium_driver.execute_script(
+                                """
+                                var el = arguments[0];
+                                var text = arguments[1];
+                                var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeInputValueSetter.call(el, text);
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+                                """,
+                                Element,
+                                pyperclip.paste(),
+                            )
+                        else:
+                            selenium_driver.execute_script(
+                                """
+                                var el = document.activeElement;
+                                var text = arguments[0];
+                                var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                                nativeInputValueSetter.call(el, text);
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+                                el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+                                """,
+                                pyperclip.paste(),
+                            )
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Paste successfully executed via JavaScript with events", 1
+                        )
+                        return "passed"
+                    except Exception as js_e:
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "JavaScript paste execution failed. Trying keypress...", 3
+                        )
+
+            elif "+" in keystroke_value:
                 hotkey_list = keystroke_value.split("+")
                 for i in range(len(hotkey_list)):
                     if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
@@ -1812,8 +1861,12 @@ def Keystroke_For_Element(data_set):
                 result = "passed"
 
             else:
-                get_keystroke_value = getattr(Keys, keystroke_value)  # Create an object for the keystroke
-                result = Element.send_keys(get_keystroke_value * key_count)  # Prepare keystroke for sending if Actions, or send if Element
+                get_keystroke_value = getattr(
+                    Keys, keystroke_value
+                )  # Create an object for the keystroke
+                result = Element.send_keys(
+                    get_keystroke_value * key_count
+                )  # Prepare keystroke for sending if Actions, or send if Element
                 if not get_element:
                     Element.perform()  # Send keystroke
         else:
@@ -1896,7 +1949,9 @@ def execute_javascript(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
-def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.webelement.WebElement):
+def handle_clickability_and_click(
+    dataset, Element: selenium.webdriver.remote.webelement.WebElement
+):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     wait_clickable = Shared_Resources.Get_Shared_Variables("element_wait")
     # for left, mid, right in dataset:
@@ -1916,29 +1971,47 @@ def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.web
         try:
             Element.click()
             if not first:
-                CommonUtil.ExecLog(sModuleInfo, "Element has become clickable after %s seconds" % round(time.perf_counter() - start, 2), 2)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Element has become clickable after %s seconds"
+                    % round(time.perf_counter() - start, 2),
+                    2,
+                )
             return Element
         except ElementClickInterceptedException:
             first = False
             if log_flag:
-                CommonUtil.ExecLog(sModuleInfo, "Click is Intercepted. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Click is Intercepted. Waiting %s seconds max for the element to become clickable"
+                    % wait_clickable,
+                    2,
+                )
                 log_flag = False
         except StaleElementReferenceException:
             first = False
             if log_flag2:
-                CommonUtil.ExecLog(sModuleInfo, "Element is stale. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Element is stale. Waiting %s seconds max for the element to become clickable"
+                    % wait_clickable,
+                    2,
+                )
                 log_flag2 = False
-            Element = LocateElement.Get_Element(dataset, selenium_driver)  # Element may need to be relocated in stale
+            Element = LocateElement.Get_Element(
+                dataset, selenium_driver
+            )  # Element may need to be relocated in stale
             if stale_i == 0:
                 stale_i += 1
                 continue
         if time.perf_counter() > start + wait_clickable:
-            raise Exception     # not StaleElementReferenceException. we don't want js to perform click
+            raise Exception  # not StaleElementReferenceException. we don't want js to perform click
+
 
 # Method to click on element; step data passed on by the user
 @logger
 def Click_Element(data_set, retry=0):
-    """ Click using element or location """
+    """Click using element or location"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     use_js = False  # Use js to click on element?
@@ -1946,11 +2019,15 @@ def Click_Element(data_set, retry=0):
         location = ""
         for row in data_set:
             if row[0] == "offset" and row[1] == "optional parameter":
-                location = row[2]  # Save shared variable name, or coordinates if entered directory in step data
+                location = row[
+                    2
+                ]  # Save shared variable name, or coordinates if entered directory in step data
             if "use js" in row[0].lower():
                 use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element in failed_tag_list:
@@ -1973,29 +2050,41 @@ def Click_Element(data_set, retry=0):
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
-                    2
+                    2,
                 )
                 return "passed"
             except Exception:
                 try:
                     element_attributes = Element.get_attribute("outerHTML")
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                    )
                     errMsg = "Could not click and hold your element."
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
                 except:
                     return CommonUtil.Exception_Handler(sys.exc_info())
         except StaleElementReferenceException:
             if retry == 5:
-                CommonUtil.ExecLog(sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Could not perform click because javascript of the element is not fully loaded",
+                    3,
+                )
                 return "zeuz_failed"
-            CommonUtil.ExecLog("", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2)
+            CommonUtil.ExecLog(
+                "",
+                "Javascript of the element is not fully loaded. Trying again after 1 second delay",
+                2,
+            )
             time.sleep(1)
             return Click_Element(data_set, retry + 1)
 
         except Exception:
             try:
                 element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                )
                 errMsg = "Could not click and hold your element."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
             except:
@@ -2006,25 +2095,37 @@ def Click_Element(data_set, retry=0):
         try:
             total_x_offset, total_y_offset = get_offsets(location, Element)
             actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(Element, total_x_offset, total_y_offset)  # Move to coordinates (referrenced by body at 0,0)
+            actions.move_to_element_with_offset(
+                Element, total_x_offset, total_y_offset
+            )  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
             CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
             return "passed"
         except Exception:
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
+            return CommonUtil.Exception_Handler(
+                sys.exc_info(), None, "Error clicking location"
+            )
 
 
 @logger
 def Click_and_Download(data_set):
-    """ Click and download attachments from web and save it to specific destinations"""
+    """Click and download attachments from web and save it to specific destinations"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
-    if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge", "firefox"):
-        CommonUtil.ExecLog(sModuleInfo, "This action was made for Chrome, MS Edge and Firefox. Other browsers won't download files in Zeuz_Download_Folder", 2)
+    if selenium_driver.capabilities["browserName"].strip().lower() not in (
+        "chrome",
+        "microsoftedge",
+        "firefox",
+    ):
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "This action was made for Chrome, MS Edge and Firefox. Other browsers won't download files in Zeuz_Download_Folder",
+            2,
+        )
 
-    #Todo:
+    # Todo:
     # 1. For other browsers than ("chrome", "msedge", "firefox") copy the New files generated in Downloads directory and move them to zeuz_download_folder
 
     wait_download = 20
@@ -2036,26 +2137,48 @@ def Click_and_Download(data_set):
             l = left.replace(" ", "").replace("_", "").lower()
             if l == "waitfordownload":
                 wait_download = float(right.strip())
-            elif l in ("folderpath", "directory", "filepath", "file", "folder") and mid.strip().lower() in ("optional parameter"):
+            elif l in (
+                "folderpath",
+                "directory",
+                "filepath",
+                "file",
+                "folder",
+            ) and mid.strip().lower() in ("optional parameter"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
-            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in ("optional parameter"):
-                automate_firefox = right.strip().lower() in ("accept", "yes", "ok", "true")
+            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in (
+                "optional parameter"
+            ):
+                automate_firefox = right.strip().lower() in (
+                    "accept",
+                    "yes",
+                    "ok",
+                    "true",
+                )
             else:
                 click_dataset.append((left, mid, right))
 
             # On next improvement user will have option to tell the filename and only that filename will be copied from
             # the initial download directory
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
 
     try:
         if Click_Element(click_dataset) == "zeuz_failed":
             return "zeuz_failed"
-        if selenium_driver.capabilities["browserName"].strip().lower() == "firefox" and automate_firefox:
+        if (
+            selenium_driver.capabilities["browserName"].strip().lower() == "firefox"
+            and automate_firefox
+        ):
             if platform.system() == "Windows":
                 try:
-                    from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element as win_Click_Element, wait_for_element
+                    from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import (
+                        Click_Element as win_Click_Element,
+                        wait_for_element,
+                    )
+
                     pid = str(selenium_driver.capabilities["moz:processID"])
                     window_ds = ("window pid", "element parameter", pid)
                     wait_ds = [
@@ -2064,19 +2187,32 @@ def Click_and_Download(data_set):
                         ("LocalizedControlType", "element parameter", "radio button"),
                         ("wait to appear", "windows action", "10"),
                     ]
-                    CommonUtil.ExecLog(sModuleInfo, "Checking if any Save window is opened", 1)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Checking if any Save window is opened", 1
+                    )
                     if wait_for_element(wait_ds) == "zeuz_failed":
-                        CommonUtil.ExecLog(sModuleInfo, "No Save window is found. Continuing...", 1)
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "No Save window is found. Continuing...", 1
+                        )
                     else:
                         save_click_ds = [
                             window_ds,
                             ("Name", "element parameter", "Save File"),
-                            ("LocalizedControlType", "element parameter", "radio button"),
+                            (
+                                "LocalizedControlType",
+                                "element parameter",
+                                "radio button",
+                            ),
                             ("click", "windows action", "click"),
                         ]
                         if win_Click_Element(save_click_ds) == "zeuz_failed":
-                            CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Could not click Save Button. Switching to GUI method",
+                                2,
+                            )
                             import pyautogui
+
                             pyautogui.hotkey("down")
                             pyautogui.hotkey("enter")
 
@@ -2097,20 +2233,38 @@ def Click_and_Download(data_set):
                                 ("click", "windows action", "click"),
                             ]
                             if win_Click_Element(ok_ds) == "zeuz_failed":
-                                CommonUtil.ExecLog(sModuleInfo, "Could not find the OK button. Switching to GUI method (pressing Enter)", 2)
+                                CommonUtil.ExecLog(
+                                    sModuleInfo,
+                                    "Could not find the OK button. Switching to GUI method (pressing Enter)",
+                                    2,
+                                )
                                 import pyautogui
+
                                 pyautogui.hotkey("enter")
                 except:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Could not check if any save window was opened. Continuing...",
+                        2,
+                    )
 
             else:
                 # Todo: Test this on Mac and Linux
                 import pyautogui
+
                 pyautogui.hotkey("down")
                 pyautogui.hotkey("enter")
 
-        if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge", "firefox"):
-            CommonUtil.ExecLog(sModuleInfo, "Download started. Will wait max %s seconds..." % wait_download, 1)
+        if selenium_driver.capabilities["browserName"].strip().lower() in (
+            "chrome",
+            "microsoftedge",
+            "firefox",
+        ):
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Download started. Will wait max %s seconds..." % wait_download,
+                1,
+            )
             s = time.perf_counter()
             if selenium_driver.capabilities["browserName"].strip().lower() == "firefox":
                 ext = ".part"
@@ -2122,17 +2276,38 @@ def Click_and_Download(data_set):
             while True:
                 try:
                     ld = os.listdir(initial_download_folder)
-                    if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
-                        CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
+                    if all(
+                        [
+                            len(ld) > 0,
+                            all(
+                                [
+                                    not i.endswith(".tmp") and not i.endswith(ext)
+                                    for i in ld
+                                ]
+                            ),
+                        ]
+                    ):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Download Finished in %s seconds"
+                            % round(time.perf_counter() - s, 2),
+                            1,
+                        )
                         break
                     if s + wait_download < time.perf_counter():
-                        CommonUtil.ExecLog(sModuleInfo, "Could not finish download within %s seconds. You can increase the amount of seconds with (wait for download, optional parameter, 60)" % wait_download, 2)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Could not finish download within %s seconds. You can increase the amount of seconds with (wait for download, optional parameter, 60)"
+                            % wait_download,
+                            2,
+                        )
                         break
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
                     time.sleep(2)
                     e += 1
-                    if e == 3: break
+                    if e == 3:
+                        break
         else:
             time.sleep(2)
         time.sleep(3)
@@ -2140,11 +2315,17 @@ def Click_and_Download(data_set):
         if filepath:
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
             source_folder = initial_download_folder
-            all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
+            all_source_dir = [
+                os.path.join(source_folder, f)
+                for f in os.listdir(source_folder)
+                if os.path.isfile(os.path.join(source_folder, f))
+            ]
             new_path = filepath
             for file_to_be_moved in all_source_dir:
                 file_name = Path(file_to_be_moved).name
-                if "." not in os.path.basename(new_path) and not os.path.exists(new_path):
+                if "." not in os.path.basename(new_path) and not os.path.exists(
+                    new_path
+                ):
                     # if the path is a directory and does not exist then create the directory
                     Path(new_path).mkdir(parents=True, exist_ok=True)
                 elif "." in os.path.basename(new_path) and not os.path.exists(new_path):
@@ -2158,130 +2339,33 @@ def Click_and_Download(data_set):
                 if "." not in os.path.basename(new_path):
                     file_path_for_check_after_move = os.path.join(new_path, file_name)
                     if os.path.isfile(file_path_for_check_after_move):
-                        CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, file_path_for_check_after_move), 1)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "File '%s' is moved to '%s'"
+                            % (file_name, file_path_for_check_after_move),
+                            1,
+                        )
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
                         return "zeuz_failed"
                 else:
                     if os.path.isfile(new_path):
-                        CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_path), 1)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "File '%s' is moved to '%s'" % (file_name, new_path),
+                            1,
+                        )
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
                         return "zeuz_failed"
         return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def Mouse_Click_Element(data_set):
-    """
-    This funciton will move the mouse to the element and then perform a physical mouse click
-
-    element_prop        element parameter          element_value
-    mouse click        selenium action            click
-
-
-
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    # Click using elemen
-    CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
-    # Get element object
-    Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element in failed_tag_list:
-        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "zeuz_failed"
-    # Get element location
-
-    # Get element size
-    try:
-        size_ele = (
-            Element.size
-        )  # Retreive the dictionary containing the x,y location coordinates
-        if size_ele in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not get element location", 3)
-            return "zeuz_failed"
-        # Find center of the element. We will use offset
-        width = (size_ele["width"]) / 2
-        height = (size_ele["height"]) / 2
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error retrieving element location"
-        )
-    try:
-        actions = ActionChains(selenium_driver)
-        actions.move_to_element_with_offset(Element, width, height).click().perform()
-        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
-        return "passed"
-    except Exception:
-
-        errMsg = "Could not select/click your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-# Method to click and hold on element; step data passed on by the user
-@logger
-def Click_and_Text(data_set):
-    """ Click and enter text specially for dropdown box"""
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        data_set_to = []
-        data_set_to2 = []
-
-        for row in data_set:
-            if row[0] == "click and enter text" and row[1] == "action":
-                row[2].lower()
-                data_set_to2.append(("keystroke chars", "action", row[2]))
-
-            elif row[1] == "element parameter":
-                data_set_to.append(row)
-        Click_Element(data_set_to)
-
-        Keystroke_For_Element(data_set_to2)
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def Click_and_Hold_Element(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "zeuz_failed":
-            try:
-                click_and_hold = ActionChains(selenium_driver).click_and_hold(Element)
-                click_and_hold.perform()
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Successfully clicked and held the element with given parameters and values",
-                    1,
-                )
-                return "passed"
-            except Exception:
-                try:
-                    element_attributes = Element.get_attribute("outerHTML")
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
-                    errMsg = "Could not click and hold your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                except:
-                    return CommonUtil.Exception_Handler(sys.exc_info())
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to right click on element; step data passed on by the user
 @logger
-def Context_Click_Element(step_data):
+def Right_Click_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
@@ -2299,7 +2383,9 @@ def Context_Click_Element(step_data):
             except Exception:
                 try:
                     element_attributes = Element.get_attribute("outerHTML")
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                    )
                     errMsg = "Could not click and hold your element."
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
                 except:
@@ -2333,40 +2419,9 @@ def Double_Click_Element(step_data):
             except Exception:
                 try:
                     element_attributes = Element.get_attribute("outerHTML")
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
-                    errMsg = "Could not click and hold your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                except:
-                    return CommonUtil.Exception_Handler(sys.exc_info())
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Method to move to middle of the element; step data passed on by the user
-@logger
-def Move_To_Element(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "zeuz_failed":
-            try:
-                move = ActionChains(selenium_driver).move_to_element(Element).perform()
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Successfully moved to the middle of the element with given parameters and values",
-                    1,
-                )
-                return "passed"
-            except Exception:
-                try:
-                    element_attributes = Element.get_attribute("outerHTML")
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                    )
                     errMsg = "Could not click and hold your element."
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
                 except:
@@ -2400,7 +2455,9 @@ def Hover_Over_Element(step_data):
             except Exception:
                 try:
                     element_attributes = Element.get_attribute("outerHTML")
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                    )
                     errMsg = "Could not select/hover your element."
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
                 except:
@@ -2413,56 +2470,6 @@ def Hover_Over_Element(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-@logger
-def get_location_of_element(data_set):
-    """ Returns the x,y location of an element """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    # Parse data set
-    try:
-        shared_var = ""
-        for row in data_set:
-            if row[1] == "action":
-                shared_var = row[2]  # Save the shared variable name
-
-        if shared_var == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Shared variable name missing from Value on action row", 3
-            )
-            return "zeuz_failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
-
-    # Get element object
-    Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element in failed_tag_list:
-        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "zeuz_failed"
-
-    # Get element location
-    try:
-        location = (
-            Element.location
-        )  # Retreive the dictionary containing the x,y location coordinates
-        if location in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not get element location", 3)
-            return "zeuz_failed"
-
-        # Save location as string, in preparation for the shared variable
-        x = str(location["x"])
-        y = str(location["y"])
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error retrieving element location"
-        )
-
-    # Save location in shared variable
-    Shared_Resources.Set_Shared_Variables(shared_var, "%s,%s" % (x, y))
-    return "passed"
 
 @logger
 def get_element_info(dataset):
@@ -2478,15 +2485,23 @@ def get_element_info(dataset):
                 new_ds.append(each_step_data_item)
 
         if variable_name is None:
-            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Variable name should be mentioned. Example: (text, save parameter, var_name)",
+                3,
+            )
             return "zeuz_failed"
 
         Element = LocateElement.Get_Element(new_ds, selenium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
             return "zeuz_failed"
         else:
-            Shared_Resources.Set_Shared_Variables(variable_name, {"size": Element.size, "location": Element.location})
+            Shared_Resources.Set_Shared_Variables(
+                variable_name, {"size": Element.size, "location": Element.location}
+            )
             return "passed"
     except Exception as e:
         CommonUtil.ExecLog(sModuleInfo, e, 3)
@@ -2508,12 +2523,18 @@ def Save_Attribute(step_data):
                 new_ds.append(each_step_data_item)
 
         if variable_name is None:
-            CommonUtil.ExecLog(sModuleInfo, "Variable name should be mentioned. Example: (text, save parameter, var_name)", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Variable name should be mentioned. Example: (text, save parameter, var_name)",
+                3,
+            )
             return "zeuz_failed"
 
         Element = LocateElement.Get_Element(new_ds, selenium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
             return "zeuz_failed"
 
         elif attribute_name == "text":
@@ -2534,196 +2555,6 @@ def Save_Attribute(step_data):
             )
             return "zeuz_failed"
         else:
-            return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Search for element on new page after a particular time-out duration entered by the user through step-data
-@logger
-def Wait_For_New_Element(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        wait_for_element_to_disappear = False
-        for each in step_data:
-            if each[1] == "action":
-                timeout_duration = int(each[2])
-                if each[0] == "wait disable":
-                    wait_for_element_to_disappear = True
-        start_time = time.time()
-        interval = 1
-        for i in range(timeout_duration):
-            time.sleep(time.time() + i * interval - start_time)
-            Element = LocateElement.Get_Element(step_data, selenium_driver)
-            if wait_for_element_to_disappear == False:
-                if Element == "zeuz_failed":
-                    continue
-                else:
-                    return "passed"
-            else:
-                if Element == "zeuz_failed":
-                    return "passed"
-                else:
-                    continue
-        if wait_for_element_to_disappear == False:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Waited for %s seconds but couldnt locate your element", 3
-            )
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Waited for %s seconds but your element still exists", 3
-            )
-        return "zeuz_failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Validating text from an element given information regarding the expected text
-@logger
-def Compare_Lists(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    try:
-        return Shared_Resources.Compare_Lists([step_data])
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Validating text from an element given information regarding the expected text
-@logger
-def Compare_Variables(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    try:
-        return Shared_Resources.Compare_Variables([step_data])
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Inserting a field into a list of shared variables
-@logger
-def Insert_Into_List(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    try:
-        if len(step_data) == 1:  # will have to test #saving direct input string data
-            list_name = ""
-            key = ""
-            value = ""
-            full_input_key_value_name = ""
-
-            for each_step_data_item in step_data:
-                if each_step_data_item[1] == "action":
-                    full_input_key_value_name = each_step_data_item[2]
-
-            temp_list = full_input_key_value_name.split(",")
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Value must contain more than one item, and must be comma separated",
-                    3,
-                )
-                return "zeuz_failed"
-            else:
-                list_name = temp_list[0].split(":")[1].strip()
-                key = temp_list[1].split(":")[1].strip()
-                value = temp_list[2].split(":")[1].strip()
-
-            result = Shared_Resources.Set_List_Shared_Variables(list_name, key, value)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "In list '%s' Value of Variable '%s' could not be saved!!!"
-                    % (list_name, key),
-                    3,
-                )
-                return "zeuz_failed"
-            else:
-                Shared_Resources.Show_All_Shared_Variables()
-                return "passed"
-
-        else:
-            Element = LocateElement.Get_Element(step_data, selenium_driver)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to locate your element with given data.", 3
-                )
-                return "zeuz_failed"
-            list_name = ""
-            key = ""
-            for each_step_data_item in step_data:
-                if each_step_data_item[1] == "action":
-                    key = each_step_data_item[2]
-            # get list name from full input_string
-            temp_list = key.split(",")
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Value must contain more than one item, and must be comma separated",
-                    3,
-                )
-                return "zeuz_failed"
-            else:
-                list_name = str(temp_list[0]).split(":")[1].strip()
-                key = str(temp_list[1]).strip()
-
-            # get text from selenium element
-            list_of_element_text = Element.text.split("\n")
-            visible_list_of_element_text = ""
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text += each_text_item
-            # save text in the list of shared variables in CommonUtil
-            result = Shared_Resources.Set_List_Shared_Variables(
-                list_name, key, visible_list_of_element_text
-            )
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "In list '%s' Value of Variable '%s' could not be saved!!!"
-                    % (list_name, key),
-                    3,
-                )
-                return "zeuz_failed"
-            else:
-                Shared_Resources.Show_All_Shared_Variables()
-                return "passed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Validating text from an element given information regarding the expected text
-@logger
-def Save_Text(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
-        for each_step_data_item in step_data:
-            if each_step_data_item[1] == "action":
-                variable_name = each_step_data_item[2]
-        list_of_element_text = Element.text.split("\n")
-        visible_list_of_element_text = ""
-        for each_text_item in list_of_element_text:
-            if each_text_item != "":
-                visible_list_of_element_text += each_text_item
-        result = Shared_Resources.Set_Shared_Variables(
-            variable_name, visible_list_of_element_text
-        )
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Value of Variable '%s' could not be saved!!!" % variable_name,
-                3,
-            )
-            return "zeuz_failed"
-        else:
-            Shared_Resources.Show_All_Shared_Variables()
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -2776,7 +2607,7 @@ def save_attribute_values_in_list(step_data):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], [], [], []])
-                    temp = right.strip(",").split(',\n')
+                    temp = right.strip(",").split(",\n")
                     data = []
                     for each in temp:
                         data.append(each.strip().split("=", 1))
@@ -2784,7 +2615,9 @@ def save_attribute_values_in_list(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = CommonUtil.strip1(data[i][j], '"')   # dont add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = CommonUtil.strip1(
+                                    data[i][j], '"'
+                                )  # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -2792,11 +2625,18 @@ def save_attribute_values_in_list(step_data):
                         elif Left == "return_contains":
                             target[target_index][2].append(Right)
                         elif Left == "return_does_not_contain":
-                            target[target_index][3].append(Right)   
-                        elif Left.replace(" ", "").replace("_", "") in ("allowhidden", "allowdisable"):
-                            target[target_index][0].append(("allow hidden", "optional parameter", Right))
+                            target[target_index][3].append(Right)
+                        elif Left.replace(" ", "").replace("_", "") in (
+                            "allowhidden",
+                            "allowdisable",
+                        ):
+                            target[target_index][0].append(
+                                ("allow hidden", "optional parameter", Right)
+                            )
                         else:
-                            target[target_index][0].append((Left, "element parameter", Right))
+                            target[target_index][0].append(
+                                (Left, "element parameter", Right)
+                            )
 
                     target_index = target_index + 1
                 elif left == "save attribute values in list":
@@ -2806,12 +2646,16 @@ def save_attribute_values_in_list(step_data):
 
         except:
             CommonUtil.ExecLog(
-                sModuleInfo, "Unable to parse data. Please write data in correct format", 3
+                sModuleInfo,
+                "Unable to parse data. Please write data in correct format",
+                3,
             )
             return "zeuz_failed"
 
         for each in target:
-            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+            all_elements.append(
+                LocateElement.Get_Element(each[0], Element, return_all_elements=True)
+            )
 
         variable_value_size = 0
         for each in all_elements:
@@ -2828,7 +2672,7 @@ def save_attribute_values_in_list(step_data):
             for elem in each:
                 if search_by_attribute == "text":
                     Attribute_value = elem.text
-                elif search_by_attribute == 'tag':
+                elif search_by_attribute == "tag":
                     Attribute_value = elem.tag_name
                 elif search_by_attribute == "checked":
                     Attribute_value = str(elem.is_selected())
@@ -2836,18 +2680,28 @@ def save_attribute_values_in_list(step_data):
                     Attribute_value = elem.get_attribute(search_by_attribute)
                 try:
                     for search_contain in target[i][2]:
-                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                        if (
+                            not isinstance(search_contain, type(Attribute_value))
+                            or search_contain in Attribute_value
+                            or len(search_contain) == 0
+                        ):
                             break
                     else:
                         if target[i][2]:
                             Attribute_value = None
 
                     for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
+                        if (
+                            isinstance(search_doesnt_contain, type(Attribute_value))
+                            and search_doesnt_contain in Attribute_value
+                            and len(search_doesnt_contain) != 0
+                        ):
                             Attribute_value = None
                 except:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
+                        sModuleInfo,
+                        "Couldn't search by return_contains and return_does_not_contain",
+                        2,
                     )
                 variable_value[j].append(Attribute_value)
                 j = j + 1
@@ -2870,7 +2724,9 @@ def Extract_Table_Data(step_data):
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
             return "zeuz_failed"
         if Element.tag_name != "tbody":
             CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
@@ -2888,9 +2744,12 @@ def Extract_Table_Data(step_data):
                 elif "column" in left and mid == "optional parameter":
                     _column = right.replace(" ", "")
 
-
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Unable to parse data. Please write data in correct format",
+                3,
+            )
             return "zeuz_failed"
 
         variable_value = []
@@ -2936,7 +2795,13 @@ def save_web_elements_in_list(step_data):
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.strip()
-                if not has_element and mid in ("element parameter", "parent parameter", "unique parameter", "child parameter", "sibling parameter"):
+                if not has_element and mid in (
+                    "element parameter",
+                    "parent parameter",
+                    "unique parameter",
+                    "child parameter",
+                    "sibling parameter",
+                ):
                     has_element = True
                 elif "target parameter" in mid:
                     target.append([[], [], [], []])
@@ -2944,9 +2809,23 @@ def save_web_elements_in_list(step_data):
                     data = []
                     for each in temp:
                         if each.strip("\n").startswith("return_contains"):
-                            data.append(["return_contains", each.split("return_contains")[1].strip()[1:-1].split("=")])
+                            data.append(
+                                [
+                                    "return_contains",
+                                    each.split("return_contains")[1]
+                                    .strip()[1:-1]
+                                    .split("="),
+                                ]
+                            )
                         elif each.strip("\n").startswith("return_does_not_contain"):
-                            data.append(["return_does_not_contain", each.split("return_does_not_contain")[1].strip()[1:-1].split("=")])
+                            data.append(
+                                [
+                                    "return_does_not_contain",
+                                    each.split("return_does_not_contain")[1]
+                                    .strip()[1:-1]
+                                    .split("="),
+                                ]
+                            )
                         else:
                             data.append(each.strip().split("="))
                     for i in range(len(data)):
@@ -2955,9 +2834,14 @@ def save_web_elements_in_list(step_data):
                                 data[i][j] = data[i][j].strip()
                             if j == 1:
                                 if isinstance(data[i][j], list):
-                                    data[i][j][0], data[i][j][1] = data[i][j][0].strip().strip('"'), data[i][j][1].strip().strip('"')
+                                    data[i][j][0], data[i][j][1] = (
+                                        data[i][j][0].strip().strip('"'),
+                                        data[i][j][1].strip().strip('"'),
+                                    )
                                 elif isinstance(data[i][j], str):
-                                    data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
+                                    data[i][j] = data[i][j].strip(
+                                        '"'
+                                    )  # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return_contains":
@@ -2965,7 +2849,9 @@ def save_web_elements_in_list(step_data):
                         elif Left == "return_does_not_contain":
                             target[target_index][3].append(Right)
                         else:
-                            target[target_index][0].append((Left, 'element parameter', Right))
+                            target[target_index][0].append(
+                                (Left, "element parameter", Right)
+                            )
 
                     target_index = target_index + 1
                 elif left == "save web elements in list":
@@ -2976,16 +2862,24 @@ def save_web_elements_in_list(step_data):
             if has_element:
                 Element = LocateElement.Get_Element(step_data, selenium_driver)
                 if Element == "zeuz_failed":
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Unable to locate your element with given data.", 3
+                    )
                     return "zeuz_failed"
             else:
                 Element = selenium_driver
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Unable to parse data. Please write data in correct format",
+                3,
+            )
             return "zeuz_failed"
 
         for each in target:
-            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+            all_elements.append(
+                LocateElement.Get_Element(each[0], Element, return_all_elements=True)
+            )
 
         cnt = 0
         while cnt < target_index:
@@ -3001,16 +2895,23 @@ def save_web_elements_in_list(step_data):
                                 break
                         else:
                             for each in target[cnt][2]:
-                                if each[0] not in ("text", "tag") and elem.get_attribute(each[0]) is None:
+                                if (
+                                    each[0] not in ("text", "tag")
+                                    and elem.get_attribute(each[0]) is None
+                                ):
                                     break
                             else:
                                 for each in target[cnt][2]:
-                                    if each[0] not in ("text", "tag") and each[1] in elem.get_attribute(each[0]):
+                                    if each[0] not in ("text", "tag") and each[
+                                        1
+                                    ] in elem.get_attribute(each[0]):
                                         break
                                 else:
                                     to_del.append(count)
                     count += 1
-                all_elements[cnt] = CommonUtil.Delete_from_list(all_elements[cnt], to_del)
+                all_elements[cnt] = CommonUtil.Delete_from_list(
+                    all_elements[cnt], to_del
+                )
                 # Using this function to delete in O(N) complexity
             if target[cnt][3]:
                 count, to_del = 0, []
@@ -3026,17 +2927,24 @@ def save_web_elements_in_list(step_data):
                                 break
                         else:
                             for each in target[cnt][3]:
-                                if each[0] not in ("text", "tag") and elem.get_attribute(each[0]) is None:
+                                if (
+                                    each[0] not in ("text", "tag")
+                                    and elem.get_attribute(each[0]) is None
+                                ):
                                     to_del.append(count)
                                     break
                             else:
                                 for each in target[cnt][3]:
-                                    if each[0] not in ("text", "tag") and each[1] in elem.get_attribute(each[0]):
+                                    if each[0] not in ("text", "tag") and each[
+                                        1
+                                    ] in elem.get_attribute(each[0]):
                                         to_del.append(count)
                                         break
 
                     count += 1
-                all_elements[cnt] = CommonUtil.Delete_from_list(all_elements[cnt], to_del)
+                all_elements[cnt] = CommonUtil.Delete_from_list(
+                    all_elements[cnt], to_del
+                )
 
             cnt += 1
 
@@ -3067,10 +2975,20 @@ def Validate_Text(step_data):
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
-            elif each_step_data_item[1].strip().lower() in ("optional parameter") and each_step_data_item[0] == "ignore case":
-                ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
+            elif (
+                each_step_data_item[1].strip().lower() in ("optional parameter")
+                and each_step_data_item[0] == "ignore case"
+            ):
+                ignore_case = (
+                    True
+                    if each_step_data_item[2].strip().lower() in ("yes", "true", "ok")
+                    else False
+                )
             elif each_step_data_item[1].strip().lower() == "text classifier offset":
-                zeuz_ai = [each_step_data_item[0].strip(), float(each_step_data_item[2])]
+                zeuz_ai = [
+                    each_step_data_item[0].strip(),
+                    float(each_step_data_item[2]),
+                ]
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
         if ignore_case:
             expected_text_data = expected_text_data.lower()
@@ -3131,67 +3049,11 @@ def Validate_Text(step_data):
                 return "zeuz_failed"
 
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
-            return "zeuz_failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def Validate_Url(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        url = selenium_driver.current_url
-        expected = ""
-
-        for row in step_data:
-            if str(row[1]).strip() == "action":
-                expected = str(row[2]).strip()
-
-        if str(expected).startswith("*"):
-            expected = expected[1:]
-            if expected in url:
-                CommonUtil.ExecLog(sModuleInfo, "Expected URL partially matched", 1)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Expected URL didn't match partially", 3
-                )
-                return "zeuz_failed"
-        else:
-            if expected == url:
-                CommonUtil.ExecLog(sModuleInfo, "Expected URL matched", 1)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Expected URL didn't match", 3)
-                return "zeuz_failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Method to sleep for a particular duration
-@logger
-def Sleep(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        if 1 < len(step_data) >= 2:
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "Please provide single row of data for only sleep. Consider using wait instead",
-                3,
+                sModuleInfo, "Incorrect validation type. Please check step data", 3
             )
             return "zeuz_failed"
-        else:
-            tuple = step_data[0]
-            seconds = int(tuple[2])
-            CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
-            time.sleep(seconds)
-            return "passed"
-        # return result
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -3207,6 +3069,7 @@ def generate_scroll_offset(direction: str, pixel: int) -> str:
         return f"{pixel},0"
     else:
         return "0,0"
+
 
 # Method to scroll down a page
 @logger
@@ -3234,7 +3097,9 @@ def Scroll(step_data):
         offset = generate_scroll_offset(scroll_direction, pixel)
 
         CommonUtil.ExecLog(sModuleInfo, f"Scrolling {scroll_direction}", 1)
-        selenium_driver.execute_script(f"{'arguments[0]' if Element is not None else 'window'}.scrollBy({offset})")
+        selenium_driver.execute_script(
+            f"{'arguments[0]' if Element is not None else 'window'}.scrollBy({offset})"
+        )
         time.sleep(2)
         return "passed"
 
@@ -3246,16 +3111,16 @@ def Scroll(step_data):
 @logger
 def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    retur_ntop_left_script = '''
+    retur_ntop_left_script = """
         var Top = window.pageYOffset || document.documentElement.scrollTop;
         var Left = window.pageXOffset || document.documentElement.scrollLeft;
-        return [Top, Left]'''
+        return [Top, Left]"""
     method = "js"
     additional_scroll = 0.1
     direction = ""
     top, left = None, None
-    alignToTop = 'true'
-    '''
+    alignToTop = "true"
+    """
     The alignToTop parameter is a boolean value that can be either true or false. Here's what each value does:
 
     true: If alignToTop  is set to  true, the browser will scroll the element so that it is positioned at the
@@ -3264,7 +3129,7 @@ def scroll_to_element(step_data):
     false (or omitted): If alignToTop is set to false or omitted, the browser will scroll the element into the
     visible area of the window, but it will try to align the bottom of the element with the bottom of the viewport.
     This means that the element will be positioned at the bottom of the visible area.
-    '''
+    """
 
     try:
         for left, mid, right in step_data:
@@ -3296,7 +3161,9 @@ def scroll_to_element(step_data):
                 top, left = None, None
 
         if method == "js":
-            selenium_driver.execute_script(f"arguments[0].scrollIntoView({alignToTop});", scroll_element)
+            selenium_driver.execute_script(
+                f"arguments[0].scrollIntoView({alignToTop});", scroll_element
+            )
         elif method == "webdriver":
             scroll_element.location_once_scrolled_into_view
         else:
@@ -3308,7 +3175,12 @@ def scroll_to_element(step_data):
             1,
         )
 
-        if not direction and additional_scroll > 0 and top is not None and left is not None:
+        if (
+            not direction
+            and additional_scroll > 0
+            and top is not None
+            and left is not None
+        ):
             try:
                 newTop, newLeft = selenium_driver.execute_script(retur_ntop_left_script)
                 if newTop > top:
@@ -3324,15 +3196,25 @@ def scroll_to_element(step_data):
             except:
                 direction = ""
 
-            if (method in["js", "webdriver"]) and \
-                (alignToTop == "true" and direction in ["down", "right"]) or \
-                (alignToTop == "false" and direction in ["up", "left"]):
+            if (
+                (method in ["js", "webdriver"])
+                and (alignToTop == "true" and direction in ["down", "right"])
+                or (alignToTop == "false" and direction in ["up", "left"])
+            ):
                 # No need of default additional scroll
                 direction = ""
 
         if direction and additional_scroll > 0:
             time.sleep(1)
-            offset = generate_scroll_offset(direction, round(selenium_driver.get_window_size()["height" if direction in ("up", "down") else "width"] * additional_scroll))
+            offset = generate_scroll_offset(
+                direction,
+                round(
+                    selenium_driver.get_window_size()[
+                        "height" if direction in ("up", "down") else "width"
+                    ]
+                    * additional_scroll
+                ),
+            )
             CommonUtil.ExecLog(
                 sModuleInfo,
                 f"Doing additional scroll in {direction} direction, {additional_scroll * 100}% of {'height' if direction in ('up', 'down') else 'width'} of html body, ({offset}) pixels",
@@ -3345,10 +3227,12 @@ def scroll_to_element(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-scroll_to_top_code = ''' var pre_x = window.pageXOffset;
+scroll_to_top_code = """ var pre_x = window.pageXOffset;
 var pre_y = window.pageYOffset;
 window.scrollTo(window.pageXOffset,0); return [pre_x, pre_y, window.pageXOffset, window.pageYOffset]
-'''
+"""
+
+
 # Method to scroll to view an element
 @logger
 def scroll_to_top(step_data):
@@ -3358,7 +3242,7 @@ def scroll_to_top(step_data):
         CommonUtil.ExecLog(
             sModuleInfo,
             f"Scrolled to top of the html.\npre_x, pre_y, x, y = [{pre_x}, {pre_y}, {x}, {y}]",
-            1 if (x,y) == (0,0) else 2,
+            1 if (x, y) == (0, 0) else 2,
         )
         return "passed"
 
@@ -3469,534 +3353,6 @@ def Select_Deselect(step_data):
 
 
 @logger
-def validate_table(data_set):
-    """ Compare the table provided in step data with the one found on the web page """
-    # Compare a webpage table with one specified in the step data
-    # All inputs have the sub-field set as "table parameter"
-    # Valid table parameters:
-    # > ignore rows: Ignores the comma delimited rows specified in the Value field
-    # > ignore columns: Ignores the comma delimited columns specified in the Value field
-    # > case: Value=Sensitive: This is the default, and values must match exactly. Value=insensitive: Perform case insensitive matching
-    # > exact: True (default) do nothing. False= Infer which cells to ignore. This is similar to ignore rows/cols, but can ignore specific cells if the user does not specify them. Mutually exclusive of ignore rows/cols
-    global selenium_driver
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    # Initialize variables
-    have_table = False  # Tells us if we read a table from the step data
-    case_sensitive = True  # Case sensitive search
-    coordinates_exact = True  # Table coordinates should match by default
-    ignore_rows = []  # List of rows to ignore/skip
-    ignore_cols = []  # List of columns to ignore/skip
-    user_table = {}  # Constructed user-defined table
-    webpage_table = {}  # Constructed webpage table
-    exact_table = True  # Require exact table match
-    table_type = ""  # Type of table (css/html)
-
-    # Parse data set
-    try:
-        for row in data_set:
-            field, subfield, value = (
-                row[0],
-                row[1],
-                row[2],
-            )  # Put data row in understandable variables
-
-            if subfield == "action":
-                if value.strip().lower() in ("css", "html"):
-                    table_type = value
-                else:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Invalid table type in Value on Action line. Should be 'html' or 'css'",
-                        3,
-                    )
-                    return "zeuz_failed"
-            elif (
-                    subfield == "table parameter"
-            ):  # Inspect the table parameters (element parameters go to a different section)
-
-                # Parse table instructions
-                if (
-                        field == "ignore row" or field == "ignore rows"
-                ):  # User specified list of rows to ignore
-                    ignore_rows = value.split(
-                        ","
-                    )  # Get rows as comma delimited string and store in list
-                    ignore_rows = list(map(int, ignore_rows))  # Convert to integers
-                elif (
-                        field == "ignore column" or field == "ignore columns"
-                ):  # User specified list of columns to ignore
-                    ignore_cols = value.split(
-                        ","
-                    )  # Get columns as comma delimited string and store in list
-                    ignore_cols = list(map(int, ignore_cols))  # Convert to integers
-                elif (
-                        field == "coordinates"
-                ):  # Check if user specifies if table coordinates should match
-                    if (
-                            value.lower().strip() == "identical"
-                    ):  # Table coordinates should match
-                        coordinates_exact = True
-                    elif (
-                            value.lower().strip() == "nonidentical"
-                    ):  # Table coordinates don't have to match
-                        coordinates_exact = False
-                elif field == "case":  # User specified case sensitivity
-                    if (
-                            value.lower().strip() == "exact"
-                            or value.lower().strip() == "sensitive"
-                    ):  # Sensitive match (default)
-                        case_sensitive = True
-                    elif (
-                            value.lower().strip() == "insensitive"
-                    ):  # Insensitive match - we'll convert everything to lower case
-                        case_sensitive = False
-                elif field == "exact":  # User specified type of table matching
-                    if (
-                            value.lower().strip() == "true"
-                            or value.lower().strip() == "yes"
-                    ):  # Exact table match, but user can specify rows/columns to ignore
-                        exact_table = True
-                    elif (
-                            value.lower().strip() == "false"
-                            or value.lower().strip() == "no"
-                    ):  # Not an exact match for all cells, only match the ones the user specified
-                        exact_table = False
-                    else:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Unknown Value for table parameter 'exact'. Should be true or false.",
-                            3,
-                        )
-                        return "zeuz_failed"
-
-                # Create user-defined table
-                else:
-                    try:
-                        table_row, table_col = ("", "")
-                        table_row, table_col = field.split(
-                            ","
-                        )  # Field should be in the format of ROW,COL
-                        if (
-                                table_row != "" and table_col != ""
-                        ):  # Check to ensure this was a table cell identifier - may not be
-                            if (
-                                    case_sensitive == False
-                            ):  # User specified case insensitive serach
-                                value = (
-                                    value.lower()
-                                )  # Prepare this table by setting all cell values to lowercase
-                            user_table[
-                                "%s,%s" % (table_row, table_col)
-                                ] = value  # Save value using the row,col as an identifier
-                            have_table = True  # Indicate we have at least one cell of a table specified
-                        else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "Unknown Field for table parameter", 3
-                            )
-                            return "zeuz_failed"
-                    except:  # Row may have been blank, or some other issue
-                        return CommonUtil.Exception_Handler(
-                            sys.exc_info(), None, "Unknown Field for table parameter"
-                        )
-
-        # Ensure we have a table from the user
-        if have_table == False:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No table values found, or they were not entered in the format of row,column (Eg: 1,2). Please create a table as defined in the documentation",
-                3,
-            )
-            return "zeuz_failed"
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Table parameters - Case Sensitive: %s - ignore_rows: %s - ignore_cols: %s - exact: %s"
-            % (
-                str(case_sensitive),
-                str(ignore_rows),
-                str(ignore_cols),
-                str(exact_table),
-            ),
-            0,
-        )
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error while parsing the data set"
-        )
-
-    # Get table from web page
-    if table_type == "html":  # HTML type table
-        webpage_table = get_webpage_table_html(
-            data_set, ignore_rows, ignore_cols, case_sensitive
-        )  # Produces an array that should match the user array
-    elif table_type == "css":  # CSS type table
-        webpage_table = get_webpage_table_css(
-            data_set, ignore_rows, ignore_cols, case_sensitive
-        )  # Produces an array that should match the user array
-    CommonUtil.ExecLog(sModuleInfo, "Webpage table  : %s" % webpage_table, 0)
-    CommonUtil.ExecLog(sModuleInfo, "Step data table: %s" % user_table, 0)
-    if webpage_table in failed_tag_list:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Unable to locate your element with given data.", 3
-        )
-        return "zeuz_failed"
-
-    # If user did not specify any rows or columns to ignore, we will infer that rows and columns NOT defined are meant to be ignored
-    # We do this by modifying the webpage table to remove rows and columns that don't match
-    if (
-            exact_table == False and ignore_rows == [] and ignore_cols == []
-    ):  # If user did not specify anything to ignore
-        CommonUtil.ExecLog(
-            sModuleInfo, "Inferring which cells from the webpage table to ignore", 0
-        )
-        unmatched_cells = []
-        for (
-                ids
-        ) in (
-                webpage_table
-        ):  # For each table cell on the user table - basically looking for items that are specified, but not found
-            if (
-                    ids not in user_table
-            ):  # if cell from user table not found in webpage table
-                unmatched_cells.append(
-                    ids
-                )  # Keep list of cell IDs we want to trim from the webpage table
-        CommonUtil.ExecLog(
-            sModuleInfo, "Removing inferred cells: %s" % str(unmatched_cells), 0
-        )
-        for ids in unmatched_cells:  # Remove these cells from the webpage table
-            if (
-                    ids in webpage_table
-            ):  # Check if the ID exists in case the user specified something that's not actually in the webpage table
-                del webpage_table[ids]
-
-    if (
-            coordinates_exact == False
-    ):  # If user specifies that cells locations do not have to match
-        unmatched_cells = []
-        for ids in user_table:
-            if user_table[ids] not in webpage_table.values():
-                unmatched_cells.append(user_table[ids])
-
-        if len(unmatched_cells) > 0:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Not all elements exist in webpage table - %s" % str(unmatched_cells),
-                3,
-            )
-            return "zeuz_failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Elements exist in webpage table", 1)
-            return "passed"
-
-    # Check if arrays match
-    failed_matches = []
-    for ids in webpage_table:  # For each table cell on the webpage table
-        if ids in user_table:  # If that table cell is also in the user defined table
-            if (
-                    webpage_table[ids] != user_table[ids]
-            ):  # Check if the values of these two cells match
-                failed_matches.append(
-                    '%s:"%s" != %s:"%s"'
-                    % (ids, user_table[ids], ids, webpage_table[ids])
-                )  # Record the unmatched cells
-        else:  # Not in user table
-            failed_matches.append("Cell %s is not defined in the step data" % ids)
-
-    for (
-            ids
-    ) in (
-            user_table
-    ):  # For each table cell on the user table - basically looking for items that are specified, but not found
-        if (
-                ids not in webpage_table
-        ):  # if cell from user table not found in webpage table
-            failed_matches.append("Cell %s is not found in the webpage table" % ids)
-
-    # If any failed matches, list them in the log, so the user can see and exit
-    if len(failed_matches) > 0:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Tables do not match - %s" % str(failed_matches), 3
-        )
-        return "zeuz_failed"
-
-    CommonUtil.ExecLog(sModuleInfo, "Tables match", 1)
-    return "passed"
-
-
-@logger
-def validate_table_row_size(data_set):
-    """ Save row size in a share variable of the table provided in step data"""
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        # Initialize variables
-        expected_row = ""  # variable where the row size will be saved
-        table_type = ""  # Type of table (css/html)
-
-        # Parse data set
-
-        for row in data_set:
-            field, subfield, value = (
-                row[0],
-                row[1],
-                row[2],
-            )  # Put data row in understandable variables
-
-            if subfield == "action":
-                table_type, expected_row = str(value).split(",")
-
-        if table_type == "" or expected_row == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No table type or expected row is given.. table type should be html or css, expected row is a number which is the expected row size",
-                3,
-            )
-            return "zeuz_failed"
-
-        # Get table from web page
-        table = LocateElement.Get_Element(data_set, selenium_driver)
-
-        if table in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your table with given data.", 3
-            )
-            return "zeuz_failed"
-
-        all_rows = []
-        if table_type == "html":  # HTML type table
-            all_rows = table.find_elements("tag name",
-                "tr"
-            )  # Get element list for all rows
-        elif table_type == "css":  # CSS type table
-            all_rows = WebDriverWait(table, WebDriver_Wait).until(
-                EC.presence_of_all_elements_located((By.XPATH, "*"))
-            )
-
-        row_size = len(all_rows)
-
-        CommonUtil.ExecLog(sModuleInfo, "Webpage table row size: %s" % row_size, 1)
-        CommonUtil.ExecLog(sModuleInfo, "Expected table row size: %s" % expected_row, 1)
-
-        if int(row_size) != int(expected_row):
-            CommonUtil.ExecLog(sModuleInfo, "Row sizes don't match", 3)
-            return "zeuz_failed"
-
-        CommonUtil.ExecLog(sModuleInfo, "Row sizes match", 1)
-        return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None)
-
-
-@logger
-def validate_table_column_size(data_set):
-    """ Save row size in a share variable of the table provided in step data"""
-    global selenium_driver
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    try:
-        # Initialize variables
-        expected_col = ""  # variable where the row size will be saved
-        table_type = ""  # Type of table (css/html)
-
-        # Parse data set
-
-        for row in data_set:
-            field, subfield, value = (
-                row[0],
-                row[1],
-                row[2],
-            )  # Put data row in understandable variables
-
-            if subfield == "action":
-                table_type, expected_col = str(value).split(",")
-
-        if table_type == "" or expected_col == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No table type or expected column is given.. table type should be html or css, expected column is a number which is the expected row size",
-                3,
-            )
-            return "zeuz_failed"
-
-        # Get table from web page
-        table = LocateElement.Get_Element(data_set, selenium_driver)
-
-        if table in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your table with given data.", 3
-            )
-            return "zeuz_failed"
-
-        all_rows = []
-        all_cols = []
-        if table_type == "html":  # HTML type table
-            all_rows = table.find_elements("tag name",
-                "tr"
-            )  # Get element list for all rows
-            if len(all_rows) > 0:
-                all_cols = all_rows[0].find_elements("tag name",
-                    "td"
-                )  # Get element list for all columns in this row
-                if (
-                        len(all_cols) == 0
-                ):  # No <TD> type columns, so check if there were header type columns, and use those instead
-                    all_cols = all_rows[0].find_elements("tag name",
-                        "th"
-                    )  # Get element list for all header columns in this row
-        elif table_type == "css":  # CSS type table
-            all_rows = WebDriverWait(table, WebDriver_Wait).until(
-                EC.presence_of_all_elements_located((By.XPATH, "*"))
-            )
-            for row_obj in all_rows:  # For each row
-                if row_obj.is_displayed() != False:
-                    # Get elements for each column
-                    all_cols = WebDriverWait(row_obj, WebDriver_Wait).until(
-                        EC.presence_of_all_elements_located((By.XPATH, "*"))
-                    )
-                    break
-
-        col_size = len(all_cols)
-
-        CommonUtil.ExecLog(sModuleInfo, "Webpage table column size: %s" % col_size, 1)
-        CommonUtil.ExecLog(
-            sModuleInfo, "Expected table column size: %s" % expected_col, 1
-        )
-
-        if int(col_size) != int(expected_col):
-            CommonUtil.ExecLog(sModuleInfo, "Column sizes don't match", 3)
-            return "zeuz_failed"
-
-        CommonUtil.ExecLog(sModuleInfo, "Column sizes match", 1)
-        return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None)
-
-
-@logger
-def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case=True):
-    """ Find an HTML table given the elements, extract the text and return as a dictionary containing lists holding the data """
-    # data_set: Contains user defined identifiers used to get the element of table
-    # ignore_rows: List containing rows to ignore
-    # ignore_cols: List containing columns to ignore
-    # retain_case: Set to true to keep data exactly as is. Set to false to set it to lower case which is useful for case insensitive matching
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        # Get element representing entire table
-        table = LocateElement.Get_Element(data_set, selenium_driver)
-        if table in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
-
-        master_text_table = {}
-        table_row = 0
-        tr_list = table.find_elements("tag name", "tr")  # Get element list for all rows
-        for tr in tr_list:  # For each row element
-            table_row += 1
-            table_col = 0
-            td_list = tr.find_elements("tag name",
-                "td"
-            )  # Get element list for all columns in this row
-            if (
-                    len(td_list) == 0
-            ):  # No <TD> type columns, so check if there were header type columns, and use those instead
-                td_list = tr.find_elements("tag name",
-                    "th"
-                )  # Get element list for all header columns in this row
-            for td in td_list:  # For each column element
-                table_col += 1
-                value = str(
-                    td.text
-                ).strip()  # Save the text from this cell (also removing any HTML tags that may be in it)
-                if retain_case == False:
-                    value = value.lower()  # change cell text to lower case
-                master_text_table[
-                    "%s,%s" % (table_row, table_col)
-                    ] = value  # Put value from cell in dictionary
-
-        return master_text_table  # Return table text as dictionary
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error while parsing the table"
-        )
-
-
-@logger
-def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=True):
-    """ Find a CSS table given the elements, extract the text and return as a dictionary containing lists holding the data """
-    # data_set: Contains user defined identifiers used to get the element of table
-    # ignore_rows: List containing rows to ignore
-    # ignore_cols: List containing columns to ignore
-    # retain_case: Set to true to keep data exactly as is. Set to false to set it to lower case which is useful for case insensitive matching
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        # Get element representing entire table
-        table = LocateElement.Get_Element(data_set, selenium_driver)
-        if table in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
-
-        # Get element for all rows
-        all_rows = WebDriverWait(table, WebDriver_Wait).until(
-            EC.presence_of_all_elements_located((By.XPATH, "*"))
-        )
-
-        master_text_table = {}
-        table_row = 0
-        for row_obj in all_rows:  # For each row
-            table_row += 1
-            if row_obj.is_displayed() != False:
-                if table_row not in ignore_rows:  # Skip rows the user wants to ignore
-                    try:
-                        # Get elements for each column
-                        col_element = WebDriverWait(row_obj, WebDriver_Wait).until(
-                            EC.presence_of_all_elements_located((By.XPATH, "*"))
-                        )
-
-                        table_col = 0
-                        for column_obj in col_element:  # For each column on the row
-                            table_col += 1
-                            if (
-                                    table_col not in ignore_cols
-                            ):  # Skip columns the user wants to ignore
-                                value = str(
-                                    column_obj.text
-                                ).strip()  # Save the text from this cell (also removing any HTML tags that may be in it)
-                                if retain_case == False:
-                                    value = (
-                                        value.lower()
-                                    )  # change cell text to lower case
-                                master_text_table[
-                                    "%s,%s" % (table_row, table_col)
-                                    ] = value  # Put value from cell in dictionary
-
-                    except:  # This will crash for single column tables or lists
-                        table_col = 1  # Likely only one column
-                        value = str(
-                            row_obj.text
-                        ).strip()  # Save the text from this cell (also removing any HTML tags that may be in it)
-                        if retain_case == False:
-                            value = value.lower()  # change cell text to lower case
-                        master_text_table[
-                            "%s,%s" % (table_row, table_col)
-                            ] = value  # Put value from cell in dictionary
-
-        return master_text_table  # Return table text as dictionary
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error while parsing the table"
-        )
-
-
-@logger
 def Tear_Down_Selenium(step_data=[]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -4010,68 +3366,58 @@ def Tear_Down_Selenium(step_data=[]):
                 driver_id = right.strip()
 
         if not driver_id:
-            if not CommonUtil.teardown:
-                CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
-            CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
+            CommonUtil.Join_Thread_and_Return_Result(
+                "screenshot"
+            )  # Let the capturing screenshot end in thread
             for driver in selenium_details:
                 try:
-                    perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
-                    perf_file = Path(perf_folder)/("matrices_"+driver+".json")
-                    # metrics = selenium_details[driver]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-                    # perf_json_data = {data["name"]:data["value"] for data in metrics["metrics"]}
-                    # with open(perf_file, "w", encoding="utf-8") as f:
-                    #     json.dump(perf_json_data, f, indent=2)
-                    if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                        try:
-                            selenium_details[driver]["driver"].execute_cdp_cmd("Performance.disable", {})
-                        except:
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
-                            )    
-                except:
-                    errMsg = "Unable to extract performance metrics of driver_id='%s'" % driver
-                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
-                    CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                try:
                     selenium_details[driver]["driver"].quit()
-                    CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver, 1)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Teared down driver_id='%s'" % driver, 1
+                    )
                 except:
-                    errMsg = "Unable to tear down driver_id='%s'. may already been killed" % driver
+                    errMsg = (
+                        "Unable to tear down driver_id='%s'. may already been killed"
+                        % driver
+                    )
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                     CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
             selenium_details = {}
             selenium_driver = None
-            CommonUtil.teardown = False
 
         elif driver_id not in selenium_details:
-            CommonUtil.ExecLog(sModuleInfo, "Driver_id='%s' not found. So could not tear down" % driver_id, 2)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Driver_id='%s' not found. So could not tear down" % driver_id,
+                2,
+            )
 
         else:
             try:
-                perf_folder = ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file)
-                perf_file = Path(perf_folder) / ("matrices_" + driver_id + ".json")
-                # metrics = selenium_details[driver_id]["driver"].execute_cdp_cmd('Performance.getMetrics', {})
-                # perf_json_data = {data["name"]: data["value"] for data in metrics["metrics"]}
-                # with open(perf_file, "w", encoding="utf-8") as f:
-                #     json.dump(perf_json_data, f, indent=2)
-                if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge"):
-                    try:
-                        selenium_details[driver_id]["driver"].execute_cdp_cmd("Performance.disable", {})
-                    except:
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Unable to execute cdp command - Performance.enable", 3
-                        )
                 selenium_details[driver_id]["driver"].quit()
-                CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1
+                )
             except:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to tear down driver_id='%s'. may already been killed" % driver_id, 2)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Unable to tear down driver_id='%s'. may already been killed"
+                    % driver_id,
+                    2,
+                )
             del selenium_details[driver_id]
             if selenium_details:
                 for driver in selenium_details:
                     selenium_driver = selenium_details[driver]["driver"]
-                    Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-                    CommonUtil.ExecLog(sModuleInfo, "Current driver is set to driver_id='%s'" % driver, 1)
+                    Shared_Resources.Set_Shared_Variables(
+                        "selenium_driver", selenium_driver
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Current driver is set to driver_id='%s'" % driver,
+                        1,
+                    )
                     current_driver_id = driver
                     break
             else:
@@ -4109,13 +3455,19 @@ def Switch_Browser(step_data):
             driver_id = "default"
 
         if driver_id not in selenium_details:
-            CommonUtil.ExecLog(sModuleInfo, "Driver_id='%s' not found. So could not Switch" % driver_id, 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Driver_id='%s' not found. So could not Switch" % driver_id,
+                3,
+            )
             return "zeuz_failed"
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             current_driver_id = driver_id
-            CommonUtil.ExecLog(sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1
+            )
 
         return "passed"
     except Exception:
@@ -4143,7 +3495,9 @@ def Get_Current_URL(step_data):
                 var_name = right.strip()
         current_url = selenium_driver.current_url
         Shared_Resources.Set_Shared_Variables(var_name, current_url)
-        CommonUtil.ExecLog(sModuleInfo, "Current url saved in a variable named '%s'" % var_name, 1)
+        CommonUtil.ExecLog(
+            sModuleInfo, "Current url saved in a variable named '%s'" % var_name, 1
+        )
 
         return "passed"
     except Exception:
@@ -4151,69 +3505,6 @@ def Get_Current_URL(step_data):
         # return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
         CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
         return "passed"
-
-
-##@Riz and @Sreejoy: More work is needed here. Please investigate further.
-@logger
-def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        if parent == False:
-            all_elements_with_text = selenium_driver.find_elements_by_xpath(".//*")
-        else:
-            all_elements_with_text = parent.find_elements_by_xpath(".//*")
-
-        # Sequential logical flow
-        if element_parameter == "plain_text":
-            index = 0
-            full_list = []
-            for each in all_elements_with_text:
-                text_to_print = None
-                try:
-                    text_to_print = each.text
-                except:
-                    False
-                if text_to_print == element_value:
-                    full_list.append(each)
-                    break
-                index = index + 1
-            return_element = full_list[len(full_list) - 1]
-
-        elif element_parameter == "partial_plain_text":
-            index = 0
-            full_list = []
-            for each in all_elements_with_text:
-                text_to_print = None
-                try:
-                    text_to_print = each.text
-                except:
-                    False
-                if element_value in text_to_print:
-                    full_list.append(each)
-                    break
-                index = index + 1
-            return_element = full_list[len(full_list) - 1]
-
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Value invalid. Only 'plain_text', 'partial_plain_text' allowed",
-                3,
-            )
-            return "zeuz_failed"
-
-        return return_element
-
-    except Exception:
-        errMsg = "Could not get the element by plain text search"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-@logger
-def get_driver():
-    global selenium_driver
-    return selenium_driver
 
 
 # Method to open a new tab
@@ -4233,119 +3524,43 @@ def open_new_tab(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-# Method to switch to a new tab
-@deprecated
-@logger
-def switch_tab(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Switch window/tab'", 2)
-    global selenium_driver
-    try:
-        tab = 1
-        for each in step_data:
-            if each[1] == "action":
-                tab = int(str(each[2]))
-
-        CommonUtil.ExecLog(sModuleInfo, "Switching to Tab %d in Browser" % tab, 1)
-        windows = selenium_driver.window_handles
-        selenium_driver.switch_to.window(windows[tab - 1])
-        CommonUtil.ExecLog(
-            sModuleInfo, "Switched to Tab %s Successfully in Browser" % tab, 1
-        )
-
-        return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Method to switch to a new tab
-@deprecated
-@logger
-def switch_window(step_data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Switch Window/Tab'", 2)
-    global selenium_driver
-    try:
-        switch_by_title_condition = False
-        switch_by_index_condition = False
-        for left, mid, right in step_data:
-            left = left.lower().strip()
-            if left == "window title":
-                switch_by_title = right
-                switch_by_title_condition = True
-            elif left == "window index":
-                switch_by_index = right.strip()
-                switch_by_index_condition = True
-
-        if switch_by_title_condition:
-            all_windows = selenium_driver.window_handles
-            window_handles_found = False
-            for each in all_windows:
-                selenium_driver.switch_to.window(each)
-                if switch_by_title == (selenium_driver.title):
-                    window_handles_found = True
-                    CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
-                    break
-            if window_handles_found == False:
-                CommonUtil.ExecLog(sModuleInfo, "unable to find your given title among the windows", 3)
-                return False
-            else:
-                return True
-
-        elif switch_by_index_condition:
-            check_if_index = ["0", "1", "2", "3", "4", "5"]
-            if switch_by_index in check_if_index:
-                window_index = int(switch_by_index)
-                window_to_switch = selenium_driver.window_handles[window_index]
-                selenium_driver.switch_to.window(window_to_switch)
-                return True
-            else:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Invalid index provided.  Please provide number between 0 to 5",
-                    3,
-                )
-                return False
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title or window index", 3)
-            return False
-
-    except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 @logger
 def switch_window_or_tab(step_data):
+    
     """
-    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
-
-    Example 1:
+    This action will switch tab/window in browser using Selenium or Playwright (via CDP) based on the 'playwright' flag.
+        Example 1:
     Field	                    Sub Field	        Value
-    *window title               input parameter	    googl
+    *window title               input parameter	    google
+    playwright                  option	            true
     switch window/tab           selenium action 	switch window or frame
 
 
     Example 2:
     Field	                    Sub Field	        Value
     window title                input parameter	    google
+    playwright                  option	            false
     switch window/tab           selenium action 	switch window or frame
 
     Example 3:
     Field	                    Sub Field	        Value
     window index                input parameter	    9
+    playwright                  option	            false
     switch window/tab           selenium action 	switch window or frame
-
     """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+
     try:
         window_title_condition = False
         window_index_condition = False
         partial_match = False
+        playwright_enabled = False
+
         for left, mid, right in step_data:
             left = left.lower().strip()
+            right = right.strip()
             if left in ("window title", "tab title"):
                 switch_by_title = right
                 window_title_condition = True
@@ -4354,49 +3569,203 @@ def switch_window_or_tab(step_data):
                 partial_match = True
                 window_title_condition = True
             elif left in ("window index", "tab index"):
-                switch_by_index = right.strip()
+                switch_by_index = right
                 window_index_condition = True
                 window_title_condition = False
+            elif left == "playwright":
+                playwright_enabled = right.lower() == "true"
+
+        # Validate that at least one switching condition was provided
+        if not window_title_condition and not window_index_condition:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Unable to switch window/tab: Neither 'window title'/'tab title' nor 'window index'/'tab index' was provided. Please provide either a title (exact or partial with *) or an index to switch to.",
+                3,
+            )
+            return "zeuz_failed"
 
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Unable to parse data. Maintain correct format written in documentation",
+            3,
+        )
         return "zeuz_failed"
 
     try:
-        if window_title_condition:
-            all_windows = selenium_driver.window_handles
-            current_window = selenium_driver.current_window_handle
-            window_handles_found = False
-            Tries = 3
-            for Try in range(Tries):
-                for each in all_windows:
-                    selenium_driver.switch_to.window(each)
-                    if (partial_match and switch_by_title.lower() in selenium_driver.title.lower()) or (
-                            not partial_match and switch_by_title.lower() == selenium_driver.title.lower()):
-                        window_handles_found = True
-                        CommonUtil.ExecLog(sModuleInfo, "Tab switched to '%s'" % selenium_driver.title, 1)
-                        break
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Couldn't find the title. Trying again after 1 second delay", 2)
-                    time.sleep(1)
-                    continue  # only executed if the inner loop did not break
-                break  # only executed if the inner loop did break
+        import time  # Import time for both Playwright and Selenium paths
 
-            if not window_handles_found:
-                selenium_driver.switch_to.window(current_window)
+        if playwright_enabled:
+            CommonUtil.ExecLog(sModuleInfo, "Playwright is enabled (using async API)", 1)
+            import asyncio
+            from playwright.async_api import async_playwright
+
+            # Async function to handle Playwright operations
+            async def run_playwright_switch():
+                async with async_playwright() as p:
+                    debug_port = selenium_details[current_driver_id][
+                        "remote-debugging-port"
+                    ]
+                    browser = await p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
+                    context = browser.contexts[0]
+                    pages = context.pages
+
+                    result_data = {"status": None, "target_url": None, "error": None}
+
+                    # Handle title-based tab switch
+                    if window_title_condition:
+                        for page in pages:
+                            page_title = await page.title()
+                            if (
+                                partial_match
+                                and switch_by_title.lower() in page_title.lower()
+                            ) or (
+                                not partial_match
+                                and switch_by_title.lower() == page_title.lower()
+                            ):
+                                # Step 1: Use Playwright to switch tabs
+                                await page.bring_to_front()
+                                await asyncio.sleep(1)
+
+                                # Store target URL for Selenium alignment
+                                result_data["target_url"] = page.url
+                                result_data["status"] = "found"
+                                return result_data
+                        
+                        result_data["status"] = "not_found"
+                        result_data["error"] = f"Playwright: No tab with title '{switch_by_title}' found"
+                        return result_data
+
+                    # Index-based switching not supported with Playwright due to CDP ordering inconsistency
+                    elif window_index_condition:
+                        result_data["status"] = "not_supported"
+                        result_data["error"] = "Index-based tab switching is not supported with Playwright. Use title-based switching instead."
+                        return result_data
+                    
+                    return result_data
+
+            # Run async Playwright code from sync context
+            try:
+                # We're always called from async context, so we need to run in a new thread with new event loop
+                loop = asyncio.get_running_loop()
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def run_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(run_playwright_switch())
+                    finally:
+                        new_loop.close()
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_in_thread)
+                    playwright_result = future.result(timeout=30)
+                
+                if playwright_result["status"] == "found":
+                    # Step 3: Re-align Selenium to match the target tab
+                    target_url = playwright_result["target_url"]
+                    for handle in selenium_driver.window_handles:
+                        selenium_driver.switch_to.window(handle)
+                        if (
+                            selenium_driver.current_url == target_url
+                            or target_url in selenium_driver.title
+                        ):
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Selenium aligned to: {selenium_driver.title}",
+                                1,
+                            )
+                            return "passed"
+
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Failed to align Selenium with target tab",
+                        3,
+                    )
+                    return "zeuz_failed"
+                
+                elif playwright_result["status"] == "not_found":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        playwright_result["error"],
+                        3,
+                    )
+                    return "zeuz_failed"
+                
+                elif playwright_result["status"] == "not_supported":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        playwright_result["error"],
+                        3,
+                    )
+                    return "zeuz_failed"
+                    
+            except Exception as e:
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "unable to find the title among the tabs. If you want to match partially please use '*tab title'",
-                    3)
-                return "zeuz_failed"
+                    f"Playwright tab switching failed: {e}. Falling back to Selenium",
+                    2,
+                )
+                playwright_enabled = False
+                # Continue with Selenium fallback
 
-        elif window_index_condition:
-            window_index = int(switch_by_index)
-            window_to_switch = selenium_driver.window_handles[window_index]
-            selenium_driver.switch_to.window(window_to_switch)
-            CommonUtil.ExecLog(sModuleInfo, f"Tab switched to index {switch_by_index} title {selenium_driver.title}", 1)
+        if not playwright_enabled:
+            # --- Selenium tab switching ---
+            CommonUtil.ExecLog(sModuleInfo, "Using Selenium for tab switching", 1)
+            if window_title_condition:
+                all_windows = selenium_driver.window_handles
+                current_window = selenium_driver.current_window_handle
+                window_handles_found = False
 
-        return "passed"
+                for _ in range(3):  # retry
+                    for handle in all_windows:
+                        selenium_driver.switch_to.window(handle)
+                        if (
+                            partial_match
+                            and switch_by_title.lower() in selenium_driver.title.lower()
+                        ) or (
+                            not partial_match
+                            and switch_by_title.lower() == selenium_driver.title.lower()
+                        ):
+                            window_handles_found = True
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Tab switched to '{selenium_driver.title}'",
+                                1,
+                            )
+                            break
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Couldn't find the title. Trying again after 1 second delay",
+                            2,
+                        )
+                        time.sleep(1)
+                        continue
+                    break
+
+                if not window_handles_found:
+                    selenium_driver.switch_to.window(current_window)
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Unable to find the title among the tabs. Use '*tab title' for partial match.",
+                        3,
+                    )
+                    return "zeuz_failed"
+
+            elif window_index_condition:
+                window_index = int(switch_by_index)
+                window_to_switch = selenium_driver.window_handles[window_index]
+                selenium_driver.switch_to.window(window_to_switch)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Tab switched to index {switch_by_index} title {selenium_driver.title}",
+                    1,
+                )
+
+            return "passed"
+
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to switch your tab", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -4405,70 +3774,444 @@ def switch_window_or_tab(step_data):
 @logger
 def close_tab(step_data):
     """
-    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
+    This action will close tab/window in browser. Supports both Selenium and Playwright.
 
     Example 1:
     Field	                    Sub Field	        Value
+    playwright                  optional parameter	 True
     close tab                   selenium action 	close tab
 
     Example 2:
     Field	                    Sub Field	        Value
     tab title                   input parameter	    ['Zeuz', 'Google']
+    playwright                  optional parameter	    True
     close tab                   selenium action 	close tab
 
     Example 3:
     Field	                    Sub Field	        Value
     tab index                   input parameter	    [0,1,-1]
+    playwright                  optional parameter	    True
     close tab                   selenium action 	close tab
+
+    Example 4:
+    Field	                    Sub Field	        Value
+    close tab                   selenium action 	close tab
+    # Closes current active tab
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    global selenium_details
+    global current_driver_id
     try:
         close_tabs = []
+        playwright_enabled = False
+        tab_title = None
+        tab_index = None
+
         for left, mid, right in step_data:
             left = left.lower().strip()
             if left in ("tabs"):
-                close_tabs = [i.strip().lower() if type(i) == str else i for i in CommonUtil.parse_value_into_object(right)]
+                close_tabs = [
+                    i.strip().lower() if isinstance(i, str) else i
+                    for i in CommonUtil.parse_value_into_object(right)
+                ]
+            elif left == "playwright" and right.lower() == "true":
+                playwright_enabled = True
+            elif left == "tab title":
+                tab_title = right.strip()
+            elif left == "tab index":
+                tab_index = right.strip()
 
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Unable to parse data. Maintain correct format writen in document",
+            3,
+        )
         return "zeuz_failed"
 
     try:
-        window_handles_found = False
-        if len(close_tabs) > 1 and type(close_tabs[0]) == str:
-            current_window = selenium_driver.current_window_handle
-            for each in selenium_driver.window_handles:
-                selenium_driver.switch_to.window(each)
-                if selenium_driver.title.strip().lower() in close_tabs:
+        if playwright_enabled:
+            # --- Playwright tab closing ---
+            CommonUtil.ExecLog(sModuleInfo, "Using Playwright for tab closing (async API)", 1)
+            import asyncio
+            from playwright.async_api import async_playwright
+
+            # Async function to handle Playwright operations
+            async def run_playwright_close():
+                async with async_playwright() as p:
+                    debug_port = selenium_details[current_driver_id]["remote-debugging-port"]
+                    browser = await p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
+                    context = browser.contexts[0]
+                    pages = context.pages
+
+                    result_data = {"status": None, "error": None, "page_title": None}
+
+                    if tab_title:
+                        # Close tab by title
+                        for page in pages:
+                            page_title = await page.title()
+                            if tab_title.lower() in page_title.lower():
+                                await page.close()
+                                result_data["status"] = "closed"
+                                result_data["page_title"] = page_title
+                                return result_data
+                        
+                        result_data["status"] = "not_found"
+                        result_data["error"] = f"Playwright: No tab with title '{tab_title}' found"
+                        return result_data
+
+                    elif tab_index is not None:
+                        # Close tab by index using visual order
+                        try:
+                            idx = int(tab_index)
+
+                            # Get visual tab order from CDP
+                            import urllib.request
+                            import json
+
+                            with urllib.request.urlopen(
+                                f"http://localhost:{debug_port}/json"
+                            ) as response:
+                                tabs = json.load(response)
+                                # Filter only 'page' type tabs for clean left-to-right order
+                                # the target url is ordered right to left
+                                target_urls = [
+                                    tab["url"] for tab in tabs if tab["type"] == "page"
+                                ]
+                                target_urls.reverse()  # Reverse to get actual left-to-right visual order
+
+                            if idx < len(target_urls):
+                                desired_url = target_urls[idx]
+                                # Find the page with matching URL
+                                for page in pages:
+                                    if page.url == desired_url:
+                                        await page.close()
+                                        result_data["status"] = "closed"
+                                        result_data["page_title"] = f"Tab at index {idx}"
+                                        return result_data
+
+                                result_data["status"] = "not_found"
+                                result_data["error"] = f"Playwright: Tab at visual index {idx} not found in context"
+                                return result_data
+                            else:
+                                result_data["status"] = "invalid_index"
+                                result_data["error"] = f"Playwright: Invalid index {idx}. Only {len(target_urls)} tabs open."
+                                return result_data
+                        except ValueError:
+                            result_data["status"] = "invalid_index"
+                            result_data["error"] = f"Playwright: Invalid tab index '{tab_index}'"
+                            return result_data
+                        except Exception as e:
+                            result_data["status"] = "error"
+                            result_data["error"] = f"Playwright: Failed to get visual tab order: {e}"
+                            return result_data
+
+                    else:
+                        # Close current active tab
+                        if len(pages) >= 1:
+                            # Try to find the currently focused tab
+                            current_page = None
+                            for page in pages:
+                                try:
+                                    # Check if this page is currently active
+                                    has_focus = await page.evaluate("document.hasFocus()")
+                                    if has_focus:
+                                        current_page = page
+                                        break
+                                except Exception:
+                                    continue
+
+                            # If no focused page found, get the first tab in visual order
+                            if current_page is None:
+                                try:
+                                    import urllib.request
+                                    import json
+
+                                    with urllib.request.urlopen(
+                                        f"http://localhost:{debug_port}/json"
+                                    ) as response:
+                                        tabs = json.load(response)
+
+                                        # Filter only 'page' type tabs (last opened tab is at index 0)
+                                        target_urls = [
+                                            tab["url"]
+                                            for tab in tabs
+                                            if tab["type"] == "page"
+                                        ]
+                                        if target_urls:
+                                            last_tab_url = target_urls[0]
+                                            # Find the page with matching URL
+                                            for page in pages:
+                                                if page.url == last_tab_url:
+                                                    current_page = page
+                                                    break
+                                except Exception as e:
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        f"Failed to get visual tab order: {e}",
+                                        2,
+                                    )
+                                    # Ultimate fallback to first page in context
+                                    current_page = pages[0]
+
+                            page_title = await current_page.title()
+                            await current_page.close()
+                            result_data["status"] = "closed"
+                            result_data["page_title"] = page_title
+                            return result_data
+                        else:
+                            result_data["status"] = "no_tabs"
+                            result_data["error"] = "Playwright: No tabs found to close"
+                            return result_data
+
+            # Run async Playwright code from sync context
+            try:
+                # We're always called from async context, so we need to run in a new thread with new event loop
+                loop = asyncio.get_running_loop()
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def run_in_thread():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(run_playwright_close())
+                    finally:
+                        new_loop.close()
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_in_thread)
+                    playwright_result = future.result(timeout=30)
+                
+                if playwright_result["status"] == "closed":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"Playwright: Tab closed '{playwright_result['page_title']}'",
+                        1,
+                    )
+                    return "passed"
+                else:
+                    # For errors that should fall back to Selenium, don't return yet
+                    if playwright_result["status"] in ["not_found", "invalid_index", "error", "no_tabs"]:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            playwright_result["error"],
+                            3,
+                        )
+                        # Don't return here - let it fall back to Selenium
+                        playwright_enabled = False
+                    else:
+                        return "zeuz_failed"
+                    
+            except Exception as e:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Playwright tab closing failed: {e}. Falling back to Selenium",
+                    2,
+                )
+                playwright_enabled = False
+                # Continue with Selenium fallback
+
+        # --- Selenium tab closing ---
+        if not playwright_enabled:
+            window_handles_found = False
+
+            if tab_title:
+                # Close tab by title using Selenium
+                current_window = selenium_driver.current_window_handle
+                for each in selenium_driver.window_handles:
+                    selenium_driver.switch_to.window(each)
+                    if tab_title.lower() in selenium_driver.title.strip().lower():
+                        title = selenium_driver.title
+                        selenium_driver.close()
+                        window_handles_found = True
+                        CommonUtil.ExecLog(sModuleInfo, f"Tab closed '{title}'", 1)
+                        break
+
+                # Return to a valid window
+                if window_handles_found:
+                    try:
+                        remaining_handles = selenium_driver.window_handles
+                        if remaining_handles:
+                            if current_window in remaining_handles:
+                                selenium_driver.switch_to.window(current_window)
+                            else:
+                                selenium_driver.switch_to.window(remaining_handles[-1])
+                        else:
+                            # No windows left, browser will close automatically
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Last tab closed '{title}'. Browser will close.",
+                                1,
+                            )
+                            return "passed"
+                    except Exception:
+                        # Session might be invalid, which is expected when closing the last tab
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            f"Tab closed '{title}'. Browser session ended.",
+                            1,
+                        )
+                        return "passed"
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, f"No tab with title '{tab_title}' found", 3
+                    )
+                    return "zeuz_failed"
+
+            elif tab_index is not None:
+                # Close tab by index using Selenium
+                try:
+                    idx = int(tab_index)
+                    if idx < 0 or idx >= len(selenium_driver.window_handles):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            f"Invalid index {idx}. Only {len(selenium_driver.window_handles)} tabs open.",
+                            3,
+                        )
+                        return "zeuz_failed"
+
+                    current_window = selenium_driver.current_window_handle
+                    target_handle = selenium_driver.window_handles[idx]
+                    selenium_driver.switch_to.window(target_handle)
                     title = selenium_driver.title
                     selenium_driver.close()
-                    window_handles_found = True
-                    CommonUtil.ExecLog(sModuleInfo, "Tab closed '%s'" % title, 1)
-            if window_handles_found:
-                if current_window in selenium_driver.window_handles:
-                    selenium_driver.switch_to.window(current_window)
-                else:
-                    selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
 
-        elif len(close_tabs) > 1:
-            current_window = selenium_driver.current_window_handle
-            for each in [selenium_driver.window_handles[i] for i in close_tabs]:
-                selenium_driver.switch_to.window(each)
-                title = selenium_driver.title
-                selenium_driver.close()
-                CommonUtil.ExecLog(sModuleInfo, f"Tab closed '{title}'", 1)
-            if current_window in selenium_driver.window_handles:
-                selenium_driver.switch_to.window(current_window)
+                    # Return to a valid window
+                    try:
+                        remaining_handles = selenium_driver.window_handles
+                        if remaining_handles:
+                            if current_window in remaining_handles:
+                                selenium_driver.switch_to.window(current_window)
+                            else:
+                                selenium_driver.switch_to.window(remaining_handles[-1])
+                        else:
+                            # No windows left, browser will close automatically
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                f"Last tab closed at index {idx}: '{title}'. Browser will close.",
+                                1,
+                            )
+                            return "passed"
+                    except Exception:
+                        # Session might be invalid, which is expected when closing the last tab
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            f"Tab closed at index {idx}: '{title}'. Browser session ended.",
+                            1,
+                        )
+                        return "passed"
+
+                    CommonUtil.ExecLog(
+                        sModuleInfo, f"Tab closed at index {idx}: '{title}'", 1
+                    )
+
+                except ValueError:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, f"Invalid tab index '{tab_index}'", 3
+                    )
+                    return "zeuz_failed"
+
+            elif len(close_tabs) > 1 and isinstance(close_tabs[0], str):
+                # Close multiple tabs by title
+                current_window = selenium_driver.current_window_handle
+                for each in selenium_driver.window_handles:
+                    selenium_driver.switch_to.window(each)
+                    if selenium_driver.title.strip().lower() in close_tabs:
+                        title = selenium_driver.title
+                        selenium_driver.close()
+                        window_handles_found = True
+                        CommonUtil.ExecLog(sModuleInfo, "Tab closed '%s'" % title, 1)
+                if window_handles_found:
+                    try:
+                        remaining_handles = selenium_driver.window_handles
+                        if remaining_handles:
+                            if current_window in remaining_handles:
+                                selenium_driver.switch_to.window(current_window)
+                            else:
+                                selenium_driver.switch_to.window(remaining_handles[-1])
+                        else:
+                            # No windows left, browser will close automatically
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "All tabs closed. Browser will close.", 1
+                            )
+                            return "passed"
+                    except Exception:
+                        # Session might be invalid, which is expected when closing the last tab
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Tabs closed. Browser session ended.", 1
+                        )
+                        return "passed"
+
+            elif len(close_tabs) > 1:
+                # Close multiple tabs by index
+                current_window = selenium_driver.current_window_handle
+                for each in [selenium_driver.window_handles[i] for i in close_tabs]:
+                    selenium_driver.switch_to.window(each)
+                    title = selenium_driver.title
+                    selenium_driver.close()
+                    CommonUtil.ExecLog(sModuleInfo, f"Tab closed '{title}'", 1)
+                try:
+                    remaining_handles = selenium_driver.window_handles
+                    if remaining_handles:
+                        if current_window in remaining_handles:
+                            selenium_driver.switch_to.window(current_window)
+                        else:
+                            selenium_driver.switch_to.window(remaining_handles[-1])
+                    else:
+                        # No windows left, browser will close automatically
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "All tabs closed. Browser will close.", 1
+                        )
+                        return "passed"
+                except Exception:
+                    # Session might be invalid, which is expected when closing the last tab
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Tabs closed. Browser session ended.", 1
+                    )
+                    return "passed"
+
             else:
-                selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+                # Close current active tab and switch to left tab
+                title = selenium_driver.title
+                current_index = selenium_driver.window_handles.index(
+                    selenium_driver.current_window_handle
+                )
+                selenium_driver.close()
 
-        else:
-            title = selenium_driver.title
-            selenium_driver.close()
-            CommonUtil.ExecLog(sModuleInfo, f"Current tab closed '{title}'", 1)
-            selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
+                # Check if there are any remaining windows after closing
+                try:
+                    remaining_handles = selenium_driver.window_handles
+                    if remaining_handles:
+                        # Switch to the left tab (previous index)
+                        if current_index > 0:
+                            # Go to the tab to the left
+                            selenium_driver.switch_to.window(
+                                remaining_handles[current_index - 1]
+                            )
+                        else:
+                            # If we were at the leftmost tab, go to the new leftmost
+                            selenium_driver.switch_to.window(remaining_handles[0])
+                    else:
+                        # No windows left, browser will close automatically
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            f"Last tab closed '{title}'. Browser will close.",
+                            1,
+                        )
+                        return "passed"
+
+                except Exception:
+                    # Session might be invalid, which is expected when closing the last tab
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"Current tab closed '{title}'. Browser session ended.",
+                        1,
+                    )
+                    return "passed"
+
+                CommonUtil.ExecLog(sModuleInfo, f"Current tab closed '{title}'", 1)
 
         return "passed"
     except Exception:
@@ -4487,32 +4230,47 @@ def switch_iframe(step_data):
                 pass
             elif left == "index" and "default" in right.lower():
                 selenium_driver.switch_to.default_content()
-                CommonUtil.ExecLog(sModuleInfo, "Exited all iframes and switched to default content", 1)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Exited all iframes and switched to default content", 1
+                )
             elif left == "index":
                 if mid == "iframe parameter":
                     for i in range(5):
                         iframes = selenium_driver.find_elements(By.TAG_NAME, "iframe")
                         idx = int(right.strip())
                         if -len(iframes) <= idx < len(iframes):
-                            CommonUtil.ExecLog(sModuleInfo, "Iframe switched to index %s" % right.strip(), 1)
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Iframe switched to index %s" % right.strip(),
+                                1,
+                            )
                             break
-                        CommonUtil.ExecLog(sModuleInfo,
-                                         "Iframe index = %s not found. retrying after 2 sec wait" % right.strip(), 2)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Iframe index = %s not found. retrying after 2 sec wait"
+                            % right.strip(),
+                            2,
+                        )
                         time.sleep(2)
                     else:
-                        CommonUtil.ExecLog(sModuleInfo, "Index out of range. Total %s iframes found." % len(iframes), 3)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Index out of range. Total %s iframes found."
+                            % len(iframes),
+                            3,
+                        )
                         return "zeuz_failed"
                     if idx < 0:
                         idx = len(iframes) + idx
                     try:
-                        frame_attribute = iframes[idx].get_attribute('outerHTML')
+                        frame_attribute = iframes[idx].get_attribute("outerHTML")
                         i, c = 0, 0
                         for i in range(len(frame_attribute)):
                             if frame_attribute[i] == '"':
                                 c += 1
-                            if (frame_attribute[i] == ">" and c % 2 == 0):
+                            if frame_attribute[i] == ">" and c % 2 == 0:
                                 break
-                        frame_attribute = frame_attribute[:i + 1]
+                        frame_attribute = frame_attribute[: i + 1]
                         CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
                     except:
                         pass
@@ -4522,25 +4280,37 @@ def switch_iframe(step_data):
                         frames = selenium_driver.find_elements(By.TAG_NAME, "frame")
                         idx = int(right.strip())
                         if -len(frames) <= idx < len(frames):
-                            CommonUtil.ExecLog(sModuleInfo, "Frame switched to index %s" % right.strip(), 1)
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Frame switched to index %s" % right.strip(),
+                                1,
+                            )
                             break
-                        CommonUtil.ExecLog(sModuleInfo,
-                                         "Frame index = %s not found. retrying after 2 sec wait" % right.strip(), 2)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Frame index = %s not found. retrying after 2 sec wait"
+                            % right.strip(),
+                            2,
+                        )
                         time.sleep(2)
                     else:
-                        CommonUtil.ExecLog(sModuleInfo, "Index out of range. Total %s frames found." % len(frames), 3)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Index out of range. Total %s frames found." % len(frames),
+                            3,
+                        )
                         return "zeuz_failed"
                     if idx < 0:
                         idx = len(frames) + idx
                     try:
-                        frame_attribute = frames[idx].get_attribute('outerHTML')
+                        frame_attribute = frames[idx].get_attribute("outerHTML")
                         i, c = 0, 0
                         for i in range(len(frame_attribute)):
                             if frame_attribute[i] == '"':
                                 c += 1
-                            if (frame_attribute[i] == ">" and c % 2 == 0):
+                            if frame_attribute[i] == ">" and c % 2 == 0:
                                 break
-                        frame_attribute = frame_attribute[:i + 1]
+                        frame_attribute = frame_attribute[: i + 1]
                         CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
                     except:
                         pass
@@ -4556,16 +4326,22 @@ def switch_iframe(step_data):
                             iframe_data.append(("tag", "element parameter", "frame"))
                     element = LocateElement.Get_Element(iframe_data, selenium_driver)
                     selenium_driver.switch_to.frame(element)
-                    CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Iframe switched using above Xpath", 1
+                    )
                 except:
                     if mid == "iframe parameter":
-                        CommonUtil.ExecLog(sModuleInfo,
-                                           "No such iframe found. Exited all iframes and switched to default content",
-                                           2)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "No such iframe found. Exited all iframes and switched to default content",
+                            2,
+                        )
                     elif mid == "frame parameter":
-                        CommonUtil.ExecLog(sModuleInfo,
-                                           "No such frame found. Exited all frames and switched to default content",
-                                           2)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "No such frame found. Exited all frames and switched to default content",
+                            2,
+                        )
                     selenium_driver.switch_to.default_content()
             else:
                 try:
@@ -4577,12 +4353,18 @@ def switch_iframe(step_data):
                             iframe_data.append(("tag", "element parameter", "frame"))
                     element = LocateElement.Get_Element(iframe_data, selenium_driver)
                     selenium_driver.switch_to.frame(element)
-                    CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Iframe switched using above Xpath", 1
+                    )
                 except:
                     if mid == "iframe parameter":
-                        CommonUtil.ExecLog(sModuleInfo, "No such iframe found using above Xpath", 3)
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "No such iframe found using above Xpath", 3
+                        )
                     elif mid == "frame parameter":
-                        CommonUtil.ExecLog(sModuleInfo, "No such frame found using above Xpath", 3)
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "No such frame found using above Xpath", 3
+                        )
                     return "zeuz_failed"
         return "passed"
     except Exception:
@@ -4592,7 +4374,6 @@ def switch_iframe(step_data):
 # Method to upload file
 @logger
 def upload_file(step_data):
-
     """
     This action will use normal element search parameters to locate the upload button
     You can upload the attachment to your test case and use the name as a variable for reference
@@ -4624,11 +4405,15 @@ def upload_file(step_data):
 
         upload_button = LocateElement.Get_Element(step_data, selenium_driver)
         if upload_button in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the element with given data", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "Could not find the element with given data", 3
+            )
             return "zeuz_failed"
 
         upload_button.send_keys(file_name)
-        CommonUtil.ExecLog(sModuleInfo, "Uploaded the file: %s successfully."%file_name, 1)
+        CommonUtil.ExecLog(
+            sModuleInfo, "Uploaded the file: %s successfully." % file_name, 1
+        )
         return "passed"
 
     except Exception:
@@ -4638,230 +4423,13 @@ def upload_file(step_data):
 def _gui_upload(path_name, pid=None):
     # Todo: Implement PID to activate the window and focus that at front
     import pyautogui
+
     time.sleep(3)
     pyautogui.hotkey("alt", "a")
     time.sleep(0.5)
     pyautogui.write(path_name)
     time.sleep(1)
     pyautogui.hotkey("enter")
-
-
-@logger
-def upload_file_through_window(step_data):
-    """
-    Purpose: Sometimes there are some upload window to upload one or more files which is out of selenium's scope.
-    This action automate that upload window with microsoft System API and pyautogui GUI API
-
-    Code detail:
-    The upload API is searched by their pid
-    The main problem is there are multiple process which open while when launching driver having multiple pid. but we need to find out the main browsers pid
-    Firefox driver provides the pid inside capabilities
-    For Chrome and Opera we added a custom args named "--zeuz_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
-    For MS Edge browser We extracted selenium.title and searched in Microsoft System API with that window title and fetch all the pids with that window title.
-    Also we had extracted all the pids from psutil having "--test-type=webdriver" arg and then matched the pids with previous one to find the genuin pid
-
-    In windows, firstly we try to automate with Microsoft System API. If anything fails in between then we switch to GUI method
-    In Mac and Linux, we automate only with GUI
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    all_file_path = []
-    pid = ""
-    send_keys_flag = False
-    import pyautogui
-    if "headless" in dependency:
-        CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
-        return "zeuz_failed"
-    try:
-        for left, mid, right in step_data:
-            left = left.strip().lower()
-            l = left.replace(" ", "").replace("_", "").lower()
-            if l in ("filepath", "directory"):
-                path = CommonUtil.path_parser(right.strip())
-                if os.path.isdir(path) or os.path.isfile(path):
-                    all_file_path.append(path)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
-            if "keys" in l:
-                send_keys_flag = True
-
-        if len(all_file_path) == 0:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find any valid filepath or directory", 3)
-            return "zeuz_failed"
-
-        path_name = '"' + '" "'.join(all_file_path) + '"'
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
-
-    try:
-
-
-        if platform.system() == "Darwin":
-            # Will require pid when we will atomate with atomacos module. Fetching PID is only tested on Chrome for now
-            if selenium_driver.capabilities["browserName"].lower() == "chrome":
-                for process in psutil.process_iter():
-                    try:
-                        if process.name() == 'Google Chrome' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                            pid = str(process.pid)
-                            break
-                    except Exception as e:
-                        # print(e)
-                        pass
-
-            path_name = path_name[1:-1]
-
-            import pyautogui
-            time.sleep(3)
-            pyautogui.hotkey("/")
-            time.sleep(5)
-            pyautogui.hotkey("command", "a")
-            time.sleep(0.5)
-            pyautogui.write(path_name)
-            time.sleep(0.5)
-            pyautogui.hotkey("enter")
-            time.sleep(2)
-            pyautogui.hotkey("enter")
-
-        elif send_keys_flag is True:
-
-            file_input = selenium_driver.find_element(By.XPATH, "//input[@type='file']")
-
-            file_path = path_name[1:-1]
-            file_input.send_keys(file_path)
-
-
-        # window_ds = ("*window", "element parameter", selenium_driver.title)
-        elif platform.system() == "Windows":
-            if selenium_driver.capabilities["browserName"].lower() == "firefox":
-                pid = str(selenium_driver.capabilities["moz:processID"])
-            elif selenium_driver.capabilities["browserName"].lower() == "chrome":
-                for process in psutil.process_iter():
-                    if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                        pid = str(process.pid)
-            elif selenium_driver.capabilities["browserName"].lower() == "opera":
-                for process in psutil.process_iter():
-                    if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                        pid = str(process.pid)
-            elif selenium_driver.capabilities["browserName"].lower() == "msedge":
-                for process in psutil.process_iter():
-                    if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                        pid = str(process.pid)
-            from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
-
-            """ We may need the following codes when deprecated msedge selenium stops working """
-            # time.sleep(3)
-            # if selenium_driver.capabilities["browserName"].lower() == "msedge": # Msedge browser only exists in windows
-            #     win_pids = get_pids_from_title(selenium_driver.title)
-            #     if len(win_pids) == 0:
-            #         CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
-            #         _gui_upload(path_name)
-            #         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-            #         return "passed"
-            #     if len(win_pids) > 1:
-            #         psutil_pids = []
-            #         for process in psutil.process_iter():
-            #             if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
-            #                 psutil_pids.append(process.pid)
-            #         for i in win_pids:
-            #             if i in psutil_pids:
-            #                 pid = str(i)
-            #                 break
-            #         else:
-            #             pid = str(win_pids[0])
-            #     else:
-            #         pid = str(win_pids[0])
-
-            if selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera", "msedge"):
-                win_pids = get_pids_from_title(selenium_driver.title)
-                if len(win_pids) == 0:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
-                    _gui_upload(path_name)
-                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-                    return "passed"
-                if len(win_pids) > 1:
-                    psutil_pids = []
-                    for process in psutil.process_iter():
-                        if '--test-type=webdriver' in process.cmdline():
-                            psutil_pids.append(process.pid)
-                    for i in win_pids:
-                        if i in psutil_pids:
-                            pid = str(i)
-                            break
-                    else:
-                        pid = str(win_pids[0])
-                else:
-                    pid = str(win_pids[0])
-
-            if not pid:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find the PID for browser. Switching to GUI method", 2)
-                _gui_upload(path_name)
-                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-                return "passed"
-
-            window_ds = ("window pid", "element parameter", pid)
-            save_attribute_ds = [
-                window_ds,
-                ("wait", "optional parameter", "20"),
-                ("AutomationId", "element parameter", "1090"),
-                ("Name", "save parameter", "ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131"),
-                ("save attribute", "windows action", "save attribute"),
-            ]
-            if Save_Attribute(save_attribute_ds) == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
-                _gui_upload(path_name)
-                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-                return "passed"
-            file_or_folder = Shared_Resources.Get_Shared_Variables("ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131")
-            if "file name" in file_or_folder.lower():
-                id = "1148"
-            elif "folder" in file_or_folder.lower():
-                id = "1152"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Invalid Upload type. file_or_folder = '%s'" % file_or_folder, 3)
-                return "zeuz_failed"
-
-            enter_text_ds = [
-                window_ds,
-                ("wait", "optional parameter", "20"),
-                ("LocalizedControlType", "element parameter", "edit"),
-                ("AutomationId", "element parameter", id),
-                ("text", "windows action", path_name),
-            ]
-            if Enter_Text_In_Text_Box(enter_text_ds) == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method", 2)
-                _gui_upload(path_name)
-                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-                return "passed"
-
-            click_ds = [
-                window_ds,
-                ("wait", "optional parameter", "20"),
-                ("AutomationId", "element parameter", "1"),
-                ("Name", "element parameter", "Open"),
-                ("LocalizedControlType", "element parameter", "button"),
-                ("click", "windows action", "click"),
-            ]
-            if Click_Element(click_ds) == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
-                time.sleep(1)
-                pyautogui.hotkey("enter")
-                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-                return "passed"
-
-        # elif platform.system() == "Linux":
-        #     _gui_upload(path_name)
-        else:
-            _gui_upload(path_name[0:-1])
-
-        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-        return "passed"
-
-    except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
-        _gui_upload(path_name)
-        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-        return "passed"
 
 
 # Method to upload file
@@ -4887,12 +4455,19 @@ def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     from time import sleep
+
     try:
         source = []
         destination = []
         destination_offset = None
         delay = None
-        param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter","optionalparameter": "optional parameter"}
+        param_dict = {
+            "elementparameter": "element parameter",
+            "parentparameter": "parent parameter",
+            "siblingparameter": "sibling parameter",
+            "childparameter": "child parameter",
+            "optionalparameter": "optional parameter",
+        }
         for left, mid, right in dataset:
             if mid.startswith("src") or mid.startswith("source"):
                 mid = mid.replace("src", "").replace(" ", "").replace("source", "")
@@ -4904,22 +4479,36 @@ def drag_and_drop(dataset):
                 for param in param_dict:
                     if param == mid:
                         destination.append((left, param_dict[param], right))
-            elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
+            elif (
+                left.strip().lower() in ("wait", "allow disable", "allow hidden")
+                and mid == "option"
+            ):
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
-            elif left.strip().lower() == "destination offset" and mid.strip().lower() == 'optional parameter':
+            elif (
+                left.strip().lower() == "destination offset"
+                and mid.strip().lower() == "optional parameter"
+            ):
                 destination_offset = right
             elif left.strip().lower() == "delay":
                 delay = float(right.strip())
 
         if not source:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
-               "(id, src element parameter, file)", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'
+                + "(id, src element parameter, file)",
+                3,
+            )
             return "zeuz_failed"
 
         if not destination:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
-               "(id, dst element parameter, table)", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'
+                + "(id, dst element parameter, table)",
+                3,
+            )
             return "zeuz_failed"
 
         source_element = LocateElement.Get_Element(source, selenium_driver)
@@ -4932,69 +4521,37 @@ def drag_and_drop(dataset):
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
-        """ The following code does not work with mentioned delay time. delay=2 takes 25 seconds for a dnd """
-        # if delay:
-            # if destination_offset:
-            #     destination_x, destination_y = get_offsets(destination_offset, destination_element)
-            # else:
-            #     destination_x = destination_element.location['x']
-            #     destination_y = destination_element.location['y']
-            # distance_x = destination_x - source_element.location['x']
-            # distance_y = destination_y - source_element.location['y']
-            # total_time = delay
-            # total_distance = (distance_x**2 + distance_y**2)**0.5
-            #
-            # pixels_per_step = 5
-            # steps = int(total_distance / pixels_per_step)
-            #
-            # # Calculate the ideal time per step to fit within the total time
-            # ideal_time_per_step = total_time / steps
-            #
-            # # Start the high-resolution timer
-            # start_time = time.perf_counter()
-            #
-            # # Create an ActionChains object
-            # actions = ActionChains(selenium_driver)
-            #
-            # # Click and hold the source element
-            # actions.click_and_hold(source_element).perform()
-            #
-            # # Manually move the mouse to the target element in small increments
-            # for i in range(steps):
-            #     # Calculate the movement for this step
-            #     move_x = distance_x / steps
-            #     move_y = distance_y / steps
-            #
-            #     # Move the mouse by the calculated offset
-            #     actions.move_by_offset(move_x, move_y).perform()
-            #
-            #     # Calculate elapsed time and adjust the sleep time
-            #     elapsed_time = time.perf_counter() - start_time
-            #     remaining_time = total_time - elapsed_time
-            #     time_per_step = remaining_time / (steps - i)
-            #
-            #     if time_per_step > 0:
-            #         time.sleep(time_per_step)
-            #
-            # # Release the mouse button to drop the element
-            # actions.release().perform()
-            # sleep(2)
-            
         if destination_offset:
             x, y = get_offsets(destination_offset, destination_element)
-            if delay:
+            if delay is not None:
                 """ This line of code was not tested, just keeping here"""
-                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).pause(0.5).release().perform()
+                ActionChains(selenium_driver).click_and_hold(
+                    source_element
+                ).move_to_element_with_offset(destination_element, x, y).pause(
+                    delay
+                ).release().perform()
             else:
-                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element_with_offset(destination_element, x, y).release().perform()
+                ActionChains(selenium_driver).click_and_hold(
+                    source_element
+                ).move_to_element_with_offset(
+                    destination_element, x, y
+                ).release().perform()
 
         else:
-            if delay:
-                ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+            if delay is not None:
+                ActionChains(selenium_driver).click_and_hold(
+                    source_element
+                ).move_to_element(destination_element).pause(delay).release(
+                    destination_element
+                ).perform()
             else:
-                ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+                ActionChains(selenium_driver).drag_and_drop(
+                    source_element, destination_element
+                ).perform()
 
-        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
+        CommonUtil.ExecLog(
+            sModuleInfo, "Drag and drop completed from source to destination", 1
+        )
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -5006,9 +4563,12 @@ def playwright(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-
         from playwright.sync_api import sync_playwright
-        devtools_url = selenium_driver.command_executor._url.replace('http://', 'ws://') + '/devtools/browser'
+
+        devtools_url = (
+            selenium_driver.command_executor._url.replace("http://", "ws://")
+            + "/devtools/browser"
+        )
         with sync_playwright() as p:
             # browser = p.chromium.connect(browserURL=devtools_url)
             browser = p.chromium.connect_over_cdp("http://localhost:9222")
@@ -5022,11 +4582,10 @@ def playwright(dataset):
             # dest = page.locator('//span[contains(text(), "abcd")]/parent::div')
             # source.drag_to(dest)
 
-            fileChooserPromise = page.wait_for_event('filechooser')
+            fileChooserPromise = page.wait_for_event("filechooser")
             # await page.getByText('Upload file').click();
             # fileChooser = await fileChooserPromise;
             # await fileChooser.setFiles(path.join(__dirname, 'myfile.pdf'));
-
 
         return "passed"
     except Exception:
@@ -5034,8 +4593,493 @@ def playwright(dataset):
 
 
 @logger
+def check_uncheck_all(data_set):
+    """Check or uncheck all elements of a common attribute"""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    target = []
+    command = "check"
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "target parameter" == mid:
+                target.append((left, "element parameter", right))
+            elif "check uncheck all" == left:
+                command = "uncheck" if "uncheck" in right.lower() else "check"
+            elif "allow hidden" == left:
+                target.append((left, "option", right))
+
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
+        return "zeuz_failed"
+
+    all_elements = LocateElement.Get_Element(target, Element, return_all_elements=True)
+    if not all_elements:
+        CommonUtil.ExecLog("", "No target was found", 3)
+        return "zeuz_failed"
+
+    for i in range(len(all_elements)):
+        th = "th"
+        if i + 1 == 1:
+            th = "st"
+        elif i + 1 == 2:
+            th = "nd"
+        elif i + 1 == 3:
+            th = "rd"
+        if command == "check" and all_elements[i].is_selected():
+            CommonUtil.ExecLog(
+                "", str(i + 1) + th + " target is already checked so skipped it", 1
+            )
+            continue
+        if command == "uncheck" and not all_elements[i].is_selected():
+            CommonUtil.ExecLog(
+                "", str(i + 1) + th + " target is already unchecked so skipped it", 1
+            )
+            continue
+
+        try:
+            if use_js:
+                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                if command == "check":
+                    CommonUtil.ExecLog(
+                        "",
+                        str(i + 1)
+                        + th
+                        + " target is checked successfully using Java Script",
+                        1,
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        "",
+                        str(i + 1)
+                        + th
+                        + " target is unchecked successfully using Java Script",
+                        1,
+                    )
+            else:
+                try:
+                    all_elements[i].click()
+                    if command == "check":
+                        CommonUtil.ExecLog(
+                            "", str(i + 1) + th + " target is checked successfully", 1
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            "", str(i + 1) + th + " target is unchecked successfully", 1
+                        )
+
+                except ElementClickInterceptedException:
+                    try:
+                        selenium_driver.execute_script(
+                            "arguments[0].click();", all_elements[i]
+                        )
+                        if command == "check":
+                            CommonUtil.ExecLog(
+                                "",
+                                str(i + 1)
+                                + th
+                                + " target is checked successfully using Java Script",
+                                1,
+                            )
+                        else:
+                            CommonUtil.ExecLog(
+                                "",
+                                str(i + 1)
+                                + th
+                                + " target is unchecked successfully using Java Script",
+                                1,
+                            )
+                    except:
+                        if command == "check":
+                            CommonUtil.ExecLog(
+                                "",
+                                str(i + 1)
+                                + th
+                                + " target couldn't be checked so skipped it",
+                                3,
+                            )
+                        else:
+                            CommonUtil.ExecLog(
+                                "",
+                                str(i + 1)
+                                + th
+                                + " target couldn't be unchecked so skipped it",
+                                3,
+                            )
+        except:
+            if command == "check":
+                CommonUtil.ExecLog(
+                    "", str(i + 1) + th + " target couldn't be checked so skipped it", 3
+                )
+            else:
+                CommonUtil.ExecLog(
+                    "",
+                    str(i + 1) + th + " target couldn't be unchecked so skipped it",
+                    3,
+                )
+
+    return "passed"
+
+
+@logger
+def check_uncheck(data_set):
+    """Check or uncheck all elements of a common attribute"""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    command = "check"
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "check uncheck" == left:
+                command = "uncheck" if "uncheck" in right.lower() else "check"
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+        return "zeuz_failed"
+
+    if command == "check" and Element.is_selected():
+        CommonUtil.ExecLog(
+            sModuleInfo, "The element is already checked so skipped it", 1
+        )
+        return "passed"
+    elif command == "uncheck" and not Element.is_selected():
+        CommonUtil.ExecLog(
+            sModuleInfo, "The element is already unchecked so skipped it", 1
+        )
+        return "passed"
+    try:
+        if use_js:
+            selenium_driver.execute_script("arguments[0].click();", Element)
+            if command == "check":
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "The element is checked successfully using Java Script",
+                    1,
+                )
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "The element is unchecked successfully using Java Script",
+                    1,
+                )
+            return "passed"
+        else:
+            try:
+                handle_clickability_and_click(data_set, Element)
+                if command == "check":
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "The element is checked successfully", 1
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "The element is unchecked successfully", 1
+                    )
+                return "passed"
+            except ElementClickInterceptedException:
+                try:
+                    selenium_driver.execute_script("arguments[0].click();", Element)
+                    if command == "check":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "The element is checked successfully using Java Script",
+                            1,
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "The element is unchecked successfully using Java Script",
+                            1,
+                        )
+                    return "passed"
+                except:
+                    if command == "check":
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "The element couldn't be checked", 3
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "The element couldn't be unchecked", 3
+                        )
+                    return "zeuz_failed"
+    except:
+        if command == "check":
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
+        return "zeuz_failed"
+
+
+def insert(string, str_to_insert, index):
+    return string[:index] + str_to_insert + string[index:]
+
+
+@logger
+def multiple_check_uncheck(data_set):
+    """Check or uncheck multiple web elements"""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    inside = False
+    allow_hidden = ""
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "allow hidden" == left:
+                allow_hidden = right
+            elif "target parameter" == mid:
+                targets = []
+                temp = right.strip()
+                i = 0
+                while True:
+                    if i >= len(temp):
+                        break
+                    if temp[i] == "(":
+                        inside = True
+                        temp = insert(temp, '"', i + 1)
+                    elif inside and temp[i] == ",":
+                        temp = insert(temp, '"', i + 1)
+                        temp = insert(temp, '"', i)
+                        i += 1
+                    if temp[i] == ")":
+                        inside = False
+                        temp = insert(temp, '"', i)
+                        i += 1
+                    i += 1
+                temp = insert(temp, "[", 0)
+                temp = insert(temp, "]", len(temp))
+                temp = CommonUtil.parse_value_into_object(temp)
+                for Left, Mid, Right in temp:
+                    targets.append(
+                        (Left.strip().lower(), Mid.strip(), Right.strip().lower())
+                    )
+                    # Stripped Mid if any trailing spaces exists need to use asterisk
+
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
+        return "zeuz_failed"
+
+    element_params = []
+    for left, mid, right in targets:
+        if allow_hidden:
+            element_params.append(
+                [
+                    ("allow hidden", "option", allow_hidden),
+                    (left, "element parameter", mid),
+                ]
+            )
+        else:
+            element_params.append([(left, "element parameter", mid)])
+
+    all_elements = []
+    for i in element_params:
+        all_elements.append(LocateElement.Get_Element(i, Element))
+
+    for i in range(len(all_elements)):
+        if all_elements[i] == "zeuz_failed":
+            CommonUtil.ExecLog("", str(targets[i]) + " was not found so skipped it", 3)
+            continue
+        if targets[i][2] == "check" and all_elements[i].is_selected():
+            CommonUtil.ExecLog(
+                "", str(targets[i]) + " is already checked so skipped it", 1
+            )
+            continue
+        if targets[i][2] == "uncheck" and not all_elements[i].is_selected():
+            CommonUtil.ExecLog(
+                "", str(targets[i]) + " is already unchecked so skipped it", 1
+            )
+            continue
+
+        try:
+            if use_js:
+                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                if targets[i][2] == "check":
+                    CommonUtil.ExecLog(
+                        "",
+                        str(targets[i]) + " is checked successfully using Java Script",
+                        1,
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        "",
+                        str(targets[i])
+                        + " is unchecked successfully using Java Script",
+                        1,
+                    )
+            else:
+                try:
+                    all_elements[i].click()
+                    if targets[i][2] == "check":
+                        CommonUtil.ExecLog(
+                            "", str(targets[i]) + " is checked successfully", 1
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            "", str(targets[i]) + " is unchecked successfully", 1
+                        )
+                except ElementClickInterceptedException:
+                    try:
+                        selenium_driver.execute_script(
+                            "arguments[0].click();", all_elements[i]
+                        )
+                        if targets[i][2] == "check":
+                            CommonUtil.ExecLog(
+                                "",
+                                str(targets[i])
+                                + " is checked successfully using Java Script",
+                                1,
+                            )
+                        else:
+                            CommonUtil.ExecLog(
+                                "",
+                                str(targets[i])
+                                + " is unchecked successfully using Java Script",
+                                1,
+                            )
+                    except:
+                        if targets[i][2] == "check":
+                            CommonUtil.ExecLog(
+                                "",
+                                str(targets[i]) + " couldn't be checked so skipped it",
+                                3,
+                            )
+                        else:
+                            CommonUtil.ExecLog(
+                                "",
+                                str(targets[i])
+                                + " couldn't be unchecked so skipped it",
+                                3,
+                            )
+        except:
+            if targets[i][2] == "check":
+                CommonUtil.ExecLog(
+                    "", str(targets[i]) + " couldn't be checked so skipped it", 3
+                )
+            else:
+                CommonUtil.ExecLog(
+                    "", str(targets[i]) + " couldn't be unchecked so skipped it", 3
+                )
+
+    return "passed"
+
+
+@logger
+def slider_bar(data_set):
+    """Set certain value to a slider bar
+    you must provide a number between 0 - 100
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        value = ""
+
+        for left, mid, right in data_set:
+            if "action" in mid:
+                value = int(right.strip())
+        # if value not in range(0, 100):
+        #     CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
+        #     return "zeuz_failed"
+        Element = LocateElement.Get_Element(data_set, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+            return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Moving the slider by %{value} ", 1)
+            move = ActionChains(selenium_driver)
+            height_width = Element.size
+            ele_width = int((height_width)["width"])
+            ele_height = int((height_width)["height"])
+            x_cord_to_tap = (value / 100) * ele_width
+            y_cord_to_tap = ele_height / 2
+
+            move.move_to_element_with_offset(
+                Element, x_cord_to_tap, y_cord_to_tap
+            ).click().perform()
+            CommonUtil.ExecLog(
+                sModuleInfo, f"Successfully set the slider to %{value}", 1
+            )
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def resize_window(step_data):
+    """Action to resize window size"""
+    """
+    width          element parameter   50%
+    height         element parameter   70%
+    resize window  selenium action     resize window
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        window_size = selenium_driver.get_window_size()
+        CommonUtil.ExecLog(sModuleInfo, f"Current window size is {window_size}", 1)
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            right = right.lower().strip()
+            if "element parameter" in mid.lower():
+                for dim in ["width", "height"]:
+                    if left.lower().strip() == dim:
+                        right = right.replace("%", "").strip()
+                        try:
+                            right = float(right)
+                            window_size[dim] = window_size[dim] * right / 100
+                        except:
+                            CommonUtil.ExecLog(
+                                sModuleInfo, f"Enter valid size for {dim}", 3
+                            )
+                            return CommonUtil.Exception_Handler(sys.exc_info())
+        selenium_driver.set_window_size(window_size["width"], window_size["height"])
+        CommonUtil.ExecLog(
+            sModuleInfo, f"Successfully set the new window size to {window_size}", 1
+        )
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error resizing window"
+        )
+
+
+@deprecated
+@logger
 def if_element_exists(data_set):
-    """ Click on an element """
+    """if an element found, save a value to a variable"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -5063,346 +5107,174 @@ def if_element_exists(data_set):
 
 
 @logger
-def check_uncheck_all(data_set):
-    """ Check or uncheck all elements of a common attribute """
+def copy_image_into_browser(data_set):
+    """
+    This action will copy an image from path or a variable into browser, and later you can paste via ctrl+v or cmd+v.
+    Supported formats: PNG, SVG
 
+    Example 1:
+    Field	                    Sub Field	            Value
+    image file                  input parameter 	    %| image.png |%
+    copy image into browser     selenium action 	    copy image into browser
+
+    Example 2:
+    Field	                    Sub Field	            Value
+    image variable              input parameter         %| image_var |%
+    copy image into browser     selenium action 	    copy image into browser
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
-    use_js = False
-    target = []
-    command = "check"
     try:
+        image_data = None
+        image_path = ""
+        variable_name = ""
+        mime_type = "image/png"
+
+        # Parse
         for left, mid, right in data_set:
-            left = left.lower().strip()
-            mid = mid.lower().strip()
-            if "use js" == left:
-                use_js = right.strip().lower() in ("true", "yes", "ok")
-            elif "target parameter" == mid:
-                target.append((left, "element parameter", right))
-            elif "check uncheck all" == left:
-                command = "uncheck" if "uncheck" in right.lower() else "check"
-            elif "allow hidden" == left:
-                target.append((left, "option", right))
+            left = left.lower().replace(" ", "")
+            mid = mid.lower().replace(" ", "")
+            right = right.strip()
 
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+            if left == "imagefile":
+                if os.path.exists(right):
+                    image_path = right
+                else:
+                    image_path = CommonUtil.path_parser(right)
 
-    Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element == "zeuz_failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
-        return "zeuz_failed"
+            elif left == "imagevariable":
+                if os.path.exists(right):
+                    image_path = right
+                else:
+                    variable_name = right
 
-    all_elements = LocateElement.Get_Element(target, Element, return_all_elements=True)
-    if not all_elements:
-        CommonUtil.ExecLog("", "No target was found", 3)
-        return "zeuz_failed"
+        if image_path:
+            if not os.path.exists(image_path):
+                CommonUtil.ExecLog(
+                    sModuleInfo, f"Image file not found: {image_path}", 3
+                )
+                return "zeuz_failed"
+        elif variable_name:
+            image_path = Shared_Resources.Get_Shared_Variables(variable_name)
+            if not image_path:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Image path not found in variable: {variable_name}. Make sure you must be use '%| |%' syntax for any variable or attachment.",
+                    3,
+                )
+                return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Must provide either 'image file' or 'image variable'", 3
+            )
+            return "zeuz_failed"
 
-    for i in range(len(all_elements)):
-        th = "th"
-        if i + 1 == 1:
-            th = "st"
-        elif i + 1 == 2:
-            th = "nd"
-        elif i + 1 == 3:
-            th = "rd"
-        if command == "check" and all_elements[i].is_selected():
-            CommonUtil.ExecLog("", str(i + 1) + th + " target is already checked so skipped it", 1)
-            continue
-        if command == "uncheck" and not all_elements[i].is_selected():
-            CommonUtil.ExecLog("", str(i + 1) + th + " target is already unchecked so skipped it", 1)
-            continue
+        if image_path.lower().endswith(".svg"):
+            mime_type = "image/svg+xml"
+        elif image_path.lower().endswith(".png"):
+            mime_type = "image/png"
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Unsupported file format. You can copy only PNG or SVG image.",
+                2,
+            )
+            return "zeuz_failed"
+
+        with open(image_path, "rb") as image_file:
+            image_data = image_file.read()
+
+        # Convert
+        image_b64 = base64.b64encode(image_data).decode("utf-8")
+
+        browser_name = selenium_driver.capabilities.get("browserName", "").lower()
+        if browser_name in ("chrome", "microsoft edge", "edge"):
+            try:
+                selenium_driver.execute_cdp_cmd(
+                    "Browser.setClipboard", {"data": image_b64, "type": mime_type}
+                )
+                CommonUtil.ExecLog(
+                    sModuleInfo, f"Image copied to clipboard via CDP: {image_path}", 1
+                )
+                return "passed"
+            except Exception as e:
+                CommonUtil.ExecLog(
+                    sModuleInfo, f"CDP failed ({str(e)}). Trying fallback method", 2
+                )
 
         try:
-            if use_js:
-                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                if command == "check":
-                    CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
-                else:
-                    CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully using Java Script", 1)
-            else:
-                try:
-                    all_elements[i].click()
-                    if command == "check":
-                        CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully", 1)
-                    else:
-                        CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully", 1)
-
-                except ElementClickInterceptedException:
-                    try:
-                        selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                        if command == "check":
-                            CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
-                        else:
-                            CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully using Java Script", 1)
-                    except:
-                        if command == "check":
-                            CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
-                        else:
-                            CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
-        except:
-            if command == "check":
-                CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
-            else:
-                CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
-
-    return "passed"
-
-@logger
-def check_uncheck(data_set):
-    """ Check or uncheck all elements of a common attribute """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-
-    use_js = False
-    command = "check"
-    try:
-        for left, mid, right in data_set:
-            left = left.lower().strip()
-            if "use js" == left:
-                use_js = right.strip().lower() in ("true", "yes", "ok")
-            elif "check uncheck" == left:
-                command = "uncheck" if "uncheck" in right.lower() else "check"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-
-    Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element == "zeuz_failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
-        return "zeuz_failed"
-
-    if command == "check" and Element.is_selected():
-        CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
-        return "passed"
-    elif command == "uncheck" and not Element.is_selected():
-        CommonUtil.ExecLog(sModuleInfo, "The element is already unchecked so skipped it", 1)
-        return "passed"
-    try:
-        if use_js:
-            selenium_driver.execute_script("arguments[0].click();", Element)
-            if command == "check":
-                CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully using Java Script", 1)
-            return "passed"
-        else:
+            # Grant clipboard permissions via CDP if possible
             try:
-                handle_clickability_and_click(data_set, Element)
-                if command == "check":
-                    CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully", 1)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully", 1)
+                from urllib.parse import urlparse
+
+                parsed_uri = urlparse(selenium_driver.current_url)
+                origin = f"{parsed_uri.scheme}://{parsed_uri.netloc}"
+                selenium_driver.execute_cdp_cmd(
+                    "Browser.grantPermissions",
+                    {
+                        "origin": origin,
+                        "permissions": [
+                            "clipboardReadWrite",
+                            "clipboardSanitizedWrite",
+                        ],
+                    },
+                )
+            except:
+                pass
+
+            async_script = """
+            const [base64Data, mimeType, callback] = arguments;
+            const byteCharacters = atob(base64Data);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                
+                byteArrays.push(new Uint8Array(byteNumbers));
+            }
+            
+            const blob = new Blob(byteArrays, {type: mimeType});
+            const item = new ClipboardItem({ [mimeType]: blob });
+            
+            window.focus();
+            navigator.clipboard.write([item])
+                .then(() => {
+                    console.log('Successfully copied image to clipboard.');
+                    callback(true);
+                })
+                .catch(err => {
+                    console.log('Failed to copy image to clipboard', err);
+                    callback(false);
+                });
+            """
+
+            selenium_driver.switch_to.window(selenium_driver.current_window_handle)
+            selenium_driver.execute_script("window.focus();")
+
+            success = selenium_driver.execute_async_script(
+                async_script, image_b64, mime_type
+            )
+            if success:
+                CommonUtil.ExecLog(
+                    sModuleInfo, f"Image copied to clipboard: {image_path}", 1
+                )
                 return "passed"
-            except ElementClickInterceptedException:
-                try:
-                    selenium_driver.execute_script("arguments[0].click();", Element)
-                    if command == "check":
-                        CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully using Java Script", 1)
-                    return "passed"
-                except:
-                    if command == "check":
-                        CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
-                    return "zeuz_failed"
-    except:
-        if command == "check":
-            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
-        return "zeuz_failed"
-
-
-def insert(string, str_to_insert, index):
-    return string[:index] + str_to_insert + string[index:]
-
-
-
-@logger
-def slider_bar(data_set):
-    """Set certain value to a slider bar
-    you must provide a number between 0 - 100
-     """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        value = ""
-
-        for left, mid, right in data_set:
-            if "action" in mid:
-                value = int(right.strip())
-        # if value not in range(0, 100):
-        #     CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
-        #     return "zeuz_failed"
-        Element = LocateElement.Get_Element(data_set, selenium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Document is not focused. Failed to copy image to clipboard: {image_path}",
+                3,
+            )
             return "zeuz_failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, f"Moving the slider by %{value} ", 1)
-            move = ActionChains(selenium_driver)
-            height_width = Element.size
-            ele_width = int((height_width)["width"])
-            ele_height = int((height_width)["height"])
-            x_cord_to_tap = ((value/100) * ele_width)
-            y_cord_to_tap = (ele_height/2)
 
-            move.move_to_element_with_offset(Element, x_cord_to_tap, y_cord_to_tap).click().perform()
-            CommonUtil.ExecLog(sModuleInfo, f"Successfully set the slider to %{value}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Fallback method failed: {str(e)}", 3)
+            return "zeuz_failed"
 
-        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def multiple_check_uncheck(data_set):
-    """ Check or uncheck multiple web elements """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-
-    use_js = False
-    inside = False
-    allow_hidden = ""
-    try:
-        for left, mid, right in data_set:
-            left = left.lower().strip()
-            mid = mid.lower().strip()
-            if "use js" == left:
-                use_js = right.strip().lower() in ("true", "yes", "ok")
-            elif "allow hidden" == left:
-                allow_hidden = right
-            elif "target parameter" == mid:
-                targets = []
-                temp = right.strip()
-                i = 0
-                while True:
-                    if i >= len(temp):
-                        break
-                    if temp[i] == "(":
-                        inside = True
-                        temp = insert(temp, "\"", i+1)
-                    elif inside and temp[i] == ",":
-                        temp = insert(temp, "\"", i+1)
-                        temp = insert(temp, "\"", i)
-                        i += 1
-                    if temp[i] == ")":
-                        inside = False
-                        temp = insert(temp, "\"", i)
-                        i += 1
-                    i += 1
-                temp = insert(temp, "[", 0)
-                temp = insert(temp, "]", len(temp))
-                temp = CommonUtil.parse_value_into_object(temp)
-                for Left, Mid, Right in temp:
-                    targets.append((Left.strip().lower(), Mid.strip(), Right.strip().lower()))
-                    # Stripped Mid if any trailing spaces exists need to use asterisk
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-
-    Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element == "zeuz_failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
-        return "zeuz_failed"
-
-    element_params = []
-    for left, mid, right in targets:
-        if allow_hidden:
-            element_params.append([("allow hidden", "option", allow_hidden), (left, "element parameter", mid)])
-        else:
-            element_params.append([(left, "element parameter", mid)])
-
-    all_elements = []
-    for i in element_params:
-        all_elements.append(LocateElement.Get_Element(i, Element))
-
-    for i in range(len(all_elements)):
-        if all_elements[i] == "zeuz_failed":
-            CommonUtil.ExecLog("", str(targets[i]) + " was not found so skipped it", 3)
-            continue
-        if targets[i][2] == "check" and all_elements[i].is_selected():
-            CommonUtil.ExecLog("", str(targets[i]) + " is already checked so skipped it", 1)
-            continue
-        if targets[i][2] == "uncheck" and not all_elements[i].is_selected():
-            CommonUtil.ExecLog("", str(targets[i]) + " is already unchecked so skipped it", 1)
-            continue
-
-        try:
-            if use_js:
-                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                if targets[i][2] == "check":
-                    CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
-                else:
-                    CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully using Java Script", 1)
-            else:
-                try:
-                    all_elements[i].click()
-                    if targets[i][2] == "check":
-                        CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully", 1)
-                    else:
-                        CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully", 1)
-                except ElementClickInterceptedException:
-                    try:
-                        selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                        if targets[i][2] == "check":
-                            CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
-                        else:
-                            CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully using Java Script", 1)
-                    except:
-                        if targets[i][2] == "check":
-                            CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
-                        else:
-                            CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
-        except:
-            if targets[i][2] == "check":
-                CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
-            else:
-                CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
-
-    return "passed"
-
-@logger
-def resize_window(step_data):
-    """Action to resize window size"""
-    """
-    width          element parameter   50%
-    height         element parameter   70%
-    resize window  selenium action     resize window
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-    try:
-        window_size = selenium_driver.get_window_size()
-        CommonUtil.ExecLog(sModuleInfo, f"Current window size is {window_size}", 1)
-        for left, mid, right in step_data:
-            left = left.lower().strip()
-            right = right.lower().strip()
-            if 'element parameter' in mid.lower():
-                for dim in ['width','height']:
-                    if left.lower().strip() == dim:
-                        right = right.replace('%','').strip()
-                        try:
-                            right = float(right)
-                            window_size[dim] = window_size[dim] * right/100
-                        except:
-                            CommonUtil.ExecLog(sModuleInfo, f"Enter valid size for {dim}", 3)
-                            return CommonUtil.Exception_Handler(sys.exc_info())
-        selenium_driver.set_window_size(window_size['width'],window_size['height'])
-        CommonUtil.ExecLog(sModuleInfo, f"Successfully set the new window size to {window_size}", 1)
-        return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error resizing window")
-
-    
-        
-
-
-
-
-                

@@ -7,6 +7,7 @@ Created on Jun 21, 2017
 import sys, time, re
 import inspect
 import traceback
+from typing import Literal
 from pathlib import Path
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
@@ -26,13 +27,194 @@ generic_driver = None
 global driver_type
 driver_type = None
 
-
 MODULE_NAME = inspect.getmodulename(__file__)
 
+def build_css_selector_query(dataset:list[list[str]]) -> str:
+    """ Builds css selector query from dataset """
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        query = ""
+        element_parameter_list = []
+        parent_parameter_list = []
+        for left, mid, right in dataset:
+            mid_ = mid.replace(" ", "").lower()
+            if "elementparameter" == mid_:
+                element_parameter_list.append((left, right))
+                if left == "css selector":
+                    return right
+            elif "parent" in mid_ and "parameter" in mid_:
+                parent_parameter_list.append([left, right])
+            elif "sibling" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Sibling parameter is not supported in css selector", 2)
+            elif "child" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Child parameter is not supported in css selector", 2)
+            elif "preceding" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Preceding parameter is not supported in css selector", 2)
+            elif "following" in mid_ and "parameter" in mid_:
+                CommonUtil.ExecLog(sModuleInfo, "Following parameter is not supported in css selector", 2)
 
-def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=False, element_wait=None):
+        for left, right in parent_parameter_list:
+            if left == "tag":
+                query = right + query
+                break
+        else:
+            if len(parent_parameter_list) > 0:
+                query = "*" + query
+
+        for left, right in parent_parameter_list:
+            if left == "tag":
+                pass
+            elif left == "text":
+                CommonUtil.ExecLog(sModuleInfo, "Text parameter is not supported in css selector", 2)
+            elif left == "xpath":
+                CommonUtil.ExecLog(sModuleInfo, "xpath parameter is not supported in css selector", 2)
+            elif left != "index":
+                quote = "'" if '"' in right else '"'
+                query += f"[{left}={quote}{right}{quote}]"
+
+        if len(parent_parameter_list) > 0:
+            query += " "
+
+        for left, right in element_parameter_list:
+            if left == "tag":
+                query += right
+                break
+        else:
+            query += "*"
+
+        for left, right in element_parameter_list:
+            if left == "tag":
+                pass
+            elif left == "text":
+                CommonUtil.ExecLog(sModuleInfo, "Text parameter is not supported in css selector", 2)
+            elif left == "xpath":
+                CommonUtil.ExecLog(sModuleInfo, "xpath parameter is not supported in css selector", 2)
+            elif left != "index":
+                quote = "'" if '"' in right else '"'
+                query += f"[{left}={quote}{right}{quote}]"
+
+        return query
+
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return ""
+
+get_element_return_type = list[selenium.webdriver.remote.webelement.WebElement] | Literal["zeuz_failed"] | selenium.webdriver.remote.webelement.WebElement
+def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[str]], Filter: str, element_wait: float, return_all_elements: bool) -> get_element_return_type:
+    """Traverses nested shadow roots and returns the target element"""
+
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        current_root = generic_driver  # Start with main document
+
+        shadow_root_params = []
+        parent_params = []
+        for shadow_param in shadow_root_ds:
+            left = shadow_param[0].strip().lower()
+            mid = shadow_param[1].strip().lower()
+            right = shadow_param[2].strip()
+
+            if "text" in left:
+                CommonUtil.ExecLog(
+                    sModuleInfo, 
+                    f"Shadow DOM does not support XPath expressions with 'text()'. Please use an attribute-based or tag-based selector instead to identify the element.", 
+                    3
+                )
+                return "zeuz_failed"
+            
+            words = mid.strip().split()
+            if len(words) < 3 or len(words) > 4:
+                CommonUtil.ExecLog(sModuleInfo, f"Invalid shadow root parameter format: {mid}", 3)
+                return "zeuz_failed"
+            idx = int(words[1]) if len(words) == 4 else 1
+            param = ' '.join(words[-2:])
+
+            if "parent" in param:
+                parent_params.append((idx, [left, param, right]))
+            elif "element" in param:
+                shadow_root_params.append((idx, [left, param, right]))
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo, 
+                    f"Invalid parameter '{param}' encountered for shadow DOM access. Only 'parent parameter' and 'element parameter' are supported.", 
+                    3
+                )
+                return "zeuz_failed"
+
+        # Check for duplicate indices
+        indices1 = [idx for idx, _ in parent_params]
+        indices2 = [idx for idx, _ in shadow_root_params]
+        if (len(indices1) != len(set(indices1))) or (len(indices2) != len(set(indices2))):
+            CommonUtil.ExecLog(sModuleInfo, "Duplicate shadow root indices found. Use 'sr 1', 'sr 2', etc.", 3)
+            return "zeuz_failed"
+
+        parent_params.sort(key=lambda x: x[0])
+        shadow_root_params.sort(key=lambda x: x[0])
+
+        # Traverse each shadow root level
+        for idx, shadow_param in shadow_root_params:
+            shadow_host_query = None
+            locator_type = None
+            for idx2, parent_param in parent_params:
+                if idx == idx2:
+                    if idx == 1: 
+                        shadow_host_query, query_type = _construct_query([parent_param, shadow_param])
+                        locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+                    else:
+                        shadow_host_query = build_css_selector_query([parent_param, shadow_param])
+                    break
+
+            # Build CSS selector for the current shadow host
+            if not shadow_host_query:
+                if idx == 1:  # First shadow root without parent, use XPath
+                    shadow_host_query, query_type = _construct_query([shadow_param])
+                    locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+                else:
+                    shadow_host_query = build_css_selector_query([shadow_param])
+                    locator_type = By.CSS_SELECTOR
+            shadow_host_index = _locate_index_number([shadow_param]) or 0
+
+            CommonUtil.ExecLog(
+                sModuleInfo, 
+                f"To locate the Element we used {locator_type}:\n{shadow_host_query}", 
+                5
+            )
+
+            elements = None
+            if locator_type == By.XPATH:
+                elements = current_root.find_elements(By.XPATH, shadow_host_query)
+            else:
+                elements = current_root.find_elements(By.CSS_SELECTOR, shadow_host_query)
+
+            filtered_elements = filter_elements(elements, Filter)
+            if not filtered_elements:
+                CommonUtil.ExecLog(sModuleInfo, "Shadow host element not found", 3)
+                return "zeuz_failed"
+            shadow_host = filtered_elements[shadow_host_index]
+
+            # Access the shadow root
+            shadow_root = generic_driver.execute_script('return arguments[0].shadowRoot', shadow_host)
+            if not shadow_root:
+                CommonUtil.ExecLog(sModuleInfo, "No shadow root found for element", 3)
+                return "zeuz_failed"
+            current_root = shadow_root
+
+        # Locate the target element in the deepest shadow root
+        element_query = build_css_selector_query(element_ds)
+        index = _locate_index_number(element_ds) or 0
+        elements = current_root.find_elements(By.CSS_SELECTOR, element_query)
+        filtered_elements = filter_elements(elements, Filter)
+
+        if return_all_elements:
+            return filtered_elements
+        return filtered_elements[index] if filtered_elements else []
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=False, element_wait=None) -> get_element_return_type:
     """
-    This funciton will return "zeuz_failed" if something went wrong, else it will always return a single element
+    This function will return "zeuz_failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
     good when you are just trying to see how your step data would be converted to a query for testing local runs
     """
@@ -62,19 +244,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         # We need to switch to default content just in case previous action switched to something else
         try:
             if driver_type == "selenium":
-                pass #generic_driver.switch_to.default_content()
-                # we need to see if there are more than one handles.  Since we cannot know if we had switch
-                # windows before, we are going to assume that we can always safely switch to default handle 0
-                """
-                try:
-                    all_windows = generic_driver.window_handles
-                    generic_driver.switch_to.window(all_windows[0])
-                    True
-                except:
-                    True
-                """
+                pass
             elif driver_type == "appium":
-
                 # If we find a '|' character in the left column, then try to check the platform
                 # and filter the appropriate data for the left column by removing '|'
                 device_platform = (
@@ -128,6 +299,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         get_parameter = ""
         Filter = ""
         text_filter_cond = False
+        shadow_root_ds = []
+        element_ds = []
         for row in step_data_set:
             if row[1] == "save parameter":
                 if row[2] != "ignore":
@@ -147,7 +320,13 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     element_wait = float(right)
                 elif left == "text filter":
                     text_filter_cond = right in ("yes", "true", "ok", "enable")
+            elif row[1].strip().lower().startswith("sr"):
+                shadow_root_ds.append([row[0], row[1], row[2]])
+            else:
+                element_ds.append([row[0], row[1], row[2]])
 
+        if len(shadow_root_ds) > 0:
+            return shadow_root_elements(shadow_root_ds, element_ds, Filter, element_wait, return_all_elements)
 
         if get_parameter != "":
 
@@ -238,9 +417,9 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
     """
     suppose dom has <div>Hello &nbsp;World</div>
     the text will be converted to "<something unknown>Hello  world<something unknown>"
-    Thats why (text, element parameter, Hello  world) does not work
+    That's why (text, element parameter, Hello  world) does not work
     But (*text, element parameter, Hello  world) works!
-    So for now we don't need this python script for now as we have an existing solution
+    So for now we don't need this python script as we have an existing solution
     """
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -283,7 +462,7 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
         similar_texts = []
         for element in result:
             for f in filters:
-                if element.text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub('\s+', '', element.text.lower().replace("\xa0", "")):
+                if element.text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub(r'\s+', '', element.text.lower().replace("\xa0", "")):
                     similar_texts.append(element.text)
                 if f[0].startswith("**") and f[2].lower().replace("\xa0", " ") in element.text.lower().replace("\xa0", " "):
                     break
@@ -390,7 +569,7 @@ def _construct_query(step_data_set, web_element_object=False):
             and driver_type in ("appium", "selenium")
         ):  # for unique identifier
             return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
-        elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
+        elif "css_selector" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw css query
             return ([x for x in step_data_set if "css" in x[0]][0][2]), "css"
@@ -700,130 +879,265 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+# def auto_scroll_appium(data_set, element_query):
+#     """
+#     To auto scroll to an element which is scrollable, won't work if no scrollable element is present
+#     """
+#     global generic_driver
+#     all_matching_elements_visible_invisible = []
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+#     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+#     auto_scroll = False
+#     inset = 0.1
+#     position = 0.5
+#     for left, mid, right in data_set:
+#         left = left.strip().lower()
+#         mid = mid.strip().lower()
+#         right = right.replace("%", "").replace(" ", "").lower()
+#         if "scroll parameter" in mid and left == "auto scroll" and right in ("yes", "ok", "enable", "true"):
+#             auto_scroll = True
+#     if auto_scroll == False :
+#         return []
+
+#     if len(scrollable_element) == 0:
+#         return []
+#     elif len(scrollable_element) > 1:
+#         CommonUtil.ExecLog(sModuleInfo, 'Multiple scrollable page found. So Auto scroll will not respond. Please use "Scroll to an element" action if you need scroll to find that element', 2)
+#         return []
+
+#     height = scrollable_element[0].size["height"]
+#     width = scrollable_element[0].size["width"]
+#     xstart_location = scrollable_element[0].location["x"]  # Starting location of the x-coordinate of scrollable element
+#     ystart_location = scrollable_element[0].location["y"]  # Starting location of the y-coordinate of scrollable element
+#     max_try = 10
+#     direction = "up" if height > width else "left"
+#     swipe_speed = None
+
+#     try:
+#         for left, mid, right in data_set:
+#             left = left.strip().lower()
+#             mid = mid.strip().lower()
+#             right = right.replace("%", "").replace(" ", "").lower()
+#             if "scroll parameter" in mid:
+#                 if left == "direction" and right in ("up", "down", "left", "right"):
+#                     direction = right
+#                 elif left == "swipe speed":
+#                     swipe_speed = float(right) / 1000.00
+#                 elif left == "inset":
+#                     inset = float(right) / 100.0
+#                 elif left == "position":
+#                     position = float(right) / 100.0
+#                 elif left == "max try":
+#                     max_try = float(right)
+#     except:
+#         CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+#         return []
+
+#     if direction == "up":
+#         tmp = 1.0 - inset
+#         new_height = round(tmp * height)
+#         new_width = round(position * width)
+#         x1 = xstart_location + new_width
+#         x2 = x1
+#         y1 = ystart_location + new_height - 1
+#         y2 = ystart_location
+#         if swipe_speed is None:
+#             duration = new_height * 0.0032
+#         else:
+#             duration = new_height * swipe_speed
+#     elif direction == "down":
+#         tmp = 1.0 - inset
+#         new_height = round(tmp * height)
+#         new_width = round(position * width)
+#         x1 = xstart_location + new_width
+#         x2 = x1
+#         y1 = ystart_location + 1
+#         y2 = ystart_location + new_height
+#         if swipe_speed is None:
+#             duration = new_height * 0.0032
+#         else:
+#             duration = new_height * swipe_speed
+#     elif direction == "left":
+#         tmp = 1.0 - inset
+#         new_width = round(tmp * width)
+#         new_height = round(position * height)
+#         x1 = xstart_location + new_width - 1
+#         x2 = xstart_location
+#         y1 = ystart_location + new_height
+#         y2 = y1
+#         if swipe_speed is None:
+#             duration = new_width * 0.0032
+#         else:
+#             duration = new_width * swipe_speed
+
+#     elif direction == "right":
+#         tmp = 1.0 - inset
+#         new_width = round(tmp * width)
+#         new_height = round(position * height)
+#         x1 = xstart_location + 1
+#         x2 = xstart_location + new_width
+#         y1 = ystart_location + new_height
+#         y2 = y1
+#         if swipe_speed is None:
+#             duration = new_width * 0.0032
+#         else:
+#             duration = new_width * swipe_speed
+#     else:
+#         CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
+#         return []
+
+#     try:
+#         CommonUtil.ExecLog(sModuleInfo, "Auto scrolling with the following scroll parameter:\n" +
+#            "Max_try: %s, Direction: %s, Duration of a swipe: %s second, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
+#            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
+#         i = 0
+#         while i < max_try:
+#             # We will try to match the outerHTML of the scrollable element to determine the end of the scroll.
+#             page_src = tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode()
+#             generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+#             all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+#             if page_src == tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode() or len(all_matching_elements_visible_invisible) != 0:
+#                 return all_matching_elements_visible_invisible
+#             i += 1
+#         return all_matching_elements_visible_invisible
+
+#     except Exception:
+#         CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not auto scroll")
+#         return []
+
 def auto_scroll_appium(data_set, element_query):
     """
-    To auto scroll to an element which is scrollable, won't work if no scrollable element is present
+    Cross-platform auto scroll to a scrollable element to find a matching element.
+    Supports Android, iOS, and macOS.
     """
     global generic_driver
     all_matching_elements_visible_invisible = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
-    auto_scroll = False
-    inset = 0.1
-    position = 0.5
-    for left, mid, right in data_set:
-        left = left.strip().lower()
-        mid = mid.strip().lower()
-        right = right.replace("%", "").replace(" ", "").lower()
-        if "scroll parameter" in mid and left == "auto scroll" and right in ("yes", "ok", "enable", "true"):
-            auto_scroll = True
-    if auto_scroll == False :
-        return []
 
-    if len(scrollable_element) == 0:
-        return []
-    elif len(scrollable_element) > 1:
-        CommonUtil.ExecLog(sModuleInfo, 'Multiple scrollable page found. So Auto scroll will not respond. Please use "Scroll to an element" action if you need scroll to find that element', 2)
-        return []
-
-    height = scrollable_element[0].size["height"]
-    width = scrollable_element[0].size["width"]
-    xstart_location = scrollable_element[0].location["x"]  # Starting location of the x-coordinate of scrollable element
-    ystart_location = scrollable_element[0].location["y"]  # Starting location of the y-coordinate of scrollable element
-    max_try = 10
-    direction = "up" if height > width else "left"
-    swipe_speed = None
+    platform = generic_driver.capabilities.get("platformName", "").lower()
 
     try:
+        # Find scrollable element differently per platform
+        if platform == "android":
+            scrollable_elements = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+            if not scrollable_elements:
+                return []
+            scrollable_element = scrollable_elements[0]
+        else:
+            scrollable_element = generic_driver.find_element(By.XPATH, "//*[@scrollable='true']")
+
+        # Get scroll options
+        auto_scroll = False
+        inset = 0.1
+        position = 0.5
+        max_try = 10
+        direction = "up"
+        swipe_speed = None
+
         for left, mid, right in data_set:
             left = left.strip().lower()
             mid = mid.strip().lower()
             right = right.replace("%", "").replace(" ", "").lower()
             if "scroll parameter" in mid:
-                if left == "direction" and right in ("up", "down", "left", "right"):
+                if left == "auto scroll" and right in ("yes", "ok", "enable", "true"):
+                    auto_scroll = True
+                elif left == "direction" and right in ("up", "down", "left", "right"):
                     direction = right
                 elif left == "swipe speed":
-                    swipe_speed = float(right) / 1000.00
+                    swipe_speed = float(right) / 1000.0
                 elif left == "inset":
                     inset = float(right) / 100.0
                 elif left == "position":
                     position = float(right) / 100.0
                 elif left == "max try":
                     max_try = float(right)
-    except:
-        CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
-        return []
 
-    if direction == "up":
-        tmp = 1.0 - inset
-        new_height = round(tmp * height)
-        new_width = round(position * width)
-        x1 = xstart_location + new_width
-        x2 = x1
-        y1 = ystart_location + new_height - 1
-        y2 = ystart_location
-        if swipe_speed is None:
-            duration = new_height * 0.0032
-        else:
-            duration = new_height * swipe_speed
-    elif direction == "down":
-        tmp = 1.0 - inset
-        new_height = round(tmp * height)
-        new_width = round(position * width)
-        x1 = xstart_location + new_width
-        x2 = x1
-        y1 = ystart_location + 1
-        y2 = ystart_location + new_height
-        if swipe_speed is None:
-            duration = new_height * 0.0032
-        else:
-            duration = new_height * swipe_speed
-    elif direction == "left":
-        tmp = 1.0 - inset
-        new_width = round(tmp * width)
-        new_height = round(position * height)
-        x1 = xstart_location + new_width - 1
-        x2 = xstart_location
-        y1 = ystart_location + new_height
-        y2 = y1
-        if swipe_speed is None:
-            duration = new_width * 0.0032
-        else:
-            duration = new_width * swipe_speed
+        if not auto_scroll:
+            return []
 
-    elif direction == "right":
-        tmp = 1.0 - inset
-        new_width = round(tmp * width)
-        new_height = round(position * height)
-        x1 = xstart_location + 1
-        x2 = xstart_location + new_width
-        y1 = ystart_location + new_height
-        y2 = y1
-        if swipe_speed is None:
-            duration = new_width * 0.0032
-        else:
-            duration = new_width * swipe_speed
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
-        return []
+        # Coordinates
+        height = scrollable_element.size["height"]
+        width = scrollable_element.size["width"]
+        xstart_location = scrollable_element.location["x"]
+        ystart_location = scrollable_element.location["y"]
 
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Auto scrolling with the following scroll parameter:\n" +
-           "Max_try: %s, Direction: %s, Duration of a swipe: %s second, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
-           "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
+        if direction == "up":
+            tmp = 1.0 - inset
+            new_height = round(tmp * height)
+            new_width = round(position * width)
+            x1 = xstart_location + new_width
+            x2 = x1
+            y1 = ystart_location + new_height - 1
+            y2 = ystart_location
+            duration = new_height * (swipe_speed if swipe_speed else 0.0032)
+        elif direction == "down":
+            tmp = 1.0 - inset
+            new_height = round(tmp * height)
+            new_width = round(position * width)
+            x1 = xstart_location + new_width
+            x2 = x1
+            y1 = ystart_location + 1
+            y2 = ystart_location + new_height
+            duration = new_height * (swipe_speed if swipe_speed else 0.0032)
+        elif direction == "left":
+            tmp = 1.0 - inset
+            new_width = round(tmp * width)
+            new_height = round(position * height)
+            x1 = xstart_location + new_width - 1
+            x2 = xstart_location
+            y1 = ystart_location + new_height
+            y2 = y1
+            duration = new_width * (swipe_speed if swipe_speed else 0.0032)
+        elif direction == "right":
+            tmp = 1.0 - inset
+            new_width = round(tmp * width)
+            new_height = round(position * height)
+            x1 = xstart_location + 1
+            x2 = xstart_location + new_width
+            y1 = ystart_location + new_height
+            y2 = y1
+            duration = new_width * (swipe_speed if swipe_speed else 0.0032)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Invalid direction", 3)
+            return []
+
+        # Begin scroll loop
         i = 0
         while i < max_try:
-            # We will try to match the outerHTML of the scrollable element to determine the end of the scroll.
-            page_src = tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode()
-            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
-            all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
-            if page_src == tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode() or len(all_matching_elements_visible_invisible) != 0:
-                return all_matching_elements_visible_invisible
-            i += 1
+            try:
+                all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+                if all_matching_elements_visible_invisible:
+                    return all_matching_elements_visible_invisible
+
+                if platform == "android":
+                    generic_driver.swipe(x1, y1, x2, y2, duration * 1000)
+                elif platform == "ios":
+                    generic_driver.execute_script("mobile: dragFromToForDuration", {
+                        "duration": duration,
+                        "fromX": x1,
+                        "fromY": y1,
+                        "toX": x2,
+                        "toY": y2
+                    })
+                elif platform == "mac":
+                    generic_driver.execute_script("macos: scroll", {
+                        "elementId": scrollable_element.id,
+                        "direction": direction
+                    })
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, f"Unsupported platform: {platform}", 2)
+                    return []
+
+                time.sleep(0.5)
+                i += 1
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Scroll attempt failed: {str(e)}", 2)
+                break
+
         return all_matching_elements_visible_invisible
 
     except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not auto scroll")
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during auto scroll")
         return []
 
 
@@ -1084,7 +1398,8 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
             return all_matching_elements
         else:
             return all_matching_elements_visible_invisible
-    except:
+    except Exception as e:
+        CommonUtil.Exception_Handler(sys.exc_info())
         all_matching_elements = []
         return all_matching_elements
 

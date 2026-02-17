@@ -6,6 +6,10 @@
 
 # Version 19
 
+
+### [19.2.1][Dec 06, 2024]
+- **[Add]** Added action that converts JSON file or Data to CSV file or Vsriable
+
 ### [19.2.0][Apr 16, 2024]
 - **[Add]** 'next', 'this', 'next_actions' keywords implementation
 - **[Improve]** If else action conditions now requires exact python syntax

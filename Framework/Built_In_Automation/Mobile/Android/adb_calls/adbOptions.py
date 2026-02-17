@@ -541,7 +541,7 @@ def wake_android(serial=""):
         output = subprocess.check_output(
             "adb %s shell wm size" % serial, shell=True, encoding="utf-8"
         )  # Need size for swipe calculation
-        m = re.search("(\d+)x(\d+)", output)  # Find w and h using regular expression
+        m = re.search(r"(\d+)x(\d+)", output)  # Find w and h using regular expression
         w, h = (m.group(1), m.group(2))  # Save w and h
         spos = int(int(h) * 0.7)  # Calculate 70% of height as starting position
         epos = int(int(h) * 0.1)  # Calculate 10% of height as ending position

@@ -25,7 +25,10 @@ from html_diff import diff
 
 from imap_tools import MailBox
 import re
-from typing import List
+from typing import List, Any
+import socket
+import signal
+import os
 
 
 try:
@@ -46,10 +49,16 @@ import datetime, random
 import datefinder
 import traceback
 import json
+
+import html
+from selenium import webdriver
+import time
+from datetime import datetime
+
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
 import re
-
+import subprocess
 months = [
     "Unknown",
     "January",
@@ -135,7 +144,7 @@ def sanitize(step_data):
         column = [0, 1, 2]
 
         # Invalid character list (space and underscore hare handle separately)
-        invalid_chars = "!\"#$%&'()*+,-./:;<=>?@[\]^`{|}~"
+        invalid_chars = r"!\"#$%&'()*+,-./:;<=>?@[\]^`{|}~"
 
         # Adjust invalid character list, based on function input
 
@@ -609,7 +618,6 @@ def Sleep(data_set):
 
     try:
         seconds = float(data_set[0][2])
-        print(f"Sleeping for {seconds} seconds")
         CommonUtil.ExecLog(sModuleInfo, f"Sleeping for {seconds} seconds", 1)
         time.sleep(seconds)
         return "passed"
@@ -1039,22 +1047,22 @@ def New_Compare_Variables(step_data):
         # --- Deep-diff specific features, these default values are taken from the
         # deep diff docs.
 
-        # truncate_datetime can take value one of ‘second’, ‘minute’, ‘hour’,
-        # ‘day’ and truncate with this value datetime objects before hashing it
+        # truncate_datetime can take value one of 'second', 'minute', 'hour',
+        # 'day' and truncate with this value datetime objects before hashing it
         truncate_datetime = None
 
         # Whether to be case-sensitive or not when comparing strings. By setting
         # ignore_string_case=False, strings will be compared case-insensitively.
         ignore_string_case = False
 
-        # Whether to ignore float(‘nan’) inequality in Python.
+        # Whether to ignore float('nan') inequality in Python.
         ignore_nan_inequality = False
 
         # significant_digits defines the number of digits AFTER the decimal point
         # to be used in the comparison.
         significant_digits = None
 
-        # math_epsilon uses Python’s built in Math.isclose. It defines a tolerance
+        # math_epsilon uses Python's built in Math.isclose. It defines a tolerance
         # value which is passed to math.isclose(). Any numbers that are within the
         # tolerance will not report as being different. Any numbers outside of
         # that tolerance will show up as different.
@@ -2899,12 +2907,12 @@ def excel_read(data_set):
                 cell_range_split = cell_range.split(":")
 
                 #converted the Cell_range index value into numerical index value
-                xy1 = coordinate_from_string(cell_range_split[0])  
-                column1 = column_index_from_string(xy1[0])  
+                xy1 = coordinate_from_string(cell_range_split[0])
+                column1 = column_index_from_string(xy1[0])
                 row1 = xy1[1]
 
-                xy2 = coordinate_from_string(cell_range_split[1])  
-                column2 = column_index_from_string(xy2[0])  
+                xy2 = coordinate_from_string(cell_range_split[1])
+                column2 = column_index_from_string(xy2[0])
                 row2 = xy2[1]
 
                 #sorted the row and column according to cell_range
@@ -2914,7 +2922,7 @@ def excel_read(data_set):
                 else:
                     row = row2
                     last_row = row1
-                
+
                 if column1<column2:
                     column = column1
                     last_column = column2
@@ -2937,10 +2945,10 @@ def excel_read(data_set):
                     for i in range(row, last_row+1):
                         cell_data.append([cell.value for cell in sheet[i][column-1:last_column+1]])
             else:
-                xy = coordinate_from_string(cell_range) 
-                column = column_index_from_string(xy[0])  
+                xy = coordinate_from_string(cell_range)
+                column = column_index_from_string(xy[0])
                 row = xy[1]
-    
+
                 if expand:
                     if expand == "table":
                         for i in range(row, sheet.max_row+1):
@@ -2994,7 +3002,7 @@ def excel_comparison(data_set):
       data source.
 
     Args:
-        data_set: List[List[str]]
+        data_set: list[List[str]]
 
     Returns:
         "passed" if successful.
@@ -3130,7 +3138,7 @@ def split_string(data_set):
     Store the result (index 0 or 1) of the split in "variableName".
 
     Args:
-        data_set: List[List[str]]
+        data_set: list[List[str]]
 
           index                     input parameter         0 or 1
           split expression          input parameter         abc
@@ -3746,28 +3754,31 @@ def execute_python_code(data_set):
         try: exec(Code, sr.shared_variables)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
 
-        current_vars = set(sr.shared_variables)
-        new_variables = current_vars - previous_vars - {'__builtins__'}
-        removed_variables = previous_vars - current_vars  - {'__builtins__'}
+        try:
+            current_vars = set(sr.shared_variables)
+            new_variables = current_vars - previous_vars - {'__builtins__'}
+            removed_variables = previous_vars - current_vars  - {'__builtins__'}
 
-        text = ("Newly declared variables:\n" +
-                "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
-                )
-        text += (
-            "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
-            "and accessible in next python_code action or in %| |%.\n" +
-            "But if you dont want your newly declared variables accessible in next actions\n" +
-            "Cleanup the variables at the end of the code. Such as:\n" +
-            "del account_name\ndel function_name" if new_variables and CommonUtil.debug_status else ""
-        )
-        text += "\nRemoved variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200]}" for i in removed_variables]) if removed_variables else ""
-        CommonUtil.ExecLog(sModuleInfo, text, 5)
+            text = ("Newly declared variables:\n" +
+                    "\n".join([f"{str(i)[:50] + (' ...' if len(str(i)) > 50 else '')} = {str(sr.shared_variables[i])[:200] + (' ...' if len(str(sr.shared_variables[i])) > 200 else '')}" for i in new_variables]) if new_variables else ""
+                    )
+            text += (
+                "\n\nBy default all the newly declared variables, functions are added in shared_variables\n" +
+                "and accessible in next python_code action or in %| |%.\n" +
+                "But if you dont want your newly declared variables accessible in next actions\n" +
+                "Cleanup the variables at the end of the code. Such as:\n" +
+                "del account_name\ndel function_name" if new_variables and CommonUtil.debug_status else ""
+            )
+            text += "\nRemoved variables:\n" + "\n".join([f"{i} = {str(sr.shared_variables[i])[:200]}" for i in removed_variables]) if removed_variables else ""
+            CommonUtil.ExecLog(sModuleInfo, text, 5)
 
-        for var in sr.shared_variables:
-            if var.startswith("zeuz_session_"):
-                CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
-        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
-        return "passed"
+            for var in sr.shared_variables:
+                if var.startswith("zeuz_session_"):
+                    CommonUtil.global_var[var] = sr.Get_Shared_Variables("run_id")
+            CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+            return "passed"
+        except:
+            pass
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -4075,7 +4086,7 @@ def text_write(data_set):
 @logger
 def modify_datetime(data_set):
     """
-    This action allows you to modify the date and time of a given datetime 
+    This action allows you to modify the date and time of a given datetime
     object or today's date.
     """
     try:
@@ -4137,14 +4148,14 @@ def modify_datetime(data_set):
                 current_format = right
             if "target format" == left.lower():
                 target_format = right
-                
+
         if current_format:
             if os.name == "nt":
                 current_format = current_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
         else:
             CommonUtil.ExecLog(sModuleInfo, "current format parameter is not provided",3)
             return CommonUtil.Exception_Handler(sys.exc_info())
-        
+
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "data" in left:
@@ -4501,11 +4512,11 @@ def random_email_generator(data_set):
         if var_email_creds == {}:
             CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
             return "zeuz_failed"
-            
+
         CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
         sr.Set_Shared_Variables("random_email_factory", mail_fac)
         return sr.Set_Shared_Variables(var_variable, var_email_creds) #saved in shared variable inside variable key
-        
+
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -5889,15 +5900,63 @@ def data_store_read(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
+    import logging
+    from datetime import datetime
+    from settings import ZEUZ_NODE_ARTIFACTS_DIR
+    
+    log_dir = ZEUZ_NODE_ARTIFACTS_DIR / "data_store_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    current_time = datetime.now()
+    log_filename = f"data_store_read_{current_time.strftime('%Y-%m-%d_%H')}.log"
+    log_file = log_dir / log_filename
+    
+    logger = logging.getLogger(f"data_store_read_{current_time.strftime('%Y%m%d%H')}")
+    logger.setLevel(logging.DEBUG)
+    
+    # Remove existing handlers to avoid duplicate logs
+    if logger.handlers:
+        logger.handlers.clear()
+    
+    handler = logging.FileHandler(str(log_file), mode='a')
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    logger.addHandler(handler)
+    
+    logger.info("="*80)
+    logger.info(f"Function data_store_read called")
+    logger.info(f"Module Info: {sModuleInfo}")
+    logger.info(f"Received data_set: {data_set}")
+
+
+
     try:
+        test_id = None
+        node_id = sr.Get_Shared_Variables("node_id") or None
+        action_no = CommonUtil.current_action_no
+        step_no = CommonUtil.current_step_no
+        if sr.Test_Shared_Variables("zeuz_current_tc"):
+            current_tc = sr.Get_Shared_Variables("zeuz_current_tc")
+            if isinstance(current_tc, dict) and "testcase_no" in current_tc:
+                test_id = current_tc["testcase_no"]
         table_name = columns = var_name = ""
-        params = {}
+        params = {
+            'test_id': test_id,
+            'node_id': node_id,
+            'action_no': action_no,
+            'step_no': step_no
+        }
+        logger.debug("Starting to parse data_set")
         for left, mid, right in data_set:
+            logger.debug(f"Processing row: left='{left}', mid='{mid}', right='{right}'")
             if left.strip() == 'table name':
                 table_name = right.strip()
                 params['table_name'] = table_name
+                logger.info(f"Table name set to: {table_name}")
             if left.strip() == 'where':
                 q = right.strip()
+                logger.info(f"Processing WHERE clause: {q}")
                 # q = re.sub(r"\band\b",",",q)
                 # q = re.sub(r"\bor\b",",",q)
                 logic=[]
@@ -5906,10 +5965,12 @@ def data_store_read(data_set):
                         logic.append('and')
                     elif s=='or':
                         logic.append('or')
+                logger.debug(f"Detected logic operators: {logic}")
                 q = right.strip()
                 q = re.sub(r"\band\b",",",q)
                 q = re.sub(r"\bor\b",",",q)
                 temp= q.split(',')
+                logger.debug(f"Split WHERE clause into: {temp}")
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
@@ -5930,29 +5991,54 @@ def data_store_read(data_set):
 
                         i += 1
                         j+=1
+                logger.info(f"Final WHERE params: {params}")
             if mid.strip() == "action":
                 var_name = right.strip()
+                logger.info(f"Variable name set to: {var_name}")
+        
+        logger.info(f"Final table_name: {table_name}")
+        logger.info(f"Final params: {params}")
+        logger.info(f"Final var_name: {var_name}")
+        
+        logger.debug("Preparing request headers")
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        logger.debug(f"Headers prepared (API key masked)")
+        
+        logger.info(f"Making GET request to data_store/data_store/custom_operation/")
+        logger.debug(f"Request params: {json.dumps(params)}")
+        
         res = RequestFormatter.request("get",
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
             verify=False,
             **headers
         )
-        #
-
-        # print(res.text)
-        if res.status_code==200:
-            # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
-
-            return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+        
+        logger.info(f"Response status code: {res.status_code}")
+        logger.debug(f"Response text: {res.text}")
+        
+        if res.status_code == 200:
+            response_json = json.loads(res.text)
+            response_json = response_json["data"]
+            logger.info(f"Successfully retrieved {len(response_json) if isinstance(response_json, (list, dict)) else 'N/A'} items from datastore")
+            logger.debug(f"Response data: {response_json}")
+            result = sr.Set_Shared_Variables(var_name, response_json, pretty=True)
+            logger.info(f"Data stored in variable '{var_name}' successfully")
+            logger.info("="*80)
+            return result
         else:
-            CommonUtil.ExecLog(sModuleInfo, "No data found , please check your dataset", 1)
+            CommonUtil.ExecLog(sModuleInfo, "No data found, please check your dataset", 1)
+            logger.warning("No data found in datastore, please check your dataset")
+            logger.info("="*80)
+            return "zeuz_failed"
         return "passed"
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}", exc_info=True)
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.info("="*80)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def data_store_get_data(data_set):
@@ -6055,16 +6141,62 @@ def data_store_write(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
+    import logging
+    from datetime import datetime
+    from settings import ZEUZ_NODE_ARTIFACTS_DIR
+    
+    log_dir = ZEUZ_NODE_ARTIFACTS_DIR / "data_store_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    current_time = datetime.now()
+    log_filename = f"data_store_write_{current_time.strftime('%Y-%m-%d_%H')}.log"
+    log_file = log_dir / log_filename
+    
+    logger = logging.getLogger(f"data_store_write_{current_time.strftime('%Y%m%d%H')}")
+    logger.setLevel(logging.DEBUG)
+    
+    # Remove existing handlers to avoid duplicate logs
+    if logger.handlers:
+        logger.handlers.clear()
+    
+    handler = logging.FileHandler(str(log_file), mode='a')
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    logger.addHandler(handler)
+    
+    logger.info("="*80)
+    logger.info("Function data_store_write called")
+    logger.info(f"Module Info: {sModuleInfo}")
+    logger.info(f"Received data_set: {data_set}")
+
     try:
+        test_id = None
+        node_id = sr.Get_Shared_Variables("node_id") or None
+        action_no = CommonUtil.current_action_no
+        step_no = CommonUtil.current_step_no
+        if sr.Test_Shared_Variables("zeuz_current_tc"):
+            current_tc = sr.Get_Shared_Variables("zeuz_current_tc")
+            if isinstance(current_tc, dict) and "testcase_no" in current_tc:
+                test_id = current_tc["testcase_no"]
         table_name = columns = var_name = ""
-        params = {}
+        params = {
+            'test_id': test_id,
+            'node_id': node_id,
+            'action_no': action_no,
+            'step_no': step_no
+        }
         data={}
+        logger.debug("Starting to parse data_set")
         for left, mid, right in data_set:
+            logger.debug(f"Processing row: left='{left}', mid='{mid}', right='{right}'")
             if left.strip() == 'table name':
                 table_name = right.strip()
                 params['table_name'] = table_name
+                logger.info(f"Table name set to: {table_name}")
             if left.strip() == 'where':
                 q = right.strip()
+                logger.info(f"Processing WHERE clause: {q}")
                 # q = re.sub(r"\band\b",",",q)
                 # q = re.sub(r"\bor\b",",",q)
                 logic=[]
@@ -6073,10 +6205,12 @@ def data_store_write(data_set):
                         logic.append('and')
                     elif s=='or':
                         logic.append('or')
+                logger.debug(f"Detected logic operators: {logic}")
                 q = right.strip()
                 q = re.sub(r"\band\b",",",q)
                 q = re.sub(r"\bor\b",",",q)
                 temp= q.split(',')
+                logger.debug(f"Split WHERE clause into: {temp}")
                 t = temp[0].split('=')
                 params['and_' + t[0].strip()] = [t[1].strip()]
                 i = 1
@@ -6097,21 +6231,38 @@ def data_store_write(data_set):
 
                         i += 1
                         j+=1
+                logger.info(f"Final WHERE params: {params}")
             if left.strip() == 'data':
                 temp = [right.strip()]
+                logger.debug(f"Processing data field: {temp}")
                 print(temp)
                 for t in temp:
                     tt = t.split('=', 1)
+                    logger.debug(f"Split data into: {tt}")
                     print(tt)
                     data[tt[0].strip()]=tt[1].strip()
+                    logger.debug(f"Data field '{tt[0].strip()}' = '{tt[1].strip()}'")
                     print(data[tt[0].strip()])
+                logger.info(f"Complete data dict: {data}")
             if mid.strip() == "action":
                 var_name = right.strip()
+                logger.info(f"Variable name set to: {var_name}")
 
+        logger.info(f"Final table_name: {table_name}")
+        logger.info(f"Final params: {params}")
+        logger.info(f"Final data: {data}")
+        logger.info(f"Final var_name: {var_name}")
 
+        logger.debug("Preparing request headers")
         headers = RequestFormatter.add_api_key_to_headers({})
         headers['headers']['content-type'] = 'application/json'
         headers['headers']['X-API-KEY'] = ConfigModule.get_config_value("Authentication", "api-key")
+        logger.debug("Headers prepared (API key masked)")
+        
+        logger.info("Making PATCH request to data_store/data_store/custom_operation/")
+        logger.debug(f"Request params: {json.dumps(params)}")
+        logger.debug(f"Request data: {json.dumps(data)}")
+        
         res = requests.patch(
             RequestFormatter.form_uri('data_store/data_store/custom_operation/'),
             params=json.dumps(params),
@@ -6119,18 +6270,32 @@ def data_store_write(data_set):
             verify=False,
             **headers
         )
+        
+        logger.info(f"Response status code: {res.status_code}")
+        logger.debug(f"Response text: {res.text}")
         #
 
         # print(res.text)
         if res.status_code == 200:
             # CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{res.text}", 1)
-
-            return sr.Set_Shared_Variables(var_name, json.loads(res.text),pretty=True)
+            response_json = json.loads(res.text)
+            logger.info(f"Successfully updated datastore")
+            logger.debug(f"Response data: {response_json}")
+            result = sr.Set_Shared_Variables(var_name, response_json, pretty=True)
+            logger.info(f"Response stored in variable '{var_name}' successfully")
+            logger.info("="*80)
+            return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "No data found to update , please check your dataset", 1)
+            logger.warning("No data found to update in datastore, please check your dataset")
+            logger.info("="*80)
+            return "zeuz_failed"
         return "passed"
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}", exc_info=True)
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.info("="*80)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -6301,7 +6466,7 @@ def data_store_insert_column(data_set):
 
 
 @logger
-def xml_to_json(data_set):
+def xml_to_dict(data_set):
     """
     """
     import xmltodict
@@ -6310,36 +6475,42 @@ def xml_to_json(data_set):
 
     try:
         filepath = None
-        json_var_name = None
+        var_name = None
+        xml_data = None
 
         for left, mid, right in data_set:
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
                 filepath = Path(CommonUtil.path_parser(filepath))
-            if "xml to json" in left:
-                json_var_name = right.strip()
+            if "xml to dict" in left:
+                var_name = right.strip()
+            if "xml data" in left:
+                xml_data = right
 
-        if None in (filepath,json_var_name):
-            CommonUtil.ExecLog(sModuleInfo, "Please specify both filename and json variable name", 3)
-
-        if filepath != None and filepath.is_file():
-            try:
-                with open(filepath) as xml_file:
-                    data_dict = xmltodict.parse(xml_file.read())
-                result = sr.Set_Shared_Variables(json_var_name, data_dict)
-                return result
-            except:
-                CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
+        if filepath is not None:
+            if filepath.is_file():
+                try:
+                    with open(filepath) as xml_file:
+                        data_dict = xmltodict.parse(xml_file.read())
+                    result = sr.Set_Shared_Variables(var_name, data_dict)
+                    return result
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't read and convert the xml file", 3)
+                    return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid file path - the given path does not represent a readable file", 3)
                 return "zeuz_failed"
-
-
-
+        elif xml_data is not None:
+            data_dict = xmltodict.parse(xml_data)
+            result = sr.Set_Shared_Variables(var_name, data_dict)
+            return result
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Specified file couldn't be found or downloaded from attachment", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Please specify either the 'xml data' or 'file path' parameters", 3)
             return "zeuz_failed"
 
     except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to parse XML into dictionary.", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -6357,15 +6528,12 @@ def classifier_AI(data_set):
             "confidence": 0.9794
         }
     """
-    from Framework.module_installer import install_missing_modules,update_outdated_modules
+    from Framework.module_installer import install_missing_modules
     install_missing_modules(['torch', 'torchvision', 'transformers'])
-    if not CommonUtil.ai_module_update_flag and CommonUtil.ws_ss_log and CommonUtil.ai_module_update_time_difference > 30:
-        update_outdated_modules(['torch', 'torchvision', 'transformers'])
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     from Framework.AI.NLP import category_score
 
     try:
-
         message = ""
         category = ""
         variable_name = ""
@@ -6653,4 +6821,689 @@ def text_to_speech(data_set):
         tts.save(full_filepath)
         return "passed"
     except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def start_ssh_tunnel(data_set):
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    host_ip = None
+    ssh_user = None
+    private_key_path = None
+    remote_bind_host = "127.0.0.1"
+    local_bind_host = "127.0.0.1"
+    local_port = None
+    remote_port = None
+    tunnel_var = None
+
+    for left, mid, right in data_set:
+        if left == 'host ip':
+            host_ip = right.strip()
+        elif left == 'ssh user':
+            ssh_user = right.strip()
+        elif left == 'private key path':
+            private_key_path = right.strip()
+        elif left == 'remote_bind_host':
+            remote_bind_host = right.strip()
+        elif left == 'local_bind_host':
+            local_bind_host = right.strip()
+        elif left == 'local port':
+            local_port = int(right.strip())
+        elif left == 'remote port':
+            remote_port = int(right.strip())
+        elif left == 'start ssh tunnel':
+            tunnel_var = right.strip()
+
+    missing = [x for x in [host_ip,ssh_user,private_key_path,local_port, remote_port, tunnel_var] if x == None]
+    if missing:
+        CommonUtil.ExecLog(sModuleInfo, f"{', '.join(missing)} needs to be provided", 3)
+        return "zeuz_failed"
+
+    tunneling_script_path = Path(os.getcwd()) / 'Utilities' / 'ssh_tunnel.py'
+
+    command = [
+        "python",
+        str(tunneling_script_path),
+        "--host_ip", host_ip,
+        "--ssh_user", ssh_user,
+        "--private_key_path", private_key_path,
+        "--remote_bind_host", "127.0.0.1",
+        "--local_bind_host", "127.0.0.1",
+        "--local_port", str(local_port),
+        "--remote_port", str(remote_port)
+    ]
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    from time import sleep
+    import socket
+    sleep(5)
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(5)
+        try:
+            s.connect((local_bind_host, local_port))
+        except (socket.timeout, socket.error):
+            CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel can not be established", 3)
+            return "zeuz_failed"
+
+        sr.Set_Shared_Variables(tunnel_var, process.pid)
+        CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel is established", 1)
+        return "passed"
+
+
+
+@logger
+def stop_ssh_tunnel(data_set):
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    tunnel_pid = None
+    for left, mid, right in data_set:
+        if left == 'stop ssh tunnel':
+            tunnel_pid = int(right.strip())
+
+    subprocess.run(['kill', str(tunnel_pid)], check=True)
+    CommonUtil.ExecLog(sModuleInfo, f"SSH Tunnel is closed", 1)
+
+    return "passed"
+
+@logger
+def proxy_server(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    proxy_var = None
+    action = None
+    port = 8080
+    for left, mid, right in data_set:
+        if left.lower().strip() == 'action':
+            action = 'start' if right.lower().strip() == 'start' else 'stop'
+        if left.lower().strip() == 'port':
+            port = int(right.strip())
+        if left.lower().strip() == 'proxy server':
+            proxy_var = right.strip()
+
+    if action is None:
+        CommonUtil.ExecLog(sModuleInfo, "Incorrect dataset", 3)
+        return "zeuz_failed"
+
+    def is_port_in_use(port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            return sock.connect_ex(('localhost', port)) == 0
+
+    if action == 'start':
+        # Check if the port is already in use
+        if is_port_in_use(port):
+            CommonUtil.ExecLog(sModuleInfo, f"Port {port} is already in use.", 3)
+            return "zeuz_failed"
+
+        CommonUtil.ExecLog(sModuleInfo, f"{action.capitalize()}ing proxy server on port {port}", 1)
+
+        proxy_log_dir = Path(sr.Get_Shared_Variables("zeuz_download_folder")).parent / 'proxy_log'
+        os.makedirs(proxy_log_dir, exist_ok=True)
+        mitm_proxy_path = Path(__file__).parent / "mitm_proxy.py"
+        output_file_path = proxy_log_dir / 'mitm.log'  # Output file to save the logs
+        CommonUtil.ExecLog(sModuleInfo, f"Proxy Log file: {output_file_path}", 1)
+
+        captured_network_file_path = proxy_log_dir / 'captured_network_data.csv'
+        CommonUtil.ExecLog(sModuleInfo, f"Captured Network file: {captured_network_file_path}", 1)
+
+        # Open the output file in append mode
+        with open(r'{}'.format(output_file_path), 'a') as output_file:
+            # Start the subprocess
+            process = subprocess.Popen(
+                [
+                    "mitmdump",
+                    "-s",
+                    f"{mitm_proxy_path}",
+                    "-p",
+                    str(port),
+                    "--set",
+                    f"output_file_path={captured_network_file_path}",
+                ],
+                stdout=output_file,  # Redirect stdout to the file
+                stderr=output_file,  # Redirect stderr to the file
+            )
+
+        pid = process.pid
+        CommonUtil.mitm_proxy_pids.append(pid)
+        CommonUtil.ExecLog(sModuleInfo, f"Started process with PID: {pid}", 1)
+
+        sr.Set_Shared_Variables(proxy_var, {"pid": pid, "captured_network_file_path": captured_network_file_path, "log_file": output_file_path})
+        return "passed"
+    else:
+        # Action is stop
+        if CommonUtil.mitm_proxy_pids:
+            try:
+                pid = CommonUtil.mitm_proxy_pids[0]
+                os.kill(pid, signal.SIGTERM)
+                CommonUtil.ExecLog(sModuleInfo, f"Process with PID {pid} has been terminated.", 1)
+                CommonUtil.mitm_proxy_pids.pop()
+            except OSError as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Error: {e}", 3)
+
+        CommonUtil.ExecLog(sModuleInfo, f"{action.capitalize()}ing proxy server on port {port}", 1)
+        return "passed"
+
+
+@logger
+def is_valid_path(path):
+    """
+    Check if a given string is a valid path.
+    
+    :param path: The string to check.
+    :return: True if the string is a valid path, False otherwise.
+    """
+    try:
+        # Attempt to normalize the path
+        normalized_path = os.path.normpath(path)
+        # Check if the directory part of the path can be resolved
+        directory = os.path.dirname(normalized_path)
+        if directory:
+            return True
+    except Exception as e:
+        return False
+    return False
+
+@logger
+def json_detect_from_file_and_Data(data):
+    """
+    Detect if the input is a file path or JSON data.
+    
+    :param data: The input data (file path or JSON string).
+    :return: A dictionary containing flags, the error message (if any), and parsed data.
+    """
+    result = {
+        "Convert_file_to_file": False,  # True if file path, False if JSON string
+        "error": "",  # Error message if detection fails
+        "parsed_data": ""  # Parsed JSON data or Empty if input is invalid
+    }
+    
+    try:
+        # Check if the input is a valid file path
+        if os.path.isfile(data):
+            result["Convert_file_to_file"] = True
+            with open(data, 'r') as file:
+                result["parsed_data"] = json.load(file)  # Load JSON data from the file
+        else:
+            # Try to parse the input as JSON data
+            result["parsed_data"] = json.loads(data)
+            result["Convert_file_to_file"] = False
+    except Exception as e:
+        # Handle exceptions and set the error message
+        result["error"] = str(e)
+    
+    return result
+
+@logger
+def json_to_csv(data_set):
+    """Save JSON Data into CSV file or Variable.
+
+    Accepts any valid JSON data in file.
+
+    Args:
+        data_set:
+          input json file or Data    | element parameter  | Path to the input JSON file or Direct JSON data.
+          json to csv        | common action      | Path to the output CSV file or Output Variable Name.
+
+    Returns:
+        "passed" if success.
+        "zeuz_failed" otherwise.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        json_file = None
+        variable_name = None
+        csv_file_or_variable = ""
+        success = None
+        output = {}
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if "input json" in left:
+                    json_file = right.strip().lower()
+                elif "action" in mid:
+                    csv_file_or_variable = right.strip()
+
+            output = json_detect_from_file_and_Data(json_file)
+            #print(output['parsed_data']);
+            #print(output['Convert_file_to_file']);            
+            if  output["error"] != "":
+                CommonUtil.ExecLog(sModuleInfo,  output['error'], 3)
+                return "zeuz_failed"
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
+            traceback.print_exc()
+            return "zeuz_failed"
+        
+        try:
+            # TRY CONVERT FROM FILE TO FILE            
+            if is_valid_path(csv_file_or_variable):
+                success = do_json_to_csv(output["parsed_data"], csv_file_or_variable)
+                if(success):
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully Saved JSON file into CSV file", 1)
+                    return "passed"
+                return "zeuz_failed" 
+            # TRY TO SAVE INTO VARIABLE
+            sr.Set_Shared_Variables(csv_file_or_variable, output["parsed_data"])
+            return "passed"
+        except Exception as e:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def do_json_to_csv(data, csv_file):
+    """
+    Convert a JSON data to a CSV file.
+    
+    :param data: Input JSON data.
+    :param csv_file: Path to the output CSV file.
+    """
+    try:
+        # Check if JSON data is a list of dictionaries
+        if isinstance(data, list) and all(isinstance(item, dict) for item in data):
+            # Open the CSV file for writing
+            with open(csv_file, 'w', newline='', encoding='utf-8') as cf:
+                writer = csv.DictWriter(cf, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            print(f"Successfully converted JSON to CSV at {csv_file}")
+            return True
+        else:
+            print("JSON file does not contain a list of dictionaries.")
+        return False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+
+@logger
+def render_jinja_template(data_set):
+    """
+    Renders a Jinja template using user-provided data.
+    data_set:
+          template text         | input parameter    | Hello, {{ name }}!
+          data input            | input parameter    | {"name": "Mini"}
+          settings              | optional parameter | {"undefined": "lenient"} <-- what to do with undefined values in the template
+          render jinja template | common action      | output_variable_name
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME  # type: ignore
+
+    try:
+        # Initialize variables
+        template_text: str | None = None
+        data_input: dict[str, Any] = {}
+        settings: dict[str, Any] = {}
+        variable_name: str | None = None
+        print_output: bool = True
+
+        # Parse inputs from data_set
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+
+            if "action" in mid:
+                variable_name = right.strip()
+            elif "template text" in left:
+                template_text = right
+            elif "data input" in left:
+                try:
+                    data_input = CommonUtil.parse_value_into_object(right.strip())
+                except:  # noqa: E722
+                    data_input = {}
+            elif "settings" in left:
+                try:
+                    settings = CommonUtil.parse_value_into_object(right.strip())
+                except:  # noqa: E722
+                    settings = {}
+            elif "print output" in left:
+                print_output = CommonUtil.parse_value_into_object(right.strip()) is True
+
+        # Validate required inputs
+        if not template_text:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Template text is missing", 3
+            )
+            return "zeuz_failed"
+        if variable_name is None or len(variable_name) == 0:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Output variable name is missing", 3
+            )
+            return "zeuz_failed"
+
+        # Import Jinja2 and set up environment
+        from jinja2 import Environment
+        env = Environment(**settings)
+
+        # Render the template
+        template = env.from_string(template_text)
+        rendered_output: str = template.render(data_input)
+
+        sr.Set_Shared_Variables(variable_name, rendered_output)
+
+        # Log the rendered template
+        if print_output:
+            CommonUtil.ExecLog(
+                sModuleInfo, f"Rendered Output:\n{rendered_output}", 5
+            )
+        return "passed"
+
+    except Exception:
+        # Handle exceptions
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_chrome_extension(data_set):
+    """
+    This function downloads a Chrome extension CRX file using the extension ID
+    
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            extension id                  | input parameter | jhbgaabkbcfjgjldjeddmofchgpjlhnj
+            download directory            | input parameter | C:/Downloads
+            download chrome extension     | common action   | result
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    try:
+        extension_id = None
+        download_dir = None
+        
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "extension id" == left:
+                extension_id = right.strip()
+            if "download directory" == left:
+                download_dir = CommonUtil.path_parser(right.strip())
+        
+        if extension_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the extension ID", 3)
+            return "zeuz_failed"
+        
+        if download_dir is None:
+            download_dir = sr.Get_Shared_Variables("zeuz_download_folder")
+            CommonUtil.ExecLog(sModuleInfo, f"Using default download directory: {download_dir}", 1)
+        
+        # Make sure the download directory exists
+        os.makedirs(download_dir, exist_ok=True)
+        
+        # Get the CRX download link
+        url = "https://www.crx4chrome.com/crx-url.php"
+        headers = {
+            "Referer": f"https://www.crx4chrome.com/crx-downloader/{extension_id}",
+        }
+        data = {"id": extension_id}
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Requesting download link for extension ID: {extension_id}", 1)
+        response = requests.post(url, headers=headers, data=data, verify=False)
+        
+        if response.status_code != 200:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to get download link. Status code: {response.status_code}", 3)
+            return "zeuz_failed"
+
+        match = re.search(r'href="(https://clients2\.googleusercontent\.com/crx/blobs/[^\"]+\.crx)"', response.text)
+        if not match or not match.group(1).startswith("http"):
+            CommonUtil.ExecLog(sModuleInfo, f"Invalid download link received: {match.group(1)}", 3)
+            return "zeuz_failed"
+        
+        download_link = match.group(1)
+        
+        # Download the CRX file
+        CommonUtil.ExecLog(sModuleInfo, f"Downloading extension from: {download_link}", 1)
+        crx_filename = f"{extension_id}.crx"
+        crx_path = os.path.join(download_dir, crx_filename)
+        
+        with requests.get(download_link, stream=True, verify=False) as r:
+            r.raise_for_status()
+            with open(crx_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        
+        CommonUtil.ExecLog(sModuleInfo, f"Extension downloaded successfully to: {crx_path}", 1)
+        return "passed"
+    
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+#this function is used in the accessibilit_test action
+
+def create_summary_report(result):
+
+    """Create a summary report from the raw axe results."""
+    summary = {
+        "test_info": {
+            "url": result.get("url", "Unknown"),
+            "timestamp": result.get("timestamp", "Unknown"),
+            "test_date": datetime.now().isoformat()
+        },
+        "summary": {
+            "violations_count": len(result.get("violations", [])),
+            "passes_count": len(result.get("passes", [])),
+            "inapplicable_count": len(result.get("inapplicable", [])),
+            "incomplete_count": len(result.get("incomplete", []))
+        },
+        "violations_summary": [],
+        "passes_summary": []
+    }
+
+    # Process violations
+    for violation in result.get("violations", []):
+        violation_summary = {
+            "id": violation.get("id", "Unknown"),
+            "description": violation.get("description", "No description"),
+            "impact": violation.get("impact", "Unknown"),
+            "help": violation.get("help", "No help available"),
+            "helpUrl": violation.get("helpUrl", ""),
+            "tags": violation.get("tags", []),
+            "nodes_count": len(violation.get("nodes", [])),
+            "nodes": []
+        }
+
+        # Add first few affected elements
+        for node in violation.get("nodes", [])[:3]:
+            node_info = {
+                "html": node.get("html", ""),
+                "target": node.get("target", []),
+                "failureSummary": node.get("failureSummary", "")
+            }
+            violation_summary["nodes"].append(node_info)
+
+        summary["violations_summary"].append(violation_summary)
+
+    # Process passes
+    for passed in result.get("passes", []):
+        pass_summary = {
+            "id": passed.get("id", "Unknown"),
+            "description": passed.get("description", "No description"),
+            "impact": passed.get("impact", "Unknown"),
+            "tags": passed.get("tags", []),
+            "nodes_count": len(passed.get("nodes", []))
+        }
+        summary["passes_summary"].append(pass_summary)
+
+    return summary
+
+#this function is used in the accessibilit_test action
+
+def safe_join_target(target):
+    """Safely join target field which can be a list or other types."""
+    try:
+        if not target:
+            return "No target"
+        if isinstance(target, list):
+            # Handle nested lists and complex structures
+            result = []
+            for item in target:
+                if isinstance(item, list):
+                    result.append(', '.join(str(x) for x in item))
+                else:
+                    result.append(str(item))
+            return ', '.join(result)
+        return str(target)
+    except Exception as e:
+        return f"Target error: {str(e)}"
+
+#this function is used in the accessibilit_test action
+
+def create_html_report(result, summary):
+    """Create a detailed HTML report from the raw axe results using Jinja2 templates."""
+    
+    from jinja2 import Environment, select_autoescape
+    import html
+    
+    # Format the test date for display
+    if 'test_date' in summary['test_info']:
+        try:
+            from datetime import datetime
+            test_date = datetime.fromisoformat(summary['test_info']['test_date'])
+            summary['test_info']['test_date_formatted'] = test_date.strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            summary['test_info']['test_date_formatted'] = summary['test_info']['test_date']
+    else:
+        summary['test_info']['test_date_formatted'] = 'Unknown'
+    
+    # Jinja2 template with autoescaping
+    env = Environment(autoescape=select_autoescape(['html', 'xml']))
+    env.globals['safe_join_target'] = safe_join_target
+    
+    # Read template from external file in the Html_templates directory
+    import os
+    template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Html_templates', 'accessibility_html_template.html')
+    
+    with open(template_path, 'r', encoding='utf-8') as f:
+        template_content = f.read()
+    template = env.from_string(template_content)
+    
+    return template.render(result=result, summary=summary)
+
+
+
+
+@logger
+def accessibility_test(data_set):
+    """
+    This function test the accessibility of a web page . First navigate to the website and then test the accessibility.
+    
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            accessibilty test     | common action   | accessibility test
+            ------------------------------------------------------------------------------
+    
+    Return:
+        `passed` and generate 3 reports (raw json resutl, html report, summary report) if success
+        `zeuz_failed` if fails
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+
+        from axe_selenium_python import Axe
+
+        if sr.Test_Shared_Variables("selenium_driver"):
+            common_driver = sr.Get_Shared_Variables("selenium_driver")
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function",
+                3,
+            )
+            return "zeuz_failed"
+
+    
+
+        time.sleep(5) #to load the images properly
+
+        axe = Axe(common_driver)
+
+        axe.inject()
+
+        result = axe.run()
+
+        # Log results summary
+        violations_count = len(result.get('violations', []))
+        passes_count = len(result.get('passes', []))
+
+        
+    
+
+        reports_dir = "Accessibility Test Report"
+        try:
+            os.makedirs(reports_dir, exist_ok=True)
+            CommonUtil.ExecLog(sModuleInfo, f"Reports directory created/verified: {reports_dir}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create reports directory: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # Generate dynamic filename with timestamp and URL
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        url = result.get("url", "unknown_page")
+        # Clean URL for filename (remove special characters)
+        url_clean = re.sub(r'[^\w\-_.]', '_', url.replace('https://', '').replace('http://', ''))
+        if len(url_clean) > 50:  # Limit length
+            url_clean = url_clean[:50]
+        
+        # 1. Raw JSON Report
+        try:
+            json_filename = f"accessibility_result_{url_clean}_{current_time}.json"
+            json_path = os.path.join(reports_dir, json_filename)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Raw JSON report saved successfully to: {json_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to save raw JSON report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 2. Summary JSON Report
+        try:
+            summary = create_summary_report(result)
+            summary_filename = f"accessibility_summary_{url_clean}_{current_time}.json"
+            summary_path = os.path.join(reports_dir, summary_filename)
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+            CommonUtil.ExecLog(sModuleInfo, f"Summary JSON report saved successfully to: {summary_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create summary report: {str(e)}", 3)
+            return "zeuz_failed"
+
+        # 3. HTML Report
+        try:
+            html_report = create_html_report(result, summary)
+            html_filename = f"accessibility_report_{url_clean}_{current_time}.html"
+            html_path = os.path.join(reports_dir, html_filename)
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(html_report)
+            CommonUtil.ExecLog(sModuleInfo, f"HTML report saved successfully to: {html_path}", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to create HTML report: {str(e)}", 3)
+            return "zeuz_failed"
+
+
+        # Display console summary
+        summary_message = f"""SUMMARY STATISTICS:
+   [X] Violations: {summary['summary']['violations_count']}
+   [V] Tests Passed: {summary['summary']['passes_count']}
+   [!] Inapplicable: {summary['summary']['inapplicable_count']}
+   [~] Incomplete: {summary['summary']['incomplete_count']}
+Reports generated:
+  - {json_filename} (raw data)
+  - {summary_filename} (summary)
+  - {html_filename} (visual report)
+Location: {reports_dir}
+"""
+
+        CommonUtil.ExecLog(sModuleInfo, summary_message, 5)
+        CommonUtil.ExecLog(sModuleInfo, f"Accessibility test completed successfully for webpage: {url}", 1)
+        return "passed"
+
+    except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

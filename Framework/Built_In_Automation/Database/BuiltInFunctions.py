@@ -34,6 +34,9 @@ DB_SERVICE_NAME = "db_service_name"
 DB_ODBC_DRIVER = "odbc_driver"
 DB_SESSION = "session"
 DB_ODBC_UTF8 = "odbc: enable utf-8 encoding"
+DB_WAREHOUSE = "warehouse"
+DB_SCHEMA = "schema"
+DB_ACCOUNT = "account"
 
 
 # [NON ACTION]
@@ -102,6 +105,16 @@ def find_odbc_driver(db_type="postgresql"):
 
 def handle_db_exception(sModuleInfo, e):
     import pyodbc
+    
+    # Handle Snowflake exceptions
+    try:
+        import snowflake.connector.errors as snowflake_errors
+        if isinstance(e, snowflake_errors.Error):
+            traceback.print_exc()
+            CommonUtil.ExecLog(sModuleInfo, f"Snowflake Error: {e}", 3)
+            return CommonUtil.Exception_Handler(e)
+    except ImportError:
+        pass  # Snowflake connector not installed
 
     if isinstance(e, pyodbc.DataError):
         traceback.print_exc()
@@ -163,7 +176,7 @@ def db_get_connection(session_name):
         db_con = None
 
         # Get the values
-        db_type = db_params.get(DB_TYPE)
+        db_type = db_params.get(DB_TYPE).lower()
         db_name = db_params.get(DB_NAME)
         db_user_id = db_params.get(DB_USER_ID)
         db_password = db_params.get(DB_PASSWORD)
@@ -178,16 +191,49 @@ def db_get_connection(session_name):
             db_service_name = db_params.get(DB_SERVICE_NAME)
 
         if "postgres" in db_type:
-            import psycopg2
-
-            # Connect to db
-            db_con = psycopg2.connect(
-                user=db_user_id,
-                password=db_password,
-                database=db_name,
-                host=db_host,
-                port=db_port
-            )
+            try:
+                # Attempt to import psycopg2
+                import psycopg2
+        
+                # Log successful import of psycopg2
+                CommonUtil.ExecLog(sModuleInfo, "Successfully imported psycopg2.", 1)
+        
+                # Connect to the database using psycopg2
+                db_con = psycopg2.connect(
+                    user=db_user_id,
+                    password=db_password,
+                    database=db_name,
+                    host=db_host,
+                    port=db_port
+                )
+                # Log successful connection
+                CommonUtil.ExecLog(sModuleInfo, "Connected to PostgreSQL using psycopg2.", 1)
+        
+            except ImportError:
+                try:
+                    # Fall back to importing psycopg (v3)
+                    import psycopg
+        
+                    # Log fallback to psycopg (v3)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to import psycopg2, falling back to psycopg (v3).", 2)
+        
+                    # Connect to the database using psycopg (v3)
+                    db_con = psycopg.connect(
+                        user=db_user_id,
+                        password=db_password,
+                        dbname=db_name,  # Note: 'dbname' instead of 'database'
+                        host=db_host,
+                        port=db_port
+                    )
+                    # Log successful connection
+                    CommonUtil.ExecLog(sModuleInfo, "Connected to PostgreSQL using psycopg (v3).", 1)
+        
+                except ImportError:
+                    # Log error if neither library is available
+                    CommonUtil.ExecLog(sModuleInfo, "Neither psycopg2 nor psycopg (v3) could be imported. Please install one of them.", 3)
+                    return "zeuz_failed"
+        
+        
         elif "mysql" in db_type:
             import mysql.connector
 
@@ -200,43 +246,60 @@ def db_get_connection(session_name):
                 port=db_port
             )
         elif "mariadb" in db_type:
-            import mariadb
+            import pymysql
 
             # Connect to db
-            db_con = mariadb.connect(
+            db_con = pymysql.connect(
                 user=db_user_id,
                 password=db_password,
                 database=db_name,
                 host=db_host,
                 port=db_port
             )
-        elif "oracle" in db_type:
-            import cx_Oracle
+        elif "snowflake" in db_type:
+            import snowflake.connector
+            
+            # Get Snowflake-specific parameters
+            account = db_params.get(DB_ACCOUNT)
+            if not account:
+                account = db_host.replace('.snowflakecomputing.com', '') if '.snowflakecomputing.com' in db_host else db_host
+            warehouse = db_params.get(DB_WAREHOUSE) or 'COMPUTE_WH'
+            schema = db_params.get(DB_SCHEMA) or 'PUBLIC'
 
-            # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.makedsn
-            if db_sid != 'zeuz_failed':
-                dsn = cx_Oracle.makedsn(
-                    host=db_host,
-                    port=db_port,
-                    sid=db_sid
-                )
-            elif db_service_name != 'zeuz_failed':
-                dsn = cx_Oracle.makedsn(
-                    host=db_host,
-                    port=db_port,
-                    service_name=db_service_name
-                )
+            # Connect to Snowflake
+            db_con = snowflake.connector.connect(
+                user=db_user_id,
+                password=db_password,
+                account=account,
+                database=db_name,
+                warehouse=warehouse,
+                schema=schema
+            )
+            CommonUtil.ExecLog(sModuleInfo, "Connected to Snowflake.", 1)
+        elif "oracle" in db_type:
+            import oracledb
+            
+            # Construct the DSN (Data Source Name) using the Easy Connect syntax
+            dsn = None
+            if db_service_name and db_service_name != 'zeuz_failed':
+                # Use Service Name for connection: host:port/service_name
+                dsn = f"{db_host}:{db_port}/{db_service_name}"
+            elif db_sid and db_sid != 'zeuz_failed':
+                # Use SID for connection: host:port:sid
+                dsn = f"{db_host}:{db_port}:{db_sid}" 
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Either db_sid or db_service must be provide.", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Either db_sid or db_service must be provided.", 3)
                 return "zeuz_failed"
+            
+            CommonUtil.ExecLog(sModuleInfo, f"Attempting Oracle connection using DSN: {dsn}", 1)
 
             # Connect to db
-            # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.connect
-            db_con = cx_Oracle.connect(
+            db_con = oracledb.connect(
                 user=db_user_id,
                 password=db_password,
                 dsn=dsn,
             )
+            CommonUtil.ExecLog(sModuleInfo, "Connected to Oracle using python-oracledb.", 1)
         else:
             import pyodbc
 
@@ -270,7 +333,7 @@ def connect_to_db(data_set):
     This action just stores the different database specific configs into shared variables for use by other actions.
     NOTE: The actual db connection does not happen here, connection to db is made inside the actions which require it.
 
-    db_type                         input parameter         <type of db, ex: postgres, mysql>
+    db_type                         input parameter         <type of db, ex: postgres, mysql, snowflake>
     db_name                         input parameter         <name of db, ex: zeuz_db>
     db_user_id                      input parameter         <user id of the os who have access to the db, ex: postgres>
     db_password                     input parameter         <password of db, ex: mydbpass-mY1-t23z>
@@ -278,6 +341,9 @@ def connect_to_db(data_set):
     db_port                         input parameter         <port of db, ex: 5432 for postgres by default>
     sid                             optional parameter      <sid of db, ex: 15321 for oracle by default>
     service_name                    optional parameter      <service_name of db, ex: 'somename' for oracle by default>
+    warehouse                       optional parameter      <warehouse for Snowflake, ex: COMPUTE_WH>
+    schema                          optional parameter      <schema for Snowflake, ex: PUBLIC>
+    account                         optional parameter      <account identifier for Snowflake>
     odbc_driver                     optional parameter      <specify the odbc driver, optional, can be found from pyodbc.drivers()>
     odbc: enable utf-8 encoding     optional parameter      true/false - optionally enable utf-8 encoding
     connect to db                   database action         Connect to a database
@@ -291,6 +357,7 @@ def connect_to_db(data_set):
     try:
         # Default values
         db_type = db_name = db_user_id = db_password = db_host = db_port = db_sid = db_service_name = db_odbc_driver = db_params = None
+        db_warehouse = db_schema = db_account = None
         db_enable_odbc_utf8 = True
         session_name = "default"
 
@@ -316,6 +383,12 @@ def connect_to_db(data_set):
                 sr.Set_Shared_Variables(DB_ODBC_DRIVER,right.strip())
             if left == DB_ODBC_UTF8:
                 db_enable_odbc_utf8 = CommonUtil.parse_value_into_object(right.strip()) == True
+            if left == DB_WAREHOUSE or left == "warehouse":
+                db_warehouse = right.strip()
+            if left == DB_SCHEMA:
+                db_schema = right.strip()
+            if left == DB_ACCOUNT:
+                db_account = right.strip()
             if DB_SESSION in left:
                 session_name = right.strip()
 
@@ -330,6 +403,9 @@ def connect_to_db(data_set):
             DB_SERVICE_NAME: db_service_name,
             DB_ODBC_DRIVER: db_odbc_driver,
             DB_ODBC_UTF8: db_enable_odbc_utf8,
+            DB_WAREHOUSE: db_warehouse,
+            DB_SCHEMA: db_schema,
+            DB_ACCOUNT: db_account,
         }
 
         if sr.Test_Shared_Variables('db_sessions'):
@@ -368,6 +444,7 @@ def db_select(data_set):
         query = None
         session_name = 'default'
         variable_name = None
+        return_type = None
         for left, mid, right in data_set:
             if left == "query":
                 # Get the and query, and remove any whitespaces
@@ -375,7 +452,10 @@ def db_select(data_set):
             if "action" in mid:
                 variable_name = right.strip()
             if 'session' in left.lower():
-                session_name = right.strip() 
+                session_name = right.strip()
+            if 'return' in left.lower():
+                return_type = "records"
+
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -389,6 +469,10 @@ def db_select(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection(session_name)
+        if db_con == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Failed to get database connection", 3)
+            return "zeuz_failed"
+            
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -403,6 +487,10 @@ def db_select(data_set):
                     db_rows.append(list(db_row))
 
                 # Set the rows as a shared variable
+                if return_type == 'records':
+                    column_headers = [i[0] for i in db_cursor.description]
+                    db_rows = [dict(zip(column_headers, row)) for row in db_rows]
+
                 sr.Set_Shared_Variables(variable_name, db_rows)
 
         db_con.close()
@@ -498,6 +586,10 @@ def select_from_db(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection(session_name)
+        if db_con == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Failed to get database connection", 3)
+            return "zeuz_failed"
+            
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -586,6 +678,10 @@ def insert_into_db(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         db_con = db_get_connection(session_name)
+        if db_con == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Failed to get database connection", 3)
+            return "zeuz_failed"
+            
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -658,6 +754,10 @@ def delete_from_db(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection(session_name)
+        if db_con == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Failed to get database connection", 3)
+            return "zeuz_failed"
+            
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -743,6 +843,10 @@ def update_into_db(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection(session_name)
+        if db_con == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Failed to get database connection", 3)
+            return "zeuz_failed"
+            
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)
@@ -808,6 +912,10 @@ def db_non_query(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection(session_name)
+        if db_con == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Failed to get database connection", 3)
+            return "zeuz_failed"
+            
         with db_con:
             with db_con.cursor() as db_cursor:
                 db_cursor.execute(query)

@@ -78,7 +78,6 @@ def CreateFolder(folderPath, forced=True):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Creating Folder %s" % folderPath, 1)
         if os.path.isdir(folderPath):
             if forced == False:
                 # print "folder already exists"
@@ -92,7 +91,6 @@ def CreateFolder(folderPath, forced=True):
         # if the folder exists in correct position then return passed
         # if the folder doesn't exist in correct position then return failed
         if os.path.isdir(folderPath):
-            CommonUtil.ExecLog(sModuleInfo, f"Folder created: {folderPath}", 1)
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Could not create folder", 3)
@@ -859,60 +857,6 @@ def download_file_using_url(file_url, location_of_file, headers=dict()):
             sys.exc_info(), None, "Error downloading file"
         )
 
-
-# Method to download and unzip file
-# def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
-#
-#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-#
-#
-#     try:
-#         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
-#           This avoids reading the content all at once into memory for large responses.
-#          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
-#         r = requests.get(file_url, stream=True)
-#
-#         list_the_parts_of_url = file_url.split("/") #get file name from the url
-#         file_name = os.path.join(location_of_file, list_the_parts_of_url[len(list_the_parts_of_url) - 1])
-#         actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
-#         with open(file_name, "wb") as f:
-#             for chunk in r.iter_content(chunk_size=1024):
-#
-#             # writing one chunk at a time to pdf file
-#                 if chunk:
-#                     f.write(chunk)
-#         # after performing the download operation we have to check that if the file with new name exists in correct location.
-#         # if the file exists in correct position then return passed
-#         # if the file doesn't exist in correct position then return failed
-#         if os.path.isfile(file_name):
-#             CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 0)
-#         else:
-#             CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
-#             return "zeuz_failed"
-#         unzip_location = os.path.join(location_of_file,"latest_directory" )
-#         CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 0)
-#         result1 = CreateFolder(unzip_location)
-#         if result1 in failed_tag_list:
-#             CommonUtil.ExecLog(sModuleInfo, "Can't not create folder '%s' " % unzip_location, 3)
-#             return "zeuz_failed"
-#         CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is created " % unzip_location, 1)
-#         result = UnZip(file_name,unzip_location)
-#         if result in failed_tag_list:
-#             CommonUtil.ExecLog(sModuleInfo, "Can't not unzip file '%s' to '%s'" % (file_name, unzip_location), 3)
-#             return "zeuz_failed"
-#         CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 0)
-#         CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
-#         #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
-#         downloaded_file = os.path.join(unzip_location,actual_file_name )
-#         Shared_Resources.Set_Shared_Variables("downloaded_file", downloaded_file)
-#         Shared_Resources.Show_All_Shared_Variables()
-#         return "passed"
-#
-#
-#     except Exception:
-#         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 # not done properly...need more works
 """def change_path_for_windows(src):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -988,7 +932,7 @@ def sanitize_string(strg, valid_chars="", clean_whitespace_only=False, maxLength
     """
 
     # Invalid character list (space and underscore are handle separately)
-    invalid_chars = "!\"#$%&'()*+,-./:;<=>?@[\]^`{|}~"
+    invalid_chars = r"!\"#$%&'()*+,-./:;<=>?@[\]^`{|}~"
 
     # Adjust invalid character list, based on function input
     for j in range(len(valid_chars)):  # For each valid character
@@ -1385,17 +1329,15 @@ def Find_File_Or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         # take a look at the use of inline commented variable
-        file_or_folder_path_splited_for_os_support = (
-            str(step_data[0][2]).strip().split("/")
-        )
-        file_or_folder_path = get_home_folder()
-
-        for path_part in file_or_folder_path_splited_for_os_support:
-            file_or_folder_path = os.path.join(file_or_folder_path, path_part)
-
-        file_or_folder = str(step_data[1][2]).strip()
-
-        if file_or_folder.lower() == "file":
+        file_or_folder = None
+        file_or_folder_path = None
+        for left,_,right in step_data:
+            if left.strip().lower() == "find":
+                file_or_folder = right.strip().lower()
+            if left.strip().lower() == "file_name":
+                file_or_folder_path = right.strip()
+                
+        if file_or_folder == "file":
             # find file "path"
             result = find_file(file_or_folder_path)
             if result in failed_tag_list:
@@ -2360,27 +2302,22 @@ def compare_images(data_set):
             import skimage, cv2, imutils
             from skimage.metrics import structural_similarity as ssim
 
-        score = 'score'
-
+        var_name = 'score'
         default_ssim = float(1)
+        result_folder = ConfigModule.get_config_value(
+            "sectionOne", "screen_capture_folder", temp_config
+        )
 
-        for eachrow in data_set:
-            if eachrow[1] == "compare":
-                imageA_path = eachrow[0].strip()
-                imageB_path = eachrow[2].strip()
-                # imageA_path = Shared_Resources.get_previous_response_variables_in_strings(
-                #     eachrow[0].strip()
-                # )
-                # imageB_path = Shared_Resources.get_previous_response_variables_in_strings(
-                #     eachrow[2].strip()
-                # )
-            elif eachrow[1] == "element parameter":
-                if eachrow[0] == "min match score":
-                    user_ssim = float(
-                        eachrow[2]
-                    )  # User defined minimum match score (i.e. SSIM)
-            elif 'action' in eachrow[1]:
-                score = eachrow[2].strip()
+        for left, mid, right in data_set:
+            if mid == "compare":
+                imageA_path = CommonUtil.path_parser(left.strip())
+                imageB_path = CommonUtil.path_parser(right.strip())
+            elif left == "min match score":
+                user_ssim = float(right)  # User defined minimum match score (i.e. SSIM)
+            elif left == "result folder":
+                result_folder = CommonUtil.path_parser(right.strip())
+            elif 'action' in mid:
+                var_name = right.strip()
 
         imageA = cv2.imread(imageA_path)  # Read first image
         imageB = cv2.imread(imageB_path)  # Read second image
@@ -2425,10 +2362,6 @@ def compare_images(data_set):
             cv2.rectangle(imageB, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
         # show an output concatenated result comparing the two images and their difference
-
-        result_folder = ConfigModule.get_config_value(
-            "sectionOne", "screen_capture_folder", temp_config
-        )
         result_name = "final_image"
         timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")
         final_result_location = (
@@ -2452,7 +2385,7 @@ def compare_images(data_set):
 
         # Perform the image comparison based on the structural similarity index
 
-        Shared_Resources.Set_Shared_Variables(score, ssim_match)
+        Shared_Resources.Set_Shared_Variables(var_name, ssim_match)
         print('Score:',ssim_match)
         if ssim_match >= req_ssim:
             CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
@@ -3396,521 +3329,6 @@ def save_substring(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-"""
-extracts number from a string, suppose a string is "hi123 4.5 -6hola", It will get all the numbers in a list ['123','4.5','-6'].. then if index is specified for example 2,
-then it will return 2nd element of the list which is '4.5'. If no index is specified default index 1 will be applied. It will return the 1st element which is 123
-It converts that number to be formatted a specified way if round is defined
-
-Original value of the variable: 246.789
-
-eg. If round is 1  -  output = 247
-    If round is 10     -  output = 250
-    If round is 100    -  output = 200
-
-    If round is 0.1     -  output = 246.8
-    If round is 0.01    -  output = 246.79
-    If round is 0.001   -  output = 246.789
-    If round is 0.0001  -  output = 246.789
-    If round is 0.00001  -  output = 246.789
-This function saves the variable to a defined variable(not the source variable)
-
-"""
-
-
-@logger
-@deprecated
-def extract_number(data_set):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Extract number or Convert data type'", 2)
-    # Parse data set
-    try:
-        from_var = ""  # the varibale from which string will be copied
-        to_var = ""  # the variable wher estring will be saved
-        index = 0  # index of the digit for a string "hello123 2.5 67" if index is 2(starting from 1) we will get 2.5
-        rounded_number = ""
-        digit = "-1"
-        extracted_number = ""
-        for row in data_set:
-            if row[1] == "element parameter":
-                if row[0] == "from":
-                    from_var = str(row[2])
-                elif row[0] == "to":
-                    to_var = str(row[2])
-                elif row[0] == "index":
-                    index = int(row[2])
-                elif row[0] == "round":
-                    digit = str(row[2])
-
-        if Shared_Resources.Test_Shared_Variables(from_var):
-            from_var = str(
-                Shared_Resources.Get_Shared_Variables(from_var)
-            )  # save the value of 'from_var' shared varibale to 'from_var'
-
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not find the variable named '%s'" % from_var, 3
-            )
-            return "zeuz_failed"
-
-        if index < 0:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Index for extracting number can't be negative", 3
-            )
-            return "zeuz_failed"
-        else:
-            """as111.a2.3"""
-            try:
-                all_digit = [s for s in re.findall(r"-?\d+\.?\d*", from_var)]
-                extracted_number = all_digit[index - 1]
-
-                if re.match("-?\d+?\.\d+?$", digit) is None:
-                    digit = int(digit)
-                else:
-                    digit = float(digit)
-
-                if re.match("-?\d+?\.\d+?$", extracted_number) is None:
-                    extracted_number = int(extracted_number)
-                else:
-                    extracted_number = float(extracted_number)
-
-                if digit < 1:
-
-                    rounded_number = round(extracted_number, abs(digit))
-
-                elif digit >= 1:
-                    rounded_number = (
-                        int((round(float(extracted_number) / digit))) * digit
-                    )
-                else:
-                    c = 0
-                    for i in range(1, 20):
-                        digit *= 10
-                        c += 1
-                        if int(digit) == 1:
-                            break
-                    if digit != 1:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Can't round number. Incorrect digit '%s' given" % digit,
-                            3,
-                        )
-                        return "zeuz_failed"
-                    rounded_number = round(float(extracted_number), c)
-
-            except:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Can't extract digit. Index out of range for string '%s'"
-                    % from_var,
-                    3,
-                )
-                return "zeuz_failed"
-
-        # now save the substing to new variable
-        CommonUtil.ExecLog(
-            sModuleInfo, "The extracted and rounded value is %s" % rounded_number, 1
-        )
-        return Shared_Resources.Set_Shared_Variables(to_var, rounded_number)
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def datatype_conversion(data_set):
-    """
-    This action executes following sub actions-
-
-    str to int
-    str to float
-    int to float
-    float to int
-    extract number from str
-
-    This action can handle a single value, 1 dimensional list and 2 dimensional list. So you can easily manipulate
-    table data of your excel file.
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
-    global repeat
-    repeat = True
-    try:
-        decimal_condition = False
-        decimal_point = ""
-        out_variable_name = ""
-        ceil_floor_round = ""
-        index = ""
-        for left, mid, right in data_set:
-            left = left.lower()
-            if "input" in left:
-                in_variable_name = right.strip()
-            elif "output variable name" in left:
-                out_variable_name = right.strip()
-            elif "decimal point" in left:
-                decimal_point = right.strip()
-            elif "datatype conversion" in left:
-                conversion_type = right.strip().lower()
-            elif "ceil floor round" in left:
-                ceil_floor_round = right.strip().lower()
-            elif "index" in left:
-                index = right.strip()
-
-        if not Shared_Resources.Test_Shared_Variables(in_variable_name):
-            in_variable_value = CommonUtil.parse_value_into_object(in_variable_name)
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Please use %| |% for using variable. From now you can use any variable, list, string, number in the input row",
-                2
-            )
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
-
-        if out_variable_name == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Output variable name was not set", 3,
-            )
-            return "zeuz_failed"
-
-        if (
-            re.match("^[-+]?[0-9]+$", decimal_point)
-        ):  # Checking if the decimal value is integer
-            decimal_point = int(decimal_point)
-            decimal_condition = True
-        else:  # We cannot round a float number if the decimal_point is set to other than int number
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Decimal value is not set. So extracting the float number with all decimal values from the given item",
-                0,
-            )
-            decimal_condition = False
-
-        if (
-            re.match("^[-+]?[0-9]+$", index)
-        ):  # Checking if the decimal value is integer
-            index = int(index)
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Decimal value is not set or properly set. So extracting the first number from the given string",
-                0,
-            )
-            index = 0
-
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-    try:
-        if "str to int" == conversion_type:
-            out_variable_value = str_to_int(
-                sModuleInfo, in_variable_value, ceil_floor_round
-            )
-            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-
-        elif "str to float" == conversion_type:
-            out_variable_value = str_to_float(
-                sModuleInfo, in_variable_value, decimal_point, decimal_condition
-            )
-            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-
-        elif "int to float" == conversion_type:
-            out_variable_value = int_to_float(
-                sModuleInfo, in_variable_value, decimal_point, decimal_condition
-            )
-            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-
-        elif "float to int" == conversion_type:
-            out_variable_value = float_to_int(
-                sModuleInfo, in_variable_value, ceil_floor_round
-            )
-            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-
-        elif "extract number from str" == conversion_type:
-            out_variable_value = extract_num_from_str(
-                sModuleInfo, in_variable_value, decimal_point, decimal_condition, index, ceil_floor_round
-            )
-            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-
-        elif "float to float" == conversion_type:
-            out_variable_value = float_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition)
-            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Unknown Type conversion was selected. Hence setting the values without any conversion",
-                2,
-            )
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
-            out_variable_value = in_variable_value
-            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-            return "passed"
-
-    except:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Could not convert the data type of the given variable", 3,
-        )
-        return "zeuz_failed"
-
-
-def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
-    """
-    Field	                Sub Field	        Value
-    input variable name	    input parameter	    inp
-    output variable name    output parameter    out
-    ceil floor round        optional parameter  ceil
-    datatype conversion     utility action      str to int
-
-    Action: "29.1" >> 30
-    """
-    if isinstance(in_variable_value, str):
-        if (
-            re.match("^[-+]?\d+?\.\d+?$", in_variable_value)
-        ):  # Checking if the string has float number
-            if ceil_floor_round == "ceil":
-                out_variable_value = int(ceil(float(in_variable_value)))
-            elif ceil_floor_round == "floor":
-                out_variable_value = int(floor(float(in_variable_value)))
-            elif ceil_floor_round == "round":
-                out_variable_value = round(float(in_variable_value))
-            else:
-                out_variable_value = int(float(in_variable_value))
-
-        elif (
-            re.match("^[-+]?[0-9]+$", in_variable_value)
-        ):  # Checking if the string has int number
-            out_variable_value = int(in_variable_value)
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
-                0,
-            )
-            out_variable_value = in_variable_value
-
-    elif isinstance(in_variable_value, list):
-
-        out_variable_value = []
-        for i in in_variable_value:
-            out_variable_value.append(str_to_int(sModuleInfo, i, ceil_floor_round))
-
-    else:
-        out_variable_value = in_variable_value
-
-    return out_variable_value
-
-
-def float_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
-    """
-    Field	                Sub Field	        Value
-    input variable name	    input parameter	    inp
-    output variable name    output parameter    out
-    ceil floor round        optional parameter  round
-    datatype conversion     utility action      float to int
-
-    Action: 368.6555 >> 367
-    """
-
-    if isinstance(in_variable_value, float):
-        if ceil_floor_round == "ceil":
-            out_variable_value = ceil(in_variable_value)
-        elif ceil_floor_round == "floor":
-            out_variable_value = floor(in_variable_value)
-        elif ceil_floor_round == "round":
-            out_variable_value = round(in_variable_value)
-        else:
-            out_variable_value = int(in_variable_value)
-
-    elif isinstance(in_variable_value, list):
-
-        out_variable_value = []
-        for i in in_variable_value:
-            out_variable_value.append(float_to_int(sModuleInfo, i, ceil_floor_round))
-
-    else:
-        out_variable_value = in_variable_value
-
-    return out_variable_value
-
-
-def str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
-    """
-    Field	                Sub Field	        Value
-    input variable name	    input parameter	    inp
-    output variable name    output parameter    out
-    decimal point           optional parameter  2
-    datatype conversion     utility action      str to float
-
-    Action: "368.6555" >> 368.66
-    """
-    global repeat
-
-    if isinstance(in_variable_value, str):
-        if (
-            re.match("^[-+]?\d+?\.\d+?$", in_variable_value)
-        ):  # Checking if the string has float number
-            if decimal_condition:
-                out_variable_value = round(float(in_variable_value), decimal_point)
-            else:
-                out_variable_value = float(in_variable_value)
-
-        elif (
-            re.match("^[-+]?[0-9]+$", in_variable_value)
-        ):  # Checking if the string has int number
-            if decimal_condition:
-                out_variable_value = round(float(in_variable_value), decimal_point)
-            else:
-                out_variable_value = float(in_variable_value)
-            # float("100")= 100.0 python handles that
-        elif repeat:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "A string has other characters than digits and +-. symbols. Try \"extract num from str\". Returning same value without any conversion",
-                2,
-            )
-            repeat = False
-            out_variable_value = in_variable_value
-        else:
-            out_variable_value = in_variable_value
-    elif isinstance(in_variable_value, list):
-
-        out_variable_value = []
-        for i in in_variable_value:
-            out_variable_value.append(str_to_float(sModuleInfo, i, decimal_point, decimal_condition))
-
-    else:
-        out_variable_value = in_variable_value
-
-    return out_variable_value
-
-"""
-^[-+]?\d+?\.\d+?$
-14.012
-"""
-
-def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
-    """
-    Field	                Sub Field	        Value
-    input variable name	    input parameter	    inp
-    output variable name    output parameter    out
-    datatype conversion     utility action      int to float
-
-    Action: 368 >> 368.0
-    """
-    if isinstance(in_variable_value, int):
-        if decimal_condition:
-            out_variable_value = round(float(in_variable_value), decimal_point)
-        else:
-            out_variable_value = float(in_variable_value)
-
-    elif isinstance(in_variable_value, list):
-
-        out_variable_value = []
-        for i in in_variable_value:
-            out_variable_value.append(int_to_float(sModuleInfo, i, decimal_point, decimal_condition))
-
-    else:
-        out_variable_value = in_variable_value
-
-    return out_variable_value
-
-
-def float_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
-    """
-    Field	                Sub Field	        Value
-    input variable name	    input parameter	    inp
-    output variable name    output parameter    out
-    datatype conversion     utility action      int to float
-
-    Action: 368 >> 368.0
-    """
-    if isinstance(in_variable_value, float):
-        if decimal_condition:
-            out_variable_value = round(float(in_variable_value), decimal_point)
-        else:
-            out_variable_value = float(in_variable_value)
-
-    elif isinstance(in_variable_value, list):
-        out_variable_value = []
-        for i in in_variable_value:
-            out_variable_value.append(float_to_float(sModuleInfo, i, decimal_point, decimal_condition))
-
-    else:
-        out_variable_value = in_variable_value
-
-    return out_variable_value
-
-
-def extract_num_from_str(
-    sModuleInfo, in_variable_value, decimal_point, decimal_condition, index, ceil_floor_round
-):
-    """
-    Field	                Sub Field	        Value
-    input variable name	    input parameter	    inp
-    output variable name    output parameter    out
-    index                   optional parameter  -1
-    decimal point           optional parameter  0
-    datatype conversion     utility action      str to float
-
-    Action: "30 dollar 400.35469 pound" >> 400.0
-    """
-
-    if isinstance(in_variable_value, str):
-        try:
-            no_numbers_found = False
-            all_nums = [s for s in re.findall(r"-?\d+\.?\d*", in_variable_value)]
-            if not all_nums:
-                no_numbers_found = True
-            else:
-                extracted_number = all_nums[index]
-        except:
-            CommonUtil.ExecLog(sModuleInfo, "Index is out of range", 3,)
-            return "zeuz_failed"
-
-        if no_numbers_found:
-            CommonUtil.ExecLog(sModuleInfo, "Your string has no number to be extracted so returning the string as it is", 1)
-            out_variable_value = in_variable_value
-        elif (
-            re.match("^[-+]?\d+?\.\d+?$", extracted_number)
-        ):  # Checking if the extracted num has float number
-            if ceil_floor_round == "ceil":
-                out_variable_value = ceil(float(extracted_number))
-            elif ceil_floor_round == "floor":
-                out_variable_value = floor(float(extracted_number))
-            elif ceil_floor_round == "round":
-                out_variable_value = round(float(extracted_number))
-            elif decimal_condition:
-                out_variable_value = round(float(extracted_number), decimal_point)
-            else:
-                out_variable_value = float(extracted_number)
-
-        elif (
-            re.match("^[-+]?[0-9]+$", extracted_number)
-        ):  # Checking if the extracted num has int number
-            if decimal_condition:
-                out_variable_value = round(int(extracted_number), decimal_point)
-            else:
-                out_variable_value = int(extracted_number)
-
-        elif (
-            re.match("^[-+]?[0-9]+", extracted_number)
-        ):  # Checking if the extracted num has int number with a full stop at the end.such as "Your verification code is 291767."
-            if decimal_condition:
-                out_variable_value = round(int(extracted_number[:-1]), decimal_point)
-            else:
-                out_variable_value = int(extracted_number[:-1])
-        else:
-            pass  # What can be done here?
-
-    elif isinstance(in_variable_value, list):
-
-        out_variable_value = []
-        for i in in_variable_value:
-            out_variable_value.append(extract_num_from_str(sModuleInfo, i, decimal_point, decimal_condition, index, ceil_floor_round))
-
-    else:
-        out_variable_value = in_variable_value
-
-    return out_variable_value
 
 @logger
 def new_compare_images(data_set):

@@ -13,7 +13,7 @@ var preventClick = false;
 var enterTarget = null;
 var enterValue = null;
 var tabCheck = null;
-
+var contextMenuFired = false;
 function print_event(event) {
     var print = true;
     let ignore = ['mouseover', 'mouseout', 'focus', 'focusout', 'blur', 'DOMNodeInserted', 'scroll']
@@ -599,13 +599,21 @@ const asCheckbox = function(target) {
         return null;
     return ['checkbox', 'radio'].includes(target.type) ? target : null;
 }
-const _shouldIgnoreMouseEvent = function(event) {
+const _shouldIgnoreMouseEvent = async function(event) {
     const target = event.target;
     const nodeName = target.nodeName;
     if (/* nodeName === 'SELECT' || */ nodeName === 'OPTION')
         return true;
     if (nodeName === 'INPUT' && ['date', 'range'].includes(target.type))
         return true;
+    if (event.button == 2){ // Ignoring right mouse click if that opens contextMenu
+        return await new Promise((resolve) => {
+            setTimeout(()=>{
+                resolve(contextMenuFired);
+                contextMenuFired = false;
+            }, 0)
+        })
+    }
     return false;
 }
 
@@ -639,12 +647,12 @@ const _shouldGenerateKeyPressFor = function(event) {
     return true;
 }
 
-const onClick = function(event) {
+const onClick = async function(event) {
     // print_event(event)
     const target = event.target
     if (isRangeInput(target))
         return;
-    if (_shouldIgnoreMouseEvent(event))
+    if (await _shouldIgnoreMouseEvent(event))
         return;
 
     const checkbox = asCheckbox(target);
@@ -658,7 +666,14 @@ const onClick = function(event) {
         return;
     }
 
-    if (event.detail === 2){
+    if (event.button == 2){
+        recorder.record({
+            name: 'context click',
+            xpath: recorder.getXpath(target),
+            value: '',
+        });
+    }
+    else if (event.detail === 2){
         recorder.record({
             name: 'double click',
             xpath: recorder.getXpath(target),
@@ -762,6 +777,7 @@ const onKeyDown = function(event) {
 
 var myPort = browserAppData.runtime.connect();
 const onContextMenu = function (event){
+    contextMenuFired = true;
     print_event(event)
     myPort = browserAppData.runtime.connect();
     const target = event.target;
@@ -784,27 +800,27 @@ function consumeEvent(e) {
     e.stopImmediatePropagation();
   }
 
-const onMouseDown = function(event) {
+const onMouseDown = async function(event) {
     print_event(event)
-    if (_shouldIgnoreMouseEvent(event))
-        return;
 }
 
-const onMouseUp = function(event) {
+const onMouseUp = async function(event) {
     print_event(event)
     /* select-2 jquery elements only dispath mousedown-up event and not click event.
     Codegen record it by event.stopPropagation() then record then continue propagation somehow
     We are not able to do it right now. So, we are simply recording click on mouseup */
-    onClick(event)      
-    if (_shouldIgnoreMouseEvent(event))
-        return;
+    onClick(event)
+}
+
+const onAuxClick = async function(event) {
+    print_event(event)
 }
 
 Recorder.prototype.newEventListeners = [
     {name: 'mouseup', handler: onMouseUp, capture: true},
     {name: 'mousedown', handler: onMouseDown, capture: true},
     // {name: 'click', handler: onClick, capture: true},
-    {name: 'auxclick', handler: onClick, capture: true},
+    {name: 'auxclick', handler: onAuxClick, capture: true},
     {name: 'input', handler: onInput, capture: true},
     {name: 'keydown', handler: onKeyDown, capture: true},
     {name: 'contextmenu', handler: onContextMenu, capture: true},

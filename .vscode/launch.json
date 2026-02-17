@@ -6,27 +6,27 @@
     "configurations": [
         {
             "name": "Python: Attach using Process Id",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
             "processId": "${command:pickProcess}"
         },
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
         },
         {
             "name": "Python: node_cli",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/node_cli.py",
             "console": "integratedTerminal",
         },
         {
             "name": "Python: node_cli custom log dir",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/node_cli.py",
             "args": ["-d /home/szxo3/Desktop/test_node_dir"],
@@ -34,7 +34,7 @@
         },
         {
             "name": "Python: local_run",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/node_cli.py",
             "args": ["--local_run"],
@@ -42,11 +42,19 @@
         },
         {
             "name": "Python: node_cli with GH_TOKEN",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/node_cli.py",
             "args": ["--gh", "TOKEN_HERE"],
             "console": "integratedTerminal",
         },
+        {
+            "name": "Go: node_runner",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/Apps/node_runner/main.go"
+        }
     ]
 }

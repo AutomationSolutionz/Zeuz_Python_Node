@@ -583,10 +583,14 @@ def parse_variable(name):
             elif len(indices) == 1:
                 result = result[0]
 
+             # send variable value in report logs and terminal
+            if str(shared_variables['zeuz_enable_variable_logging']).lower() in {"on", "yes", "true", "1"}:
+                CommonUtil.AddVariableToLog(sModuleInfo, copy_of_name, result)
+
             # Print to console.
             # CommonUtil.prettify(copy_of_name, result)
             return result
-        elif len(indices) > 0 and re.search("^[a-zA-Z_][a-zA-Z_0-9]*\(", name) and Test_Shared_Variables(name[: name.find("(")]) and type(Get_Shared_Variables(name[: name.find("(")], log=False)) not in (type(lambda a:a), type(a)):
+        elif len(indices) > 0 and re.search(r"^[a-zA-Z_][a-zA-Z_0-9]*\(", name) and Test_Shared_Variables(name[: name.find("(")]) and type(Get_Shared_Variables(name[: name.find("(")], log=False)) not in (type(lambda a:a), type(a)):
             # regex: startswith valid_var_name(
             # Data collector with keys.
             # Match with the following pattern.
@@ -606,16 +610,35 @@ def parse_variable(name):
             if len(indices) == 1:
                 result = result[0]
 
+            if str(shared_variables['zeuz_enable_variable_logging']).lower() in {"on", "yes", "true", "1"}:
+                CommonUtil.AddVariableToLog(sModuleInfo, copy_of_name, result)
+
             # CommonUtil.prettify(copy_of_name, result)
             return result
         else:
-            val = eval(name, shared_variables)
+            from .secrets import secret
+            
+            eval_context = dict(shared_variables)
+            eval_context['secret'] = secret
+            
+            val = eval(name, eval_context)
             val_to_print = copy.deepcopy(val)
 
             for each_var in CommonUtil.zeuz_disable_var_print.keys():
                 if each_var in name:
                     val_to_print = '*****'
                     break
+            
+            if 'secret[' in name:
+                secret_key_match = re.search(r"secret\[['\"](.*?)['\"]\]", name)
+                if secret_key_match:
+                    secret_key = secret_key_match.group(1)
+                    if secret_key not in CommonUtil.zeuz_disable_var_print:
+                        CommonUtil.zeuz_disable_var_print[secret_key] = val
+                    val_to_print = '*****'
+
+            if str(shared_variables['zeuz_enable_variable_logging']).lower() in {"on", "yes", "true", "1"} and not "os.environ" in name:
+                CommonUtil.AddVariableToLog(sModuleInfo, copy_of_name, val_to_print)
 
             # Print to console.
             # if not "os.environ" in name:
@@ -646,7 +669,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     params = temp[1].split(")")[0]
                     if isinstance(CommonUtil.parse_value_into_object(params.strip()), list):
                         random_string = str(random.choice(CommonUtil.parse_value_into_object(params.strip())))
-                    elif re.search("^\s*\d+\s*-{1}\s*\d+\s*$", params):
+                    elif re.search(r"^\s*\d+\s*-{1}\s*\d+\s*$", params):
                         start, end = params.replace(" ", "").split("-")
                         random_string = str(random.randrange(int(start), int(end), 1))
                     elif "," in params:
