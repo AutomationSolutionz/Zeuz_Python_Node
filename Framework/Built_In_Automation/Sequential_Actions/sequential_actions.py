@@ -1984,6 +1984,37 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
             logic_decision = False
             log_msg += "Element is not found\n"
 
+    elif module == "playwright":
+        try:
+            from Framework.Built_In_Automation.Web.Playwright import locator as PlaywrightLocator
+            from Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions import current_page
+            
+            wait = 10
+            for left, mid, right in data_set:
+                mid = mid.lower()
+                left = left.lower()
+                if "optional parameter" in mid and "wait" in left:
+                    wait = float(right.strip())
+
+            if current_page is None:
+                CommonUtil.ExecLog(sModuleInfo, "No browser open for Playwright conditional action", 3)
+                logic_decision = False
+                log_msg += "Browser not open\n"
+            else:
+                Element = await PlaywrightLocator.Get_Element(data_set, current_page, element_wait=wait)
+                if Element == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
+                    logic_decision = False
+                    log_msg += "Element is not found\n"
+                else:
+                    logic_decision = True
+                    log_msg += "Element is found\n"
+
+        except:  # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
+            logic_decision = False
+            log_msg += "Element is not found\n"
+
     elif module == "windows":
         try:
             from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
@@ -2186,7 +2217,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 2
             )
         if data_set_index not in inner_skip:
-            result, skip = Run_Sequential_Actions(
+            result, skip = await Run_Sequential_Actions(
                 [data_set_index]
             )  # Running
             inner_skip = list(set(inner_skip + skip))
