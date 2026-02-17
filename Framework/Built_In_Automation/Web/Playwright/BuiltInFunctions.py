@@ -303,7 +303,7 @@ async def Go_To_Link(step_data):
 
 
 @logger
-def Tear_Down_Playwright(step_data=None):
+async def Tear_Down_Playwright(step_data=None):
     """
     Close browser and clean up Playwright resources.
 
@@ -320,34 +320,34 @@ def Tear_Down_Playwright(step_data=None):
         for page_id, details in playwright_details.items():
             try:
                 if details.get("page"):
-                    details["page"].close()
+                    await details["page"].close()
                 if details.get("context"):
-                    details["context"].close()
+                    await details["context"].close()
             except Exception:
                 pass
 
         # Close main instances
         try:
             if current_page and current_page not in [d.get("page") for d in playwright_details.values()]:
-                current_page.close()
+                await current_page.close()
         except Exception:
             pass
 
         try:
             if context:
-                context.close()
+                await context.close()
         except Exception:
             pass
 
         try:
             if browser:
-                browser.close()
+                await browser.close()
         except Exception:
             pass
 
         try:
             if playwright_instance:
-                playwright_instance.stop()
+                await playwright_instance.stop()
         except Exception:
             pass
 
