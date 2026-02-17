@@ -1961,27 +1961,25 @@ async def drag_and_drop(step_data):
             return "zeuz_failed"
 
         # Separate source and target parameters
-        source_params = []
-        target_params = []
+        source_param = None
+        target_param = None
 
         for left, mid, right in step_data:
             mid_l = mid.strip().lower()
-            if mid_l == "target parameter":
-                target_params.append((left, "element parameter", right))
-            elif mid_l == "element parameter":
-                source_params.append((left, mid, right))
-            else:
-                source_params.append((left, mid, right))
-                target_params.append((left, mid, right))
+            if "element parameter" in mid_l:
+                if mid_l.startswith("dst"):
+                    target_param = left.strip()
+                elif mid_l.startswith("src"):
+                    source_param = left.strip()
 
         # Get source element
-        source_locator = await PlaywrightLocator.Get_Element(source_params, current_page)
+        source_locator = await PlaywrightLocator.Get_Element(source_param, current_page)
         if source_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Source element not found", 3)
             return "zeuz_failed"
 
         # Get target element
-        target_locator = await PlaywrightLocator.Get_Element(target_params, current_page)
+        target_locator = await PlaywrightLocator.Get_Element(target_param, current_page)
         if target_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Target element not found", 3)
             return "zeuz_failed"
