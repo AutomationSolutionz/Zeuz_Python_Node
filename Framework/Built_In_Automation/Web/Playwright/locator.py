@@ -25,7 +25,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-async def Get_Element(step_data, page, return_all=False, element_wait=None):
+async def Get_Element(step_data, page, return_all=False, element_wait=None, frame_locator=None):
     """
     Get element using Playwright's native Locator API.
 
@@ -38,6 +38,7 @@ async def Get_Element(step_data, page, return_all=False, element_wait=None):
         page: Playwright Page object
         return_all: If True, return list of all matching ElementHandles
         element_wait: Override default wait timeout (in seconds)
+        frame_locator: Optional frame locator for iframe context
 
     Returns:
         Locator | List[ElementHandle] | "zeuz_failed"
@@ -75,7 +76,7 @@ async def Get_Element(step_data, page, return_all=False, element_wait=None):
                 return "zeuz_failed"
 
         # Build the locator
-        locator = _build_locator(page, step_data, params)
+        locator = _build_locator(page, step_data, params, frame_locator)
 
         if locator is None:
             CommonUtil.ExecLog(sModuleInfo, "Could not build locator from step data", 3)
@@ -230,7 +231,7 @@ def _parse_element_params(step_data):
     return params
 
 
-def _build_locator(page, step_data, params):
+def _build_locator(page, step_data, params, frame_locator=None):
     """
     Build a Playwright Locator from step data.
 
@@ -238,7 +239,16 @@ def _build_locator(page, step_data, params):
     1. Playwright-native selectors (test-id, role, text, etc.) - fastest
     2. Direct xpath/css if provided
     3. Build xpath from element parameters using existing logic
+    
+    Args:
+        page: Playwright Page object
+        step_data: Step data for building xpath
+        params: Parsed element parameters
+        frame_locator: Optional frame locator for iframe context
     """
+
+    # Use frame locator if provided, otherwise use page
+    base_locator = frame_locator if frame_locator else page
 
     # Strategy 1: Check for Playwright-native selectors (fastest path)
     for left, right in params['element_params']:
@@ -246,7 +256,7 @@ def _build_locator(page, step_data, params):
 
         # Test ID selectors
         if left_lower in ("test-id", "testid", "data-testid", "data-test-id"):
-            return page.get_by_test_id(right)
+            return base_locator.get_by_test_id(right)
 
         # Role selector
         if left_lower == "role":
@@ -257,54 +267,54 @@ def _build_locator(page, step_data, params):
                     name = r
                     break
             if name:
-                return page.get_by_role(right, name=name)
-            return page.get_by_role(right)
+                return base_locator.get_by_role(right, name=name)
+            return base_locator.get_by_role(right)
 
         # Text selectors
         if left_lower == "text":
-            return page.get_by_text(right, exact=True)
+            return base_locator.get_by_text(right, exact=True)
         if left_lower == "*text":
-            return page.get_by_text(right, exact=False)
+            return base_locator.get_by_text(right, exact=False)
         if left_lower == "**text":
             # Case-insensitive partial match
-            return page.get_by_text(re.compile(re.escape(right), re.IGNORECASE))
+            return base_locator.get_by_text(re.compile(re.escape(right), re.IGNORECASE))
 
         # Label selector
         if left_lower == "label":
-            return page.get_by_label(right)
+            return base_locator.get_by_label(right)
 
         # Placeholder selector
         if left_lower == "placeholder":
-            return page.get_by_placeholder(right)
+            return base_locator.get_by_placeholder(right)
 
         # Alt text selector
         if left_lower in ("alt", "alt text", "alt-text"):
-            return page.get_by_alt_text(right)
+            return base_locator.get_by_alt_text(right)
 
         # Title selector
         if left_lower == "title" and "parameter" not in params.get('mid', ''):
-            return page.get_by_title(right)
+            return base_locator.get_by_title(right)
 
         # Direct xpath
         if left_lower == "xpath":
-            return page.locator(f"xpath={right}")
+            return base_locator.locator(f"xpath={right}")
 
         # Direct CSS selector
         if left_lower in ("css", "css selector", "css_selector"):
-            return page.locator(right)
+            return base_locator.locator(right)
 
     # Strategy 2: Check for unique parameters
     for left, right in params['unique_params']:
         left_lower = left.lower()
 
         if left_lower == "id":
-            return page.locator(f"#{right}")
+            return base_locator.locator(f"#{right}")
         elif left_lower == "name":
-            return page.locator(f"[name='{right}']")
+            return base_locator.locator(f"[name='{right}']")
         elif left_lower == "class":
-            return page.locator(f".{right}")
+            return base_locator.locator(f".{right}")
         elif left_lower == "tag":
-            return page.locator(right)
+            return base_locator.locator(right)
 
     # Strategy 3: Build xpath from element/parent/child parameters
     xpath = _build_xpath_from_params(step_data, params)
@@ -314,7 +324,7 @@ def _build_locator(page, step_data, params):
             f"Built xpath from parameters: {xpath}",
             5
         )
-        return page.locator(f"xpath={xpath}")
+        return base_locator.locator(f"xpath={xpath}")
 
     # Strategy 4: Simple element parameters as xpath
     if params['element_params']:
@@ -348,9 +358,9 @@ def _build_locator(page, step_data, params):
 
         if xpath_parts:
             xpath = f"//{tag}[{' and '.join(xpath_parts)}]"
-            return page.locator(f"xpath={xpath}")
+            return base_locator.locator(f"xpath={xpath}")
         elif tag != "*":
-            return page.locator(tag)
+            return base_locator.locator(tag)
 
     return None
 

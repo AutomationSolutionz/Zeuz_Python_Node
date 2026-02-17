@@ -46,6 +46,13 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from . import locator as PlaywrightLocator
 
+def _get_frame_locator():
+    """Helper function to get current frame locator from shared variables."""
+    frame_locator = sr.Get_Shared_Variables("playwright_frame")
+    if frame_locator in failed_tag_list:
+        return None
+    return frame_locator
+
 #########################
 #                       #
 #    Global Variables   #
@@ -495,7 +502,7 @@ async def Click_Element(step_data):
                     right_click = True
 
         # Get element
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -609,7 +616,7 @@ async def Hover_Over_Element(step_data):
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -686,7 +693,7 @@ async def Enter_Text_In_Text_Box(step_data):
                 elif left_l == "timeout":
                     timeout = int(float(right.strip()) * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -830,7 +837,7 @@ async def Keystroke_For_Element(step_data):
                 key = key_map.get(key, keystroke_value)
 
             if has_element:
-                locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+                locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
                 if locator == "zeuz_failed":
                     CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                     return "zeuz_failed"
@@ -853,7 +860,7 @@ async def Keystroke_For_Element(step_data):
                 type_options["delay"] = int(delay * 1000)
 
             if has_element:
-                locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+                locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
                 if locator == "zeuz_failed":
                     CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                     return "zeuz_failed"
@@ -930,7 +937,7 @@ async def Validate_Text(step_data):
                 if left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -995,7 +1002,7 @@ async def if_element_exists(step_data):
             if mid_l == "optional parameter" and left_l == "timeout":
                 timeout = int(float(right_v) * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, element_wait=timeout/1000)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, element_wait=timeout/1000, frame_locator=_get_frame_locator())
 
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element does not exist", 1)
@@ -1069,7 +1076,7 @@ async def Save_Attribute(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No save variable specified", 3)
             return "zeuz_failed"
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -1131,7 +1138,7 @@ async def get_element_info(step_data):
             if mid.strip().lower() == "save parameter":
                 save_variable = left.strip()
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -1363,7 +1370,7 @@ async def scroll_to_element(step_data):
                 elif left_l == "align to top":
                     align_to_top = right_v.lower() in ("true", "yes", "1")
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -1443,7 +1450,7 @@ async def Select_Deselect(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No selection value provided", 3)
             return "zeuz_failed"
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -1521,7 +1528,7 @@ async def check_uncheck(step_data):
                 if left_l == "use js":
                     use_js = right_v in ("true", "yes", "1")
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -1758,7 +1765,7 @@ def close_tab(step_data):
 #########################
 
 @logger
-def switch_iframe(step_data):
+async def switch_iframe(step_data):
     """
     Switch to an iframe or back to main content.
 
@@ -1806,6 +1813,7 @@ def switch_iframe(step_data):
         if switch_to_default:
             # In Playwright, we work with the main page directly
             # Store a flag or reset frame locator
+            sr.Set_Shared_Variables("playwright_frame", None)
             CommonUtil.ExecLog(sModuleInfo, "Switched to default content", 1)
             return "passed"
 
@@ -1974,13 +1982,13 @@ async def drag_and_drop(step_data):
                     source_param = left.strip()
 
         # Get source element
-        source_locator = await PlaywrightLocator.Get_Element(source_param, current_page)
+        source_locator = await PlaywrightLocator.Get_Element(source_param, current_page, frame_locator=_get_frame_locator())
         if source_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Source element not found", 3)
             return "zeuz_failed"
 
         # Get target element
-        target_locator = await PlaywrightLocator.Get_Element(target_param, current_page)
+        target_locator = await PlaywrightLocator.Get_Element(target_param, current_page, frame_locator=_get_frame_locator())
         if target_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Target element not found", 3)
             return "zeuz_failed"
@@ -2053,7 +2061,7 @@ async def take_screenshot_playwright(step_data):
 
         # Take screenshot
         if has_element:
-            locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+            locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
@@ -2123,7 +2131,7 @@ async def execute_javascript(step_data):
 
         # Execute JS
         if has_element:
-            locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+            locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
@@ -2193,7 +2201,7 @@ async def upload_file(step_data):
                 CommonUtil.ExecLog(sModuleInfo, f"File not found: {file_path}", 3)
                 return "zeuz_failed"
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -2320,7 +2328,7 @@ async def Wait_For_Element(step_data):
         if timeout:
             await asyncio.sleep(timeout)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
 
         if locator == "zeuz_failed":
             # For hidden/detached states, element not found is actually success
@@ -2539,7 +2547,7 @@ async def Extract_Table_Data(step_data):
                 elif left_l == "column":
                     col_filter = right_v
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page)
+        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Table element not found", 3)
             return "zeuz_failed"
