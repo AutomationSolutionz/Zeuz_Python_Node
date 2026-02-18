@@ -48,10 +48,14 @@ from . import locator as PlaywrightLocator
 
 def _get_frame_locator():
     """Helper function to get current frame locator from shared variables."""
-    frame_locator = sr.Get_Shared_Variables("playwright_frame")
-    if frame_locator in failed_tag_list:
+    try:
+        frame_locator = sr.Get_Shared_Variables("playwright_frame")
+        if frame_locator in failed_tag_list:
+            return None
+        return frame_locator
+    except:
+        # Variable doesn't exist yet
         return None
-    return frame_locator
 
 #########################
 #                       #
@@ -1977,18 +1981,18 @@ async def drag_and_drop(step_data):
             mid_l = mid.strip().lower()
             if "element parameter" in mid_l:
                 if mid_l.startswith("dst"):
-                    target_param = left.strip()
+                    target_param = (left, mid, right)
                 elif mid_l.startswith("src"):
-                    source_param = left.strip()
+                    source_param = (left, mid, right)
 
         # Get source element
-        source_locator = await PlaywrightLocator.Get_Element(source_param, current_page, frame_locator=_get_frame_locator())
+        source_locator = await PlaywrightLocator.Get_Element([source_param], current_page, frame_locator=_get_frame_locator())
         if source_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Source element not found", 3)
             return "zeuz_failed"
 
         # Get target element
-        target_locator = await PlaywrightLocator.Get_Element(target_param, current_page, frame_locator=_get_frame_locator())
+        target_locator = await PlaywrightLocator.Get_Element([target_param], current_page, frame_locator=_get_frame_locator())
         if target_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Target element not found", 3)
             return "zeuz_failed"

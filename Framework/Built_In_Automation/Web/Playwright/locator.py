@@ -199,7 +199,7 @@ def _parse_element_params(step_data):
                 params['wait'] = float(right_stripped)
 
         # Element parameters
-        elif mid_lower == "element parameter":
+        elif mid_lower == "element parameter" or "element parameter" in mid_lower:
             if left_lower == "index":
                 try:
                     params['index'] = int(right_stripped)
@@ -303,8 +303,8 @@ def _build_locator(page, step_data, params, frame_locator=None):
         if left_lower in ("css", "css selector", "css_selector"):
             return base_locator.locator(right)
 
-    # Strategy 2: Check for unique parameters
-    for left, right in params['unique_params']:
+    # Strategy 2: Check for unique parameters and element parameters
+    for left, right in params['unique_params'] + params['element_params']:
         left_lower = left.lower()
 
         if left_lower == "id":
