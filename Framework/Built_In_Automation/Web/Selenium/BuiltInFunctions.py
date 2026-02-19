@@ -686,6 +686,7 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             return "passed"
 
         options = generate_options(browser, browser_options)
+
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
 
@@ -702,10 +703,20 @@ def Open_Browser(browser, browser_options: BrowserOptions):
                 service = Service()
                 CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
 
-            selenium_driver = webdriver.Chrome(
-                service=service,
-                options=options,
-            )
+            try:
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
+            except SessionNotCreatedException:
+                options.add_argument("--no-sandbox")
+                options.add_argument(
+                    "--disable-dev-shm-usage"
+                )  # Overcomes /dev/shm space issues
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
 
             # service = Service()
             # selenium_driver = webdriver.Chrome(

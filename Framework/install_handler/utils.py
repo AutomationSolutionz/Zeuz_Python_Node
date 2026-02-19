@@ -1,7 +1,7 @@
 import datetime
 import asyncio
 import platform
-from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
+from Framework.Utilities import RequestFormatter, CommonUtil
 
 debug = False
 version = "2.0.0"
@@ -40,6 +40,8 @@ def generate_services_list(services):
 
 
 async def send_response(data=None) -> None:
+    if data is None:
+        data = {}
     try:
         from Framework.install_handler.route import services
         host = RequestFormatter.form_uri("d/nodes/install/server/push")
@@ -60,18 +62,19 @@ async def send_response(data=None) -> None:
         
         for _ in range(3):
             try:
-                resp = await RequestFormatter.request("post", host, json=data, timeout=70)
+                resp = await asyncio.to_thread(RequestFormatter.request, "post", host, json=data, timeout=70)
                 if debug: 
                     print(f"[installer] Response status: {resp.status_code}")
                     print(f"[installer] Response content: {resp.content}")
                 if not resp.ok:
                     if debug: 
                         print(f"[installer] Failed to send response: {resp.status_code}")
-                    await asyncio.sleep(3,5)
+                    await asyncio.sleep(3.5)
                 else:
                     break
             except Exception as e:
-                if debug: print(e)
-                await asyncio.sleep(3,5)
+                if debug: 
+                    print(e)
+                await asyncio.sleep(3.5)
     except Exception as e:
         print(f"[installer] Error sending response: {e}")
