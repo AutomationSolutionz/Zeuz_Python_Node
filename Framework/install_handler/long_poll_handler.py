@@ -13,7 +13,7 @@ from Framework.install_handler.utils import (
     generate_services_list,
 )
 from Framework.Utilities import RequestFormatter, ConfigModule
-from Framework.node_server_state import STATE
+from Framework.node_server_state import STATE, LoginCredentials
 from Framework.install_handler.android.emulator import (
     check_emulator_list,
     create_avd_from_system_image,
@@ -355,6 +355,13 @@ class InstallHandler:
                 resp = await RequestFormatter.async_request("get", host, timeout=70)
 
                 if not resp.ok:
+                    if resp.status_code == httpx.codes.UNAUTHORIZED:
+                        print(Fore.YELLOW + "Unauthorized. Logging in again...")
+                        STATE.reconnect_with_credentials = LoginCredentials(
+                            server=ConfigModule.get_config_value('Authentication', "server_address").strip('"').strip(),
+                            api_key=ConfigModule.get_config_value('Authentication', "api-key").strip('"').strip(),
+                        )
+                        return 
                     if debug:
                         print(
                             "[installer] Request Error, status code:",

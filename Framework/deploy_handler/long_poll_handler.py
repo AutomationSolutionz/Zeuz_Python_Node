@@ -13,7 +13,7 @@ import requests
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
-from Framework.node_server_state import STATE
+from Framework.node_server_state import STATE, LoginCredentials
 
 
 class DeployHandler:
@@ -288,14 +288,17 @@ class DeployHandler:
                     continue
 
                 if not resp.ok:
-                    print(
-                        "[deploy] Request Error, status code:",
-                        resp.status_code,
-                        "| reconnecting",
-                    )
+                    print("[deploy] Request Error, status code:", resp.status_code)
+                    if resp.status_code == httpx.codes.UNAUTHORIZED:
+                        print(Fore.YELLOW + "Unauthorized. Logging in again...")
+                        STATE.reconnect_with_credentials = LoginCredentials(
+                            server=ConfigModule.get_config_value('Authentication', "server_address").strip('"').strip(),
+                            api_key=ConfigModule.get_config_value('Authentication', "api-key").strip('"').strip(),
+                        )
+                        return                        
 
-                    # Encountered a server error, retry.
-                    await asyncio.sleep(random.randint(1, 3))
+                    print(Fore.YELLOW + "Retrying after 30s")
+                    await asyncio.sleep(30)
                     continue
 
                 should_quit = await self.on_message(resp.content)
