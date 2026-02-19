@@ -1,12 +1,12 @@
 declarations = (
-    { "name": "click",                         "function": "Click_Element",                 "screenshot": "web" },
+    { "name": "click",                         "function": "Click_Element",                 "screenshot": "web" },# will be ai suppoted
     { "name": "click and hold",                "function": "Click_and_Hold_Element",        "screenshot": "web" },
     { "name": "click and download",            "function": "Click_and_Download",            "screenshot": "web" },
-    { "name": "right click",                   "function": "Right_Click_Element",           "screenshot": "web" },
-    { "name": "double click",                  "function": "Double_Click_Element",          "screenshot": "web" },
+    { "name": "right click",                   "function": "Right_Click_Element",           "screenshot": "web" },# will be ai suppoted
+    { "name": "double click",                  "function": "Double_Click_Element",          "screenshot": "web" },# will be ai suppoted
     { "name": "hover",                         "function": "Hover_Over_Element",            "screenshot": "web" },
-    { "name": "keystroke keys",                "function": "Keystroke_For_Element",         "screenshot": "web" },
-    { "name": "keystroke chars",               "function": "Keystroke_For_Element",         "screenshot": "web" },
+    { "name": "keystroke keys",                "function": "Keystroke_For_Element",         "screenshot": "web" },# will be ai suppoted
+    { "name": "keystroke chars",               "function": "Keystroke_For_Element",         "screenshot": "web" },# will be ai suppoted
     { "name": "text",                          "function": "Enter_Text_In_Text_Box",        "screenshot": "web" },
     { "name": "validate full text",            "function": "Validate_Text",                 "screenshot": "web" },
     { "name": "validate partial text",         "function": "Validate_Text",                 "screenshot": "web" },
@@ -26,15 +26,15 @@ declarations = (
     { "name": "get current url",               "function": "Get_Current_URL",               "screenshot": "none"},
     { "name": "navigate",                      "function": "Navigate",                      "screenshot": "web" },
     { "name": "validate table",                "function": "validate_table",                "screenshot": "web" },
-    { "name": "handle alert",                  "function": "Handle_Browser_Alert",          "screenshot": "desktop"},
+    { "name": "handle alert",                  "function": "Handle_Browser_Alert",          "screenshot": "desktop"},# will be ai suppoted
     { "name": "teardown",                      "function": "Tear_Down_Selenium",            "screenshot": "none"},
     { "name": "open new tab",                  "function": "open_new_tab",                  "screenshot": "web" },
     { "name": "close tab",                     "function": "close_tab",                     "screenshot": "web" },
     { "name": "validate table row size",       "function": "validate_table_row_size",       "screenshot": "web" },
     { "name": "validate table column size",    "function": "validate_table_column_size",    "screenshot": "web" },
     { "name": "upload file",                   "function": "upload_file",                   "screenshot": "web" },
-    { "name": "drag and drop",                 "function": "drag_and_drop",                 "screenshot": "web" },
-    { "name": "get element info",              "function": "get_element_info",              "screenshot": "web" },
+    { "name": "drag and drop",                 "function": "drag_and_drop",                 "screenshot": "web" },# will be ai suppoted
+    { "name": "get element info",              "function": "get_element_info",              "screenshot": "web" },# will be ai suppoted
     { "name": "playwright",                    "function": "playwright",                    "screenshot": "web" },
     { "name": "scroll",                        "function": "Scroll",                        "screenshot": "web" },
     { "name": "scroll to element",             "function": "scroll_to_element",             "screenshot": "web" },
@@ -44,8 +44,8 @@ declarations = (
     { "name": "switch window or frame",        "function": "switch_window_or_tab",          "screenshot": "web" },
     { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },
     { "name": "switch iframe",                 "function": "switch_iframe",                 "screenshot": "web" },
-    { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
-    { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
+    { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },# will be ai suppoted
+    { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },# will be ai suppoted
     { "name": "extract table data",            "function": "Extract_Table_Data",            "screenshot": "web" },
     { "name": "save web elements in list",     "function": "save_web_elements_in_list",     "screenshot": "web" },
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
