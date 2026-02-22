@@ -249,6 +249,9 @@ async def Open_Browser(step_data):
         sr.Set_Shared_Variables("playwright_context", context)
         sr.Set_Shared_Variables("playwright_browser", browser)
         sr.Set_Shared_Variables("element_wait", timeout / 1000)  # In seconds
+        
+        # Set screenshot variables for CommonUtil.TakeScreenShot()
+        CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         CommonUtil.ExecLog(sModuleInfo, f"Browser opened successfully (page_id: {page_id})", 1)
         return "passed"
@@ -420,6 +423,9 @@ def Switch_Browser(step_data):
 
         sr.Set_Shared_Variables("playwright_page", current_page)
         sr.Set_Shared_Variables("playwright_context", context)
+        
+        # Set screenshot variables for CommonUtil.TakeScreenShot()
+        CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         CommonUtil.ExecLog(sModuleInfo, f"Switched to page: {target_id}", 1)
         return "passed"
@@ -1616,6 +1622,7 @@ def switch_window_or_tab(step_data):
                         current_page = page
                         page.bring_to_front()
                         sr.Set_Shared_Variables("playwright_page", current_page)
+                        CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
                         CommonUtil.ExecLog(sModuleInfo, f"Switched to tab: {page_title}", 1)
                         return "passed"
                 else:
@@ -1623,6 +1630,7 @@ def switch_window_or_tab(step_data):
                         current_page = page
                         page.bring_to_front()
                         sr.Set_Shared_Variables("playwright_page", current_page)
+                        CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
                         CommonUtil.ExecLog(sModuleInfo, f"Switched to tab: {page_title}", 1)
                         return "passed"
 
@@ -1634,6 +1642,7 @@ def switch_window_or_tab(step_data):
                 current_page = pages[switch_by_index]
                 current_page.bring_to_front()
                 sr.Set_Shared_Variables("playwright_page", current_page)
+                CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
                 CommonUtil.ExecLog(sModuleInfo, f"Switched to tab index {switch_by_index}: {current_page.title()}", 1)
                 return "passed"
             else:
@@ -1677,6 +1686,7 @@ def open_new_tab(step_data):
         new_page = context.new_page()
         current_page = new_page
         sr.Set_Shared_Variables("playwright_page", current_page)
+        CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         if url:
             new_page.goto(url)
@@ -1755,6 +1765,7 @@ def close_tab(step_data):
         if pages:
             current_page = pages[-1]
             sr.Set_Shared_Variables("playwright_page", current_page)
+            CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         return "passed"
 

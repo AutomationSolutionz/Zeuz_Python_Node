@@ -2469,7 +2469,7 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
         compare_variable_names(False, [])
         if performance_action.zeuz_cycle != -1:
             CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
-        CommonUtil.TakeScreenShot(function)
+        await CommonUtil.TakeScreenShot(function)
         CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False

@@ -869,14 +869,16 @@ def set_screenshot_vars(shared_variables):
                 screen_capture_driver = appium_details[device_id][
                     "driver"
                 ]  # Driver for selected device
-        if screen_capture_type == "web":  # Selenium driver object
+        if screen_capture_type == "web":  # Selenium or Playwright driver object
             if "selenium_driver" in shared_variables:
                 screen_capture_driver = shared_variables["selenium_driver"]
+            elif "playwright_page" in shared_variables:
+                screen_capture_driver = shared_variables["playwright_page"]
     except:
         ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
 
 
-def TakeScreenShot(function_name, local_run=False):
+async def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
     if not ws_ss_log or performance_testing: return
     try:
@@ -925,8 +927,7 @@ def TakeScreenShot(function_name, local_run=False):
                     break
             image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + filename
 
-        thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
-        SaveThread("screenshot", thread)
+        await Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name)
 
     except:
         return Exception_Handler(sys.exc_info())
@@ -939,7 +940,7 @@ def pil_image_to_bytearray(img):
     return img_byte_array
 
 
-def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
+async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
     if performance_testing: return
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -985,7 +986,11 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
 
         # Capture screenshot of web browser
         elif Method == "web":
-            Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
+            # Check if it's a Playwright page or Selenium driver
+            if hasattr(Driver, 'screenshot'):  # Playwright page
+                await Driver.screenshot(path=ImageName, full_page=True)
+            else:  # Selenium driver
+                Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
 
         # Capture screenshot of mobile
         elif Method == "mobile":
