@@ -10,6 +10,7 @@ from server.evaluator import router as evaluator_router
 from server.node_operator import router as operator_router
 from server.mobile import router as mobile_router, upload_android_ui_dump
 from server.mac import router as mac_router
+from server.reports import router as security_reports_router
 from server.linux import router as linux_router
 from server.installers import router as installers_router
 import asyncio
@@ -42,6 +43,7 @@ def main() -> FastAPI:
     v1router.include_router(evaluator_router)
     v1router.include_router(mobile_router)
     v1router.include_router(mac_router)
+    v1router.include_router(security_reports_router)
     v1router.include_router(linux_router)
     v1router.include_router(installers_router)
     app = FastAPI()
