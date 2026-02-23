@@ -53,9 +53,9 @@ case "$OS" in
     fi
     ;;
   Darwin)
-    if [ "$ARCH" = "x86_64" ]; then
+    if [ "$ARCH" = "arm64" ]; then
       BINARY="ZeuZ_Node_macos"
-    elif [ "$ARCH" = "arm64" ]; then
+    elif [ "$ARCH" = "x86_64" ]; then
       BINARY="ZeuZ_Node_macos_amd64"
     else
       echo "❌ Unsupported macOS architecture: $ARCH"
