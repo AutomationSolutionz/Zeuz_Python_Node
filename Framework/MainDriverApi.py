@@ -780,13 +780,20 @@ def zip_and_delete_tc_folder(
     FL.DeleteFolder(path)
 
 
-def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
+async def cleanup_driver_instances():  # cleans up driver(selenium, playwright, appium) instances
     try:  # if error happens. we don't care, main driver should not stop, pass in exception
         import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
+        import Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions as Playwright
         try:
             Selenium.Tear_Down_Selenium()
         except:
             pass
+        
+        try:
+            await Playwright.Tear_Down_Playwright()
+        except:
+            pass
+        
         if shared.Test_Shared_Variables("appium_details"):
             import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
             driver = shared.Remove_From_Shared_Variables("appium_details")
@@ -1116,7 +1123,7 @@ async def run_test_case(
         else:
             CommonUtil.Join_Thread_and_Return_Result("screenshot")
             if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
-                cleanup_driver_instances()
+                await cleanup_driver_instances()
             shared.Clean_Up_Shared_Variables(run_id)
 
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -1928,7 +1935,7 @@ async def main(device_dict, all_run_id_info):
                 if "debug_step_actions" in run_id_info:
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
                 if run_id_info["debug_clean"] == "YES":
-                    cleanup_driver_instances()
+                    await cleanup_driver_instances()
                     shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
 
@@ -1949,7 +1956,7 @@ async def main(device_dict, all_run_id_info):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
 
             if not CommonUtil.debug_status and str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
-                cleanup_driver_instances()
+                await cleanup_driver_instances()
 
             if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
                 shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
