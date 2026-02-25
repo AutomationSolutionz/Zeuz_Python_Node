@@ -269,6 +269,7 @@ def connect(url):
     global ws_url
     global ws_thread
     global should_run
+    global server_version
     global reconnect_delay_seconds
 
     # Uncomment next line for debugging.
@@ -281,6 +282,7 @@ def connect(url):
     if ws_thread is not None and ws_thread.is_alive():
         if previous_url != url:
             _log(f"Live log server changed. Switching immediately to: {url}")
+            server_version = None
             with connection_lock:
                 current_ws = ws
             if current_ws is not None:
