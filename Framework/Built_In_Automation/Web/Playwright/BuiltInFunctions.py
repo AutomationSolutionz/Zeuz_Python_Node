@@ -322,6 +322,10 @@ async def Go_To_Link(step_data):
             goto_options["timeout"] = timeout
 
         await current_page.goto(url, **goto_options)
+        
+        # Reset frame context when navigating to a new URL
+        sr.Set_Shared_Variables("playwright_frame", None)
+        
         CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
         return "passed"
 
