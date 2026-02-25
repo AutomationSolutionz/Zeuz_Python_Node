@@ -45,6 +45,8 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from . import locator as PlaywrightLocator
+from . import utils as PlaywrightUtils
+from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 def _get_frame_locator():
     """Helper function to get current frame locator from shared variables."""
@@ -177,6 +179,16 @@ async def Open_Browser(step_data):
             elif mid_l == "shared capability":
                 # Handle Selenium-style capabilities where possible
                 pass
+
+        # Set playwright browser path environment variable
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(PlaywrightUtils.PW_BROWSERS_DIR)
+
+        # Check if pw-browsers folder exists, download Chromium if needed
+        if not PlaywrightUtils.check_playwright_browser_exists():
+            CommonUtil.ExecLog(sModuleInfo, "Playwright browser not found, downloading Chromium...", 2)
+            if not PlaywrightUtils.download_playwright_browser():
+                CommonUtil.ExecLog(sModuleInfo, "Failed to download Playwright browser", 2)
+                return "zeuz_failed"
 
         # Launch Playwright
         CommonUtil.ExecLog(sModuleInfo, f"Launching Playwright with {browser_name} browser", 1)
