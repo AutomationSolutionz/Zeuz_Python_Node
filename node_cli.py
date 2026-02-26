@@ -144,6 +144,7 @@ from Framework import MainDriverApi  # noqa: E402
 
 
 TMP_INI_FILE = None
+_shutdown_event: asyncio.Event | None = None
 
 """Constants"""
 AUTHENTICATION_TAG = "Authentication"
@@ -168,9 +169,8 @@ def kill_child_processes():
 def signal_handler(sig, frame):
     print("\n--- SIGINT received, quitting ---\n")
     CommonUtil.run_cancelled = True
-    CommonUtil.ShutdownExecutor()
-    kill_child_processes()
-    os._exit(0)
+    if _shutdown_event is not None and not _shutdown_event.is_set():
+        _shutdown_event.set()
 
 
 async def destroy_session():
@@ -1317,6 +1317,8 @@ def create_temp_ini_automation_log():
 
 
 async def main():
+    global _shutdown_event
+
     print_system_info_version()
     load_dotenv()
     adjust_python_path()
@@ -1352,7 +1354,10 @@ async def main():
     asyncio.create_task(delete_old_automationlog_folders())
     await destroy_session()
 
+    _shutdown_event = asyncio.Event()
     signal.signal(signal.SIGINT, signal_handler)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, signal_handler)
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
     console = Console()
@@ -1388,39 +1393,45 @@ async def main():
                 log_dir=log_dir,
             )
         )
-    while True:
-        if STATE.reconnect_with_credentials is not None:
-            await destroy_session()
-            server_name = STATE.reconnect_with_credentials.server
-            api_key = STATE.reconnect_with_credentials.api_key
-            await set_new_credentials(server=server_name, api_key=api_key)
+    try:
+        while not _shutdown_event.is_set():
+            if STATE.reconnect_with_credentials is not None:
+                await destroy_session()
+                server_name = STATE.reconnect_with_credentials.server
+                api_key = STATE.reconnect_with_credentials.api_key
+                await set_new_credentials(server=server_name, api_key=api_key)
 
-            STATE.reconnect_with_credentials = None
-            server_name = (
-                ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
-                .strip('"')
-                .strip()
-            )
-            api = (
-                ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
-                .strip('"')
-                .strip()
-            )
-
-            if len(server_name) == 0 and len(api) == 0:
-                console.print(
-                    "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
-                    style="bold red",
+                STATE.reconnect_with_credentials = None
+                server_name = (
+                    ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+                    .strip('"')
+                    .strip()
                 )
-                console.print("Please log in to ZeuZ server and connect.")
-
-            asyncio.create_task(
-                Login(
-                    server_name=server_name,
-                    log_dir=log_dir,
+                api = (
+                    ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+                    .strip('"')
+                    .strip()
                 )
-            )
-        await asyncio.sleep(1)
+
+                if len(server_name) == 0 and len(api) == 0:
+                    console.print(
+                        "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
+                        style="bold red",
+                    )
+                    console.print("Please log in to ZeuZ server and connect.")
+
+                asyncio.create_task(
+                    Login(
+                        server_name=server_name,
+                        log_dir=log_dir,
+                    )
+                )
+            await asyncio.sleep(1)
+    finally:
+        if _shutdown_event.is_set():
+            CommonUtil.run_cancelled = True
+            CommonUtil.ShutdownExecutor()
+            kill_child_processes()
 
 
 asyncio.run(main())
