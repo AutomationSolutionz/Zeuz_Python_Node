@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
@@ -163,6 +164,7 @@ func findExistingZeuzNodeDir(expectedDir string) (string, error) {
 		return "", fmt.Errorf("failed to read current directory: %v", err)
 	}
 
+	var candidates []string
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -172,11 +174,56 @@ func findExistingZeuzNodeDir(expectedDir string) (string, error) {
 			continue
 		}
 		if containsNodeCLI(name) {
-			return name, nil
+			candidates = append(candidates, name)
 		}
 	}
 
-	return "", nil
+	if len(candidates) == 0 {
+		return "", nil
+	}
+
+	sort.Strings(candidates)
+	return candidates[0], nil
+}
+
+func removeDirIfExists(path string) (bool, error) {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if err := os.RemoveAll(path); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func removeZeuzNodeDirs() (bool, error) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return false, fmt.Errorf("failed to read current directory: %v", err)
+	}
+
+	removedAny := false
+	for _, entry := range entries {
+		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "ZeuZ_Node-") {
+			continue
+		}
+
+		removed, err := removeDirIfExists(entry.Name())
+		if err != nil {
+			return removedAny, fmt.Errorf("failed to remove %s: %v", entry.Name(), err)
+		}
+		if removed {
+			fmt.Printf("Removed %s\n", entry.Name())
+			removedAny = true
+		}
+	}
+
+	return removedAny, nil
 }
 
 // setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
@@ -312,22 +359,20 @@ func main() {
 	zeuzDir := getZeuZNodeDir()
 
 	if *cleanFlag {
-		var removedAny bool
-		if err := os.RemoveAll(zeuzDir); err == nil {
-			fmt.Printf("Removed %s\n", zeuzDir)
-			removedAny = true
-		} else if !os.IsNotExist(err) {
-			fmt.Printf("Failed to remove %s: %v\n", zeuzDir, err)
+		removedAny, err := removeZeuzNodeDirs()
+		if err != nil {
+			fmt.Printf("Failed during ZeuZ Node cleanup: %v\n", err)
 		}
 
 		home, err := os.UserHomeDir()
 		if err == nil {
 			zeuzHome := filepath.Join(home, ".zeuz")
-			if err := os.RemoveAll(zeuzHome); err == nil {
+			removed, removeErr := removeDirIfExists(zeuzHome)
+			if removeErr != nil {
+				fmt.Printf("Failed to remove %s: %v\n", zeuzHome, removeErr)
+			} else if removed {
 				fmt.Printf("Removed %s\n", zeuzHome)
 				removedAny = true
-			} else if !os.IsNotExist(err) {
-				fmt.Printf("Failed to remove %s: %v\n", zeuzHome, err)
 			}
 		} else {
 			fmt.Printf("Could not determine user home dir: %v\n", err)
