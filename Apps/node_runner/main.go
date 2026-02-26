@@ -139,24 +139,59 @@ func getZeuZNodeDir() string {
 	if version != "dev" && !strings.HasPrefix(version, "dev-") {
 		selectedVersion = version
 	}
+	if selectedVersion == "" {
+		selectedVersion = "dev"
+	}
 
 	return fmt.Sprintf("ZeuZ_Node-%s", selectedVersion)
 }
 
-// setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
-func setupZeuzNode() error {
-	zeuzDir := getZeuZNodeDir()
-	// Check if ZeuZ Node directory already exists and contains files
-	if info, err := os.Stat(zeuzDir); err == nil && info.IsDir() {
-		// Check if directory is not empty
-		f, err := os.Open(zeuzDir)
-		if err == nil {
-			defer f.Close()
-			_, err = f.Readdirnames(1) // Try to read at least one file
-			if err == nil {            // Directory is not empty
-				return nil
-			}
+func containsNodeCLI(dir string) bool {
+	if info, err := os.Stat(filepath.Join(dir, "node_cli.py")); err == nil && !info.IsDir() {
+		return true
+	}
+	return false
+}
+
+func findExistingZeuzNodeDir(expectedDir string) (string, error) {
+	if info, err := os.Stat(expectedDir); err == nil && info.IsDir() && containsNodeCLI(expectedDir) {
+		return expectedDir, nil
+	}
+
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return "", fmt.Errorf("failed to read current directory: %v", err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
 		}
+		name := entry.Name()
+		if !strings.HasPrefix(name, "ZeuZ_Node-") {
+			continue
+		}
+		if containsNodeCLI(name) {
+			return name, nil
+		}
+	}
+
+	return "", nil
+}
+
+// setupZeuzNode downloads and extracts the ZeuZ Node repository if not already present
+func setupZeuzNode() (string, error) {
+	zeuzDir := getZeuZNodeDir()
+
+	existingDir, err := findExistingZeuzNodeDir(zeuzDir)
+	if err != nil {
+		return "", err
+	}
+	if existingDir != "" {
+		if existingDir != zeuzDir {
+			fmt.Printf("Using existing ZeuZ Node directory: %s\n", existingDir)
+		}
+		return existingDir, nil
 	}
 
 	fmt.Println("Setting up ZeuZ Node...")
@@ -164,7 +199,7 @@ func setupZeuzNode() error {
 	// Create temporary directory for zip file
 	tempDir, err := os.MkdirTemp("", "zeuz-download")
 	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %v", err)
+		return "", fmt.Errorf("failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
@@ -173,21 +208,21 @@ func setupZeuzNode() error {
 	zeuzURL := getZeuZNodeURL()
 	fmt.Printf("Downloading ZeuZ Node repository from: %s\n", zeuzURL)
 	if err := downloadFile(zeuzURL, zipPath); err != nil {
-		return err
+		return "", err
 	}
 
 	// Remove existing ZeuZ Node directory if it exists
 	if err := os.RemoveAll(zeuzDir); err != nil {
-		return fmt.Errorf("failed to remove existing directory: %v", err)
+		return "", fmt.Errorf("failed to remove existing directory: %v", err)
 	}
 
 	// Extract zip file
 	fmt.Println("Extracting ZeuZ Node repository...")
 	if err := unzip(zipPath, zeuzDir); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return zeuzDir, nil
 }
 
 // installUV installs the UV package manager if not already installed
@@ -306,10 +341,12 @@ func main() {
 	}
 
 	// Setup ZeuZ Node directory and change into it
-	if err := setupZeuzNode(); err != nil {
+	resolvedZeuzDir, err := setupZeuzNode()
+	if err != nil {
 		fmt.Printf("Error setting up ZeuZ Node: %v\n", err)
 		os.Exit(1)
 	}
+	zeuzDir = resolvedZeuzDir
 
 	// Change directory to ZeuZ Node
 	if err := os.Chdir(zeuzDir); err != nil {
