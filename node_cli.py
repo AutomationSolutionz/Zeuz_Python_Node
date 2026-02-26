@@ -1423,4 +1423,7 @@ async def main():
         await asyncio.sleep(1)
 
 
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except KeyboardInterrupt:
+    signal_handler(signal.SIGINT, None)
