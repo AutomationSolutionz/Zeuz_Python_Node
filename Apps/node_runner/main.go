@@ -159,6 +159,11 @@ func findExistingZeuzNodeDir(expectedDir string) (string, error) {
 		return expectedDir, nil
 	}
 
+	requestedSpecificRevision := *branch != "" || (version != "dev" && !strings.HasPrefix(version, "dev-"))
+	if requestedSpecificRevision {
+		return "", nil
+	}
+
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		return "", fmt.Errorf("failed to read current directory: %v", err)
