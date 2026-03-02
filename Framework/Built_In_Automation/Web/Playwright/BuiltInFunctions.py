@@ -180,15 +180,10 @@ async def Open_Browser(step_data):
                 # Handle Selenium-style capabilities where possible
                 pass
 
-        # Set playwright browser path environment variable
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(PlaywrightUtils.PW_BROWSERS_DIR)
-
-        # Check if pw-browsers folder exists, download Chromium if needed
-        if not PlaywrightUtils.check_playwright_browser_exists():
-            CommonUtil.ExecLog(sModuleInfo, "Playwright browser not found, downloading Chromium...", 2)
-            if not PlaywrightUtils.download_playwright_browser():
-                CommonUtil.ExecLog(sModuleInfo, "Failed to download Playwright browser", 2)
-                return "zeuz_failed"
+        # Ensure Chrome for Testing is available
+        chrome_binary_path, success = PlaywrightUtils.ensure_chromium_downloads(sModuleInfo)
+        if not success:
+            return "zeuz_failed"
 
         # Launch Playwright
         CommonUtil.ExecLog(sModuleInfo, f"Launching Playwright with {browser_name} browser", 1)
@@ -204,6 +199,11 @@ async def Open_Browser(step_data):
             launch_options["args"] = args
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
+        
+        # Use Chrome for Testing binary if available
+        if chrome_binary_path and browser_name in ("chrome", "chromium"):
+            launch_options["executable_path"] = chrome_binary_path
+            CommonUtil.ExecLog(sModuleInfo, f"Using Chrome for Testing binary: {chrome_binary_path}", 1)
 
         # Select and launch browser
         if browser_name in ("chrome", "chromium"):

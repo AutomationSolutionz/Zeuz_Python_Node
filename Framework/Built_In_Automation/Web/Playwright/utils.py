@@ -8,47 +8,38 @@ including browser download and setup functionality.
 Author: Zeuz/AutomationSolutionz
 """
 
-import subprocess
 import os
-import sys
 from pathlib import Path
 from Framework.Utilities import CommonUtil
-from settings import ZEUZ_NODE_DOWNLOADS_DIR
+from Framework.Built_In_Automation.Web.Selenium.utils import ChromeForTesting
 
-PW_BROWSERS_DIR = ZEUZ_NODE_DOWNLOADS_DIR / "pw-browsers"
-
-def check_playwright_browser_exists():
-    if not PW_BROWSERS_DIR.exists():
-        return False
-
-    # Check if a folder name exists that starts with "chromium-"
-    for folder in PW_BROWSERS_DIR.iterdir():
-        if folder.name.startswith("chromium-"):
-            # Check if a file named "INSTALLATION_COMPLETE" exist
-            if (folder / "INSTALLATION_COMPLETE").exists():
-                return True
-    return False
+# Initialize Chrome for Testing instance
+chrome_for_testing = ChromeForTesting()
 
 
-def download_playwright_browser(brand="chromium", download_path=PW_BROWSERS_DIR):
+def ensure_chromium_downloads(sModuleInfo):
     """
-    Download Playwright browser for the specified brand.
+    Ensure Chrome for Testing is available for Playwright.
     
     Args:
-        brand (str): Browser brand to download (default: "chromium")
-        download_path (Path): Path to download the browser to (default: PW_BROWSERS_DIR)
+        sModuleInfo: Module information for logging
+        
+    Returns:
+        tuple: (chrome_binary_path, success_flag) where success_flag is True if successful
     """
-    
-    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(download_path)
-
-    CommonUtil.ExecLog("", f"Downloading Playwright browser: {brand} to {os.environ['PLAYWRIGHT_BROWSERS_PATH']}", 2)
-    # Execute the command with the current Python instance (venv)
-    python_path = sys.executable
-    install = subprocess.run([python_path, "-m", "playwright", "install", "--no-shell", brand])
-
-    if install.returncode == 0:
-        CommonUtil.ExecLog("", f"Playwright browser downloaded successfully: {brand}", 2)
-        return True
-    else:
-        CommonUtil.ExecLog("", f"Failed to download Playwright browser: {brand}", 2)
-        return False
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Setting up Chrome for Testing for Playwright...", 1)
+        
+        # Use Chrome for Testing to get Chrome binary
+        chrome_bin, driver_bin = chrome_for_testing.setup_chrome_for_testing()
+        
+        if chrome_bin and chrome_bin.exists():
+            CommonUtil.ExecLog(sModuleInfo, f"Chrome for Testing ready: {chrome_bin}", 1)
+            return str(chrome_bin), True
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to setup Chrome for Testing", 3)
+            return None, False
+            
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Error setting up Chrome for Testing: {str(e)}", 3)
+        return None, False
