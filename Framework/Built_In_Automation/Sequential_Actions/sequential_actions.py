@@ -2327,6 +2327,34 @@ def compare_variable_names(set, dataset):
         CommonUtil.compare_action_varnames = {"left": "Left", "right": "Right"}
 
 
+def get_browser_driver_routing(action_subfield, data_set):
+    """
+    Check if browser driver optional parameter is present and route to appropriate driver.
+    
+    Args:
+        action_subfield: The original action subfield (e.g., "selenium action", "playwright action")
+        data_set: The data set containing optional parameters
+        
+    Returns:
+        Updated action_subfield based on browser driver parameter
+    """
+    if action_subfield not in ("playwright action", "selenium action"):
+        return action_subfield
+    
+    for left, mid, right in data_set:
+        if (mid.strip().lower().startswith("optional") 
+            and left.strip().lower() == "browser driver" 
+            and right.strip().lower() in ("playwright", "selenium")):
+            
+            updated_action_subfield = right.strip().lower() + " action"
+            if action_subfield != updated_action_subfield:
+                CommonUtil.ExecLog("", "Browser driver changed from %s to %s" % (action_subfield, updated_action_subfield), 1)
+
+            return updated_action_subfield
+    
+    return action_subfield
+
+
 async def Action_Handler(_data_set, action_row, _bypass_bug=True):
     """ Finds the appropriate function for the requested action in the step data and executes it """
 
@@ -2337,6 +2365,9 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
     action_name = action_row[0]
     action_subfield = action_row[1]
 
+    # Apply browser driver routing if applicable
+    action_subfield = get_browser_driver_routing(action_subfield, _data_set)
+    
     if str(action_name).startswith("%|"):  # if shared variable
         action_name = sr.get_previous_response_variables_in_strings(action_name)
 
