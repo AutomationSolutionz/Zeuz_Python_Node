@@ -2332,27 +2332,55 @@ def get_browser_driver_routing(action_subfield, data_set):
     Check if browser driver optional parameter is present and route to appropriate driver.
     
     Args:
-        action_subfield: The original action subfield (e.g., "selenium action", "playwright action")
-        data_set: The data set containing optional parameters
+        action_subfield (str): The original action subfield (e.g., "selenium action", "playwright action")
+        data_set (list): The data set containing optional parameters
         
     Returns:
-        Updated action_subfield based on browser driver parameter
+        str: Updated action_subfield based on browser driver parameter
+        
+    This function checks if there is a "browser driver" optional parameter in the data set or a BROWSER_DRIVER in runtime parameters.
+    If any of them are present, it updates the action_subfield to the value specified.
+    If both are present, it uses the action-level optional parameter.
+    If neither are present, it returns the original action_subfield.
     """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # If the action subfield is not for playwright or selenium, return as is
     if action_subfield not in ("playwright action", "selenium action"):
         return action_subfield
     
+    # Initialize the updated action subfield with the original action subfield
+    updated_action_subfield = action_subfield
+
+    # Get the runtime parameter for browser driver preference
+    browser_driver_runtime_parameter = sr.shared_variables.get("BROWSER_DRIVER")
+
+    # If runtime parameter is present and valid, update the action subfield
+    if browser_driver_runtime_parameter and browser_driver_runtime_parameter.strip().lower() in ("playwright", "selenium"):
+        CommonUtil.ExecLog(sModuleInfo, "Runtime parameter for browser driver preference detected", 5)
+        updated_action_subfield = browser_driver_runtime_parameter + " action"
+
+    # Check if there is an optional parameter for browser driver in the data set
     for left, mid, right in data_set:
+        # If optional parameter is present and valid, update the action subfield
         if (mid.strip().lower().startswith("optional") 
             and left.strip().lower() == "browser driver" 
             and right.strip().lower() in ("playwright", "selenium")):
-            
-            updated_action_subfield = right.strip().lower() + " action"
-            if action_subfield != updated_action_subfield:
-                CommonUtil.ExecLog("", "Browser driver changed from %s to %s" % (action_subfield, updated_action_subfield), 1)
 
-            return updated_action_subfield
+            # If runtime parameter is also present, action-level optional parameter will take precedence
+            if browser_driver_runtime_parameter:
+                # log a warning for browser driver preference in two places
+                CommonUtil.ExecLog(sModuleInfo, "Both runtime parameter and optional parameter for browser driver detected, using optional parameter", 2)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Optional parameter for browser driver preference detected in action", 5)
+            updated_action_subfield = right.strip().lower() + " action"
+            break
     
-    return action_subfield
+    # If the action subfield has changed, log the change
+    if action_subfield != updated_action_subfield:
+        CommonUtil.ExecLog(sModuleInfo, "Browser action changed from %s to %s" % (action_subfield, updated_action_subfield), 1)
+
+    return updated_action_subfield
 
 
 async def Action_Handler(_data_set, action_row, _bypass_bug=True):
