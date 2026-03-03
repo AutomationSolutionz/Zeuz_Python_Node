@@ -16,7 +16,8 @@ class OperatorResponse(BaseModel):
 @router.post("/kill")
 def kill():
     print("[Node server] Kill signal received. Shutting down.")
-    os.kill(os.getpid(), signal.SIGINT)
+    shutdown_signal = signal.SIGTERM if hasattr(signal, "SIGTERM") else signal.SIGINT
+    os.kill(os.getpid(), shutdown_signal)
     return OperatorResponse(status="ok")
 
 

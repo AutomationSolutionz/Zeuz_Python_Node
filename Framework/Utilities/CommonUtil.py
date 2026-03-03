@@ -213,8 +213,8 @@ def GetExecutor():
     return executor
 
 
-def ShutdownExecutor():
-    executor.shutdown()
+def ShutdownExecutor(wait: bool = True):
+    executor.shutdown(wait=wait)
 
 
 def SaveThread(key, thread):

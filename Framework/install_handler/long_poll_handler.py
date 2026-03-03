@@ -12,7 +12,7 @@ from Framework.install_handler.utils import (
     read_node_id,
     generate_services_list,
 )
-from Framework.Utilities import RequestFormatter, ConfigModule
+from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import (
     check_emulator_list,
@@ -339,6 +339,10 @@ class InstallHandler:
             print(f"[installer] Started running")
         
         while not self.cancel_:
+            if CommonUtil.run_cancelled:
+                if debug:
+                    print("[installer] Shutdown requested, stopping...")
+                break
             if STATE.reconnect_with_credentials is not None:
                 if debug:
                     print("[installer] Reconnection requested, stopping...")
@@ -375,6 +379,10 @@ class InstallHandler:
                     print(f"[installer] Type Error in parsing response: {e}")
                     continue
 
+            except asyncio.CancelledError:
+                if debug:
+                    print("[installer] Cancelled.")
+                break
             except Exception:
                 if debug:
                     traceback.print_exc()

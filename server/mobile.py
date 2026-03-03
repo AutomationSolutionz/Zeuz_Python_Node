@@ -469,9 +469,24 @@ def capture_ios_ui_dump(device_udid: str):
         pass
 
 
-async def upload_android_ui_dump():
+async def _sleep_or_shutdown(shutdown_event: asyncio.Event | None, seconds: int) -> bool:
+    if shutdown_event is None:
+        await asyncio.sleep(seconds)
+        return False
+    try:
+        await asyncio.wait_for(shutdown_event.wait(), timeout=seconds)
+    except asyncio.TimeoutError:
+        return False
+    return True
+
+
+async def upload_android_ui_dump(shutdown_event: asyncio.Event | None = None):
     prev_xml_hash = ""
     while True:
+        if shutdown_event is not None and shutdown_event.is_set():
+            return
+        if CommonUtil.run_cancelled:
+            return
         try:
             await asyncio.to_thread(capture_ui_dump)
             try:
@@ -487,12 +502,14 @@ async def upload_android_ui_dump():
                     ).hexdigest()
                     # Don't upload if the content hasn't changed
                     if prev_xml_hash == new_xml_hash:
-                        await asyncio.sleep(5)
+                        if await _sleep_or_shutdown(shutdown_event, 5):
+                            return
                         continue
                     prev_xml_hash = new_xml_hash
 
             except FileNotFoundError:
-                await asyncio.sleep(5)
+                if await _sleep_or_shutdown(shutdown_event, 5):
+                    return
                 continue
             url = (
                 ConfigModule.get_config_value(
@@ -515,16 +532,22 @@ async def upload_android_ui_dump():
                 CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
         except Exception as e:
             CommonUtil.ExecLog("", f"Error uploading UI dump: {str(e)}", iLogLevel=3)
-        await asyncio.sleep(5)
+        if await _sleep_or_shutdown(shutdown_event, 5):
+            return
 
 
-async def upload_ios_ui_dump():
+async def upload_ios_ui_dump(shutdown_event: asyncio.Event | None = None):
     prev_xml_hash = ""
     while True:
+        if shutdown_event is not None and shutdown_event.is_set():
+            return
+        if CommonUtil.run_cancelled:
+            return
         try:
             ios_devices = get_ios_devices()
             if not ios_devices:
-                await asyncio.sleep(5)
+                if await _sleep_or_shutdown(shutdown_event, 5):
+                    return
                 continue
             
             device_udid = ios_devices[0].udid
@@ -537,12 +560,14 @@ async def upload_ios_ui_dump():
                     new_xml_hash = hashlib.sha256(xml_content.encode('utf-8')).hexdigest()
                     # Don't upload if the content hasn't changed
                     if prev_xml_hash == new_xml_hash:
-                        await asyncio.sleep(5)
+                        if await _sleep_or_shutdown(shutdown_event, 5):
+                            return
                         continue
                     prev_xml_hash = new_xml_hash
 
             except FileNotFoundError:
-                await asyncio.sleep(5)
+                if await _sleep_or_shutdown(shutdown_event, 5):
+                    return
                 continue
             
             url = ConfigModule.get_config_value("Authentication", "server_address").strip() + "/node_ai_contents/"
@@ -558,6 +583,8 @@ async def upload_ios_ui_dump():
                 CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)
         except Exception as e:
             CommonUtil.ExecLog("", f"Error uploading iOS UI dump: {str(e)}", iLogLevel=3)
+        if await _sleep_or_shutdown(shutdown_event, 5):
+            return
         await asyncio.sleep(5)
         
         

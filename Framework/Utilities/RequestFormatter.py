@@ -28,6 +28,14 @@ session = requests.Session()
 SESSION_FILE_NAME = "session.bin"
 ACCESS_TOKEN_EXPIRES_AT = datetime.now()
 
+
+def close_session():
+    global session
+    try:
+        session.close()
+    except Exception:
+        pass
+
 def save_cookies(session: requests.Session, filename: str):
     try:
         with open(filename, 'wb') as f:

@@ -255,6 +255,8 @@ class DeployHandler:
         reconnect = False
         print_online = False
         while True:
+            if CommonUtil.run_cancelled:
+                break
             if STATE.reconnect_with_credentials is not None:
                 break
 
@@ -303,6 +305,8 @@ class DeployHandler:
                     break
 
                 reconnect = False
+            except asyncio.CancelledError:
+                break
             except (
                 requests.exceptions.ConnectTimeout,
                 requests.exceptions.ReadTimeout,
@@ -323,4 +327,3 @@ class DeployHandler:
                 print(e)
                 print(Fore.YELLOW + "Retrying after 30s")
                 await asyncio.sleep(30)
-
