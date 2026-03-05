@@ -72,6 +72,7 @@ from Framework.AI.NLP import binary_classification
 from .utils import ChromeForTesting, ChromeExtensionDownloader
 
 from playwright.async_api import async_playwright
+from Framework.Built_In_Automation.Web.utils import get_browser_session, create_browser_session
 
 #########################
 #                       #
@@ -466,7 +467,12 @@ def Open_Electron_App(data_set):
 
             opts = Options()
             opts.binary_location = desktop_app_path
-            opts.add_argument("--remote-debugging-port=9222")
+            # Generate unique port for Electron app based on driver_id
+            import hashlib
+            port_hash = int(hashlib.md5((driver_id or "electron").encode()).hexdigest(), 16)
+            electron_port = 9230 + (port_hash % 90)  # Range 9230-9320 to avoid conflicts with browser sessions
+            opts.add_argument(f"--remote-debugging-port={electron_port}")
+            CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {electron_port} for Electron app", 1)
             # service = Service(executable_path=electron_chrome_path)
             arch = platform.machine().lower()
             if platform.system() == "Darwin" and arch == "arm64":
@@ -705,8 +711,13 @@ async def Open_Browser(browser, browser_options: BrowserOptions, session_name: s
 
         options = generate_options(browser, browser_options)
 
-        # Enable remote debugging / CDP
-        options.add_argument("--remote-debugging-port=9222")
+        # Enable remote debugging / CDP with unique port per session
+        import hashlib
+        # Generate unique port based on session name (range 9222-9322 to avoid conflicts)
+        port_hash = int(hashlib.md5(session_name.encode()).hexdigest(), 16)
+        unique_port = 9222 + (port_hash % 100)
+        options.add_argument(f"--remote-debugging-port={unique_port}")
+        CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{session_name}'", 1)
 
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
@@ -785,13 +796,12 @@ async def Open_Browser(browser, browser_options: BrowserOptions, session_name: s
             playwright_context = None
             playwright_page = None
             try:
-                playwright_browser, playwright_context, playwright_page = await connect_playwright_to_selenium(port=9222)
+                playwright_browser, playwright_context, playwright_page = await connect_playwright_to_selenium(port=unique_port)
                 CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
             except Exception as e:
                 CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
 
             # Create browser session
-            from Framework.Built_In_Automation.Web.utils import create_browser_session
             create_browser_session(
                 session_name=session_name,
                 selenium_driver=selenium_driver,
@@ -1043,7 +1053,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             if left == "gotolink":
                 web_link = right.strip()
             elif left == "driverid":
-                driver_id = right.strip()
+                session_name = driver_id = right.strip()
             elif left in ("waittimetoappearelement", "waitforelement"):
                 Shared_Resources.Set_Shared_Variables(
                     "element_wait", float(right.strip())
@@ -1057,7 +1067,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             elif left == "chrome:version":
                 chrome_version = right.strip()
             elif left == "session":
-                session_name = right.strip()
+                session_name = driver_id = right.strip()
 
             # Capabilities are WebDriver attribute common across different browser
             elif mid.strip().lower() == "shared capability":
@@ -1169,6 +1179,8 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             if await Open_Browser(dependency["Browser"], browser_options, session_name) == "zeuz_failed":
                 return "zeuz_failed"
 
+            selenium_driver = get_browser_session(session_name)["selenium_driver"]
+
             if ConfigModule.get_config_value(
                 "RunDefinition", "window_size_x"
             ) and ConfigModule.get_config_value("RunDefinition", "window_size_y"):
@@ -1193,7 +1205,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 "remote-debugging-port": debug_port
             }
         else:
-            selenium_driver = selenium_details[driver_id]["driver"]
+            selenium_driver = get_browser_session(session_name)["selenium_driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
         current_driver_id = driver_id
     except Exception:
@@ -4622,8 +4634,15 @@ def drag_and_drop(dataset):
 def playwright(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    global selenium_details
+    global current_driver_id
     try:
         from playwright.sync_api import sync_playwright
+
+        # Get the correct remote debugging port for current driver
+        debug_port = 9222  # fallback
+        if current_driver_id and current_driver_id in selenium_details:
+            debug_port = selenium_details[current_driver_id].get("remote-debugging-port", 9222)
 
         devtools_url = (
             selenium_driver.command_executor._url.replace("http://", "ws://")
@@ -4631,7 +4650,7 @@ def playwright(dataset):
         )
         with sync_playwright() as p:
             # browser = p.chromium.connect(browserURL=devtools_url)
-            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
             page = browser.contexts[0].pages[0]
 
             # source = page.locator("//div[contains(text(), 'abcd')]")
