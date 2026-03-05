@@ -671,11 +671,11 @@ async def connect_playwright_to_selenium(port=9222):
     Shared_Resources.Set_Shared_Variables("playwright_browser", browser)
     Shared_Resources.Set_Shared_Variables("playwright_page", page)
 
-    return "passed"
+    return browser, context, page
 
 
 @logger
-async def Open_Browser(browser, browser_options: BrowserOptions):
+async def Open_Browser(browser, browser_options: BrowserOptions, session_name: str = "default"):
     """Launch browser from options and service object"""
     try:
         global selenium_driver
@@ -778,11 +778,26 @@ async def Open_Browser(browser, browser_options: BrowserOptions):
             return "zeuz_failed"
 
         # Connect Playwright to Selenium via CDP
+        playwright_browser = None
+        playwright_context = None
+        playwright_page = None
         try:
-            await connect_playwright_to_selenium(port=9222)
+            playwright_browser, playwright_context, playwright_page = await connect_playwright_to_selenium(port=9222)
             CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
+
+        # Create browser session
+        from Framework.Built_In_Automation.Web.utils import create_browser_session
+        session = create_browser_session(
+            session_name=session_name,
+            selenium_driver=selenium_driver,
+            playwright_page=playwright_page,
+            playwright_browser=playwright_browser,
+            playwright_context=playwright_context,
+            playwright_frame=None
+        )
+        CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {session_name=}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Started {browser} browser", 1)
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
@@ -1018,6 +1033,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
         chrome_version = None
         chrome_channel = None
         debug_port = False
+        session_name = "default"
 
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
@@ -1037,6 +1053,8 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 window_size_Y = int(resolution[1])
             elif left == "chrome:version":
                 chrome_version = right.strip()
+            elif left == "session":
+                session_name = right.strip()
 
             # Capabilities are WebDriver attribute common across different browser
             elif mid.strip().lower() == "shared capability":
@@ -1145,7 +1163,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 sModuleInfo, "Browser not previously opened, doing so now", 1
             )
 
-            if await Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
+            if await Open_Browser(dependency["Browser"], browser_options, session_name) == "zeuz_failed":
                 return "zeuz_failed"
 
             if ConfigModule.get_config_value(
@@ -1219,7 +1237,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             # If the browser is closed but selenium instance is on, relaunch selenium_driver
             if Shared_Resources.Test_Shared_Variables("dependency"):
                 dependency = Shared_Resources.Get_Shared_Variables("dependency")
-            result = await Open_Browser(dependency["Browser"], browser_options)
+            result = await Open_Browser(dependency["Browser"], browser_options, session_name)
         else:
             result = "zeuz_failed"
 
