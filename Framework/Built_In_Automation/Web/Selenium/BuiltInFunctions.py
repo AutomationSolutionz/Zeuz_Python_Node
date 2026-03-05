@@ -777,27 +777,30 @@ async def Open_Browser(browser, browser_options: BrowserOptions, session_name: s
             )
             return "zeuz_failed"
 
-        # Connect Playwright to Selenium via CDP
-        playwright_browser = None
-        playwright_context = None
-        playwright_page = None
-        try:
-            playwright_browser, playwright_context, playwright_page = await connect_playwright_to_selenium(port=9222)
-            CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
-        except Exception as e:
-            CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
+        # If selenium_driver is of type Webdriver
+        from selenium.webdriver import Chrome, Firefox, Edge, Safari
+        if isinstance(selenium_driver, (Chrome, Firefox, Edge, Safari)):
+            # Connect Playwright to Selenium via CDP
+            playwright_browser = None
+            playwright_context = None
+            playwright_page = None
+            try:
+                playwright_browser, playwright_context, playwright_page = await connect_playwright_to_selenium(port=9222)
+                CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
 
-        # Create browser session
-        from Framework.Built_In_Automation.Web.utils import create_browser_session
-        session = create_browser_session(
-            session_name=session_name,
-            selenium_driver=selenium_driver,
-            playwright_page=playwright_page,
-            playwright_browser=playwright_browser,
-            playwright_context=playwright_context,
-            playwright_frame=None
-        )
-        CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {session_name=}", 5)
+            # Create browser session
+            from Framework.Built_In_Automation.Web.utils import create_browser_session
+            session = create_browser_session(
+                session_name=session_name,
+                selenium_driver=selenium_driver,
+                playwright_page=playwright_page,
+                playwright_browser=playwright_browser,
+                playwright_context=playwright_context,
+                playwright_frame=None
+            )
+            CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {session_name=}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Started {browser} browser", 1)
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
