@@ -507,57 +507,136 @@ async def Tear_Down_Playwright(step_data=None):
     Example:
         Field               Sub Field           Value
         tear down           playwright action   tear down
+        
+    Example with session:
+        Field               Sub Field           Value
+        session             optional parameter  my_session
+        tear down           playwright action   tear down
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global playwright_instance, browser, context, current_page
     global playwright_details, current_page_id
 
     try:
-        # Close all tracked pages/contexts
-        for page_id, details in playwright_details.items():
+        # Parse session parameter
+        session_name = None
+        if step_data:
+            for left, mid, right in step_data:
+                left_l = left.strip().lower()
+                mid_l = mid.strip().lower()
+                right_v = right.strip()
+                
+                if mid_l == "optional parameter" and left_l == "session":
+                    session_name = right_v
+                    break
+        
+        # Handle session-specific teardown
+        if session_name:
+            from Framework.Built_In_Automation.Web.utils import get_browser_session
+            existing_session = get_browser_session(session_name)
+            
+            if existing_session and existing_session.get("playwright_page"):
+                try:
+                    # Close the specific session's page and context
+                    session_page = existing_session["playwright_page"]
+                    session_context = existing_session["playwright_context"]
+                    session_browser = existing_session["playwright_browser"]
+                    
+                    if session_page:
+                        await session_page.close()
+                    if session_context:
+                        await session_context.close()
+                    
+                    CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
+                except Exception as e:
+                    errMsg = f"Unable to tear down session '{session_name}'. may already been killed"
+                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                
+                # Remove session from browser_sessions
+                browser_sessions = sr.Get_Shared_Variables("browser_sessions", {})
+                if session_name in browser_sessions:
+                    del browser_sessions[session_name]
+                    sr.Set_Shared_Variables("browser_sessions", browser_sessions)
+                
+                # Remove from playwright_details if present
+                if session_name in playwright_details:
+                    del playwright_details[session_name]
+                
+                # If this was the current session, clear globals
+                if current_page_id == session_name:
+                    current_page = None
+                    context = None
+                    browser = None
+                    current_page_id = None
+                    
+                    # Try to switch to another available session
+                    if playwright_details:
+                        for page_id, details in playwright_details.items():
+                            current_page = details["page"]
+                            context = details["context"]
+                            browser = details["browser"]
+                            current_page_id = page_id
+                            
+                            # Update shared variables
+                            sr.Set_Shared_Variables("playwright_page", current_page)
+                            sr.Set_Shared_Variables("playwright_context", context)
+                            sr.Set_Shared_Variables("playwright_browser", browser)
+                            
+                            CommonUtil.ExecLog(sModuleInfo, f"Switched to session '{page_id}'", 1)
+                            break
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Nothing to tear down.", 2)
+        
+        # Handle full teardown (backwards compatibility)
+        else:
+            # Close all tracked pages/contexts
+            for page_id, details in playwright_details.items():
+                try:
+                    if details.get("page"):
+                        await details["page"].close()
+                    if details.get("context"):
+                        await details["context"].close()
+                except Exception:
+                    pass
+
+        # Close main instances
             try:
-                if details.get("page"):
-                    await details["page"].close()
-                if details.get("context"):
-                    await details["context"].close()
+                if current_page and current_page not in [d.get("page") for d in playwright_details.values()]:
+                    await current_page.close()
             except Exception:
                 pass
 
-        # Close main instances
-        try:
-            if current_page and current_page not in [d.get("page") for d in playwright_details.values()]:
-                await current_page.close()
-        except Exception:
-            pass
+            try:
+                if context:
+                    await context.close()
+            except Exception:
+                pass
 
-        try:
-            if context:
-                await context.close()
-        except Exception:
-            pass
+            try:
+                if browser:
+                    await browser.close()
+            except Exception:
+                pass
 
-        try:
-            if browser:
-                await browser.close()
-        except Exception:
-            pass
+            try:
+                if playwright_instance:
+                    await playwright_instance.stop()
+            except Exception:
+                pass
 
-        try:
-            if playwright_instance:
-                await playwright_instance.stop()
-        except Exception:
-            pass
+            # Reset all globals
+            current_page = None
+            context = None
+            browser = None
+            playwright_instance = None
+            playwright_details = {}
+            current_page_id = None
+            
+            # Clear all browser sessions
+            sr.Set_Shared_Variables("browser_sessions", {})
 
-        # Reset all globals
-        current_page = None
-        context = None
-        browser = None
-        playwright_instance = None
-        playwright_details = {}
-        current_page_id = None
-
-        CommonUtil.ExecLog(sModuleInfo, "Browser closed successfully", 1)
-        return "passed"
+            CommonUtil.ExecLog(sModuleInfo, "Browser closed successfully", 1)
+            return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

@@ -3502,12 +3502,62 @@ def Tear_Down_Selenium(step_data=[]):
     global current_driver_id
     try:
         driver_id = ""
+        session_name = None
+        
+        # Parse both driverid (legacy) and session (new) parameters
         for left, mid, right in step_data:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "driverid":
                 driver_id = right.strip()
+            elif left == "session" and mid.strip().lower() == "optional parameter":
+                session_name = right.strip()
+                # For backward compatibility, treat session_name as driver_id
+                driver_id = session_name
 
-        if not driver_id:
+        # Handle session-specific teardown
+        if session_name:
+            from Framework.Built_In_Automation.Web.utils import get_browser_session
+            existing_session = get_browser_session(session_name)
+            
+            if existing_session and existing_session.get("selenium_driver"):
+                try:
+                    # Close the specific session's browser
+                    session_driver = existing_session["selenium_driver"]
+                    session_driver.quit()
+                    CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
+                except Exception as e:
+                    errMsg = f"Unable to tear down session '{session_name}'. may already been killed"
+                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                    CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                
+                # Remove session from browser_sessions
+                browser_sessions = Shared_Resources.Get_Shared_Variables("browser_sessions", {})
+                if session_name in browser_sessions:
+                    del browser_sessions[session_name]
+                    Shared_Resources.Set_Shared_Variables("browser_sessions", browser_sessions)
+                
+                # Remove from selenium_details if present
+                if session_name in selenium_details:
+                    del selenium_details[session_name]
+                
+                # If this was the current driver, switch to another or clear
+                if current_driver_id == session_name:
+                    if selenium_details:
+                        for driver in selenium_details:
+                            selenium_driver = selenium_details[driver]["driver"]
+                            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+                            CommonUtil.ExecLog(sModuleInfo, f"Current driver switched to driver_id='{driver}'", 1)
+                            current_driver_id = driver
+                            break
+                    else:
+                        Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
+                        selenium_driver = None
+                        current_driver_id = None
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Nothing to tear down.", 2)
+        
+        # Handle existing driver_id logic (backwards compatibility)
+        elif not driver_id:
             CommonUtil.Join_Thread_and_Return_Result(
                 "screenshot"
             )  # Let the capturing screenshot end in thread
@@ -3525,6 +3575,8 @@ def Tear_Down_Selenium(step_data=[]):
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                     CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
+            # Clear all browser sessions
+            Shared_Resources.Set_Shared_Variables("browser_sessions", {})
             selenium_details = {}
             selenium_driver = None
 
