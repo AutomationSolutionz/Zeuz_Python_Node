@@ -792,7 +792,7 @@ async def Open_Browser(browser, browser_options: BrowserOptions, session_name: s
 
             # Create browser session
             from Framework.Built_In_Automation.Web.utils import create_browser_session
-            session = create_browser_session(
+            create_browser_session(
                 session_name=session_name,
                 selenium_driver=selenium_driver,
                 playwright_page=playwright_page,

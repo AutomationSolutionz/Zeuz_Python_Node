@@ -77,7 +77,7 @@ def connect_selenium_to_playwright(port=9222):
         sr.Set_Shared_Variables("selenium_driver", driver)
         
         CommonUtil.ExecLog("connect_selenium_to_playwright", "Connected Selenium to Playwright", 1)
-        return "passed"
+        return driver
         
     except Exception as e:
         CommonUtil.ExecLog("connect_selenium_to_playwright", f"Failed to connect Selenium to Playwright: {e}", 3)
@@ -168,8 +168,6 @@ async def Open_Browser(step_data):
                     url = right_v
                 elif left_l in ("browser", "browser name"):
                     browser_name = right_v.lower()
-                elif left_l in ("driver id", "page id", "driver tag"):
-                    page_id = right_v
 
             elif mid_l == "optional parameter":
                 if left_l == "headless":
@@ -199,6 +197,8 @@ async def Open_Browser(step_data):
                     color_scheme = right_v
                 elif left_l == "permission":
                     permissions.append(right_v)
+                elif left_l in ("driver id", "page id", "driver tag", "session"):
+                    page_id = right_v    
 
             elif mid_l == "shared capability":
                 # Handle Selenium-style capabilities where possible
@@ -293,7 +293,20 @@ async def Open_Browser(step_data):
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         # Connect Selenium to Playwright via CDP
-        connect_selenium_to_playwright(port=9222)
+        selenium_driver = connect_selenium_to_playwright(port=9222)
+
+        # Create browser session
+        from Framework.Built_In_Automation.Web.utils import create_browser_session
+        
+        create_browser_session(
+            session_name=page_id,
+            selenium_driver=selenium_driver,
+            playwright_page=current_page,
+            playwright_browser=browser,
+            playwright_context=context,
+            playwright_frame=None
+        )
+        CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {page_id}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Browser opened successfully (page_id: {page_id})", 1)
         return "passed"
