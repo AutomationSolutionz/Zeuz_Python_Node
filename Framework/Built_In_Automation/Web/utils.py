@@ -1,6 +1,8 @@
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
+from playwright.async_api import Browser, BrowserContext, Frame, Page
+from selenium.webdriver import Chrome, Firefox, Edge, Safari
 
 
 
@@ -16,7 +18,7 @@ def initialize_browser_sessions():
 
 def create_browser_session(
     session_name: str = "default",
-    selenium_driver: WebDriver | None = None,
+    selenium_driver: Chrome | Firefox | Edge | Safari | None = None,
     playwright_page: Page | None = None,
     playwright_browser: Browser | None = None,
     playwright_context: BrowserContext | None = None,
@@ -28,7 +30,7 @@ def create_browser_session(
     
     Args:
         session_name (str): The name of the session.
-        selenium_driver (WebDriver): The Selenium WebDriver instance.
+        selenium_driver (Chrome | Firefox | Edge | Safari): The Selenium WebDriver instance.
         playwright_page (Page): The Playwright Page instance.
         playwright_browser (Browser): The Playwright Browser instance.
         playwright_context (BrowserContext): The Playwright BrowserContext instance.
