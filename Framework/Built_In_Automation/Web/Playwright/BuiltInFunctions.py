@@ -112,6 +112,69 @@ default_viewport = {"width": 1920, "height": 1080}
 #                       #
 #########################
 
+def _handle_playwright_session(step_data):
+    """
+    Helper function to handle session parameter for Playwright actions.
+    
+    Args:
+        step_data: The step data containing potential session parameter
+        
+    Returns:
+        tuple: (session_name, current_page, current_page_id, context, browser)
+        - session_name: The session name found or None
+        - current_page: The appropriate page instance
+        - current_page_id: The current page ID
+        - context: The browser context
+        - browser: The browser instance
+    """
+    global current_page, current_page_id, context, browser
+    
+    # Parse session parameter
+    session_name = None
+    for left, mid, right in step_data:
+        left_l = left.strip().lower()
+        mid_l = mid.strip().lower()
+        right_v = right.strip()
+        
+        if mid_l == "optional parameter" and left_l == "session":
+            session_name = right_v
+            break
+    
+    # If session parameter is provided, switch to that session
+    if session_name:
+        from Framework.Built_In_Automation.Web.utils import get_browser_session
+        existing_session = get_browser_session(session_name)
+        
+        if existing_session and existing_session.get("playwright_page"):
+            # Session exists, use existing browser
+            current_page = existing_session["playwright_page"]
+            context = existing_session["playwright_context"]
+            browser = existing_session["playwright_browser"]
+            current_page_id = session_name
+            
+            # Update globals
+            globals().update({
+                'current_page': current_page,
+                'context': context,
+                'browser': browser,
+                'current_page_id': current_page_id
+            })
+            
+            # Update shared variables
+            sr.Set_Shared_Variables("playwright_page", current_page)
+            sr.Set_Shared_Variables("playwright_context", context)
+            sr.Set_Shared_Variables("playwright_browser", browser)
+            
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
+        else:
+            # Session doesn't exist
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Using current browser.", 2)
+    
+    return session_name, current_page, current_page_id, context, browser
+
+
 @logger
 async def Open_Browser(step_data):
     """
@@ -590,6 +653,9 @@ async def Click_Element(step_data):
     global current_page
 
     try:
+        # Handle session parameter
+        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
+        
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
@@ -608,6 +674,10 @@ async def Click_Element(step_data):
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
             right_v = right.strip()
+
+            # Skip session parameter - already handled above
+            if mid_l == "optional parameter" and left_l == "session":
+                continue
 
             if mid_l == "optional parameter":
                 if left_l == "use js":
@@ -796,6 +866,9 @@ async def Enter_Text_In_Text_Box(step_data):
     global current_page
 
     try:
+        # Handle session parameter
+        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
+        
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
@@ -809,6 +882,10 @@ async def Enter_Text_In_Text_Box(step_data):
         for left, mid, right in step_data:
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
+
+            # Skip session parameter - already handled above
+            if mid_l == "optional parameter" and left_l == "session":
+                continue
 
             if mid_l == "action":
                 text_value = right  # Don't strip - preserve whitespace

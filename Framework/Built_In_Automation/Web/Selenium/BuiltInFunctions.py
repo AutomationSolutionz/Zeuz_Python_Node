@@ -150,6 +150,50 @@ Dataset = list[tuple[str, str, str]]
 ReturnType = Literal["passed", "zeuz_failed"]
 
 
+def _handle_selenium_session(step_data):
+    """
+    Helper function to handle session parameter for Selenium actions.
+    
+    Args:
+        step_data: The step data containing potential session parameter
+        
+    Returns:
+        tuple: (session_name, selenium_driver, current_driver_id)
+        - session_name: The session name found or None
+        - selenium_driver: The appropriate selenium driver instance
+        - current_driver_id: The current driver ID
+    """
+    global selenium_driver, current_driver_id
+    
+    # Parse session parameter
+    session_name = None
+    for left, mid, right in step_data:
+        left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+        if left == "session" and mid.strip().lower() == "optional parameter":
+            session_name = right.strip()
+            break
+    
+    # If session parameter is provided, switch to that session
+    if session_name:
+        from Framework.Built_In_Automation.Web.utils import get_browser_session
+        existing_session = get_browser_session(session_name)
+        
+        if existing_session and existing_session.get("selenium_driver"):
+            # Session exists, use existing driver
+            selenium_driver = existing_session["selenium_driver"]
+            current_driver_id = session_name
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
+        else:
+            # Session doesn't exist
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Using current browser.", 2)
+    
+    return session_name, selenium_driver, current_driver_id
+
+
 class DefaultChromiumArguments(TypedDict):
     add_argument: list[str]
     add_experimental_option: dict[str, Any]
@@ -1645,6 +1689,10 @@ def Enter_Text_In_Text_Box(step_data):
         use_js = False
         clear = True
         global selenium_driver
+        
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(step_data)
+        
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(
@@ -1654,6 +1702,9 @@ def Enter_Text_In_Text_Box(step_data):
         for left, mid, right in step_data:
             mid = mid.strip().lower()
             left = left.strip().lower()
+            # Skip session parameter - already handled above
+            if left == "session" and mid == "optional parameter":
+                continue
             if mid == "action":
                 text_value = right
             elif left == "delay":
@@ -2088,8 +2139,14 @@ def Click_Element(data_set, retry=0):
     global selenium_driver
     use_js = False  # Use js to click on element?
     try:
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(data_set)
+        
         location = ""
         for row in data_set:
+            # Skip session parameter - already handled above
+            if row[0].lower().replace(" ", "").replace("_", "").replace("-", "") == "session" and row[1].strip().lower() == "optional parameter":
+                continue
             if row[0] == "offset" and row[1] == "optional parameter":
                 location = row[
                     2
@@ -3035,6 +3092,9 @@ def Validate_Text(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(step_data)
+        
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         ignore_case = False
         zeuz_ai = None
@@ -3044,6 +3104,9 @@ def Validate_Text(step_data):
             )
             return "zeuz_failed"
         for each_step_data_item in step_data:
+            # Skip session parameter - already handled above
+            if each_step_data_item[0].lower().replace(" ", "").replace("_", "").replace("-", "") == "session" and each_step_data_item[1].strip().lower() == "optional parameter":
+                continue
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
@@ -3149,6 +3212,9 @@ def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(step_data)
+        
         Element = None
         get_element = False
         scroll_direction = ""
@@ -3156,6 +3222,10 @@ def Scroll(step_data):
         pixel = 750
         for left, mid, right in step_data:
             mid = mid.strip().lower()
+            left_clean = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            # Skip session parameter - already handled above
+            if left_clean == "session" and mid == "optional parameter":
+                continue
             if "action" in mid:
                 scroll_direction = right.strip().lower()
             elif mid == "element parameter":
