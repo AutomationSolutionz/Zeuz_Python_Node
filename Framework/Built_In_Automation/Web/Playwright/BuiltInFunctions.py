@@ -332,7 +332,59 @@ async def Go_To_Link(step_data):
     global current_page
 
     try:
-        if current_page is None:
+        # Parse session parameter first
+        session_name = None
+        for left, mid, right in step_data:
+            left_l = left.strip().lower()
+            mid_l = mid.strip().lower()
+            right_v = right.strip()
+            
+            if mid_l == "optional parameter" and left_l == "session":
+                session_name = right_v
+                break
+        
+        # Check if session exists and use it
+        if session_name:
+            from Framework.Built_In_Automation.Web.utils import get_browser_session
+            existing_session = get_browser_session(session_name)
+            
+            if existing_session and existing_session.get("playwright_page"):
+                # Session exists, use existing browser
+                current_page = existing_session["playwright_page"]
+                context = existing_session["playwright_context"]
+                browser = existing_session["playwright_browser"]
+                current_page_id = session_name
+                
+                # Update globals
+                globals().update({
+                    'current_page': current_page,
+                    'context': context,
+                    'browser': browser,
+                    'current_page_id': current_page_id
+                })
+                
+                # Update shared variables
+                sr.Set_Shared_Variables("playwright_page", current_page)
+                sr.Set_Shared_Variables("playwright_context", context)
+                sr.Set_Shared_Variables("playwright_browser", browser)
+                
+                CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
+            else:
+                # Session doesn't exist, open new browser with session name
+                CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Opening new browser.", 2)
+                
+                # Add session parameter to step_data for Open_Browser
+                step_data_with_session = step_data.copy()
+                if not any(left.strip().lower() == "session" and mid.strip().lower() == "optional parameter" for left, mid, right in step_data_with_session):
+                    step_data_with_session.append(("session", "optional parameter", session_name))
+                
+                result = await Open_Browser(step_data_with_session)
+                if result == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to open browser for new session", 3)
+                    return "zeuz_failed"
+        
+        elif current_page is None:
+            # No session specified and no browser open
             CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
             result = await Open_Browser(step_data)
             if result == "zeuz_failed":
@@ -351,7 +403,10 @@ async def Go_To_Link(step_data):
             if left_l in ("go to link", "url", "link"):
                     url = right_v
             elif mid_l == "optional parameter":
-                if left_l in ("wait until", "wait_until", "waituntil", "wait time"):
+                if left_l == "session":
+                    # Skip session parameter - already processed above
+                    continue
+                elif left_l in ("wait until", "wait_until", "waituntil", "wait time"):
                     wait_until = right_v.lower()
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
