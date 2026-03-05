@@ -29,6 +29,18 @@ IOS_XML_PATH = "ios_ui.xml"
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
 
+_UPLOAD_TASKS_STARTED = False
+
+
+def start_ui_dump_uploads() -> None:
+    """Start background UI dump uploads once per process."""
+    global _UPLOAD_TASKS_STARTED
+    if _UPLOAD_TASKS_STARTED:
+        return
+    _UPLOAD_TASKS_STARTED = True
+    asyncio.create_task(upload_android_ui_dump())
+    asyncio.create_task(upload_ios_ui_dump())
+
 
 def is_wda_running(port: int) -> bool:
     """Check if WebDriverAgent is running on given port."""
