@@ -220,8 +220,13 @@ async def Open_Browser(step_data):
             "devtools": devtools,
         }
         
-        # Add remote debugging port for CDP connection
-        all_args = args + ["--remote-debugging-port=9222"]
+        # Add remote debugging port for CDP connection with unique port per session
+        import hashlib
+        # Generate unique port based on page_id (range 9222-9322 to avoid conflicts)
+        port_hash = int(hashlib.md5(page_id.encode()).hexdigest(), 16)
+        unique_port = 9222 + (port_hash % 100)
+        all_args = args + [f"--remote-debugging-port={unique_port}"]
+        CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
         if all_args:
             launch_options["args"] = all_args
         if downloads_path:
@@ -293,7 +298,7 @@ async def Open_Browser(step_data):
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         # Connect Selenium to Playwright via CDP
-        selenium_driver = connect_selenium_to_playwright(port=9222)
+        selenium_driver = connect_selenium_to_playwright(port=unique_port)
 
         # Create browser session
         from Framework.Built_In_Automation.Web.utils import create_browser_session
