@@ -1,5 +1,9 @@
 const browserAppData = chrome || browser;
 setInterval(() => {
+	// Only run this periodic extraction on the main page, not inside iframes 
+	// (this prevents tracking pixels from overwriting the main page DOM)
+	if (window.top !== window.self) return;
+
 	var html = document.createElement('html');
 	html.setAttribute('zeuz', 'aiplugin');
 	var myString = document.documentElement.outerHTML;

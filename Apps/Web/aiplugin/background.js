@@ -7,6 +7,7 @@ var zeuz_url;
 var zeuz_key;
 var zeuz_node_id;
 const _aiContentTimers = {};  // per-tab debounce for node_ai_contents
+const _aiContentHashes = {};  // per-tab hashes to avoid resending unchanged contents
 
 fetch("data.json")
     .then(Response => Response.json())
@@ -175,8 +176,31 @@ browserAppData.runtime.onMessage.addListener(
         } else if (request.apiName == 'node_ai_contents') {
             const tabId = sender.tab ? sender.tab.id : 'unknown';
             if (_aiContentTimers[tabId]) clearTimeout(_aiContentTimers[tabId]);
-            _aiContentTimers[tabId] = setTimeout(() => {
+            _aiContentTimers[tabId] = setTimeout(async () => {
                 delete _aiContentTimers[tabId];
+
+                const contentObj = { "dom": request.dom, "page_map": request.page_map, "page_map_json": request.page_map_json };
+                const contentStr = JSON.stringify(contentObj);
+
+                let hash = '';
+                try {
+                    const msgUint8 = new TextEncoder().encode(contentStr);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                } catch (e) {
+                    console.error("Error generating hash", e);
+                    hash = contentStr.length.toString(); // Fallback
+                }
+
+                if (_aiContentHashes[tabId] === hash) {
+                    console.log('node_ai_contents skipped, content unchanged for tab:', tabId, 'hash:', hash);
+                    try { sendResponse({ status: "skipped" }); } catch (e) { }
+                    return;
+                }
+                _aiContentHashes[tabId] = hash;
+                console.log('node_ai_contents sending, new hash for tab:', tabId, 'hash:', hash);
+
                 var url = `${zeuz_url}/node_ai_contents/`;
                 fetch(url, {
                     method: "POST",
@@ -185,12 +209,18 @@ browserAppData.runtime.onMessage.addListener(
                         "X-Api-Key": zeuz_key,
                     },
                     body: JSON.stringify({
-                        "dom_web": { "dom": request.dom, "page_map": request.page_map, "page_map_json": request.page_map_json },
+                        "dom_web": contentObj,
                         "node_id": zeuz_node_id
                     }),
                 })
-                    .then(response => response.json())
-                    .then(text => { console.log(text); sendResponse(text); })
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error("node_ai_contents failed with status:", response.status, response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(text => { console.log("node_ai_contents response:", text); try { sendResponse(text); } catch (e) { } })
+                    .catch(e => console.error("node_ai_contents fetch error:", e));
             }, 2000);
             return true;  // Will respond asynchronously.
         }

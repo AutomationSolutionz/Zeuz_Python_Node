@@ -109,6 +109,10 @@ function extractPageMapData() {
     // ── Collect everything in DOM order ──────────────────────────────────────
     const allNodes = [];
 
+    // Pre-compute DOM order Map to avoid O(N^2) slowdown on large pages (eBay/Amazon)
+    const domOrderMap = new Map();
+    document.querySelectorAll('*').forEach((el, idx) => domOrderMap.set(el, idx));
+
     // Pass 1 — action elements
     document.querySelectorAll(ACTION_SELECTOR).forEach(el => {
         if (!isVisible(el)) return;
@@ -116,7 +120,7 @@ function extractPageMapData() {
         allNodes.push({
             _type: 'action',
             _el: el,
-            _order: [...document.querySelectorAll('*')].indexOf(el),
+            _order: domOrderMap.get(el) || 0,
             tag: el.tagName.toLowerCase(),
             type: el.getAttribute('type') || null,
             role: el.getAttribute('role') || el.tagName.toLowerCase(),
@@ -153,7 +157,7 @@ function extractPageMapData() {
         allNodes.push({
             _type: 'text',
             _el: el,
-            _order: [...document.querySelectorAll('*')].indexOf(el),
+            _order: domOrderMap.get(el) || 0,
             kind: isHeading ? 'heading' : (el.getAttribute('role') || tag),
             text,
             in_viewport: true,
