@@ -1,10 +1,10 @@
 const browserAppData = chrome || browser;
 setInterval(() => {
 	var html = document.createElement('html');
-	html.setAttribute('zeuz','aiplugin');
+	html.setAttribute('zeuz', 'aiplugin');
 	var myString = document.documentElement.outerHTML;
 	html.innerHTML = myString;
-	
+
 	var elements = html.getElementsByTagName('head');
 	while (elements[0])
 		elements[0].parentNode.removeChild(elements[0])
@@ -20,16 +20,27 @@ setInterval(() => {
 	var elements = html.getElementsByTagName('style');
 	while (elements[0])
 		elements[0].parentNode.removeChild(elements[0])
-	
+
 	// AI model works better on indented dom, so not removing indentation.
 	// var result = html.outerHTML.replace(/\s+/g, ' ').replace(/>\s+</g, '><');
 
 	//The following code removes non-unicode characters except newline and tab
 	var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
 
+	let mapData = { page_map_json: null, page_map: "" };
+	if (typeof extractPageMapData === 'function') {
+		try {
+			mapData = extractPageMapData();
+		} catch (e) {
+			console.error("Error extracting page map:", e);
+		}
+	}
+
 	browserAppData.runtime.sendMessage({
 		apiName: 'node_ai_contents',
 		dom: result,
+		page_map: mapData.page_map,
+		page_map_json: mapData.page_map_json
 	})
 
 }, 5000);
@@ -68,7 +79,7 @@ class Inspector {
 				if (response["info"] == "success") {
 					const modalText = 'Element data was recorded. Please Click "Add by AI"';
 					console.log(modalText);
-					
+
 					if (this.successContainer) {
 						this.successContainer.textContent = modalText;
 						this.successContainer.classList.add('show');
@@ -88,9 +99,9 @@ class Inspector {
 					data: data,
 					html: refinedHtml,
 				},
-				response => {
-					insert_modal_text(response, modal_id);
-				}
+					response => {
+						insert_modal_text(response, modal_id);
+					}
 				);
 			}
 
@@ -477,19 +488,19 @@ class Inspector {
 			let value = e.target.getAttribute(name);
 			elementText += `${name}="${value}" `;
 		}
-		
+
 		this.attributesContainer.textContent = elementText.trim();
 	}
 
 	activate() {
 		this.createOverlayElements();
 		this.createSuccessMessage();
-		
+
 		const style = document.createElement('style');
 		style.id = this.cssNode;
 		style.textContent = '*{cursor:crosshair!important;}';
 		document.head.appendChild(style);
-		
+
 		// add listeners
 		document.addEventListener('click', this.getData, true);
 		this.options.inspector && (document.addEventListener('mouseover', this.draw));
@@ -506,7 +517,7 @@ class Inspector {
 			'zeuz-success-host'
 		]
 
-		for (let elemId of Remove){
+		for (let elemId of Remove) {
 			const elem = document.getElementById(elemId);
 			elem && elem.remove();
 		}
@@ -514,7 +525,7 @@ class Inspector {
 		// remove listeners
 		document.removeEventListener('click', this.getData, true);
 		this.options && this.options.inspector && (document.removeEventListener('mouseover', this.draw));
-		
+
 		// reset
 		this.attributesHost = null;
 		this.attributesContainer = null;
