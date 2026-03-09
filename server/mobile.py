@@ -344,26 +344,35 @@ def run_adb_command(command):
 
 def capture_ui_dump(device_serial: str | None = None):
     """Capture the current UI hierarchy from the device"""
+    # Try to get from active Appium driver first (like web does)
+    try:
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+        
+        if appium_driver is not None:
+            page_src = appium_driver.page_source
+            with open(UI_XML_PATH, "w") as xml_file:
+                xml_file.write(page_src)
+            return
+    except Exception as e:
+        pass
+    
+    # Fallback to ADB
     device_flag = f"-s {device_serial}" if device_serial else ""
+    
+    if os.path.exists(UI_XML_PATH):
+        os.remove(UI_XML_PATH)
+    
     out = run_adb_command(
         f"{ADB_PATH} {device_flag} shell uiautomator dump /sdcard/ui.xml".strip()
     )
     if out.startswith("Error:"):
-        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import (
-            appium_driver,
-        )
-
-        if appium_driver is None:
-            return
-        page_src = appium_driver.page_source
-        with open(UI_XML_PATH, "w") as xml_file:
-            xml_file.write(page_src)
-    else:
-        out = run_adb_command(
-            f"{ADB_PATH} {device_flag} pull /sdcard/ui.xml {UI_XML_PATH}"
-        )
-        if out.startswith("Error:"):
-            return
+        return
+    
+    out = run_adb_command(
+        f"{ADB_PATH} {device_flag} pull /sdcard/ui.xml {UI_XML_PATH}"
+    )
+    if os.path.exists(UI_XML_PATH):
+        size = os.path.getsize(UI_XML_PATH)
 
 
 def capture_screenshot(device_serial: str | None = None):
@@ -456,6 +465,19 @@ def get_real_ios_hierarchy(device_udid: str):
 
 
 def capture_ios_ui_dump(device_udid: str):
+    # Try to get from active Appium driver first (like web does)
+    try:
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+        
+        if appium_driver is not None:
+            page_src = appium_driver.page_source
+            with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
+                xml_file.write(page_src)
+            return
+    except Exception as e:
+        pass
+    
+    # Fallback to WDA
     real_hierarchy = get_real_ios_hierarchy(device_udid)
     if real_hierarchy:
         try:
@@ -468,17 +490,6 @@ def capture_ios_ui_dump(device_udid: str):
         with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
             xml_file.write(xml_content)
         return
-    
-    # Fallback to Appium driver
-    try:
-        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
-        if appium_driver is not None:
-            page_src = appium_driver.page_source
-            with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
-                xml_file.write(page_src)
-            return
-    except:
-        pass
 
 
 async def upload_android_ui_dump():
