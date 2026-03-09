@@ -233,7 +233,11 @@ def run_ws_thread():
             next_ws = _build_websocket(ws_url)
             with connection_lock:
                 ws = next_ws
-            next_ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+            next_ws.run_forever(
+                sslopt={"cert_reqs": ssl.CERT_NONE},
+                ping_interval=15,
+                ping_timeout=10
+            )
         except Exception as e:
             _log(f"Connection attempt failed: {e}")
         finally:
