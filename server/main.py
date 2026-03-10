@@ -8,7 +8,7 @@ from server.status import router as status_router
 from server.connect import router as connect_router
 from server.evaluator import router as evaluator_router
 from server.node_operator import router as operator_router
-from server.mobile import router as mobile_router, upload_android_ui_dump
+from server.mobile import router as mobile_router, start_ui_dump_uploads
 from server.mac import router as mac_router
 from server.linux import router as linux_router
 from server.installers import router as installers_router
@@ -45,6 +45,10 @@ def main() -> FastAPI:
     v1router.include_router(linux_router)
     v1router.include_router(installers_router)
     app = FastAPI()
+
+    @app.on_event("startup")
+    async def _start_background_uploads():
+        start_ui_dump_uploads()
     app.include_router(v1router)
 
     origins = [
