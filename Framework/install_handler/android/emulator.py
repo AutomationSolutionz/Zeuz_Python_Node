@@ -77,6 +77,42 @@ def _build_android_process_env(sdk_root: Path | None = None) -> dict[str, str]:
     return env
 
 
+def _run_avdmanager_capture(
+    avdmanager: Path,
+    sdk_root: Path,
+    args: list[str],
+    timeout: int
+) -> subprocess.CompletedProcess:
+    """
+    Run avdmanager with SDK-root first, with a Darwin-only fallback that drops
+    --sdk_root but keeps the ZeuZ SDK env vars.
+    """
+    env = _build_android_process_env(sdk_root)
+    cmd_with_sdk_root = [str(avdmanager), f"--sdk_root={sdk_root}", *args]
+    result = subprocess.run(
+        cmd_with_sdk_root,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env=env
+    )
+    if result.returncode == 0 or not _is_darwin():
+        return result
+
+    if debug:
+        print(f"[installer][emulator] avdmanager command failed with --sdk_root, retrying without it on macOS. stderr: {result.stderr}")
+
+    cmd_without_sdk_root = [str(avdmanager), *args]
+    fallback_result = subprocess.run(
+        cmd_without_sdk_root,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env=env
+    )
+    return fallback_result
+
+
 def _read_file_tail(path: Path, max_lines: int = 20) -> str:
     """Read tail of a log file for error hints."""
     try:
@@ -158,16 +194,9 @@ async def get_available_avds() -> list[dict]:
         
         # Run avdmanager list avd command using async executor
         loop = asyncio.get_event_loop()
-        env = _build_android_process_env(sdk_root)
         result = await loop.run_in_executor(
             None,
-            lambda: subprocess.run(
-                [str(avdmanager), f"--sdk_root={sdk_root}", "list", "avd"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                env=env
-            )
+            lambda: _run_avdmanager_capture(avdmanager, sdk_root, ["list", "avd"], 30)
         )
         
         if result.returncode != 0:
@@ -264,19 +293,29 @@ async def launch_avd(avd_name: str) -> bool:
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / f"{sanitized_name}.log"
 
-        # Launch emulator in background and validate it does not exit immediately.
-        with open(log_path, "w", encoding="utf-8") as log_file:
-            process = subprocess.Popen(
-                [emulator_path, "-avd", avd_name, "-sdk-root", str(sdk_root)],
-                stdout=log_file,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,  # Detach from parent process
-                env=env
-            )
+        def _spawn_emulator(cmd: list[str]) -> subprocess.Popen:
+            with open(log_path, "w", encoding="utf-8") as log_file:
+                return subprocess.Popen(
+                    cmd,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,  # Detach from parent process
+                    env=env
+                )
 
-        # Give emulator time to fail fast (common for missing/invalid system image).
+        # Try launch with explicit sdk-root first.
+        process = _spawn_emulator([emulator_path, "-avd", avd_name, "-sdk-root", str(sdk_root)])
         await asyncio.sleep(3)
         returncode = process.poll()
+
+        # macOS compatibility: retry without -sdk-root if first launch exits immediately.
+        if returncode is not None and _is_darwin():
+            if debug:
+                print("[installer][emulator] Emulator exited quickly with -sdk-root on macOS. Retrying without -sdk-root.")
+            process = _spawn_emulator([emulator_path, "-avd", avd_name])
+            await asyncio.sleep(3)
+            returncode = process.poll()
+
         if returncode is not None:
             launch_hint = _read_file_tail(log_path)
             error_msg = f"Emulator process for {avd_name} exited immediately (code {returncode})."
@@ -664,16 +703,9 @@ async def get_available_devices() -> list[dict]:
         
         # Run avdmanager list device using async executor
         loop = asyncio.get_event_loop()
-        env = _build_android_process_env(sdk_root)
         result = await loop.run_in_executor(
             None,
-            lambda: subprocess.run(
-                [str(avdmanager), f"--sdk_root={sdk_root}", "list", "device"],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                env=env
-            )
+            lambda: _run_avdmanager_capture(avdmanager, sdk_root, ["list", "device"], 60)
         )
         
         if result.returncode != 0:
@@ -848,13 +880,7 @@ def _get_existing_avd_names() -> list[str]:
         if not avdmanager:
             return []
         
-        result = subprocess.run(
-            [str(avdmanager), f"--sdk_root={sdk_root}", "list", "avd"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            env=_build_android_process_env(sdk_root)
-        )
+        result = _run_avdmanager_capture(avdmanager, sdk_root, ["list", "avd"], 30)
         
         if result.returncode != 0:
             return []
@@ -1321,60 +1347,91 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
 def _run_avdmanager_create_darwin(avdmanager: Path, sdk_root: Path, avd_name: str, system_image: str, device_id: str) -> tuple[bool, str]:
     """Create AVD on macOS with real-time output"""
     try:
-        # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
-        # Answer "no" to custom hardware profile prompt
         env = _build_android_process_env(sdk_root)
-        process = subprocess.Popen(
-            [str(avdmanager), f"--sdk_root={sdk_root}", "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,  # Line buffered
-            env=env
-        )
-        
-        # Send "no" to custom hardware profile prompt
-        process.stdin.write("no\n")
-        process.stdin.close()
-        
-        # Print output in real-time as it comes, showing progress on single line
-        output_lines = []
-        last_progress = ""
-        try:
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    stripped = line.strip()
-                    output_lines.append(stripped)
-                    
-                    # Extract progress percentage from lines like "[====] 25% Loading..."
-                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                    if progress_match:
-                        percent = progress_match.group(1)
-                        status = progress_match.group(2).strip()
-                        current_progress = f"{percent}% {status}"
-                        if current_progress != last_progress:
-                            print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
-                            last_progress = current_progress
-                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                        # Print important non-progress messages on new line
-                        print(f"\n[installer][emulator] {stripped}")
-                    elif stripped.endswith('%'):
-                        # Handle lines that end with just percentage
-                        print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
-        except Exception as e:
-            print(f"\n[installer][emulator] Output reading error: {e}")
-        finally:
-            print()  # New line after progress completes
-        
-        process.stdout.close()
-        returncode = process.wait(timeout=120)
-        
-        output = "\n".join(output_lines)
-        if returncode == 0:
+
+        def _run_create_command(cmd: list[str]) -> tuple[bool, str]:
+            # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
+            # Answer "no" to custom hardware profile prompt
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,  # Line buffered
+                env=env
+            )
+
+            process.stdin.write("no\n")
+            process.stdin.close()
+
+            output_lines = []
+            last_progress = ""
+            try:
+                for line in iter(process.stdout.readline, ''):
+                    if line:
+                        stripped = line.strip()
+                        output_lines.append(stripped)
+
+                        # Extract progress percentage from lines like "[====] 25% Loading..."
+                        progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                        if progress_match:
+                            percent = progress_match.group(1)
+                            status = progress_match.group(2).strip()
+                            current_progress = f"{percent}% {status}"
+                            if current_progress != last_progress:
+                                print(f"\r[installer][emulator] Download progress: {current_progress}", end='', flush=True)
+                                last_progress = current_progress
+                        elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                            # Print important non-progress messages on new line
+                            print(f"\n[installer][emulator] {stripped}")
+                        elif stripped.endswith('%'):
+                            # Handle lines that end with just percentage
+                            print(f"\r[installer][emulator] Download progress: {stripped}", end='', flush=True)
+            except Exception as e:
+                print(f"\n[installer][emulator] Output reading error: {e}")
+            finally:
+                print()  # New line after progress completes
+
+            process.stdout.close()
+            returncode = process.wait(timeout=120)
+            output = "\n".join(output_lines)
+            return returncode == 0, output
+
+        primary_cmd = [
+            str(avdmanager),
+            f"--sdk_root={sdk_root}",
+            "create",
+            "avd",
+            "-n",
+            avd_name,
+            "-k",
+            system_image,
+            "-d",
+            device_id,
+        ]
+        success, output = _run_create_command(primary_cmd)
+        if success:
             return True, output
-        else:
-            return False, output
+
+        # macOS-only compatibility fallback for avdmanager builds that reject --sdk_root.
+        if debug:
+            print("[installer][emulator] Retrying AVD create without --sdk_root on macOS.")
+        fallback_cmd = [
+            str(avdmanager),
+            "create",
+            "avd",
+            "-n",
+            avd_name,
+            "-k",
+            system_image,
+            "-d",
+            device_id,
+        ]
+        fallback_success, fallback_output = _run_create_command(fallback_cmd)
+        if fallback_success:
+            return True, fallback_output
+        return False, fallback_output or output
     except subprocess.TimeoutExpired:
         return False, "AVD creation timed out"
     except Exception as e:
