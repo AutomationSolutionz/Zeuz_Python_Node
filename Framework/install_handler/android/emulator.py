@@ -4,6 +4,7 @@ import subprocess
 import asyncio
 import re
 import random
+import tempfile
 from pathlib import Path
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 from Framework.install_handler.utils import send_response, debug
@@ -54,6 +55,62 @@ def _is_darwin():
     return platform.system() == 'Darwin'
 
 
+def _build_android_process_env(sdk_root: Path | None = None) -> dict[str, str]:
+    """
+    Build subprocess env that always points to ZeuZ-managed Android SDK.
+    This keeps sdkmanager/avdmanager/emulator in the same SDK context.
+    """
+    sdk_root = sdk_root or _get_sdk_root()
+    env = os.environ.copy()
+    sdk_root_str = str(sdk_root)
+    env["ANDROID_HOME"] = sdk_root_str
+    env["ANDROID_SDK_ROOT"] = sdk_root_str
+
+    # Prepend SDK paths to make sure ZeuZ binaries are resolved first.
+    sdk_paths = [
+        str(sdk_root / "platform-tools"),
+        str(sdk_root / "emulator"),
+        str(sdk_root / "cmdline-tools" / "latest" / "bin"),
+    ]
+    current_path = env.get("PATH", "")
+    env["PATH"] = os.pathsep.join([*sdk_paths, current_path]) if current_path else os.pathsep.join(sdk_paths)
+    return env
+
+
+def _read_file_tail(path: Path, max_lines: int = 20) -> str:
+    """Read tail of a log file for error hints."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+        tail = [line.strip() for line in lines[-max_lines:] if line.strip()]
+        return " | ".join(tail)
+    except Exception:
+        return ""
+
+
+def _get_host_arch() -> str:
+    """Normalize host architecture for image selection."""
+    arch = platform.machine().lower()
+    if arch in {"arm64", "aarch64"}:
+        return "arm64"
+    if arch in {"x86_64", "amd64", "x64"}:
+        return "x86_64"
+    return arch
+
+
+def _get_arch_preference_order() -> list[str]:
+    """
+    Return preferred system-image ABI order for current host.
+    On Apple Silicon, arm64-v8a must be preferred over x86_64.
+    """
+    host_arch = _get_host_arch()
+    if _is_darwin() and host_arch == "arm64":
+        return ["arm64-v8a", "arm64", "aarch64", "x86_64", "x86"]
+    if host_arch == "x86_64":
+        return ["x86_64", "x86", "arm64-v8a", "arm64", "aarch64"]
+    return [host_arch, "x86_64", "x86", "arm64-v8a", "arm64", "aarch64"]
+
+
 def get_emulator_command():
     """
     Returns the correct emulator executable path depending on OS.
@@ -101,13 +158,15 @@ async def get_available_avds() -> list[dict]:
         
         # Run avdmanager list avd command using async executor
         loop = asyncio.get_event_loop()
+        env = _build_android_process_env(sdk_root)
         result = await loop.run_in_executor(
             None,
             lambda: subprocess.run(
-                [str(avdmanager), "list", "avd"],
+                [str(avdmanager), f"--sdk_root={sdk_root}", "list", "avd"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
+                env=env
             )
         )
         
@@ -197,16 +256,43 @@ async def launch_avd(avd_name: str) -> bool:
     Sends response to server on success or failure.
     """
     try:
+        sdk_root = _get_sdk_root()
         emulator_path = get_emulator_command()
+        env = _build_android_process_env(sdk_root)
+        sanitized_name = re.sub(r"[^a-zA-Z0-9._-]", "_", avd_name) or "avd"
+        log_dir = Path(tempfile.gettempdir()) / "zeuz" / "android_emulator_logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"{sanitized_name}.log"
 
-        # Launch emulator in background using Popen (non-blocking)
-        # Popen returns immediately, so we can call it directly without blocking
-        process = subprocess.Popen(
-            [emulator_path, "-avd", avd_name],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True  # Detach from parent process
-        )
+        # Launch emulator in background and validate it does not exit immediately.
+        with open(log_path, "w", encoding="utf-8") as log_file:
+            process = subprocess.Popen(
+                [emulator_path, "-avd", avd_name, "-sdk-root", str(sdk_root)],
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,  # Detach from parent process
+                env=env
+            )
+
+        # Give emulator time to fail fast (common for missing/invalid system image).
+        await asyncio.sleep(3)
+        returncode = process.poll()
+        if returncode is not None:
+            launch_hint = _read_file_tail(log_path)
+            error_msg = f"Emulator process for {avd_name} exited immediately (code {returncode})."
+            if launch_hint:
+                error_msg += f" Output hint: {launch_hint[:500]}"
+            print(f"[installer][emulator] {error_msg}")
+            await send_response({
+                "action": "status",
+                "data": {
+                    "category": "AndroidEmulator",
+                    "name": avd_name,
+                    "status": "not installed",
+                    "comment": error_msg,
+                }
+            })
+            return False
         
         print(f"[installer][emulator] Launching AVD: {avd_name}... (PID: {process.pid})")
         
@@ -578,13 +664,15 @@ async def get_available_devices() -> list[dict]:
         
         # Run avdmanager list device using async executor
         loop = asyncio.get_event_loop()
+        env = _build_android_process_env(sdk_root)
         result = await loop.run_in_executor(
             None,
             lambda: subprocess.run(
-                [str(avdmanager), "list", "device"],
+                [str(avdmanager), f"--sdk_root={sdk_root}", "list", "device"],
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
+                env=env
             )
         )
         
@@ -761,10 +849,11 @@ def _get_existing_avd_names() -> list[str]:
             return []
         
         result = subprocess.run(
-            [str(avdmanager), "list", "avd"],
+            [str(avdmanager), f"--sdk_root={sdk_root}", "list", "avd"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
+            env=_build_android_process_env(sdk_root)
         )
         
         if result.returncode != 0:
@@ -1108,13 +1197,15 @@ def _run_avdmanager_create_windows(avdmanager: Path, sdk_root: Path, avd_name: s
     try:
         # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
         # Answer "no" to custom hardware profile prompt
+        env = _build_android_process_env(sdk_root)
         process = subprocess.Popen(
-            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
+            [str(avdmanager), f"--sdk_root={sdk_root}", "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1  # Line buffered
+            bufsize=1,  # Line buffered
+            env=env
         )
         
         # Send "no" to custom hardware profile prompt
@@ -1169,13 +1260,15 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
     try:
         # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
         # Answer "no" to custom hardware profile prompt
+        env = _build_android_process_env(sdk_root)
         process = subprocess.Popen(
-            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
+            [str(avdmanager), f"--sdk_root={sdk_root}", "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1  # Line buffered
+            bufsize=1,  # Line buffered
+            env=env
         )
         
         # Send "no" to custom hardware profile prompt
@@ -1230,13 +1323,15 @@ def _run_avdmanager_create_darwin(avdmanager: Path, sdk_root: Path, avd_name: st
     try:
         # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
         # Answer "no" to custom hardware profile prompt
+        env = _build_android_process_env(sdk_root)
         process = subprocess.Popen(
-            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
+            [str(avdmanager), f"--sdk_root={sdk_root}", "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1  # Line buffered
+            bufsize=1,  # Line buffered
+            env=env
         )
         
         # Send "no" to custom hardware profile prompt
@@ -1411,7 +1506,8 @@ def _get_highest_api_system_image(system_images: list[dict]) -> str | None:
     if not system_images:
         return None
     
-    # Extract API levels - API level is the priority
+    # Extract API levels - API level is the priority.
+    arch_preference = _get_arch_preference_order()
     candidates = []
     for img in system_images:
         package = img.get("package", "")
@@ -1433,30 +1529,33 @@ def _get_highest_api_system_image(system_images: list[dict]) -> str | None:
         variant = parts[2] if len(parts) > 2 else ""
         arch = parts[3] if len(parts) > 3 else ""
         
-        # Variant/arch preference for tiebreaking (only used when API levels are equal)
+        # Variant preference for tiebreaking (only used when API levels are equal).
         variant_priority = 0
-        if variant == "google_apis" and arch == "x86_64":
-            variant_priority = 3  # Best variant/arch combo
-        elif variant == "google_apis_playstore" and arch == "x86_64":
-            variant_priority = 2  # Second best
-        elif variant == "google_apis":
-            variant_priority = 1
+        if variant == "google_apis":
+            variant_priority = 3
         elif variant == "google_apis_playstore":
+            variant_priority = 2
+        elif variant:
             variant_priority = 1
+
+        # Host-compatible architecture preference (important for Apple Silicon).
+        if arch in arch_preference:
+            arch_priority = len(arch_preference) - arch_preference.index(arch)
         else:
-            variant_priority = 0
+            arch_priority = 0
         
         candidates.append({
             "package": package,
             "api_level": api_level,
+            "arch_priority": arch_priority,
             "variant_priority": variant_priority
         })
     
     if not candidates:
         return None
     
-    # Sort by API level (descending - highest first), then by variant priority (tiebreaker)
-    candidates.sort(key=lambda x: (x["api_level"], x["variant_priority"]), reverse=True)
+    # Sort by API level (descending), then host arch compatibility, then image variant.
+    candidates.sort(key=lambda x: (x["api_level"], x["arch_priority"], x["variant_priority"]), reverse=True)
     
     # Return the highest API level (variant priority only matters if API levels are equal)
     return candidates[0]["package"]
@@ -1546,15 +1645,15 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             })
             return False
         
-        # Step 0: Get available system images and select highest API level
-        print(f"[installer][emulator] Getting available system images with Android Version 16")
+        # Step 0: Get available system images and select highest API level.
+        print("[installer][emulator] Discovering the latest compatible Android system image")
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
                 "package": device_id,
                 "status": "installing",
-                "comment": "Finding system image with Android Version 16",
+                "comment": "Finding the latest compatible Android system image",
             }
         })
         
@@ -1573,7 +1672,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             })
             return False
         
-        # Get highest API level system image (prefer google_apis;x86_64)
+        # Get highest API level system image with host-architecture-aware tiebreakers.
         system_image_name = _get_highest_api_system_image(system_images)
         if not system_image_name:
             error_msg = "Could not find a suitable system image."
@@ -1639,7 +1738,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             )
         
         if not success:
-            error_msg = f"Failed to install Android Version 16: {output}"
+            error_msg = f"Failed to install system image '{system_image_name}': {output}"
             print(f"[installer][emulator] {error_msg}")
             await send_response({
                 "action": "status",
