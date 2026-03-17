@@ -6,6 +6,8 @@ const defaultIcon = 'zeuz.png';
 var zeuz_url;
 var zeuz_key;
 var zeuz_node_id;
+const _aiContentTimers = {};  // per-tab debounce for node_ai_contents
+const _aiContentHashes = {};  // per-tab hashes to avoid resending unchanged contents
 
 fetch("data.json")
     .then(Response => Response.json())
@@ -135,7 +137,7 @@ if (navigator.userAgentData.platform.toLowerCase().includes('mac')) {
 }
 browserAppData.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
-        
+
         if (request.action === 'toggle_from_content_script') {
             // allows the floating button to trigger the toggle logic
             toggle(sender.tab);
@@ -171,36 +173,71 @@ browserAppData.runtime.onMessage.addListener(
                 .then(text => { console.log(text); sendResponse(text); })
 
             return true;  // Will respond asynchronously.
-        } else if (request.apiName == 'node_ai_contents'){
-            var url = `${zeuz_url}/node_ai_contents/`;
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    // "Content-Type": "application/json",
-                    "X-Api-Key": zeuz_key,
-                },
-                body: JSON.stringify({
-                    "dom_web": { "dom": request.dom },
-                    "node_id": zeuz_node_id
-                }),
-            })
-                .then(response => response.json())
-                .then(text => { console.log(text); sendResponse(text); })
+        } else if (request.apiName == 'node_ai_contents') {
+            const tabId = sender.tab ? sender.tab.id : 'unknown';
+            if (_aiContentTimers[tabId]) clearTimeout(_aiContentTimers[tabId]);
+            _aiContentTimers[tabId] = setTimeout(async () => {
+                delete _aiContentTimers[tabId];
+
+                const contentObj = { "dom": request.dom, "page_map": request.page_map, "page_map_json": request.page_map_json };
+                const contentStr = JSON.stringify(contentObj);
+
+                let hash = '';
+                try {
+                    const msgUint8 = new TextEncoder().encode(contentStr);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                } catch (e) {
+                    console.error("Error generating hash", e);
+                    hash = contentStr.length.toString(); // Fallback
+                }
+
+                if (_aiContentHashes[tabId] === hash) {
+                    console.log('node_ai_contents skipped, content unchanged for tab:', tabId, 'hash:', hash);
+                    try { sendResponse({ status: "skipped" }); } catch (e) { }
+                    return;
+                }
+                _aiContentHashes[tabId] = hash;
+                console.log('node_ai_contents sending, new hash for tab:', tabId, 'hash:', hash);
+
+                var url = `${zeuz_url}/node_ai_contents/`;
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        // "Content-Type": "application/json",
+                        "X-Api-Key": zeuz_key,
+                    },
+                    body: JSON.stringify({
+                        "dom_web": contentObj,
+                        "node_id": zeuz_node_id
+                    }),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error("node_ai_contents failed with status:", response.status, response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(text => { console.log("node_ai_contents response:", text); try { sendResponse(text); } catch (e) { } })
+                    .catch(e => console.error("node_ai_contents fetch error:", e));
+            }, 2000);
+            return true;  // Will respond asynchronously.
         }
     }
 );
 
 // add AI Inspector to the right click menu
 browserAppData.runtime.onInstalled.addListener(() => {
-  browserAppData.contextMenus.create({
-    id: "toggle-ai-inspect",
-    title: "Inspect with AI",
-    contexts: ["all"]
-  });
+    browserAppData.contextMenus.create({
+        id: "toggle-ai-inspect",
+        title: "Inspect with AI",
+        contexts: ["all"]
+    });
 });
 
 browserAppData.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "toggle-ai-inspect" && tab) {
-    toggle(tab);
-  }
+    if (info.menuItemId === "toggle-ai-inspect" && tab) {
+        toggle(tab);
+    }
 });
