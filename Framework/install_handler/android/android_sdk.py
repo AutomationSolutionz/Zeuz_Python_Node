@@ -4,22 +4,26 @@ import stat
 import shutil
 import zipfile
 import subprocess
+import traceback
 from pathlib import Path
 import httpx
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
+
+logger = get_logger()
 
 
 async def check_status() -> bool:
     """Check if Android SDK is installed in isolated directory (following Node.js installer pattern)."""
-    print("[installer][android-sdk] Checking status...")
+    logger.info("[installer][android-sdk] Checking status...")
     
     # Simple file existence check in isolated directory (like Node.js installer)
     adb_path = get_adb_path()
     
     if adb_path.exists():
         sdk_root = _get_sdk_root()
-        print(f"[installer][android-sdk] Already installed at {sdk_root}")
+        logger.info("[installer][android-sdk] Already installed at %s", sdk_root)
         
         
         await send_response({
@@ -34,7 +38,7 @@ async def check_status() -> bool:
         return True
     
     # Not installed
-    print("[installer][android-sdk] Not installed")
+    logger.info("[installer][android-sdk] Not installed")
     await send_response({
         "action": "status",
         "data": {
@@ -73,13 +77,13 @@ def update_android_sdk_path():
     # Check if SDK exists
     adb_path = get_adb_path()
     if not adb_path.exists():
-        print("[installer][android-sdk] Warning: Android SDK not found for PATH update.")
+        logger.warning("[installer][android-sdk] Warning: Android SDK not found for PATH update.")
         return
     
     # Set ANDROID_HOME and ANDROID_SDK_ROOT for current process
     os.environ['ANDROID_HOME'] = str(sdk_root)
     os.environ['ANDROID_SDK_ROOT'] = str(sdk_root)
-    print(f"[installer][android-sdk] ANDROID_HOME set for current process: {sdk_root}")
+    logger.info("[installer][android-sdk] ANDROID_HOME set for current process: %s", sdk_root)
     
     # Add SDK paths to PATH for current process (prepend so they take precedence)
     sdk_paths = [
@@ -93,7 +97,7 @@ def update_android_sdk_path():
         # Always prepend to ensure isolated SDK takes precedence (even if path already exists)
         os.environ['PATH'] = f"{sdk_path}{os.pathsep}{current_path}"
         current_path = os.environ['PATH']
-        print(f"[installer][android-sdk] Prepended to current process PATH: {sdk_path}")
+        logger.info("[installer][android-sdk] Prepended to current process PATH: %s", sdk_path)
 
 
 def _get_cmdline_tools_url() -> str:
@@ -117,7 +121,7 @@ async def _download_cmdline_tools(archive_path: Path) -> bool:
    archive_path.parent.mkdir(parents=True, exist_ok=True)
 
 
-   print(f"[installer][android-sdk] Downloading Android Command Line Tools to {archive_path}...")
+   logger.info("[installer][android-sdk] Downloading Android Command Line Tools to %s...", archive_path)
    await send_response({
        "action": "status",
        "data": {
@@ -136,19 +140,19 @@ async def _download_cmdline_tools(archive_path: Path) -> bool:
                total_size = int(response.headers.get("content-length", 0))
                downloaded = 0
                chunk = 8192
-               counts = []
+               last_pct = [-1]
                with open(archive_path, "wb") as f:
                    async for data in response.aiter_bytes(chunk):
                        f.write(data)
                        downloaded += len(data)
                        if total_size > 0:
                            progress = (downloaded / total_size) * 100
-                           mb_d = downloaded / (1024 * 1024)
-                           mb_t = total_size / (1024 * 1024)
-                           print(f"\r[installer][android-sdk] Download {progress:.1f}% ({mb_d:.1f}/{mb_t:.1f} MB)", end='', flush=True)
-                           p = round(mb_d/mb_t, 1)
-                           if p not in counts:
-                               counts.append(p)
+                           pct = int(progress)
+                           if pct != last_pct[0]:
+                               last_pct[0] = pct
+                               mb_d = downloaded / (1024 * 1024)
+                               mb_t = total_size / (1024 * 1024)
+                               logger.info("[installer][android-sdk] Download %d%% (%.1f/%.1f MB)", pct, mb_d, mb_t)
                                await send_response({
                                    "action": "status",
                                    "data": {
@@ -158,11 +162,10 @@ async def _download_cmdline_tools(archive_path: Path) -> bool:
                                        "comment": f"Downloading Android Command Line Tools... {progress:.1f}% ({mb_d:.1f}/{mb_t:.1f} MB)",
                                    }
                                })
-       print()
-       print(f"[installer][android-sdk] Download complete: {archive_path}")
+       logger.info("[installer][android-sdk] Download complete: %s", archive_path)
        return True
    except Exception as e:
-       print(f"\n[installer][android-sdk] Download failed: {e}")
+       logger.error("[installer][android-sdk] Download failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -206,7 +209,7 @@ async def _extract_cmdline_tools(archive_path: Path, sdk_root: Path) -> bool:
    # If already extracted, clean stale zip and exit success
    sdkmanager = _find_executable(latest_dir / "bin", "sdkmanager")
    if sdkmanager:
-       print("[installer][android-sdk] Command Line Tools already extracted")
+       logger.info("[installer][android-sdk] Command Line Tools already extracted")
        try:
            if archive_path.exists():
                archive_path.unlink()
@@ -215,7 +218,7 @@ async def _extract_cmdline_tools(archive_path: Path, sdk_root: Path) -> bool:
        return True
 
 
-   print("[installer][android-sdk] Extracting Android Command Line Tools...")
+   logger.info("[installer][android-sdk] Extracting Android Command Line Tools...")
    await send_response({
        "action": "status",
        "data": {
@@ -265,10 +268,10 @@ async def _extract_cmdline_tools(archive_path: Path, sdk_root: Path) -> bool:
            pass
 
 
-       print("[installer][android-sdk] Extraction complete")
+       logger.info("[installer][android-sdk] Extraction complete")
        return True
    except Exception as e:
-       print(f"[installer][android-sdk] Extraction failed: {e}")
+       logger.error("[installer][android-sdk] Extraction failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -293,7 +296,7 @@ async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
    try:
        sdkmanager = _find_sdkmanager(sdk_root)
        if not sdkmanager:
-           print("[installer][android-sdk] sdkmanager not found")
+           logger.info("[installer][android-sdk] sdkmanager not found")
            return False
        
        import asyncio
@@ -309,8 +312,8 @@ async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
            # Wrap each arg in single quotes to preserve semicolons in package names like "platforms;android-36"
            quoted_args = " ".join([f"'{arg}'" for arg in args])
            shell_cmd = f'powershell -Command "{yes_responses} | &\\"{str(sdkmanager)}\\" --sdk_root={sdk_root} {quoted_args}"'
-           print(f"[installer][android-sdk] Running: sdkmanager {' '.join(args)}")
-           print(f"[installer][android-sdk] This may take 5-15 minutes to download ~450MB of components...")
+           logger.info("[installer][android-sdk] Running: sdkmanager %s", " ".join(args))
+           logger.info("[installer][android-sdk] This may take 5-15 minutes to download ~450MB of components...")
            
            loop = asyncio.get_event_loop()
            
@@ -333,10 +336,10 @@ async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
                try:
                    for line in iter(process.stdout.readline, ''):
                        if line:
-                           print(line.rstrip())  # Print immediately
+                           logger.info("%s", line.rstrip())
                            output_lines.append(line.strip())
                except Exception as e:
-                   print(f"[installer][android-sdk] Output reading error: {e}")
+                   logger.error("[installer][android-sdk] Output reading error: %s", e)
                
                process.stdout.close()
                returncode = process.wait(timeout=1800)
@@ -353,7 +356,7 @@ async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
        elif system == "Linux":
            # Linux can execute directly
            cmd = [str(sdkmanager), f"--sdk_root={sdk_root}"] + args
-           print(f"[installer][android-sdk] Running: {' '.join(cmd)}")
+           logger.info("[installer][android-sdk] Running: %s", " ".join(cmd))
            
            loop = asyncio.get_event_loop()
            result = await loop.run_in_executor(
@@ -369,7 +372,7 @@ async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
        elif system == "Darwin":
            # macOS can execute directly
            cmd = [str(sdkmanager), f"--sdk_root={sdk_root}"] + args
-           print(f"[installer][android-sdk] Running: {' '.join(cmd)}")
+           logger.info("[installer][android-sdk] Running: %s", " ".join(cmd))
            
            loop = asyncio.get_event_loop()
            result = await loop.run_in_executor(
@@ -383,25 +386,24 @@ async def _run_sdkmanager(sdk_root: Path, args: list[str]) -> bool:
            )
            output = (result.stdout or "") + (result.stderr or "")
        else:
-           print(f"[installer][android-sdk] Unsupported platform: {system}")
+           logger.warning("[installer][android-sdk] Unsupported platform: %s", system)
            return False
        
        if result.returncode != 0:
-           print(f"[installer][android-sdk] sdkmanager failed (returncode={result.returncode})")
+           logger.error("[installer][android-sdk] sdkmanager failed (returncode=%s)", result.returncode)
            if output:
-               print(f"[installer][android-sdk] Last output:\n{output}")
+               logger.error("[installer][android-sdk] Last output:\n%s", output)
            return False
        
-       print(f"[installer][android-sdk] sdkmanager completed successfully")
+       logger.info("[installer][android-sdk] sdkmanager completed successfully")
        if output:
-           print(f"[installer][android-sdk] Final output:\n{output[-500:]}")  # Last 500 chars
+           logger.info("[installer][android-sdk] Final output:\n%s", output[-500:])
        return True
    except subprocess.TimeoutExpired:
-       print("[installer][android-sdk] sdkmanager timed out after 30 minutes")
+       logger.warning("[installer][android-sdk] sdkmanager timed out after 30 minutes")
        return False
    except Exception as e:
-       print(f"[installer][android-sdk] sdkmanager error: {e}")
-       import traceback
+       logger.exception("[installer][android-sdk] sdkmanager error: %s", e)
        traceback.print_exc()
        return False
 
@@ -411,14 +413,14 @@ async def _accept_licenses(sdk_root: Path) -> bool:
    try:
        sdkmanager = _find_sdkmanager(sdk_root)
        if not sdkmanager:
-           print("[installer][android-sdk] sdkmanager not found")
+           logger.info("[installer][android-sdk] sdkmanager not found")
            return False
        
        import asyncio
        import subprocess
        
        cmd = [str(sdkmanager), f"--sdk_root={sdk_root}", "--licenses"]
-       print(f"[installer][android-sdk] Accepting licenses: {' '.join(cmd)}")
+       logger.info("[installer][android-sdk] Accepting licenses: %s", " ".join(cmd))
        
        if platform.system() == "Windows":
            # On Windows, use PowerShell to pipe 'y' responses
@@ -470,13 +472,12 @@ async def _accept_licenses(sdk_root: Path) -> bool:
            returncode = result.returncode
        
        if returncode != 0:
-           print(f"[installer][android-sdk] License acceptance failed: {output}")
+           logger.error("[installer][android-sdk] License acceptance failed: %s", output)
            return False
-       print("[installer][android-sdk] Licenses accepted successfully")
+       logger.info("[installer][android-sdk] Licenses accepted successfully")
        return True
    except Exception as e:
-       print(f"[installer][android-sdk] License acceptance error: {e}")
-       import traceback
+       logger.exception("[installer][android-sdk] License acceptance error: %s", e)
        traceback.print_exc()
        return False
 
@@ -484,11 +485,11 @@ async def _accept_licenses(sdk_root: Path) -> bool:
 
 
 async def install() -> bool:
-   print("[installer][android-sdk] Installing...")
+   logger.info("[installer][android-sdk] Installing...")
    
    # Check if Android SDK is already installed
    if await check_status():
-       print("[installer][android-sdk] Android SDK is already installed")
+       logger.info("[installer][android-sdk] Android SDK is already installed")
        return True
    
    sdk_root = _get_sdk_root()
@@ -520,7 +521,7 @@ async def install() -> bool:
        }
    })
    if not await _accept_licenses(sdk_root):
-       print("[installer][android-sdk] License acceptance failed")
+       logger.warning("[installer][android-sdk] License acceptance failed")
        # Continue; some environments prompt-less acceptance may not be required
 
 
@@ -542,7 +543,7 @@ async def install() -> bool:
        }
    })
    if not await _run_sdkmanager(sdk_root, core_components):
-       print("[installer][android-sdk] Failed installing one or more SDK components")
+       logger.error("[installer][android-sdk] Failed installing one or more SDK components")
        return False
 
 
@@ -550,7 +551,7 @@ async def install() -> bool:
    update_android_sdk_path()
 
 
-   print(f"[installer][android-sdk] Installation successful at {sdk_root}")
+   logger.info("[installer][android-sdk] Installation successful at %s", sdk_root)
    await send_response({
        "action": "status",
        "data": {

@@ -400,7 +400,7 @@ async def RunProcess(node_id, log_dir=None):
 
         from Framework import node_server_state
 
-        install_handler = InstallHandler()
+        install_handler = InstallHandler(log_dir=log_dir)
         install_task = asyncio.create_task(install_handler.run())
 
         async def response_callback(response: str):

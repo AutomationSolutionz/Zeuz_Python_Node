@@ -1,13 +1,16 @@
 import subprocess
 import asyncio
 import platform
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from Framework.nodejs_appium_installer import check_installations, get_appium_path, get_node_dir
+
+logger = get_logger()
 
 
 async def check_status() -> bool:
    """Check if Appium is installed."""
-   print("[installer][android-appium] Checking status...")
+   logger.info("[installer][android-appium] Checking status...")
   
    try:
        # Use the check function from nodejs_appium_installer
@@ -32,13 +35,12 @@ async def check_status() -> bool:
                    )
                )
 
-               print("appium result: ", result)
                version_output = (result.stdout or result.stderr or "").strip()
                version_info = f" (version: {version_output})" if version_output else ""
-           except:
+           except Exception:
                version_info = ""
            
-           print(f"[installer][android-appium] Already installed at {appium_location}")
+           logger.info("[installer][android-appium] Already installed at %s", appium_location)
            await send_response({
                "action": "status",
                "data": {
@@ -50,7 +52,7 @@ async def check_status() -> bool:
            })
            return True
        else:
-           print("[installer][android-appium] Not installed")
+           logger.info("[installer][android-appium] Not installed")
            await send_response({
                "action": "status",
                "data": {
@@ -62,7 +64,7 @@ async def check_status() -> bool:
            })
            return False
    except Exception as e:
-       print(f"[installer][android-appium] Error checking status: {e}")
+       logger.error("[installer][android-appium] Error checking status: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -79,7 +81,7 @@ async def check_status() -> bool:
 
 async def install() -> bool:
     """Install Appium globally via npm."""
-    print("[installer][android-appium] Installing...")
+    logger.info("[installer][android-appium] Installing...")
     
     await send_response({
         "action": "status",
@@ -101,7 +103,7 @@ async def install() -> bool:
             npm_cmd = "npm"
             cmd = [npm_cmd, "install", "-g", "appium"]
             
-            print(f"[installer][android-appium] Running on Windows: {' '.join(cmd)}")
+            logger.info("[installer][android-appium] Running on Windows: %s", " ".join(cmd))
             result = await loop.run_in_executor(
                 None,
                 lambda: subprocess.run(
@@ -118,7 +120,7 @@ async def install() -> bool:
             npm_cmd = "npm"
             cmd = [npm_cmd, "install", "-g", "appium"]
             
-            print(f"[installer][android-appium] Running on Linux: {' '.join(cmd)}")
+            logger.info("[installer][android-appium] Running on Linux: %s", " ".join(cmd))
             result = await loop.run_in_executor(
                 None,
                 lambda: subprocess.run(
@@ -134,7 +136,7 @@ async def install() -> bool:
             npm_cmd = "npm"
             cmd = [npm_cmd, "install", "-g", "appium"]
             
-            print(f"[installer][android-appium] Running on macOS: {' '.join(cmd)}")
+            logger.info("[installer][android-appium] Running on macOS: %s", " ".join(cmd))
             result = await loop.run_in_executor(
                 None,
                 lambda: subprocess.run(
@@ -146,7 +148,7 @@ async def install() -> bool:
             )
             
         else:
-            print(f"[installer][android-appium] Unsupported platform: {system}")
+            logger.warning("[installer][android-appium] Unsupported platform: %s", system)
             await send_response({
                 "action": "status",
                 "data": {
@@ -162,8 +164,8 @@ async def install() -> bool:
         output = (result.stdout or "") + (result.stderr or "")
         
         if result.returncode != 0:
-            print(f"[installer][android-appium] Installation failed (returncode={result.returncode})")
-            print(f"[installer][android-appium] Output: {output[:500]}")
+            logger.error("[installer][android-appium] Installation failed (returncode=%s)", result.returncode)
+            logger.error("[installer][android-appium] Output: %s", output[:500])
             
             await send_response({
                 "action": "status",
@@ -176,9 +178,9 @@ async def install() -> bool:
             })
             return False
         
-        print(f"[installer][android-appium] Installation successful")
+        logger.info("[installer][android-appium] Installation successful")
         if output:
-            print(f"[installer][android-appium] Output: {output[:300]}")
+            logger.info("[installer][android-appium] Output: %s", output[:300])
         
         # Verify installation by checking status
         if await check_status():
@@ -205,7 +207,7 @@ async def install() -> bool:
             return False
             
     except subprocess.TimeoutExpired:
-        print("[installer][android-appium] Installation timed out after 10 minutes")
+        logger.warning("[installer][android-appium] Installation timed out after 10 minutes")
         await send_response({
             "action": "status",
             "data": {
@@ -218,7 +220,7 @@ async def install() -> bool:
         return False
         
     except Exception as e:
-        print(f"[installer][android-appium] Installation error: {e}")
+        logger.error("[installer][android-appium] Installation error: %s", e)
         await send_response({
             "action": "status",
             "data": {

@@ -6,8 +6,13 @@ import subprocess
 import json
 import re
 import tempfile
+import traceback
 from pathlib import Path
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
+
+logger = get_logger()
+
 
 async def _send_status(status: str, comment: str):
     """Helper to send status responses."""
@@ -134,7 +139,7 @@ def fallback_is_xcode_installed() -> bool:
 
 async def check_status() -> bool:
     """Check if iOS Simulator is installed and available."""
-    print("[simulator] Checking status...")
+    logger.info("[simulator] Checking status...")
 
     if platform.system().lower() != "darwin":
         await _send_status("error", "Unsupported OS. iOS Simulator is only available on macOS.")
@@ -307,7 +312,7 @@ async def get_available_simulators() -> list[dict]:
         return simulators
     
     except Exception as e:
-        print(f"[simulator] Error listing simulators: {e}")
+        logger.error("[simulator] Error listing simulators: %s", e)
         return []
 
 
@@ -371,7 +376,7 @@ async def get_available_device_types() -> list[dict]:
         return device_types
     
     except Exception as e:
-        print(f"[simulator] Error listing device types: {e}")
+        logger.error("[simulator] Error listing device types: %s", e)
         return []
 
 
@@ -416,7 +421,7 @@ async def get_available_runtimes() -> list[dict]:
         return runtimes
     
     except Exception as e:
-        print(f"[simulator] Error listing runtimes: {e}")
+        logger.error("[simulator] Error listing runtimes: %s", e)
         return []
 
 
@@ -443,7 +448,7 @@ async def ios_simulator_install():
     Get available device types when install button is clicked.
     Returns list of available iOS device types for simulator creation.
     """
-    print("[simulator] Getting available device types...")
+    logger.info("[simulator] Getting available device types...")
     
     try:
         # Check if macOS
@@ -487,7 +492,7 @@ async def ios_simulator_install():
         
         # Get available device types
         device_types = await get_available_device_types()
-        print(f"[simulator] Available device types: {device_types}")
+        logger.info("[simulator] Available device types: %s", device_types)
         
         await send_response({
             "action": "status",
@@ -499,7 +504,7 @@ async def ios_simulator_install():
         return True
         
     except Exception as e:
-        print(f"[simulator] Error getting device types: {e}")
+        logger.error("[simulator] Error getting device types: %s", e)
         await send_response({
             "action": "status",
             "data": {
@@ -557,7 +562,7 @@ async def get_filtered_simulator_services():
         }
     
     except Exception as e:
-        print(f"[simulator] Error getting filtered simulators: {e}")
+        logger.error("[simulator] Error getting filtered simulators: %s", e)
         return None
 
 
@@ -579,7 +584,7 @@ async def delete_simulator(udid: str) -> bool:
         
         if not simulator_info:
             error_msg = f"Simulator {udid} not found"
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -592,7 +597,7 @@ async def delete_simulator(udid: str) -> bool:
             return False
         
         simulator_name = simulator_info["name"]
-        print(f"[simulator] Deleting simulator: {simulator_name} ({udid})")
+        logger.info("[simulator] Deleting simulator: %s (%s)", simulator_name, udid)
         
         # Send deleting status
         await send_response({
@@ -615,7 +620,7 @@ async def delete_simulator(udid: str) -> bool:
         
         if result.returncode != 0:
             error_msg = f"Failed to delete simulator: {result.stderr.strip()}"
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -627,7 +632,7 @@ async def delete_simulator(udid: str) -> bool:
             })
             return False
         
-        print(f"[simulator] Simulator deleted successfully: {simulator_name} ({udid})")
+        logger.info("[simulator] Simulator deleted successfully: %s (%s)", simulator_name, udid)
         
         # Send success response
         await send_response({
@@ -643,7 +648,7 @@ async def delete_simulator(udid: str) -> bool:
     
     except subprocess.TimeoutExpired:
         error_msg = "Simulator deletion timed out"
-        print(f"[simulator] {error_msg}")
+        logger.warning("[simulator] %s", error_msg)
         await send_response({
             "action": "status",
             "data": {
@@ -656,8 +661,7 @@ async def delete_simulator(udid: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Error deleting simulator: {e}"
-        print(f"[simulator] {error_msg}")
-        import traceback
+        logger.exception("[simulator] %s", error_msg)
         traceback.print_exc()
         await send_response({
             "action": "status",
@@ -686,7 +690,7 @@ async def launch_simulator(udid: str) -> bool:
         
         if not simulator_info:
             error_msg = f"Simulator {udid} not found"
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -723,7 +727,7 @@ async def launch_simulator(udid: str) -> bool:
             
             if result.returncode != 0:
                 error_msg = f"Failed to boot simulator: {result.stderr.strip()}"
-                print(f"[simulator] {error_msg}")
+                logger.error("[simulator] %s", error_msg)
                 await send_response({
                     "action": "status",
                     "data": {
@@ -825,7 +829,7 @@ async def launch_simulator(udid: str) -> bool:
                                 # Copy to standard location before temp directory is deleted
                                 standard_build_path.parent.mkdir(parents=True, exist_ok=True)
                                 shutil.copytree(app_path, standard_build_path, dirs_exist_ok=True)
-                                print(f"[simulator] Copied built app to {standard_build_path}")
+                                logger.info("[simulator] Copied built app to %s", standard_build_path)
                                 app_path_to_install = standard_build_path
                             else:
                                 await _send_status_emulator(udid, "installed", f"WebDriverAgent app not found at {app_path}")
@@ -842,12 +846,12 @@ async def launch_simulator(udid: str) -> bool:
                     )
                     
                     if install_result.returncode == 0:
-                        print(f"[simulator] WebDriverAgent installed successfully on {simulator_name}")
+                        logger.info("[simulator] WebDriverAgent installed successfully on %s", simulator_name)
                         wda_installed = True
                     else:
-                        print(f"[simulator] Failed to install WebDriverAgent: {install_result.stderr}")
+                        logger.error("[simulator] Failed to install WebDriverAgent: %s", install_result.stderr)
         else:
-            print(f"[simulator] WebDriverAgent already installed on {simulator_name}")
+            logger.info("[simulator] WebDriverAgent already installed on %s", simulator_name)
         
         # Launch WebDriverAgent if installed
         if wda_installed:
@@ -870,7 +874,7 @@ async def launch_simulator(udid: str) -> bool:
             )
             
             if launch_wda.returncode == 0:
-                print(f"[simulator] WebDriverAgent launched successfully on {simulator_name}")
+                logger.info("[simulator] WebDriverAgent launched successfully on %s", simulator_name)
                 await send_response({
                     "action": "status",
                     "data": {
@@ -881,7 +885,7 @@ async def launch_simulator(udid: str) -> bool:
                     }
                 })
             else:
-                print(f"[simulator] Failed to launch WebDriverAgent: {launch_wda.stderr}")
+                logger.error("[simulator] Failed to launch WebDriverAgent: %s", launch_wda.stderr)
                 await send_response({
                     "action": "status",
                     "data": {
@@ -907,7 +911,7 @@ async def launch_simulator(udid: str) -> bool:
     
     except subprocess.TimeoutExpired:
         error_msg = "Operation timed out"
-        print(f"[simulator] {error_msg}")
+        logger.warning("[simulator] %s", error_msg)
         await send_response({
             "action": "status",
             "data": {
@@ -920,8 +924,7 @@ async def launch_simulator(udid: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Failed to launch simulator: {e}"
-        print(f"[simulator] {error_msg}")
-        import traceback
+        logger.exception("[simulator] %s", error_msg)
         traceback.print_exc()
         await send_response({
             "action": "status",
@@ -952,7 +955,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
         parts = device_param.split(";")
         if len(parts) < 3:
             error_msg = f"Invalid device parameter format. Expected 'install device;device_type_id;device_name', got: {device_param}"
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -967,13 +970,13 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
         device_type_id = parts[1].strip()
         device_name = parts[2].strip()
         
-        print(f"[simulator] Creating simulator '{device_name}' with device type '{device_type_id}'")
+        logger.info("[simulator] Creating simulator '%s' with device type '%s'", device_name, device_type_id)
         
         # Get available runtimes
         runtimes = await get_available_runtimes()
         if not runtimes:
             error_msg = "No iOS runtimes found. Please install Xcode and iOS runtime first."
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -989,7 +992,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
         available_runtimes = [r for r in runtimes if r.get("isAvailable", False)]
         if not available_runtimes:
             error_msg = "No available iOS runtimes found."
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -1006,7 +1009,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
         runtime_id = runtime["identifier"]
         runtime_name = runtime["name"]
         
-        print(f"[simulator] Using runtime: {runtime_name} ({runtime_id})")
+        logger.info("[simulator] Using runtime: %s (%s)", runtime_name, runtime_id)
         
         # Generate a unique simulator name
         existing_sims = await get_available_simulators()
@@ -1040,7 +1043,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
         
         if result.returncode != 0:
             error_msg = f"Failed to create simulator: {result.stderr.strip()}"
-            print(f"[simulator] {error_msg}")
+            logger.error("[simulator] %s", error_msg)
             await send_response({
                 "action": "status",
                 "data": {
@@ -1053,7 +1056,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
             return False
         
         new_udid = result.stdout.strip()
-        print(f"[simulator] Simulator created successfully: {simulator_name} ({new_udid})")
+        logger.info("[simulator] Simulator created successfully: %s (%s)", simulator_name, new_udid)
         
         # Send success response
         await send_response({
@@ -1070,7 +1073,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
     
     except subprocess.TimeoutExpired:
         error_msg = "Simulator creation timed out"
-        print(f"[simulator] {error_msg}")
+        logger.warning("[simulator] %s", error_msg)
         await send_response({
             "action": "status",
             "data": {
@@ -1083,8 +1086,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Error creating simulator: {e}"
-        print(f"[simulator] {error_msg}")
-        import traceback
+        logger.exception("[simulator] %s", error_msg)
         traceback.print_exc()
         await send_response({
             "action": "status",
@@ -1100,7 +1102,7 @@ async def create_simulator_from_device_type(device_param: str) -> bool:
 
 async def install(user_password: str = "") -> bool:
     """Main install entry point."""
-    print("[simulator] Installing...")
+    logger.info("[simulator] Installing...")
 
     if platform.system().lower() != "darwin":
         await _send_status("error", "iOS Simulator is only available on macOS.")

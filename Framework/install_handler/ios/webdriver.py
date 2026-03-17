@@ -6,11 +6,15 @@ import json
 import tempfile
 import asyncio
 from pathlib import Path
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
+
+logger = get_logger()
+
 
 async def _send_status(status: str, comment: str):
     """Helper to send status responses."""
-    print(f"[{status}] {comment}")
+    logger.info("[%s] %s", status, comment)
     await send_response(
         {
             "action": "status",
@@ -74,7 +78,7 @@ async def _get_best_simulator() -> tuple[str, str] | None:
             return candidates[0][1], candidates[0][2]
         return None
     except Exception as e:
-        print(f"Error listing simulators: {e}")
+        logger.error("Error listing simulators: %s", e)
         return None
 
 async def _boot_simulator_if_needed(device_uuid: str) -> bool:
@@ -110,14 +114,14 @@ async def _boot_simulator_if_needed(device_uuid: str) -> bool:
         )
         return res.returncode == 0
     except Exception as e:
-        print(f"Boot exception: {e}")
+        logger.warning("Boot exception: %s", e)
         # We return True here to attempt the next step anyway, 
         # as sometimes bootstatus fails even if the device works.
         return True
 
 async def check_status() -> bool:
     """Checks if WebDriverAgent is installed (Ensures Simulator is ON)."""
-    print("[webdriver] Checking status...")
+    logger.info("[webdriver] Checking status...")
 
     if platform.system().lower() != "darwin":
         await _send_status("error", "Unsupported OS.")
@@ -239,7 +243,7 @@ async def _bootstrap_webdriver(webdriver_path: Path):
         except: pass
 
 async def install() -> bool:
-    print("[webdriver] Starting installation...")
+    logger.info("[webdriver] Starting installation...")
     
     if await check_status():
         return True
