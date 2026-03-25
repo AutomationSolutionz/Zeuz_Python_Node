@@ -1198,6 +1198,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 driver_id = current_driver_id
             else:
                 driver_id = list(selenium_details.keys())[0]
+            session_name = driver_id
 
         if (
             driver_id not in selenium_details
