@@ -2358,7 +2358,7 @@ def get_browser_driver_routing(action_subfield, data_set):
     # If runtime parameter is present and valid, update the action subfield
     if browser_driver_runtime_parameter and browser_driver_runtime_parameter.strip().lower() in ("playwright", "selenium"):
         CommonUtil.ExecLog(sModuleInfo, "Runtime parameter for browser driver preference detected", 5)
-        updated_action_subfield = browser_driver_runtime_parameter + " action"
+        updated_action_subfield = browser_driver_runtime_parameter.strip().lower() + " action"
 
     # Check if there is an optional parameter for browser driver in the data set
     for left, mid, right in data_set:
