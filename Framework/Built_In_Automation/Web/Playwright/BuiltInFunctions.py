@@ -231,6 +231,8 @@ async def Open_Browser(step_data):
                     url = right_v
                 elif left_l in ("browser", "browser name"):
                     browser_name = right_v.lower()
+                elif left_l in ("driver id", "page id", "driver tag", "session"):
+                    page_id = right_v
 
             elif mid_l == "optional parameter":
                 if left_l == "headless":
