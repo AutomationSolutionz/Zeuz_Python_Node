@@ -665,6 +665,9 @@ async def connect_playwright_to_selenium(port=9222):
     page = context.pages[0]
 
     from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as PlaywrightBuiltInFunctions
+    PlaywrightBuiltInFunctions.playwright_instance = playwright_instance
+    PlaywrightBuiltInFunctions.browser = browser
+    PlaywrightBuiltInFunctions.context = context
     PlaywrightBuiltInFunctions.current_page = page
 
     Shared_Resources.Set_Shared_Variables("playwright_context", context)
