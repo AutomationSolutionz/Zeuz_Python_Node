@@ -1245,6 +1245,11 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             else:
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
 
+            if debug_port is None:
+                import hashlib
+                port_hash = int(hashlib.md5(session_name.encode()).hexdigest(), 16)
+                debug_port = 9222 + (port_hash % 100)
+
             selenium_details[driver_id] = {
                 "driver": Shared_Resources.Get_Shared_Variables("selenium_driver"),
                 "remote-debugging-port": debug_port
@@ -4765,7 +4770,7 @@ def playwright(dataset):
         # Get the correct remote debugging port for current driver
         debug_port = 9222  # fallback
         if current_driver_id and current_driver_id in selenium_details:
-            debug_port = selenium_details[current_driver_id].get("remote-debugging-port", 9222)
+            debug_port = selenium_details[current_driver_id].get("remote-debugging-port") or 9222
 
         devtools_url = (
             selenium_driver.command_executor._url.replace("http://", "ws://")
