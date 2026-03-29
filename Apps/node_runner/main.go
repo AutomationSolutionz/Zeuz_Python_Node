@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/automationsolutionz/Zeuz_Python_Node/Apps/node_runner/uv_installer"
 )
@@ -78,7 +79,7 @@ func printUpdateBanner(current, latest string) {
 	line1 := fmt.Sprintf("  Update available: %s → %s", current, latest)
 	line2 := "  Run with --update to upgrade"
 	pad := func(s string) string {
-		spaces := width - len(s) - 1
+		spaces := width - utf8.RuneCountInString(s)
 		if spaces < 0 {
 			spaces = 0
 		}
@@ -335,24 +336,24 @@ func installUV() error {
 		return uv_installer.InstallUVFromSource()
 	} else {
 		// For non-Windows systems, use the shell script
-		tempDir, err := os.MkdirTemp("", "uv-install")
-		if err != nil {
-			return fmt.Errorf("failed to create temp directory: %v", err)
-		}
-		defer os.RemoveAll(tempDir)
+	tempDir, err := os.MkdirTemp("", "uv-install")
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
 
 		scriptURL := "https://astral.sh/uv/install.sh"
-		scriptPath := filepath.Join(tempDir, "install.sh")
+	scriptPath := filepath.Join(tempDir, "install.sh")
 
 		if err := downloadFile(scriptURL, scriptPath); err != nil {
-			return err
-		}
+		return err
+	}
 
-		cmd := exec.Command("sh", scriptPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		return cmd.Run()
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	return cmd.Run()
 	}
 }
 
