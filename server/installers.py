@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from Framework.install_handler import install_log_config
 from Framework.install_handler import utils as install_utils
 from Framework.install_handler.route import services as INSTALLER_SERVICES
-from Framework.install_handler.android.emulator import (
+from Framework.install_handler.android.android_emulator import (
     android_emulator_install,
     check_emulator_list,
     create_avd_from_system_image,
@@ -276,6 +276,7 @@ def _patch_send_response_targets() -> None:
 
     # Explicitly add emulator module
     modules.add("Framework.install_handler.android.emulator")
+    modules.add("Framework.install_handler.android.emulator_windows_linux")
 
     # Patch modules that use send_response
     for mod_name in modules:

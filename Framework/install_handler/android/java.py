@@ -101,10 +101,10 @@ def update_java_path():
     """Add Java binaries to PATH and set JAVA_HOME for the current process (following Node.js pattern)."""
     java_path = get_java_path()
     
-    logger.info("Updating java path for the current session")
+    print("Updating java path for the current session")
     # Check if java exists
     if not java_path.exists():
-        logger.warning("Java not found for PATH update.")
+        print("Java not found for PATH update.")
         return
     
     # Get JDK home directory (parent of bin directory)
@@ -118,14 +118,14 @@ def update_java_path():
     
     # Set JAVA_HOME for the current process
     os.environ['JAVA_HOME'] = str(jdk_home)
-    logger.info("JAVA_HOME set for current process: %s", jdk_home)
+    print("JAVA_HOME set for current process: %s", jdk_home)
     
     # Add Java bin to PATH for the current process (always prepend so it takes precedence)
     java_bin_path = str(java_path.parent)
     current_path = os.environ.get('PATH', '')
     # Always prepend to ensure isolated Java takes precedence (even if path already exists)
     os.environ['PATH'] = f"{java_bin_path}{os.pathsep}{current_path}"
-    logger.info("Java prepended to current process PATH: %s", java_bin_path)
+    print("Java prepended to current process PATH: %s", java_bin_path)
 
 
 async def _get_jdk_download_url():

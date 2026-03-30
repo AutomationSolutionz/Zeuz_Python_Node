@@ -17,7 +17,7 @@ from Framework.install_handler.utils import (
 )
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
-from Framework.install_handler.android.emulator import (
+from Framework.install_handler.android.android_emulator import (
     check_emulator_list,
     create_avd_from_system_image,
     get_filtered_avd_services,

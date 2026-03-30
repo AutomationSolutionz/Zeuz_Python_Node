@@ -77,13 +77,13 @@ def update_android_sdk_path():
     # Check if SDK exists
     adb_path = get_adb_path()
     if not adb_path.exists():
-        logger.warning("[installer][android-sdk] Warning: Android SDK not found for PATH update.")
-        return
+            print(f"[installer][android-sdk] Warning: Android SDK not found for PATH update.")
+            return
     
     # Set ANDROID_HOME and ANDROID_SDK_ROOT for current process
     os.environ['ANDROID_HOME'] = str(sdk_root)
     os.environ['ANDROID_SDK_ROOT'] = str(sdk_root)
-    logger.info("[installer][android-sdk] ANDROID_HOME set for current process: %s", sdk_root)
+    print(f"[installer][android-sdk] ANDROID_HOME set for current process: {sdk_root}")
     
     # Add SDK paths to PATH for current process (prepend so they take precedence)
     sdk_paths = [
@@ -97,7 +97,7 @@ def update_android_sdk_path():
         # Always prepend to ensure isolated SDK takes precedence (even if path already exists)
         os.environ['PATH'] = f"{sdk_path}{os.pathsep}{current_path}"
         current_path = os.environ['PATH']
-        logger.info("[installer][android-sdk] Prepended to current process PATH: %s", sdk_path)
+        print(f"[installer][android-sdk] Prepended to current process PATH:{ sdk_path}")
 
 
 def _get_cmdline_tools_url() -> str:

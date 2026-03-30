@@ -16,6 +16,20 @@ ROTATING_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 ROTATING_BACKUP_COUNT = 3
 
 
+class ConditionalLevelFormatter(logging.Formatter):
+    """
+    Show log level name only for WARNING+ so INFO stays message-only.
+    This keeps current installer log appearance for success/progress lines,
+    while making warnings/errors/exception tracebacks stand out.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        msg = record.getMessage()
+        if record.levelno >= logging.WARNING:
+            return f"{record.levelname}: {msg}"
+        return msg
+
+
 def get_installer_log_dir() -> Path:
     """Return the directory for installer log files. Uses default if not yet set."""
     if INSTALLER_LOG_DIR is not None:
@@ -46,7 +60,8 @@ def setup_installer_logging(log_dir: Path | None = None) -> None:
 
         logger = logging.getLogger(INSTALLER_LOGGER_NAME)
         logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(LOG_FORMAT, style="{", datefmt=LOG_DATE_FMT)
+        # Keep INFO message-only, but add level for WARNING+ (warnings/errors/exception).
+        formatter = ConditionalLevelFormatter(LOG_FORMAT, style="{", datefmt=LOG_DATE_FMT)
 
         # Avoid duplicate handlers: remove existing ones from this logger
         for h in list(logger.handlers):

@@ -1,14 +1,9 @@
-#this file is for mac os emulator installation. there are codes for windows and linux as well but they are not used for now.
-#windows and linux codes are in emulator_windows_linux.py
-
 import os
 import platform
 import subprocess
 import asyncio
 import re
 import random
-import traceback
-import tempfile
 from pathlib import Path
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 from Framework.install_handler.utils import send_response, debug
@@ -62,98 +57,6 @@ def _is_darwin():
     return platform.system() == 'Darwin'
 
 
-def _build_android_process_env(sdk_root: Path | None = None) -> dict[str, str]:
-    """
-    Build subprocess env that always points to ZeuZ-managed Android SDK.
-    This keeps sdkmanager/avdmanager/emulator in the same SDK context.
-    """
-    sdk_root = sdk_root or _get_sdk_root()
-    env = os.environ.copy()
-    sdk_root_str = str(sdk_root)
-    env["ANDROID_HOME"] = sdk_root_str
-    env["ANDROID_SDK_ROOT"] = sdk_root_str
-
-    # Prepend SDK paths to make sure ZeuZ binaries are resolved first.
-    sdk_paths = [
-        str(sdk_root / "platform-tools"),
-        str(sdk_root / "emulator"),
-        str(sdk_root / "cmdline-tools" / "latest" / "bin"),
-    ]
-    current_path = env.get("PATH", "")
-    env["PATH"] = os.pathsep.join([*sdk_paths, current_path]) if current_path else os.pathsep.join(sdk_paths)
-    return env
-
-
-def _run_avdmanager_capture(
-    avdmanager: Path,
-    sdk_root: Path,
-    args: list[str],
-    timeout: int
-) -> subprocess.CompletedProcess:
-    """
-    Run avdmanager with SDK-root first, with a Darwin-only fallback that drops
-    --sdk_root but keeps the ZeuZ SDK env vars.
-    """
-    env = _build_android_process_env(sdk_root)
-    cmd_with_sdk_root = [str(avdmanager), f"--sdk_root={sdk_root}", *args]
-    result = subprocess.run(
-        cmd_with_sdk_root,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        env=env
-    )
-    if result.returncode == 0 or not _is_darwin():
-        return result
-
-    if debug:
-        logger.debug("[installer][emulator] avdmanager command failed with --sdk_root, retrying without it on macOS. stderr: %s", result.stderr)
-
-    cmd_without_sdk_root = [str(avdmanager), *args]
-    fallback_result = subprocess.run(
-        cmd_without_sdk_root,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        env=env
-    )
-    return fallback_result
-
-
-def _read_file_tail(path: Path, max_lines: int = 20) -> str:
-    """Read tail of a log file for error hints."""
-    try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
-        tail = [line.strip() for line in lines[-max_lines:] if line.strip()]
-        return " | ".join(tail)
-    except Exception:
-        return ""
-
-
-def _get_host_arch() -> str:
-    """Normalize host architecture for image selection."""
-    arch = platform.machine().lower()
-    if arch in {"arm64", "aarch64"}:
-        return "arm64"
-    if arch in {"x86_64", "amd64", "x64"}:
-        return "x86_64"
-    return arch
-
-
-def _get_arch_preference_order() -> list[str]:
-    """
-    Return preferred system-image ABI order for current host.
-    On Apple Silicon, arm64-v8a must be preferred over x86_64.
-    """
-    host_arch = _get_host_arch()
-    if _is_darwin() and host_arch == "arm64":
-        return ["arm64-v8a", "arm64", "aarch64", "x86_64", "x86"]
-    if host_arch == "x86_64":
-        return ["x86_64", "x86", "arm64-v8a", "arm64", "aarch64"]
-    return [host_arch, "x86_64", "x86", "arm64-v8a", "arm64", "aarch64"]
-
-
 def get_emulator_command():
     """
     Returns the correct emulator executable path depending on OS.
@@ -163,7 +66,7 @@ def get_emulator_command():
     sdk_root = _get_sdk_root()
     
     if debug:
-        logger.debug("[installer][emulator] Launch avd: %s", sdk_root)
+        logger.debug("Launch avd: %s", sdk_root)
 
     if system == "Windows":
         return os.path.join(str(sdk_root), "emulator", "emulator.exe")
@@ -203,7 +106,12 @@ async def get_available_avds() -> list[dict]:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: _run_avdmanager_capture(avdmanager, sdk_root, ["list", "avd"], 30)
+            lambda: subprocess.run(
+                [str(avdmanager), "list", "avd"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
         )
         
         if result.returncode != 0:
@@ -280,6 +188,7 @@ async def get_available_avds() -> list[dict]:
     except Exception as e:
         if debug:
             logger.debug("[installer][emulator] Error listing AVDs: %s", e)
+        import traceback
         traceback.print_exc()
         return []
 
@@ -291,53 +200,16 @@ async def launch_avd(avd_name: str) -> bool:
     Sends response to server on success or failure.
     """
     try:
-        sdk_root = _get_sdk_root()
         emulator_path = get_emulator_command()
-        env = _build_android_process_env(sdk_root)
-        sanitized_name = re.sub(r"[^a-zA-Z0-9._-]", "_", avd_name) or "avd"
-        log_dir = Path(tempfile.gettempdir()) / "zeuz" / "android_emulator_logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / f"{sanitized_name}.log"
 
-        def _spawn_emulator(cmd: list[str]) -> subprocess.Popen:
-            with open(log_path, "w", encoding="utf-8") as log_file:
-                return subprocess.Popen(
-                    cmd,
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True,  # Detach from parent process
-                    env=env
-                )
-
-        # Try launch with explicit sdk-root first.
-        process = _spawn_emulator([emulator_path, "-avd", avd_name, "-sdk-root", str(sdk_root)])
-        await asyncio.sleep(3)
-        returncode = process.poll()
-
-        # macOS compatibility: retry without -sdk-root if first launch exits immediately.
-        if returncode is not None and _is_darwin():
-            if debug:
-                logger.debug("[installer][emulator] Emulator exited quickly with -sdk-root on macOS. Retrying without -sdk-root.")
-            process = _spawn_emulator([emulator_path, "-avd", avd_name])
-            await asyncio.sleep(3)
-            returncode = process.poll()
-
-        if returncode is not None:
-            launch_hint = _read_file_tail(log_path)
-            error_msg = f"Emulator process for {avd_name} exited immediately (code {returncode})."
-            if launch_hint:
-                error_msg += f" Output hint: {launch_hint[:500]}"
-            logger.error("[installer][emulator] %s", error_msg)
-            await send_response({
-                "action": "status",
-                "data": {
-                    "category": "AndroidEmulator",
-                    "name": avd_name,
-                    "status": "not installed",
-                    "comment": error_msg,
-                }
-            })
-            return False
+        # Launch emulator in background using Popen (non-blocking)
+        # Popen returns immediately, so we can call it directly without blocking
+        process = subprocess.Popen(
+            [emulator_path, "-avd", avd_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True  # Detach from parent process
+        )
         
         logger.info("[installer][emulator] Launching AVD: %s... (PID: %s)", avd_name, process.pid)
         
@@ -355,6 +227,7 @@ async def launch_avd(avd_name: str) -> bool:
 
     except FileNotFoundError:
         error_msg = f"Emulator executable not found"
+
         logger.error("[installer][emulator] %s", error_msg)
         await send_response({
             "action": "status",
@@ -370,6 +243,7 @@ async def launch_avd(avd_name: str) -> bool:
         error_msg = f"Failed to launch AVD {avd_name}: {e}"
     
         logger.error("[installer][emulator] %s", error_msg)
+        import traceback
         traceback.print_exc()
         await send_response({
             "action": "status",
@@ -429,6 +303,7 @@ async def get_filtered_avd_services():
    except Exception as e:
        if debug:
            logger.debug("[installer][emulator] Error getting filtered AVD services: %s", e)
+       import traceback
        traceback.print_exc()
        return None
 
@@ -602,6 +477,7 @@ async def get_available_system_images() -> list[dict]:
     except Exception as e:
         if debug:
             logger.debug("[installer][emulator] Error getting available system images: %s", e)
+        import traceback
         traceback.print_exc()
         return []
 
@@ -707,7 +583,12 @@ async def get_available_devices() -> list[dict]:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: _run_avdmanager_capture(avdmanager, sdk_root, ["list", "device"], 60)
+            lambda: subprocess.run(
+                [str(avdmanager), "list", "device"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
         )
         
         if result.returncode != 0:
@@ -732,13 +613,21 @@ async def get_available_devices() -> list[dict]:
                 if sanitized_name not in existing_avd_names:
                     filtered_devices.append(device)
                 elif debug:
-                    logger.debug("[installer][emulator] Filtering out device '%s' (AVD '%s' already exists)", device_name, sanitized_name)
+                    logger.debug(
+                        "[installer][emulator] Filtering out device '%s' (AVD '%s' already exists)",
+                        device_name,
+                        sanitized_name,
+                    )
             else:
                 # If no device name, include it (shouldn't happen, but safe fallback)
                 filtered_devices.append(device)
         
         if debug:
-            logger.debug("[installer][emulator] Found %s available devices, %s not yet installed", len(devices), len(filtered_devices))
+            logger.debug(
+                "[installer][emulator] Found %s available devices, %s not yet installed",
+                len(devices),
+                len(filtered_devices),
+            )
         return filtered_devices
     
     except subprocess.TimeoutExpired:
@@ -746,7 +635,9 @@ async def get_available_devices() -> list[dict]:
             logger.debug("[installer][emulator] avdmanager list device timed out")
         return []
     except Exception as e:
-        logger.exception("[installer][emulator] Error getting available devices: %s", e)
+        if debug:
+            logger.debug("[installer][emulator] Error getting available devices: %s", e)
+        import traceback
         traceback.print_exc()
         return []
 
@@ -824,7 +715,9 @@ async def android_emulator_install():
         return True
         
     except Exception as e:
-        logger.exception("[installer][emulator] Error getting devices: %s", e)
+        if debug:
+            logger.debug("[installer][emulator] Error getting devices: %s", e)
+        import traceback
         traceback.print_exc()
         await send_response({
             "action": "status",
@@ -878,7 +771,12 @@ def _get_existing_avd_names() -> list[str]:
         if not avdmanager:
             return []
         
-        result = _run_avdmanager_capture(avdmanager, sdk_root, ["list", "avd"], 30)
+        result = subprocess.run(
+            [str(avdmanager), "list", "avd"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
         
         if result.returncode != 0:
             return []
@@ -928,7 +826,11 @@ def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_ima
         shell_cmd = f'powershell -Command "{yes_responses} | &\\"{str(sdkmanager)}\\" --sdk_root={sdk_root} {quoted_image}"'
         
         if debug:
-            logger.debug("[installer][emulator] Running: sdkmanager --sdk_root=%s %s", sdk_root, system_image)
+            logger.debug(
+                "[installer][emulator] Running: sdkmanager --sdk_root=%s %s",
+                sdk_root,
+                system_image,
+            )
             logger.debug("[installer][emulator] This may take 10-30 minutes to download system image...")
         
         process = subprocess.Popen(
@@ -1008,7 +910,7 @@ def _run_sdkmanager_install_windows(sdkmanager: Path, sdk_root: Path, system_ima
         except Exception as e:
             logger.error("[installer][emulator] Output reading error: %s", e)
         finally:
-            pass  # New line after progress completes
+            logger.debug("[installer][emulator] Download progress complete")
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -1028,7 +930,11 @@ def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image
     """Install system image on Linux with real-time output"""
     try:
         if debug:
-            logger.debug("[installer][emulator] Running: sdkmanager --sdk_root=%s %s", sdk_root, system_image)
+            logger.debug(
+                "[installer][emulator] Running: sdkmanager --sdk_root=%s %s",
+                sdk_root,
+                system_image,
+            )
             logger.debug("[installer][emulator] This may take 10-30 minutes to download system image...")
         
         process = subprocess.Popen(
@@ -1104,7 +1010,7 @@ def _run_sdkmanager_install_linux(sdkmanager: Path, sdk_root: Path, system_image
         except Exception as e:
             logger.error("[installer][emulator] Output reading error: %s", e)
         finally:
-            pass  # New line after progress completes
+            logger.debug("[installer][emulator] Download progress complete")
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -1124,7 +1030,11 @@ def _run_sdkmanager_install_darwin(sdkmanager: Path, sdk_root: Path, system_imag
     """Install system image on macOS with real-time output"""
     try:
         if debug:
-            logger.debug("[installer][emulator] Running: sdkmanager --sdk_root=%s %s", sdk_root, system_image)
+            logger.debug(
+                "[installer][emulator] Running: sdkmanager --sdk_root=%s %s",
+                sdk_root,
+                system_image,
+            )
             logger.debug("[installer][emulator] This may take 10-30 minutes to download system image...")
         
         process = subprocess.Popen(
@@ -1200,7 +1110,7 @@ def _run_sdkmanager_install_darwin(sdkmanager: Path, sdk_root: Path, system_imag
         except Exception as e:
             logger.error("[installer][emulator] Output reading error: %s", e)
         finally:
-            pass  # New line after progress completes
+            logger.debug("[installer][emulator] Download progress complete")
         
         process.stdout.close()
         returncode = process.wait(timeout=1800)  # 30 minutes for large system image downloads
@@ -1221,15 +1131,13 @@ def _run_avdmanager_create_windows(avdmanager: Path, sdk_root: Path, avd_name: s
     try:
         # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
         # Answer "no" to custom hardware profile prompt
-        env = _build_android_process_env(sdk_root)
         process = subprocess.Popen(
-            [str(avdmanager), f"--sdk_root={sdk_root}", "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
+            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,  # Line buffered
-            env=env
+            bufsize=1  # Line buffered
         )
         
         # Send "no" to custom hardware profile prompt
@@ -1263,7 +1171,7 @@ def _run_avdmanager_create_windows(avdmanager: Path, sdk_root: Path, avd_name: s
         except Exception as e:
             logger.error("[installer][emulator] Output reading error: %s", e)
         finally:
-            pass  # New line after progress completes
+            logger.debug("[installer][emulator] Creation progress complete")
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1284,15 +1192,13 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
     try:
         # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
         # Answer "no" to custom hardware profile prompt
-        env = _build_android_process_env(sdk_root)
         process = subprocess.Popen(
-            [str(avdmanager), f"--sdk_root={sdk_root}", "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
+            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,  # Line buffered
-            env=env
+            bufsize=1  # Line buffered
         )
         
         # Send "no" to custom hardware profile prompt
@@ -1326,7 +1232,7 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
         except Exception as e:
             logger.error("[installer][emulator] Output reading error: %s", e)
         finally:
-            pass  # New line after progress completes
+            logger.debug("[installer][emulator] Creation progress complete")
         
         process.stdout.close()
         returncode = process.wait(timeout=120)
@@ -1345,91 +1251,58 @@ def _run_avdmanager_create_linux(avdmanager: Path, sdk_root: Path, avd_name: str
 def _run_avdmanager_create_darwin(avdmanager: Path, sdk_root: Path, avd_name: str, system_image: str, device_id: str) -> tuple[bool, str]:
     """Create AVD on macOS with real-time output"""
     try:
-        env = _build_android_process_env(sdk_root)
-
-        def _run_create_command(cmd: list[str]) -> tuple[bool, str]:
-            # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
-            # Answer "no" to custom hardware profile prompt
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,  # Line buffered
-                env=env
-            )
-
-            process.stdin.write("no\n")
-            process.stdin.close()
-
-            output_lines = []
-            last_progress = ""
-            try:
-                for line in iter(process.stdout.readline, ''):
-                    if line:
-                        stripped = line.strip()
-                        output_lines.append(stripped)
-
-                        # Extract progress percentage from lines like "[====] 25% Loading..."
-                        progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
-                        if progress_match:
-                            percent = progress_match.group(1)
-                            status = progress_match.group(2).strip()
-                            current_progress = f"{percent}% {status}"
-                            if current_progress != last_progress:
-                                logger.info("[installer][emulator] Download progress: %s", current_progress)
-                                last_progress = current_progress
-                        elif stripped and not stripped.startswith('[') and '%' not in stripped:
-                            # Print important non-progress messages on new line
-                            logger.info("[installer][emulator] %s", stripped)
-                        elif stripped.endswith('%'):
-                            # Handle lines that end with just percentage
-                            logger.info("[installer][emulator] Download progress: %s", stripped)
-            except Exception as e:
-                logger.error("[installer][emulator] Output reading error: %s", e)
-            finally:
-                pass  # New line after progress completes
-
-            process.stdout.close()
-            returncode = process.wait(timeout=120)
-            output = "\n".join(output_lines)
-            return returncode == 0, output
-
-        primary_cmd = [
-            str(avdmanager),
-            f"--sdk_root={sdk_root}",
-            "create",
-            "avd",
-            "-n",
-            avd_name,
-            "-k",
-            system_image,
-            "-d",
-            device_id,
-        ]
-        success, output = _run_create_command(primary_cmd)
-        if success:
+        # Create AVD: avdmanager create avd -n {avd_name} -k {system_image} -d {device_id}
+        # Answer "no" to custom hardware profile prompt
+        process = subprocess.Popen(
+            [str(avdmanager), "create", "avd", "-n", avd_name, "-k", system_image, "-d", device_id],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1  # Line buffered
+        )
+        
+        # Send "no" to custom hardware profile prompt
+        process.stdin.write("no\n")
+        process.stdin.close()
+        
+        # Print output in real-time as it comes, showing progress on single line
+        output_lines = []
+        last_progress = ""
+        try:
+            for line in iter(process.stdout.readline, ''):
+                if line:
+                    stripped = line.strip()
+                    output_lines.append(stripped)
+                    
+                    # Extract progress percentage from lines like "[====] 25% Loading..."
+                    progress_match = re.search(r'\[.*?\]\s*(\d+)%\s*(.+)', stripped)
+                    if progress_match:
+                        percent = progress_match.group(1)
+                        status = progress_match.group(2).strip()
+                        current_progress = f"{percent}% {status}"
+                        if current_progress != last_progress:
+                            logger.info("[installer][emulator] Download progress: %s", current_progress)
+                            last_progress = current_progress
+                    elif stripped and not stripped.startswith('[') and '%' not in stripped:
+                        # Print important non-progress messages on new line
+                        logger.info("[installer][emulator] %s", stripped)
+                    elif stripped.endswith('%'):
+                        # Handle lines that end with just percentage
+                        logger.info("[installer][emulator] Download progress: %s", stripped)
+        except Exception as e:
+            logger.error("[installer][emulator] Output reading error: %s", e)
+        finally:
+            logger.debug("[installer][emulator] Creation progress complete")
+        
+        process.stdout.close()
+        returncode = process.wait(timeout=120)
+        
+        output = "\n".join(output_lines)
+        if returncode == 0:
             return True, output
-
-        # macOS-only compatibility fallback for avdmanager builds that reject --sdk_root.
-        if debug:
-            logger.debug("[installer][emulator] Retrying AVD create without --sdk_root on macOS.")
-        fallback_cmd = [
-            str(avdmanager),
-            "create",
-            "avd",
-            "-n",
-            avd_name,
-            "-k",
-            system_image,
-            "-d",
-            device_id,
-        ]
-        fallback_success, fallback_output = _run_create_command(fallback_cmd)
-        if fallback_success:
-            return True, fallback_output
-        return False, fallback_output or output
+        else:
+            return False, output
     except subprocess.TimeoutExpired:
         return False, "AVD creation timed out"
     except Exception as e:
@@ -1534,21 +1407,54 @@ def _configure_avd_hardware(avd_name: str) -> bool:
         if modified:
             with open(config_path, 'w', encoding='utf-8') as f:
                 f.writelines(new_lines)
-            logger.info("[installer][emulator] Configured hardware settings (hw.keyboard=yes) for AVD '%s'", avd_name)
+            logger.info(
+                "[installer][emulator] Configured hardware settings (hw.keyboard=yes) for AVD '%s'",
+                avd_name,
+            )
             return True
         else:
-            logger.info("[installer][emulator] Hardware settings already configured for AVD '%s'", avd_name)
+            logger.info(
+                "[installer][emulator] Hardware settings already configured for AVD '%s'",
+                avd_name,
+            )
             return True
         
     except Exception as e:
-        logger.exception("[installer][emulator] Failed to configure hardware settings for AVD '%s': %s", avd_name, e)
+        logger.error(
+            "[installer][emulator] Failed to configure hardware settings for AVD '%s': %s",
+            avd_name,
+            e,
+        )
+        import traceback
         traceback.print_exc()
         return False
 
 
+def _host_accepts_emulator_abi(abi: str) -> bool:
+    """
+    True if this sdkmanager system-image ABI can run on the current host.
+    Windows/Linux x86_64 hosts cannot use ARM-only images (e.g. arm64-v8a); ARM64 hosts can use
+    ARM images or x86 images (where the emulator supports it).
+    """
+    if not abi:
+        return False
+    machine = platform.machine().lower()
+    intel_abi = abi in ("x86_64", "x86")
+    arm_abi = abi in ("arm64-v8a", "armeabi-v7a")
+    is_intel_host = machine in ("amd64", "x86_64", "i386", "i686", "x86")
+    is_arm_host = machine in ("aarch64", "arm64", "armv8l")
+
+    if is_intel_host:
+        return intel_abi
+    if is_arm_host:
+        return arm_abi or intel_abi
+    # Unknown machine: prefer Intel ABIs (typical desktop/CI)
+    return intel_abi
+
+
 def _get_highest_api_system_image(system_images: list[dict]) -> str | None:
     """
-    Get the system image with the highest API level.
+    Get the system image with the highest API level among images whose ABI matches this host.
     API level is the primary priority. Uses variant/arch as tiebreaker when API levels are equal.
     
     Args:
@@ -1560,15 +1466,14 @@ def _get_highest_api_system_image(system_images: list[dict]) -> str | None:
     if not system_images:
         return None
     
-    # Extract API levels - API level is the priority.
-    arch_preference = _get_arch_preference_order()
+    # Extract API levels - API level is the priority
     candidates = []
     for img in system_images:
         package = img.get("package", "")
         if not package.startswith("system-images;"):
             continue
         
-        # Parse: system-images;android-XX;variant;arch
+        # Parse: system-images;android-XX;variant;arch (arch is last segment)
         parts = package.split(";")
         if len(parts) < 2:
             continue
@@ -1580,36 +1485,44 @@ def _get_highest_api_system_image(system_images: list[dict]) -> str | None:
             continue
         
         api_level = int(match.group(1))
+        if api_level > 36:  # Cap at API 36; API 37+ is not reliable still. 
+            continue
         variant = parts[2] if len(parts) > 2 else ""
-        arch = parts[3] if len(parts) > 3 else ""
-        
-        # Variant preference for tiebreaking (only used when API levels are equal).
-        variant_priority = 0
-        if variant == "google_apis":
-            variant_priority = 3
-        elif variant == "google_apis_playstore":
-            variant_priority = 2
-        elif variant:
-            variant_priority = 1
+        arch = parts[-1] if len(parts) >= 4 else ""
 
-        # Host-compatible architecture preference (important for Apple Silicon).
-        if arch in arch_preference:
-            arch_priority = len(arch_preference) - arch_preference.index(arch)
+        if not _host_accepts_emulator_abi(arch):
+            if debug:
+                logger.debug(
+                    "[installer][emulator] Skipping system image (ABI not usable on this host): %s (host=%r)",
+                    package,
+                    platform.machine(),
+                )
+            continue
+        
+        # Variant/arch preference for tiebreaking (only used when API levels are equal)
+        variant_priority = 0
+        if variant == "google_apis" and arch == "x86_64":
+            variant_priority = 3  # Best variant/arch combo
+        elif variant == "google_apis_playstore" and arch == "x86_64":
+            variant_priority = 2  # Second best
+        elif variant == "google_apis":
+            variant_priority = 1
+        elif variant == "google_apis_playstore":
+            variant_priority = 1
         else:
-            arch_priority = 0
+            variant_priority = 0
         
         candidates.append({
             "package": package,
             "api_level": api_level,
-            "arch_priority": arch_priority,
             "variant_priority": variant_priority
         })
     
     if not candidates:
         return None
     
-    # Sort by API level (descending), then host arch compatibility, then image variant.
-    candidates.sort(key=lambda x: (x["api_level"], x["arch_priority"], x["variant_priority"]), reverse=True)
+    # Sort by API level (descending - highest first), then by variant priority (tiebreaker)
+    candidates.sort(key=lambda x: (x["api_level"], x["variant_priority"]), reverse=True)
     
     # Return the highest API level (variant priority only matters if API levels are equal)
     return candidates[0]["package"]
@@ -1650,12 +1563,17 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         # Sanitize device name for AVD (AVD names can only contain: a-z A-Z 0-9 . _ -)
         avd_name = _sanitize_avd_name(device_name)
         
-        logger.info("[installer][emulator] Creating AVD '%s' (from device name '%s') with device ID '%s'", avd_name, device_name, device_id)
+        logger.info(
+            "[installer][emulator] Creating AVD '%s' (from device name '%s') with device ID '%s'",
+            avd_name,
+            device_name,
+            device_id,
+        )
         
         # Check if Android SDK is installed
         sdk_root = _get_sdk_root()
         if sdk_root is None:
-            logger.warning("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
+            logger.error("[installer][emulator] Android SDK not found. ANDROID_HOME or ANDROID_SDK_ROOT not set.")
             await send_response({
                 "action": "status",
                 "data": {
@@ -1707,7 +1625,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
                 "category": "AndroidEmulator",
                 "package": device_id,
                 "status": "installing",
-                "comment": "Finding the latest compatible Android system image",
+                "comment": "Finding system image with Android Version 16",
             }
         })
         
@@ -1726,7 +1644,7 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             })
             return False
         
-        # Get highest API level system image with host-architecture-aware tiebreakers.
+        # Get highest API level system image (prefer google_apis;x86_64)
         system_image_name = _get_highest_api_system_image(system_images)
         if not system_image_name:
             error_msg = "Could not find a suitable system image."
@@ -1743,7 +1661,12 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             return False
         
         logger.info("[installer][emulator] Selected system image: %s", system_image_name)
-        logger.info("[installer][emulator] Creating AVD '%s' with device ID '%s' and system image '%s'", device_name, device_id, system_image_name)
+        logger.info(
+            "[installer][emulator] Creating AVD '%s' with device ID '%s' and system image '%s'",
+            device_name,
+            device_id,
+            system_image_name,
+        )
         
         # Step 1: Install system image
         logger.info("[installer][emulator] Installing system image: %s", system_image_name)
@@ -1808,7 +1731,11 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         logger.info("[installer][emulator] System image installed successfully")
         
         # Step 2: Create AVD with device_id and device_name
-        logger.info("[installer][emulator] Creating AVD: %s with device ID: %s", avd_name, device_id)
+        logger.info(
+            "[installer][emulator] Creating AVD: %s with device ID: %s",
+            avd_name,
+            device_id,
+        )
         await send_response({
             "action": "status",
             "data": {
@@ -1912,7 +1839,8 @@ async def create_avd_from_system_image(device_param: str) -> bool:
         return False
     except Exception as e:
         error_msg = f"Error creating AVD: {e}"
-        logger.exception("[installer][emulator] %s", error_msg)
+        logger.error("[installer][emulator] %s", error_msg)
+        import traceback
         traceback.print_exc()
         device_name = device_param.split(";")[2].strip() if len(device_param.split(";")) > 2 else device_param
         await send_response({
@@ -1925,7 +1853,3 @@ async def create_avd_from_system_image(device_param: str) -> bool:
             }
         })
         return False
-
-
-########################################
-
