@@ -38,7 +38,60 @@ type zeuzRelease struct {
 	TagName string `json:"tag_name"`
 }
 
+// versionCache persists the last GitHub version check result to disk so the
+// network call is skipped on subsequent startups within the cache window.
+type versionCache struct {
+	CheckedAt time.Time `json:"checked_at"`
+	Latest    string    `json:"latest"`
+}
+
+const versionCheckInterval = 24 * time.Hour
+
 var errRateLimited = errors.New("GitHub API rate limited — try again later")
+
+// versionCachePath returns the path to the version cache file.
+func versionCachePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".zeuz", "version_check_cache.json")
+}
+
+// loadVersionCache reads the cache file. Returns nil if missing, unreadable,
+// or older than versionCheckInterval.
+func loadVersionCache() *versionCache {
+	path := versionCachePath()
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var cache versionCache
+	if err := json.Unmarshal(data, &cache); err != nil {
+		return nil
+	}
+	if time.Since(cache.CheckedAt) > versionCheckInterval {
+		return nil // expired
+	}
+	return &cache
+}
+
+// saveVersionCache writes the latest version and current timestamp to disk.
+func saveVersionCache(latest string) {
+	path := versionCachePath()
+	if path == "" {
+		return
+	}
+	os.MkdirAll(filepath.Dir(path), 0755)
+	data, err := json.Marshal(versionCache{CheckedAt: time.Now(), Latest: latest})
+	if err != nil {
+		return
+	}
+	os.WriteFile(path, data, 0644)
+}
 
 func effectiveVersion() string {
 	if targetVersion != "" {
@@ -122,6 +175,9 @@ func runUpdate() error {
 	if err := setupZeuzNode(); err != nil {
 		return fmt.Errorf("update failed: %w", err)
 	}
+
+	// Refresh the cache so the next startup doesn't re-check immediately.
+	saveVersionCache(latest)
 
 	fmt.Printf(colorGreen+"  Update complete (%s)"+colorReset+"\n", latest)
 	return nil
@@ -401,21 +457,41 @@ func runUVCommands(args []string) error {
 	return runCmd.Run()
 }
 
+// showUpdateBannerIfNeeded reads the version cache and prints the update
+// banner if the cached latest version differs from the running version.
+// This is called at startup and again after node_cli.py exits so the user
+// always sees a reminder. No network call — purely a cache file read.
+func showUpdateBannerIfNeeded() {
+	cache := loadVersionCache()
+	if cache == nil {
+		return
+	}
+	if cache.Latest != "" && cache.Latest != effectiveVersion() {
+		printUpdateBanner(effectiveVersion(), cache.Latest)
+	}
+}
+
 func main() {
 	flag.Parse()
 
 	fmt.Printf(colorGreen+colorBold+"  ZeuZ Node %s"+colorReset+"\n", version)
 
-	// Launch background version check (non-blocking)
-	updateCh := make(chan string, 1)
+	// Refresh the version cache in the background (once per 24h).
+	// Just writes to the cache file — showUpdateBannerIfNeeded() reads it.
 	go func() {
+		if loadVersionCache() != nil {
+			return // cache still fresh, nothing to do
+		}
 		latest, err := fetchLatestVersion()
 		if err != nil {
-			updateCh <- ""
 			return
 		}
-		updateCh <- latest
+		saveVersionCache(latest)
 	}()
+
+	// Show update banner at startup using whatever is in the cache.
+	// On first ever run the cache is empty so nothing shows yet.
+	showUpdateBannerIfNeeded()
 
 	zeuzDir := getZeuZNodeDir()
 
@@ -461,24 +537,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Change directory to ZeuZ Node (re-evaluate after potential targetVersion change)
+	// Re-evaluate after potential targetVersion change by runUpdate.
 	zeuzDir = getZeuZNodeDir()
 	if err := os.Chdir(zeuzDir); err != nil {
 		fmt.Printf("  Error changing to ZeuZ Node directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Drain the background update check (non-blocking)
-	select {
-	case latest := <-updateCh:
-		if latest != "" && latest != effectiveVersion() {
-			printUpdateBanner(effectiveVersion(), latest)
-		}
-	default:
-		// check still in flight or failed — continue silently
-	}
-
-	// Update PATH before checking if UV is installed
 	if err := updatePath(); err != nil {
 		fmt.Printf("  Error updating path: %v\n", err)
 	}
@@ -496,10 +561,13 @@ func main() {
 
 	// Get remaining command line arguments after flag parsing
 	args := flag.Args()
+	runErr := runUVCommands(args)
 
-	// Run UV commands with arguments
-	if err := runUVCommands(args); err != nil {
-		fmt.Printf("  Error running UV commands: %v\n", err)
+	// Show update banner again after node_cli.py exits.
+	showUpdateBannerIfNeeded()
+
+	if runErr != nil {
+		fmt.Printf("  Error running UV commands: %v\n", runErr)
 		os.Exit(1)
 	}
 }
