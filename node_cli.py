@@ -1359,10 +1359,10 @@ async def main():
 
     if not disable_mobile_install:
         setup_nodejs_appium()
-    update_java_path()
+        update_java_path()
+        update_android_sdk_path()
+        update_outdated_modules()
 
-    update_android_sdk_path()
-    update_outdated_modules()
     asyncio.create_task(start_server())
     start_ui_dump_uploads()
     asyncio.create_task(delete_old_automationlog_folders())
