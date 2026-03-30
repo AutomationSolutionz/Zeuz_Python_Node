@@ -980,12 +980,13 @@ async def delete_old_automationlog_folders():
         await asyncio.sleep(60 * 60 * 5)
 
 
-async def command_line_args() -> Path | None:
+async def command_line_args() -> tuple[Path | None, bool]:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
 
     Returns:
       `log_dir` - Path object for custom log directory if specified, otherwise None
+      `disable_mobile_install` - True if startup mobile install should be skipped
 
     Example 1 - Basic usage:
     python node_cli.py
@@ -1150,6 +1151,11 @@ async def command_line_args() -> Path | None:
         action="store_true",
         help="Install Linux desktop automation dependencies (runs Installer/setup_linux_inspector.sh)",
     )
+    parser_object.add_argument(
+        "--disable-mobile-install",
+        action="store_true",
+        help="Skip Node.js/Appium setup at startup",
+    )
 
     all_arguments = parser_object.parse_args()
 
@@ -1178,6 +1184,7 @@ async def command_line_args() -> Path | None:
 
     # Desktop automation and UI inspection options
     install_linux_deps = all_arguments.install_linux_deps
+    disable_mobile_install = all_arguments.disable_mobile_install
 
     # Handle RSA key management commands
     if generate_key:
@@ -1284,7 +1291,7 @@ async def command_line_args() -> Path | None:
     #     CommonUtil.ExecLog("\ncommand_line_args : node_cli.py","Did not parse anything from given arguments",4)
     #     sys.exit()
 
-    return log_dir
+    return log_dir, disable_mobile_install
 
 
 async def set_new_credentials(server, api_key):
@@ -1340,28 +1347,28 @@ async def main():
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
 
-    # Setup Node.js and Appium before other operations
-    setup_nodejs_appium()
-    update_java_path()
+    signal.signal(signal.SIGINT, signal_handler)
+    print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
-    update_android_sdk_path()
-    update_outdated_modules()
+    try:
+        log_dir, disable_mobile_install = await command_line_args()
+    except Exception as e:
+        print(Fore.RED + str(e))
+        print("Exiting...")
+        os._exit(1)
+
+    if not disable_mobile_install:
+        setup_nodejs_appium()
+        update_java_path()
+        update_android_sdk_path()
+        update_outdated_modules()
+
     asyncio.create_task(start_server())
     start_ui_dump_uploads()
     asyncio.create_task(delete_old_automationlog_folders())
     await destroy_session()
 
-    signal.signal(signal.SIGINT, signal_handler)
-    print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
-
     console = Console()
-
-    try:
-        log_dir = await command_line_args()
-    except Exception as e:
-        print(Fore.RED + str(e))
-        print("Exiting...")
-        os._exit(1)
 
     server_name = (
         ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
