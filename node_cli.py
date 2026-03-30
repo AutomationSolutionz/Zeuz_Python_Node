@@ -1340,6 +1340,9 @@ async def main():
     kill_old_process(Path.cwd().parent / "pid.txt")
     check_min_python_version(min_python_version="3.11", show_warning=True)
 
+    signal.signal(signal.SIGINT, signal_handler)
+    print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
+
     # Setup Node.js and Appium before other operations
     setup_nodejs_appium()
     update_java_path()
@@ -1350,9 +1353,6 @@ async def main():
     start_ui_dump_uploads()
     asyncio.create_task(delete_old_automationlog_folders())
     await destroy_session()
-
-    signal.signal(signal.SIGINT, signal_handler)
-    print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
     console = Console()
 
