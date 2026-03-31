@@ -66,12 +66,22 @@ if not 7 <= int(python_sub_version.group(1)) <= 11:
 # this needs to be here on top, otherwise will return error
 import clr, System
 dll_path = os.getcwd().split("Framework")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
-clr.AddReference(dll_path+"UIAutomationClient")
-clr.AddReference(dll_path+"UIAutomationTypes")
-clr.AddReference(dll_path+"UIAutomationProvider")
+clr.AddReference(dll_path + "UIAutomationClient")
+clr.AddReference(dll_path + "UIAutomationTypes")
+clr.AddReference(dll_path + "UIAutomationProvider")
 clr.AddReference("System.Windows.Forms")
 
-from System.Windows.Automation import *
+from System.Windows.Automation import (
+    AutomationElement,
+    TreeScope,
+    Condition,
+    Automation,
+    InvokePattern,
+    ValuePattern,
+    TogglePattern,
+    SelectionItemPattern,
+    ExpandCollapsePattern,
+)
 import pyautogui  # Should be removed after we complete sequential actions
 import autoit  # The likely method we'll use
 
