@@ -319,7 +319,7 @@ def Check_uncheck(data_set):
     if command == "check" and is_selected == "On":
         CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
         return "passed"
-    elif command == "uncheck" and not is_selected:
+    elif command == "uncheck" and is_selected == "Off":
         CommonUtil.ExecLog(sModuleInfo, "The element is already unchecked so skipped it", 1)
         return "passed"
     try:

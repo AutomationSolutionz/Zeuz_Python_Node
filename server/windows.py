@@ -15,6 +15,7 @@ router = APIRouter(prefix="/windows", tags=["windows"])
 
 _TARGET_APP_NAME: str | None = None
 _TARGET_APP_SET_TIME: float = 0.0
+_active_ui_requests: dict[str, asyncio.Task] = {}
 
 
 class InspectorResponse(BaseModel):
@@ -149,6 +150,19 @@ def _get_ui_tree_xml(app_name: str) -> str | None:
     return "\n".join(xml_lines)
 
 
+async def _get_ui_tree_xml_async(app_name: str) -> str | None:
+    """Run _get_ui_tree_xml async and avoid concurrent duplicate requests for the same app."""
+    if app_name in _active_ui_requests:
+        return await _active_ui_requests[app_name]
+    
+    task = asyncio.create_task(asyncio.to_thread(_get_ui_tree_xml, app_name))
+    _active_ui_requests[app_name] = task
+    try:
+        return await task
+    finally:
+        _active_ui_requests.pop(app_name, None)
+
+
 def _get_active_apps() -> list[AppInfo]:
     """Return all top-level windows (active apps) from the UIAutomation tree."""
     AutomationElement, TreeScope, Condition, _ = _get_automation_imports()
@@ -175,7 +189,7 @@ def _get_active_apps() -> list[AppInfo]:
 
 
 @router.get("/inspect")
-def inspect(app_name: str):
+async def inspect(app_name: str):
     """Get the Windows UI DOM (XML tree) for a given application.
 
     Args:
@@ -189,7 +203,7 @@ def inspect(app_name: str):
         return InspectorResponse(status="error", error="This endpoint is only available on Windows")
 
     try:
-        xml_content = _get_ui_tree_xml(app_name)
+        xml_content = await _get_ui_tree_xml_async(app_name)
         if not xml_content:
             return InspectorResponse(
                 status="error",
@@ -200,14 +214,15 @@ def inspect(app_name: str):
         return InspectorResponse(status="error", error=str(e))
 
 
+
 @router.get("/apps", response_model=list[AppInfo])
-def get_apps():
+async def get_apps():
     """Return all opened/active application windows."""
     if sys.platform != "win32":
         return []
 
     try:
-        return _get_active_apps()
+        return await asyncio.to_thread(_get_active_apps)
     except Exception:
         return []
 
@@ -231,9 +246,10 @@ async def upload_windows_ui_dump():
             target_app = _TARGET_APP_NAME
 
             if target_app:
-                xml_content = await asyncio.to_thread(_get_ui_tree_xml, target_app)
+                xml_content = await _get_ui_tree_xml_async(target_app)
                 if xml_content:
                     new_xml_hash = hashlib.sha256(xml_content.encode("utf-8")).hexdigest()
+
 
                     if prev_xml_hash != new_xml_hash:
                         prev_xml_hash = new_xml_hash
