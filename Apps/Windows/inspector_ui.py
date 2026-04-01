@@ -1,11 +1,96 @@
+import argparse
+import json
 import threading
+import time
 import xml.etree.ElementTree as ET
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import os
 import pyperclip  # Add this import for clipboard functionality
 
 from inspector import WindowsInspector, Authenticate, inspect
+
+# Server-only mode: in-memory latest inspection for GET /latest
+LATEST_RESULT = {"xml": "", "paths": [], "window_name": "", "log": [], "captured_at": 0}
+LATEST_LOCK = threading.Lock()
+HTTP_PORT = 8765
+
+
+def _update_latest(xml_str: str, paths: list, window_name: str, log: list):
+    with LATEST_LOCK:
+        LATEST_RESULT["xml"] = xml_str or ""
+        LATEST_RESULT["paths"] = list(paths) if paths else []
+        LATEST_RESULT["window_name"] = window_name or ""
+        LATEST_RESULT["log"] = list(log) if log else []
+        LATEST_RESULT["captured_at"] = time.time()
+
+
+def _get_latest():
+    with LATEST_LOCK:
+        return {
+            "xml": LATEST_RESULT["xml"],
+            "paths": LATEST_RESULT["paths"],
+            "window_name": LATEST_RESULT["window_name"],
+            "log": LATEST_RESULT["log"],
+            "captured_at": LATEST_RESULT["captured_at"],
+        }
+
+
+class InspectorHTTPHandler(BaseHTTPRequestHandler):
+    """Serves GET /latest with CORS for the web Inspector panel."""
+
+    def do_GET(self):
+        if self.path == "/latest" or self.path == "/latest/":
+            body = json.dumps(_get_latest()).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        pass  # quiet by default in server mode
+
+
+def run_server_only():
+    """Run without Tkinter: HTTP server on port 8765 + hover+Ctrl inspection loop."""
+    inspector = WindowsInspector()
+    log_lines = []
+
+    def log(msg: str):
+        log_lines.append(msg)
+        print(msg)
+
+    def inspection_loop():
+        while True:
+            log("Hover over the element you want to inspect and press Ctrl...")
+            try:
+                x, y = inspect()
+                log(f"Captured at x={x}, y={y}")
+                cleanup = inspector.inspect_element(x, y)
+                try:
+                    root = ET.fromstring(inspector.xml_str)
+                    path_list = [{"path": p["path"], "area": p.get("area", "")} for p in inspector.paths]
+                    _update_latest(inspector.xml_str, path_list, inspector.window_name, list(log_lines))
+                except ET.ParseError:
+                    log("Failed to parse XML from inspector.")
+                finally:
+                    cleanup()
+            except Exception as e:
+                log(f"Inspection error: {e}")
+
+    server = HTTPServer(("", HTTP_PORT), InspectorHTTPHandler)
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    log(f"Inspector server listening on http://localhost:{HTTP_PORT}/latest (no UI mode)")
+
+    inspection_loop()
 
 
 class InspectorGUI(tk.Tk):
@@ -204,6 +289,17 @@ class InspectorGUI(tk.Tk):
             self.create_path_section(text, path["path"])
 
 
-if __name__ == '__main__':
-    app = InspectorGUI()
-    app.mainloop()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="ZeuZ Windows Inspector")
+    parser.add_argument(
+        "--no-ui",
+        action="store_true",
+        help="Run without GUI: start HTTP server on port 8765 and serve GET /latest for the web Inspector panel. Use hover+Ctrl in the terminal to capture.",
+    )
+    args = parser.parse_args()
+
+    if args.no_ui:
+        run_server_only()
+    else:
+        app = InspectorGUI()
+        app.mainloop()
