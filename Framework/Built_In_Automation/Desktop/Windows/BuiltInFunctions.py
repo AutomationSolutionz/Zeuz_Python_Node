@@ -219,71 +219,82 @@ def Click_Element_None_Mouse(Element, Expand=True, Gui=False, offset: str | None
                 pattern_name = Automation.PatternName(each)
                 CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name, 1)
 
-                # Expand and collapse actions
-                if pattern_name == "ExpandCollapse":
-                    if Expand:
-                        # check to see if its expanded, if expanded, then do nothing... if not, expand it
-                        status = Element.GetCurrentPattern(
-                            ExpandCollapsePattern.Pattern
-                        ).Current.ExpandCollapseState
-                        if status == 0:
-                            CommonUtil.ExecLog(sModuleInfo, "Expanding the item", 1)
-                            Element.GetCurrentPattern(
+                try:
+                    # Expand and collapse actions
+                    if pattern_name == "ExpandCollapse":
+                        if Expand:
+                            # check to see if its expanded, if expanded, then do nothing... if not, expand it
+                            status = Element.GetCurrentPattern(
                                 ExpandCollapsePattern.Pattern
-                            ).Expand()
-                            return "passed"
-                        elif status == 1:
-                            CommonUtil.ExecLog(sModuleInfo, "Already expanded", 1)
-                            return "passed"
-                    else:
-                        # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
-                        status = Element.GetCurrentPattern(
-                            ExpandCollapsePattern.Pattern
-                        ).Current.ExpandCollapseState
-                        if status == 1:
-                            CommonUtil.ExecLog(sModuleInfo, "Collapsing the item", 1)
-                            Element.GetCurrentPattern(
+                            ).Current.ExpandCollapseState
+                            if status == 0:
+                                CommonUtil.ExecLog(sModuleInfo, "Expanding the item", 1)
+                                Element.GetCurrentPattern(
+                                    ExpandCollapsePattern.Pattern
+                                ).Expand()
+                                return "passed"
+                            elif status == 1:
+                                CommonUtil.ExecLog(sModuleInfo, "Already expanded", 1)
+                                return "passed"
+                        else:
+                            # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
+                            status = Element.GetCurrentPattern(
                                 ExpandCollapsePattern.Pattern
-                            ).Collapse()
-                            return "passed"
-                        elif status == 0:
-                            CommonUtil.ExecLog(sModuleInfo, "Already collapsed", 1)
-                            return "passed"
-                # Invoking actions
-                elif pattern_name == "Invoke":
-                    CommonUtil.ExecLog(sModuleInfo, "Invoking the object", 1)
-                    time.sleep(unnecessary_sleep)
-                    Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
-                    return "passed"
-                # Selection of an item
-                elif pattern_name == "SelectionItem":
-                    CommonUtil.ExecLog(sModuleInfo, "Selecting an item", 1)
-                    Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
-                    time.sleep(unnecessary_sleep)
-                    return "passed"
-                # Toggling action
-
-                elif pattern_name == "Toggle":
-                    CommonUtil.ExecLog(sModuleInfo, "Toggling an item", 1)
-                    Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
-                    time.sleep(unnecessary_sleep)
-                    return "passed"
-                # if no patterns are found, then we do an actual mouse click
-                else:
-                    # x = int (Element.Current.BoundingRectangle.X)
-                    # y = int (Element.Current.BoundingRectangle.Y)
+                            ).Current.ExpandCollapseState
+                            if status == 1:
+                                CommonUtil.ExecLog(sModuleInfo, "Collapsing the item", 1)
+                                Element.GetCurrentPattern(
+                                    ExpandCollapsePattern.Pattern
+                                ).Collapse()
+                                return "passed"
+                            elif status == 0:
+                                CommonUtil.ExecLog(sModuleInfo, "Already collapsed", 1)
+                                return "passed"
+                    # Invoking actions
+                    elif pattern_name == "Invoke":
+                        CommonUtil.ExecLog(sModuleInfo, "Invoking the object", 1)
+                        time.sleep(unnecessary_sleep)
+                        Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
+                        return "passed"
+                    # Selection of an item
+                    elif pattern_name == "SelectionItem":
+                        CommonUtil.ExecLog(sModuleInfo, "Selecting an item", 1)
+                        Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
+                        time.sleep(unnecessary_sleep)
+                        return "passed"
+                    # Toggling action
+                    elif pattern_name == "Toggle":
+                        CommonUtil.ExecLog(sModuleInfo, "Toggling an item", 1)
+                        Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
+                        time.sleep(unnecessary_sleep)
+                        return "passed"
+                except Exception as e:
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "We did not find any pattern for this object, so we will click by mouse with location",
-                        1,
+                        f"Normal click ({pattern_name}) failed or did nothing ({e}). Automatically using GUI click.",
+                        2,
                     )
-                    x, y = get_coords(Element)
+                    x, y = get_coords(Element, offset)
                     win32api.SetCursorPos((x, y))
                     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
                     time.sleep(0.1)
                     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
                     time.sleep(unnecessary_sleep)
                     return "passed"
+
+            # if no patterns matched the standard ones, then we do an actual mouse click as fallback
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "We did not find any suitable pattern for this object, so we will click by mouse with location",
+                1,
+            )
+            x, y = get_coords(Element, offset)
+            win32api.SetCursorPos((x, y))
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+            time.sleep(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+            time.sleep(unnecessary_sleep)
+            return "passed"
 
         CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
         return "zeuz_failed"
