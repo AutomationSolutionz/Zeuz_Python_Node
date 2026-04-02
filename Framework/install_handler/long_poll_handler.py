@@ -13,6 +13,7 @@ from Framework.install_handler.utils import (
     generate_services_list,
 )
 from Framework.Utilities import RequestFormatter, ConfigModule
+from Framework.Utilities.verbose_log import vlog
 from Framework.node_server_state import STATE
 from Framework.install_handler.android.emulator import (
     check_emulator_list,
@@ -352,7 +353,9 @@ class InstallHandler:
                     f"d/nodes/install/node/listen?node_id={read_node_id()}"
                 )
 
+                vlog(f"[installer] long poll GET {host}")
                 resp = await RequestFormatter.async_request("get", host, timeout=70)
+                vlog(f"[installer] long poll -> {resp.status_code}")
 
                 if not resp.ok:
                     if debug:

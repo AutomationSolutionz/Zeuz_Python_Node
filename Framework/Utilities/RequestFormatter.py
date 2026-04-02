@@ -1,6 +1,7 @@
 # -- coding: utf-8 --
 # -- coding: cp1252 --
 import asyncio
+import time
 from . import ConfigModule
 import os
 import requests
@@ -9,6 +10,8 @@ import pickle
 from urllib3.exceptions import InsecureRequestWarning
 from colorama import Fore
 from datetime import datetime, timedelta, timezone
+from .verbose_log import vlog, VERBOSE as _VERBOSE
+import Framework.Utilities.verbose_log as _vmod
 
 # Tags for reading data from settings.conf file.
 AUTHENTICATION_CATEGORY = "Authentication"
@@ -92,21 +95,23 @@ def renew_token_with_expiry_check():
 def renew_token():
     global ACCESS_TOKEN_EXPIRES_AT
 
+    url = form_uri("/zsvc/auth/v1/renew")
+    vlog(f"POST {url}")
+    t0 = time.perf_counter()
     r = session.post(
-        url=form_uri("/zsvc/auth/v1/renew"),
+        url=url,
         verify=False,
     )
+    elapsed = time.perf_counter() - t0
+    vlog(f"POST {url} -> {r.status_code} ({elapsed:.3f}s)")
 
     data = {}
     if r.status_code != 200:
-        line_color = Fore.RED
-        # print(line_color + "[RequestFormatter] token could not be renewed. Please login again.")
         return data, r.status_code
 
     data = r.json()
     set_access_token_expiration(data["access_token_expires_at"])
 
-    # Save new tokens to disk
     save_cookies(session=session, filename=SESSION_FILE_NAME)
 
     return data, r.status_code
@@ -120,16 +125,19 @@ def login():
         "type": "api_key",
         "api_key": api_key,
     }
+    url = form_uri("/zsvc/auth/v1/login")
+    vlog(f"POST {url}")
+    t0 = time.perf_counter()
     r = session.post(
-        url=form_uri("/zsvc/auth/v1/login"),
+        url=url,
         json=payload,
         verify=False,
     )
-
+    elapsed = time.perf_counter() - t0
+    vlog(f"POST {url} -> {r.status_code} ({elapsed:.3f}s)")
 
     data = {}
     if r.status_code == 200:
-        # Save new tokens to disk
         data = r.json()
         set_access_token_expiration(data["access_token_expires_at"])
         save_cookies(session=session, filename=SESSION_FILE_NAME)
@@ -178,32 +186,55 @@ def request(*args, **kwargs):
         kwargs["verify"] = False
     if "timeout" not in kwargs:
         kwargs["timeout"] = 70
-    
 
-    return session.request(*args, **kwargs)
+    method = args[0] if args else kwargs.get("method", "?")
+    url = args[1] if len(args) > 1 else kwargs.get("url", "?")
+    if _vmod.VERBOSE:
+        vlog(f"request {method.upper()} {url}")
+    t0 = time.perf_counter()
+    resp = session.request(*args, **kwargs)
+    elapsed = time.perf_counter() - t0
+    if _vmod.VERBOSE:
+        vlog(f"request {method.upper()} {url} -> {resp.status_code} ({elapsed:.3f}s)")
+    return resp
 
-# async wrapper
 async def async_request(*args, **kwargs):
     """
     Runs the blocking request() in a worker thread
     so the event loop is not blocked.
     """
-    return await asyncio.to_thread(request, *args, **kwargs)
+    method = args[0] if args else kwargs.get("method", "?")
+    url = args[1] if len(args) > 1 else kwargs.get("url", "?")
+    if _vmod.VERBOSE:
+        vlog(f"async_request {method.upper()} {url}")
+    t0 = time.perf_counter()
+    resp = await asyncio.to_thread(request, *args, **kwargs)
+    elapsed = time.perf_counter() - t0
+    if _vmod.VERBOSE:
+        vlog(f"async_request {method.upper()} {url} -> {resp.status_code} ({elapsed:.3f}s)")
+    return resp
 
 
 def Post(resource_path, payload=None, **kwargs):
     renew_token_with_expiry_check()
-    if payload is None:  # Removing default mutable argument
+    if payload is None:
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
+        url = form_uri(resource_path + "/")
+        if _vmod.VERBOSE:
+            vlog(f"Post {url}")
+        t0 = time.perf_counter()
         resp = session.post(
-            form_uri(resource_path + "/"),
+            url,
             data=json.dumps(payload),
             verify=False,
             timeout=REQUEST_TIMEOUT,
             **kwargs
         )
+        elapsed = time.perf_counter() - t0
+        if _vmod.VERBOSE:
+            vlog(f"Post {url} -> {resp.status_code} ({elapsed:.3f}s)")
         return resp.json()
     except Exception as e:
         print("Post Exception: {}".format(e))
@@ -212,17 +243,25 @@ def Post(resource_path, payload=None, **kwargs):
 
 def Get(resource_path, payload=None, **kwargs):
     renew_token_with_expiry_check()
-    if payload is None:  # Removing default mutable argument
+    if payload is None:
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return session.get(
-            form_uri(resource_path),
+        url = form_uri(resource_path)
+        if _vmod.VERBOSE:
+            vlog(f"Get {url}")
+        t0 = time.perf_counter()
+        resp = session.get(
+            url,
             params=json.dumps(payload),
             timeout=REQUEST_TIMEOUT,
             verify=False,
             **kwargs
-        ).json()
+        )
+        elapsed = time.perf_counter() - t0
+        if _vmod.VERBOSE:
+            vlog(f"Get {url} -> {resp.status_code} ({elapsed:.3f}s)")
+        return resp.json()
 
     except requests.exceptions.RequestException as e:
         print(e)
@@ -233,20 +272,27 @@ def Get(resource_path, payload=None, **kwargs):
         return {}
 
 
-# here params are passed as a plain dictionary for better catching get parameter values
 def UpdatedGet(resource_path, payload=None, **kwargs):
     renew_token_with_expiry_check()
-    if payload is None:  # Removing default mutable argument
+    if payload is None:
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return session.get(
-            form_uri(resource_path + "/"),
+        url = form_uri(resource_path + "/")
+        if _vmod.VERBOSE:
+            vlog(f"UpdatedGet {url}")
+        t0 = time.perf_counter()
+        resp = session.get(
+            url,
             params=payload,
             timeout=REQUEST_TIMEOUT,
             verify=False,
             **kwargs
-        ).json()
+        )
+        elapsed = time.perf_counter() - t0
+        if _vmod.VERBOSE:
+            vlog(f"UpdatedGet {url} -> {resp.status_code} ({elapsed:.3f}s)")
+        return resp.json()
 
     except requests.exceptions.RequestException as e:
         print(

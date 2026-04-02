@@ -13,6 +13,7 @@ import requests
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
+from Framework.Utilities.verbose_log import vlog
 from Framework.node_server_state import STATE
 
 
@@ -265,6 +266,7 @@ class DeployHandler:
 
             try:
                 reconnect = True
+                vlog(f"[deploy] long poll GET {host}")
                 resp = await RequestFormatter.async_request("get", host, timeout=70)
                 if resp is None:
                     break
@@ -279,6 +281,7 @@ class DeployHandler:
                     print(f"🟢 {node_id} back to online")
 
                 if resp.status_code == httpx.codes.NO_CONTENT:
+                    vlog("[deploy] long poll -> 204 NO_CONTENT (idle)")
                     continue
 
                 if resp.status_code == httpx.codes.BAD_GATEWAY:
@@ -288,16 +291,16 @@ class DeployHandler:
                     continue
 
                 if not resp.ok:
+                    vlog(f"[deploy] long poll -> {resp.status_code} (error)")
                     print(
                         "[deploy] Request Error, status code:",
                         resp.status_code,
                         "| reconnecting",
                     )
-
-                    # Encountered a server error, retry.
                     await asyncio.sleep(random.randint(1, 3))
                     continue
 
+                vlog(f"[deploy] long poll -> {resp.status_code} (has work)")
                 should_quit = await self.on_message(resp.content)
                 if should_quit:
                     break

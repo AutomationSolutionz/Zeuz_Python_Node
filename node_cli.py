@@ -141,6 +141,8 @@ from Framework.Utilities import (  # noqa: E402
     All_Device_Info,
 )
 from Framework import MainDriverApi  # noqa: E402
+from Framework.Utilities.verbose_log import vlog, vtimed, VERBOSE as _VERBOSE  # noqa: E402
+import Framework.Utilities.verbose_log as verbose_log_mod  # noqa: E402
 
 
 TMP_INI_FILE = None
@@ -235,12 +237,15 @@ async def Login(
 
     try:
         if load_from_session:
-            data, status_code = RequestFormatter.renew_token()
+            with vtimed("RequestFormatter.renew_token"):
+                data, status_code = RequestFormatter.renew_token()
             if status_code != 200:
-                data, status_code = RequestFormatter.login()
+                with vtimed("RequestFormatter.login (after renew fail)"):
+                    data, status_code = RequestFormatter.login()
                 return
         else:
-            data, status_code = RequestFormatter.login()
+            with vtimed("RequestFormatter.login"):
+                data, status_code = RequestFormatter.login()
 
         # # Upon successful login, replace the api key in the settings
         # # file with a dummy value since we don't need it anymore.
@@ -315,26 +320,30 @@ async def Login(
     # report_thread = threading.Thread(target=retry_failed_report_upload, daemon=True)
     # report_thread.start()
 
+    vlog("Starting RunProcess (long poll loop)")
     await RunProcess(node_id, log_dir=log_dir)
 
 
 def update_machine_info(node_id, should_print=True):
     from tzlocal import get_localzone
 
-    update_machine(
-        False,
-        should_print,
-    )
+    with vtimed("update_machine"):
+        update_machine(
+            False,
+            should_print,
+        )
 
     local_tz = str(get_localzone())
-    RequestFormatter.Get(
-        "send_machine_time_zone_api",
-        {
-            "time_zone": local_tz,
-            "machine": node_id,
-        },
-    )
-    RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
+    with vtimed("send_machine_time_zone_api"):
+        RequestFormatter.Get(
+            "send_machine_time_zone_api",
+            {
+                "time_zone": local_tz,
+                "machine": node_id,
+            },
+        )
+    with vtimed("update_machine_with_time_api"):
+        RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
 def notify_complete(message="Run completed"):
@@ -389,8 +398,8 @@ async def RunProcess(node_id, log_dir=None):
             )
             return f"{server_url.scheme}://{server_url.netloc}/zsvc/deploy/v1/next/{node_id}"
 
-        # Connect to the live log service.
-        live_log_service.connect(live_log_service_addr())
+        with vtimed("live_log_service.connect"):
+            live_log_service.connect(live_log_service_addr())
 
         # WARNING: For local development only.
         # if "localhost" in host:
@@ -404,6 +413,7 @@ async def RunProcess(node_id, log_dir=None):
         install_task = asyncio.create_task(install_handler.run())
 
         async def response_callback(response: str):
+            vlog("response_callback: received deploy payload, starting test execution")
             node_server_state.STATE.state = "in_progress"
             nonlocal node_json
             nonlocal log_dir
@@ -438,16 +448,19 @@ async def RunProcess(node_id, log_dir=None):
                 traceback.print_exc()
 
             # 3. Call MainDriver
-            device_info = All_Device_Info.get_all_connected_device_info()
+            with vtimed("All_Device_Info.get_all_connected_device_info"):
+                device_info = All_Device_Info.get_all_connected_device_info()
             await install_handler.cancel_run()
-            MainDriverApi.main(
-                device_dict=device_info,
-                all_run_id_info=node_json,
-            )
+            with vtimed("MainDriverApi.main"):
+                MainDriverApi.main(
+                    device_dict=device_info,
+                    all_run_id_info=node_json,
+                )
 
         async def on_connect_callback(reconnected: bool):
             node_server_state.STATE.state = "idle"
-            update_machine_info(node_id, should_print=not reconnected)
+            with vtimed("update_machine_info"):
+                update_machine_info(node_id, should_print=not reconnected)
             return
 
         async def done_callback() -> bool:
@@ -562,6 +575,7 @@ def update_machine(dependency, should_print=True):
             "allProject": allProject,
         }
         url = RequestFormatter.form_uri("update_automation_machine_api/")
+        vlog(f"POST {url}")
         resp = RequestFormatter.request("post", url, json=update_object)
 
         if resp.status_code != 200:
@@ -980,13 +994,14 @@ async def delete_old_automationlog_folders():
         await asyncio.sleep(60 * 60 * 5)
 
 
-async def command_line_args() -> tuple[Path | None, bool]:
+async def command_line_args() -> tuple[Path | None, bool, bool]:
     """
     This function handles command line arguments for configuring and running Zeuz Node.
 
     Returns:
       `log_dir` - Path object for custom log directory if specified, otherwise None
       `disable_mobile_install` - True if startup mobile install should be skipped
+      `verbose_log` - True if verbose startup/request logging should be enabled
 
     Example 1 - Basic usage:
     python node_cli.py
@@ -1156,6 +1171,11 @@ async def command_line_args() -> tuple[Path | None, bool]:
         action="store_true",
         help="Skip Node.js/Appium setup at startup",
     )
+    parser_object.add_argument(
+        "--verbose-log",
+        action="store_true",
+        help="Print timestamped entry/exit/duration for startup functions and HTTP requests",
+    )
 
     all_arguments = parser_object.parse_args()
 
@@ -1185,6 +1205,7 @@ async def command_line_args() -> tuple[Path | None, bool]:
     # Desktop automation and UI inspection options
     install_linux_deps = all_arguments.install_linux_deps
     disable_mobile_install = all_arguments.disable_mobile_install
+    verbose_log = all_arguments.verbose_log
 
     # Handle RSA key management commands
     if generate_key:
@@ -1291,7 +1312,7 @@ async def command_line_args() -> tuple[Path | None, bool]:
     #     CommonUtil.ExecLog("\ncommand_line_args : node_cli.py","Did not parse anything from given arguments",4)
     #     sys.exit()
 
-    return log_dir, disable_mobile_install
+    return log_dir, disable_mobile_install, verbose_log
 
 
 async def set_new_credentials(server, api_key):
@@ -1351,22 +1372,34 @@ async def main():
     print("Press Ctrl-C or Ctrl-Break to disconnect and quit.")
 
     try:
-        log_dir, disable_mobile_install = await command_line_args()
+        log_dir, disable_mobile_install, verbose_log_flag = await command_line_args()
     except Exception as e:
         print(Fore.RED + str(e))
         print("Exiting...")
         os._exit(1)
 
-    if not disable_mobile_install:
-        setup_nodejs_appium()
-        update_java_path()
-        update_android_sdk_path()
-        update_outdated_modules()
+    if verbose_log_flag:
+        verbose_log_mod.VERBOSE = True
+        vlog("Verbose logging enabled")
 
-    asyncio.create_task(start_server())
-    start_ui_dump_uploads()
-    asyncio.create_task(delete_old_automationlog_folders())
-    await destroy_session()
+    if not disable_mobile_install:
+        with vtimed("setup_nodejs_appium"):
+            setup_nodejs_appium()
+        with vtimed("update_java_path"):
+            update_java_path()
+        with vtimed("update_android_sdk_path"):
+            update_android_sdk_path()
+        with vtimed("update_outdated_modules"):
+            update_outdated_modules()
+
+    with vtimed("start_server (create_task)"):
+        asyncio.create_task(start_server())
+    with vtimed("start_ui_dump_uploads"):
+        start_ui_dump_uploads()
+    with vtimed("delete_old_automationlog_folders (create_task)"):
+        asyncio.create_task(delete_old_automationlog_folders())
+    with vtimed("destroy_session"):
+        await destroy_session()
 
     console = Console()
 

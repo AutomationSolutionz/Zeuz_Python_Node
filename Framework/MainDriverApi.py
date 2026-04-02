@@ -31,6 +31,7 @@ from threading import Timer
 from Framework.attachment_db import AttachmentDB, GlobalAttachment
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
+from .Utilities.verbose_log import vlog, vtimed
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
@@ -1479,6 +1480,7 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
         if CommonUtil.debug_status:
             return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        vlog(f"upload_step_report tc={tc_id} step_seq={step_seq}")
         res = RequestFormatter.request(
             "post",
             RequestFormatter.form_uri("create_step_report/"),
@@ -1494,8 +1496,7 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
             timeout=600
         )
         duration = round(res.elapsed.total_seconds(), 2)
-        # if res.status_code == 200:
-        #     CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the step report [{duration} sec]", 1)
+        vlog(f"upload_step_report tc={tc_id} step_seq={step_seq} -> {res.status_code} ({duration}s)")
         if res.status_code == 500:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to upload step report  [{duration} sec]\n{res.json()}", 3)
     except:
@@ -1506,6 +1507,7 @@ def upload_reports_and_zips(temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status:
             return
+        vlog(f"upload_reports_and_zips run_id={run_id}")
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
@@ -1750,6 +1752,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
 
 def download_attachments(testcase_info):
     """Download test case and step attachments for the given test case."""
+    vlog("download_attachments")
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     temp_ini_file = os.path.join(
@@ -1831,10 +1834,9 @@ def download_attachments(testcase_info):
                 db.remove(r["hash"])
 
 
-# main function
 def main(device_dict, all_run_id_info):
     try:
-        # get module info
+        vlog("MainDriverApi.main() enter")
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
         temp_ini_file = os.path.join(
