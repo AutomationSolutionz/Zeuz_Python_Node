@@ -2162,7 +2162,7 @@ def Run_Application(data_set):
                 #last_start_time = time.time()
                 autoit.send("^{ESC}")
                 time.sleep(keypress_interval)
-                autoit.send(Desktop_app)
+                autoit.send(Desktop_app, 1)
                 time.sleep(keypress_interval)
                 autoit.send("{ENTER}")
                 CommonUtil.ExecLog(sModuleInfo, "Successfully launched your app", 1)
