@@ -71,6 +71,8 @@ from Framework.Utilities.CommonUtil import (
 from Framework.AI.NLP import binary_classification
 from .utils import ChromeForTesting, ChromeExtensionDownloader
 
+from playwright.async_api import async_playwright
+
 #########################
 #                       #
 #    Global Variables   #
@@ -656,8 +658,27 @@ def generate_options(browser: str, browser_options: BrowserOptions):
     return options
 
 
+async def connect_playwright_to_selenium(port=9222):
+    playwright_instance = await async_playwright().start()
+    browser = await playwright_instance.chromium.connect_over_cdp(f"http://localhost:{port}")
+    context = browser.contexts[0]
+    page = context.pages[0]
+
+    from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as PlaywrightBuiltInFunctions
+    PlaywrightBuiltInFunctions.playwright_instance = playwright_instance
+    PlaywrightBuiltInFunctions.browser = browser
+    PlaywrightBuiltInFunctions.context = context
+    PlaywrightBuiltInFunctions.current_page = page
+
+    Shared_Resources.Set_Shared_Variables("playwright_context", context)
+    Shared_Resources.Set_Shared_Variables("playwright_browser", browser)
+    Shared_Resources.Set_Shared_Variables("playwright_page", page)
+
+    return "passed"
+
+
 @logger
-def Open_Browser(browser, browser_options: BrowserOptions):
+async def Open_Browser(browser, browser_options: BrowserOptions):
     """Launch browser from options and service object"""
     try:
         global selenium_driver
@@ -686,6 +707,9 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             return "passed"
 
         options = generate_options(browser, browser_options)
+
+        # Enable remote debugging / CDP
+        options.add_argument("--remote-debugging-port=9222")
 
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
@@ -755,6 +779,13 @@ def Open_Browser(browser, browser_options: BrowserOptions):
                 sModuleInfo, "You did not select a valid browser: %s" % browser, 3
             )
             return "zeuz_failed"
+
+        # Connect Playwright to Selenium via CDP
+        try:
+            await connect_playwright_to_selenium(port=9222)
+            CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
 
         CommonUtil.ExecLog(sModuleInfo, f"Started {browser} browser", 1)
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
@@ -915,7 +946,7 @@ def parse_and_verify_datatype(left: str, right: str, chrome_version=None):
 
 
 @logger
-def Go_To_Link(dataset: Dataset) -> ReturnType:
+async def Go_To_Link(dataset: Dataset) -> ReturnType:
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         window_size_X = None
@@ -1117,7 +1148,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                 sModuleInfo, "Browser not previously opened, doing so now", 1
             )
 
-            if Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
+            if await Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
                 return "zeuz_failed"
 
             if ConfigModule.get_config_value(
@@ -1191,7 +1222,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
             # If the browser is closed but selenium instance is on, relaunch selenium_driver
             if Shared_Resources.Test_Shared_Variables("dependency"):
                 dependency = Shared_Resources.Get_Shared_Variables("dependency")
-            result = Open_Browser(dependency["Browser"], browser_options)
+            result = await Open_Browser(dependency["Browser"], browser_options)
         else:
             result = "zeuz_failed"
 

@@ -59,6 +59,30 @@ def _get_frame_locator():
         # Variable doesn't exist yet
         return None
 
+
+def connect_selenium_to_playwright(port=9222):
+    """Connect Selenium to Playwright browser via CDP"""
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        
+        options = Options()
+        options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
+        
+        driver = webdriver.Chrome(options=options)
+        
+        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
+        SeleniumBuiltInFunctions.selenium_driver = driver
+        
+        sr.Set_Shared_Variables("selenium_driver", driver)
+        
+        CommonUtil.ExecLog("connect_selenium_to_playwright", "Connected Selenium to Playwright", 1)
+        return "passed"
+        
+    except Exception as e:
+        CommonUtil.ExecLog("connect_selenium_to_playwright", f"Failed to connect Selenium to Playwright: {e}", 3)
+        return "zeuz_failed"
+
 #########################
 #                       #
 #    Global Variables   #
@@ -195,8 +219,11 @@ async def Open_Browser(step_data):
             "slow_mo": slow_mo,
             "devtools": devtools,
         }
-        if args:
-            launch_options["args"] = args
+        
+        # Add remote debugging port for CDP connection
+        all_args = args + ["--remote-debugging-port=9222"]
+        if all_args:
+            launch_options["args"] = all_args
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
         
@@ -264,6 +291,9 @@ async def Open_Browser(step_data):
         
         # Set screenshot variables for CommonUtil.TakeScreenShot()
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
+
+        # Connect Selenium to Playwright via CDP
+        connect_selenium_to_playwright(port=9222)
 
         CommonUtil.ExecLog(sModuleInfo, f"Browser opened successfully (page_id: {page_id})", 1)
         return "passed"
