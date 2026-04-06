@@ -4,6 +4,7 @@ import sys
 import asyncio
 import requests
 import time
+import xml.etree.ElementTree as ET
 from typing import Literal
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -15,7 +16,6 @@ router = APIRouter(prefix="/windows", tags=["windows"])
 
 _TARGET_APP_NAME: str | None = None
 _TARGET_APP_SET_TIME: float = 0.0
-_active_ui_requests: dict[str, asyncio.Task] = {}
 
 
 class InspectorResponse(BaseModel):
@@ -70,55 +70,59 @@ def _get_automation_imports():
     return AutomationElement, TreeScope, Condition, TreeWalker
 
 
-def _dump_element_to_xml(element, indent_level: int = 0, max_depth: int = 30) -> list[str]:
-    """Recursively dump a UIAutomation element tree to XML strings."""
-    if indent_level > max_depth:
-        return []
+def _build_element_tree(xml_parent, ui_element, max_depth: int = 50, _depth: int = 0):
+    """Recursively build an ET tree from a UIAutomation element.
 
-    lines: list[str] = []
-    indent = "  " * indent_level
+    Mirrors create_tree() from ZeuZ_Windows_Inspector.py: <div> tags with
+    Name, AutomationId, LocalizedControlType, ClassName, Left, Right, Top, Bottom.
+    """
+    if _depth > max_depth:
+        return
 
+    _, TreeScope, Condition, _ = _get_automation_imports()
     try:
-        current = element.Current
-        control_type = current.LocalizedControlType or "unknown"
-        # Sanitize the tag name: replace spaces with underscores
-        tag = control_type.replace(" ", "_")
-        name = _xml_escape(current.Name or "")
-        class_name = _xml_escape(current.ClassName or "")
-        automation_id = _xml_escape(current.AutomationId or "")
-
-        attrs = f'name="{name}"'
-        if class_name:
-            attrs += f' class="{class_name}"'
-        if automation_id:
-            attrs += f' automation_id="{automation_id}"'
-
-        # Add bounding rectangle if available
-        try:
-            rect = current.BoundingRectangle
-            if rect.Width > 0 or rect.Height > 0:
-                attrs += f' x="{int(rect.Left)}" y="{int(rect.Top)}"'
-                attrs += f' width="{int(rect.Width)}" height="{int(rect.Height)}"'
-        except Exception:
-            pass
-
-        # Get children
-        _, TreeScope, Condition, _ = _get_automation_imports()
-        children = element.FindAll(TreeScope.Children, Condition.TrueCondition)
-
-        if children.Count > 0:
-            lines.append(f'{indent}<{tag} {attrs}>')
-            for i in range(children.Count):
-                child = children[i]
-                lines.extend(_dump_element_to_xml(child, indent_level + 1, max_depth))
-            lines.append(f'{indent}</{tag}>')
-        else:
-            lines.append(f'{indent}<{tag} {attrs}/>')
-
+        child_elements = ui_element.FindAll(TreeScope.Children, Condition.TrueCondition)
     except Exception:
-        pass
+        return
 
-    return lines
+    for i in range(child_elements.Count):
+        each_child = child_elements[i]
+        try:
+            elem_name = _xml_escape(each_child.Current.Name or "")
+            elem_automationid = _xml_escape(each_child.Current.AutomationId or "")
+            elem_control = _xml_escape(each_child.Current.LocalizedControlType or "")
+            elem_class = _xml_escape(each_child.Current.ClassName or "")
+            try:
+                left = str(each_child.Current.BoundingRectangle.Left)
+                right = str(each_child.Current.BoundingRectangle.Right)
+                top = str(each_child.Current.BoundingRectangle.Top)
+                bottom = str(each_child.Current.BoundingRectangle.Bottom)
+            except Exception:
+                left, right, top, bottom = "", "", "", ""
+
+            attribs = {
+                "Name": elem_name,
+                "AutomationId": elem_automationid,
+                "LocalizedControlType": elem_control,
+                "ClassName": elem_class,
+                "Left": left,
+                "Right": right,
+                "Top": top,
+                "Bottom": bottom,
+            }
+            xml_child = ET.SubElement(xml_parent, "div", **attribs)
+            _build_element_tree(xml_child, each_child, max_depth, _depth + 1)
+        except Exception:
+            continue
+
+
+def _remove_coordinates(root):
+    """Remove Left/Right/Top/Bottom attributes from all elements. Matches inspector's Remove_coordinate()."""
+    for each in root:
+        att = each.attrib
+        for key in ("Left", "Right", "Top", "Bottom"):
+            att.pop(key, None)
+        _remove_coordinates(each)
 
 
 def _find_window_by_name(app_name: str):
@@ -139,28 +143,53 @@ def _find_window_by_name(app_name: str):
     return None
 
 
-def _get_ui_tree_xml(app_name: str) -> str | None:
-    """Get the full UI tree of a window as XML."""
+def _get_ui_tree(app_name: str) -> ET.Element | None:
+    """Build the UI tree as an ET Element matching ZeuZ_Windows_Inspector format.
+
+    Returns a <body> root with Name, AutomationId, LocalizedControlType, ClassName, pid.
+    Children are <div> elements with the same attributes plus Left/Right/Top/Bottom.
+    """
     window = _find_window_by_name(app_name)
     if window is None:
         return None
 
-    xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>']
-    xml_lines.extend(_dump_element_to_xml(window, indent_level=0))
-    return "\n".join(xml_lines)
+    current = window.Current
+    attribs = {
+        "Name": _xml_escape(current.Name or ""),
+        "AutomationId": _xml_escape(current.AutomationId or ""),
+        "LocalizedControlType": _xml_escape(current.LocalizedControlType or ""),
+        "ClassName": _xml_escape(current.ClassName or ""),
+        "pid": str(current.ProcessId) if hasattr(current, "ProcessId") else "",
+    }
+    root = ET.Element("body", **attribs)
+    _build_element_tree(root, window)
+    return root
 
 
-async def _get_ui_tree_xml_async(app_name: str) -> str | None:
-    """Run _get_ui_tree_xml async and avoid concurrent duplicate requests for the same app."""
-    if app_name in _active_ui_requests:
-        return await _active_ui_requests[app_name]
-    
-    task = asyncio.create_task(asyncio.to_thread(_get_ui_tree_xml, app_name))
-    _active_ui_requests[app_name] = task
+def _get_ui_tree_xml(app_name: str) -> str | None:
+    """Get the full UI tree of a window as XML string (with coordinates, for /inspect)."""
+    root = _get_ui_tree(app_name)
+    if root is None:
+        return None
     try:
-        return await task
-    finally:
-        _active_ui_requests.pop(app_name, None)
+        ET.indent(root)
+    except AttributeError:
+        pass
+    return ET.tostring(root, encoding="unicode")
+
+
+def _get_ui_tree_xml_for_upload(app_name: str) -> str | None:
+    """Get the UI tree XML for upload (without coordinates, matching inspector's uploaded version)."""
+    root = _get_ui_tree(app_name)
+    if root is None:
+        return None
+    _remove_coordinates(root)
+    try:
+        ET.indent(root, "")
+    except AttributeError:
+        pass
+    return ET.tostring(root, encoding="unicode")
+
 
 
 def _get_active_apps() -> list[AppInfo]:
@@ -203,7 +232,7 @@ async def inspect(app_name: str):
         return InspectorResponse(status="error", error="This endpoint is only available on Windows")
 
     try:
-        xml_content = await _get_ui_tree_xml_async(app_name)
+        xml_content = await asyncio.to_thread(_get_ui_tree_xml, app_name)
         if not xml_content:
             return InspectorResponse(
                 status="error",
@@ -246,10 +275,9 @@ async def upload_windows_ui_dump():
             target_app = _TARGET_APP_NAME
 
             if target_app:
-                xml_content = await _get_ui_tree_xml_async(target_app)
+                xml_content = await asyncio.to_thread(_get_ui_tree_xml_for_upload, target_app)
                 if xml_content:
                     new_xml_hash = hashlib.sha256(xml_content.encode("utf-8")).hexdigest()
-
 
                     if prev_xml_hash != new_xml_hash:
                         prev_xml_hash = new_xml_hash
