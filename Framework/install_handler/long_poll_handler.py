@@ -3,7 +3,10 @@ import traceback
 import random
 import httpx
 import inspect
+from pathlib import Path
+
 from colorama import Fore
+from Framework.install_handler import install_log_config
 from Framework.install_handler.route import Response, services
 from Framework.install_handler.utils import (
     debug,
@@ -14,7 +17,7 @@ from Framework.install_handler.utils import (
 )
 from Framework.Utilities import RequestFormatter, ConfigModule
 from Framework.node_server_state import STATE
-from Framework.install_handler.android.emulator import (
+from Framework.install_handler.android.android_emulator import (
     check_emulator_list,
     create_avd_from_system_image,
     get_filtered_avd_services,
@@ -34,10 +37,16 @@ if debug:
 
 
 class InstallHandler:
-    def __init__(self):
+    def __init__(self, log_dir: Path | None = None):
         self.cancel_ = False
         self.running = False
         self.client = None
+        installer_log_dir = log_dir if log_dir is not None else Path.home() / ".zeuz" / "logs"
+        install_log_config.INSTALLER_LOG_DIR = installer_log_dir
+        try:
+            install_log_config.setup_installer_logging(installer_log_dir)
+        except Exception:
+            pass
 
     async def on_message(self, message: Response) -> None:
         try:

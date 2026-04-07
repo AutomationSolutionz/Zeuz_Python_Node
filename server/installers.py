@@ -12,12 +12,13 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from Framework.install_handler import install_log_config
 from Framework.install_handler import utils as install_utils
 from Framework.install_handler.route import services as INSTALLER_SERVICES
-from Framework.install_handler.android.emulator import (
+from Framework.install_handler.android.android_emulator import (
     android_emulator_install,
     check_emulator_list,
     create_avd_from_system_image,
@@ -275,6 +276,7 @@ def _patch_send_response_targets() -> None:
 
     # Explicitly add emulator module
     modules.add("Framework.install_handler.android.emulator")
+    modules.add("Framework.install_handler.android.emulator_windows_linux")
 
     # Patch modules that use send_response
     for mod_name in modules:
@@ -629,3 +631,25 @@ async def all_events():
             EVENT_BUS.unsubscribe("*", queue)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# --- Installer log download (node-side; Zeuz UI fetches from node host:port) --- #
+
+
+@router.get("/logs/download")
+async def download_installer_log():
+    """Serve the current installer log file. Returns 404 if log dir or file is missing."""
+    try:
+        log_dir = install_log_config.get_installer_log_dir()
+        log_path = log_dir / install_log_config.INSTALLER_LOG_FILENAME
+        if not log_path.is_file():
+            raise HTTPException(status_code=404, detail="Installer log not found")
+        return FileResponse(
+            path=str(log_path),
+            filename=install_log_config.INSTALLER_LOG_FILENAME,
+            media_type="text/plain",
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail="Installer log not found")

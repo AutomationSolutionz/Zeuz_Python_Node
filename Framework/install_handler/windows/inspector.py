@@ -1,14 +1,16 @@
 import httpx
 import asyncio
 from pathlib import Path
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 
+logger = get_logger()
 inspector_path = Path("Apps/Windows/inspector.exe").absolute()
 async def check_status() -> bool:
-    print("[installer][windows-inspector] Checking status...")
+    logger.info("[installer][windows-inspector] Checking status...")
     exists = inspector_path.exists()
     if exists:
-        print("[installer][windows-inspector] Already installed")
+        logger.info("[installer][windows-inspector] Already installed")
         await send_response({
             "action": "status",
             "data": {
@@ -21,7 +23,7 @@ async def check_status() -> bool:
         })
         return True
     else:
-        print("[installer][windows-inspector] Not installed")
+        logger.info("[installer][windows-inspector] Not installed")
         await send_response({
             "action": "status",
             "data": {
@@ -36,7 +38,7 @@ async def check_status() -> bool:
 
 
 async def install() -> bool:
-    print("[installer][windows-inspector] Installing...")
+    logger.info("[installer][windows-inspector] Installing...")
     
     status = inspector_path.exists()
     if status:
@@ -50,7 +52,7 @@ async def install() -> bool:
                 "install_text": "installed",
             }
         })
-        print("[installer][windows-inspector] Already installed")
+        logger.info("[installer][windows-inspector] Already installed")
         return True
     
     url = "https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python_Node_Setup/master/installation_files/Windows/inspector.exe"
@@ -80,7 +82,7 @@ async def install() -> bool:
                         mb_downloaded = downloaded / (1024 * 1024)
                         mb_total = total_size / (1024 * 1024)
                         
-                        print(f"\r[installer][windows-inspector] |{bar}| {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)", end='', flush=True)
+                        logger.info("[installer][windows-inspector] |%s| %.1f%% (%.1f/%.1f MB)", bar, progress, mb_downloaded, mb_total)
 
                         p = round(mb_downloaded/mb_total, 1)
                         if p not in count:
@@ -96,9 +98,8 @@ async def install() -> bool:
                                 }
                             }))
             
-            print()
-            print(f"[installer][windows-inspector] Download completed: {inspector_path}")
-            print(f"[installer][windows-inspector] Installation successful")
+            logger.info("[installer][windows-inspector] Download completed: %s", inspector_path)
+            logger.info("[installer][windows-inspector] Installation successful")
             await send_response({
                 "action": "status",
                 "data": {

@@ -1,10 +1,13 @@
 import os
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from .linux_utils import (
     detect_package_manager,
     check_all_packages_installed,
     install_packages,
 )
+
+logger = get_logger()
 
 
 # Package definitions for different package managers
@@ -40,7 +43,7 @@ PACKAGES = {
 
 async def check_status():
     """Checks if AT-SPI development packages are installed."""
-    print("Checking AT-SPI development packages status...")
+    logger.info("Checking AT-SPI development packages status...")
 
     # Check if session type is X11
     session_type = os.environ.get("XDG_SESSION_TYPE", "unknown")
@@ -105,7 +108,7 @@ async def check_status():
 
 async def install(user_password: str = ""):
     """Install AT-SPI development packages using the system package manager."""
-    print("Installing AT-SPI development packages...")
+    logger.info("Installing AT-SPI development packages...")
 
     # Check if session type is X11
     session_type = os.environ.get("XDG_SESSION_TYPE", "unknown")

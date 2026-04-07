@@ -1,11 +1,14 @@
 import asyncio
 from Framework.Built_In_Automation.Web.Selenium.utils import ChromeForTesting
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
+
+logger = get_logger()
 
 
 async def check_status() -> bool:
     """Check if Chrome for Testing is installed."""
-    print("[installer][web-chrome_for_testing] Checking status...")
+    logger.info("[installer][web-chrome_for_testing] Checking status...")
     
     try:
         cft = ChromeForTesting()
@@ -14,7 +17,7 @@ async def check_status() -> bool:
         latest_version = cft.get_latest_version(channel="Stable", force_check=False)
         
         if not latest_version:
-            print("[installer][web-chrome_for_testing] Not installed (no version available)")
+            logger.info("[installer][web-chrome_for_testing] Not installed (no version available)")
             await send_response({
                 "action": "status",
                 "data": {
@@ -30,7 +33,7 @@ async def check_status() -> bool:
         is_installed = cft.is_version_installed(latest_version)
         
         if is_installed:
-            print(f"[installer][web-chrome_for_testing] Already installed (version: {latest_version})")
+            logger.info("[installer][web-chrome_for_testing] Already installed (version: %s)", latest_version)
             await send_response({
                 "action": "status",
                 "data": {
@@ -42,7 +45,7 @@ async def check_status() -> bool:
             })
             return True
         else:
-            print("[installer][web-chrome_for_testing] Not installed")
+            logger.info("[installer][web-chrome_for_testing] Not installed")
             await send_response({
                 "action": "status",
                 "data": {
@@ -54,7 +57,7 @@ async def check_status() -> bool:
             })
             return False
     except Exception as e:
-        print(f"[installer][web-chrome_for_testing] Error checking status: {e}")
+        logger.error("[installer][web-chrome_for_testing] Error checking status: %s", e)
         await send_response({
             "action": "status",
             "data": {
@@ -69,11 +72,11 @@ async def check_status() -> bool:
 
 async def install() -> bool:
     """Install Chrome for Testing."""
-    print("[installer][web-chrome_for_testing] Installing...")
+    logger.info("[installer][web-chrome_for_testing] Installing...")
     
     # Check if already installed
     if await check_status():
-        print("[installer][web-chrome_for_testing] Chrome for Testing is already installed")
+        logger.info("[installer][web-chrome_for_testing] Chrome for Testing is already installed")
         return True
     
     try:
@@ -98,7 +101,7 @@ async def install() -> bool:
         )
         
         if chrome_bin and driver_bin:
-            print("[installer][web-chrome_for_testing] Chrome for Testing installation successful")
+            logger.info("[installer][web-chrome_for_testing] Chrome for Testing installation successful")
             await send_response({
                 "action": "status",
                 "data": {
@@ -110,7 +113,7 @@ async def install() -> bool:
             })
             return True
         else:
-            print("[installer][web-chrome_for_testing] Chrome for Testing installation failed")
+            logger.error("[installer][web-chrome_for_testing] Chrome for Testing installation failed")
             await send_response({
                 "action": "status",
                 "data": {
@@ -122,7 +125,7 @@ async def install() -> bool:
             })
             return False
     except FileNotFoundError as e:
-        print(f"[installer][web-chrome_for_testing] Error installing: {e}")
+        logger.error("[installer][web-chrome_for_testing] Error installing: %s", e)
         await send_response({
             "action": "status",
             "data": {
@@ -134,7 +137,7 @@ async def install() -> bool:
         })
         return False
     except Exception as e:
-        print(f"[installer][web-chrome_for_testing] Error installing: {e}")
+        logger.error("[installer][web-chrome_for_testing] Error installing: %s", e)
         await send_response({
             "action": "status",
             "data": {

@@ -2,13 +2,16 @@ import subprocess
 import asyncio
 import platform
 import os
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from Framework.install_handler.android.android_sdk import update_android_sdk_path
+
+logger = get_logger()
 
 
 async def check_status() -> bool:
    """Check if ADB (Android Debug Bridge) is installed."""
-   print("[installer][android-adb] Checking status...")
+   logger.info("[installer][android-adb] Checking status...")
   
    try:
 
@@ -26,7 +29,7 @@ async def check_status() -> bool:
        # If command succeeds (returncode = 0), ADB is installed
        if result.returncode == 0:
            version_output = (result.stdout or result.stderr).strip()
-           print(f"[installer][android-adb] Already installed")
+           logger.info("[installer][android-adb] Already installed")
            await send_response({
                "action": "status",
                "data": {
@@ -38,7 +41,7 @@ async def check_status() -> bool:
            })
            return True
        else:
-           print("[installer][android-adb] Not installed")
+           logger.info("[installer][android-adb] Not installed")
            await send_response({
                "action": "status",
                "data": {
@@ -50,7 +53,7 @@ async def check_status() -> bool:
            })
            return False
    except Exception as e:
-       print(f"[installer][android-adb] Error checking status: {e}")
+       logger.error("[installer][android-adb] Error checking status: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -67,15 +70,15 @@ async def check_status() -> bool:
 
 async def install():
    """Install ADB - checks if already installed, otherwise prompts to install Android SDK."""
-   print("[installer][android-adb] Installing...")
+   logger.info("[installer][android-adb] Installing...")
    
    # Check if ADB is already installed
    if await check_status():
-       print("[installer][android-adb] ADB is already installed")
+       logger.info("[installer][android-adb] ADB is already installed")
        return
    
    # ADB is not installed, send response to install Android SDK
-   print("[installer][android-adb] ADB is not installed. Install Android SDK to get ADB.")
+   logger.info("[installer][android-adb] ADB is not installed. Install Android SDK to get ADB.")
    await send_response({
        "action": "status",
        "data": {
