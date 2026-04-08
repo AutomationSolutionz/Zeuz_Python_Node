@@ -17,6 +17,8 @@ router = APIRouter(prefix="/windows", tags=["windows"])
 _TARGET_APP_NAME: str | None = None
 _TARGET_APP_SET_TIME: float = 0.0
 
+_HOTKEY = "ctrl+shift+i"
+
 
 class InspectorResponse(BaseModel):
     """Response model for the /inspect endpoint."""
@@ -192,6 +194,16 @@ def _get_ui_tree_xml_for_upload(app_name: str) -> str | None:
 
 
 
+def _wait_hotkey_and_capture(app_name: str) -> str | None:
+    """Block until user presses the hotkey, then immediately capture the UI tree.
+
+    This runs in a thread so the menu stays open (no focus change).
+    """
+    import keyboard
+    keyboard.wait(_HOTKEY)
+    return _get_ui_tree_xml(app_name)
+
+
 def _get_active_apps() -> list[AppInfo]:
     """Return all top-level windows (active apps) from the UIAutomation tree."""
     AutomationElement, TreeScope, Condition, _ = _get_automation_imports()
@@ -242,6 +254,31 @@ async def inspect(app_name: str):
     except Exception as e:
         return InspectorResponse(status="error", error=str(e))
 
+
+
+@router.get("/snapshot")
+async def snapshot(app_name: str):
+    """Wait for hotkey press, then capture and return the UI tree.
+
+    The request blocks until the user presses the hotkey (Ctrl+Shift+I).
+    This allows capturing menus/popups that disappear on focus change.
+
+    Args:
+        app_name: Name (or substring) of the target application window.
+    """
+    if sys.platform != "win32":
+        return InspectorResponse(status="error", error="This endpoint is only available on Windows")
+
+    try:
+        xml_content = await asyncio.to_thread(_wait_hotkey_and_capture, app_name)
+        if not xml_content:
+            return InspectorResponse(
+                status="error",
+                error=f"No window found matching '{app_name}'. Use /apps to list active windows.",
+            )
+        return InspectorResponse(status="ok", ui_xml=xml_content)
+    except Exception as e:
+        return InspectorResponse(status="error", error=str(e))
 
 
 @router.get("/apps", response_model=list[AppInfo])
