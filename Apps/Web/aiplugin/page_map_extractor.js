@@ -98,7 +98,7 @@ function extractPageMapData() {
     }
 
     function hasOwnText(el) {
-        const full = norm(el.innerText, 200);
+        const full = norm(getDirectText(el), 200);
         if (!full || full.length < 3) return false;
         if (actionEls.has(el)) return false;
         const nested = [...el.querySelectorAll(ACTION_SELECTOR)];
@@ -179,7 +179,7 @@ function extractPageMapData() {
         if (node.node_type === "text") {
             const kind = (node.kind || "text").toUpperCase();
             const vp = node.in_viewport ? "👁" : "↕";
-            lines.push(`  ${vp} [${kind}] "${node.text}"`);
+            lines.push(`  ${vp} [${node.idx}] [${kind}] "${node.text}"`);
         } else {
             const parts = [`[${node.idx}]`, (node.role || '').toUpperCase()];
             if (node.label) parts.push(`label='${node.label}'`);
