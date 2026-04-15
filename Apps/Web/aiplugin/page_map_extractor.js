@@ -161,6 +161,7 @@ function extractPageMapData() {
             kind: isHeading ? 'heading' : (el.getAttribute('role') || tag),
             text,
             in_viewport: true,
+            xpath: getXPath(el),
         });
     });
 
