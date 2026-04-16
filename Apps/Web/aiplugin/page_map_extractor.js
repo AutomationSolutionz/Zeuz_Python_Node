@@ -18,28 +18,8 @@ function extractPageMapData() {
 
     // ── XPath generator ──────────────────────────────────────────────────────
     function getXPath(el) {
-        if (el.id) return `//*[@id="${el.id}"]`;
-        const stableAttrs = ['name', 'data-testid', 'aria-label', 'placeholder'];
-        for (const attr of stableAttrs) {
-            const val = el.getAttribute(attr);
-            if (val) {
-                const tag = el.tagName.toLowerCase();
-                try {
-                    if (document.querySelectorAll(`${tag}[${attr}="${CSS.escape(val)}"]`).length === 1)
-                        return `//${tag}[@${attr}="${val}"]`;
-                } catch (e) {
-                    // Ignore escaping errors
-                }
-            }
-        }
-        if (['BUTTON', 'A'].includes(el.tagName)) {
-            const txt = el.innerText.trim().slice(0, 60);
-            if (txt) {
-                const tag = el.tagName.toLowerCase();
-                const hits = [...document.querySelectorAll(tag)].filter(e => e.innerText.trim().startsWith(txt));
-                if (hits.length === 1) return `//${tag}[normalize-space()="${txt}"]`;
-            }
-        }
+        // Always return full absolute xpath from document root.
+        // This keeps page_map_json xpaths deterministic and directly resolvable later.
         function pos(e) {
             const tag = e.tagName.toLowerCase();
             const sibs = [...e.parentNode.children].filter(c => c.tagName === e.tagName);
@@ -121,6 +101,9 @@ function extractPageMapData() {
             _type: 'action',
             _el: el,
             _order: domOrderMap.get(el) || 0,
+            attributes: Object.fromEntries(
+                [...el.attributes].map(attr => [attr.name, attr.value])
+            ),
             tag: el.tagName.toLowerCase(),
             type: el.getAttribute('type') || null,
             role: el.getAttribute('role') || el.tagName.toLowerCase(),
