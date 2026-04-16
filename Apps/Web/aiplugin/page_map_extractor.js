@@ -18,28 +18,8 @@ function extractPageMapData() {
 
     // ── XPath generator ──────────────────────────────────────────────────────
     function getXPath(el) {
-        if (el.id) return `//*[@id="${el.id}"]`;
-        const stableAttrs = ['name', 'data-testid', 'aria-label', 'placeholder'];
-        for (const attr of stableAttrs) {
-            const val = el.getAttribute(attr);
-            if (val) {
-                const tag = el.tagName.toLowerCase();
-                try {
-                    if (document.querySelectorAll(`${tag}[${attr}="${CSS.escape(val)}"]`).length === 1)
-                        return `//${tag}[@${attr}="${val}"]`;
-                } catch (e) {
-                    // Ignore escaping errors
-                }
-            }
-        }
-        if (['BUTTON', 'A'].includes(el.tagName)) {
-            const txt = el.innerText.trim().slice(0, 60);
-            if (txt) {
-                const tag = el.tagName.toLowerCase();
-                const hits = [...document.querySelectorAll(tag)].filter(e => e.innerText.trim().startsWith(txt));
-                if (hits.length === 1) return `//${tag}[normalize-space()="${txt}"]`;
-            }
-        }
+        // Always return full absolute xpath from document root.
+        // This keeps page_map_json xpaths deterministic and directly resolvable later.
         function pos(e) {
             const tag = e.tagName.toLowerCase();
             const sibs = [...e.parentNode.children].filter(c => c.tagName === e.tagName);
@@ -98,7 +78,7 @@ function extractPageMapData() {
     }
 
     function hasOwnText(el) {
-        const full = norm(el.innerText, 200);
+        const full = norm(getDirectText(el), 200);
         if (!full || full.length < 3) return false;
         if (actionEls.has(el)) return false;
         const nested = [...el.querySelectorAll(ACTION_SELECTOR)];
@@ -121,6 +101,9 @@ function extractPageMapData() {
             _type: 'action',
             _el: el,
             _order: domOrderMap.get(el) || 0,
+            attributes: Object.fromEntries(
+                [...el.attributes].map(attr => [attr.name, attr.value])
+            ),
             tag: el.tagName.toLowerCase(),
             type: el.getAttribute('type') || null,
             role: el.getAttribute('role') || el.tagName.toLowerCase(),
@@ -161,6 +144,7 @@ function extractPageMapData() {
             kind: isHeading ? 'heading' : (el.getAttribute('role') || tag),
             text,
             in_viewport: true,
+            xpath: getXPath(el),
         });
     });
 
@@ -179,7 +163,7 @@ function extractPageMapData() {
         if (node.node_type === "text") {
             const kind = (node.kind || "text").toUpperCase();
             const vp = node.in_viewport ? "👁" : "↕";
-            lines.push(`  ${vp} [${kind}] "${node.text}"`);
+            lines.push(`  ${vp} [${node.idx}] [${kind}] "${node.text}"`);
         } else {
             const parts = [`[${node.idx}]`, (node.role || '').toUpperCase()];
             if (node.label) parts.push(`label='${node.label}'`);
