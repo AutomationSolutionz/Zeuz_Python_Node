@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	version   = "dev"
-	branch    = flag.String("branch", "", "Branch to download (defaults to tagged version)")
-	cleanFlag = flag.Bool("clean", false, "Remove ZeuZ Node directory and $HOME/.zeuz and exit")
+	version    = "dev"
+	branch     = flag.String("branch", "", "Branch to download (defaults to tagged version)")
+	cleanFlag  = flag.Bool("clean", false, "Remove ZeuZ Node directory and $HOME/.zeuz and exit")
+	upgradeFlag = flag.Bool("upgrade", false, "Check for updates and upgrade if available")
 )
 
 func downloadFile(url, destPath string) error {
@@ -292,6 +293,12 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("✅ ZeuZ Node %s\n", version)
+
+	// Handle upgrade flag - performs upgrade if available
+	if *upgradeFlag {
+		PerformUpgrade()
+		return // Only reached if upgrade failed or not needed
+	}
 
 	// Check for updates (non-blocking, uses cached info from last run)
 	if !HandleUpdateFlow() {

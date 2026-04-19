@@ -10,35 +10,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
-// UpdateInfo holds the latest version info from async check or cache
-var latestVersionInfo = struct {
-	tagName string
-	htmlURL string
-	checked bool
-}{}
-
-// UpdatePrefs stores user update preferences
-type UpdatePrefs struct {
-	DismissedVersion string `json:"dismissed_version"` // Version user declined
-	AutoUpdate      bool   `json:"auto_update"`       // Auto-update without asking
-}
+const (
+	colorYellow = "\033[33m"
+	colorReset  = "\033[0m"
+)
 
 // UpdateCache stores cached update info
 type UpdateCache struct {
 	TagName string `json:"tag_name"`
 	HTMLURL string `json:"html_url"`
-}
-
-// getUpdatePrefsPath returns the path to the update preferences file
-func getUpdatePrefsPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	zeuzDir := filepath.Join(home, ".zeuz")
-	return filepath.Join(zeuzDir, "update_prefs.json"), nil
 }
 
 // getUpdateCachePath returns the path to the update cache file
@@ -49,48 +32,6 @@ func getUpdateCachePath() (string, error) {
 	}
 	zeuzDir := filepath.Join(home, ".zeuz")
 	return filepath.Join(zeuzDir, "update_cache.json"), nil
-}
-
-// loadUpdatePrefs loads user update preferences from disk
-func loadUpdatePrefs() (*UpdatePrefs, error) {
-	path, err := getUpdatePrefsPath()
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return &UpdatePrefs{}, nil
-		}
-		return nil, err
-	}
-
-	var prefs UpdatePrefs
-	if err := json.Unmarshal(data, &prefs); err != nil {
-		return &UpdatePrefs{}, nil
-	}
-	return &prefs, nil
-}
-
-// saveUpdatePrefs saves user update preferences to disk
-func saveUpdatePrefs(prefs *UpdatePrefs) error {
-	path, err := getUpdatePrefsPath()
-	if err != nil {
-		return err
-	}
-
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-
-	data, err := json.MarshalIndent(prefs, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(path, data, 0644)
 }
 
 // saveUpdateCache saves cached update info to disk
@@ -133,117 +74,44 @@ func loadUpdateCache() *UpdateCache {
 	return &cache
 }
 
-// checkForUpdatesAsync fetches latest release info asynchronously and caches it
-func checkForUpdatesAsync() {
+// fetchLatestRelease fetches the latest release info from GitHub API.
+// Returns tag name, HTML URL, and error.
+func fetchLatestRelease() (tagName, htmlURL string, err error) {
 	if version == "dev" || strings.HasPrefix(version, "dev-") {
-		return
+		return "", "", fmt.Errorf("dev version")
 	}
 
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Get("https://api.github.com/repos/AutomationSolutionz/Zeuz_Python_Node/releases/latest")
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	var release struct {
+		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", "", err
+	}
+
+	return release.TagName, release.HTMLURL, nil
+}
+
+// checkForUpdatesAsync fetches latest release info asynchronously and caches it
+func checkForUpdatesAsync() {
 	go func() {
-		client := &http.Client{Timeout: 15 * time.Second}
-		resp, err := client.Get("https://api.github.com/repos/AutomationSolutionz/Zeuz_Python_Node/releases/latest")
+		tagName, _, err := fetchLatestRelease()
 		if err != nil {
 			return
 		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return
-		}
-
-		var release struct {
-			TagName string `json:"tag_name"`
-			HTMLURL string `json:"html_url"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-			return
-		}
-
-		latestVersion := parseVersion(release.TagName)
-		currentVersion := parseVersion(version)
-
-		if compareVersions(latestVersion, currentVersion) {
-			latestVersionInfo.tagName = release.TagName
-			latestVersionInfo.htmlURL = release.HTMLURL
-			latestVersionInfo.checked = true
-
-			// Cache the update info for next startup
-			saveUpdateCache(release.TagName, release.HTMLURL)
-		}
+		saveUpdateCache(tagName, "")
 	}()
-}
-
-// handleUpdatePromptWithInfo shows update prompt with provided version info
-func handleUpdatePromptWithInfo(latestTag, htmlURL string) bool {
-	prefs, err := loadUpdatePrefs()
-	if err != nil {
-		return true
-	}
-
-	// If auto-update is enabled, update without asking
-	if prefs.AutoUpdate {
-		fmt.Println("Auto-updating to latest version...")
-		return performSelfUpdateWithInfo(latestTag, htmlURL)
-	}
-
-	// If user previously dismissed this exact version, don't ask again
-	if prefs.DismissedVersion == latestTag {
-		return true
-	}
-
-	fmt.Printf("\n")
-	fmt.Printf("╔══════════════════════════════════════════════════════════════╗\n")
-	fmt.Printf("║           ⚠️  Update Available: Zeuz Node %s → %s    ║\n",
-		strings.TrimPrefix(version, "v"), strings.TrimPrefix(latestTag, "v"))
-	fmt.Printf("╠══════════════════════════════════════════════════════════════╣\n")
-	fmt.Printf("║  Release notes: %s                ║\n", htmlURL)
-	fmt.Printf("╠══════════════════════════════════════════════════════════════╣\n")
-	fmt.Printf("║  [Y] Yes, update now                                        ║\n")
-	fmt.Printf("║  [N] No, ask me again next time                             ║\n")
-	fmt.Printf("║  [D] Don't ask again for this version                        ║\n")
-	fmt.Printf("║  [A] Always update without asking                            ║\n")
-	fmt.Printf("╚══════════════════════════════════════════════════════════════╝\n")
-	fmt.Printf("Choice (Y/N/D/A): ")
-
-	var choice string
-	fmt.Scanln(&choice)
-	choice = strings.ToUpper(strings.TrimSpace(choice))
-
-	switch choice {
-	case "Y", "":
-		fmt.Println("Updating...")
-		return performSelfUpdateWithInfo(latestTag, htmlURL)
-	case "N":
-		fmt.Println("Update postponed.")
-		return true
-	case "D":
-		prefs.DismissedVersion = latestTag
-		if err := saveUpdatePrefs(prefs); err != nil {
-			fmt.Printf("Warning: Failed to save preference: %v\n", err)
-		}
-		fmt.Println("Update dismissed for this version.")
-		return true
-	case "A":
-		prefs.AutoUpdate = true
-		prefs.DismissedVersion = ""
-		if err := saveUpdatePrefs(prefs); err != nil {
-			fmt.Printf("Warning: Failed to save preference: %v\n", err)
-		}
-		fmt.Println("Auto-update enabled. Updating...")
-		return performSelfUpdateWithInfo(latestTag, htmlURL)
-	default:
-		fmt.Println("Invalid choice. Update postponed.")
-		return true
-	}
-}
-
-// performSelfUpdate downloads and replaces the current binary with the latest version
-func performSelfUpdate() bool {
-	if latestVersionInfo.tagName == "" {
-		fmt.Println("No update information available.")
-		return false
-	}
-	return performSelfUpdateWithInfo(latestVersionInfo.tagName, latestVersionInfo.htmlURL)
 }
 
 // performSelfUpdateWithInfo downloads and replaces the current binary with the specified version
@@ -370,7 +238,58 @@ func compareVersions(a, b []int) bool {
 	return len(a) > len(b)
 }
 
-// HandleUpdateFlow checks for updates and handles user interaction.
+// printUpgradeBanner prints a compact upgrade notification banner.
+func printUpgradeBanner(current, latest string) {
+	width := 52
+	line1 := fmt.Sprintf("  Update available: %s → %s", current, latest)
+	line2 := "  Run with --upgrade to upgrade"
+	pad := func(s string) string {
+		spaces := width - utf8.RuneCountInString(s)
+		if spaces < 0 {
+			spaces = 0
+		}
+		return s + strings.Repeat(" ", spaces) + "║"
+	}
+	border := "╔" + strings.Repeat("═", width) + "╗"
+	bottom := "╚" + strings.Repeat("═", width) + "╝"
+	fmt.Println(colorYellow + border)
+	fmt.Println("║" + pad(line1))
+	fmt.Println("║" + pad(line2))
+	fmt.Println(bottom + colorReset)
+}
+
+// PerformUpgrade fetches latest version from GitHub and performs the upgrade.
+// Returns true if upgrade was performed (binary will exit), false if not.
+func PerformUpgrade() bool {
+	currentVersionStr := getZeuZNodeVersion()
+
+	fmt.Println("Checking for latest version...")
+	tagName, htmlURL, err := fetchLatestRelease()
+	if err != nil {
+		fmt.Printf("Failed to fetch latest release: %v\n", err)
+		return false
+	}
+
+	latestVersion := parseVersion(tagName)
+	currentVersion := parseVersion(currentVersionStr)
+	if !compareVersions(latestVersion, currentVersion) {
+		fmt.Println("✅ You are running the latest version. No upgrade needed.")
+		return false
+	}
+
+	fmt.Println()
+	printUpgradeBanner(
+		strings.TrimPrefix(currentVersionStr, "v"),
+		strings.TrimPrefix(tagName, "v"),
+	)
+	fmt.Println("  Release notes:", htmlURL)
+	fmt.Println()
+	fmt.Println("Starting upgrade...")
+
+	return !performSelfUpdateWithInfo(tagName, htmlURL)
+}
+
+// HandleUpdateFlow checks for updates in background and shows banner if available.
 // Returns true if execution should continue, false if binary was updated and should exit.
 func HandleUpdateFlow() bool {
 	// Get current version from the Zeuz_Node folder name (if it exists)
@@ -396,22 +315,17 @@ func HandleUpdateFlow() bool {
 		return true
 	}
 
-	prefs, _ := loadUpdatePrefs()
-	if prefs.AutoUpdate {
-		fmt.Println("Auto-updating to latest version...")
-		performSelfUpdateWithInfo(cachedUpdate.TagName, cachedUpdate.HTMLURL)
-		return false
-	}
+	// Show yellow banner with update info (non-blocking)
+	fmt.Println()
+	printUpgradeBanner(
+		strings.TrimPrefix(currentVersionStr, "v"),
+		strings.TrimPrefix(cachedUpdate.TagName, "v"),
+	)
+	fmt.Println()
 
-	if prefs.DismissedVersion == cachedUpdate.TagName {
-		// User dismissed this version
-		checkForUpdatesAsync()
-		return true
-	}
-
-	// Show update prompt
-	checkForUpdatesAsync() // Refresh cache in background
-	return handleUpdatePromptWithInfo(cachedUpdate.TagName, cachedUpdate.HTMLURL)
+	// Refresh cache in background
+	checkForUpdatesAsync()
+	return true
 }
 
 // getZeuZNodeVersion extracts version from Zeuz_Node folder name
