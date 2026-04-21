@@ -60,6 +60,7 @@ function extractPageMapData() {
     const ACTION_SELECTOR = [
         'input:not([type=hidden])', 'textarea', 'select',
         'button', 'a[href]',
+        'iframe', 'frame',
         '[role=button]', '[role=link]', '[role=textbox]',
         '[role=checkbox]', '[role=radio]', '[role=combobox]', '[role=option]'
     ].join(',');
@@ -97,6 +98,8 @@ function extractPageMapData() {
     document.querySelectorAll(ACTION_SELECTOR).forEach(el => {
         if (!isVisible(el)) return;
         const form = el.closest('form');
+        const tag = el.tagName.toLowerCase();
+        const isFrame = tag === 'iframe' || tag === 'frame';
         allNodes.push({
             _type: 'action',
             _el: el,
@@ -104,14 +107,20 @@ function extractPageMapData() {
             attributes: Object.fromEntries(
                 [...el.attributes].map(attr => [attr.name, attr.value])
             ),
-            tag: el.tagName.toLowerCase(),
+            tag,
             type: el.getAttribute('type') || null,
-            role: el.getAttribute('role') || el.tagName.toLowerCase(),
+            role: el.getAttribute('role') || tag,
             id: el.id || null,
             name: el.getAttribute('name') || null,
             placeholder: el.getAttribute('placeholder') || null,
             label: getLabel(el) || null,
-            text: norm(el.innerText || el.value || '', 80) || null,
+            text: norm(
+                isFrame
+                    ? (el.getAttribute('title') || el.getAttribute('aria-label') || el.getAttribute('name') || '')
+                    : (el.innerText || el.value || ''),
+                80
+            ) || null,
+            src: isFrame ? (el.getAttribute('src') || null) : null,
             required: el.required || false,
             disabled: el.disabled || false,
             in_viewport: inViewport(el),
@@ -171,6 +180,7 @@ function extractPageMapData() {
             if (node.text) parts.push(`text='${node.text}'`);
             if (node.type) parts.push(`type=${node.type}`);
             if (node.name) parts.push(`name=${node.name}`);
+            if (node.src) parts.push(`src='${norm(node.src, 80)}'`);
             if (node.required) parts.push("required");
             if (node.disabled) parts.push("disabled");
             if (node.heading) parts.push(`section='${node.heading}'`);
