@@ -3243,6 +3243,14 @@ def Enter_Text_Appium(data_set):
                     "Entered the text using action chains",
                     1,
                 )
+            if context_switched == True:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Context was switched during this action.  Switching back to default Native Context",
+                    1,
+                )
+                context_result = auto_switch_context_and_try("native")
+            return "passed"
         except Exception:
             errMsg = "Failed to enter text"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)

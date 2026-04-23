@@ -160,7 +160,7 @@ all_action_info = []
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
 
-AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS = 5
+AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS = 3
 AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS = 0.25
 CANCELLED_RUN_STATUS = "Cancelled"
 
@@ -428,7 +428,7 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
-        elif sTestStepReturnStatus.lower() == "cancelled":
+        elif sTestStepReturnStatus is not None and sTestStepReturnStatus.lower() == "cancelled":
             temp_q.put("cancelled")
             return "cancelled"
         else:
