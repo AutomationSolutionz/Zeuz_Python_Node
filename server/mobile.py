@@ -383,7 +383,7 @@ def capture_ui_dump(device_serial: str | None = None):
         
         if appium_driver is not None:
             page_src = appium_driver.page_source
-            with open(UI_XML_PATH, "w") as xml_file:
+            with open(UI_XML_PATH, "w", encoding="utf-8", errors="replace") as xml_file:
                 xml_file.write(page_src)
             return
     except Exception as e:
@@ -540,7 +540,12 @@ async def upload_android_ui_dump():
                 
             await asyncio.to_thread(capture_ui_dump, device_to_capture)
             try:
-                with open(UI_XML_PATH, "r") as xml_file:
+                try:
+                    with open(UI_XML_PATH, "r", encoding="utf-8") as xml_file:
+                        xml_content = xml_file.read()
+                except UnicodeDecodeError:
+                    CommonUtil.ExecLog("", "Error decoding UI dump file", iLogLevel=3)
+                with open(UI_XML_PATH, "r", encoding="utf-8", errors="replace") as xml_file:
                     xml_content = xml_file.read()
                     xml_content = xml_content.replace(
                         "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>",
@@ -557,6 +562,10 @@ async def upload_android_ui_dump():
                     prev_xml_hash = new_xml_hash
 
             except FileNotFoundError:
+                await asyncio.sleep(5)
+                continue
+            if not xml_content.strip():
+                CommonUtil.ExecLog("", "UI dump is empty", iLogLevel=1)
                 await asyncio.sleep(5)
                 continue
             url = (
