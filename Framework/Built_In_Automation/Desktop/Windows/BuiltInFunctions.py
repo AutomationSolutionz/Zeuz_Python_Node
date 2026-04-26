@@ -101,7 +101,7 @@ gui_action_sleep = 2
 
 
 @logger
-def go_to_desktop(data_set=[]):
+def go_to_desktop_old(data_set=[]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     Element = Element_only_search(None, None, ["Show desktop", ""], ["TrayShowDesktopButtonWClass", ""], None, None, 0)[0]
     if Element == "zeuz_failed":
@@ -117,6 +117,18 @@ def go_to_desktop(data_set=[]):
             return "passed"
     except Exception:
         errMsg = "Could not select/click your element."
+        CommonUtil.ExecLog(sModuleInfo, errMsg, 3)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def go_to_desktop(data_set=[]):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        gui.hotkey("win", "d")
+        CommonUtil.ExecLog(sModuleInfo, "Successfully went to desktop", 1)
+        return "passed"
+    except Exception:
+        errMsg = "Could not go to desktop."
         CommonUtil.ExecLog(sModuleInfo, errMsg, 3)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
