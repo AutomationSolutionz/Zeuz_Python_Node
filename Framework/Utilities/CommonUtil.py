@@ -1003,6 +1003,17 @@ def _get_window_screenshot_bbox():
             windows = gw.getWindowsWithTitle(window_title)
             if windows:
                 win = windows[0]
+                try:
+                    if win.isMinimized:
+                        win.restore()
+                    try:
+                        import autoit
+                        autoit.win_activate(win.title)
+                    except Exception:
+                        win.activate()
+                    time.sleep(0.5) # Allow time for window to render in foreground
+                except Exception:
+                    pass
                 return (win.left, win.top, win.right, win.bottom)
         
     except Exception:
