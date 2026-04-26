@@ -2244,11 +2244,20 @@ def Close_Application(data_set):
             if mid.strip().lower() == "action":
                 Desktop_app = right.strip()
 
-        if ".exe" not in Desktop_app:
-            Desktop_app = Desktop_app + ".exe"
-            os.system("TASKKILL /F /IM %s" % Desktop_app)
-        else:
-            os.system("TASKKILL /F /IM %s" % Desktop_app)
+        # Strategy 1: Kill by Executable Name (Existing)
+        exec_name = Desktop_app
+        if ".exe" not in exec_name.lower():
+            exec_name = exec_name + ".exe"
+        
+        os.system("TASKKILL /F /IM %s" % exec_name)
+        
+        # Strategy 2: Kill by PID (Fallback/Title based)
+        # Finds PIDs of windows matching the title and kills them
+        pids = get_pids_from_title(Desktop_app)
+        if pids:
+            for pid in pids:
+                os.system("TASKKILL /F /PID %d" % pid)
+
         CommonUtil.ExecLog(sModuleInfo, "Succesfully closed your app", 1)
 
         return "passed"
