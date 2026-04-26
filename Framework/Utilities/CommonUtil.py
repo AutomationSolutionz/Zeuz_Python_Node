@@ -978,6 +978,38 @@ def _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
     return True
 
 
+def _get_window_screenshot_bbox():
+    """ Try to find window title from step_data and return its bounding box if found """
+    try:
+        if sys.platform != "win32":
+            return None
+        import pygetwindow as gw
+        from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
+        
+        window_title = None
+        step_data = shared.Get_Shared_Variables("step_data", False)
+        if step_data and current_action_no and str(current_action_no).isdigit():
+            current_dataset = step_data[int(current_action_no) - 1]
+            for row in current_dataset:
+                left = str(row[0]).strip().lower()
+                if "window" in left:
+                    window_title = str(row[2])
+                    break
+                if "open app" in left:
+                    window_title = str(row[2])
+                    # not breaking because window is more preferred
+                    
+        if window_title:
+            windows = gw.getWindowsWithTitle(window_title)
+            if windows:
+                win = windows[0]
+                return (win.left, win.top, win.right, win.bottom)
+        
+    except Exception:
+        pass
+    return None
+
+
 def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
     if performance_testing: return
@@ -1025,7 +1057,8 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
                 image = ImageGrab_Linux.grab()
                 image.save(ImageName, format="PNG")  # Save to disk
             elif sys.platform == "win32" or sys.platform == "darwin":
-                image = ImageGrab_Mac_Win.grab()
+                bbox = _get_window_screenshot_bbox()
+                image = ImageGrab_Mac_Win.grab(bbox)
                 image.save(ImageName, format="PNG")  # Save to disk
 
         # Capture screenshot of web browser
