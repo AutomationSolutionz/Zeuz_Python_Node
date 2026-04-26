@@ -160,6 +160,10 @@ all_action_info = []
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
 
+AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS = 3
+AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS = 0.25
+CANCELLED_RUN_STATUS = "Cancelled"
+
 # Metrics variables
 browser_perf = {}
 action_perf = []
@@ -424,7 +428,7 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
-        elif sTestStepReturnStatus.lower() == "cancelled":
+        elif sTestStepReturnStatus is not None and sTestStepReturnStatus.lower() == "cancelled":
             temp_q.put("cancelled")
             return "cancelled"
         else:
@@ -939,6 +943,84 @@ def pil_image_to_bytearray(img):
     return img_byte_array
 
 
+def _is_run_cancelled():
+    return run_cancelled or str(run_cancel).strip().lower() == CANCELLED_RUN_STATUS.lower()
+
+
+def _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
+    if not debug_status:
+        return True
+
+    remaining_delay = AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS
+    while remaining_delay > 0:
+        if _is_run_cancelled():
+            ExecLog(
+                sModuleInfo,
+                "Skipping delayed screenshot for Action: %s Method: %s because run was cancelled"
+                % (function_name, Method),
+                0,
+            )
+            return False
+
+        sleep_duration = min(AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS, remaining_delay)
+        time.sleep(sleep_duration)
+        remaining_delay = round(remaining_delay - sleep_duration, 10)
+
+    if _is_run_cancelled():
+        ExecLog(
+            sModuleInfo,
+            "Skipping delayed screenshot for Action: %s Method: %s because run was cancelled"
+            % (function_name, Method),
+            0,
+        )
+        return False
+
+    return True
+
+
+def _get_window_screenshot_bbox():
+    """ Try to find window title from step_data and return its bounding box if found """
+    try:
+        if sys.platform != "win32":
+            return None
+        import pygetwindow as gw
+        from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
+        
+        window_title = None
+        step_data = shared.Get_Shared_Variables("step_data", False)
+        if step_data and current_action_no and str(current_action_no).isdigit():
+            current_dataset = step_data[int(current_action_no) - 1]
+            for row in current_dataset:
+                left = str(row[0]).strip().lower()
+                if "window" in left:
+                    window_title = str(row[2])
+                    break
+                if "open app" in left:
+                    window_title = str(row[2])
+                    # not breaking because window is more preferred
+                    
+        if window_title:
+            windows = gw.getWindowsWithTitle(window_title)
+            if windows:
+                win = windows[0]
+                try:
+                    if win.isMinimized:
+                        win.restore()
+                    try:
+                        import autoit
+                        autoit.win_activate(win.title)
+                    except Exception:
+                        win.activate()
+                    time.sleep(0.5) # Allow time for window to render in foreground
+                except Exception:
+                    pass
+                return (win.left, win.top, win.right, win.bottom)
+        
+    except Exception:
+        pass
+    return None
+
+
 def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
     if performance_testing: return
@@ -964,24 +1046,31 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     ImageName = os.path.join(image_folder, (image_name.translate(trans_table)).strip().replace(" ", "_") + ".png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(Method), str(Driver), ImageName), 0)
     try:
+        should_delay_before_capture = Method == "desktop" and sys.platform in ("linux2", "win32", "darwin")
+
+        if Method in ("mobile", "web"):
+            if Driver is None:
+                ExecLog(
+                    sModuleInfo,
+                    "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
+                    % (str(Method), str(Driver)),
+                    3,
+                )
+                return
+            should_delay_before_capture = True
+
+        if should_delay_before_capture and not _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
+            return
+
         # Capture screenshot of desktop
         if Method == "desktop":
             if sys.platform == "linux2":
                 image = ImageGrab_Linux.grab()
                 image.save(ImageName, format="PNG")  # Save to disk
             elif sys.platform == "win32" or sys.platform == "darwin":
-                image = ImageGrab_Mac_Win.grab()
+                bbox = _get_window_screenshot_bbox()
+                image = ImageGrab_Mac_Win.grab(bbox)
                 image.save(ImageName, format="PNG")  # Save to disk
-
-        # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
-        elif Driver is None and Method in ("mobile", "web"):
-            ExecLog(
-                sModuleInfo,
-                "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
-                % (str(Method), str(Driver)),
-                3,
-            )
-            return
 
         # Capture screenshot of web browser
         elif Method == "web":
