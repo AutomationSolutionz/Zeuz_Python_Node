@@ -437,6 +437,29 @@ def _get_attribute(value):
     return value
 
 
+def _get_element_attribute(elem, attribute_name):
+    """Get an attribute value from a UI Automation element."""
+    if attribute_name.strip().lower() == "value":
+        return elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value
+    return getattr(elem.Current, _get_attribute(attribute_name))
+
+
+def _filter_by_contains(value, must_contain, must_not_contain):
+    """Apply contains/does_not_contain filters. Returns None if filtered out."""
+    for pattern in must_contain:
+        if not isinstance(pattern, type(value)) or pattern in value or len(pattern) == 0:
+            break
+    else:
+        if must_contain:
+            return None
+
+    for pattern in must_not_contain:
+        if isinstance(pattern, type(value)) and pattern in value and len(pattern) != 0:
+            return None
+
+    return value
+
+
 @logger
 def Element_only_search(
     Parent_Element,
@@ -445,7 +468,8 @@ def Element_only_search(
     element_class,
     element_automation,
     element_control,
-    element_index
+    element_index,
+    deadline=None
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
     try:
@@ -466,7 +490,7 @@ def Element_only_search(
             element_automation,
             element_control,
             element_index,
-
+            deadline=deadline
         )
         all_elements += tmp_elements
 
@@ -519,8 +543,9 @@ def _child_bfs_search(
             return all_elements[element_index]  # in case of, negative index
         else:
             return []
-    except:
-        CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        if "ElementNotAvailableException" not in str(type(e)) and "ElementNotAvailableException" not in str(e):
+            CommonUtil.Exception_Handler(sys.exc_info())
         return []
 
 def _child_search(
@@ -530,8 +555,11 @@ def _child_search(
     element_automation,
     element_control,
     element_index,
+    deadline=None
 ):
     try:
+        if deadline is not None and time.time() > deadline:
+            return [], []
         tmp_ancestor = []
         # Name, Class, AutomationID, LocalizedControlType
         if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
@@ -572,7 +600,8 @@ def _child_search(
                 element_class,
                 element_automation,
                 element_control,
-                element_index
+                element_index,
+                deadline=deadline
             )
             all_elements += tmp_elements
             if 0 <= element_index == len(all_elements) - 1:
@@ -583,14 +612,15 @@ def _child_search(
 
         return all_elements, [ParentElement] + tmp_ancestor
 
-    except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        if "ElementNotAvailableException" not in str(type(e)) and "ElementNotAvailableException" not in str(e):
+            CommonUtil.Exception_Handler(sys.exc_info())
         return [], []
 
 
 def Parent_search(
     Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
-    parent_name, parent_class, parent_automation, parent_control,
+    parent_name, parent_class, parent_automation, parent_control, deadline=None
 ):
     try:
         if Parent_Element is not None:
@@ -604,7 +634,8 @@ def Parent_search(
         all_elements = []
         all_elements += _child_search_with_parent(
             ParentElement, element_name, element_class, element_automation, element_control, element_index,
-            parent_name, parent_class, parent_automation, parent_control, False
+            parent_name, parent_class, parent_automation, parent_control, False,
+            deadline=deadline
         )
 
         if all_elements:
@@ -618,9 +649,12 @@ def Parent_search(
 
 def _child_search_with_parent(
     ParentElement, element_name, element_class, element_automation, element_control, element_index,
-    parent_name, parent_class, parent_automation, parent_control, parent_found
+    parent_name, parent_class, parent_automation, parent_control, parent_found,
+    deadline=None
 ):
     try:
+        if deadline is not None and time.time() > deadline:
+            return []
         NameE = ParentElement.Current.Name
         ClassE = ParentElement.Current.ClassName
         AutomationE = ParentElement.Current.AutomationId
@@ -653,15 +687,17 @@ def _child_search_with_parent(
         for each_child in child_elements:
             all_elements += _child_search_with_parent(
                 each_child, element_name, element_class, element_automation, element_control, element_index,
-                parent_name, parent_class, parent_automation, parent_control, parent_found
+                parent_name, parent_class, parent_automation, parent_control, parent_found,
+                deadline=deadline
             )
             if 0 <= element_index == len(all_elements) - 1:
                 return all_elements
 
         return all_elements
 
-    except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        if "ElementNotAvailableException" not in str(type(e)) and "ElementNotAvailableException" not in str(e):
+            CommonUtil.Exception_Handler(sys.exc_info())
         return []
 
 
@@ -669,6 +705,7 @@ def Sibling_search(
     Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
     sibling_name, sibling_class, sibling_automation, sibling_control,
+    deadline=None
 ):
     try:
         if Parent_Element is not None:
@@ -684,7 +721,8 @@ def Sibling_search(
         all_elements += _child_search_with_parent_sibling(
             ParentElement, element_name, element_class, element_automation, element_control, element_index,
             parent_name, parent_class, parent_automation, parent_control,
-            sibling_name, sibling_class, sibling_automation, sibling_control, False
+            sibling_name, sibling_class, sibling_automation, sibling_control, False,
+            deadline=deadline
         )
 
         if all_elements:
@@ -700,9 +738,12 @@ sibling_found = False
 def _child_search_with_parent_sibling(
     ParentElement, element_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
-    sibling_name, sibling_class, sibling_automation, sibling_control, parent_found
+    sibling_name, sibling_class, sibling_automation, sibling_control, parent_found,
+    deadline=None
 ):
     try:
+        if deadline is not None and time.time() > deadline:
+            return []
         NameE = ParentElement.Current.Name
         ClassE = ParentElement.Current.ClassName
         AutomationE = ParentElement.Current.AutomationId
@@ -746,7 +787,8 @@ def _child_search_with_parent_sibling(
             temp = _child_search_with_parent_sibling(
                 each_child, element_name, element_class, element_automation, element_control, element_index,
                 parent_name, parent_class, parent_automation, parent_control,
-                sibling_name, sibling_class, sibling_automation, sibling_control, parent_found
+                sibling_name, sibling_class, sibling_automation, sibling_control, parent_found,
+                deadline=deadline
             )
             all_elements += temp
         if parent_level:
@@ -759,8 +801,9 @@ def _child_search_with_parent_sibling(
 
         return all_elements
 
-    except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        if "ElementNotAvailableException" not in str(type(e)) and "ElementNotAvailableException" not in str(e):
+            CommonUtil.Exception_Handler(sys.exc_info())
         return []
 
 
@@ -1492,6 +1535,11 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                     element_image.append((left, mid, right))
                 elif "imagetext" in left:
                     element_image.append((left, mid, right))
+                elif "window" in left:
+                    pass  # Already handled by window extraction above
+                else:
+                    elem = left  # Store unrecognized attribute name for error reporting
+
 
 
             elif mid == "parent parameter":
@@ -1502,6 +1550,8 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "control" in left: parent_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: parent_path = right.strip()
                 elif "index" in left: parent_index = right.strip()
+                else:
+                    parent = left  # Store unrecognized attribute name for error reporting
 
             elif mid == "sibling parameter":
                 sibling = True
@@ -1509,24 +1559,33 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "name" in left: sibling_name = [right, _count_star(left)]
                 elif "automation" in left: sibling_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: sibling_control = [right, _count_star(left)]    # localizedcontroltype
+                else:
+                    sibling = left  # Store unrecognized attribute name for error reporting
 
         if not elem:
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
         if elem and (element_name, element_class, element_automation, element_control, element_path, element_image) == (None, None, None, None, "", []):
-            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path', 'image'", 3)
+            if window_name is not None:
+                # Only window specified as element parameter, return the window element directly
+                window_elem = _get_main_window(window_name)
+                if window_elem is None:
+                    CommonUtil.ExecLog(sModuleInfo, f"Could not find window: '{window_name[0]}'", 3)
+                    return "zeuz_failed"
+                return window_elem
+            CommonUtil.ExecLog(sModuleInfo, f"We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path', 'image', provided: '{elem}'", 3)
             return "zeuz_failed"
         if sibling and not parent:
             CommonUtil.ExecLog(sModuleInfo, "A common PARENT of both ELEMENT and SIBLING should be provided", 3)
             return "zeuz_failed"
         if parent and element_image and (parent_name, parent_class, parent_automation, parent_control, parent_path) == (None, None, None, None, ""):
-            CommonUtil.ExecLog(sModuleInfo, "For image parent, We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'path'", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"For image parent, We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId' or 'element path', provided: '{element_image}'", 3)
             return "zeuz_failed"
         elif parent and not element_image and (parent_name, parent_class, parent_automation, parent_control) == (None, None, None, None):
-            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', provided: '{parent}'", 3)
             return "zeuz_failed"
         if sibling and (sibling_name, sibling_class, sibling_automation, sibling_control) == (None, None, None, None):
-            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
+            CommonUtil.ExecLog(sModuleInfo, f"We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', provided: '{sibling}'", 3)
             return "zeuz_failed"
         if window_name is None and Parent_Element is None and not element_path:
             CommonUtil.ExecLog(sModuleInfo, "You should provide 'Window' otherwise the search won't be efficient", 2)
@@ -1609,15 +1668,18 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                     Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
                     parent_name, parent_class, parent_automation, parent_control,
                     sibling_name, sibling_class, sibling_automation, sibling_control,
+                    deadline=s + wait_time
                 )
             elif parent:
                 all_elements = Parent_search(
                     Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
                     parent_name, parent_class, parent_automation, parent_control,
+                    deadline=s + wait_time
                 )
             else:
                 all_elements = Element_only_search(
-                    Parent_Element, window_name, element_name, element_class, element_automation, element_control, element_index
+                    Parent_Element, window_name, element_name, element_class, element_automation, element_control, element_index,
+                    deadline=s + wait_time
                 )
 
             if all_elements != "zeuz_failed" and -len(all_elements) <= element_index < len(all_elements) or time.time() > s + wait_time:
@@ -2423,19 +2485,28 @@ def save_attribute_values_in_list(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         Element = Get_Element(data_set)
-        # if Element == "zeuz_failed":
         if type(Element) == str and Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the main Element. We are searching for targets through out the whole desktop", 2)
-            Element = AutomationElement.RootElement
+            # Try to scope the search to the window if specified
+            window_name = None
+            for left, mid, right in data_set:
+                left_clean = left.replace(" ", "").replace("_", "").lower()
+                if "windowpid" in left_clean:
+                    window_name = [right, _count_star(left_clean), "pid"]
+                elif "window" in left_clean:
+                    window_name = [right, _count_star(left_clean), "name"]
+            if window_name:
+                Element = _get_main_window(window_name)
+            if Element is None or (type(Element) == str and Element == "zeuz_failed"):
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the main Element. We are searching for targets through out the whole desktop", 2)
+                Element = AutomationElement.RootElement
 
-        all_elements = []
         target_index = 0
         target = []
         paired = True
-        p = False
         scroll_count = 3
         scroll_value = None
 
+        # --- Parse data_set ---
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -2443,10 +2514,12 @@ def save_attribute_values_in_list(data_set):
                 right = right.strip()
                 if "target parameter" in mid:
                     target.append([[], "", [], []])
-                    temp = right.strip(",").split(',\n')
+                    import re
+                    temp = re.split(r'(?:,\n|,|\n)\s*(?=(?:[^"]*"[^"]*")*[^"]*$)', right.strip(","))
                     data = []
                     for each in temp:
-                        data.append(each.strip().split("=", 1))
+                        if each.strip():
+                            data.append(each.strip().split("=", 1))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
@@ -2463,12 +2536,11 @@ def save_attribute_values_in_list(data_set):
                         else:
                             target[target_index][0].append((Left, 'element parameter', Right))
 
-                    target_index = target_index + 1
+                    target_index += 1
                 elif left == "save attribute values in list":
                     variable_name = right
                 elif left == "paired":
                     paired = False if right.lower() in ("no", "false") or "colum" in right.lower() else True
-                    p = True
                 elif left == "scroll count":
                     scroll_count = int(right)
 
@@ -2477,105 +2549,73 @@ def save_attribute_values_in_list(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "zeuz_failed"
 
-        # if not p and len(target) == 1:
-        #     paired = False
+        # --- Collect attribute values with scroll support ---
         try:
             while True:
+                # Find all matching elements for each target
                 all_elements = []
                 for each in target:
-                    all_elements.append(Get_Element(each[0], Parent_Element=Element))
+                    res = Get_Element(each[0], Parent_Element=Element)
+                    if type(res) == str and res == "zeuz_failed":
+                        res = []
+                    all_elements.append(res)
 
-                if paired and not len(target) == 1:
-                    variable_value_size = 0
-                    variable_value = []
-                    for each in all_elements:
-                        variable_value_size = max(variable_value_size, len(each))
-                    for i in range(variable_value_size):
-                        variable_value.append([])
-                    i = 0
-                    for each in all_elements:
-                        search_by_attribute = target[i][1] if target[i][1] else "Value"
-                        j = 0
-                        for elem in each:
-                            if search_by_attribute.strip().lower() == "value":
-                                Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
-                            else:
-                                Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
+                if paired and len(target) != 1:
+                    # Paired mode: group by row across multiple targets
+                    # Result: [[target1_row0, target2_row0], [target1_row1, target2_row1], ...]
+                    max_elems = max((len(e) for e in all_elements), default=0)
+                    variable_value = [[] for _ in range(max_elems)]
+                    for i, elems in enumerate(all_elements):
+                        attr_name = target[i][1] or "Value"
+                        for j, elem in enumerate(elems):
+                            val = _get_element_attribute(elem, attr_name)
                             try:
-                                for search_contain in target[i][2]:
-                                    if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
-                                        break
-                                else:
-                                    if target[i][2]:
-                                        Attribute_value = None
-
-                                for search_doesnt_contain in target[i][3]:
-                                    if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
-                                        Attribute_value = None
+                                val = _filter_by_contains(val, target[i][2], target[i][3])
                             except:
                                 CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
-                            variable_value[j].append(Attribute_value)
-                            j = j + 1
-                        i = i + 1
-                elif not paired or len(target) == 1:
-                    variable_value = []
-                    for i in range(len(all_elements)):
-                        variable_value.append([])
-                    i = 0
-                    for each in all_elements:
-                        search_by_attribute = target[i][1] if target[i][1] else "Value"
-                        j = 0
-                        for elem in each:
-                            if search_by_attribute.strip().lower() == "value":
-                                Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
-                            else:
-                                Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
+                            variable_value[j].append(val)
+                else:
+                    # Unpaired / single-target mode: group by target (column)
+                    single_target = len(target) == 1
+                    variable_value = [[] for _ in all_elements]
+                    for i, elems in enumerate(all_elements):
+                        attr_name = target[i][1] or "Value"
+                        for elem in elems:
+                            val = _get_element_attribute(elem, attr_name)
                             try:
-                                for search_contain in target[i][2]:
-                                    if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
-                                        break
-                                else:
-                                    if target[i][2]:
-                                        Attribute_value = None
-
-                                for search_doesnt_contain in target[i][3]:
-                                    if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
-                                        Attribute_value = None
+                                val = _filter_by_contains(val, target[i][2], target[i][3])
                             except:
                                 CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
-                            if len(target) == 1:
-                                variable_value[i].append([Attribute_value, elem])
+                            if single_target:
+                                variable_value[i].append([val, elem])
                             else:
-                                variable_value[i].append(Attribute_value)
-                            j = j + 1
-                        i = i + 1
-                    if len(target) == 1:
-                        variable_value = variable_value[0]
+                                variable_value[i].append(val)
+
+                    if single_target:
+                        # Group elements sharing the same vertical position into rows
                         new_values = {}
-                        for i in variable_value:
-                            top = str(i[1].Current.BoundingRectangle.Top)
+                        for val, elem in variable_value[0]:
+                            top = str(elem.Current.BoundingRectangle.Top)
                             if top in new_values:
-                                new_values[top] += [i[0]]
+                                new_values[top].append(val)
                             else:
-                                new_values[top] = [i[0]]
-                        variable_value = []
-                        for i in new_values:
-                            variable_value.append(new_values[i])
+                                new_values[top] = [val]
+                        variable_value = list(new_values.values())
 
+                # Scroll deduplication: merge new results, skipping overlap with previous scroll
                 if scroll_value is None:
                     scroll_value = variable_value
                 else:
-                    i = len(variable_value)
-                    while i > 0:
-                        if scroll_value[len(scroll_value)-i:] == variable_value[:i]:
-                            temp = variable_value[i:]
+                    overlap = len(variable_value)
+                    while overlap > 0:
+                        if scroll_value[-overlap:] == variable_value[:overlap]:
                             break
-                        i -= 1
-                    else:
-                        temp = variable_value
-                    if i == len(variable_value):
-                        break
-                    scroll_value += temp
+                        overlap -= 1
+                    new_items = variable_value[overlap:] if overlap > 0 else variable_value
+                    if overlap == len(variable_value):
+                        break  # No new items found, stop scrolling
+                    scroll_value += new_items
+
                 win32api.SetCursorPos(get_coords(Element))
                 autoit.mouse_wheel("down", scroll_count)
 
