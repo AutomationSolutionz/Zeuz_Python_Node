@@ -2099,8 +2099,9 @@ def Scroll_to_element(dataset):
         desired_dataset = []
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(dataset)
-        # if Element == "zeuz_failed":
+
         if type(Element) == str and Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to find the scrollable element to scroll. Please check the element.", 3)
             return "zeuz_failed"
         try:
             for left, mid, right in dataset:
@@ -2127,9 +2128,22 @@ def Scroll_to_element(dataset):
         x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
 
-        desired_Element = Get_Element(desired_dataset, 0)
-        if not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
-            CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
+        def is_element_visible(element):
+            if type(element) == str and element == "zeuz_failed":
+                return False
+            if type(element) == list and len(element) == 0:
+                return False
+            if type(element) == list:
+                element = element[0]
+            try:
+                return not element.Current.IsOffscreen
+            except Exception as e:
+                CommonUtil.Exception_Handler(sys.exc_info(), None, f"Unable to check if element is visible: {e}")
+                return False
+
+        desired_Element = Get_Element(desired_dataset, 0.1, Parent_Element=Element)
+        if is_element_visible(desired_Element):
+            CommonUtil.ExecLog(sModuleInfo, "Desired element is found and visible. No need to scroll.", 1)
             return "passed"
         else:
             count = 0
@@ -2144,16 +2158,23 @@ def Scroll_to_element(dataset):
                     pyautogui.keyUp('shift')
                 else:
                     autoit.mouse_wheel(direction, scroll_count)
-                desired_Element = Get_Element(desired_dataset, 0)
+                
+                # Jiggle the mouse to force Windows UI Automation to update Virtualized items
+                # win32api.SetCursorPos((x + 1, y + 1))
+                # time.sleep(0.1)
+                # win32api.SetCursorPos((x, y))
+                
+                # time.sleep(0.4)  # Give UI time to update after scroll
+                desired_Element = Get_Element(desired_dataset, 0.1, Parent_Element=Element)
                 count += 1
-                if count > max_try or not(type(desired_Element) == str and desired_Element == "zeuz_failed"):
+                if count >= max_try or is_element_visible(desired_Element):
                     break
 
-            if count < max_try:
+            if is_element_visible(desired_Element):
                 CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
                 return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times but desired element is still not visible" % (direction, scroll_count * count), 3)
                 return "zeuz_failed"
         time.sleep(unnecessary_sleep)
 
