@@ -969,6 +969,25 @@ def _child_search_by_path(
         CommonUtil.Exception_Handler(sys.exc_info())
         return []
 
+
+class _Element:
+    def __init__(self, element):
+        self.Current = self.Current(element)
+
+    class Current:
+        def __init__(self, element):
+            self.BoundingRectangle = self.BoundingRectangle(element)
+
+        class BoundingRectangle:
+            def __init__(self, image):
+                self.Left = image[0]
+                self.Top = image[1]
+                self.Width = image[2]
+                self.Height = image[3]
+
+    def GetSupportedPatterns(self, *args, **kwargs):
+        return []
+
 def install_ocr():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:

@@ -1,14 +1,29 @@
 from PIL import Image
-import torch
-import torch.backends.cudnn as cudnn
-import torch.utils.data
-import torch.nn.functional as F
-import torchvision.transforms as transforms
 import numpy as np
 from collections import OrderedDict
 import importlib
 from .utils import CTCLabelConverter
 import math
+import os
+
+try:
+    import torch
+    import torch.backends.cudnn as cudnn
+    import torch.utils.data
+    import torch.nn.functional as F
+    import torchvision.transforms as transforms
+except ImportError:
+    os.system("uv add torch")
+    import torch
+    import torch.backends.cudnn as cudnn
+    import torch.utils.data
+    import torch.nn.functional as F
+
+try:
+    import torchvision.transforms as transforms
+except ImportError:
+    os.system("uv add torchvision")
+    import torchvision.transforms as transforms
 
 def custom_mean(x):
     return x.prod()**(2.0/np.sqrt(len(x)))
