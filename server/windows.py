@@ -72,12 +72,19 @@ def _get_automation_imports():
     return AutomationElement, TreeScope, Condition, TreeWalker
 
 
-def _build_element_tree(xml_parent, ui_element, max_depth: int = 50, _depth: int = 0):
-    """Recursively build an ET tree from a UIAutomation element.
+def _safe_get_attr(current, attr_name: str) -> str:
+    """Safely get an attribute value from a UIAutomation element's Current property."""
+    try:
+        val = getattr(current, attr_name)
+        if val is None:
+            return ""
+        return str(val)
+    except Exception:
+        return ""
 
-    Mirrors create_tree() from ZeuZ_Windows_Inspector.py: <div> tags with
-    Name, AutomationId, LocalizedControlType, ClassName, Left, Right, Top, Bottom.
-    """
+
+def _build_element_tree(xml_parent, ui_element, max_depth: int = 50, _depth: int = 0):
+    """Recursively build an ET tree from a UIAutomation element."""
     if _depth > max_depth:
         return
 
@@ -87,31 +94,37 @@ def _build_element_tree(xml_parent, ui_element, max_depth: int = 50, _depth: int
     except Exception:
         return
 
+    attrs_to_extract = [
+        "AutomationId", "Name", "ClassName", "ControlType", "LocalizedControlType",
+        "IsEnabled", "BoundingRectangle", "IsOffscreen", "NativeWindowHandle", "ProcessId",
+        "HasKeyboardFocus", "AcceleratorKey", "IsPassword", "AccessKey", "FrameworkId", "IsKeyboardFocusable", "LabeledBy",
+    ]
+
     for i in range(child_elements.Count):
         each_child = child_elements[i]
         try:
-            elem_name = _xml_escape(each_child.Current.Name or "")
-            elem_automationid = _xml_escape(each_child.Current.AutomationId or "")
-            elem_control = _xml_escape(each_child.Current.LocalizedControlType or "")
-            elem_class = _xml_escape(each_child.Current.ClassName or "")
-            try:
-                left = str(each_child.Current.BoundingRectangle.Left)
-                right = str(each_child.Current.BoundingRectangle.Right)
-                top = str(each_child.Current.BoundingRectangle.Top)
-                bottom = str(each_child.Current.BoundingRectangle.Bottom)
-            except Exception:
-                left, right, top, bottom = "", "", "", ""
+            current = each_child.Current
+            attribs = {attr: _xml_escape(_safe_get_attr(current, attr)) for attr in attrs_to_extract}
 
-            attribs = {
-                "Name": elem_name,
-                "AutomationId": elem_automationid,
-                "LocalizedControlType": elem_control,
-                "ClassName": elem_class,
-                "Left": left,
-                "Right": right,
-                "Top": top,
-                "Bottom": bottom,
-            }
+            # Add coordinates separately
+            try:
+                rect = current.BoundingRectangle
+                attribs.update({
+                    "Left": str(rect.Left),
+                    "Right": str(rect.Right),
+                    "Top": str(rect.Top),
+                    "Bottom": str(rect.Bottom),
+                })
+            except Exception:
+                attribs.update({"Left": "", "Right": "", "Top": "", "Bottom": ""})
+
+            # Add supported patterns
+            try:
+                patterns = each_child.GetSupportedPatterns()
+                attribs["pattern_list"] = ",".join([p.ProgrammaticName for p in patterns]) if patterns else ""
+            except Exception:
+                attribs["pattern_list"] = ""
+
             xml_child = ET.SubElement(xml_parent, "div", **attribs)
             _build_element_tree(xml_child, each_child, max_depth, _depth + 1)
         except Exception:
@@ -157,11 +170,11 @@ def _get_ui_tree(app_name: str) -> ET.Element | None:
 
     current = window.Current
     attribs = {
-        "Name": _xml_escape(current.Name or ""),
-        "AutomationId": _xml_escape(current.AutomationId or ""),
-        "LocalizedControlType": _xml_escape(current.LocalizedControlType or ""),
-        "ClassName": _xml_escape(current.ClassName or ""),
-        "pid": str(current.ProcessId) if hasattr(current, "ProcessId") else "",
+        "Name": _xml_escape(_safe_get_attr(current, "Name")),
+        "AutomationId": _xml_escape(_safe_get_attr(current, "AutomationId")),
+        "LocalizedControlType": _xml_escape(_safe_get_attr(current, "LocalizedControlType")),
+        "ClassName": _xml_escape(_safe_get_attr(current, "ClassName")),
+        "pid": _safe_get_attr(current, "ProcessId"),
     }
     root = ET.Element("body", **attribs)
     _build_element_tree(root, window)
