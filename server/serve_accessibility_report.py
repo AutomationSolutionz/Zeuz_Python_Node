@@ -18,9 +18,17 @@ def serve_accessibility_report(file_path: str):
         # Decode URL-encoded path
         print("Serving accessi file")
         decoded_path = unquote(file_path)
+        requested_path = Path(decoded_path)
+
+        # Reject absolute paths and traversal attempts before joining
+        if requested_path.is_absolute() or ".." in requested_path.parts:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid report path"
+            )
 
         # Resolve path under a fixed reports directory to prevent traversal
-        html_file = (REPORTS_BASE_DIR / decoded_path).resolve()
+        html_file = (REPORTS_BASE_DIR / requested_path).resolve()
         try:
             html_file.relative_to(REPORTS_BASE_DIR)
         except ValueError:
