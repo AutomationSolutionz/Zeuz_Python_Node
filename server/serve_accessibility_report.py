@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from urllib.parse import unquote
 
 router = APIRouter(prefix="/debug/reports", tags=["debug-reports"])
+REPORTS_BASE_DIR = Path("reports/accessibility").resolve()
 
 
 @router.get("/accessibility")
@@ -17,9 +18,16 @@ def serve_accessibility_report(file_path: str):
         # Decode URL-encoded path
         print("Serving accessi file")
         decoded_path = unquote(file_path)
-        
-        # Convert to Path object (handles both Windows and Unix paths)
-        html_file = Path(decoded_path)
+
+        # Resolve path under a fixed reports directory to prevent traversal
+        html_file = (REPORTS_BASE_DIR / decoded_path).resolve()
+        try:
+            html_file.relative_to(REPORTS_BASE_DIR)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid report path"
+            )
         
         # Security check: ensure file exists and is a file (not a directory)
         if not html_file.exists():
