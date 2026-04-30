@@ -7436,7 +7436,27 @@ def accessibility_test(data_set):
         
     
 
-        reports_dir = "Accessibility Test Report"
+        # Get zeuz_download_folder for saving reports (will be uploaded to server)
+        try:
+            if sr.Test_Shared_Variables("zeuz_download_folder"):
+                zeuz_download_folder = sr.Get_Shared_Variables("zeuz_download_folder")
+                reports_dir = str(Path(zeuz_download_folder))
+                CommonUtil.ExecLog(sModuleInfo, f"Saving accessibility reports to zeuz_download_folder: {reports_dir}", 1)
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "zeuz_download_folder not found. Using current directory for reports.",
+                    2,
+                )
+                reports_dir = "Accessibility Test Report"
+        except Exception as e:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Failed to get zeuz_download_folder: {str(e)}. Using current directory.",
+                2,
+            )
+            reports_dir = "Accessibility Test Report"
+        
         try:
             os.makedirs(reports_dir, exist_ok=True)
             CommonUtil.ExecLog(sModuleInfo, f"Reports directory created/verified: {reports_dir}", 1)
@@ -7458,7 +7478,7 @@ def accessibility_test(data_set):
             json_path = os.path.join(reports_dir, json_filename)
             with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
-            CommonUtil.ExecLog(sModuleInfo, f"Raw JSON report saved successfully to: {json_path}", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Raw JSON report saved to zeuz_download_folder: {json_path}", 1)
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to save raw JSON report: {str(e)}", 3)
             return "zeuz_failed"
@@ -7470,7 +7490,7 @@ def accessibility_test(data_set):
             summary_path = os.path.join(reports_dir, summary_filename)
             with open(summary_path, 'w', encoding='utf-8') as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
-            CommonUtil.ExecLog(sModuleInfo, f"Summary JSON report saved successfully to: {summary_path}", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"Summary JSON report saved to zeuz_download_folder: {summary_path}", 1)
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to create summary report: {str(e)}", 3)
             return "zeuz_failed"
@@ -7482,7 +7502,7 @@ def accessibility_test(data_set):
             html_path = os.path.join(reports_dir, html_filename)
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_report)
-            CommonUtil.ExecLog(sModuleInfo, f"HTML report saved successfully to: {html_path}", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"HTML report saved to zeuz_download_folder: {html_path}", 1)
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed to create HTML report: {str(e)}", 3)
             return "zeuz_failed"
@@ -7494,11 +7514,12 @@ def accessibility_test(data_set):
    [V] Tests Passed: {summary['summary']['passes_count']}
    [!] Inapplicable: {summary['summary']['inapplicable_count']}
    [~] Incomplete: {summary['summary']['incomplete_count']}
-Reports generated:
+Reports generated and saved to zeuz_download_folder:
   - {json_filename} (raw data)
   - {summary_filename} (summary)
   - {html_filename} (visual report)
 Location: {reports_dir}
+
 """
 
         CommonUtil.ExecLog(sModuleInfo, summary_message, 5)
