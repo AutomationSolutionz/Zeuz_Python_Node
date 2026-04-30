@@ -3,7 +3,10 @@ import platform
 import os
 import shutil
 import subprocess
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
+
+logger = get_logger()
 
 
 async def _send_status(category, status: str, comment: str):
@@ -37,7 +40,7 @@ def fallback_is_xcode_installed() -> bool:
 
 async def xcode_check_status(category) -> bool:
     """Check if Xcode is installed and license is accepted."""
-    print("[xcode] Checking status...")
+    logger.info("[xcode] Checking status...")
 
     if platform.system().lower() != "darwin":
         await _send_status(
@@ -126,7 +129,7 @@ async def _accept_license(category, user_password: str) -> bool:
 
 async def xcode_install(category, user_password: str = "") -> bool:
     """Install Xcode via App Store and accept license."""
-    print("[xcode] Installing...")
+    logger.info("[xcode] Installing...")
 
     if platform.system().lower() != "darwin":
         await _send_status(

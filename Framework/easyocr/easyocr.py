@@ -6,16 +6,25 @@ from .utils import group_text_box, get_image_list, calculate_md5, get_paragraph,
                    make_rotated_img_list, set_result_with_confidence,\
                    reformat_input_batched, merge_to_free
 from .config import *
-from bidi.algorithm import get_display
 import numpy as np
 import cv2
-import torch
 import os
 import sys
 from PIL import Image
 from logging import getLogger
 import yaml
 import json
+try:
+    import torch
+except ImportError:
+    os.system("uv add torch")
+    import torch
+
+try:
+    from bidi.algorithm import get_display
+except ImportError:
+    os.system("uv add python-bidi")
+    from bidi.algorithm import get_display
 
 if sys.version_info[0] == 2:
     from io import open

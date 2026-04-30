@@ -4,11 +4,8 @@ import hashlib
 import os
 import shutil
 import subprocess
-import base64
 import json
 from typing import Literal, Optional
-import asyncio
-import socket
 import xml.etree.ElementTree as ET
 import zipfile
 import plistlib
@@ -31,6 +28,18 @@ IOS_SCREENSHOT_PATH = "ios_screen.png"
 IOS_XML_PATH = "ios_ui.xml"
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
+
+_UPLOAD_TASKS_STARTED = False
+
+
+def start_ui_dump_uploads() -> None:
+    """Start background UI dump uploads once per process."""
+    global _UPLOAD_TASKS_STARTED
+    if _UPLOAD_TASKS_STARTED:
+        return
+    _UPLOAD_TASKS_STARTED = True
+    asyncio.create_task(upload_android_ui_dump())
+    asyncio.create_task(upload_ios_ui_dump())
 
 
 def is_wda_running(port: int) -> bool:
@@ -125,26 +134,124 @@ def get_ios_devices():
         return []
 
 
-@router.get("/inspect")
-def inspect(device_serial: str | None = None):
-    """Get the Mobile DOM and screenshot."""
+def run_adb_command_bytes(cmd: str, timeout: int = 30) -> bytes:
+    """
+    Run an adb command and return stdout as raw bytes.
+
+    - cmd: full command string (example: 'adb -s SERIAL exec-out screencap -p')
+    - timeout: seconds
+
+    Raises RuntimeError if adb fails.
+    """
     try:
-        # Capture UI and screenshot
-        capture_ui_dump(device_serial=device_serial)
-        capture_screenshot(device_serial=device_serial)
-
-        # Read XML file
-        with open(UI_XML_PATH, "r") as xml_file:
-            xml_content = xml_file.read()
-
-        # Read and encode screenshot
-        with open(SCREENSHOT_PATH, "rb") as img_file:
-            screenshot_bytes = img_file.read()
-            screenshot_base64 = base64.b64encode(screenshot_bytes).decode("utf-8")
-
-        return InspectorResponse(
-            status="ok", ui_xml=xml_content, screenshot=screenshot_base64
+        # Use shell=True ONLY if you are passing a full string with quotes
+        # (like the sh -c command). For normal adb commands, shell=False is better.
+        #
+        # Since your combined command uses quotes heavily, we keep shell=True.
+        p = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            shell=True,
         )
+
+        if p.returncode != 0:
+            err = p.stderr.decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"ADB command failed ({p.returncode}): {err}")
+
+        return p.stdout
+
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"ADB command timed out after {timeout}s: {cmd}")
+
+
+def get_appium_driver_for_serial(device_serial: str | None = None):
+    """
+    Retrieve the specific Appium driver instance for the given Android device serial.
+    Defaults to the global appium_driver if no serial is provided.
+    """
+    from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+    
+    if not device_serial:
+        return Shared_Resources.Get_Shared_Variables("appium_driver", log=False)
+        
+    appium_details = Shared_Resources.Get_Shared_Variables("appium_details", log=False)
+    if isinstance(appium_details, dict):
+        for name, details in appium_details.items():
+            stored_serial = details.get("serial")
+            if stored_serial and (stored_serial == device_serial or stored_serial in device_serial or device_serial in stored_serial):
+                return details.get("driver")
+                
+    return None
+
+
+def fetch_xml_and_screenshot(device_serial: str | None = None) -> tuple[str, bytes]:
+    """
+    Single-function fetch. Primary path uses ONE adb exec-out command to capture
+    UI XML + PNG (base64) in a single stream. Falls back (still inside this function)
+    if markers or outputs are invalid.
+    """
+    # Try Appium first
+    try:
+        appium_driver = get_appium_driver_for_serial(device_serial)
+        if appium_driver is not None:
+            xml = appium_driver.page_source
+            png = appium_driver.get_screenshot_as_png()
+            if xml and png:
+                return xml, png
+    except Exception:
+        pass
+
+    device_flag = f"-s {device_serial}" if device_serial else ""
+
+    SPLIT = "__ZEUZ_SPLIT__"
+    END = "__ZEUZ_END__"
+
+    cmd = (
+        f'{ADB_PATH} {device_flag} exec-out sh -c '
+        f'"uiautomator dump /dev/tty; '
+        f'echo {SPLIT}; '
+        f'screencap -p | base64; '
+        f'echo {END}"'
+    ).strip()
+
+    out = run_adb_command_bytes(cmd)
+
+    text = out.decode("utf-8", errors="replace")
+    if SPLIT in text and END in text:
+        xml_part, rest = text.split(SPLIT, 1)
+        b64_part = rest.split(END, 1)[0]
+
+        # Extract real XML starting from <hierarchy
+        i = xml_part.find("<hierarchy")
+        xml = xml_part[i:] if i != -1 else ""
+
+        # Decode PNG (ignore newlines/spaces)
+        b64_compact = "".join(b64_part.split())
+        try:
+            png = base64.b64decode(b64_compact, validate=False)
+        except Exception:
+            png = b""
+
+        if "<hierarchy" in xml and png.startswith(b"\x89PNG"):
+            return xml, png
+
+    return "", b""
+
+
+@router.get("/inspect", response_model=InspectorResponse)
+async def inspect(device_serial: str | None = None):
+    """Get the Mobile DOM and screenshot (XML + screenshot fetched together)."""
+    global stop_android_ui_dump
+    try:
+        xml, png = await asyncio.to_thread(fetch_xml_and_screenshot, device_serial)
+        if not xml or not png:
+            return InspectorResponse(status="error", error="Failed to capture xml/screenshot")
+
+        screenshot_base64 = base64.b64encode(png).decode("utf-8")
+        return InspectorResponse(status="ok", ui_xml=xml, screenshot=screenshot_base64)
+
     except Exception as e:
         return InspectorResponse(status="error", error=str(e))
 
@@ -259,7 +366,6 @@ def run_adb_command(command):
         result = subprocess.run(
             command,
             shell=True,
-            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -271,26 +377,39 @@ def run_adb_command(command):
 
 def capture_ui_dump(device_serial: str | None = None):
     """Capture the current UI hierarchy from the device"""
+    # Try to get from active Appium driver first (like web does)
+    try:
+        appium_driver = get_appium_driver_for_serial(device_serial)
+        
+        if appium_driver is not None:
+            page_src = appium_driver.page_source
+            with open(UI_XML_PATH, "w", encoding="utf-8", errors="replace") as xml_file:
+                xml_file.write(page_src)
+            return
+    except Exception as e:
+        # If Appium driver is active but failed, do NOT fallback to ADB as it will kill the session
+        try:
+            appium_driver = get_appium_driver_for_serial(device_serial)
+            if appium_driver is not None:
+                return
+        except Exception:
+            pass
+    
+    # Fallback to ADB
     device_flag = f"-s {device_serial}" if device_serial else ""
+    
+    if os.path.exists(UI_XML_PATH):
+        os.remove(UI_XML_PATH)
+    
     out = run_adb_command(
         f"{ADB_PATH} {device_flag} shell uiautomator dump /sdcard/ui.xml".strip()
     )
     if out.startswith("Error:"):
-        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import (
-            appium_driver,
-        )
-
-        if appium_driver is None:
-            return
-        page_src = appium_driver.page_source
-        with open(UI_XML_PATH, "w") as xml_file:
-            xml_file.write(page_src)
-    else:
-        out = run_adb_command(
-            f"{ADB_PATH} {device_flag} pull /sdcard/ui.xml {UI_XML_PATH}"
-        )
-        if out.startswith("Error:"):
-            return
+        return
+    
+    run_adb_command(
+        f"{ADB_PATH} {device_flag} pull /sdcard/ui.xml {UI_XML_PATH}"
+    )
 
 
 def capture_screenshot(device_serial: str | None = None):
@@ -383,6 +502,19 @@ def get_real_ios_hierarchy(device_udid: str):
 
 
 def capture_ios_ui_dump(device_udid: str):
+    # Try to get from active Appium driver first (like web does)
+    try:
+        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
+        
+        if appium_driver is not None:
+            page_src = appium_driver.page_source
+            with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
+                xml_file.write(page_src)
+            return
+    except Exception as e:
+        pass
+    
+    # Fallback to WDA
     real_hierarchy = get_real_ios_hierarchy(device_udid)
     if real_hierarchy:
         try:
@@ -395,26 +527,25 @@ def capture_ios_ui_dump(device_udid: str):
         with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
             xml_file.write(xml_content)
         return
-    
-    # Fallback to Appium driver
-    try:
-        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions import appium_driver
-        if appium_driver is not None:
-            page_src = appium_driver.page_source
-            with open(IOS_XML_PATH, 'w', encoding='utf-8') as xml_file:
-                xml_file.write(page_src)
-            return
-    except:
-        pass
 
 
 async def upload_android_ui_dump():
     prev_xml_hash = ""
     while True:
         try:
-            capture_ui_dump()
+            device_to_capture = None
+            devices = get_devices()
+            if devices:
+                device_to_capture = devices[0].serial
+                
+            await asyncio.to_thread(capture_ui_dump, device_to_capture)
             try:
-                with open(UI_XML_PATH, "r") as xml_file:
+                try:
+                    with open(UI_XML_PATH, "r", encoding="utf-8") as xml_file:
+                        xml_content = xml_file.read()
+                except UnicodeDecodeError:
+                    CommonUtil.ExecLog("", "Error decoding UI dump file", iLogLevel=3)
+                with open(UI_XML_PATH, "r", encoding="utf-8", errors="replace") as xml_file:
                     xml_content = xml_file.read()
                     xml_content = xml_content.replace(
                         "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>",
@@ -433,6 +564,10 @@ async def upload_android_ui_dump():
             except FileNotFoundError:
                 await asyncio.sleep(5)
                 continue
+            if not xml_content.strip():
+                CommonUtil.ExecLog("", "UI dump is empty", iLogLevel=1)
+                await asyncio.sleep(5)
+                continue
             url = (
                 ConfigModule.get_config_value(
                     "Authentication", "server_address"
@@ -440,13 +575,15 @@ async def upload_android_ui_dump():
                 + "/node_ai_contents/"
             )
             apiKey = ConfigModule.get_config_value("Authentication", "api-key").strip()
-            res = requests.post(
+            res = await asyncio.to_thread(
+                requests.post,
                 url,
                 headers={"X-Api-Key": apiKey},
                 json={
                     "dom_mob": {"dom": xml_content},
                     "node_id": CommonUtil.MachineInfo().getLocalUser().lower(),
                 },
+                timeout=10,
             )
             if res.ok:
                 CommonUtil.ExecLog("", "UI dump uploaded successfully", iLogLevel=1)

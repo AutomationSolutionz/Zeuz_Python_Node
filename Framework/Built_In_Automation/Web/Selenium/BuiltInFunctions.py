@@ -686,6 +686,7 @@ def Open_Browser(browser, browser_options: BrowserOptions):
             return "passed"
 
         options = generate_options(browser, browser_options)
+
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
 
@@ -702,10 +703,20 @@ def Open_Browser(browser, browser_options: BrowserOptions):
                 service = Service()
                 CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
 
-            selenium_driver = webdriver.Chrome(
-                service=service,
-                options=options,
-            )
+            try:
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
+            except SessionNotCreatedException:
+                options.add_argument("--no-sandbox")
+                options.add_argument(
+                    "--disable-dev-shm-usage"
+                )  # Overcomes /dev/shm space issues
+                selenium_driver = webdriver.Chrome(
+                    service=service,
+                    options=options,
+                )
 
             # service = Service()
             # selenium_driver = webdriver.Chrome(
@@ -4224,148 +4235,183 @@ def switch_iframe(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-        for left, mid, right in step_data:
-            left = left.lower().strip()
-            if "action" in mid.lower() and left == "switch iframe":
-                pass
-            elif left == "index" and "default" in right.lower():
-                selenium_driver.switch_to.default_content()
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Exited all iframes and switched to default content", 1
-                )
-            elif left == "index":
-                if mid == "iframe parameter":
-                    for i in range(5):
-                        iframes = selenium_driver.find_elements(By.TAG_NAME, "iframe")
-                        idx = int(right.strip())
-                        if -len(iframes) <= idx < len(iframes):
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Iframe switched to index %s" % right.strip(),
-                                1,
-                            )
-                            break
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Iframe index = %s not found. retrying after 2 sec wait"
-                            % right.strip(),
-                            2,
-                        )
-                        time.sleep(2)
-                    else:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Index out of range. Total %s iframes found."
-                            % len(iframes),
-                            3,
-                        )
-                        return "zeuz_failed"
-                    if idx < 0:
-                        idx = len(iframes) + idx
-                    try:
-                        frame_attribute = iframes[idx].get_attribute("outerHTML")
-                        i, c = 0, 0
-                        for i in range(len(frame_attribute)):
-                            if frame_attribute[i] == '"':
-                                c += 1
-                            if frame_attribute[i] == ">" and c % 2 == 0:
-                                break
-                        frame_attribute = frame_attribute[: i + 1]
-                        CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
-                    except:
-                        pass
-                    selenium_driver.switch_to.frame(idx)
-                elif mid == "frame parameter":
-                    for i in range(5):
-                        frames = selenium_driver.find_elements(By.TAG_NAME, "frame")
-                        idx = int(right.strip())
-                        if -len(frames) <= idx < len(frames):
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Frame switched to index %s" % right.strip(),
-                                1,
-                            )
-                            break
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Frame index = %s not found. retrying after 2 sec wait"
-                            % right.strip(),
-                            2,
-                        )
-                        time.sleep(2)
-                    else:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Index out of range. Total %s frames found." % len(frames),
-                            3,
-                        )
-                        return "zeuz_failed"
-                    if idx < 0:
-                        idx = len(frames) + idx
-                    try:
-                        frame_attribute = frames[idx].get_attribute("outerHTML")
-                        i, c = 0, 0
-                        for i in range(len(frame_attribute)):
-                            if frame_attribute[i] == '"':
-                                c += 1
-                            if frame_attribute[i] == ">" and c % 2 == 0:
-                                break
-                        frame_attribute = frame_attribute[: i + 1]
-                        CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
-                    except:
-                        pass
-                    selenium_driver.switch_to.frame(idx)
+        default_aliases = ("default content", "default", "main")
+        frame_targets = []
+        has_default_reset = False
 
-            elif "default" in right.lower():
-                try:
-                    iframe_data = [(left, "element parameter", right)]
-                    if left != "xpath":
-                        if mid == "iframe parameter":
-                            iframe_data.append(("tag", "element parameter", "iframe"))
-                        elif mid == "frame parameter":
-                            iframe_data.append(("tag", "element parameter", "frame"))
-                    element = LocateElement.Get_Element(iframe_data, selenium_driver)
-                    selenium_driver.switch_to.frame(element)
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Iframe switched using above Xpath", 1
-                    )
-                except:
-                    if mid == "iframe parameter":
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "No such iframe found. Exited all iframes and switched to default content",
-                            2,
-                        )
-                    elif mid == "frame parameter":
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "No such frame found. Exited all frames and switched to default content",
-                            2,
-                        )
-                    selenium_driver.switch_to.default_content()
+        for left, mid, right in step_data:
+            left_l = left.lower().strip()
+            mid_l = mid.lower().strip()
+            right_v = str(right).strip()
+            right_l = right_v.lower()
+
+            if "action" in mid_l and left_l == "switch iframe":
+                continue
+
+            if left_l == "index" and right_l in default_aliases:
+                has_default_reset = True
+                continue
+
+            if left_l == "index" and mid_l in ("iframe parameter", "frame parameter"):
+                frame_targets.append(
+                    {
+                        "kind": "index",
+                        "mid": mid_l,
+                        "left": left_l,
+                        "right": right_v,
+                    }
+                )
             else:
-                try:
-                    iframe_data = [(left, "element parameter", right)]
-                    if left != "xpath":
-                        if mid == "iframe parameter":
-                            iframe_data.append(("tag", "element parameter", "iframe"))
-                        elif mid == "frame parameter":
-                            iframe_data.append(("tag", "element parameter", "frame"))
-                    element = LocateElement.Get_Element(iframe_data, selenium_driver)
-                    selenium_driver.switch_to.frame(element)
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Iframe switched using above Xpath", 1
-                    )
-                except:
-                    if mid == "iframe parameter":
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "No such iframe found using above Xpath", 3
-                        )
-                    elif mid == "frame parameter":
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "No such frame found using above Xpath", 3
-                        )
+                frame_targets.append(
+                    {
+                        "kind": "locator",
+                        "mid": mid_l,
+                        "left": left_l,
+                        "right": right_v,
+                    }
+                )
+
+        if has_default_reset:
+            selenium_driver.switch_to.default_content()
+            CommonUtil.ExecLog(
+                sModuleInfo, "Exited all iframes and switched to default content", 1
+            )
+
+        if not frame_targets:
+            return "passed"
+
+        def _switch_by_index(target):
+            tag_name = "iframe" if target["mid"] == "iframe parameter" else "frame"
+            try:
+                idx = int(target["right"])
+            except Exception:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Invalid %s index '%s'" % (tag_name, target["right"]),
+                    3,
+                )
+                return "fatal"
+
+            for _ in range(5):
+                frame_list = selenium_driver.find_elements(By.TAG_NAME, tag_name)
+                if -len(frame_list) <= idx < len(frame_list):
+                    break
+                time.sleep(2)
+            else:
+                return "not_found"
+
+            log_idx = idx
+            if idx < 0:
+                idx = len(frame_list) + idx
+            try:
+                frame_attribute = frame_list[idx].get_attribute("outerHTML")
+                i, c = 0, 0
+                for i in range(len(frame_attribute)):
+                    if frame_attribute[i] == '"':
+                        c += 1
+                    if frame_attribute[i] == ">" and c % 2 == 0:
+                        break
+                frame_attribute = frame_attribute[: i + 1]
+                CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
+            except:
+                pass
+
+            selenium_driver.switch_to.frame(idx)
+            if tag_name == "iframe":
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Iframe switched to index %s" % str(log_idx), 1
+                )
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Frame switched to index %s" % str(log_idx), 1
+                )
+            return "passed"
+
+        def _switch_by_locator(target):
+            try:
+                iframe_data = [(target["left"], "element parameter", target["right"])]
+                if target["left"] != "xpath":
+                    if target["mid"] == "iframe parameter":
+                        iframe_data.append(("tag", "element parameter", "iframe"))
+                    elif target["mid"] == "frame parameter":
+                        iframe_data.append(("tag", "element parameter", "frame"))
+
+                element = LocateElement.Get_Element(iframe_data, selenium_driver)
+                if element in failed_tag_list:
+                    return "not_found"
+                selenium_driver.switch_to.frame(element)
+                CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
+                return "passed"
+            except:
+                return "not_found"
+
+        pending_targets = frame_targets[:]
+        active_switch_stack = []
+        unknown_parent_hops = 0
+        max_unknown_parent_hops = len(frame_targets) + 5
+
+        while pending_targets:
+            switched = False
+            for idx, target in enumerate(pending_targets):
+                if target["kind"] == "index":
+                    status = _switch_by_index(target)
+                else:
+                    status = _switch_by_locator(target)
+
+                if status == "passed":
+                    active_switch_stack.append(target)
+                    pending_targets.pop(idx)
+                    switched = True
+                    unknown_parent_hops = 0
+                    break
+
+                if status == "fatal":
                     return "zeuz_failed"
+
+            if switched:
+                continue
+
+            if active_switch_stack:
+                selenium_driver.switch_to.parent_frame()
+                active_switch_stack.pop()
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "No matching frame in current context. Switched to parent frame and retrying",
+                    2,
+                )
+                continue
+
+            if has_default_reset:
+                unresolved = [
+                    "%s=%s" % (item["left"], item["right"]) for item in pending_targets
+                ]
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Unable to resolve iframe/frame targets: %s"
+                    % ", ".join(unresolved),
+                    3,
+                )
+                return "zeuz_failed"
+
+            selenium_driver.switch_to.parent_frame()
+            unknown_parent_hops += 1
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "No matching frame in current context. Switched to parent frame and retrying",
+                2,
+            )
+            if unknown_parent_hops > max_unknown_parent_hops:
+                unresolved = [
+                    "%s=%s" % (item["left"], item["right"]) for item in pending_targets
+                ]
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Unable to resolve iframe/frame targets from current starting context: %s"
+                    % ", ".join(unresolved),
+                    3,
+                )
+                return "zeuz_failed"
+
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

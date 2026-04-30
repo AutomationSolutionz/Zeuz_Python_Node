@@ -93,6 +93,32 @@ device_info = {}
 failed_due_to_linked_fail = False
 
 
+def post_runid_cleanup():
+    """Run node cleanup tasks that should execute after each run_id."""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        from Framework.Built_In_Automation.Web.Selenium.utils import (
+            ChromeExtensionDownloader,
+            ChromeForTesting,
+        )
+
+        ChromeForTesting().cleanup_old_versions()
+        ChromeExtensionDownloader().cleanup_extensions()
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Completed post run_id cleanup for Chrome for Testing and Chrome extensions.",
+            1,
+        )
+    except Exception:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Post run_id cleanup failed. Continuing execution.",
+            2,
+        )
+        CommonUtil.debug_code_error(sys.exc_info())
+
+
 # sets server variable
 # TODO: remove, need alternative
 def set_server_variable(run_id, key, value):
@@ -2182,6 +2208,9 @@ def main(device_dict, all_run_id_info):
                     CommonUtil.run_cancelled = True
                 del CommonUtil.all_threads["run_cancel"]
             CommonUtil.run_cancelled = False
+
+            post_runid_cleanup()
+
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
                 input("[Local run] Press any key to finish")
 

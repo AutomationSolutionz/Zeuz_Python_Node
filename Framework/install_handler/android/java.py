@@ -9,9 +9,13 @@ import tarfile
 import stat
 import httpx
 from pathlib import Path
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from Framework.install_handler.android.jdk import install as install_jdk
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
+
+logger = get_logger()
+
 
 def get_jdk_dir():
     """Get JDK installation directory (in downloads directory, matching jdk.py extraction location)."""
@@ -59,14 +63,14 @@ def get_java_path():
 
 async def check_status() -> bool:
     """Check if Java 21 is installed (following Node.js installer pattern - simple file existence check)."""
-    print("[installer][android-java] Checking status...")
+    logger.info("[installer][android-java] Checking status...")
     
     
     # Simple file existence check in isolated directory (like Node.js installer)
     java_path = get_java_path()
     
     if java_path.exists():
-        print("[installer][android-java] Already installed")
+        logger.info("[installer][android-java] Already installed")
         
         await send_response({
             "action": "status",
@@ -80,7 +84,7 @@ async def check_status() -> bool:
         return True
     
     # Not installed
-    print("[installer][android-java] Not installed")
+    logger.info("[installer][android-java] Not installed")
     await send_response({
         "action": "status",
         "data": {
@@ -114,14 +118,14 @@ def update_java_path():
     
     # Set JAVA_HOME for the current process
     os.environ['JAVA_HOME'] = str(jdk_home)
-    print(f"JAVA_HOME set for current process: {jdk_home}")
+    print("JAVA_HOME set for current process: %s", jdk_home)
     
     # Add Java bin to PATH for the current process (always prepend so it takes precedence)
     java_bin_path = str(java_path.parent)
     current_path = os.environ.get('PATH', '')
     # Always prepend to ensure isolated Java takes precedence (even if path already exists)
     os.environ['PATH'] = f"{java_bin_path}{os.pathsep}{current_path}"
-    print(f"Java prepended to current process PATH: {java_bin_path}")
+    print("Java prepended to current process PATH: %s", java_bin_path)
 
 
 async def _get_jdk_download_url():
@@ -156,7 +160,7 @@ async def _get_jdk_download_url():
        arch = "s390x"
    else:
        # Default to x64 for unknown architectures
-       print(f"[installer][android-java] Warning: Unknown architecture '{machine}', defaulting to x64")
+       logger.warning("[installer][android-java] Warning: Unknown architecture '%s', defaulting to x64", machine)
        arch = "x64"
    
    # Use Temurin metadata API to get latest JDK 21 download URL
@@ -171,18 +175,18 @@ async def _get_jdk_download_url():
            # Extract download URL from API response
            if data and len(data) > 0:
                download_url = data[0]["binary"]["package"]["link"]
-               print(f"[installer][android-java] Found Temurin JDK 21 download URL: {download_url}")
+               logger.info("[installer][android-java] Found Temurin JDK 21 download URL: %s", download_url)
                return download_url
            else:
                raise Exception("No download URL found in API response")
    except Exception as e:
-       print(f"[installer][android-java] Error fetching Temurin download URL: {e}")
+       logger.error("[installer][android-java] Error fetching Temurin download URL: %s", e)
        raise Exception(f"Failed to get JDK download URL from Temurin API: {e}")
 
 
 async def _download_jdk():
    """Download JDK 21 LTS with progress reporting"""
-   print("[installer][android-jdk] Downloading JDK 21 LTS...")
+   logger.info("[installer][android-jdk] Downloading JDK 21 LTS...")
    await send_response({
        "action": "status",
        "data": {
@@ -217,8 +221,7 @@ async def _download_jdk():
                total_size = int(response.headers.get("content-length", 0))
                chunk_size = 8192
                downloaded = 0
-              
-               count = []
+               last_pct = [-1]
                with open(jdk_archive, "wb") as f:
                    async for chunk in response.aiter_bytes(chunk_size):
                        f.write(chunk)
@@ -226,18 +229,15 @@ async def _download_jdk():
                       
                        if total_size > 0:
                            progress = (downloaded / total_size) * 100
-                           bar_length = 50
-                           filled_length = int(bar_length * downloaded // total_size)
-                           bar = '█' * filled_length + '-' * (bar_length - filled_length)
-                          
-                           mb_downloaded = downloaded / (1024 * 1024)
-                           mb_total = total_size / (1024 * 1024)
-                          
-                           print(f"\r[installer][android-jdk] |{bar}| {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)", end='', flush=True)
-                          
-                           p = round(mb_downloaded/mb_total, 1)
-                           if p not in count:
-                               count.append(p)
+                           pct = int(progress)
+                           if pct != last_pct[0]:
+                               last_pct[0] = pct
+                               bar_length = 50
+                               filled_length = int(bar_length * downloaded // total_size)
+                               bar = '█' * filled_length + '-' * (bar_length - filled_length)
+                               mb_downloaded = downloaded / (1024 * 1024)
+                               mb_total = total_size / (1024 * 1024)
+                               logger.info("[installer][android-jdk] |%s| %d%% (%.1f/%.1f MB)", bar, pct, mb_downloaded, mb_total)
                                asyncio.create_task(send_response({
                                    "action": "status",
                                    "data": {
@@ -248,11 +248,10 @@ async def _download_jdk():
                                    }
                                }))
       
-       print()
-       print(f"[installer][android-jdk] JDK download complete: {jdk_archive}")
+       logger.info("[installer][android-jdk] JDK download complete: %s", jdk_archive)
        return jdk_archive
    except Exception as e:
-       print(f"\n[installer][android-jdk] JDK download failed: {e}")
+       logger.error("[installer][android-jdk] JDK download failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -270,7 +269,7 @@ async def _extract_jdk(jdk_archive):
    if not jdk_archive or not jdk_archive.exists():
        return None
   
-   print("[installer][android-jdk] Extracting JDK...")
+   logger.info("[installer][android-jdk] Extracting JDK...")
    await send_response({
        "action": "status",
        "data": {
@@ -290,11 +289,11 @@ async def _extract_jdk(jdk_archive):
    jdk_dir.mkdir(parents=True, exist_ok=True)
    
    if system == "Windows":
-       print(f"[installer][android-jdk] Extracting JDK to {jdk_dir}")
+       logger.info("[installer][android-jdk] Extracting JDK to %s", jdk_dir)
    elif system == "Linux":
-       print(f"[installer][android-jdk] Extracting JDK to {jdk_dir}")
+       logger.info("[installer][android-jdk] Extracting JDK to %s", jdk_dir)
    elif system == "Darwin":
-       print(f"[installer][android-jdk] Extracting JDK to {jdk_dir}")
+       logger.info("[installer][android-jdk] Extracting JDK to %s", jdk_dir)
   
    try:
        if system == "Windows":
@@ -341,7 +340,7 @@ async def _extract_jdk(jdk_archive):
            raise OSError(f"Unsupported platform: {system}")
        
        if not jdk_home:
-           print("[installer][android-jdk] Could not find JDK directory after extraction")
+           logger.error("[installer][android-jdk] Could not find JDK directory after extraction")
            await send_response({
                "action": "status",
                "data": {
@@ -353,10 +352,10 @@ async def _extract_jdk(jdk_archive):
            })
            return None
        
-       print(f"[installer][android-jdk] JDK extracted to {jdk_home}")
+       logger.info("[installer][android-jdk] JDK extracted to %s", jdk_home)
        return jdk_home
    except Exception as e:
-       print(f"[installer][android-jdk] JDK extraction failed: {e}")
+       logger.error("[installer][android-jdk] JDK extraction failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -371,7 +370,7 @@ async def _extract_jdk(jdk_archive):
 
 async def _verify_java_installation(jdk_home):
    """Verify that Java is properly installed and working"""
-   print("[installer][android-jdk] Verifying Java installation...")
+   logger.info("[installer][android-jdk] Verifying Java installation...")
    await send_response({
        "action": "status",
        "data": {
@@ -392,11 +391,11 @@ async def _verify_java_installation(jdk_home):
    elif system == "Darwin":
        java_exe = jdk_home / "bin" / "java"
    else:
-       print(f"[installer][android-jdk] Unsupported platform: {system}")
+       logger.warning("[installer][android-jdk] Unsupported platform: %s", system)
        return False
        
    if not java_exe.exists():
-       print(f"[installer][android-jdk] Java executable not found at {java_exe}")
+       logger.error("[installer][android-jdk] Java executable not found at %s", java_exe)
        await send_response({
            "action": "status",
            "data": {
@@ -413,13 +412,13 @@ async def _verify_java_installation(jdk_home):
        try:
            java_exe.chmod(java_exe.stat().st_mode | stat.S_IEXEC)
        except Exception as e:
-           print(f"[installer][android-jdk] Failed to make Java executable: {e}")
+           logger.error("[installer][android-jdk] Failed to make Java executable: %s", e)
            return False
    elif system == "Darwin":
        try:
            java_exe.chmod(java_exe.stat().st_mode | stat.S_IEXEC)
        except Exception as e:
-           print(f"[installer][android-jdk] Failed to make Java executable: {e}")
+           logger.error("[installer][android-jdk] Failed to make Java executable: %s", e)
            return False
   
    # Test Java version (async)
@@ -434,7 +433,7 @@ async def _verify_java_installation(jdk_home):
            )
        )
        if "version \"21" not in result.stderr:
-           print("[installer][android-jdk] Java version check failed")
+           logger.error("[installer][android-jdk] Java version check failed")
            await send_response({
                "action": "status",
                "data": {
@@ -445,7 +444,7 @@ async def _verify_java_installation(jdk_home):
                }
            })
            return False
-       print("[installer][android-jdk] Java version verified")
+       logger.info("[installer][android-jdk] Java version verified")
       
        # Test Java compiler
        if system == "Windows":
@@ -456,7 +455,7 @@ async def _verify_java_installation(jdk_home):
            javac_exe = jdk_home / "bin" / "javac"
            
        if not javac_exe.exists():
-           print(f"[installer][android-jdk] Java compiler not found at {javac_exe}")
+           logger.error("[installer][android-jdk] Java compiler not found at %s", javac_exe)
            await send_response({
                "action": "status",
                "data": {
@@ -482,7 +481,7 @@ async def _verify_java_installation(jdk_home):
            )
        )
        if "javac 21" not in (result.stdout or result.stderr):
-           print("[installer][android-jdk] Java compiler version check failed")
+           logger.error("[installer][android-jdk] Java compiler version check failed")
            await send_response({
                "action": "status",
                "data": {
@@ -493,11 +492,11 @@ async def _verify_java_installation(jdk_home):
                }
            })
            return False
-       print("[installer][android-jdk] Java compiler verified")
+       logger.info("[installer][android-jdk] Java compiler verified")
       
        return True
    except Exception as e:
-       print(f"[installer][android-jdk] Java verification failed: {e}")
+       logger.error("[installer][android-jdk] Java verification failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -512,11 +511,11 @@ async def _verify_java_installation(jdk_home):
 
 async def install() -> bool:
    """Main function to setup JDK 21 LTS"""
-   print("[installer][android-java] Installing...")
+   logger.info("[installer][android-java] Installing...")
   
    # Check if JDK 21 is already installed
    if await check_status():
-       print("[installer][android-java] JDK 21 is already installed")
+       logger.info("[installer][android-java] JDK 21 is already installed")
        return True
    
    jdk_home = None
@@ -535,15 +534,15 @@ async def install() -> bool:
        # Clean up archive
        try:
            jdk_archive.unlink()
-       except:
+       except Exception:
            pass
   
    # Verify installation
    if not await _verify_java_installation(jdk_home):
-       print("[installer][android-jdk] Java installation verification failed")
+       logger.error("[installer][android-jdk] Java installation verification failed")
        return False
   
-   print("[installer][android-jdk] JDK 21 LTS setup complete")
+   logger.info("[installer][android-jdk] JDK 21 LTS setup complete")
    await send_response({
        "action": "status",
        "data": {

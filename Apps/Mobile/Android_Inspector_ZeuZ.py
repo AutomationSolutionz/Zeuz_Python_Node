@@ -24,8 +24,23 @@ def run_adb_command(command):
 
 def capture_ui_dump():
     """Capture the current UI hierarchy from the device and take a screenshot."""
-    run_adb_command(f"{ADB_PATH} shell uiautomator dump /sdcard/ui.xml")
-    run_adb_command(f"{ADB_PATH} pull /sdcard/ui.xml {UI_XML_PATH}")
+    xml_saved = False
+    appium_driver = None
+    try:
+        from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+        appium_driver = Shared_Resources.Get_Shared_Variables("appium_driver", log=False)
+        if appium_driver is not None:
+            page_src = appium_driver.page_source
+            with open(UI_XML_PATH, "w") as xml_file:
+                xml_file.write(page_src)
+            xml_saved = True
+    except Exception:
+        pass
+    # even if it fails don't try adb if appium driver is available
+    if not xml_saved and appium_driver is None:
+        run_adb_command(f"{ADB_PATH} shell uiautomator dump /sdcard/ui.xml")
+        run_adb_command(f"{ADB_PATH} pull /sdcard/ui.xml {UI_XML_PATH}")
+
     run_adb_command(f"{ADB_PATH} shell screencap -p /sdcard/screen.png")
     run_adb_command(f"{ADB_PATH} pull /sdcard/screen.png {SCREENSHOT_PATH}")
     update_treeview()

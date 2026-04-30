@@ -8,8 +8,11 @@ import json
 import tarfile
 import re
 from pathlib import Path
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
+
+logger = get_logger()
 
 
 def _is_windows():
@@ -50,7 +53,7 @@ def _get_linux_package_manager():
 
 async def check_status() -> bool:
    """Check if Mozilla Firefox is installed."""
-   print("[installer][web-mozilla] Checking status...")
+   logger.info("[installer][web-mozilla] Checking status...")
   
    try:
        result = None
@@ -165,7 +168,7 @@ async def check_status() -> bool:
            )
 
        if result.returncode != 0:
-           print("[installer][web-mozilla] Not installed")
+           logger.info("[installer][web-mozilla] Not installed")
            await send_response({
                "action": "status",
                "data": {
@@ -180,7 +183,7 @@ async def check_status() -> bool:
        # Firefox version output is typically in stdout or stderr
        version_text = (result.stdout or result.stderr).strip()
        if not version_text:
-           print("[installer][web-mozilla] Not installed")
+           logger.info("[installer][web-mozilla] Not installed")
            await send_response({
                "action": "status",
                "data": {
@@ -192,7 +195,7 @@ async def check_status() -> bool:
            })
            return False
       
-       print("[installer][web-mozilla] Already installed")
+       logger.info("[installer][web-mozilla] Already installed")
        await send_response({
            "action": "status",
            "data": {
@@ -205,7 +208,7 @@ async def check_status() -> bool:
        return True
    except (FileNotFoundError, OSError):
        # Firefox command not found - Firefox is not installed
-       print("[installer][web-mozilla] Not installed (firefox not found)")
+       logger.info("[installer][web-mozilla] Not installed (firefox not found)")
        await send_response({
            "action": "status",
            "data": {
@@ -217,7 +220,7 @@ async def check_status() -> bool:
        })
        return False
    except Exception as e:
-       print(f"[installer][web-mozilla] Error checking status: {e}")
+       logger.error("[installer][web-mozilla] Error checking status: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -232,7 +235,7 @@ async def check_status() -> bool:
 
 async def _download_firefox_installer():
    """Download Firefox installer based on platform"""
-   print("[installer][web-mozilla] Downloading Mozilla Firefox installer...")
+   logger.info("[installer][web-mozilla] Downloading Mozilla Firefox installer...")
    await send_response({
        "action": "status",
        "data": {
@@ -297,8 +300,7 @@ async def _download_firefox_installer():
                total_size = int(response.headers.get("content-length", 0))
                chunk_size = 8192
                downloaded = 0
-               
-               count = []
+               last_pct = [-1]
                with open(installer_path, "wb") as f:
                    async for chunk in response.aiter_bytes(chunk_size):
                        f.write(chunk)
@@ -306,18 +308,15 @@ async def _download_firefox_installer():
                        
                        if total_size > 0:
                            progress = (downloaded / total_size) * 100
-                           bar_length = 50
-                           filled_length = int(bar_length * downloaded // total_size)
-                           bar = '█' * filled_length + '-' * (bar_length - filled_length)
-                           
-                           mb_downloaded = downloaded / (1024 * 1024)
-                           mb_total = total_size / (1024 * 1024)
-                           
-                           print(f"\r[installer][web-mozilla] |{bar}| {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)", end='', flush=True)
-                           
-                           p = round(mb_downloaded/mb_total, 1)
-                           if p not in count:
-                               count.append(p)
+                           pct = int(progress)
+                           if pct != last_pct[0]:
+                               last_pct[0] = pct
+                               bar_length = 50
+                               filled_length = int(bar_length * downloaded // total_size)
+                               bar = '█' * filled_length + '-' * (bar_length - filled_length)
+                               mb_downloaded = downloaded / (1024 * 1024)
+                               mb_total = total_size / (1024 * 1024)
+                               logger.info("[installer][web-mozilla] |%s| %d%% (%.1f/%.1f MB)", bar, pct, mb_downloaded, mb_total)
                                asyncio.create_task(send_response({
                                    "action": "status",
                                    "data": {
@@ -334,13 +333,12 @@ async def _download_firefox_installer():
                exe_files = list(download_dir.glob("*.exe"))
                if exe_files:
                    installer_path = exe_files[0]  # Use the first .exe file found
-                   print(f"[installer][web-mozilla] Found installer file: {installer_path.name}")
+                   logger.info("[installer][web-mozilla] Found installer file: %s", installer_path.name)
        
-       print()
-       print(f"[installer][web-mozilla] Download complete: {installer_path}")
+       logger.info("[installer][web-mozilla] Download complete: %s", installer_path)
        return installer_path
    except Exception as e:
-       print(f"\n[installer][web-mozilla] Download failed: {e}")
+       logger.error("[installer][web-mozilla] Download failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -355,7 +353,7 @@ async def _download_firefox_installer():
 
 async def _install_firefox_windows(installer_path, user_password: str = ""):
    """Install Firefox on Windows"""
-   print("[installer][web-mozilla] Installing Mozilla Firefox on Windows...")
+   logger.info("[installer][web-mozilla] Installing Mozilla Firefox on Windows...")
    await send_response({
        "action": "status",
        "data": {
@@ -379,11 +377,11 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
                exe_files = list(download_dir.glob("*.exe"))
                if exe_files:
                    installer_exe = exe_files[0]
-                   print(f"[installer][web-mozilla] Found installer: {installer_exe.name}")
+                   logger.info("[installer][web-mozilla] Found installer: %s", installer_exe.name)
        
        if not installer_exe or not installer_exe.exists():
            error_msg = "Firefox installer not found in download directory"
-           print(f"[installer][web-mozilla] {error_msg}")
+           logger.error("[installer][web-mozilla] %s", error_msg)
            await send_response({
                "action": "status",
                "data": {
@@ -400,8 +398,8 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
        installer_path_str = str(installer_exe).replace('/', '\\')
        ps_command = f'Start-Process "{installer_path_str}" -ArgumentList "/S" -Wait'
        
-       print(f"[installer][web-mozilla] Running installer: {installer_exe.name}")
-       print(f"[installer][web-mozilla] Command: {ps_command}")
+       logger.info("[installer][web-mozilla] Running installer: %s", installer_exe.name)
+       logger.info("[installer][web-mozilla] Command: %s", ps_command)
        
        # Run the command (UAC prompt will appear if needed for elevation)
        result = subprocess.run(
@@ -412,11 +410,11 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
        )
        
        if result.returncode == 0:
-           print("[installer][web-mozilla] Mozilla Firefox installed successfully")
+           logger.info("[installer][web-mozilla] Mozilla Firefox installed successfully")
            return True
        else:
            error_msg = f"Installation failed: {result.stderr or result.stdout}"
-           print(f"[installer][web-mozilla] {error_msg}")
+           logger.error("[installer][web-mozilla] %s", error_msg)
            await send_response({
                "action": "status",
                "data": {
@@ -428,7 +426,7 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
            })
            return False
    except Exception as e:
-       print(f"[installer][web-mozilla] Windows installation failed: {e}")
+       logger.exception("[installer][web-mozilla] Windows installation failed: %s", e)
        import traceback
        traceback.print_exc()
        await send_response({
@@ -445,7 +443,7 @@ async def _install_firefox_windows(installer_path, user_password: str = ""):
 
 async def _install_firefox_linux(installer_path, user_password: str = ""):
    """Install Firefox on Linux"""
-   print("[installer][web-mozilla] Installing Mozilla Firefox on Linux...")
+   logger.info("[installer][web-mozilla] Installing Mozilla Firefox on Linux...")
    await send_response({
        "action": "status",
        "data": {
@@ -480,10 +478,10 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
                tar_files = list(download_dir.glob("*.tar.xz"))
                if tar_files:
                    tar_file = tar_files[0]  # Use the first .tar.xz file found
-                   print(f"[installer][web-mozilla] Found Firefox installer: {tar_file.name}")
+                   logger.info("[installer][web-mozilla] Found Firefox installer: %s", tar_file.name)
        
        if tar_file and tar_file.exists():
-           print("[installer][web-mozilla] Attempting to install from downloaded .tar.xz file...")
+           logger.info("[installer][web-mozilla] Attempting to install from downloaded .tar.xz file...")
            await send_response({
                "action": "status",
                "data": {
@@ -498,7 +496,7 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
                extract_dir = ZEUZ_NODE_DOWNLOADS_DIR / "firefox"
                extract_dir.mkdir(parents=True, exist_ok=True)
                
-               print("[installer][web-mozilla] Extracting Firefox from archive...")
+               logger.info("[installer][web-mozilla] Extracting Firefox from archive...")
                await send_response({
                    "action": "status",
                    "data": {
@@ -525,7 +523,7 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
                    # Binary path: ~/.zeuz/zeuz_node_downloads/firefox/firefox/firefox
                    firefox_binary_path = firefox_dir / "firefox"
                    
-                   print(f"[installer][web-mozilla] Creating symlink to Firefox binary...")
+                   logger.info("[installer][web-mozilla] Creating symlink to Firefox binary...")
                    await send_response({
                        "action": "status",
                        "data": {
@@ -548,7 +546,7 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
                        if symlink_path.exists() or symlink_path.is_symlink():
                            remove_result = run_sudo(["sudo", "rm", "-f", str(symlink_path)])
                            if remove_result.returncode != 0:
-                               print(f"[installer][web-mozilla] Warning: Failed to remove existing {symlink_path}: {remove_result.stderr}")
+                               logger.warning("[installer][web-mozilla] Warning: Failed to remove existing %s: %s", symlink_path, remove_result.stderr)
                        
                        # Create new symlink pointing directly to the binary in download directory
                        symlink_result = run_sudo([
@@ -556,15 +554,15 @@ async def _install_firefox_linux(installer_path, user_password: str = ""):
                        ])
                        
                        if symlink_result.returncode == 0:
-                           print(f"[installer][web-mozilla] Created symlink: {symlink_path} -> {firefox_binary_path}")
+                           logger.info("[installer][web-mozilla] Created symlink: %s -> %s", symlink_path, firefox_binary_path)
                            run_sudo(["sudo", "chmod", "+x", str(symlink_path)])
                            symlink_created = True
                            break
                        else:
-                           print(f"[installer][web-mozilla] Failed to create symlink at {symlink_path}: {symlink_result.stderr}")
+                           logger.error("[installer][web-mozilla] Failed to create symlink at %s: %s", symlink_path, symlink_result.stderr)
                    
                    if not symlink_created:
-                       print("[installer][web-mozilla] Failed to create symlink in any location")
+                       logger.error("[installer][web-mozilla] Failed to create symlink in any location")
                    else:
                        # Create .desktop file to appear in application menu
                        desktop_dir = Path.home() / ".local" / "share" / "applications"
@@ -599,9 +597,9 @@ StartupNotify=true
                                f.write(desktop_content)
                            # Make .desktop file executable
                            os.chmod(desktop_file, 0o755)
-                           print(f"[installer][web-mozilla] Created .desktop file: {desktop_file}")
+                           logger.info("[installer][web-mozilla] Created .desktop file: %s", desktop_file)
                        except Exception as e:
-                           print(f"[installer][web-mozilla] Warning: Failed to create .desktop file: {e}")
+                           logger.warning("[installer][web-mozilla] Warning: Failed to create .desktop file: %s", e)
                        
                        # Verify installation by testing firefox command (uses symlink)
                        test_result = subprocess.run(
@@ -611,13 +609,13 @@ StartupNotify=true
                            check=False
                        )
                        if test_result.returncode == 0:
-                           print(f"[installer][web-mozilla] Firefox successfully installed")
-                           print(f"[installer][web-mozilla] Binary location: {firefox_binary_path}")
-                           print(f"[installer][web-mozilla] Symlink: {symlink_path} -> {firefox_binary_path}")
+                           logger.info("[installer][web-mozilla] Firefox successfully installed")
+                           logger.info("[installer][web-mozilla] Binary location: %s", firefox_binary_path)
+                           logger.info("[installer][web-mozilla] Symlink: %s -> %s", symlink_path, firefox_binary_path)
                            return True
                        else:
                            error_msg = f"Firefox verification failed: {test_result.stderr}"
-                           print(f"[installer][web-mozilla] {error_msg}")
+                           logger.error("[installer][web-mozilla] %s", error_msg)
                            await send_response({
                                "action": "status",
                                "data": {
@@ -630,7 +628,7 @@ StartupNotify=true
                            return False
                else:
                    error_msg = "Could not find Firefox directory or binary after extraction"
-                   print(f"[installer][web-mozilla] {error_msg}")
+                   logger.error("[installer][web-mozilla] %s", error_msg)
                    await send_response({
                        "action": "status",
                        "data": {
@@ -643,7 +641,7 @@ StartupNotify=true
                    return False
            except Exception as e:
                error_msg = f"Installation from .tar.xz failed: {str(e)}"
-               print(f"[installer][web-mozilla] {error_msg}")
+               logger.exception("[installer][web-mozilla] %s", error_msg)
                import traceback
                traceback.print_exc()
                await send_response({
@@ -659,7 +657,7 @@ StartupNotify=true
        
        # If no installer file was downloaded or tar.xz installation not attempted
        error_msg = "Firefox installer file not found or invalid. Cannot proceed with installation."
-       print(f"[installer][web-mozilla] {error_msg}")
+       logger.error("[installer][web-mozilla] %s", error_msg)
        await send_response({
            "action": "status",
            "data": {
@@ -671,7 +669,7 @@ StartupNotify=true
        })
        return False
    except Exception as e:
-       print(f"[installer][web-mozilla] Linux installation failed: {e}")
+       logger.exception("[installer][web-mozilla] Linux installation failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -686,7 +684,7 @@ StartupNotify=true
 
 async def _install_firefox_darwin(installer_path, user_password: str = ""):
    """Install Firefox on macOS"""
-   print("[installer][web-mozilla] Installing Mozilla Firefox on macOS...")
+   logger.info("[installer][web-mozilla] Installing Mozilla Firefox on macOS...")
    await send_response({
        "action": "status",
        "data": {
@@ -707,7 +705,7 @@ async def _install_firefox_darwin(installer_path, user_password: str = ""):
        )
        
        if brew_result.returncode == 0:
-           print("[installer][web-mozilla] Mozilla Firefox installed via homebrew")
+           logger.info("[installer][web-mozilla] Mozilla Firefox installed via homebrew")
            return True
        
        # Fallback to .dmg installer
@@ -747,7 +745,7 @@ async def _install_firefox_darwin(installer_path, user_password: str = ""):
                                )
                            
                            if copy_result.returncode == 0:
-                               print("[installer][web-mozilla] Mozilla Firefox installed via .dmg")
+                               logger.info("[installer][web-mozilla] Mozilla Firefox installed via .dmg")
                                return True
                finally:
                    # Unmount the DMG (doesn't need sudo)
@@ -769,7 +767,7 @@ async def _install_firefox_darwin(installer_path, user_password: str = ""):
        })
        return False
    except Exception as e:
-       print(f"[installer][web-mozilla] macOS installation failed: {e}")
+       logger.exception("[installer][web-mozilla] macOS installation failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -784,7 +782,7 @@ async def _install_firefox_darwin(installer_path, user_password: str = ""):
 
 async def _verify_firefox_installation():
    """Verify that Firefox is properly installed"""
-   print("[installer][web-mozilla] Verifying Mozilla Firefox installation...")
+   logger.info("[installer][web-mozilla] Verifying Mozilla Firefox installation...")
    await send_response({
        "action": "status",
        "data": {
@@ -804,11 +802,11 @@ async def _verify_firefox_installation():
 
 async def install(user_password: str = "") -> bool:
    """Main function to install Mozilla Firefox"""
-   print("[installer][web-mozilla] Installing Mozilla Firefox...")
+   logger.info("[installer][web-mozilla] Installing Mozilla Firefox...")
    
    # Check if Firefox is already installed
    if await check_status():
-       print("[installer][web-mozilla] Mozilla Firefox is already installed")
+       logger.info("[installer][web-mozilla] Mozilla Firefox is already installed")
        return True
    
    installer_path = None
@@ -844,13 +842,13 @@ async def install(user_password: str = "") -> bool:
    
    # Verify installation
    if not await _verify_firefox_installation():
-       print("[installer][web-mozilla] Mozilla Firefox installation verification failed")
+       logger.error("[installer][web-mozilla] Mozilla Firefox installation verification failed")
        return False
    
    # Keep installer file in downloads directory (not cleaning up)
    # The installer is kept for potential reuse
    
-   print("[installer][web-mozilla] Mozilla Firefox installation complete")
+   logger.info("[installer][web-mozilla] Mozilla Firefox installation complete")
    await send_response({
        "action": "status",
        "data": {

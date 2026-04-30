@@ -782,11 +782,38 @@ def check_if_device_is_unlocked(serial=""):
             "adb %s shell input keyevent 82" % (serial), shell=True, encoding="utf-8"
         )  # Wakeup device and bring it unlock window
         time.sleep(1)
-        output = subprocess.check_output(
-            "adb %s exec-out uiautomator dump /dev/tty" % serial,
-            shell=True,
-            encoding="utf-8",
-        )
+        
+        try:
+            from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+            
+            appium_driver = None
+            if serial and serial.startswith("-s "):
+                extracted_serial = serial.split("-s ")[1].strip()
+                appium_details = Shared_Resources.Get_Shared_Variables("appium_details", log=False)
+                if isinstance(appium_details, dict):
+                    for name, details in appium_details.items():
+                        stored_serial = details.get("serial")
+                        if stored_serial and (stored_serial == extracted_serial or stored_serial in extracted_serial or extracted_serial in stored_serial):
+                            appium_driver = details.get("driver")
+                            break
+                            
+            if appium_driver is None and not serial:
+                appium_driver = Shared_Resources.Get_Shared_Variables("appium_driver", log=False)
+                
+            if appium_driver is not None:
+                output = appium_driver.page_source
+            else:
+                output = subprocess.check_output(
+                    "adb %s exec-out uiautomator dump /dev/tty" % serial,
+                    shell=True,
+                    encoding="utf-8",
+                )
+        except Exception:
+            output = subprocess.check_output(
+                "adb %s exec-out uiautomator dump /dev/tty" % serial,
+                shell=True,
+                encoding="utf-8",
+            )
 
         if "EMERGENCY" in output or "emergency_call_button" in output:
             CommonUtil.ExecLog(
