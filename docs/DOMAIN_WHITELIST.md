@@ -18,6 +18,7 @@ services, and runtime APIs used by the framework and its sub-applications.
 - [Browser Downloads & WebDrivers](#browser-downloads--webdrivers)
 - [Mobile Testing (Appium / Android / iOS)](#mobile-testing-appium--android--ios)
 - [Google Cloud Platform](#google-cloud-platform)
+- [Google Hosted Assets](#google-hosted-assets)
 - [Snowflake](#snowflake)
 - [OCR Models (EasyOCR / PyTorch)](#ocr-models-easyocr--pytorch)
 - [Temporary Email Services](#temporary-email-services)
@@ -49,7 +50,7 @@ The `uv` binary itself is downloaded from GitHub releases (`github.com/astral-sh
 | Domain | Purpose |
 |--------|---------|
 | `nodejs.org` | Node.js binary downloads (used by `nodejs_appium_installer.py`) |
-| `registry.npmjs.org` | npm package registry (Appium server, AI Recorder 2 deps) |
+| `registry.npmjs.org` | npm package registry (Appium server, AI_Recorder_2 deps) |
 
 **Note**: No Yarn domains needed. The project uses npm exclusively.
 
@@ -159,6 +160,15 @@ Required by `google-cloud-bigquery`, `google-cloud-bigquery-storage`, and
 | `oauth2.googleapis.com` | OAuth 2.0 token endpoint |
 | `accounts.google.com` | Google account authentication |
 | `www.googleapis.com` | Google API discovery + legacy endpoints |
+
+---
+
+## Google Hosted Assets
+
+| Domain | Purpose |
+|--------|---------|
+| `fonts.googleapis.com` | Space Grotesk stylesheet for `Apps/Web/AI_Recorder_2/` |
+| `fonts.gstatic.com` | Space Grotesk font files for `Apps/Web/AI_Recorder_2/` |
 
 ---
 
@@ -319,6 +329,10 @@ oauth2.googleapis.com
 accounts.google.com
 www.googleapis.com
 
+# ── Google Hosted Assets ──────────────────────────────────────
+fonts.googleapis.com
+fonts.gstatic.com
+
 # ── Snowflake ─────────────────────────────────────────────────
 *.snowflakecomputing.com
 
@@ -354,7 +368,7 @@ ocsp.r2m01.amazontrust.com
 
 | App | Type | External Dependencies |
 |-----|------|----------------------|
-| `Apps/Web/AI_Recorder_2/` | React (Vite + TypeScript) Chrome extension | npm packages only (antd, react, bootstrap, jquery) — all from `registry.npmjs.org` |
+| `Apps/Web/AI_Recorder_2/` | React (Vite + TypeScript) calculator UI | npm packages from `registry.npmjs.org`; Space Grotesk from Google Fonts |
 | `Apps/Web/aiplugin/` | Vanilla JS Chrome extension | No external downloads — static assets only |
 | `Apps/node_runner/` | Go CLI (no external deps) | Zero `require` in `go.mod` — Go proxy needed only for toolchain |
 | `Apps/lorust/` | Pre-built binaries | No runtime downloads — binaries are vendored |

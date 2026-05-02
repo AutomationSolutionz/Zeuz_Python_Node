@@ -118,7 +118,7 @@ Zeuz_Python_Node/
 │       └── adapter.py                    # Protocol conversion
 │
 ├── Apps/                                 # Supporting applications
-│   ├── Web/AI_Recorder_2/                # Browser recorder (React)
+│   ├── Web/AI_Recorder_2/                # Modern calculator UI (React/Vite)
 │   └── Mobile/                           # Mobile inspectors
 │
 ├── Server/                               # Local FastAPI server

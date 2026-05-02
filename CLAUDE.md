@@ -18,7 +18,7 @@ uv run ruff check Framework/ # Linting
 uv run ruff format Framework/ # Format code
 ```
 
-### AI Recorder Extension (React)
+### AI_Recorder_2 Calculator UI (React)
 ```bash
 cd Apps/Web/AI_Recorder_2/
 npm install
