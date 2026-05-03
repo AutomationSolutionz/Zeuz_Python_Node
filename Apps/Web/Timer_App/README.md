@@ -1,6 +1,6 @@
 # ZeuZ Web Timer App
 
-A dependency-free browser timer app for REQ-121. It supports multiple simultaneous timers, stopwatch mode, countdown mode, labels, pause/resume, stop, individual reset, reset all, and millisecond-precision displays.
+A dependency-free browser timer app for REQ-121. It supports multiple simultaneous timers, stopwatch mode, countdown mode, labels, pause/resume, stop, individual reset, reset all, clear all, and millisecond-precision displays.
 
 ## Run locally
 

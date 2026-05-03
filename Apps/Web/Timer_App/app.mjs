@@ -19,6 +19,7 @@ const template = document.querySelector("#timer-card-template");
 const modeInputs = [...document.querySelectorAll("input[name='timer-mode']")];
 const countdownFields = document.querySelector("#countdown-fields");
 const resetAllButton = document.querySelector("#reset-all");
+const clearAllButton = document.querySelector("#clear-all");
 const runningCount = document.querySelector("#running-count");
 const totalCount = document.querySelector("#total-count");
 const emptyHelper = document.querySelector("#empty-helper");
@@ -72,6 +73,7 @@ function updateStats() {
   runningCount.textContent = String(timers.filter((timer) => timer.status === TIMER_STATUSES.RUNNING).length);
   totalCount.textContent = String(timers.length);
   resetAllButton.disabled = timers.length === 0;
+  clearAllButton.disabled = timers.length === 0;
   emptyHelper.textContent = timers.length === 0
     ? "No timers yet. Create a stopwatch or countdown to begin."
     : "Start with one timer, then add more to run them at the same time.";
@@ -136,7 +138,7 @@ function renderTimers(now = Date.now()) {
     primaryButton.textContent = getPrimaryButtonText(timer);
     primaryButton.classList.toggle("is-primary", timer.status !== TIMER_STATUSES.RUNNING);
 
-    card.querySelector(".stop-timer").disabled = timer.status !== TIMER_STATUSES.RUNNING;
+    card.querySelector(".stop-timer").disabled = timer.status === TIMER_STATUSES.STOPPED;
     timerGrid.append(card);
   });
 
@@ -213,6 +215,11 @@ function resetAllTimers() {
   renderTimers();
 }
 
+function clearAllTimers() {
+  timers = [];
+  renderTimers();
+}
+
 function tick(now = Date.now()) {
   const completedLabels = [];
 
@@ -242,6 +249,7 @@ function tick(now = Date.now()) {
 form.addEventListener("submit", addTimer);
 timerGrid.addEventListener("click", handleTimerAction);
 resetAllButton.addEventListener("click", resetAllTimers);
+clearAllButton.addEventListener("click", clearAllTimers);
 modeInputs.forEach((input) => input.addEventListener("change", syncCountdownVisibility));
 
 syncCountdownVisibility();

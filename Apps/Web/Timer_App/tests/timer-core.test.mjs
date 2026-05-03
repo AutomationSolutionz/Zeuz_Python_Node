@@ -35,6 +35,10 @@ const stoppedStopwatch = stopTimer(startTimer(pausedStopwatch, 5_000), 6_500);
 assert.equal(stoppedStopwatch.status, TIMER_STATUSES.STOPPED);
 assert.equal(stoppedStopwatch.elapsedMs, 3_500);
 
+const stoppedPausedStopwatch = stopTimer(pausedStopwatch, 7_000);
+assert.equal(stoppedPausedStopwatch.status, TIMER_STATUSES.STOPPED);
+assert.equal(stoppedPausedStopwatch.elapsedMs, 2_000);
+
 const countdown = createTimer({
   id: "cd",
   label: "Launch",

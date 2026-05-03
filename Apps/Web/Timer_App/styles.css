@@ -250,6 +250,18 @@ fieldset {
   color: var(--purple-600);
 }
 
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.danger-button {
+  color: var(--purple-900);
+  border-color: var(--purple-500);
+}
+
 .timer-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
@@ -368,6 +380,14 @@ fieldset {
     grid-template-columns: 1fr;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .toolbar-actions {
+    justify-content: stretch;
+  }
+
+  .toolbar-actions button {
+    flex: 1;
   }
 
   .timer-form {
