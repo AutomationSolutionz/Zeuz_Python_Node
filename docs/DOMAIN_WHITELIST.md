@@ -355,6 +355,7 @@ ocsp.r2m01.amazontrust.com
 | App | Type | External Dependencies |
 |-----|------|----------------------|
 | `Apps/Web/AI_Recorder_2/` | React (Vite + TypeScript) Chrome extension | npm packages only (antd, react, bootstrap, jquery) — all from `registry.npmjs.org` |
+| `Apps/Web/Timer_App/` | Dependency-free static browser timer app | No external downloads — static assets only |
 | `Apps/Web/aiplugin/` | Vanilla JS Chrome extension | No external downloads — static assets only |
 | `Apps/node_runner/` | Go CLI (no external deps) | Zero `require` in `go.mod` — Go proxy needed only for toolchain |
 | `Apps/lorust/` | Pre-built binaries | No runtime downloads — binaries are vendored |

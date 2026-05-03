@@ -27,6 +27,12 @@ npm run build  # Production (TSC + Vite)
 npm run lint   # ESLint
 ```
 
+### Web Timer App (Static)
+```bash
+python -m http.server 8080 --directory Apps/Web/Timer_App
+node Apps/Web/Timer_App/tests/timer-core.test.mjs
+```
+
 ### Node Runner CLI (Go)
 ```bash
 cd Apps/node_runner/

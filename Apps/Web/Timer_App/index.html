@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZeuZ Web Timer App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">ZeuZ Timer Workspace</p>
+        <h1>Web Timer App</h1>
+        <p class="hero-copy">Create multiple stopwatch or countdown timers, keep them running together, and manage each timer independently.</p>
+      </div>
+      <div class="hero-stats" aria-label="Timer summary">
+        <div>
+          <span id="running-count">0</span>
+          <small>Running</small>
+        </div>
+        <div>
+          <span id="total-count">0</span>
+          <small>Total</small>
+        </div>
+      </div>
+    </header>
+
+    <section class="composer" aria-labelledby="new-timer-title">
+      <div>
+        <p class="eyebrow">New timer</p>
+        <h2 id="new-timer-title">Add a timer</h2>
+      </div>
+      <form id="timer-form" class="timer-form">
+        <label>
+          <span>Timer label</span>
+          <input id="timer-label" type="text" maxlength="40" placeholder="e.g. Focus sprint" />
+        </label>
+
+        <fieldset>
+          <legend>Timer mode</legend>
+          <label class="radio-card">
+            <input type="radio" name="timer-mode" value="stopwatch" checked />
+            <span>Stopwatch</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="timer-mode" value="countdown" />
+            <span>Countdown</span>
+          </label>
+        </fieldset>
+
+        <div id="countdown-fields" class="countdown-fields" aria-label="Countdown duration">
+          <label>
+            <span>Hours</span>
+            <input id="countdown-hours" type="number" min="0" max="99" value="0" inputmode="numeric" />
+          </label>
+          <label>
+            <span>Minutes</span>
+            <input id="countdown-minutes" type="number" min="0" max="59" value="5" inputmode="numeric" />
+          </label>
+          <label>
+            <span>Seconds</span>
+            <input id="countdown-seconds" type="number" min="0" max="59" value="0" inputmode="numeric" />
+          </label>
+        </div>
+
+        <button class="primary-button" type="submit">Create timer</button>
+      </form>
+    </section>
+
+    <section class="toolbar" aria-label="Timer actions">
+      <div>
+        <h2>Your timers</h2>
+        <p id="empty-helper">Start with one timer, then add more to run them at the same time.</p>
+      </div>
+      <button id="reset-all" class="ghost-button" type="button">Reset all timers</button>
+    </section>
+
+    <section id="timer-grid" class="timer-grid" aria-live="polite"></section>
+  </main>
+
+  <div id="completion-toast" class="completion-toast" role="status" aria-live="polite" hidden></div>
+
+  <template id="timer-card-template">
+    <article class="timer-card">
+      <div class="timer-card__header">
+        <div>
+          <h3 class="timer-card__label"></h3>
+          <p class="timer-card__meta"></p>
+        </div>
+        <button class="icon-button delete-timer" type="button" aria-label="Delete timer">×</button>
+      </div>
+      <div class="timer-display" aria-live="off">00:00:00.000</div>
+      <div class="progress-track" aria-hidden="true"><span></span></div>
+      <p class="timer-status"></p>
+      <div class="timer-controls">
+        <button class="control-button start-pause" type="button">Start</button>
+        <button class="control-button stop-timer" type="button">Stop</button>
+        <button class="control-button reset-timer" type="button">Reset</button>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

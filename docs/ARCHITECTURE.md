@@ -118,7 +118,9 @@ Zeuz_Python_Node/
 │       └── adapter.py                    # Protocol conversion
 │
 ├── Apps/                                 # Supporting applications
-│   ├── Web/AI_Recorder_2/                # Browser recorder (React)
+│   ├── Web/
+│   │   ├── AI_Recorder_2/                # Browser recorder (React)
+│   │   └── Timer_App/                    # Dependency-free browser timer app
 │   └── Mobile/                           # Mobile inspectors
 │
 ├── Server/                               # Local FastAPI server
