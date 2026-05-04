@@ -938,7 +938,12 @@ def get_path_appname_from_dataset(
     When `ancestor_path` is provided, the search is restricted to descendants
     of that path (used by parent/sibling resolution).
     """
-    path, app_name = data_dict.get("path"), data_dict.get("app_name")
+    path = data_dict.get("path")
+    app_name = data_dict.get("app_name")
+    if app_name:
+        save_latest_app_name(app_name)
+    else:
+        app_name = get_latest_app_name()
     wait_time = float(data_dict.get("wait", wait_time) or str(wait_time or 10))
     index_raw = (data_dict.get("index") or "0").strip()
     if not index_raw.isdigit():
@@ -1081,6 +1086,10 @@ def resolve_node(
     groups = split_data_set_by_role(data_set)
     common_dict = convert_data_set_to_dict(data_set)
     app_name = common_dict.get("app_name", "").strip()
+    if app_name:
+        save_latest_app_name(app_name)
+    else:
+        app_name = get_latest_app_name() or ""
 
     parent_path: str | None = None
     if groups["parent"]:
@@ -1924,11 +1933,10 @@ def scroll_to_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 
     container_node = get_node(container_dict, wait_time=0) if container_dict else None
     container_coords = get_node_center_coords(container_node)
-    app_name = (
-        _node_app_name(container_node)
-        or container_dict.get("app_name")
-        or desired_dict.get("app_name")
-    )
+    _dataset_app_name = container_dict.get("app_name") or desired_dict.get("app_name")
+    if _dataset_app_name:
+        save_latest_app_name(_dataset_app_name)
+    app_name = _node_app_name(container_node) or _dataset_app_name or get_latest_app_name()
     if container_coords:
         _xdotool_move(container_coords, app_name=app_name)
     for _ in range(int(options["max_try"])):
@@ -2103,6 +2111,10 @@ def enter_text(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
+    if app_name:
+        save_latest_app_name(app_name)
+    else:
+        app_name = get_latest_app_name() or ""
     # The element locator uses `text=` for matching; the value to type comes from
     # the action row (mid="action"). Pull that explicitly so the locator's text
     # criterion stays distinct from the input value.
@@ -2298,6 +2310,10 @@ def close_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
+    if app_name:
+        save_latest_app_name(app_name)
+    else:
+        app_name = get_latest_app_name() or ""
 
     app_key, matched_app, exec_cmd = find_best_app_match(app_name) or (None, None, None)
     if app_key:
