@@ -979,7 +979,7 @@ def get_parent_path_from_paths(paths: list[str]) -> list[str]:
 
     return parents
 
-
+@logger
 def get_path_appname_from_dataset(
     data_dict: dict[str, str],
     wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
@@ -1414,7 +1414,7 @@ def _parse_bool(value: str | None) -> bool | None:
 
 
 def _parse_click_options(data_set: DataSet) -> dict[str, Any]:
-    """Parse optional click parameter rows: button, click count, offset, method."""
+    """Parse optional click parameter rows: type, button, click count, offset, delay, method."""
     opts: dict[str, Any] = {
         "button": "1", "click_count": 1, "offset": None,
         "delay": 0.05, "method": "auto",
@@ -1426,16 +1426,14 @@ def _parse_click_options(data_set: DataSet) -> dict[str, Any]:
         right_l = right_v.lower()
         if mid_l in _NON_ELEMENT_MIDS or "parameter" not in mid_l and mid_l != "action":
             pass  # parsing happens regardless of mid for action-row keywords
-        if "action" in mid_l:
-            if "right" in left_l or "right" in right_l:
-                opts["button"] = "3"
-            if "middle" in left_l or "middle" in right_l:
-                opts["button"] = "2"
-            if "double" in left_l or "double" in right_l:
+        if left_l == "type":
+            if "double click" in right_l:
                 opts["click_count"] = 2
-            elif "triple" in left_l or "triple" in right_l:
-                opts["click_count"] = 3
-        if left_l in ("button", "click button", "mouse button"):
+            elif "right click" in right_l:
+                opts["button"] = "3"
+            elif "middle click" in right_l:
+                opts["button"] = "2"
+        elif left_l in ("button", "click button", "mouse button"):
             opts["button"] = _BUTTON_MAP.get(right_l, opts["button"])
         elif left_l in ("click count", "clicks", "count"):
             opts["click_count"] = max(1, _parse_int(right_v, opts["click_count"]))
@@ -1692,10 +1690,12 @@ def click_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     """Click an element. Variants (right click, double click, offset) are passed
     as extra rows in the dataset:
 
-      ("button", "optional parameter", "right" | "left" | "middle")
+      ("type", "optional parameter", "double click" | "right click" | "middle click")
+      ("button", "optional parameter", "1" | "2" | "3")
       ("click count", "optional parameter", "1" | "2" | "3")
       ("offset", "optional parameter", "x,y")
-      ("click method", "optional parameter", "accessibility" | "xdotool")
+      ("delay", "optional parameter", "<seconds>")
+      ("method", "optional parameter", "auto" | "xdotool" | "gui")
 
     The same single declaration covers single, double, triple, right, and middle
     click — Action interface is preferred only for plain left single clicks.
