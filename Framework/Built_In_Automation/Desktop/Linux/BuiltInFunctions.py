@@ -650,7 +650,7 @@ def _find_app(app_name: str | None) -> Accessible | None:
     if not app_name:
         return None
     desktop = pyatspi.Registry.getDesktop(0)
-    keyword = app_name.lower()
+    keyword = app_name.strip().lower()
     for app in desktop:
         if app and app.name and keyword in app.name.lower():
             return app
@@ -896,9 +896,10 @@ def get_ui_tree(app_keyword) -> str | None:
     global ui_xml_strings
     desktop = pyatspi.Registry.getDesktop(0)
     target_app = None
+    keyword = (app_keyword or "").strip().lower()
 
     for app in desktop:
-        if app and app_keyword in app.name.lower():
+        if app and keyword and keyword in app.name.lower():
             target_app = app
             break
 
