@@ -27,6 +27,22 @@ except ImportError:
         )
         sys.exit(1)
 
+try:
+    from Xlib import X, display as xlib_display
+    from Xlib.ext import composite as xlib_composite  # noqa: F401  registers ext methods
+    from Xlib.error import XError
+except ImportError:
+    install_missing_modules(["python-xlib==0.33"])
+    try:
+        from Xlib import X, display as xlib_display
+        from Xlib.ext import composite as xlib_composite  # noqa: F401
+        from Xlib.error import XError
+    except ImportError:
+        sys.stderr.write(
+            "Error: python-xlib is not installed. Install it by running Installer/setup_linux_inspector.sh.\n"
+        )
+        sys.exit(1)
+
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
@@ -247,175 +263,142 @@ def _get_window_id_for_app(app_name: str | None) -> str | None:
     return None
 
 
-def capture_screenshot(file_path: str, app_name: str | None = None) -> bool:
-    """Capture screenshot of the desired window.
+def _capture_via_composite(file_path: str, winid: str) -> bool:
+    """Capture a window's pixels via the XComposite offscreen pixmap.
 
-    On macOS: Uses AppleScript + screencapture to capture the frontmost window.
-    On Linux: Uses xwd (and ImageMagick convert), falling back to scrot/gnome-screenshot/import if necessary.
+    A running compositor (mutter/kwin/picom/xfwm4 etc.) redirects every
+    top-level window to an offscreen pixmap; we ask the server for that
+    pixmap and read it directly, so anything stacked above the target
+    window does NOT appear in the result, and we never have to steal focus.
 
-    The function will try to capture the latest opened application window if available
-    (via `get_latest_app_name()`); otherwise it will capture the currently active window.
+    Returns False whenever this path can't be used (no compositor running,
+    Composite extension absent, deps missing, X errors) so the caller can
+    fall back to a different strategy.
     """
-    desired_app = app_name or get_latest_app_name()
-
-    # Check if running on macOS
-    if sys.platform == "darwin":
-        if not desired_app:
-            CommonUtil.ExecLog(
-                MODULE_NAME, "App name is required for macOS screenshot capture", 3
-            )
-            return False
-
-        try:
-            # Use AppleScript to get the Window ID of the frontmost window
-            osascript_command = (
-                f"osascript -e 'tell application \"{desired_app}\" to id of window 1'"
-            )
-            result = subprocess.run(
-                osascript_command,
-                shell=True,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            window_id = result.stdout.strip()
-
-            if not window_id.isdigit():
-                CommonUtil.ExecLog(
-                    MODULE_NAME,
-                    f"Could not retrieve a valid Window ID for '{desired_app}'. Is the app running and does it have a window open?",
-                    3,
-                )
-                return False
-
-            CommonUtil.ExecLog(MODULE_NAME, f"Found Window ID: {window_id}", 1)
-
-            # Use screencapture with the -l (limit) flag to target the Window ID
-            screencapture_command = ["screencapture", "-l", window_id, file_path]
-            subprocess.run(screencapture_command, check=True, capture_output=True)
-
-            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                CommonUtil.ExecLog(
-                    MODULE_NAME,
-                    f"Successfully captured '{desired_app}' window to: {file_path}",
-                    1,
-                )
-                return True
-            else:
-                CommonUtil.ExecLog(
-                    MODULE_NAME, "Screenshot file was not created or is empty", 3
-                )
-                return False
-
-        except subprocess.CalledProcessError as e:
-            CommonUtil.ExecLog(
-                MODULE_NAME,
-                f"macOS screenshot capture failed: {e.stderr.decode() if e.stderr else str(e)}",
-                3,
-            )
-            return False
-        except FileNotFoundError:
-            CommonUtil.ExecLog(
-                MODULE_NAME,
-                "osascript or screencapture command not found (should be present on macOS)",
-                3,
-            )
-            return False
-        except Exception as e:
-            CommonUtil.ExecLog(MODULE_NAME, f"macOS screenshot capture failed: {e}", 3)
-            return False
-
-    # Linux screenshot logic
     try:
-        winid = _get_window_id_for_app(desired_app)
-        if winid:
-            # Try to use xwd + convert (ImageMagick) to create the requested file
-            # If convert is not available, xwd will produce an .xwd output (which may not be desired)
-            # We'll attempt convert and if it fails fall back to writing xwd file then try to convert
-            convert_available = (
-                subprocess.run(
-                    ["which", "convert"], capture_output=True, text=True
-                ).returncode
-                == 0
-            )
-            if convert_available:
-                # Run xwd and pipe to convert which will write the final file
-                p1 = subprocess.Popen(
-                    ["xwd", "-silent", "-id", winid],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                )
-                p2 = subprocess.Popen(
-                    ["convert", "xwd:-", file_path],
-                    stdin=p1.stdout,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-                if p1.stdout:
-                    p1.stdout.close()
-                out, err = p2.communicate()
-                if (
-                    p2.returncode == 0
-                    and os.path.exists(file_path)
-                    and os.path.getsize(file_path) > 0
-                ):
-                    return True
-            else:
-                # convert not available, write xwd to file and then optionally convert using import
-                tmp_xwd = (
-                    file_path if file_path.endswith(".xwd") else f"{file_path}.xwd"
-                )
-                exit_code = subprocess.run(
-                    ["xwd", "-silent", "-id", winid, "-out", tmp_xwd],
-                    capture_output=True,
-                ).returncode
-                if (
-                    exit_code == 0
-                    and os.path.exists(tmp_xwd)
-                    and os.path.getsize(tmp_xwd) > 0
-                ):
-                    # If desired output wasn't .xwd and ImageMagick 'convert' exists, try to convert
-                    if (
-                        not file_path.endswith(".xwd")
-                        and subprocess.run(
-                            ["which", "convert"], capture_output=True
-                        ).returncode
-                        == 0
-                    ):
-                        conv_exit = subprocess.run(
-                            ["convert", tmp_xwd, file_path], capture_output=True
-                        ).returncode
-                        if (
-                            conv_exit == 0
-                            and os.path.exists(file_path)
-                            and os.path.getsize(file_path) > 0
-                        ):
-                            # remove the temporary xwd file
-                            try:
-                                os.remove(tmp_xwd)
-                            except Exception:
-                                pass
-                            return True
-                    # If the caller wanted .xwd (or conversion not possible), move or rename temporary file
-                    if tmp_xwd != file_path:
-                        try:
-                            os.replace(tmp_xwd, file_path)
-                        except Exception:
-                            pass
-                    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                        return True
-    except FileNotFoundError:
-        # xwd not present
-        CommonUtil.ExecLog(MODULE_NAME, "xwd command not found", 3)
+        from PIL import Image
+    except ImportError as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Composite capture skipped: {e}", 4)
+        return False
+
+    d = None
+    pixmap = None
+    try:
+        d = xlib_display.Display()
+        if not d.has_extension("Composite"):
+            return False
+        d.composite_query_version()
+
+        win = d.create_resource_object("window", int(winid))
+        geom = win.get_geometry()
+        w, h = geom.width, geom.height
+        if w <= 0 or h <= 0:
+            return False
+
+        # Fails (e.g. BadMatch) when no compositor has redirected the window.
+        pixmap = win.composite_name_window_pixmap()
+        raw = pixmap.get_image(0, 0, w, h, X.ZPixmap, 0xFFFFFFFF)
+
+        # ZPixmap on a 24/32-bit truecolor visual lays bytes out as B,G,R,X
+        # in memory; "BGRX" tells Pillow to drop the pad byte and produce RGB.
+        img = Image.frombuffer("RGB", (w, h), raw.data, "raw", "BGRX", 0, 1)
+        img.save(file_path)
+
+        return os.path.exists(file_path) and os.path.getsize(file_path) > 0
+    except XError as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Composite capture X error: {e}", 4)
+        return False
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Composite capture failed: {e}", 4)
+        return False
+    finally:
+        try:
+            if pixmap is not None:
+                pixmap.free()
+        except Exception:
+            pass
+        try:
+            if d is not None:
+                d.close()
+        except Exception:
+            pass
+
+
+def _capture_via_xwd_raise(file_path: str, winid: str) -> bool:
+    """Fallback: raise the window, then capture screen pixels with xwd.
+
+    Used when no compositor is running (so XComposite can't help) or the
+    composite path failed. Steals focus as a side effect.
+    """
+    try:
+        subprocess.run(["xdotool", "windowraise", winid], capture_output=True)
+        subprocess.run(
+            ["xdotool", "windowactivate", "--sync", winid], capture_output=True
+        )
+        time.sleep(0.25)
+
+        p1 = subprocess.Popen(
+            ["xwd", "-silent", "-id", winid],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        p2 = subprocess.Popen(
+            ["convert", "xwd:-", file_path],
+            stdin=p1.stdout,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+        if p1.stdout:
+            p1.stdout.close()
+        _, err = p2.communicate()
+        p1.wait()
+
+        if (
+            p2.returncode == 0
+            and os.path.exists(file_path)
+            and os.path.getsize(file_path) > 0
+        ):
+            return True
+
+        CommonUtil.ExecLog(
+            MODULE_NAME,
+            f"xwd/convert capture failed: {err.decode(errors='replace').strip()}",
+            3,
+        )
+    except FileNotFoundError as e:
+        CommonUtil.ExecLog(
+            MODULE_NAME,
+            f"Required command not found ({e.filename}). Install xwd (x11-apps), xdotool, and ImageMagick.",
+            3,
+        )
     except Exception as e:
         CommonUtil.ExecLog(MODULE_NAME, f"xwd/convert screenshot failed: {e}", 3)
 
-    CommonUtil.ExecLog(
-        MODULE_NAME,
-        "Failed to capture screenshot. Ensure xwd, xdotool, and ImageMagick (convert) are installed.",
-        3,
-    )
     return False
+
+
+def capture_screenshot(file_path: str, app_name: str | None = None) -> bool:
+    """Capture a screenshot of the application's window (X11 only).
+
+    Tries the XComposite extension first, which reads the compositor's
+    offscreen pixmap and is unaffected by other windows on top. Falls back
+    to raising the window and capturing on-screen pixels with xwd if the
+    composite path is unavailable (no compositor, missing deps, or X error).
+    """
+    desired_app = app_name or get_latest_app_name()
+
+    winid = _get_window_id_for_app(desired_app)
+    if not winid:
+        CommonUtil.ExecLog(
+            MODULE_NAME,
+            f"Could not resolve a window for app '{desired_app}'",
+            3,
+        )
+        return False
+
+    if _capture_via_composite(file_path, winid):
+        return True
+    return _capture_via_xwd_raise(file_path, winid)
 
 
 def convert_data_set_to_dict(data_set: DataSet) -> dict[str, str]:
