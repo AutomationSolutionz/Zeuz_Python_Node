@@ -44,6 +44,8 @@ try:
 except:
     pass
 
+
+
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
@@ -1064,9 +1066,22 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
 
         # Capture screenshot of desktop
         if Method == "desktop":
-            if sys.platform == "linux2":
-                image = ImageGrab_Linux.grab()
-                image.save(ImageName, format="PNG")  # Save to disk
+            if sys.platform in ("linux", "linux2"):
+                # Import Linux screenshot function for AT-SPI desktop automation
+                try:
+                    if sys.platform in ("linux", "linux2"):
+                        from Framework.Built_In_Automation.Desktop.Linux.BuiltInFunctions import capture_screenshot as linux_capture_screenshot
+                except Exception:
+                    linux_capture_screenshot = None
+                if linux_capture_screenshot:
+                    linux_capture_screenshot(ImageName)
+                else:
+                    ExecLog(
+                        sModuleInfo,
+                        "Linux screenshot module not available",
+                        3,
+                    )
+                    return
             elif sys.platform == "win32" or sys.platform == "darwin":
                 bbox = _get_window_screenshot_bbox()
                 image = ImageGrab_Mac_Win.grab(bbox)

@@ -966,7 +966,7 @@ def get_parent_path_from_paths(paths: list[str]) -> list[str]:
 @logger
 def get_path_appname_from_dataset(
     data_dict: dict[str, str],
-    wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
+    wait_time=Shared_Resources.Get_Shared_Variables("element_wait", False),
     ancestor_path: str | None = None,
 ) -> tuple[str | None, str | None]:
     """Resolve (path, app_name) from a flattened element dict.
@@ -1030,7 +1030,7 @@ def get_path_appname_from_dataset(
 @logger
 def get_node(
     data_dict: dict[str, str],
-    wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
+    wait_time=Shared_Resources.Get_Shared_Variables("element_wait", False),
     ancestor_path: str | None = None,
 ) -> Accessible | None:
     """Resolve an Accessible from a flattened element dict.
@@ -1110,7 +1110,7 @@ def _node_path_string(node: Accessible | None) -> str | None:
 
 def resolve_node(
     data_set: DataSet,
-    wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
+    wait_time=Shared_Resources.Get_Shared_Variables("element_wait", False),
 ) -> Accessible | None:
     """Resolve the target Accessible honoring mid-column parent/sibling/child grouping.
 
