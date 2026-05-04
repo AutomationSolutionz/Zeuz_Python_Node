@@ -5,6 +5,7 @@ import subprocess
 import sys
 import os
 import glob
+import difflib
 import xml.etree.ElementTree as ET
 from typing import List, Literal, Tuple, Optional, Any, Callable
 
@@ -653,6 +654,60 @@ def _find_app(app_name: str | None) -> Accessible | None:
     for app in desktop:
         if app and app.name and keyword in app.name.lower():
             return app
+    return None
+
+
+def _get_atspi_apps() -> dict[int, str]:
+    """Return {pid: name} for all apps currently in the AT-SPI2 desktop tree."""
+    try:
+        desktop = pyatspi.Registry.getDesktop(0)
+        result: dict[int, str] = {}
+        for app in desktop:
+            if app and app.name:
+                try:
+                    result[app.get_process_id()] = app.name
+                except Exception:
+                    pass
+        return result
+    except Exception:
+        return {}
+
+
+def _discover_atspi_app_name(
+    launched_name: str,
+    before: dict[int, str],
+    timeout: float = 10.0,
+    poll_interval: float = 0.5,
+) -> str | None:
+    """
+    Poll AT-SPI2 until a new app appears (identified by a PID not in `before`).
+    Returns the AT-SPI2 name of that app.
+    If multiple new apps appear simultaneously, similarity to `launched_name` breaks the tie.
+    Falls back to name-similarity across all running apps if no new PID appears within timeout.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        current = _get_atspi_apps()
+        new_apps = {pid: name for pid, name in current.items() if pid not in before}
+        if new_apps:
+            if len(new_apps) == 1:
+                return next(iter(new_apps.values()))
+            return max(
+                new_apps.values(),
+                key=lambda n: difflib.SequenceMatcher(
+                    None, launched_name.lower(), n.lower()
+                ).ratio(),
+            )
+        time.sleep(poll_interval)
+    # No new PID appeared (e.g. app was already running): fall back to name similarity
+    current = _get_atspi_apps()
+    if current:
+        return max(
+            current.values(),
+            key=lambda n: difflib.SequenceMatcher(
+                None, launched_name.lower(), n.lower()
+            ).ratio(),
+        )
     return None
 
 
@@ -2232,15 +2287,24 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 
     _, matched_app, exec_cmd = find_best_app_match(app_name) or (None, None, None)
 
+    before_apps = _get_atspi_apps()
+
+    def _record_launch(launched: str):
+        atspi_name = _discover_atspi_app_name(launched, before_apps)
+        if atspi_name and atspi_name.lower() != launched.lower():
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Accessibility tree name resolved to: '{atspi_name}'",
+                1,
+            )
+        save_latest_app_name(atspi_name or launched)
+
     if matched_app:
         if matched_app != app_name:
             CommonUtil.ExecLog(
                 MODULE_NAME, f"Best match found: {matched_app} for {app_name}", 1
             )
         try:
-            # if args:
-            #     command = f"nohup {app_name} {' '.join(args)} >/dev/null 2>&1 &"
-            # else:
             command = f"nohup {exec_cmd} >/dev/null 2>&1 &"
             exit_code = os.system(command)
             if exit_code == 0:
@@ -2249,7 +2313,7 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
                     f"Successfully launched '{app_name}' with command: {command}",
                     1,
                 )
-                save_latest_app_name(app_name)
+                _record_launch(app_name)
                 return "passed"
             else:
                 CommonUtil.ExecLog(
@@ -2272,7 +2336,7 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
                     f"Successfully launched '{app_name}' with command: {command}",
                     1,
                 )
-                save_latest_app_name(app_name)
+                _record_launch(app_name)
                 return "passed"
             else:
                 CommonUtil.ExecLog(
