@@ -5,6 +5,7 @@ import subprocess
 import sys
 import os
 import glob
+import xml.etree.ElementTree as ET
 from typing import List, Literal, Tuple, Optional, Any, Callable
 
 from Framework.module_installer import install_missing_modules
@@ -417,24 +418,242 @@ def capture_screenshot(file_path: str, app_name: str | None = None) -> bool:
 
 
 def convert_data_set_to_dict(data_set: DataSet) -> dict[str, str]:
-    """Convert data set to dictionary for easier access"""
-    # ToDo: handle * and ** properly
+    """Convert data set to dictionary for easier access.
+
+    Records `exact_<key>` / `case_sensitive_<key>` flags from `*`/`**` prefixes
+    so downstream matchers can apply fuzzy / case-insensitive matching uniformly.
+    """
     data_dict = {}
     for item in data_set:
         if len(item) == 3:
             key, _, value = item
             if key.startswith("**"):
-                data_dict[key[2:].strip()] = value
-                data_dict["exact_" + key[2:].strip()] = "false"
-                data_dict["case_sensitive_" + key[2:].strip()] = "false"
+                clean = key[2:].strip()
+                data_dict[clean] = value
+                data_dict["exact_" + clean] = "false"
+                data_dict["case_sensitive_" + clean] = "false"
             elif key.startswith("*"):
-                data_dict[key[1:].strip()] = value
-                data_dict["exact_" + key[1:].strip()] = "false"
+                clean = key[1:].strip()
+                data_dict[clean] = value
+                data_dict["exact_" + clean] = "false"
             else:
                 data_dict[key.strip()] = value
         else:
             CommonUtil.ExecLog(MODULE_NAME, f"Invalid item in data set: {item}", 3)
     return data_dict
+
+
+# Mid-column values that should NOT be treated as element selectors.
+_NON_ELEMENT_MIDS = {
+    "action",
+    "save parameter",
+    "optional parameter",
+    "click parameter",
+    "scroll parameter",
+    "loop action",
+    "loop settings",
+    "optional loop settings",
+    "optional loop condition",
+    "optional loop control",
+    "common action",
+}
+
+# Mid-column values that select an element role within the locator.
+_ELEMENT_ROLES = ("element", "parent", "sibling", "child", "unique")
+
+# Locator attribute keys recognized by find_paths_by_attrs (besides path/text).
+# Maps user-facing key name -> XML attribute name (or "__role__" for the tag).
+_ATTR_ALIASES = {
+    "name": "name",
+    "role": "__role__",
+    "type": "__role__",
+    "control type": "__role__",
+    "controltype": "__role__",
+    "description": "description",
+    "desc": "description",
+    "states": "states",
+    "state": "states",
+    "actions": "actions",
+    "action attr": "actions",
+    "class": "class",
+    "toolkit class": "class",
+    "id": "id",
+    "automation id": "id",
+    "automationid": "id",
+    "x": "x",
+    "y": "y",
+    "width": "width",
+    "height": "height",
+}
+
+# Numeric attributes that should be compared with int equality.
+_NUMERIC_ATTRS = {"x", "y", "width", "height"}
+
+# Multi-token attributes that should match if the criterion appears as a token.
+_TOKEN_ATTRS = {"states", "actions"}
+
+
+def split_data_set_by_role(data_set: DataSet) -> dict[str, DataSet]:
+    """Bucket dataset rows by mid-column 'X parameter' prefix.
+
+    Rows whose mid is in `_NON_ELEMENT_MIDS` are skipped (they belong to the
+    action itself, not the element selector). Unknown mids default to
+    'element' for backwards compatibility with datasets that omit the mid.
+    """
+    groups: dict[str, DataSet] = {role: [] for role in _ELEMENT_ROLES}
+    for left, mid, right in data_set:
+        mid_l = (mid or "").strip().lower()
+        if mid_l in _NON_ELEMENT_MIDS:
+            continue
+        role = "element"
+        for candidate in _ELEMENT_ROLES:
+            if mid_l.startswith(candidate):
+                role = candidate
+                break
+        groups[role].append((left, mid, right))
+    return groups
+
+
+def _normalize_attr_key(raw_key: str) -> str | None:
+    """Map a user-facing dataset key to a normalized XML attribute name."""
+    cleaned = raw_key.strip().lower()
+    if cleaned in _ATTR_ALIASES:
+        return _ATTR_ALIASES[cleaned]
+    return None
+
+
+def _matches_one_criterion(
+    elem_value: str | None,
+    target_value: str,
+    fuzzy: bool,
+    case_insensitive: bool,
+    token_split: bool,
+    numeric: bool,
+) -> bool:
+    if elem_value is None:
+        return False
+    target = target_value.strip()
+    if numeric:
+        try:
+            return int(float(elem_value)) == int(float(target))
+        except Exception:
+            return False
+    if token_split:
+        tokens = [t.strip() for t in elem_value.split(",") if t.strip()]
+        if case_insensitive:
+            return target.lower() in [t.lower() for t in tokens]
+        return target in tokens
+    if case_insensitive:
+        elem_value = elem_value.lower()
+        target = target.lower()
+    if fuzzy:
+        return target in elem_value
+    return elem_value == target
+
+
+def _build_criteria_from_dict(data_dict: dict[str, str]) -> list[tuple]:
+    """Build matcher criteria tuples from a flattened element dict.
+
+    Returns a list of (xml_attr, target_value, fuzzy, case_insensitive,
+    token_split, numeric). 'text' is included as a special pseudo-attribute
+    that maps to the XML 'text' attribute.
+    """
+    criteria: list[tuple] = []
+    text_value = data_dict.get("text", "").strip()
+    if text_value:
+        fuzzy = data_dict.get("exact_text", "true").lower() == "false"
+        ci = data_dict.get("case_sensitive_text", "true").lower() == "false"
+        criteria.append(("text", text_value, fuzzy, ci, False, False))
+
+    for raw_key, value in data_dict.items():
+        if raw_key in (
+            "text",
+            "path",
+            "app_name",
+            "wait",
+            "index",
+        ):
+            continue
+        if raw_key.startswith("exact_") or raw_key.startswith("case_sensitive_"):
+            continue
+        if not value or not str(value).strip():
+            continue
+        attr = _normalize_attr_key(raw_key)
+        if not attr:
+            continue
+        fuzzy = data_dict.get("exact_" + raw_key, "true").lower() == "false"
+        ci = data_dict.get("case_sensitive_" + raw_key, "true").lower() == "false"
+        token_split = attr in _TOKEN_ATTRS
+        numeric = attr in _NUMERIC_ATTRS
+        criteria.append((attr, str(value).strip(), fuzzy, ci, token_split, numeric))
+    return criteria
+
+
+def find_paths_by_attrs(
+    xml_content: str,
+    criteria: list[tuple],
+    ancestor_path: str | None = None,
+) -> list[str]:
+    """Walk the AT-SPI XML dump and return paths whose elements match all criteria.
+
+    Each criterion is a tuple (xml_attr, target, fuzzy, case_insensitive,
+    token_split, numeric). xml_attr can be the special "__role__" to match
+    against the tag name (which encodes the AT-SPI role).
+    """
+    if not criteria:
+        return []
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"XML parse error in matcher: {e}", 3)
+        return []
+
+    matches: list[str] = []
+    for elem in root.iter():
+        path = elem.get("path", "")
+        if not path:
+            continue
+        if ancestor_path and not (
+            path == ancestor_path or path.startswith(ancestor_path + ".")
+        ):
+            continue
+        ok = True
+        for attr, target, fuzzy, ci, token_split, numeric in criteria:
+            if attr == "__role__":
+                actual: str | None = elem.tag
+            else:
+                actual = elem.get(attr)
+            if not _matches_one_criterion(actual, target, fuzzy, ci, token_split, numeric):
+                ok = False
+                break
+        if ok:
+            matches.append(path)
+    return matches
+
+
+def _node_at_path(target_app: Accessible, path_str: str) -> Accessible | None:
+    """Walk dot-separated child indices from target_app to the requested node."""
+    try:
+        indices = [int(i) for i in path_str.strip().split(".")]
+    except ValueError:
+        return None
+    node: Accessible | None = target_app
+    for index in indices:
+        if node is None or index >= len(node):
+            return None
+        node = node[index]
+    return node
+
+
+def _find_app(app_name: str | None) -> Accessible | None:
+    if not app_name:
+        return None
+    desktop = pyatspi.Registry.getDesktop(0)
+    keyword = app_name.lower()
+    for app in desktop:
+        if app and app.name and keyword in app.name.lower():
+            return app
+    return None
 
 
 def simulate_keyboard_typing(
@@ -709,102 +928,101 @@ def get_parent_path_from_paths(paths: list[str]) -> list[str]:
 def get_path_appname_from_dataset(
     data_dict: dict[str, str],
     wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
+    ancestor_path: str | None = None,
 ) -> tuple[str | None, str | None]:
+    """Resolve (path, app_name) from a flattened element dict.
+
+    Honors the path directly when supplied. Otherwise builds a criteria list
+    from any combination of supported attributes (text, name, role, description,
+    states, actions, class, id, x/y/width/height) and walks the AT-SPI dump.
+    When `ancestor_path` is provided, the search is restricted to descendants
+    of that path (used by parent/sibling resolution).
+    """
     path, app_name = data_dict.get("path"), data_dict.get("app_name")
     wait_time = float(data_dict.get("wait", wait_time) or str(wait_time or 10))
-    index = data_dict.get("index") or "0"
-    if index.isdigit():
-        index = int(index)
-    else:
+    index_raw = (data_dict.get("index") or "0").strip()
+    if not index_raw.isdigit():
         raise ValueError("Index must be an integer.")
-    text = data_dict.get("text", "").strip()
-    exact_text_match = data_dict.get("exact_text", "true").lower() == "true"
-    text_case_sensitive = data_dict.get("case_sensitive_text", "true").lower() == "true"
-    start_time = time.time()
-    if not path and text:
-        while True:
-            ui_tree = get_ui_tree(app_name)
-            if not ui_tree:
-                CommonUtil.ExecLog(
-                    "", "UI tree not found for app_name: %s" % app_name, 3
-                )
-                return None, app_name
-            paths = get_paths_by_text(
-                ui_tree,
-                text,
-                exact_match=exact_text_match,
-                case_sensitive=text_case_sensitive,
-            )
+    index = int(index_raw)
 
-            if len(paths) == 0:
-                if time.time() < start_time + wait_time:
-                    time.sleep(0.5)
-                    continue
-                else:
-                    CommonUtil.ExecLog("", "No elements found with text: %s" % text, 3)
-                    return None, app_name
-            if len(paths) == 1:
-                return paths[0], app_name
-            else:
-                parent_paths = get_parent_path_from_paths(paths)
-                CommonUtil.ExecLog("", "Found paths: %s" % parent_paths, 1)
-                return parent_paths[index] if parent_paths else None, app_name
-    return path, app_name
+    if path:
+        return path, app_name
+
+    criteria = _build_criteria_from_dict(data_dict)
+    if not criteria:
+        return None, app_name
+
+    start_time = time.time()
+    while True:
+        ui_tree = get_ui_tree(app_name)
+        if not ui_tree:
+            CommonUtil.ExecLog("", "UI tree not found for app_name: %s" % app_name, 3)
+            return None, app_name
+        paths = find_paths_by_attrs(ui_tree, criteria, ancestor_path=ancestor_path)
+        if not paths:
+            if time.time() < start_time + wait_time:
+                time.sleep(0.5)
+                continue
+            CommonUtil.ExecLog(
+                "", "No elements found matching criteria: %s" % data_dict, 3
+            )
+            return None, app_name
+        if len(paths) == 1:
+            return paths[0], app_name
+        parent_paths = get_parent_path_from_paths(paths)
+        CommonUtil.ExecLog("", "Found paths: %s" % parent_paths, 1)
+        if not parent_paths:
+            return None, app_name
+        if index >= len(parent_paths):
+            CommonUtil.ExecLog(
+                "",
+                f"Index {index} out of range; only {len(parent_paths)} matches",
+                3,
+            )
+            return None, app_name
+        return parent_paths[index], app_name
 
 
 @logger
 def get_node(
     data_dict: dict[str, str],
     wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
+    ancestor_path: str | None = None,
 ) -> Accessible | None:
-    """Get element using path_string from dataset"""
+    """Resolve an Accessible from a flattened element dict.
+
+    Supports any combination of locator attributes (text, name, role, description,
+    states, actions, class, id, x/y/width/height) plus an explicit `path`. When
+    `ancestor_path` is supplied the search is restricted to descendants.
+    """
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
-    start_time = time.time()
     if not data_dict:
         CommonUtil.ExecLog(sModuleInfo, "Data set is empty", 3)
         return None
     try:
-        path, app_name = get_path_appname_from_dataset(data_dict)
+        path, app_name = get_path_appname_from_dataset(
+            data_dict, wait_time=wait_time, ancestor_path=ancestor_path
+        )
         if not path:
             CommonUtil.ExecLog(sModuleInfo, "No path found in the dataset", 3)
             return None
         if not app_name:
             CommonUtil.ExecLog(sModuleInfo, "No app_name found in the dataset", 3)
             return None
-        path = path.strip().replace(" ", ".")  # support for space separated paths
+        path = path.strip().replace(" ", ".")  # support for space-separated paths
 
-        desktop = pyatspi.Registry.getDesktop(0)
-        target_app = None
-        for app in desktop:
-            if app and app.name and app_name in app.name.lower():
-                target_app = app
-                break
+        target_app = _find_app(app_name)
         if not target_app:
             CommonUtil.ExecLog(
                 sModuleInfo, "No application found with name: %s" % app_name, 3
             )
             return None
-        try:
-            indices = [int(i) for i in path.strip().split(".")]
-        except ValueError:
-            CommonUtil.ExecLog(sModuleInfo, "Invalid path string: %s" % path, 3)
-            return None
-
-        node = target_app
-        for i, index in enumerate(indices):
-            if index >= len(node):
-                current_path = ".".join(map(str, indices[:i]))
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Index %d out of bounds at %s" % (index, current_path),
-                    3,
-                )
-                return None
-            node = node[index]
-
+        node = _node_at_path(target_app, path)
         if not node:
-            CommonUtil.ExecLog(sModuleInfo, "No element found at the specified path", 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "No element found at the specified path: %s" % path, 3
+            )
             return None
         return node
     except Exception as e:
@@ -812,8 +1030,366 @@ def get_node(
         return None
 
 
-def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_failed"]:
-    """Click using node, first get the element then click"""
+def _node_path_string(node: Accessible | None) -> str | None:
+    """Compute the dot-path of a node relative to its application."""
+    if node is None:
+        return None
+    indices: list[int] = []
+    current = node
+    try:
+        while True:
+            parent = current.parent
+            if parent is None:
+                break
+            try:
+                idx = current.get_index_in_parent()
+            except Exception:
+                idx = -1
+                for i in range(len(parent)):
+                    if parent[i] == current:
+                        idx = i
+                        break
+                if idx < 0:
+                    return None
+            indices.append(idx)
+            current = parent
+            try:
+                if current.get_role() == pyatspi.ROLE_APPLICATION:
+                    break
+            except Exception:
+                break
+    except Exception:
+        return None
+    indices.reverse()
+    return ".".join(str(i) for i in indices)
+
+
+def resolve_node(
+    data_set: DataSet,
+    wait_time=Shared_Resources.Get_Shared_Variables("element_wait"),
+) -> Accessible | None:
+    """Resolve the target Accessible honoring mid-column parent/sibling/child grouping.
+
+    Falls back to plain element resolution when no parent/sibling/child rows are
+    present, preserving backwards compatibility with existing test cases.
+    """
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    if not data_set:
+        return None
+
+    groups = split_data_set_by_role(data_set)
+    common_dict = convert_data_set_to_dict(data_set)
+    app_name = common_dict.get("app_name", "").strip()
+
+    parent_path: str | None = None
+    if groups["parent"]:
+        parent_dict = convert_data_set_to_dict(groups["parent"])
+        if "app_name" not in parent_dict and app_name:
+            parent_dict["app_name"] = app_name
+        parent_node = get_node(parent_dict, wait_time=wait_time)
+        if parent_node is None:
+            CommonUtil.ExecLog(sModuleInfo, "Parent element not found", 3)
+            return None
+        parent_path = _node_path_string(parent_node)
+
+    if groups["sibling"]:
+        if not parent_path:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "A common PARENT of both ELEMENT and SIBLING should be provided",
+                3,
+            )
+            return None
+        sibling_dict = convert_data_set_to_dict(groups["sibling"])
+        if "app_name" not in sibling_dict and app_name:
+            sibling_dict["app_name"] = app_name
+        sibling_node = get_node(
+            sibling_dict, wait_time=wait_time, ancestor_path=parent_path
+        )
+        if sibling_node is None:
+            CommonUtil.ExecLog(sModuleInfo, "Sibling element not found", 3)
+            return None
+
+    element_dict = convert_data_set_to_dict(groups["element"]) if groups["element"] else common_dict
+    if "app_name" not in element_dict and app_name:
+        element_dict["app_name"] = app_name
+    target_node = get_node(
+        element_dict, wait_time=wait_time, ancestor_path=parent_path
+    )
+    if target_node is None:
+        return None
+
+    if groups["child"]:
+        child_dict = convert_data_set_to_dict(groups["child"])
+        if "app_name" not in child_dict and app_name:
+            child_dict["app_name"] = app_name
+        child_anchor = _node_path_string(target_node)
+        if child_anchor is None:
+            CommonUtil.ExecLog(sModuleInfo, "Could not derive child anchor path", 3)
+            return None
+        child_node = get_node(
+            child_dict, wait_time=wait_time, ancestor_path=child_anchor
+        )
+        if child_node is None:
+            CommonUtil.ExecLog(sModuleInfo, "Child element not found", 3)
+            return None
+        return child_node
+
+    return target_node
+
+
+# --- AT-SPI helpers (state, action, mouse synth) -----------------------------
+
+# Click-shaped Action interface names recognized across toolkits.
+# AT-SPI dumps in this repo use Press / Toggle / ShowMenu / SetFocus / Increase /
+# Decrease (case sensitive); _action_index() lower-cases names before lookup so
+# this set is lower-case too. ShowMenu is included because clicking a menu_item
+# whose only action is ShowMenu should open its popup.
+_CLICK_ACTION_NAMES = {
+    "click", "jump", "press", "open", "activate", "select",
+    "clickancestor", "link.open", "showmenu",
+}
+_CHECK_ACTION_NAMES = {"toggle", "press", "click", "check", "activate", "select"}
+_UNCHECK_ACTION_NAMES = {"toggle", "press", "click", "uncheck", "activate", "select"}
+_STATE_CHECKED = {"checked", "selected", "pressed", "armed"}
+_STATE_VISIBLE = {"visible", "showing"}
+_STATE_HIDDEN = {"hidden", "offscreen", "defunct", "invisible"}
+
+_BUTTON_MAP = {
+    "left": "1", "primary": "1", "1": "1",
+    "middle": "2", "center": "2", "2": "2",
+    "right": "3", "secondary": "3", "3": "3",
+}
+
+
+def _node_app_name(node: Accessible | None) -> str | None:
+    if node is None:
+        return None
+    try:
+        app_acc = node.get_application()
+        if app_acc and getattr(app_acc, "name", None):
+            return app_acc.name
+    except Exception:
+        return None
+    return None
+
+
+def _node_state_names(node: Accessible | None) -> set[str]:
+    if node is None:
+        return set()
+    try:
+        state_set = node.getStateSet()
+    except Exception:
+        try:
+            state_set = node.get_state_set()
+        except Exception:
+            return set()
+    states: set[str] = set()
+    try:
+        for state in state_set.getStates():
+            states.add((pyatspi.stateToString(state) or str(state)).strip().lower())
+    except Exception:
+        pass
+    return states
+
+
+def _is_node_checked(node: Accessible | None) -> bool:
+    return bool(_node_state_names(node) & _STATE_CHECKED)
+
+
+def _is_node_visible(node: Accessible | None) -> bool:
+    if node is None:
+        return False
+    states = _node_state_names(node)
+    if states & _STATE_HIDDEN:
+        return False
+    rect = _node_rect(node)
+    return bool(rect and rect[2] > 0 and rect[3] > 0)
+
+
+def _node_rect(node: Accessible | None) -> tuple[int, int, int, int] | None:
+    if node is None:
+        return None
+    try:
+        comp = node.queryComponent()
+        if not comp:
+            return None
+        get_extents = getattr(comp, "getExtents", None)
+        if get_extents:
+            x, y, w, h = get_extents(pyatspi.DESKTOP_COORDS)
+        else:
+            x, y = comp.getPosition(pyatspi.DESKTOP_COORDS)
+            w, h = comp.getSize()
+        return int(x), int(y), int(w), int(h)
+    except Exception:
+        return None
+
+
+def _action_index(node: Accessible | None, names: set[str]) -> int:
+    """Return the first action index whose name (case-insensitive) is in `names`."""
+    if node is None:
+        return -1
+    try:
+        iface = node.queryAction()
+        if not iface or iface.nActions <= 0:
+            return -1
+        for i in range(iface.nActions):
+            if iface.getName(i).strip().lower() in names:
+                return i
+    except Exception:
+        return -1
+    return -1
+
+
+def _perform_action(node: Accessible | None, names: set[str], climb: bool = True) -> bool:
+    """Try to invoke an Action interface entry whose name matches `names`,
+    optionally climbing to ancestors when the leaf has no matching action."""
+    current = node
+    while current is not None:
+        idx = _action_index(current, names)
+        if idx >= 0:
+            try:
+                current.queryAction().doAction(idx)
+                return True
+            except Exception:
+                return False
+        if not climb:
+            return False
+        try:
+            current = current.parent
+        except Exception:
+            return False
+    return False
+
+
+def _grab_focus(node: Accessible | None) -> bool:
+    if node is None:
+        return False
+    try:
+        comp = node.queryComponent()
+        if comp and hasattr(comp, "grabFocus"):
+            return bool(comp.grabFocus())
+    except Exception:
+        return False
+    return False
+
+
+def _atspi_mouse_move(coords: tuple[int, int]) -> bool:
+    try:
+        pyatspi.Registry.generateMouseEvent(coords[0], coords[1], "abs")
+        return True
+    except Exception:
+        return False
+
+
+def _atspi_mouse_click(
+    coords: tuple[int, int], button: str = "1", click_count: int = 1, delay: float = 0.05
+) -> bool:
+    try:
+        pyatspi.Registry.generateMouseEvent(coords[0], coords[1], "abs")
+        for _ in range(max(1, click_count)):
+            pyatspi.Registry.generateMouseEvent(
+                coords[0], coords[1], f"b{button}c"
+            )
+            if delay > 0:
+                time.sleep(delay)
+        return True
+    except Exception:
+        return False
+
+
+def _atspi_mouse_drag(
+    src: tuple[int, int], dst: tuple[int, int], button: str = "1"
+) -> bool:
+    try:
+        pyatspi.Registry.generateMouseEvent(src[0], src[1], "abs")
+        pyatspi.Registry.generateMouseEvent(src[0], src[1], f"b{button}p")
+        pyatspi.Registry.generateMouseEvent(dst[0], dst[1], "abs")
+        pyatspi.Registry.generateMouseEvent(dst[0], dst[1], f"b{button}r")
+        return True
+    except Exception:
+        return False
+
+
+def _parse_int(value: str | None, default: int) -> int:
+    try:
+        return int(float((value or "").strip()))
+    except Exception:
+        return default
+
+
+def _parse_float(value: str | None, default: float) -> float:
+    try:
+        return float((value or "").strip())
+    except Exception:
+        return default
+
+
+def _parse_offset(value: str | None) -> tuple[int, int] | None:
+    if not value:
+        return None
+    try:
+        parts = [p.strip() for p in value.replace(";", ",").split(",")]
+        if len(parts) < 2:
+            return None
+        return int(float(parts[0])), int(float(parts[1]))
+    except Exception:
+        return None
+
+
+def _parse_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    v = value.strip().lower()
+    if v in ("true", "yes", "y", "1", "on", "checked", "check"):
+        return True
+    if v in ("false", "no", "n", "0", "off", "unchecked", "uncheck"):
+        return False
+    return None
+
+
+def _parse_click_options(data_set: DataSet) -> dict[str, Any]:
+    """Parse optional click parameter rows: button, click count, offset, method."""
+    opts: dict[str, Any] = {
+        "button": "1", "click_count": 1, "offset": None,
+        "delay": 0.05, "method": "auto",
+    }
+    for left, mid, right in data_set:
+        left_l = left.strip().lower()
+        mid_l = (mid or "").strip().lower()
+        right_v = (right or "").strip()
+        right_l = right_v.lower()
+        if mid_l in _NON_ELEMENT_MIDS or "parameter" not in mid_l and mid_l != "action":
+            pass  # parsing happens regardless of mid for action-row keywords
+        if "action" in mid_l:
+            if "right" in left_l or "right" in right_l:
+                opts["button"] = "3"
+            if "middle" in left_l or "middle" in right_l:
+                opts["button"] = "2"
+            if "double" in left_l or "double" in right_l:
+                opts["click_count"] = 2
+            elif "triple" in left_l or "triple" in right_l:
+                opts["click_count"] = 3
+        if left_l in ("button", "click button", "mouse button"):
+            opts["button"] = _BUTTON_MAP.get(right_l, opts["button"])
+        elif left_l in ("click count", "clicks", "count"):
+            opts["click_count"] = max(1, _parse_int(right_v, opts["click_count"]))
+        elif left_l == "offset":
+            opts["offset"] = _parse_offset(right_v)
+        elif left_l in ("delay", "click delay"):
+            opts["delay"] = max(0.0, _parse_float(right_v, opts["delay"]))
+        elif left_l in ("method", "click method", "click using"):
+            opts["method"] = right_l
+    return opts
+
+
+def click_element_by_node(
+    node: Accessible | None, options: dict[str, Any] | None = None
+) -> Literal["passed", "zeuz_failed"]:
+    """Click an Accessible: prefer AT-SPI Action interface, climb to ancestors
+    when the leaf has no click-shaped action, then fall back to AT-SPI mouse
+    synthesis, then xdotool."""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
@@ -821,268 +1397,258 @@ def click_element_by_node(node: Accessible | None) -> Literal["passed", "zeuz_fa
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
+    options = options or _parse_click_options([])
+    button = str(options.get("button") or "1")
+    click_count = int(options.get("click_count") or 1)
+    offset = options.get("offset")
+    delay = float(options.get("delay") or 0.05)
+    method = str(options.get("method") or "auto").lower()
+
     original_node = node
-    # Use module-level helper get_node_center_coords
 
-    # Use module-level helper click_coords_with_xdotool
-
-    while node:
-        try:
-            action_iface = node.queryAction()
-            if action_iface and action_iface.nActions > 0:
-                click_action_index: int = -1
-                for i in range(action_iface.nActions):
-                    action_name: str = action_iface.getName(i)
-                    if action_name in [
-                        "click",
-                        "jump",
-                        "press",
-                        "open",
-                        "activate",
-                        "select",
-                        "clickAncestor",
-                        "link.open",
-                    ]:
-                        click_action_index = i
-                        break
-
-                if click_action_index >= 0:
-                    action_name: str = action_iface.getName(click_action_index)
-                    action_iface.doAction(click_action_index)
+    # Stage 1 — AT-SPI Action interface (only when a plain left single-click).
+    if method not in ("xdotool", "gui", "mouse") and button == "1" and click_count == 1 and not offset:
+        current = node
+        while current is not None:
+            idx = _action_index(current, _CLICK_ACTION_NAMES)
+            if idx >= 0:
+                try:
+                    iface = current.queryAction()
+                    name = iface.getName(idx)
+                    iface.doAction(idx)
                     CommonUtil.ExecLog(
-                        sModuleInfo, f"Clicked element using action: {action_name}", 1
+                        sModuleInfo, f"Clicked element using action: {name}", 1
                     )
                     return "passed"
-                else:
-                    # No action found on this node: consider clicking via xdotool using node coordinates
-                    # Attempt to compute center coords for the current node
-                    coords = get_node_center_coords(node)
-                    if coords:
-                        # Attempt to get the application name if available
-                        app_name = None
-                        try:
-                            app_acc = node.get_application()
-                            if app_acc and getattr(app_acc, "name", None):
-                                app_name = app_acc.name
-                        except Exception:
-                            app_name = None
-                        if click_coords_with_xdotool(coords, app_name=app_name):
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                f"Clicked element using xdotool at: {coords}",
-                                1,
-                            )
-                            return "passed"
-                        else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                f"xdotool could not activate the application '{app_name}', aborting click",
-                                3,
-                            )
-                            return "zeuz_failed"
-            else:
-                node = node.parent
-                continue
-        except NotImplementedError:
-            node = node.parent
-            continue
-        except Exception as e:
-            CommonUtil.ExecLog(sModuleInfo, f"Failed to click element: {e}", 3)
-    # try a final attempt using xdotool on the original node
-    coords = get_node_center_coords(original_node)
+                except Exception as e:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, f"Action '{idx}' failed, falling back: {e}", 2
+                    )
+                    break
+            try:
+                current = current.parent
+            except Exception:
+                break
+
+    # Stage 2 — coord-based clicks (AT-SPI mouse → xdotool).
+    coords = get_node_center_coords(original_node, offset=offset)
     if coords:
-        app_name = None
-        try:
-            app_acc = original_node.get_application()
-            if app_acc and getattr(app_acc, "name", None):
-                app_name = app_acc.name
-        except Exception:
-            app_name = None
-        if click_coords_with_xdotool(coords, app_name=app_name):
+        app_name = _node_app_name(original_node)
+        if method != "xdotool" and _atspi_mouse_click(
+            coords, button=button, click_count=click_count, delay=delay
+        ):
+            CommonUtil.ExecLog(
+                sModuleInfo, f"Clicked element using AT-SPI mouse at: {coords}", 1
+            )
+            return "passed"
+        if click_coords_with_xdotool(
+            coords, app_name=app_name, button=button,
+            click_count=click_count, delay=delay,
+        ):
             CommonUtil.ExecLog(
                 sModuleInfo, f"Clicked element using xdotool at: {coords}", 1
             )
             return "passed"
+    CommonUtil.ExecLog(sModuleInfo, "All click strategies failed", 3)
     return "zeuz_failed"
 
 
-def get_node_center_coords(node: Accessible) -> tuple[int, int] | None:
-    """Module-level helper to compute center coordinates of a node in desktop coords."""
-    try:
-        comp = node.queryComponent()
-        if comp:
-            pos_func = getattr(comp, "getPosition", None)
-            size_func = getattr(comp, "getSize", None)
-            if pos_func and size_func:
-                x, y = pos_func(pyatspi.DESKTOP_COORDS)
-                w, h = size_func()
-                cx = int(x + (w / 2))
-                cy = int(y + (h / 2))
-                return cx, cy
-    except Exception:
+def get_node_center_coords(
+    node: Accessible | None, offset: tuple[int, int] | None = None
+) -> tuple[int, int] | None:
+    """Compute desktop-coord click point. With `offset`, returns top-left + offset."""
+    rect = _node_rect(node)
+    if not rect:
         return None
-    return None
+    x, y, w, h = rect
+    if w <= 0 or h <= 0:
+        return None
+    if offset:
+        return x + offset[0], y + offset[1]
+    return int(x + w / 2), int(y + h / 2)
 
 
-def click_coords_with_xdotool(
-    coords: tuple[int, int], app_name: str | None = None
-) -> bool:
-    """Module-level helper to click coordinates via xdotool and optionally activate the app window."""
+def _activate_window_for_app(app_name: str | None) -> bool:
+    """Activate/raise the window owned by `app_name`. Returns True on success or
+    when no app was specified (treat as 'use whatever is focused')."""
+    if not app_name:
+        return True
     try:
-        x, y = coords
-        if app_name:
+        winid = _get_window_id_for_app(app_name)
+        if not winid:
+            CommonUtil.ExecLog(
+                MODULE_NAME, f"Could not find a window for app '{app_name}'", 3
+            )
+            return False
+        activated = False
+        try:
+            subprocess.run(
+                ["xdotool", "windowactivate", "--sync", winid], capture_output=True
+            )
+            activated = True
+        except Exception:
             try:
-                winid = _get_window_id_for_app(app_name)
-                # If we couldn't find the desired window id for the app, do not click
-                if not winid:
-                    CommonUtil.ExecLog(
-                        MODULE_NAME, f"Could not find a window for app '{app_name}'", 3
-                    )
-                    return False
-                # Try a few methods to activate/raise the window so it's on top
+                subprocess.run(["xdotool", "windowactivate", winid], capture_output=True)
+                activated = True
+            except Exception:
                 activated = False
-                try:
-                    # Prefer --sync if available
-                    subprocess.run(
-                        ["xdotool", "windowactivate", "--sync", winid],
-                        capture_output=True,
-                    )
+        try:
+            subprocess.run(["xdotool", "windowraise", winid], capture_output=True)
+        except Exception:
+            pass
+        try:
+            if subprocess.run(["which", "wmctrl"], capture_output=True, text=True).returncode == 0:
+                subprocess.run(["wmctrl", "-i", "-a", winid], capture_output=True)
+                activated = True
+        except Exception:
+            pass
+        for _ in range(5):
+            try:
+                active = subprocess.run(
+                    ["xdotool", "getactivewindow"], capture_output=True, text=True
+                ).stdout.strip()
+                if active and active == winid:
                     activated = True
-                except Exception:
-                    try:
-                        subprocess.run(
-                            ["xdotool", "windowactivate", winid], capture_output=True
-                        )
-                        activated = True
-                    except Exception:
-                        activated = False
-
-                try:
-                    subprocess.run(
-                        ["xdotool", "windowraise", winid], capture_output=True
-                    )
-                except Exception:
-                    # Not critical
-                    pass
-
-                # If wmctrl is available, try using it to activate the window (more reliable on some WMs)
-                try:
-                    if (
-                        subprocess.run(
-                            ["which", "wmctrl"], capture_output=True, text=True
-                        ).returncode
-                        == 0
-                    ):
-                        subprocess.run(
-                            ["wmctrl", "-i", "-a", winid], capture_output=True
-                        )
-                        activated = True
-                except Exception:
-                    pass
-
-                # Verify that the requested window is now active; retry a few times
-                for _ in range(5):
-                    try:
-                        active = subprocess.run(
-                            ["xdotool", "getactivewindow"],
-                            capture_output=True,
-                            text=True,
-                        ).stdout.strip()
-                        if active and active == winid:
-                            activated = True
-                            break
-                    except Exception:
-                        pass
-                    time.sleep(0.1)
-                if not activated:
-                    CommonUtil.ExecLog(
-                        MODULE_NAME,
-                        f"Failed to activate/raise window {winid} for app '{app_name}'",
-                        3,
-                    )
-                    return False
+                    break
             except Exception:
                 pass
+            time.sleep(0.1)
+        if not activated:
+            CommonUtil.ExecLog(
+                MODULE_NAME,
+                f"Failed to activate/raise window {winid} for app '{app_name}'",
+                3,
+            )
+        return activated
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"Window activation failed: {e}", 3)
+        return False
+
+
+def _xdotool_move(coords: tuple[int, int], app_name: str | None = None) -> bool:
+    if not _activate_window_for_app(app_name):
+        return False
+    try:
         subprocess.run(
-            ["xdotool", "mousemove", "--sync", str(x), str(y)],
-            check=True,
-            capture_output=True,
+            ["xdotool", "mousemove", "--sync", str(coords[0]), str(coords[1])],
+            check=True, capture_output=True,
         )
-        time.sleep(0.05)
-        subprocess.run(["xdotool", "click", "1"], check=True, capture_output=True)
+        return True
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"xdotool mouse move failed: {e}", 3)
+        return False
+
+
+def _xdotool_click(button: str = "1", click_count: int = 1, delay: float = 0.05) -> bool:
+    try:
+        for _ in range(max(1, click_count)):
+            subprocess.run(["xdotool", "click", str(button)], check=True, capture_output=True)
+            if delay > 0:
+                time.sleep(delay)
         return True
     except Exception as e:
         CommonUtil.ExecLog(MODULE_NAME, f"xdotool click failed: {e}", 3)
         return False
 
 
+def _xdotool_drag(
+    src: tuple[int, int], dst: tuple[int, int],
+    app_name: str | None = None, duration: float = 0.3, button: str = "1",
+) -> bool:
+    if not _xdotool_move(src, app_name=app_name):
+        return False
+    try:
+        subprocess.run(["xdotool", "mousedown", str(button)], check=True, capture_output=True)
+        time.sleep(max(0.0, duration))
+        subprocess.run(
+            ["xdotool", "mousemove", "--sync", str(dst[0]), str(dst[1])],
+            check=True, capture_output=True,
+        )
+        subprocess.run(["xdotool", "mouseup", str(button)], check=True, capture_output=True)
+        return True
+    except Exception as e:
+        CommonUtil.ExecLog(MODULE_NAME, f"xdotool drag failed: {e}", 3)
+        return False
+
+
+def _xdotool_scroll(direction: str = "down", scroll_count: int = 1) -> bool:
+    button = {"up": "4", "down": "5", "left": "6", "right": "7"}.get(direction, "5")
+    return _xdotool_click(button=button, click_count=max(1, scroll_count), delay=0.02)
+
+
+def click_coords_with_xdotool(
+    coords: tuple[int, int],
+    app_name: str | None = None,
+    button: str = "1",
+    click_count: int = 1,
+    delay: float = 0.05,
+) -> bool:
+    """Click absolute coords via xdotool, activating the named app window first."""
+    if not _xdotool_move(coords, app_name=app_name):
+        return False
+    time.sleep(0.05)
+    return _xdotool_click(button=button, click_count=click_count, delay=delay)
+
+
 @logger
 def click_element_xdotool(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
-    """Click an element using xdotool by computing coordinates from the node in the dataset."""
+    """Click an element using xdotool by computing coordinates from the resolved node."""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
-    data_dict = convert_data_set_to_dict(data_set)
-    node = get_node(data_dict)
+    options = _parse_click_options(data_set)
+    node = resolve_node(data_set)
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
-    coords = get_node_center_coords(node)
+    coords = get_node_center_coords(node, offset=options.get("offset"))
     if not coords:
         CommonUtil.ExecLog(sModuleInfo, "Could not determine coordinates for node", 3)
         return "zeuz_failed"
 
-    app_name = None
-    try:
-        app_acc = node.get_application()
-        if app_acc and getattr(app_acc, "name", None):
-            app_name = app_acc.name
-    except Exception:
-        app_name = None
-
-    # Require app_name to bring it to front before clicking; if we can't determine it, fail
+    app_name = _node_app_name(node)
     if not app_name:
         CommonUtil.ExecLog(
             sModuleInfo, "No application context found for xdotool click; aborting", 3
         )
         return "zeuz_failed"
-    if click_coords_with_xdotool(coords, app_name=app_name):
-        CommonUtil.ExecLog(
-            sModuleInfo, f"Clicked element using xdotool at: {coords}", 1
-        )
+    if click_coords_with_xdotool(
+        coords, app_name=app_name,
+        button=str(options.get("button") or "1"),
+        click_count=int(options.get("click_count") or 1),
+        delay=float(options.get("delay") or 0.05),
+    ):
+        CommonUtil.ExecLog(sModuleInfo, f"Clicked element using xdotool at: {coords}", 1)
         return "passed"
-    else:
-        return "zeuz_failed"
+    return "zeuz_failed"
 
 
 @logger
 def click_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
-    """Click using element, first get the element then click"""
+    """Click an element. Variants (right click, double click, offset) are passed
+    as extra rows in the dataset:
+
+      ("button", "optional parameter", "right" | "left" | "middle")
+      ("click count", "optional parameter", "1" | "2" | "3")
+      ("offset", "optional parameter", "x,y")
+      ("click method", "optional parameter", "accessibility" | "xdotool")
+
+    The same single declaration covers single, double, triple, right, and middle
+    click — Action interface is preferred only for plain left single clicks.
+    """
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
-    data_dict = convert_data_set_to_dict(data_set)
-    # Check for explicit xdotool method in the dataset
-    use_xdotool = False
-    for left, mid, right in data_set:
-        try:
-            if (
-                mid.strip().lower() == "action"
-                and left.strip().lower() in ("click method", "method", "click using")
-                and right.strip().lower() == "xdotool"
-            ):
-                use_xdotool = True
-        except Exception:
-            continue
-    node = get_node(data_dict)
+    options = _parse_click_options(data_set)
+    node = resolve_node(data_set)
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
     try:
-        if use_xdotool:
+        if str(options.get("method") or "").lower() in ("xdotool", "gui"):
             return click_element_xdotool(data_set)
-        return click_element_by_node(node)
+        return click_element_by_node(node, options)
     except NotImplementedError:
         CommonUtil.ExecLog(
             sModuleInfo, "This node does not support the Action interface.", 3
@@ -1093,10 +1659,411 @@ def click_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
         return "zeuz_failed"
 
 
+# --- New actions (accessibility-first) ---------------------------------------
+
+
+def _parse_desired_check(data_set: DataSet) -> bool:
+    """Determine the desired checked state for check/uncheck actions."""
+    desired = True
+    for left, mid, right in data_set:
+        left_l = left.strip().lower()
+        mid_l = (mid or "").strip().lower()
+        right_l = (right or "").strip().lower()
+        if "action" in mid_l and left_l in ("check", "uncheck", "check uncheck"):
+            if "uncheck" in left_l or "uncheck" in right_l:
+                desired = False
+            elif "check" in left_l or "check" in right_l:
+                desired = True
+            parsed = _parse_bool(right_l)
+            if parsed is not None:
+                desired = parsed
+        elif left_l in ("state", "desired state", "checked"):
+            parsed = _parse_bool(right_l)
+            if parsed is not None:
+                desired = parsed
+    return desired
+
+
+@logger
+def check_uncheck(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Check/uncheck a toggle. Reads the StateSet, only acts when the current
+    state differs, prefers the AT-SPI Action interface (`Toggle`/`Press`),
+    then falls back to a click. Verifies the post-action state.
+    """
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    desired = _parse_desired_check(data_set)
+    node = resolve_node(data_set)
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        return "zeuz_failed"
+
+    states = _node_state_names(node)
+    if states and _is_node_checked(node) == desired:
+        CommonUtil.ExecLog(sModuleInfo, "Element already in requested state", 1)
+        return "passed"
+
+    names = _CHECK_ACTION_NAMES if desired else _UNCHECK_ACTION_NAMES
+    performed = _perform_action(node, names, climb=False)
+    if not performed:
+        opts = _parse_click_options(data_set)
+        opts["button"] = "1"
+        opts["click_count"] = 1
+        performed = click_element_by_node(node, opts) == "passed"
+    if not performed:
+        CommonUtil.ExecLog(sModuleInfo, "Could not change element state", 3)
+        return "zeuz_failed"
+
+    time.sleep(0.1)
+    final_states = _node_state_names(node)
+    if final_states and _is_node_checked(node) != desired:
+        CommonUtil.ExecLog(
+            sModuleInfo, "Element state did not match requested state", 3
+        )
+        return "zeuz_failed"
+    CommonUtil.ExecLog(sModuleInfo, "Element state changed", 1)
+    return "passed"
+
+
+def _absolute_coords_from_dict(data_dict: dict[str, str]) -> tuple[int, int] | None:
+    x_value = data_dict.get("x") or data_dict.get("left")
+    y_value = data_dict.get("y") or data_dict.get("top")
+    if x_value is not None and y_value is not None:
+        try:
+            return int(float(x_value)), int(float(y_value))
+        except Exception:
+            return None
+    return _parse_offset(data_dict.get("coordinates") or data_dict.get("coords"))
+
+
+def _grouped_data_set(data_set: DataSet, prefixes: tuple[str, ...]) -> DataSet:
+    """Pull rows whose left column begins with any of the given prefixes (e.g.
+    'src', 'dst'), stripping the prefix so the residual key looks like a regular
+    locator attribute. A bare 'dst' / 'src' row maps to a `path` attribute."""
+    out: DataSet = []
+    norm = tuple(p.lower() for p in prefixes)
+    for left, mid, right in data_set:
+        left_s = left.strip()
+        left_l = left_s.lower()
+        for p in norm:
+            if left_l == p:
+                out.append(("path", mid or "element parameter", right))
+                break
+            if left_l.startswith(p + " "):
+                out.append((left_s[len(p):].strip(), mid or "element parameter", right))
+                break
+            if left_l.startswith(p + "_"):
+                out.append((left_s[len(p) + 1:].strip(), mid or "element parameter", right))
+                break
+    return out
+
+
+def _grouped_dict(data_set: DataSet, prefixes: tuple[str, ...]) -> dict[str, str]:
+    grouped = _grouped_data_set(data_set, prefixes)
+    d = convert_data_set_to_dict(grouped)
+    common = convert_data_set_to_dict(data_set)
+    if "app_name" not in d and common.get("app_name"):
+        d["app_name"] = common["app_name"]
+    return d
+
+
+def _resolve_endpoint(
+    data_dict: dict[str, str], offset: tuple[int, int] | None = None
+) -> tuple[Accessible | None, tuple[int, int] | None]:
+    """Resolve a drag/drop or hover endpoint as either an Accessible+coords pair
+    (when a locator was supplied) or absolute coords (when only x/y were)."""
+    coords = _absolute_coords_from_dict(data_dict)
+    if coords is not None:
+        return None, coords
+    if not _build_criteria_from_dict(data_dict) and not data_dict.get("path"):
+        return None, None
+    node = get_node(data_dict)
+    return node, get_node_center_coords(node, offset=offset)
+
+
+@logger
+def hover_over_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Hover over an element or coords. AT-SPI mouse synthesis preferred."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    data_dict = convert_data_set_to_dict(data_set)
+    options = _parse_click_options(data_set)
+    duration = max(0.0, _parse_float(data_dict.get("duration"), 0.3))
+    node, coords = _resolve_endpoint(data_dict, offset=options.get("offset"))
+    if not coords:
+        node = resolve_node(data_set)
+        coords = get_node_center_coords(node, offset=options.get("offset"))
+    if not coords:
+        CommonUtil.ExecLog(sModuleInfo, "Could not resolve hover coordinates", 3)
+        return "zeuz_failed"
+    app_name = _node_app_name(node) or data_dict.get("app_name")
+    if _atspi_mouse_move(coords):
+        time.sleep(duration)
+        CommonUtil.ExecLog(sModuleInfo, "Hovered using AT-SPI mouse", 1)
+        return "passed"
+    if _xdotool_move(coords, app_name=app_name):
+        time.sleep(duration)
+        CommonUtil.ExecLog(sModuleInfo, "Hovered using xdotool", 1)
+        return "passed"
+    CommonUtil.ExecLog(sModuleInfo, "Hover failed", 3)
+    return "zeuz_failed"
+
+
+@logger
+def drag_and_drop_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Drag from a source locator (or absolute coords) to a destination.
+
+    Accepts `src ...` and `dst ...` (or `source`/`destination`/`target`) prefix
+    rows. AT-SPI mouse press/release sequence preferred; falls back to xdotool.
+    """
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    src_dict = _grouped_dict(data_set, ("src", "source"))
+    dst_dict = _grouped_dict(data_set, ("dst", "dest", "destination", "target"))
+    if not src_dict:
+        src_dict = convert_data_set_to_dict(data_set)
+    if not dst_dict:
+        CommonUtil.ExecLog(
+            sModuleInfo, "Destination element or coordinates are required", 3
+        )
+        return "zeuz_failed"
+
+    options = _parse_click_options(data_set)
+    src_node, src_coords = _resolve_endpoint(src_dict, offset=options.get("offset"))
+    _dst_node, dst_coords = _resolve_endpoint(dst_dict)
+    if not src_coords:
+        CommonUtil.ExecLog(sModuleInfo, "Could not resolve source coordinates", 3)
+        return "zeuz_failed"
+    if not dst_coords:
+        CommonUtil.ExecLog(sModuleInfo, "Could not resolve destination coordinates", 3)
+        return "zeuz_failed"
+
+    app_name = _node_app_name(src_node) or src_dict.get("app_name")
+    button = str(options.get("button") or "1")
+    duration = _parse_float(convert_data_set_to_dict(data_set).get("duration"), 0.3)
+    if _atspi_mouse_drag(src_coords, dst_coords, button=button):
+        CommonUtil.ExecLog(sModuleInfo, "Dragged using AT-SPI mouse events", 1)
+        return "passed"
+    if _xdotool_drag(src_coords, dst_coords, app_name=app_name, duration=duration, button=button):
+        CommonUtil.ExecLog(sModuleInfo, "Dragged using xdotool", 1)
+        return "passed"
+    CommonUtil.ExecLog(sModuleInfo, "Drag and drop failed", 3)
+    return "zeuz_failed"
+
+
+def _scroll_node_into_view(node: Accessible | None) -> bool:
+    if node is None:
+        return False
+    try:
+        comp = node.queryComponent()
+    except Exception:
+        return False
+    if not comp:
+        return False
+    for type_name in (
+        "SCROLL_ANYWHERE", "SCROLL_TOP_LEFT", "SCROLL_BOTTOM_RIGHT",
+        "SCROLL_TOP_EDGE", "SCROLL_BOTTOM_EDGE",
+    ):
+        scroll_type = getattr(pyatspi, type_name, None)
+        if scroll_type is None:
+            continue
+        try:
+            if hasattr(comp, "scrollTo") and comp.scrollTo(scroll_type):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _parse_scroll_options(data_set: DataSet) -> dict[str, Any]:
+    opts = {"direction": "down", "scroll_count": 1, "max_try": 50, "delay": 0.1}
+    for left, mid, right in data_set:
+        left_l = left.strip().lower()
+        mid_l = (mid or "").strip().lower()
+        right_v = (right or "").strip()
+        right_l = right_v.lower()
+        if "scroll parameter" in mid_l or "optional parameter" in mid_l:
+            if left_l == "direction" and right_l in ("up", "down", "left", "right"):
+                opts["direction"] = right_l
+            elif left_l in ("scroll count", "count"):
+                opts["scroll_count"] = max(1, _parse_int(right_v, opts["scroll_count"]))
+            elif left_l in ("max try", "max tries", "retries"):
+                opts["max_try"] = max(1, _parse_int(right_v, opts["max_try"]))
+            elif left_l == "delay":
+                opts["delay"] = max(0.0, _parse_float(right_v, opts["delay"]))
+    return opts
+
+
+@logger
+def scroll_to_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Scroll a target element into view. Tries the AT-SPI Component.scrollTo
+    interface first, then falls back to mouse-wheel scrolls under the container.
+
+    With only an element locator, scrolls that element into view. With an
+    explicit `desired ...` group plus a container locator, scrolls the container
+    until the desired element becomes visible.
+    """
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    desired_dict = _grouped_dict(data_set, ("desired", "target", "dst", "destination"))
+    container_dict = convert_data_set_to_dict(data_set)
+    options = _parse_scroll_options(data_set)
+
+    if not desired_dict:
+        node = resolve_node(data_set)
+        if node and (_is_node_visible(node) or _scroll_node_into_view(node)):
+            CommonUtil.ExecLog(sModuleInfo, "Element visible / scrolled into view", 1)
+            return "passed"
+        CommonUtil.ExecLog(sModuleInfo, "Element not found for scrolling", 3)
+        return "zeuz_failed"
+
+    desired_node = get_node(desired_dict, wait_time=0)
+    if desired_node and (_is_node_visible(desired_node) or _scroll_node_into_view(desired_node)):
+        CommonUtil.ExecLog(sModuleInfo, "Desired element visible / scrolled in", 1)
+        return "passed"
+
+    container_node = get_node(container_dict, wait_time=0) if container_dict else None
+    container_coords = get_node_center_coords(container_node)
+    app_name = (
+        _node_app_name(container_node)
+        or container_dict.get("app_name")
+        or desired_dict.get("app_name")
+    )
+    if container_coords:
+        _xdotool_move(container_coords, app_name=app_name)
+    for _ in range(int(options["max_try"])):
+        if container_coords:
+            _xdotool_scroll(options["direction"], int(options["scroll_count"]))
+        desired_node = get_node(desired_dict, wait_time=0)
+        if desired_node and _is_node_visible(desired_node):
+            CommonUtil.ExecLog(sModuleInfo, "Scrolled to desired element", 1)
+            return "passed"
+        time.sleep(float(options["delay"]))
+    CommonUtil.ExecLog(sModuleInfo, "Could not scroll to desired element", 3)
+    return "zeuz_failed"
+
+
+@logger
+def select_item(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Select a child item via the parent's AT-SPI Selection interface, falling
+    back to a click on the item itself."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    node = resolve_node(data_set)
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        return "zeuz_failed"
+    parent = None
+    try:
+        parent = node.parent
+    except Exception:
+        parent = None
+    if parent is not None:
+        try:
+            sel = parent.querySelection()
+            if sel is not None:
+                idx = -1
+                try:
+                    idx = node.get_index_in_parent()
+                except Exception:
+                    for i in range(len(parent)):
+                        if parent[i] == node:
+                            idx = i
+                            break
+                if idx >= 0:
+                    try:
+                        sel.selectChild(idx)
+                        CommonUtil.ExecLog(
+                            sModuleInfo, f"Selected child index {idx} via Selection", 1
+                        )
+                        return "passed"
+                    except Exception:
+                        pass
+        except (NotImplementedError, Exception):
+            pass
+    return click_element_by_node(node)
+
+
+@logger
+def set_value(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Set a numeric value via AT-SPI Value interface, with Increase/Decrease
+    Action fallback for elements that expose those instead."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    data_dict = convert_data_set_to_dict(data_set)
+    raw = data_dict.get("value") or data_dict.get("text") or ""
+    if raw == "":
+        CommonUtil.ExecLog(sModuleInfo, "No value provided", 3)
+        return "zeuz_failed"
+    try:
+        target = float(str(raw).strip())
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, f"Value must be numeric, got: {raw}", 3)
+        return "zeuz_failed"
+    node = resolve_node(data_set)
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+        return "zeuz_failed"
+    try:
+        v_iface = node.queryValue()
+        if v_iface is not None:
+            v_iface.currentValue = target
+            CommonUtil.ExecLog(sModuleInfo, f"Set value to {target} via Value iface", 1)
+            return "passed"
+    except (NotImplementedError, AttributeError):
+        pass
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Value interface failed: {e}", 2)
+
+    try:
+        current = float(node.queryValue().currentValue)
+    except Exception:
+        current = 0.0
+    direction = "Increase" if target > current else "Decrease"
+    steps = int(abs(target - current))
+    for _ in range(max(1, steps)):
+        if not _perform_action(node, {direction.lower()}, climb=False):
+            CommonUtil.ExecLog(
+                sModuleInfo, f"No {direction} action and no Value iface", 3
+            )
+            return "zeuz_failed"
+    CommonUtil.ExecLog(sModuleInfo, f"Adjusted value via {direction} action", 1)
+    return "passed"
+
+
+@logger
+def go_to_desktop(data_set: DataSet | None = None) -> Literal["passed", "zeuz_failed"]:
+    """Show the desktop (minimize/hide all windows). Tries wmctrl first, then
+    common keyboard shortcuts via xdotool."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    commands = [
+        ["wmctrl", "-k", "on"],
+        ["xdotool", "key", "super+d"],
+        ["xdotool", "key", "ctrl+alt+d"],
+    ]
+    for cmd in commands:
+        try:
+            res = subprocess.run(cmd, capture_output=True)
+            if res.returncode == 0:
+                CommonUtil.ExecLog(
+                    sModuleInfo, f"Switched to desktop via {' '.join(cmd)}", 1
+                )
+                return "passed"
+        except FileNotFoundError:
+            continue
+        except Exception:
+            continue
+    CommonUtil.ExecLog(sModuleInfo, "Could not switch to desktop", 3)
+    return "zeuz_failed"
+
+
 def enter_text_in_node(
     app_name: str, node: Accessible | None, text: str
 ) -> Literal["passed", "zeuz_failed"]:
-    """Enter text using node, first get the element then enter text"""
+    """Enter text into a node. Grabs focus before EditableText.setTextContents
+    (some toolkits drop the change otherwise) and climbs to ancestors when the
+    leaf has no EditableText interface."""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
@@ -1104,50 +2071,61 @@ def enter_text_in_node(
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
-    while node:
+    current = node
+    while current:
         try:
-            editable_iface = node.queryEditableText()
+            editable_iface = current.queryEditableText()
             if editable_iface:
+                _grab_focus(current)
                 editable_iface.setTextContents(text)
-                CommonUtil.ExecLog(sModuleInfo, f"Entering text: {text}", 1)
+                CommonUtil.ExecLog(sModuleInfo, f"Entered text: {text}", 1)
                 return "passed"
-            elif simulate_keyboard_typing(app_name, node, text):
+            if simulate_keyboard_typing(app_name, current, text):
                 return "passed"
-            else:
-                node = node.parent
-                continue
+            current = current.parent
+            continue
         except NotImplementedError:
-            if simulate_keyboard_typing(app_name, node, text):
+            if simulate_keyboard_typing(app_name, current, text):
                 return "passed"
-            node = node.parent
+            current = current.parent
             continue
         except Exception as e:
             CommonUtil.ExecLog(sModuleInfo, f"Failed enter text: {e}", 3)
+            return "zeuz_failed"
     return "zeuz_failed"
 
 
 @logger
 def enter_text(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
-    """Enter text using element, first get the element then enter text"""
+    """Enter text into the resolved element."""
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     data_dict = convert_data_set_to_dict(data_set)
     app_name = data_dict.get("app_name", "").strip()
-    text = data_dict.get("text", "").strip()
-    if not text:
+    # The element locator uses `text=` for matching; the value to type comes from
+    # the action row (mid="action"). Pull that explicitly so the locator's text
+    # criterion stays distinct from the input value.
+    text_to_type = ""
+    for left, mid, right in data_set:
+        if (mid or "").strip().lower() == "action" and left.strip().lower() == "text":
+            text_to_type = (right or "").strip()
+            break
+    if not text_to_type:
+        text_to_type = data_dict.get("text", "").strip()
+    if not text_to_type:
         CommonUtil.ExecLog(sModuleInfo, "No text provided to enter", 3)
         return "zeuz_failed"
     if not app_name:
         CommonUtil.ExecLog(sModuleInfo, "No app_name provided to enter text", 3)
         return "zeuz_failed"
-    node = get_node(data_dict)
+    node = resolve_node(data_set)
     if node is None:
         CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
         return "zeuz_failed"
 
     try:
-        return enter_text_in_node(app_name, node, text)
+        return enter_text_in_node(app_name, node, text_to_type)
     except NotImplementedError:
         CommonUtil.ExecLog(
             sModuleInfo, "This node does not support the Action interface.", 3
@@ -1236,7 +2214,9 @@ def open_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
     data_dict = convert_data_set_to_dict(data_set)
-    app_name = data_dict.get("app_name", "").strip()
+    app_name = data_dict.get("open app", "").strip()
+    if not app_name:
+        app_name = data_dict.get("app_name", "").strip()
 
     _, matched_app, exec_cmd = find_best_app_match(app_name) or (None, None, None)
 
@@ -1386,23 +2366,27 @@ def close_app(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 def wait_for_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
-    data_dict = convert_data_set_to_dict(data_set)
     try:
         timeout_duration = 10
         appear_condition = True
         for left, mid, right in data_set:
-            if mid.strip().lower() == "action":
-                if left.strip().lower() == "wait to disappear":
-                    appear_condition = False
-                timeout_duration = int(right.strip())
+            if (mid or "").strip().lower() != "action":
+                continue
+            left_l = left.strip().lower()
+            if left_l == "wait to disappear":
+                appear_condition = False
+            right_v = (right or "").strip()
+            parsed_timeout = _parse_int(right_v, -1)
+            if parsed_timeout > 0:
+                timeout_duration = parsed_timeout
 
         end_time = time.time() + timeout_duration
         while time.time() <= end_time:
-            node = get_node(data_dict, 0)
-            if appear_condition and node:  # Element found
+            node = resolve_node(data_set, wait_time=0)
+            if appear_condition and node:
                 CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
                 return "passed"
-            elif not appear_condition and not node:  # Element removed
+            if not appear_condition and not node:
                 CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
                 return "passed"
             time.sleep(1)
@@ -1410,8 +2394,8 @@ def wait_for_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
 
-    except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Error while waiting for element", 3)
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Error while waiting for element: {e}", 3)
         return "zeuz_failed"
 
 
@@ -1426,16 +2410,15 @@ def save_attribute(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     frame = inspect.currentframe()
     sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
 
-    data_dict = convert_data_set_to_dict(data_set)
     try:
         variable_name = ""
         field = "value"
         for left, mid, right in data_set:
-            if mid.strip().lower() == "save parameter":
+            if (mid or "").strip().lower() == "save parameter":
                 field = left.replace(" ", "").lower()
-                variable_name = right.strip()
+                variable_name = (right or "").strip()
 
-        node = get_node(data_dict)
+        node = resolve_node(data_set)
         if node is None:
             return "zeuz_failed"
         tag_str = (dump_node(node, recursive=False) or ["", ""])[0]
@@ -1454,8 +2437,8 @@ def save_attribute(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
             1,
         )
         return "passed"
-    except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Error while saving attribute", 3)
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, f"Error while saving attribute: {e}", 3)
         return "zeuz_failed"
 
 
