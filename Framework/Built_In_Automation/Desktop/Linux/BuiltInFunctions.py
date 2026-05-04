@@ -1991,6 +1991,33 @@ def scroll_to_element(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
 
 
 @logger
+def swap(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
+    """Swipe/scroll a container element in a given direction."""
+    frame = inspect.currentframe()
+    sModuleInfo = (frame.f_code.co_name if frame else "unknown") + " : " + MODULE_NAME
+    data_dict = convert_data_set_to_dict(data_set)
+    options = _parse_scroll_options(data_set)
+    node = get_node(data_dict)
+    if node is None:
+        CommonUtil.ExecLog(sModuleInfo, "Container element not found", 3)
+        return "zeuz_failed"
+    coords = get_node_center_coords(node)
+    if coords is None:
+        CommonUtil.ExecLog(sModuleInfo, "Could not get element coordinates", 3)
+        return "zeuz_failed"
+    _dataset_app_name = data_dict.get("app_name")
+    if _dataset_app_name:
+        save_latest_app_name(_dataset_app_name)
+    app_name = _node_app_name(node) or _dataset_app_name or get_latest_app_name()
+    if not _xdotool_move(coords, app_name=app_name):
+        CommonUtil.ExecLog(sModuleInfo, "Could not position mouse on element", 3)
+        return "zeuz_failed"
+    _xdotool_scroll(options["direction"], int(options["scroll_count"]))
+    CommonUtil.ExecLog(sModuleInfo, f"Swiped {options['direction']}", 1)
+    return "passed"
+
+
+@logger
 def select_item(data_set: DataSet) -> Literal["passed", "zeuz_failed"]:
     """Select a child item via the parent's AT-SPI Selection interface, falling
     back to a click on the item itself."""

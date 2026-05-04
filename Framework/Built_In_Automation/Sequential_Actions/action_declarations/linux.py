@@ -7,6 +7,7 @@ declarations = (
     { "name": "hover",            "function": "hover_over_element",      "screenshot": "desktop" },
     { "name": "drag and drop",    "function": "drag_and_drop_element",   "screenshot": "desktop" },
     { "name": "scroll to element","function": "scroll_to_element",       "screenshot": "desktop" },
+    { "name": "swap",             "function": "swap",                    "screenshot": "desktop" },
     { "name": "select",           "function": "select_item",             "screenshot": "desktop" },
     { "name": "set value",        "function": "set_value",               "screenshot": "desktop" },
     { "name": "go to desktop",    "function": "go_to_desktop",           "screenshot": "desktop" },
