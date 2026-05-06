@@ -490,6 +490,11 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                 print('temp_config:', temp_config)
                 with open(temp_config, 'r') as f:
                     print('\n\n', f.read(), '\n\n')
+
+                settings_conf_path = Path(os.path.join(os.path.abspath(__file__).split("Framework")[0])) / "Framework" / "settings.conf"
+                print('settings_conf_path:', settings_conf_path)
+                with open(settings_conf_path, 'r') as f:
+                    print('\n\n', f.read(), '\n\n')
                 print('\n\n --------------------------------------\n\n')
             if not log_id:
                 return
