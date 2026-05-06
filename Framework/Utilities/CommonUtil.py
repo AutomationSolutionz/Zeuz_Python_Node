@@ -482,6 +482,12 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                 print('\n\n ------ Set report investigation ------\n\n')
                 print('log_id:', log_id)
                 print('setInfo:', json.dumps(setInfo, indent=2))
+                advanced_options_file = ConfigModule.get_config_value(
+                    "Advanced Options",
+                    "_file",
+                )
+                print('advanced_options_file:', advanced_options_file)
+                print('temp_config:', temp_config)
                 with open(temp_config, 'r') as f:
                     print('\n\n', f.read(), '\n\n')
                 print('\n\n --------------------------------------\n\n')
