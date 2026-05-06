@@ -483,7 +483,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
             log_id_vals = log_id.split("|")
             if logs:
                 log_id, now, iLogLevel, status, sModuleInfo, sDetails = logs
-            if not len(log_id_vals) == 4 and setInfo:
+            if setInfo:
                 print('\n\n ------ Set report investigation ------\n\n')
                 print('log_id:', log_id)
                 print('log_id_vals:', log_id_vals)
