@@ -477,11 +477,20 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
         start = time.perf_counter()
         if logs or stepInfo or TCInfo or setInfo:
             log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
+            # 'Wed-May-6-08:11:59-2026|TEST-0158|none|none'
             if not log_id:
                 return
             log_id_vals = log_id.split("|")
             if logs:
                 log_id, now, iLogLevel, status, sModuleInfo, sDetails = logs
+            if not len(log_id_vals) == 4 and stepInfo:
+                print('\n\n ------ Set report investigation ------\n\n')
+                print('log_id:', log_id)
+                print('log_id_vals:', log_id_vals)
+                print('setInfo:', json.dumps(setInfo, indent=2))
+                with open(temp_config, 'r') as f:
+                    print('\n\n', f.read(), '\n\n')
+                print('\n\n --------------------------------------\n\n')
             if len(log_id_vals) == 4:
                 # these loops can be optimized by saving the previous log_id_vals and comparing it with current one
                 runID, testcase_no, step_id, step_no = log_id_vals
