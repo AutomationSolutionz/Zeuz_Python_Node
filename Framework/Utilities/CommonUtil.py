@@ -482,6 +482,12 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                 print('\n\n ------ Set report investigation ------\n\n')
                 print('log_id:', log_id)
                 print('setInfo:', json.dumps(setInfo, indent=2))
+
+                settings_conf_path = Path(os.path.join(os.path.abspath(__file__).split("Framework")[0])) / "Framework" / "settings.conf"
+                print('settings_conf_path:', settings_conf_path)
+                with open(settings_conf_path, 'r') as f:
+                    print('\n\n', f.read(), '\n\n')
+                    
                 advanced_options_file = ConfigModule.get_config_value(
                     "Advanced Options",
                     "_file",
@@ -491,10 +497,6 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                 with open(temp_config, 'r') as f:
                     print('\n\n', f.read(), '\n\n')
 
-                settings_conf_path = Path(os.path.join(os.path.abspath(__file__).split("Framework")[0])) / "Framework" / "settings.conf"
-                print('settings_conf_path:', settings_conf_path)
-                with open(settings_conf_path, 'r') as f:
-                    print('\n\n', f.read(), '\n\n')
                 print('\n\n --------------------------------------\n\n')
             if not log_id:
                 return
