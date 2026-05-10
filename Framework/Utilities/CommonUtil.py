@@ -58,16 +58,17 @@ console = Console()
 MODULE_NAME = inspect.getmodulename(__file__)
 
 # Get file path for temporary config file
-temp_config = Path(
-    os.path.join(os.path.abspath(__file__).split("Framework")[0])
-    / Path("AutomationLog")
-    / Path(
-        ConfigModule.get_config_value(
-            "Advanced Options",
-            "_file",
+def temp_config() -> Path:
+    return Path(
+        os.path.join(os.path.abspath(__file__).split("Framework")[0])
+        / Path("AutomationLog")
+        / Path(
+            ConfigModule.get_config_value(
+                "Advanced Options",
+                "_file",
+            )
         )
     )
-)
 
 common_modules = ["os", "sys", "platform", "time", "datetime", "random", "re", "uuid", "pathlib", "json", "ast", "yaml", "csv", "xml", "xlwings", "requests", "sr"]
 
@@ -328,41 +329,6 @@ def prettify(key, val):
         # 4 means console log which is Magenta color in server console
         live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
 
-def Add_Folder_To_Current_Test_Case_Log(src):
-    try:
-        # get the current test case locations
-        dest_folder = ConfigModule.get_config_value(
-            "sectionOne", "test_case_folder", temp_config
-        )
-        folder_name = [x for x in src.split("/") if x != ""][-1]
-        if folder_name:
-            des_path = os.path.join(dest_folder, folder_name)
-            FL.copy_folder(src, des_path)
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        return Exception_Handler(sys.exc_info())
-
-
-def Add_File_To_Current_Test_Case_Log(src):
-    try:
-        # get the current test case locations
-        dest_folder = ConfigModule.get_config_value(
-            "sectionOne", "test_case_folder", temp_config
-        )
-        file_name = [x for x in src.split("/") if x != ""][-1]
-        if file_name:
-            des_path = os.path.join(dest_folder, file_name)
-            FL.copy_file(src, des_path)
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        return Exception_Handler(sys.exc_info())
-
 
 def strip1(original_value: str, remove: str) -> str:
     if original_value.startswith(remove):
@@ -476,7 +442,8 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
         global all_logs_json, report_json_time, tc_error_logs, passed_after_rerun, zeuz_tc_run_comment
         start = time.perf_counter()
         if logs or stepInfo or TCInfo or setInfo:
-            log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
+            log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config())
+            # 'Wed-May-6-08:11:59-2026|TEST-0158|none|none'
             if not log_id:
                 return
             log_id_vals = log_id.split("|")
@@ -695,7 +662,7 @@ def ExecLog(
     if iLogLevel > 0:
         if iLogLevel == 6:
             FWLogFolder = ConfigModule.get_config_value(
-                "sectionOne", "log_folder", temp_config
+                "sectionOne", "log_folder", temp_config()
             )
             if os.path.exists(FWLogFolder) == False:
                 FL.CreateFolder(FWLogFolder)  # Create log directory if missing
@@ -703,7 +670,7 @@ def ExecLog(
             if FWLogFolder == "":
                 BrowserConsoleLogFile = (
                     ConfigModule.get_config_value(
-                        "sectionOne", "temp_run_file_path", temp_config
+                        "sectionOne", "temp_run_file_path", temp_config()
                     )
                     + os.sep
                     + "BrowserLog.log"
@@ -756,7 +723,7 @@ def ExecLog(
                 
 
             log_id = ConfigModule.get_config_value(
-                "sectionOne", "sTestStepExecLogId", temp_config
+                "sectionOne", "sTestStepExecLogId", temp_config()
             )
             if not log_id:
                 return
@@ -784,7 +751,7 @@ def ExecLog(
                     filepath = (
                         Path(
                             ConfigModule.get_config_value(
-                                "sectionOne", "temp_run_file_path", temp_config
+                                "sectionOne", "temp_run_file_path", temp_config()
                             )
                         )
                         / "execution.log"
@@ -889,7 +856,7 @@ def TakeScreenShot(function_name, local_run=False):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         # Read values from config file
         take_screenshot_settings = ConfigModule.get_config_value("RunDefinition", "take_screenshot")
-        image_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config)
+        image_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config())
 
         try:
             if not os.path.exists(image_folder):
