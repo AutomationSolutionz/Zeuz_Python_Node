@@ -2147,23 +2147,37 @@ async def switch_iframe(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
 
-        iframe_index = None
-        iframe_selector = None
+        default_aliases = ("default content", "default", "main")
+        frame_targets = []
         switch_to_default = False
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
             right_v = right.strip()
+            right_l = right_v.lower()
 
-            if mid_l in ("iframe parameter", "frame parameter"):
-                iframe_selector = f"[{left}='{right_v}']" if left_l not in ("tag",) else right_v
-            elif mid_l == "input parameter":
-                if left_l == "index":
-                    if right_v.lower() in ("default content", "default", "main"):
-                        switch_to_default = True
-                    else:
-                        iframe_index = int(right_v)
+            if "action" in mid_l and left_l == "switch iframe":
+                continue
+
+            if left_l == "index" and right_l in default_aliases:
+                switch_to_default = True
+                continue
+
+            if mid_l not in ("iframe parameter", "frame parameter", "input parameter"):
+                continue
+
+            if left_l == "index":
+                frame_targets.append({"kind": "index", "mid": mid_l, "right": right_v})
+            elif mid_l in ("iframe parameter", "frame parameter"):
+                frame_targets.append(
+                    {
+                        "kind": "selector",
+                        "mid": mid_l,
+                        "left": left_l,
+                        "right": right_v,
+                    }
+                )
 
         if switch_to_default:
             # In Playwright, we work with the main page directly
@@ -2171,16 +2185,40 @@ async def switch_iframe(step_data):
             sr.Set_Shared_Variables("playwright_frame", None)
             _save_current_playwright_frame(None)
             CommonUtil.ExecLog(sModuleInfo, "Switched to default content", 1)
-            return "passed"
+            if not frame_targets:
+                return "passed"
 
-        # Build frame locator
-        if iframe_selector:
-            frame_locator = current_page.frame_locator(iframe_selector)
-        elif iframe_index is not None:
-            frame_locator = current_page.frame_locator(f"iframe >> nth={iframe_index}")
-        else:
+        if not frame_targets:
             CommonUtil.ExecLog(sModuleInfo, "No iframe selector or index provided", 3)
             return "zeuz_failed"
+
+        frame_locator = None
+        for target in frame_targets:
+            base = frame_locator if frame_locator else current_page
+            tag_name = "frame" if target["mid"] == "frame parameter" else "iframe"
+
+            if target["kind"] == "index":
+                try:
+                    iframe_index = int(target["right"])
+                except Exception:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Invalid %s index '%s'" % (tag_name, target["right"]),
+                        3,
+                    )
+                    return "zeuz_failed"
+                frame_locator = base.frame_locator(tag_name).nth(iframe_index)
+                continue
+
+            left_l = target["left"]
+            right_v = target["right"]
+            if left_l == "tag":
+                iframe_selector = right_v
+            elif left_l == "xpath":
+                iframe_selector = right_v if right_v.startswith("xpath=") else f"xpath={right_v}"
+            else:
+                iframe_selector = f"{tag_name}[{left_l}='{right_v}']"
+            frame_locator = base.frame_locator(iframe_selector)
 
         # Store frame locator for subsequent actions
         sr.Set_Shared_Variables("playwright_frame", frame_locator)

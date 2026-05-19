@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import MagicMock
 
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -130,3 +131,35 @@ def test_selenium_global_teardown_preserves_playwright_owned_sessions(monkeypatc
     assert browser_utils.get_browser_session("playwright_session")
     context.close.assert_not_called()
     browser.close.assert_not_called()
+
+
+def test_playwright_switch_iframe_uses_index_parameter_after_default_reset():
+    frame_locator = MagicMock()
+    indexed_frame_locator = MagicMock()
+    frame_locator.nth.return_value = indexed_frame_locator
+    page = MagicMock()
+    page.frame_locator.return_value = frame_locator
+    playwright_bif.current_page = page
+    playwright_bif.current_page_id = "default"
+    browser_utils.create_browser_session(
+        session_name="default",
+        playwright_page=page,
+        playwright_context=MagicMock(),
+        playwright_browser=MagicMock(),
+    )
+
+    result = asyncio.run(
+        playwright_bif.switch_iframe(
+            [
+                ("index", "iframe parameter", "default content"),
+                ("index", "iframe parameter", "1"),
+                ("switch iframe", "playwright action", "switch iframe"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    page.frame_locator.assert_called_once_with("iframe")
+    frame_locator.nth.assert_called_once_with(1)
+    assert sr.Get_Shared_Variables("playwright_frame") is indexed_frame_locator
+    assert browser_utils.get_browser_session("default")["playwright_frame"] is indexed_frame_locator
