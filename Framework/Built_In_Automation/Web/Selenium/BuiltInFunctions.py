@@ -3673,8 +3673,10 @@ def Tear_Down_Selenium(step_data=[]):
             CommonUtil.Join_Thread_and_Return_Result(
                 "screenshot"
             )  # Let the capturing screenshot end in thread
-            for session in get_browser_sessions().values():
+            for session_name, session in get_browser_sessions().items():
                 if not (isinstance(session, dict) and session.get("selenium_driver")):
+                    continue
+                if session.get("playwright_page") and session_name not in selenium_details:
                     continue
                 try:
                     _close_maybe_async(session.get("playwright_context"))
@@ -3700,7 +3702,11 @@ def Tear_Down_Selenium(step_data=[]):
             sessions = {
                 name: session
                 for name, session in sessions.items()
-                if not (isinstance(session, dict) and session.get("selenium_driver"))
+                if not (
+                    isinstance(session, dict)
+                    and session.get("selenium_driver")
+                    and (not session.get("playwright_page") or name in selenium_details)
+                )
             }
             Shared_Resources.Set_Shared_Variables("browser_sessions", sessions)
             selenium_details = {}

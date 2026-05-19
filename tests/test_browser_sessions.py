@@ -5,7 +5,9 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Built_In_Automation.Web import utils as browser_utils
 from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as playwright_bif
-from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium_bif
+
+sr.Set_Shared_Variables("dependency", {"Browser": "chrome"})
+from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium_bif  # noqa: E402
 
 
 def setup_function():
@@ -104,3 +106,27 @@ def test_remove_browser_session_updates_registry():
 
     assert removed is not None
     assert browser_utils.get_browser_session("temp") == {}
+
+
+def test_selenium_global_teardown_preserves_playwright_owned_sessions(monkeypatch):
+    selenium_driver = MagicMock()
+    context = MagicMock()
+    browser = MagicMock()
+    browser_utils.create_browser_session(
+        session_name="playwright_session",
+        selenium_driver=selenium_driver,
+        playwright_page=MagicMock(),
+        playwright_context=context,
+        playwright_browser=browser,
+    )
+    monkeypatch.setattr(
+        "Framework.Utilities.CommonUtil.Join_Thread_and_Return_Result",
+        lambda key: [],
+    )
+
+    result = selenium_bif.Tear_Down_Selenium([])
+
+    assert result == "passed"
+    assert browser_utils.get_browser_session("playwright_session")
+    context.close.assert_not_called()
+    browser.close.assert_not_called()

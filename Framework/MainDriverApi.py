@@ -811,12 +811,12 @@ async def cleanup_driver_instances():  # cleans up driver(selenium, playwright, 
         import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
         import Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions as Playwright
         try:
-            Selenium.Tear_Down_Selenium()
+            await Playwright.Tear_Down_Playwright()
         except:
             pass
         
         try:
-            await Playwright.Tear_Down_Playwright()
+            Selenium.Tear_Down_Selenium()
         except:
             pass
         
