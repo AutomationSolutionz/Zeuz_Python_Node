@@ -177,8 +177,22 @@ def write_browser_logs():
     try:
         if str(sr.Get_Shared_Variables("zeuz_collect_browser_log")).strip().lower() in ("false", "no", "off", "disable"):
             return
+        drivers = []
+        if sr.Test_Shared_Variables("browser_sessions"):
+            browser_sessions = sr.Get_Shared_Variables("browser_sessions", log=False)
+            if isinstance(browser_sessions, dict):
+                drivers.extend(
+                    session.get("selenium_driver")
+                    for session in browser_sessions.values()
+                    if isinstance(session, dict) and session.get("selenium_driver")
+                )
         if sr.Test_Shared_Variables("selenium_driver"):
-            driver = sr.Get_Shared_Variables("selenium_driver")
+            drivers.append(sr.Get_Shared_Variables("selenium_driver"))
+        seen = set()
+        for driver in drivers:
+            if id(driver) in seen:
+                continue
+            seen.add(id(driver))
             for browser_log in driver.get_log("browser"):
                 CommonUtil.ExecLog(sModuleInfo, browser_log["message"], 6,print_Execlog=CommonUtil.show_browser_log)
     except Exception as e:
@@ -2500,6 +2514,13 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "zeuz_failed"
+        session_activator = getattr(eval(module), "_activate_browser_session_for_action", None)
+        if session_activator:
+            result = session_activator(data_set, function)
+            if inspect.iscoroutine(result):
+                result = await result
+            if result in failed_tag_list:
+                return result
         run_function = getattr(eval(module), function)  # create a reference to the function
         start_time = time.perf_counter()
         if pre_sleep:
