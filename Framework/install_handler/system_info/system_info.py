@@ -9,6 +9,10 @@ try:
 except ImportError:
     psutil = None
 
+from Framework.install_handler.install_log_config import get_logger
+
+logger = get_logger()
+
 
 def get_system_uptime() -> Dict[str, Any]:
     """
@@ -107,7 +111,7 @@ def get_system_uptime() -> Dict[str, Any]:
                 "uptime_human": "Unknown"
             }
     except Exception as e:
-        print(f"[installer][system-info] Error getting uptime: {e}")
+        logger.error("[installer][system-info] Error getting uptime: %s", e)
         return {
             "uptime_seconds": None,
             "uptime_human": "Unknown"
@@ -184,7 +188,7 @@ def get_device_model() -> str:
         
         return "Unknown"
     except Exception as e:
-        print(f"[installer][system-info] Error getting device model: {e}")
+        logger.error("[installer][system-info] Error getting device model: %s", e)
         return "Unknown"
 
 
@@ -261,7 +265,7 @@ def get_os_info() -> Dict[str, str]:
             "os_release": release
         }
     except Exception as e:
-        print(f"[installer][system-info] Error getting OS info: {e}")
+        logger.error("[installer][system-info] Error getting OS info: %s", e)
         return {
             "os_name": platform.system(),
             "os_version": platform.version(),
@@ -371,7 +375,7 @@ def get_cpu_info() -> Dict[str, Any]:
             "cpu_temperature": cpu_temperature
         }
     except Exception as e:
-        print(f"[installer][system-info] Error getting CPU info: {e}")
+        logger.error("[installer][system-info] Error getting CPU info: %s", e)
         return {
             "cpu_cores": None,
             "cpu_physical_cores": None,
@@ -684,7 +688,7 @@ def get_memory_info() -> Dict[str, Any]:
             "swap_percent": 0
         }
     except Exception as e:
-        print(f"[installer][system-info] Error getting memory info: {e}")
+        logger.error("[installer][system-info] Error getting memory info: %s", e)
         return {
             "total_ram_bytes": None,
             "total_ram_gb": None,
@@ -776,7 +780,7 @@ def get_disk_info() -> Dict[str, Any]:
                     # Skip partitions we don't have permission to access
                     continue
                 except Exception as e:
-                    print(f"[installer][system-info] Error getting usage for {partition.mountpoint}: {e}")
+                    logger.error("[installer][system-info] Error getting usage for %s: %s", partition.mountpoint, e)
                     continue
             
             total_disk_space_gb = total_disk_space_bytes / (1024 ** 3)
@@ -891,7 +895,7 @@ def get_disk_info() -> Dict[str, Any]:
                             "mount_points": mount_points
                         }
                 except Exception as e:
-                    print(f"[installer][system-info] Error getting disk info (Linux fallback): {e}")
+                    logger.error("[installer][system-info] Error getting disk info (Linux fallback): %s", e)
             elif system == "Darwin":
                 try:
                     result = subprocess.run(
@@ -930,7 +934,7 @@ def get_disk_info() -> Dict[str, Any]:
                             "mount_points": mount_points
                         }
                 except Exception as e:
-                    print(f"[installer][system-info] Error getting disk info (macOS fallback): {e}")
+                    logger.error("[installer][system-info] Error getting disk info (macOS fallback): %s", e)
             elif system == "Windows":
                 try:
                     result = subprocess.run(
@@ -990,7 +994,7 @@ def get_disk_info() -> Dict[str, Any]:
                             "mount_points": mount_points
                         }
                 except Exception as e:
-                    print(f"[installer][system-info] Error getting disk info (Windows fallback): {e}")
+                    logger.error("[installer][system-info] Error getting disk info (Windows fallback): %s", e)
         
         return {
             "total_disk_space_bytes": None,
@@ -1007,7 +1011,7 @@ def get_disk_info() -> Dict[str, Any]:
             "mount_points": []
         }
     except Exception as e:
-        print(f"[installer][system-info] Error getting disk info: {e}")
+        logger.error("[installer][system-info] Error getting disk info: %s", e)
         return {
             "total_disk_space_bytes": None,
             "total_disk_space_gb": None,
@@ -1045,7 +1049,7 @@ async def get_all_system_info() -> Dict[str, Any]:
             "disk": disk_info
         }
     except Exception as e:
-        print(f"[installer][system-info] Error getting all system info: {e}")
+        logger.error("[installer][system-info] Error getting all system info: %s", e)
         return {
             "os": get_os_info(),
             "cpu": get_cpu_info(),
@@ -1211,7 +1215,7 @@ async def get_formatted_system_info() -> Dict[str, Any]:
             "disk": disk_data
         }
     except Exception as e:
-        print(f"[installer][system-info] Error formatting system info: {e}")
+        logger.error("[installer][system-info] Error formatting system info: %s", e)
         # Return minimal error response
         return {
             "os": {"name": "Unknown", "version": "Unknown", "release": "Unknown"},

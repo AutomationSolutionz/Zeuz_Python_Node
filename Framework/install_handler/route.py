@@ -12,7 +12,7 @@ from .android import (
 from .ios import xcode, simulator
 from .macos import xcode as macos_xcode
 from .windows import inspector
-from .android import emulator
+from .android import android_emulator, emulator_windows_linux, emulator
 
 services = [
     {
@@ -89,8 +89,8 @@ services = [
         "check_text":"Check status",
         "install_text": "Install",
         "os": ["windows", "linux", "darwin"],
-        "status_function": emulator.check_emulator_list,
-        "install_function": emulator.android_emulator_install,
+        "status_function": android_emulator.check_emulator_list,
+        "install_function": android_emulator.android_emulator_install,
         "installables": [],
         "services": [],
     },

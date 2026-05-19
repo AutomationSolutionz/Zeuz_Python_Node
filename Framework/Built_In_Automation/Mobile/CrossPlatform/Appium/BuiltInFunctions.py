@@ -1194,13 +1194,55 @@ def teardown_appium(dataset=None):
 
 @logger
 def close_application(data_set):
-    """ Exit the application """
+    """
+    This action **closes (terminates) the current foreground application** on the device using **Appium**.
+
+    - No element targeting is required — the action terminates the active app automatically.
+    - On Android, the current package name is retrieved from the driver.
+    - On iOS and macOS, the bundle ID is retrieved from the driver capabilities.
+    - The Appium action used is: close.
+
+    Data Input Fields:
+
+    | Action                                                        | Field Type    | Value  |
+    |---------------------------------------------------------------|---------------|--------|
+    | close                                                         | appium action | close  |
+
+    Note: Uses `terminate_app()` which is the modern replacement for the deprecated `close_app()`.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to close the app", 1)
-        appium_driver.close_app()
-        CommonUtil.ExecLog(sModuleInfo, "Closed the app successfully", 1)
+
+        device_type = appium_details.get(device_id, {}).get("type", "").lower()
+
+        if device_type == "android":
+            try:
+                app_id = appium_driver.current_package
+            except Exception:
+                app_id = (
+                    appium_driver.capabilities.get("appPackage")
+                    or appium_driver.capabilities.get("appium:appPackage", "")
+                )
+            if not app_id:
+                CommonUtil.ExecLog(sModuleInfo, "Could not determine Android package name.", 3)
+                return "zeuz_failed"
+        elif device_type in ("ios", "macos"):
+            app_id = (
+                appium_driver.capabilities.get("bundleId")
+                or appium_driver.capabilities.get("appium:bundleId", "")
+            )
+            if not app_id:
+                CommonUtil.ExecLog(sModuleInfo, "Could not determine bundle ID from capabilities.", 3)
+                return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Unsupported device type '{device_type}' for close action.", 3)
+            return "zeuz_failed"
+
+        appium_driver.terminate_app(app_id)
+        CommonUtil.ExecLog(sModuleInfo, f"Successfully closed app '{app_id}'.", 1)
         return "passed"
+
     except Exception:
         errMsg = "Unable to close the application."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -2868,7 +2910,23 @@ def Seek_Progress_Bar(data_set):
 
 @logger
 def Double_Tap_Appium(data_set):
-    #!!!not yet tested or used
+    """
+    This action performs a **double tap** on a mobile app element using **Appium**.
+
+    - Locate UI elements using standard properties like 'resource-id', 'tag', 'text', 'content-desc', etc.
+    - Supports **partial matching** using `*` before the property name (e.g., *text).
+    - You can provide **multiple rows of element properties** for accurate targeting.
+    - The Appium action used is: double tap.
+
+    Data Input Fields:
+
+    | Action                                                        | Field Type        | Value              |
+    |---------------------------------------------------------------|-------------------|--------------------|
+    | Enter element's property name to double tap.                  | element parameter | resource-id value  |
+    | double tap                                                    | appium action     | double tap         |
+
+    Note: Uses W3C touch pointer actions for compatibility with both Android and iOS.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -2877,43 +2935,65 @@ def Double_Tap_Appium(data_set):
 
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate element with given data.", 3)
             return "zeuz_failed"
-        else:
+
+        if not Element.is_enabled():
+            CommonUtil.ExecLog(sModuleInfo, "Element is not enabled. Cannot double tap.", 3)
+            return "zeuz_failed"
+
+        try:
+            finger = PointerInput(interaction.POINTER_TOUCH, "finger")
+            builder = ActionBuilder(appium_driver, mouse=finger)
+            builder.pointer_action.move_to(Element)
+            builder.pointer_action.pointer_down()
+            builder.pointer_action.pause(0.1)
+            builder.pointer_action.pointer_up()
+            builder.pointer_action.pause(0.1)
+            builder.pointer_action.pointer_down()
+            builder.pointer_action.pause(0.1)
+            builder.pointer_action.pointer_up()
+            builder.perform()
+            CommonUtil.ExecLog(sModuleInfo, "Double tap performed successfully.", 1)
+            return "passed"
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "W3C pointer action failed, trying ActionChains fallback.", 2)
             try:
-                if Element.is_enabled():
-                    action = TouchAction(appium_driver)
-
-                    action.press(Element).wait(100).release().press(Element).wait(
-                        100
-                    ).release().perform()
-
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Double Tapped on element successfully", 1
-                    )
-                    return "passed"
-                else:
-                    # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Element not enabled. Unable to click.", 3
-                    )
-                    return "zeuz_failed"
+                actions = ActionChains(appium_driver)
+                actions.double_click(Element).perform()
+                CommonUtil.ExecLog(sModuleInfo, "Double tap performed via ActionChains fallback.", 1)
+                return "passed"
             except Exception:
-                errMsg = "Could not select/click your element."
+                errMsg = "Double tap failed with both W3C pointer and ActionChains methods."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
     except Exception:
-        errMsg = "Unable to tap."
+        errMsg = "Unable to perform double tap."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 @logger
 def Long_Press_Appium(data_set):
-    """ Press and hold an element """
+    """
+    This action performs a **long press (press and hold)** on a mobile app element using **Appium**.
 
+    - Locate UI elements using standard properties like 'resource-id', 'tag', 'text', 'content-desc', etc.
+    - Supports **partial matching** using `*` before the property name (e.g., *text).
+    - You can provide **multiple rows of element properties** for accurate targeting.
+    - Optionally specify a **duration** (in milliseconds) for how long to press (default: 1000ms).
+    - The Appium action used is: long press.
+
+    Data Input Fields:
+
+    | Action                                                        | Field Type        | Value              |
+    |---------------------------------------------------------------|-------------------|--------------------|
+    | Enter element's property name to long press.                  | element parameter | value              |
+    | duration (optional, in milliseconds, default 1000)            | optional parameter| 2000               |
+    | long press                                                    | appium action     | long press         |
+
+    Note: Uses W3C touch pointer actions for compatibility with both Android and iOS.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -2921,35 +3001,49 @@ def Long_Press_Appium(data_set):
         return "passed"
 
     try:
+        duration_ms = 1000  # default long press duration in milliseconds
+
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            mid = mid.strip().lower()
+            if mid in ("optional parameter", "option") and "duration" in left:
+                try:
+                    duration_ms = int(right.strip())
+                except ValueError:
+                    CommonUtil.ExecLog(sModuleInfo, f"Invalid duration value '{right}', using default 1000ms.", 2)
+
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate element with given data.", 3)
             return "zeuz_failed"
-        else:
+
+        if not Element.is_enabled():
+            CommonUtil.ExecLog(sModuleInfo, "Element is not enabled. Cannot long press.", 3)
+            return "zeuz_failed"
+
+        try:
+            finger = PointerInput(interaction.POINTER_TOUCH, "finger")
+            builder = ActionBuilder(appium_driver, mouse=finger)
+            builder.pointer_action.move_to(Element)
+            builder.pointer_action.pointer_down()
+            builder.pointer_action.pause(duration_ms / 1000)
+            builder.pointer_action.pointer_up()
+            builder.perform()
+            CommonUtil.ExecLog(sModuleInfo, f"Long press performed successfully (duration: {duration_ms}ms).", 1)
+            return "passed"
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "W3C pointer action failed, trying ActionChains fallback.", 2)
             try:
-                if Element.is_enabled():
-                    action = TouchAction(appium_driver)
-
-                    action.long_press(Element, 150, 10).release().perform()
-
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Long Pressed on element successfully", 1
-                    )
-                    return "passed"
-                else:
-                    # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Element not enabled. Unable to click.", 3
-                    )
-                    return "zeuz_failed"
+                actions = ActionChains(appium_driver)
+                actions.click_and_hold(Element).pause(duration_ms / 1000).release().perform()
+                CommonUtil.ExecLog(sModuleInfo, f"Long press performed via ActionChains fallback (duration: {duration_ms}ms).", 1)
+                return "passed"
             except Exception:
-                errMsg = "Could not select/click your element."
+                errMsg = "Long press failed with both W3C pointer and ActionChains methods."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
     except Exception:
-        errMsg = "Unable to tap."
+        errMsg = "Unable to perform long press."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
@@ -3149,6 +3243,14 @@ def Enter_Text_Appium(data_set):
                     "Entered the text using action chains",
                     1,
                 )
+            if context_switched == True:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Context was switched during this action.  Switching back to default Native Context",
+                    1,
+                )
+                context_result = auto_switch_context_and_try("native")
+            return "passed"
         except Exception:
             errMsg = "Failed to enter text"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)

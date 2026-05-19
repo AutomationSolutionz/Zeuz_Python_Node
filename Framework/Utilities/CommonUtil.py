@@ -44,6 +44,8 @@ try:
 except:
     pass
 
+
+
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
@@ -58,16 +60,17 @@ console = Console()
 MODULE_NAME = inspect.getmodulename(__file__)
 
 # Get file path for temporary config file
-temp_config = Path(
-    os.path.join(os.path.abspath(__file__).split("Framework")[0])
-    / Path("AutomationLog")
-    / Path(
-        ConfigModule.get_config_value(
-            "Advanced Options",
-            "_file",
+def temp_config() -> Path:
+    return Path(
+        os.path.join(os.path.abspath(__file__).split("Framework")[0])
+        / Path("AutomationLog")
+        / Path(
+            ConfigModule.get_config_value(
+                "Advanced Options",
+                "_file",
+            )
         )
     )
-)
 
 common_modules = ["os", "sys", "platform", "time", "datetime", "random", "re", "uuid", "pathlib", "json", "ast", "yaml", "csv", "xml", "xlwings", "requests", "sr"]
 
@@ -159,6 +162,10 @@ all_action_info = []
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
+
+AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS = 3
+AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS = 0.25
+CANCELLED_RUN_STATUS = "Cancelled"
 
 # Metrics variables
 browser_perf = {}
@@ -324,41 +331,6 @@ def prettify(key, val):
         # 4 means console log which is Magenta color in server console
         live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
 
-def Add_Folder_To_Current_Test_Case_Log(src):
-    try:
-        # get the current test case locations
-        dest_folder = ConfigModule.get_config_value(
-            "sectionOne", "test_case_folder", temp_config
-        )
-        folder_name = [x for x in src.split("/") if x != ""][-1]
-        if folder_name:
-            des_path = os.path.join(dest_folder, folder_name)
-            FL.copy_folder(src, des_path)
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        return Exception_Handler(sys.exc_info())
-
-
-def Add_File_To_Current_Test_Case_Log(src):
-    try:
-        # get the current test case locations
-        dest_folder = ConfigModule.get_config_value(
-            "sectionOne", "test_case_folder", temp_config
-        )
-        file_name = [x for x in src.split("/") if x != ""][-1]
-        if file_name:
-            des_path = os.path.join(dest_folder, file_name)
-            FL.copy_file(src, des_path)
-            return True
-        else:
-            return False
-
-    except Exception as e:
-        return Exception_Handler(sys.exc_info())
-
 
 def strip1(original_value: str, remove: str) -> str:
     if original_value.startswith(remove):
@@ -424,7 +396,7 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
-        elif sTestStepReturnStatus.lower() == "cancelled":
+        elif sTestStepReturnStatus is not None and sTestStepReturnStatus.lower() == "cancelled":
             temp_q.put("cancelled")
             return "cancelled"
         else:
@@ -472,7 +444,8 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
         global all_logs_json, report_json_time, tc_error_logs, passed_after_rerun, zeuz_tc_run_comment
         start = time.perf_counter()
         if logs or stepInfo or TCInfo or setInfo:
-            log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
+            log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config())
+            # 'Wed-May-6-08:11:59-2026|TEST-0158|none|none'
             if not log_id:
                 return
             log_id_vals = log_id.split("|")
@@ -691,7 +664,7 @@ def ExecLog(
     if iLogLevel > 0:
         if iLogLevel == 6:
             FWLogFolder = ConfigModule.get_config_value(
-                "sectionOne", "log_folder", temp_config
+                "sectionOne", "log_folder", temp_config()
             )
             if os.path.exists(FWLogFolder) == False:
                 FL.CreateFolder(FWLogFolder)  # Create log directory if missing
@@ -699,7 +672,7 @@ def ExecLog(
             if FWLogFolder == "":
                 BrowserConsoleLogFile = (
                     ConfigModule.get_config_value(
-                        "sectionOne", "temp_run_file_path", temp_config
+                        "sectionOne", "temp_run_file_path", temp_config()
                     )
                     + os.sep
                     + "BrowserLog.log"
@@ -752,7 +725,7 @@ def ExecLog(
                 
 
             log_id = ConfigModule.get_config_value(
-                "sectionOne", "sTestStepExecLogId", temp_config
+                "sectionOne", "sTestStepExecLogId", temp_config()
             )
             if not log_id:
                 return
@@ -780,7 +753,7 @@ def ExecLog(
                     filepath = (
                         Path(
                             ConfigModule.get_config_value(
-                                "sectionOne", "temp_run_file_path", temp_config
+                                "sectionOne", "temp_run_file_path", temp_config()
                             )
                         )
                         / "execution.log"
@@ -889,7 +862,7 @@ async def TakeScreenShot(function_name, local_run=False):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         # Read values from config file
         take_screenshot_settings = ConfigModule.get_config_value("RunDefinition", "take_screenshot")
-        image_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config)
+        image_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config())
 
         try:
             if not os.path.exists(image_folder):
@@ -942,6 +915,84 @@ def pil_image_to_bytearray(img):
     return img_byte_array
 
 
+def _is_run_cancelled():
+    return run_cancelled or str(run_cancel).strip().lower() == CANCELLED_RUN_STATUS.lower()
+
+
+def _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
+    if not debug_status:
+        return True
+
+    remaining_delay = AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS
+    while remaining_delay > 0:
+        if _is_run_cancelled():
+            ExecLog(
+                sModuleInfo,
+                "Skipping delayed screenshot for Action: %s Method: %s because run was cancelled"
+                % (function_name, Method),
+                0,
+            )
+            return False
+
+        sleep_duration = min(AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS, remaining_delay)
+        time.sleep(sleep_duration)
+        remaining_delay = round(remaining_delay - sleep_duration, 10)
+
+    if _is_run_cancelled():
+        ExecLog(
+            sModuleInfo,
+            "Skipping delayed screenshot for Action: %s Method: %s because run was cancelled"
+            % (function_name, Method),
+            0,
+        )
+        return False
+
+    return True
+
+
+def _get_window_screenshot_bbox():
+    """ Try to find window title from step_data and return its bounding box if found """
+    try:
+        if sys.platform != "win32":
+            return None
+        import pygetwindow as gw
+        from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
+        
+        window_title = None
+        step_data = shared.Get_Shared_Variables("step_data", False)
+        if step_data and current_action_no and str(current_action_no).isdigit():
+            current_dataset = step_data[int(current_action_no) - 1]
+            for row in current_dataset:
+                left = str(row[0]).strip().lower()
+                if "window" in left:
+                    window_title = str(row[2])
+                    break
+                if "open app" in left:
+                    window_title = str(row[2])
+                    # not breaking because window is more preferred
+                    
+        if window_title:
+            windows = gw.getWindowsWithTitle(window_title)
+            if windows:
+                win = windows[0]
+                try:
+                    if win.isMinimized:
+                        win.restore()
+                    try:
+                        import autoit
+                        autoit.win_activate(win.title)
+                    except Exception:
+                        win.activate()
+                    time.sleep(0.5) # Allow time for window to render in foreground
+                except Exception:
+                    pass
+                return (win.left, win.top, win.right, win.bottom)
+        
+    except Exception:
+        pass
+    return None
+
+
 async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
     if performance_testing: return
@@ -967,24 +1018,44 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
     ImageName = os.path.join(image_folder, (image_name.translate(trans_table)).strip().replace(" ", "_") + ".png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(Method), str(Driver), ImageName), 0)
     try:
+        should_delay_before_capture = Method == "desktop" and sys.platform in ("linux2", "win32", "darwin")
+
+        if Method in ("mobile", "web"):
+            if Driver is None:
+                ExecLog(
+                    sModuleInfo,
+                    "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
+                    % (str(Method), str(Driver)),
+                    3,
+                )
+                return
+            should_delay_before_capture = True
+
+        if should_delay_before_capture and not _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
+            return
+
         # Capture screenshot of desktop
         if Method == "desktop":
-            if sys.platform == "linux2":
-                image = ImageGrab_Linux.grab()
-                image.save(ImageName, format="PNG")  # Save to disk
+            if sys.platform in ("linux", "linux2"):
+                # Import Linux screenshot function for AT-SPI desktop automation
+                try:
+                    if sys.platform in ("linux", "linux2"):
+                        from Framework.Built_In_Automation.Desktop.Linux.BuiltInFunctions import capture_screenshot as linux_capture_screenshot
+                except Exception:
+                    linux_capture_screenshot = None
+                if linux_capture_screenshot:
+                    linux_capture_screenshot(ImageName)
+                else:
+                    ExecLog(
+                        sModuleInfo,
+                        "Linux screenshot module not available",
+                        3,
+                    )
+                    return
             elif sys.platform == "win32" or sys.platform == "darwin":
-                image = ImageGrab_Mac_Win.grab()
+                bbox = _get_window_screenshot_bbox()
+                image = ImageGrab_Mac_Win.grab(bbox)
                 image.save(ImageName, format="PNG")  # Save to disk
-
-        # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
-        elif Driver is None and Method in ("mobile", "web"):
-            ExecLog(
-                sModuleInfo,
-                "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
-                % (str(Method), str(Driver)),
-                3,
-            )
-            return
 
         # Capture screenshot of web browser
         elif Method == "web":

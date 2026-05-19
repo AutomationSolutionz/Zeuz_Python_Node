@@ -2213,7 +2213,7 @@ def TakeScreenShot(step_data):
                     'could not import python package needed for screenshot...installing package "gi"',
                     1,
                 )
-                os.system("pip install gi")
+                os.system("uv add gi")
 
             # set the root window as the window we want for screenshot
             window = Gdk.get_default_root_window()

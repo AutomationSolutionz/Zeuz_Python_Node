@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	version   = "dev"
-	branch    = flag.String("branch", "", "Branch to download (defaults to tagged version)")
-	cleanFlag = flag.Bool("clean", false, "Remove ZeuZ Node directory and $HOME/.zeuz and exit")
+	version    = "dev"
+	branch     = flag.String("branch", "", "Branch to download (defaults to tagged version)")
+	cleanFlag  = flag.Bool("clean", false, "Remove ZeuZ Node directory and $HOME/.zeuz and exit")
+	upgradeFlag = flag.Bool("upgrade", false, "Check for updates and upgrade if available")
 )
 
 func downloadFile(url, destPath string) error {
@@ -52,8 +53,27 @@ func downloadFile(url, destPath string) error {
 		}
 	}
 
-	// Move the temp file to the destination
+	// Move the temp file to the destination (on Windows, rename can't cross drives)
 	if err := os.Rename(out.Name(), destPath); err != nil {
+		if runtime.GOOS == "windows" {
+			// Cross-device rename failed, use copy instead
+			src, err := os.Open(out.Name())
+			if err != nil {
+				return fmt.Errorf("failed to open temp file: %v", err)
+			}
+			defer src.Close()
+
+			dst, err := os.Create(destPath)
+			if err != nil {
+				return fmt.Errorf("failed to create destination: %v", err)
+			}
+			defer dst.Close()
+
+			if _, err := io.Copy(dst, src); err != nil {
+				return fmt.Errorf("failed to copy file: %v", err)
+			}
+			return nil
+		}
 		return fmt.Errorf("failed to move file to destination: %v", err)
 	}
 
@@ -273,6 +293,17 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("✅ ZeuZ Node %s\n", version)
+
+	// Handle upgrade flag - performs upgrade if available
+	if *upgradeFlag {
+		PerformUpgrade()
+		return // Only reached if upgrade failed or not needed
+	}
+
+	// Check for updates (non-blocking, uses cached info from last run)
+	if !HandleUpdateFlow() {
+		return
+	}
 
 	zeuzDir := getZeuZNodeDir()
 

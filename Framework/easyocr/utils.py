@@ -1,16 +1,26 @@
 from __future__ import print_function
 
-import torch
 import pickle
 import numpy as np
 import math
 import cv2
 from PIL import Image, JpegImagePlugin
-from scipy import ndimage
 import hashlib
 import sys, os
 from zipfile import ZipFile
 from .imgproc import loadImage
+
+try:
+    import torch
+except ImportError:
+    os.system("uv add torch")
+    import torch
+
+try:
+    from scipy import ndimage
+except ImportError:
+    os.system("uv add scipy")
+    from scipy import ndimage
 
 if sys.version_info[0] == 2:
     from six.moves.urllib.request import urlretrieve

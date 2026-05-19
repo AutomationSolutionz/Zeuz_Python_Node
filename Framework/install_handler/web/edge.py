@@ -6,8 +6,11 @@ import os
 import shutil
 import json
 from pathlib import Path
+from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
+
+logger = get_logger()
 
 
 def _is_windows():
@@ -48,7 +51,7 @@ def _get_linux_package_manager():
 
 async def check_status() -> bool:
    """Check if Microsoft Edge is installed."""
-   print("[installer][web-edge] Checking status...")
+   logger.info("[installer][web-edge] Checking status...")
   
    try:
        result = None
@@ -120,7 +123,7 @@ async def check_status() -> bool:
                )
          
        if result.returncode != 0:
-           print("[installer][web-edge] Not installed")
+           logger.info("[installer][web-edge] Not installed")
            await send_response({
                "action": "status",
                "data": {
@@ -135,7 +138,7 @@ async def check_status() -> bool:
        # Edge version output is typically in stdout or stderr
        version_text = (result.stdout or result.stderr).strip()
        if not version_text:
-           print("[installer][web-edge] Not installed")
+           logger.info("[installer][web-edge] Not installed")
            await send_response({
                "action": "status",
                "data": {
@@ -147,7 +150,7 @@ async def check_status() -> bool:
            })
            return False
       
-       print("[installer][web-edge] Already installed")
+       logger.info("[installer][web-edge] Already installed")
        await send_response({
            "action": "status",
            "data": {
@@ -160,7 +163,7 @@ async def check_status() -> bool:
        return True
    except (FileNotFoundError, OSError):
        # Edge command not found - Edge is not installed
-       print("[installer][web-edge] Not installed (msedge not found)")
+       logger.info("[installer][web-edge] Not installed (msedge not found)")
        await send_response({
            "action": "status",
            "data": {
@@ -172,7 +175,7 @@ async def check_status() -> bool:
        })
        return False
    except Exception as e:
-       print(f"[installer][web-edge] Error checking status: {e}")
+       logger.error("[installer][web-edge] Error checking status: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -187,7 +190,7 @@ async def check_status() -> bool:
 
 async def _download_edge_installer():
    """Download Edge installer based on platform"""
-   print("[installer][web-edge] Downloading Microsoft Edge installer...")
+   logger.info("[installer][web-edge] Downloading Microsoft Edge installer...")
    await send_response({
        "action": "status",
        "data": {
@@ -235,8 +238,7 @@ async def _download_edge_installer():
                total_size = int(response.headers.get("content-length", 0))
                chunk_size = 8192
                downloaded = 0
-               
-               count = []
+               last_pct = [-1]
                with open(installer_path, "wb") as f:
                    async for chunk in response.aiter_bytes(chunk_size):
                        f.write(chunk)
@@ -244,18 +246,15 @@ async def _download_edge_installer():
                        
                        if total_size > 0:
                            progress = (downloaded / total_size) * 100
-                           bar_length = 50
-                           filled_length = int(bar_length * downloaded // total_size)
-                           bar = '█' * filled_length + '-' * (bar_length - filled_length)
-                           
-                           mb_downloaded = downloaded / (1024 * 1024)
-                           mb_total = total_size / (1024 * 1024)
-                           
-                           print(f"\r[installer][web-edge] |{bar}| {progress:.1f}% ({mb_downloaded:.1f}/{mb_total:.1f} MB)", end='', flush=True)
-                           
-                           p = round(mb_downloaded/mb_total, 1)
-                           if p not in count:
-                               count.append(p)
+                           pct = int(progress)
+                           if pct != last_pct[0]:
+                               last_pct[0] = pct
+                               bar_length = 50
+                               filled_length = int(bar_length * downloaded // total_size)
+                               bar = '█' * filled_length + '-' * (bar_length - filled_length)
+                               mb_downloaded = downloaded / (1024 * 1024)
+                               mb_total = total_size / (1024 * 1024)
+                               logger.info("[installer][web-edge] |%s| %d%% (%.1f/%.1f MB)", bar, pct, mb_downloaded, mb_total)
                                asyncio.create_task(send_response({
                                    "action": "status",
                                    "data": {
@@ -266,11 +265,10 @@ async def _download_edge_installer():
                                    }
                                }))
        
-       print()
-       print(f"[installer][web-edge] Download complete: {installer_path}")
+       logger.info("[installer][web-edge] Download complete: %s", installer_path)
        return installer_path
    except Exception as e:
-       print(f"\n[installer][web-edge] Download failed: {e}")
+       logger.error("[installer][web-edge] Download failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -285,7 +283,7 @@ async def _download_edge_installer():
 
 async def _install_edge_windows(installer_path, user_password: str = ""):
    """Install Edge on Windows"""
-   print("[installer][web-edge] Installing Microsoft Edge on Windows...")
+   logger.info("[installer][web-edge] Installing Microsoft Edge on Windows...")
    await send_response({
        "action": "status",
        "data": {
@@ -345,7 +343,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
        winget_result = run_elevated(["winget", "install", "--id", "Microsoft.Edge", "--silent", "--accept-package-agreements", "--accept-source-agreements"])
        
        if winget_result.returncode == 0:
-           print("[installer][web-edge] Microsoft Edge installed via winget")
+           logger.info("[installer][web-edge] Microsoft Edge installed via winget")
            return True
        
        # Fallback to MSI installer
@@ -353,10 +351,10 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
            msi_result = run_elevated(["msiexec", "/i", str(installer_path), "/quiet", "/norestart"])
            
            if msi_result.returncode == 0:
-               print("[installer][web-edge] Microsoft Edge installed via MSI")
+               logger.info("[installer][web-edge] Microsoft Edge installed via MSI")
                return True
            else:
-               print(f"[installer][web-edge] Installation failed. Error: {msi_result.stderr}")
+               logger.error("[installer][web-edge] Installation failed. Error: %s", msi_result.stderr)
                await send_response({
                    "action": "status",
                    "data": {
@@ -368,7 +366,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
                })
                return False
        else:
-           print("[installer][web-edge] Installer not found, trying direct download")
+           logger.warning("[installer][web-edge] Installer not found, trying direct download")
            # Try direct download URL (this will prompt for elevation if needed)
            if user_password:
                import getpass
@@ -395,7 +393,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
            if download_result.returncode == 0:
                return True
            else:
-               print(f"[installer][web-edge] Installation failed. Error: {download_result.stderr}")
+               logger.error("[installer][web-edge] Installation failed. Error: %s", download_result.stderr)
                await send_response({
                    "action": "status",
                    "data": {
@@ -408,7 +406,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
                return False
        
        # All installation methods failed
-       print(f"[installer][web-edge] Installation failed. Error: {winget_result.stderr}")
+       logger.error("[installer][web-edge] Installation failed. Error: %s", winget_result.stderr)
        await send_response({
            "action": "status",
            "data": {
@@ -420,7 +418,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
        })
        return False
    except Exception as e:
-       print(f"[installer][web-edge] Windows installation failed: {e}")
+       logger.exception("[installer][web-edge] Windows installation failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -435,7 +433,7 @@ async def _install_edge_windows(installer_path, user_password: str = ""):
 
 async def _install_edge_linux(installer_path, user_password: str = ""):
    """Install Edge on Linux"""
-   print("[installer][web-edge] Installing Microsoft Edge on Linux...")
+   logger.info("[installer][web-edge] Installing Microsoft Edge on Linux...")
    await send_response({
        "action": "status",
        "data": {
@@ -465,7 +463,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
            apt_install_result = run_sudo(["sudo", "apt-get", "install", "-y", "microsoft-edge-stable"])
            
            if apt_install_result.returncode == 0:
-               print("[installer][web-edge] Microsoft Edge installed via apt")
+               logger.info("[installer][web-edge] Microsoft Edge installed via apt")
                return True
            
            
@@ -479,11 +477,11 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
                    deb_result = run_sudo(["sudo", "dpkg", "-i", str(installer_path)])
                
                if deb_result.returncode == 0:
-                   print("[installer][web-edge] Microsoft Edge installed via .deb package")
+                   logger.info("[installer][web-edge] Microsoft Edge installed via .deb package")
                    return True
                
                # .deb installation failed
-               print(f"[installer][web-edge] Installation failed. Error: {deb_result.stderr}")
+               logger.error("[installer][web-edge] Installation failed. Error: %s", deb_result.stderr)
                await send_response({
                    "action": "status",
                    "data": {
@@ -496,7 +494,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
                return False
            else:
                # No .deb package available and apt failed
-               print(f"[installer][web-edge] Installation failed. Error: {apt_install_result.stderr}")
+               logger.error("[installer][web-edge] Installation failed. Error: %s", apt_install_result.stderr)
                await send_response({
                    "action": "status",
                    "data": {
@@ -513,11 +511,11 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
            yum_result = run_sudo(["sudo", "yum", "install", "-y", "microsoft-edge-stable"])
            
            if yum_result.returncode == 0:
-               print("[installer][web-edge] Microsoft Edge installed via yum")
+               logger.info("[installer][web-edge] Microsoft Edge installed via yum")
                return True
            
            # Installation failed
-           print(f"[installer][web-edge] Installation failed. Error: {yum_result.stderr}")
+           logger.error("[installer][web-edge] Installation failed. Error: %s", yum_result.stderr)
            await send_response({
                "action": "status",
                "data": {
@@ -534,11 +532,11 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
            dnf_result = run_sudo(["sudo", "dnf", "install", "-y", "microsoft-edge-stable"])
            
            if dnf_result.returncode == 0:
-               print("[installer][web-edge] Microsoft Edge installed via dnf")
+               logger.info("[installer][web-edge] Microsoft Edge installed via dnf")
                return True
            
            # Installation failed
-           print(f"[installer][web-edge] Installation failed. Error: {dnf_result.stderr}")
+           logger.error("[installer][web-edge] Installation failed. Error: %s", dnf_result.stderr)
            await send_response({
                "action": "status",
                "data": {
@@ -561,7 +559,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
        })
        return False
    except Exception as e:
-       print(f"[installer][web-edge] Linux installation failed: {e}")
+       logger.exception("[installer][web-edge] Linux installation failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -576,7 +574,7 @@ async def _install_edge_linux(installer_path, user_password: str = ""):
 
 async def _install_edge_darwin(installer_path, user_password: str = ""):
    """Install Edge on macOS"""
-   print("[installer][web-edge] Installing Microsoft Edge on macOS...")
+   logger.info("[installer][web-edge] Installing Microsoft Edge on macOS...")
    await send_response({
        "action": "status",
        "data": {
@@ -597,7 +595,7 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
        )
        
        if brew_result.returncode == 0:
-           print("[installer][web-edge] Microsoft Edge installed via homebrew")
+           logger.info("[installer][web-edge] Microsoft Edge installed via homebrew")
            return True
        
        # Fallback to .pkg installer (needs sudo)
@@ -615,10 +613,10 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
                )
            
            if pkg_result.returncode == 0:
-               print("[installer][web-edge] Microsoft Edge installed via .pkg")
+               logger.info("[installer][web-edge] Microsoft Edge installed via .pkg")
                return True
            else:
-               print(f"[installer][web-edge] Installation failed. Error: {pkg_result.stderr}")
+               logger.error("[installer][web-edge] Installation failed. Error: %s", pkg_result.stderr)
                await send_response({
                    "action": "status",
                    "data": {
@@ -632,7 +630,7 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
        
        # All installation methods failed
        if brew_result.returncode != 0:
-           print(f"[installer][web-edge] Installation failed. Error: {brew_result.stderr}")
+           logger.error("[installer][web-edge] Installation failed. Error: %s", brew_result.stderr)
        
        await send_response({
            "action": "status",
@@ -645,7 +643,7 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
        })
        return False
    except Exception as e:
-       print(f"[installer][web-edge] macOS installation failed: {e}")
+       logger.exception("[installer][web-edge] macOS installation failed: %s", e)
        await send_response({
            "action": "status",
            "data": {
@@ -660,7 +658,7 @@ async def _install_edge_darwin(installer_path, user_password: str = ""):
 
 async def _verify_edge_installation():
    """Verify that Edge is properly installed"""
-   print("[installer][web-edge] Verifying Microsoft Edge installation...")
+   logger.info("[installer][web-edge] Verifying Microsoft Edge installation...")
    await send_response({
        "action": "status",
        "data": {
@@ -681,11 +679,11 @@ async def _verify_edge_installation():
 async def install(user_password: str = "") -> bool:
 
    """Main function to install Microsoft Edge"""
-   print("[installer][web-edge] Installing Microsoft Edge...")
+   logger.info("[installer][web-edge] Installing Microsoft Edge...")
    
    # Check if Edge is already installed
    if await check_status():
-       print("[installer][web-edge] Microsoft Edge is already installed")
+       logger.info("[installer][web-edge] Microsoft Edge is already installed")
        return True
    
    installer_path = None
@@ -721,10 +719,10 @@ async def install(user_password: str = "") -> bool:
    
    # Verify installation
    if not await _verify_edge_installation():
-       print("[installer][web-edge] Microsoft Edge installation verification failed")
+       logger.error("[installer][web-edge] Microsoft Edge installation verification failed")
        return False
    
-   print("[installer][web-edge] Microsoft Edge installation complete")
+   logger.info("[installer][web-edge] Microsoft Edge installation complete")
    await send_response({
        "action": "status",
        "data": {

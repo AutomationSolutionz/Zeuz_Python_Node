@@ -27,6 +27,7 @@
                 "https://*/*"
             ],
             "js": [
+                "page_map_extractor.js",
                 "inspect.js"
             ]
         },

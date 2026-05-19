@@ -17,7 +17,9 @@ import datetime
 from datetime import timedelta
 import struct
 import urllib.request
+from contextlib import contextmanager
 from rich.progress import Progress
+from filelock import FileLock
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 try:
@@ -57,6 +59,48 @@ class ChromeForTesting:
 
         if not self.CHROME_INFO_FILE.exists():
             self._init_info_file()
+
+    @contextmanager
+    def _info_lock(self):
+        """Serialize access to the chrome-for-testing cache files."""
+        self.CHROME_BASE_DIR.mkdir(parents=True, exist_ok=True)
+        lock_path = str(self.CHROME_INFO_FILE) + ".lock"
+        with FileLock(lock_path):
+            yield
+
+    def _read_info_unlocked(self):
+        """Read info.json without taking the lock."""
+        defaults = {
+            "latest": {"version": "", "last_check": ""},
+            "installed_versions": {},
+            "settings": {"days_before_fetch": 15, "days_before_cleanup": 50},
+        }
+
+        if not self.CHROME_INFO_FILE.exists():
+            return defaults
+
+        with open(self.CHROME_INFO_FILE, "r") as f:
+            info = json.load(f)
+
+        if "settings" not in info:
+            info["settings"] = defaults["settings"]
+
+        if "latest" not in info:
+            info["latest"] = defaults["latest"]
+
+        if "installed_versions" not in info:
+            info["installed_versions"] = defaults["installed_versions"]
+
+        return info
+
+    def _write_info_unlocked(self, info):
+        """Atomically write info.json without taking the lock."""
+        temp_path = self.CHROME_INFO_FILE.with_suffix(".json.tmp")
+        with open(temp_path, "w") as f:
+            json.dump(info, f, indent=4)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, self.CHROME_INFO_FILE)
 
     def _install_linux_dependencies(self):
         """Install Chrome dependencies for Ubuntu 24.04 and newer"""
@@ -182,35 +226,28 @@ class ChromeForTesting:
                 "days_before_cleanup": 50,  # set default cleanup old versions after 50 days
             },
         }
-        with open(self.CHROME_INFO_FILE, "w") as f:
-            json.dump(info, f, indent=4)
+        with self._info_lock():
+            self._write_info_unlocked(info)
 
     def _load_info(self):
         """Load the info.json content"""
-        # modification here to use defaults with settings
-        defaults = {
-            "latest": {"version": "", "last_check": ""},
-            "installed_versions": {},
-            "settings": {"days_before_fetch": 15, "days_before_cleanup": 50},
-        }
+        with self._info_lock():
+            try:
+                info = self._read_info_unlocked()
+            except json.JSONDecodeError:
+                info = {
+                    "latest": {"version": "", "last_check": ""},
+                    "installed_versions": {},
+                    "settings": {"days_before_fetch": 15, "days_before_cleanup": 50},
+                }
+                self._write_info_unlocked(info)
 
-        if not self.CHROME_INFO_FILE.exists():
-            return defaults
-
-        with open(self.CHROME_INFO_FILE, "r") as f:
-            info = json.load(f)
-
-        # adds settings if missing
-        if "settings" not in info:
-            info["settings"] = defaults["settings"]
-            self._save_info(info)
-
-        return info
+            return info
 
     def _save_info(self, info):
         """Save data to info.json"""
-        with open(self.CHROME_INFO_FILE, "w") as f:
-            json.dump(info, f, indent=4)
+        with self._info_lock():
+            self._write_info_unlocked(info)
 
     def get_latest_version(self, channel="Stable", force_check=False):
         """Get the latest Chrome version with caching"""
@@ -318,11 +355,12 @@ class ChromeForTesting:
 
     def _update_installed_version_date(self, version):
         """Update the last used date for an installed version"""
-        info = self._load_info()
-        today = datetime.date.today().isoformat()
+        with self._info_lock():
+            info = self._read_info_unlocked()
+            today = datetime.date.today().isoformat()
 
-        info["installed_versions"][version] = today
-        self._save_info(info)
+            info["installed_versions"][version] = today
+            self._write_info_unlocked(info)
 
     def get_chrome_binary_path(self, version_dir):
         """Get path to Chrome binary"""
@@ -413,45 +451,46 @@ class ChromeForTesting:
 
     def cleanup_old_versions(self):
         """Remove versions not used in the last X days (from settings)"""
-        info = self._load_info()
-        installed_versions = info.get("installed_versions", {})
-        today = datetime.date.today()
+        with self._info_lock():
+            info = self._read_info_unlocked()
+            installed_versions = info.get("installed_versions", {})
+            today = datetime.date.today()
 
-        # get days_before_cleanup from  settings
-        settings = info.get("settings", {})
+            # get days_before_cleanup from  settings
+            settings = info.get("settings", {})
 
-        # Check environment variable first
-        env_fetch = os.environ.get("CHROME_DAYS_BEFORE_CLEANUP")
-        if env_fetch:
-            days_before_cleanup = int(env_fetch)
-            print(f"Using days_before_cleanup from env: {days_before_cleanup}")
-        else:
-            # otherwise use info.json or default
-            days_before_cleanup = settings.get("days_before_cleanup", 50)
+            # Check environment variable first
+            env_fetch = os.environ.get("CHROME_DAYS_BEFORE_CLEANUP")
+            if env_fetch:
+                days_before_cleanup = int(env_fetch)
+                print(f"Using days_before_cleanup from env: {days_before_cleanup}")
+            else:
+                # otherwise use info.json or default
+                days_before_cleanup = settings.get("days_before_cleanup", 50)
 
-        # modification here to use settings for days_before_cleanup
-        cutoff_date = today - timedelta(days=days_before_cleanup)
+            # modification here to use settings for days_before_cleanup
+            cutoff_date = today - timedelta(days=days_before_cleanup)
 
-        versions_to_remove = []
-        for version, date_str in installed_versions.items():
-            if not date_str:
-                continue
+            versions_to_remove = []
+            for version, date_str in installed_versions.items():
+                if not date_str:
+                    continue
 
-            last_used = datetime.date.fromisoformat(date_str)
-            if last_used < cutoff_date:
-                versions_to_remove.append(version)
+                last_used = datetime.date.fromisoformat(date_str)
+                if last_used < cutoff_date:
+                    versions_to_remove.append(version)
 
-        for version in versions_to_remove:
-            version_dir = self.CHROME_VERSIONS_DIR / version
-            if version_dir.exists():
-                print(f"Cleaning up unused CfT version: {version}")
-                shutil.rmtree(version_dir, ignore_errors=True)
-            del installed_versions[version]
+            for version in versions_to_remove:
+                version_dir = self.CHROME_VERSIONS_DIR / version
+                if version_dir.exists():
+                    print(f"Cleaning up unused CfT version: {version}")
+                    shutil.rmtree(version_dir, ignore_errors=True)
+                del installed_versions[version]
 
-        if versions_to_remove:
-            info["installed_versions"] = installed_versions
-            self._save_info(info)
-            print(f"Removed {len(versions_to_remove)} old versions of CfT")
+            if versions_to_remove:
+                info["installed_versions"] = installed_versions
+                self._write_info_unlocked(info)
+                print(f"Removed {len(versions_to_remove)} old versions of CfT")
 
     def install_version(self, version):
         """Install a specific Chrome version"""

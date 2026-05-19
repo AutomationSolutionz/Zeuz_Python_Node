@@ -566,6 +566,7 @@ def parse_variable(name):
             # Data collector with pattern.
             # Match with the following pattern.
             # var_name{pattern1}{pattern2}{...}
+            # Optional post-indexing: var_name{pattern}[0] to get single value
 
             name = name[: name.find("{")]
             val = Get_Shared_Variables(name, log=False)
@@ -573,15 +574,30 @@ def parse_variable(name):
             if val == "zeuz_failed":
                 return "zeuz_failed"
 
+            # Separate {} collector patterns from trailing [] post-indices
+            rest = copy_of_name[copy_of_name.find("{"):]
+            last_brace = rest.rfind("}")
+            trailing = rest[last_brace + 1:] if last_brace >= 0 else ""
+            collector_patterns = re.findall(r"\{(.*?)\}", rest)
+            post_indices = re.findall(r"\[(.*?)\]", trailing)
+
             result = []
 
-            for idx in indices:
+            for idx in collector_patterns:
                 result.append(data_collector.collect(idx, val, "pattern"))
 
-            if len(indices) > 1:
+            if len(collector_patterns) > 1:
                 result = list(zip(*result))
-            elif len(indices) == 1:
+            elif len(collector_patterns) == 1:
                 result = result[0]
+
+            # Apply post-indexing if specified (e.g., var{pattern}[0] to get single value)
+            for idx in post_indices:
+                try:
+                    result = result[int(idx)]
+                except (ValueError, IndexError, TypeError) as e:
+                    CommonUtil.ExecLog(sModuleInfo, "Post-index [%s] could not be applied to data collector result: %s" % (idx, str(e)), 3)
+                    return "zeuz_failed"
 
              # send variable value in report logs and terminal
             if str(shared_variables['zeuz_enable_variable_logging']).lower() in {"on", "yes", "true", "1"}:
@@ -595,6 +611,7 @@ def parse_variable(name):
             # Data collector with keys.
             # Match with the following pattern.
             # var_name(pattern1)(pattern2)(...)
+            # Optional post-indexing: var_name(key)[0] to get single value
 
             name = name[: name.find("(")]
             val = Get_Shared_Variables(name, log=False)
@@ -602,13 +619,35 @@ def parse_variable(name):
             if val == "zeuz_failed":
                 return "zeuz_failed"
 
+            # Separate () collector patterns from trailing [] post-indices
+            rest = copy_of_name[copy_of_name.find("("):]
+            last_paren = rest.rfind(")")
+            trailing = rest[last_paren + 1:] if last_paren >= 0 else ""
+            collector_patterns = re.findall(r"\((.*?)\)", rest)
+            post_indices = re.findall(r"\[(.*?)\]", trailing)
+
             result = []
 
-            for idx in indices:
+            for idx in collector_patterns:
                 result.append(data_collector.collect(idx, val, "key"))
 
-            if len(indices) == 1:
+            if len(collector_patterns) == 1:
                 result = result[0]
+
+            # Apply post-indexing if specified (e.g., var(key)['line'][0] to get single value)
+            for idx in post_indices:
+                try:
+                    result = result[int(idx)]
+                except ValueError:
+                    # Try string key access (e.g., var(key)['line'])
+                    try:
+                        result = result[idx.strip("'\"")]
+                    except (KeyError, TypeError, IndexError) as e:
+                        CommonUtil.ExecLog(sModuleInfo, "Post-index [%s] could not be applied to key collector result: %s" % (idx, str(e)), 3)
+                        return "zeuz_failed"
+                except (IndexError, TypeError) as e:
+                    CommonUtil.ExecLog(sModuleInfo, "Post-index [%s] could not be applied to key collector result: %s" % (idx, str(e)), 3)
+                    return "zeuz_failed"
 
             if str(shared_variables['zeuz_enable_variable_logging']).lower() in {"on", "yes", "true", "1"}:
                 CommonUtil.AddVariableToLog(sModuleInfo, copy_of_name, result)

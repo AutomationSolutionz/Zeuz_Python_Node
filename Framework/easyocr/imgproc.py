@@ -4,9 +4,14 @@ MIT License
 """
 
 # -*- coding: utf-8 -*-
+import os
 import numpy as np
-from skimage import io
 import cv2
+try:
+    from skimage import io
+except ImportError:
+    os.system("uv add scikit-image")
+    from skimage import io
 
 def loadImage(img_file):
     img = io.imread(img_file)           # RGB order

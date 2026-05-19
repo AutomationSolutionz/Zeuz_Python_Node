@@ -211,8 +211,10 @@ declarations = (
 |-------|-------------|
 | `name` | Action name used in test steps (case-insensitive) |
 | `function` | Python function name in BuiltInFunctions.py |
-| `screenshot` | When to take screenshot: `"web"`, `"desktop"`, `"none"` |
+| `screenshot` | Automatic post-action screenshot mode: `"web"`, `"mobile"`, `"desktop"`, `"none"` |
 | `module` | Auto-added by loader (e.g., `"selenium"`) |
+
+Automatic post-action screenshots are queued by `CommonUtil.TakeScreenShot()`; the shared worker waits 5 seconds only in debug runs before valid `web`/`mobile`/`desktop` captures, and skips that delayed capture if the run is cancelled during the wait.
 
 ### Action Registration (info.py)
 
