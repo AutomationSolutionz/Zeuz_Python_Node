@@ -870,7 +870,9 @@ def set_screenshot_vars(shared_variables):
                     "driver"
                 ]  # Driver for selected device
         if screen_capture_type == "web":  # Selenium or Playwright driver object
-            if "selenium_driver" in shared_variables:
+            if shared_variables.get("active_web_driver_type") == "playwright" and "playwright_page" in shared_variables:
+                screen_capture_driver = shared_variables["playwright_page"]
+            elif "selenium_driver" in shared_variables:
                 screen_capture_driver = shared_variables["selenium_driver"]
             elif "playwright_page" in shared_variables:
                 screen_capture_driver = shared_variables["playwright_page"]

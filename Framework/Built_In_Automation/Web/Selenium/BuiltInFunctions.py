@@ -72,6 +72,14 @@ from Framework.AI.NLP import binary_classification
 from .utils import ChromeForTesting, ChromeExtensionDownloader
 
 from playwright.async_api import async_playwright
+from Framework.Built_In_Automation.Web.utils import (
+    create_browser_session,
+    extract_session_name,
+    get_browser_session,
+    get_browser_sessions,
+    get_debug_port,
+    remove_browser_session,
+)
 
 #########################
 #                       #
@@ -147,6 +155,117 @@ from typing import Literal, TypedDict, Any, Union, NotRequired
 
 Dataset = list[tuple[str, str, str]]
 ReturnType = Literal["passed", "zeuz_failed"]
+
+
+def _handle_selenium_session(step_data):
+    """
+    Helper function to handle session parameter for Selenium actions.
+    
+    Args:
+        step_data: The step data containing potential session parameter
+        
+    Returns:
+        tuple: (session_name, selenium_driver, current_driver_id)
+        - session_name: The session name found or None
+        - selenium_driver: The appropriate selenium driver instance
+        - current_driver_id: The current driver ID
+    """
+    global selenium_driver, current_driver_id
+    
+    session_name = extract_session_name(step_data)
+    
+    # If session parameter is provided, switch to that session
+    if session_name:
+        existing_session = get_browser_session(session_name)
+        
+        if existing_session and existing_session.get("selenium_driver"):
+            # Session exists, use existing driver
+            selenium_driver = existing_session["selenium_driver"]
+            current_driver_id = session_name
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
+            
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
+        else:
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
+            raise ValueError(f"Browser session '{session_name}' not found")
+    
+    return session_name, selenium_driver, current_driver_id
+
+
+def _activate_browser_session_for_action(step_data, function_name=None):
+    """Select the requested browser session before running Selenium actions."""
+
+    global selenium_driver, current_driver_id, selenium_details
+
+    session_name = extract_session_name(step_data)
+    if not session_name:
+        return "passed"
+
+    create_or_cleanup_actions = {
+        "Go_To_Link",
+        "Go_To_Link_V2",
+        "Open_Electron_App",
+        "Tear_Down_Selenium",
+    }
+    if function_name in create_or_cleanup_actions:
+        return "passed"
+
+    existing_session = get_browser_session(session_name)
+    if not existing_session or not existing_session.get("selenium_driver"):
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
+        return "zeuz_failed"
+
+    selenium_driver = existing_session["selenium_driver"]
+    current_driver_id = session_name
+    selenium_details.setdefault(session_name, {})["driver"] = selenium_driver
+    if existing_session.get("remote_debugging_port"):
+        selenium_details[session_name]["remote-debugging-port"] = existing_session["remote_debugging_port"]
+    Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+    Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
+    if existing_session.get("playwright_page"):
+        Shared_Resources.Set_Shared_Variables("playwright_page", existing_session["playwright_page"])
+    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+    return "passed"
+
+
+def _run_async_from_sync(awaitable):
+    """Run an awaitable from Selenium's sync actions, including inside an event loop."""
+
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+
+    try:
+        loop = asyncio.get_running_loop()
+        if loop.is_running():
+            def run_in_thread():
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                try:
+                    return new_loop.run_until_complete(awaitable)
+                finally:
+                    new_loop.close()
+
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                return executor.submit(run_in_thread).result(timeout=30)
+    except RuntimeError:
+        pass
+
+    return asyncio.run(awaitable)
+
+
+def _close_maybe_async(resource, method_name="close"):
+    if not resource:
+        return
+    method = getattr(resource, method_name, None)
+    if not method:
+        return
+    result = method()
+    if inspect.iscoroutine(result):
+        _run_async_from_sync(result)
 
 
 class DefaultChromiumArguments(TypedDict):
@@ -428,7 +547,7 @@ def Open_Electron_App(data_set):
         desktop_app_path = ""
         driver_id = ""
         chrome_version = ""
-        for left, _, right in data_set:
+        for left, mid, right in data_set:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if "windows" in left and platform.system() == "Windows":
                 desktop_app_path = right.strip()
@@ -437,6 +556,8 @@ def Open_Electron_App(data_set):
             elif "linux" in left and platform.system() == "Linux":
                 desktop_app_path = right.strip()
             elif left == "driverid":
+                driver_id = right.strip()
+            elif left == "session" and mid.strip().lower() == "optional parameter":
                 driver_id = right.strip()
             elif left == "chrome:version":
                 chrome_version = right.strip()
@@ -466,7 +587,9 @@ def Open_Electron_App(data_set):
 
             opts = Options()
             opts.binary_location = desktop_app_path
-            opts.add_argument("--remote-debugging-port=9222")
+            electron_port = get_debug_port(driver_id or "electron", start=9230, stop=9320)
+            opts.add_argument(f"--remote-debugging-port={electron_port}")
+            CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {electron_port} for Electron app", 1)
             # service = Service(executable_path=electron_chrome_path)
             arch = platform.machine().lower()
             if platform.system() == "Darwin" and arch == "arm64":
@@ -483,15 +606,21 @@ def Open_Electron_App(data_set):
             selenium_driver.implicitly_wait(0.5)
             CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
 
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info())
 
-        if driver_id in selenium_details:
-            pass  # we need to decide later based on the situation
-        else:
-            selenium_details[driver_id] = {"driver": selenium_driver}
+        selenium_details[driver_id] = {
+            "driver": selenium_driver,
+            "remote-debugging-port": electron_port,
+        }
+        create_browser_session(
+            session_name=driver_id,
+            selenium_driver=selenium_driver,
+            remote_debugging_port=electron_port,
+        )
         current_driver_id = driver_id
         return "passed"
     except:
@@ -674,11 +803,11 @@ async def connect_playwright_to_selenium(port=9222):
     Shared_Resources.Set_Shared_Variables("playwright_browser", browser)
     Shared_Resources.Set_Shared_Variables("playwright_page", page)
 
-    return "passed"
+    return playwright_instance, browser, context, page
 
 
 @logger
-async def Open_Browser(browser, browser_options: BrowserOptions):
+async def Open_Browser(browser, browser_options: BrowserOptions, session_name: str = "default"):
     """Launch browser from options and service object"""
     try:
         global selenium_driver
@@ -708,8 +837,10 @@ async def Open_Browser(browser, browser_options: BrowserOptions):
 
         options = generate_options(browser, browser_options)
 
-        # Enable remote debugging / CDP
-        options.add_argument("--remote-debugging-port=9222")
+        # Enable remote debugging / CDP with a unique port per session.
+        unique_port = get_debug_port(session_name)
+        options.add_argument(f"--remote-debugging-port={unique_port}")
+        CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{session_name}'", 1)
 
         if browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.service import Service
@@ -780,15 +911,36 @@ async def Open_Browser(browser, browser_options: BrowserOptions):
             )
             return "zeuz_failed"
 
-        # Connect Playwright to Selenium via CDP
-        try:
-            await connect_playwright_to_selenium(port=9222)
-            CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
-        except Exception as e:
-            CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
+        # If selenium_driver is of type Webdriver
+        from selenium.webdriver import Chrome, Firefox, Edge, Safari
+        if isinstance(selenium_driver, (Chrome, Firefox, Edge, Safari)):
+            # Connect Playwright to Selenium via CDP
+            playwright_instance = None
+            playwright_browser = None
+            playwright_context = None
+            playwright_page = None
+            try:
+                playwright_instance, playwright_browser, playwright_context, playwright_page = await connect_playwright_to_selenium(port=unique_port)
+                CommonUtil.ExecLog(sModuleInfo, "Connected Playwright to Selenium", 1)
+            except Exception as e:
+                CommonUtil.ExecLog(sModuleInfo, f"Failed to connect Playwright to Selenium: {e}", 3)
+
+            # Create browser session
+            create_browser_session(
+                session_name=session_name,
+                selenium_driver=selenium_driver,
+                playwright_page=playwright_page,
+                playwright_browser=playwright_browser,
+                playwright_context=playwright_context,
+                playwright_frame=None,
+                playwright_instance=playwright_instance,
+                remote_debugging_port=unique_port,
+            )
+            CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {session_name=}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Started {browser} browser", 1)
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
         CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
         return "passed"
 
@@ -813,7 +965,7 @@ def Go_To_Link_V2(step_data):
     options = Options()
     page_load_strategy = "normal"
 
-    for left, _, right in step_data:
+    for left, mid, right in step_data:
         left = left.strip().lower()
         if "add argument" == left:
             options.add_argument(right.strip())
@@ -840,6 +992,8 @@ def Go_To_Link_V2(step_data):
             url = right.strip() if right.strip() != "" else None
         elif "driver tag" == left:
             driver_tag = right.strip()
+        elif left == "session" and mid.strip().lower() == "optional parameter":
+            driver_tag = right.strip()
         elif "wait for element" == left:
             Shared_Resources.Set_Shared_Variables("element_wait", float(right.strip()))
         elif "page load timeout" == left:
@@ -848,7 +1002,13 @@ def Go_To_Link_V2(step_data):
             page_load_strategy = right.strip()
             options.page_load_strategy = page_load_strategy
 
-    if driver_tag in selenium_details.keys():
+    existing_session = get_browser_session(driver_tag)
+    if existing_session and existing_session.get("selenium_driver"):
+        selenium_driver = existing_session["selenium_driver"]
+        selenium_details.setdefault(driver_tag, {})["driver"] = selenium_driver
+        if existing_session.get("remote_debugging_port"):
+            selenium_details[driver_tag]["remote-debugging-port"] = existing_session["remote_debugging_port"]
+    elif driver_tag in selenium_details.keys():
         selenium_driver = selenium_details[driver_tag]["driver"]
     else:
         if Shared_Resources.Test_Shared_Variables("dependency"):
@@ -861,16 +1021,28 @@ def Go_To_Link_V2(step_data):
             options.add_argument("--headless")
             CommonUtil.ExecLog(sModuleInfo, "Added headless argument", 1)
 
+        debug_port = get_debug_port(driver_tag)
+        options.add_argument(f"--remote-debugging-port={debug_port}")
+        CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {debug_port} for session '{driver_tag}'", 1)
+
         if "chrome" in dependency_browser:
             selenium_driver = webdriver.Chrome(options=options)
         elif "firefox" in dependency_browser:
             selenium_driver = webdriver.Firefox(options=options)
 
         selenium_driver.set_page_load_timeout(page_load_timeout_sec)
-        selenium_details[driver_tag] = dict()
-        selenium_details[driver_tag]["driver"] = selenium_driver
-        current_driver_id = selenium_driver
+        selenium_details[driver_tag] = {
+            "driver": selenium_driver,
+            "remote-debugging-port": debug_port,
+        }
+        create_browser_session(
+            session_name=driver_tag,
+            selenium_driver=selenium_driver,
+            remote_debugging_port=debug_port,
+        )
+        current_driver_id = driver_tag
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
 
         # Handle headless mode window maximize
         if (
@@ -884,6 +1056,8 @@ def Go_To_Link_V2(step_data):
 
     selenium_driver.maximize_window()
     Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+    current_driver_id = driver_tag
+    Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
     CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
     return "passed"
 
@@ -1021,13 +1195,14 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
         chrome_version = None
         chrome_channel = None
         debug_port = False
+        session_name = "default"
 
         for left, mid, right in dataset:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if left == "gotolink":
                 web_link = right.strip()
             elif left == "driverid":
-                driver_id = right.strip()
+                session_name = driver_id = right.strip()
             elif left in ("waittimetoappearelement", "waitforelement"):
                 Shared_Resources.Set_Shared_Variables(
                     "element_wait", float(right.strip())
@@ -1040,6 +1215,8 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 window_size_Y = int(resolution[1])
             elif left == "chrome:version":
                 chrome_version = right.strip()
+            elif left == "session":
+                session_name = driver_id = right.strip()
 
             # Capabilities are WebDriver attribute common across different browser
             elif mid.strip().lower() == "shared capability":
@@ -1126,6 +1303,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 driver_id = current_driver_id
             else:
                 driver_id = list(selenium_details.keys())[0]
+            session_name = driver_id
 
         if (
             driver_id not in selenium_details
@@ -1148,8 +1326,11 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                 sModuleInfo, "Browser not previously opened, doing so now", 1
             )
 
-            if await Open_Browser(dependency["Browser"], browser_options) == "zeuz_failed":
+            if await Open_Browser(dependency["Browser"], browser_options, session_name) == "zeuz_failed":
                 return "zeuz_failed"
+
+            session_data = get_browser_session(session_name)
+            selenium_driver = session_data.get("selenium_driver", Shared_Resources.Get_Shared_Variables("selenium_driver"))
 
             if ConfigModule.get_config_value(
                 "RunDefinition", "window_size_x"
@@ -1170,13 +1351,18 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             else:
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
 
+            if debug_port is None:
+                debug_port = session_data.get("remote_debugging_port") or get_debug_port(session_name)
+
             selenium_details[driver_id] = {
                 "driver": Shared_Resources.Get_Shared_Variables("selenium_driver"),
                 "remote-debugging-port": debug_port
             }
         else:
-            selenium_driver = selenium_details[driver_id]["driver"]
+            session_data = get_browser_session(session_name)
+            selenium_driver = session_data.get("selenium_driver") or selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
         current_driver_id = driver_id
     except Exception:
         ErrorMessage = "failed to open browser"
@@ -1222,7 +1408,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             # If the browser is closed but selenium instance is on, relaunch selenium_driver
             if Shared_Resources.Test_Shared_Variables("dependency"):
                 dependency = Shared_Resources.Get_Shared_Variables("dependency")
-            result = await Open_Browser(dependency["Browser"], browser_options)
+            result = await Open_Browser(dependency["Browser"], browser_options, session_name)
         else:
             result = "zeuz_failed"
 
@@ -1615,6 +1801,10 @@ def Enter_Text_In_Text_Box(step_data):
         use_js = False
         clear = True
         global selenium_driver
+        
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(step_data)
+        
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(
@@ -1624,6 +1814,9 @@ def Enter_Text_In_Text_Box(step_data):
         for left, mid, right in step_data:
             mid = mid.strip().lower()
             left = left.strip().lower()
+            # Skip session parameter - already handled above
+            if left == "session" and mid == "optional parameter":
+                continue
             if mid == "action":
                 text_value = right
             elif left == "delay":
@@ -2058,8 +2251,14 @@ def Click_Element(data_set, retry=0):
     global selenium_driver
     use_js = False  # Use js to click on element?
     try:
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(data_set)
+        
         location = ""
         for row in data_set:
+            # Skip session parameter - already handled above
+            if row[0].lower().replace(" ", "").replace("_", "").replace("-", "") == "session" and row[1].strip().lower() == "optional parameter":
+                continue
             if row[0] == "offset" and row[1] == "optional parameter":
                 location = row[
                     2
@@ -3005,6 +3204,9 @@ def Validate_Text(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(step_data)
+        
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         ignore_case = False
         zeuz_ai = None
@@ -3014,6 +3216,9 @@ def Validate_Text(step_data):
             )
             return "zeuz_failed"
         for each_step_data_item in step_data:
+            # Skip session parameter - already handled above
+            if each_step_data_item[0].lower().replace(" ", "").replace("_", "").replace("-", "") == "session" and each_step_data_item[1].strip().lower() == "optional parameter":
+                continue
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
@@ -3119,6 +3324,9 @@ def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
+        # Handle session parameter
+        session_name, selenium_driver, current_driver_id = _handle_selenium_session(step_data)
+        
         Element = None
         get_element = False
         scroll_direction = ""
@@ -3126,6 +3334,10 @@ def Scroll(step_data):
         pixel = 750
         for left, mid, right in step_data:
             mid = mid.strip().lower()
+            left_clean = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            # Skip session parameter - already handled above
+            if left_clean == "session" and mid == "optional parameter":
+                continue
             if "action" in mid:
                 scroll_direction = right.strip().lower()
             elif mid == "element parameter":
@@ -3402,15 +3614,74 @@ def Tear_Down_Selenium(step_data=[]):
     global current_driver_id
     try:
         driver_id = ""
+        session_name = None
+        
+        # Parse both driverid (legacy) and session (new) parameters
         for left, mid, right in step_data:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
-            if left == "driverid":
+            if left == "session" and mid.strip().lower() == "optional parameter":
+                session_name = right.strip()
+                driver_id = session_name
+            elif left == "driverid":
                 driver_id = right.strip()
 
-        if not driver_id:
+        # Handle session-specific teardown
+        if session_name:
+            existing_session = get_browser_session(session_name)
+            
+            if existing_session and existing_session.get("selenium_driver"):
+                try:
+                    try:
+                        _close_maybe_async(existing_session.get("playwright_context"))
+                        _close_maybe_async(existing_session.get("playwright_browser"))
+                        _close_maybe_async(existing_session.get("playwright_instance"), "stop")
+                    except Exception:
+                        pass
+                    # Close the specific session's browser
+                    session_driver = existing_session["selenium_driver"]
+                    session_driver.quit()
+                    CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
+                except Exception as e:
+                    errMsg = f"Unable to tear down session '{session_name}'. may already been killed"
+                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                    CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                
+                remove_browser_session(session_name)
+                
+                # Remove from selenium_details if present
+                if session_name in selenium_details:
+                    del selenium_details[session_name]
+                
+                # If this was the current driver, switch to another or clear
+                if current_driver_id == session_name:
+                    if selenium_details:
+                        for driver in selenium_details:
+                            selenium_driver = selenium_details[driver]["driver"]
+                            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+                            CommonUtil.ExecLog(sModuleInfo, f"Current driver switched to driver_id='{driver}'", 1)
+                            current_driver_id = driver
+                            break
+                    else:
+                        Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
+                        selenium_driver = None
+                        current_driver_id = None
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Nothing to tear down.", 2)
+        
+        # Handle existing driver_id logic (backwards compatibility)
+        elif not driver_id:
             CommonUtil.Join_Thread_and_Return_Result(
                 "screenshot"
             )  # Let the capturing screenshot end in thread
+            for session in get_browser_sessions().values():
+                if not (isinstance(session, dict) and session.get("selenium_driver")):
+                    continue
+                try:
+                    _close_maybe_async(session.get("playwright_context"))
+                    _close_maybe_async(session.get("playwright_browser"))
+                    _close_maybe_async(session.get("playwright_instance"), "stop")
+                except Exception:
+                    pass
             for driver in selenium_details:
                 try:
                     selenium_details[driver]["driver"].quit()
@@ -3425,8 +3696,16 @@ def Tear_Down_Selenium(step_data=[]):
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                     CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
             Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
+            sessions = get_browser_sessions()
+            sessions = {
+                name: session
+                for name, session in sessions.items()
+                if not (isinstance(session, dict) and session.get("selenium_driver"))
+            }
+            Shared_Resources.Set_Shared_Variables("browser_sessions", sessions)
             selenium_details = {}
             selenium_driver = None
+            current_driver_id = None
 
         elif driver_id not in selenium_details:
             CommonUtil.ExecLog(
@@ -3449,6 +3728,7 @@ def Tear_Down_Selenium(step_data=[]):
                     2,
                 )
             del selenium_details[driver_id]
+            remove_browser_session(driver_id)
             if selenium_details:
                 for driver in selenium_details:
                     selenium_driver = selenium_details[driver]["driver"]
@@ -3490,13 +3770,19 @@ def Switch_Browser(step_data):
         driver_id = ""
         for left, mid, right in step_data:
             left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
-            if left == "driverid":
+            if left in ("driverid", "session"):
                 driver_id = right.strip()
 
         if not driver_id:
             driver_id = "default"
 
-        if driver_id not in selenium_details:
+        existing_session = get_browser_session(driver_id)
+        if existing_session and existing_session.get("selenium_driver"):
+            selenium_driver = existing_session["selenium_driver"]
+            selenium_details.setdefault(driver_id, {})["driver"] = selenium_driver
+            if existing_session.get("remote_debugging_port"):
+                selenium_details[driver_id]["remote-debugging-port"] = existing_session["remote_debugging_port"]
+        elif driver_id not in selenium_details:
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Driver_id='%s' not found. So could not Switch" % driver_id,
@@ -3505,11 +3791,13 @@ def Switch_Browser(step_data):
             return "zeuz_failed"
         else:
             selenium_driver = selenium_details[driver_id]["driver"]
-            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-            current_driver_id = driver_id
-            CommonUtil.ExecLog(
-                sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1
-            )
+        Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+        current_driver_id = driver_id
+        Shared_Resources.Set_Shared_Variables("active_web_driver_type", "selenium")
+        CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+        CommonUtil.ExecLog(
+            sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1
+        )
 
         return "passed"
     except Exception:
@@ -4604,8 +4892,15 @@ def drag_and_drop(dataset):
 def playwright(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    global selenium_details
+    global current_driver_id
     try:
         from playwright.sync_api import sync_playwright
+
+        # Get the correct remote debugging port for current driver
+        debug_port = 9222  # fallback
+        if current_driver_id and current_driver_id in selenium_details:
+            debug_port = selenium_details[current_driver_id].get("remote-debugging-port") or 9222
 
         devtools_url = (
             selenium_driver.command_executor._url.replace("http://", "ws://")
@@ -4613,7 +4908,7 @@ def playwright(dataset):
         )
         with sync_playwright() as p:
             # browser = p.chromium.connect(browserURL=devtools_url)
-            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
             page = browser.contexts[0].pages[0]
 
             # source = page.locator("//div[contains(text(), 'abcd')]")

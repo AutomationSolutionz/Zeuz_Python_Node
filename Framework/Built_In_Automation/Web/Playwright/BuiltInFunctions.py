@@ -46,6 +46,14 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from . import locator as PlaywrightLocator
 from . import utils as PlaywrightUtils
+from Framework.Built_In_Automation.Web.utils import (
+    create_browser_session,
+    extract_session_name,
+    get_browser_session,
+    get_browser_sessions,
+    get_debug_port,
+    remove_browser_session,
+)
 from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 def _get_frame_locator():
@@ -58,6 +66,60 @@ def _get_frame_locator():
     except:
         # Variable doesn't exist yet
         return None
+
+
+def _set_active_playwright_session(session_name, session):
+    """Update module globals/shared variables for a selected Playwright session."""
+
+    global current_page, current_page_id, context, browser, playwright_instance
+
+    current_page = session.get("playwright_page")
+    context = session.get("playwright_context")
+    browser = session.get("playwright_browser")
+    playwright_instance = session.get("playwright_instance") or playwright_instance
+    current_page_id = session_name
+
+    sr.Set_Shared_Variables("playwright_page", current_page)
+    sr.Set_Shared_Variables("playwright_context", context)
+    sr.Set_Shared_Variables("playwright_browser", browser)
+    sr.Set_Shared_Variables("playwright_frame", session.get("playwright_frame"))
+    sr.Set_Shared_Variables("active_web_driver_type", "playwright")
+    if session.get("selenium_driver"):
+        sr.Set_Shared_Variables("selenium_driver", session["selenium_driver"])
+    CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
+
+
+def _save_current_playwright_frame(frame_locator):
+    if current_page_id:
+        sessions = get_browser_sessions()
+        if current_page_id in sessions:
+            sessions[current_page_id]["playwright_frame"] = frame_locator
+            sr.Set_Shared_Variables("browser_sessions", sessions)
+
+
+def _activate_browser_session_for_action(step_data, function_name=None):
+    """Select the requested browser session before running Playwright actions."""
+
+    session_name = extract_session_name(step_data)
+    if not session_name:
+        return "passed"
+
+    create_or_cleanup_actions = {
+        "Open_Browser",
+        "Go_To_Link",
+        "Tear_Down_Playwright",
+    }
+    if function_name in create_or_cleanup_actions:
+        return "passed"
+
+    existing_session = get_browser_session(session_name)
+    if not existing_session or not existing_session.get("playwright_page"):
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
+        return "zeuz_failed"
+
+    _set_active_playwright_session(session_name, existing_session)
+    return "passed"
 
 
 def connect_selenium_to_playwright(port=9222):
@@ -77,7 +139,7 @@ def connect_selenium_to_playwright(port=9222):
         sr.Set_Shared_Variables("selenium_driver", driver)
         
         CommonUtil.ExecLog("connect_selenium_to_playwright", "Connected Selenium to Playwright", 1)
-        return "passed"
+        return driver
         
     except Exception as e:
         CommonUtil.ExecLog("connect_selenium_to_playwright", f"Failed to connect Selenium to Playwright: {e}", 3)
@@ -111,6 +173,41 @@ default_viewport = {"width": 1920, "height": 1080}
 #   Browser Management  #
 #                       #
 #########################
+
+def _handle_playwright_session(step_data):
+    """
+    Helper function to handle session parameter for Playwright actions.
+    
+    Args:
+        step_data: The step data containing potential session parameter
+        
+    Returns:
+        tuple: (session_name, current_page, current_page_id, context, browser)
+        - session_name: The session name found or None
+        - current_page: The appropriate page instance
+        - current_page_id: The current page ID
+        - context: The browser context
+        - browser: The browser instance
+    """
+    global current_page, current_page_id, context, browser
+    
+    session_name = extract_session_name(step_data)
+    
+    # If session parameter is provided, switch to that session
+    if session_name:
+        existing_session = get_browser_session(session_name)
+        
+        if existing_session and existing_session.get("playwright_page"):
+            _set_active_playwright_session(session_name, existing_session)
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
+        else:
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
+            raise ValueError(f"Browser session '{session_name}' not found")
+    
+    return session_name, current_page, current_page_id, context, browser
+
 
 @logger
 async def Open_Browser(step_data):
@@ -168,7 +265,7 @@ async def Open_Browser(step_data):
                     url = right_v
                 elif left_l in ("browser", "browser name"):
                     browser_name = right_v.lower()
-                elif left_l in ("driver id", "page id", "driver tag"):
+                elif left_l in ("driver id", "page id", "driver tag", "session"):
                     page_id = right_v
 
             elif mid_l == "optional parameter":
@@ -199,6 +296,8 @@ async def Open_Browser(step_data):
                     color_scheme = right_v
                 elif left_l == "permission":
                     permissions.append(right_v)
+                elif left_l in ("driver id", "page id", "driver tag", "session"):
+                    page_id = right_v    
 
             elif mid_l == "shared capability":
                 # Handle Selenium-style capabilities where possible
@@ -220,8 +319,10 @@ async def Open_Browser(step_data):
             "devtools": devtools,
         }
         
-        # Add remote debugging port for CDP connection
-        all_args = args + ["--remote-debugging-port=9222"]
+        # Add remote debugging port for CDP connection with unique port per session
+        unique_port = get_debug_port(page_id)
+        all_args = args + [f"--remote-debugging-port={unique_port}"]
+        CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
         if all_args:
             launch_options["args"] = all_args
         if downloads_path:
@@ -276,6 +377,7 @@ async def Open_Browser(step_data):
             "context": context,
             "browser": browser,
             "playwright": playwright_instance,
+            "remote-debugging-port": unique_port,
         }
 
         # Navigate if URL provided
@@ -288,12 +390,26 @@ async def Open_Browser(step_data):
         sr.Set_Shared_Variables("playwright_context", context)
         sr.Set_Shared_Variables("playwright_browser", browser)
         sr.Set_Shared_Variables("element_wait", timeout / 1000)  # In seconds
+        sr.Set_Shared_Variables("active_web_driver_type", "playwright")
         
         # Set screenshot variables for CommonUtil.TakeScreenShot()
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         # Connect Selenium to Playwright via CDP
-        connect_selenium_to_playwright(port=9222)
+        selenium_driver = connect_selenium_to_playwright(port=unique_port)
+
+        # Create browser session
+        create_browser_session(
+            session_name=page_id,
+            selenium_driver=selenium_driver,
+            playwright_page=current_page,
+            playwright_browser=browser,
+            playwright_context=context,
+            playwright_frame=None,
+            playwright_instance=playwright_instance,
+            remote_debugging_port=unique_port,
+        )
+        CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {page_id}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Browser opened successfully (page_id: {page_id})", 1)
         return "passed"
@@ -319,7 +435,40 @@ async def Go_To_Link(step_data):
     global current_page
 
     try:
-        if current_page is None:
+        # Parse session parameter first
+        session_name = None
+        for left, mid, right in step_data:
+            left_l = left.strip().lower()
+            mid_l = mid.strip().lower()
+            right_v = right.strip()
+            
+            if mid_l == "optional parameter" and left_l == "session":
+                session_name = right_v
+                break
+        
+        # Check if session exists and use it
+        if session_name:
+            existing_session = get_browser_session(session_name)
+            
+            if existing_session and existing_session.get("playwright_page"):
+                _set_active_playwright_session(session_name, existing_session)
+                CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
+            else:
+                # Session doesn't exist, open new browser with session name
+                CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Opening new browser.", 2)
+                
+                # Add session parameter to step_data for Open_Browser
+                step_data_with_session = step_data.copy()
+                if not any(left.strip().lower() == "session" and mid.strip().lower() == "optional parameter" for left, mid, right in step_data_with_session):
+                    step_data_with_session.append(("session", "optional parameter", session_name))
+                
+                result = await Open_Browser(step_data_with_session)
+                if result == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to open browser for new session", 3)
+                    return "zeuz_failed"
+        
+        elif current_page is None:
+            # No session specified and no browser open
             CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
             result = await Open_Browser(step_data)
             if result == "zeuz_failed":
@@ -338,7 +487,10 @@ async def Go_To_Link(step_data):
             if left_l in ("go to link", "url", "link"):
                     url = right_v
             elif mid_l == "optional parameter":
-                if left_l in ("wait until", "wait_until", "waituntil", "wait time"):
+                if left_l == "session":
+                    # Skip session parameter - already processed above
+                    continue
+                elif left_l in ("wait until", "wait_until", "waituntil", "wait time"):
                     wait_until = right_v.lower()
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
@@ -355,6 +507,7 @@ async def Go_To_Link(step_data):
         
         # Reset frame context when navigating to a new URL
         sr.Set_Shared_Variables("playwright_frame", None)
+        _save_current_playwright_frame(None)
         
         CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
         return "passed"
@@ -371,56 +524,163 @@ async def Tear_Down_Playwright(step_data=None):
     Example:
         Field               Sub Field           Value
         tear down           playwright action   tear down
+        
+    Example with session:
+        Field               Sub Field           Value
+        session             optional parameter  my_session
+        tear down           playwright action   tear down
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global playwright_instance, browser, context, current_page
     global playwright_details, current_page_id
 
     try:
-        # Close all tracked pages/contexts
-        for page_id, details in playwright_details.items():
+        # Parse session parameter
+        session_name = None
+        if step_data:
+            for left, mid, right in step_data:
+                left_l = left.strip().lower()
+                mid_l = mid.strip().lower()
+                right_v = right.strip()
+                
+                if mid_l == "optional parameter" and left_l == "session":
+                    session_name = right_v
+                    break
+        
+        # Handle session-specific teardown
+        if session_name:
+            existing_session = get_browser_session(session_name)
+            
+            if existing_session and existing_session.get("playwright_page"):
+                try:
+                    # Close the specific session's page and context
+                    session_page = existing_session["playwright_page"]
+                    session_context = existing_session["playwright_context"]
+                    session_browser = existing_session["playwright_browser"]
+                    session_playwright = existing_session.get("playwright_instance")
+                    session_selenium = existing_session.get("selenium_driver")
+                    
+                    if session_page:
+                        await session_page.close()
+                    if session_context:
+                        await session_context.close()
+                    if session_browser:
+                        await session_browser.close()
+                    if session_playwright:
+                        await session_playwright.stop()
+                    if session_selenium and session_selenium != "zeuz_failed":
+                        try:
+                            session_selenium.quit()
+                        except Exception:
+                            pass
+                    
+                    CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
+                except Exception as e:
+                    errMsg = f"Unable to tear down session '{session_name}'. may already been killed"
+                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                
+                remove_browser_session(session_name)
+                
+                # Remove from playwright_details if present
+                if session_name in playwright_details:
+                    del playwright_details[session_name]
+                
+                # If this was the current session, clear globals
+                if current_page_id == session_name:
+                    current_page = None
+                    context = None
+                    browser = None
+                    current_page_id = None
+                    
+                    # Try to switch to another available session
+                    if playwright_details:
+                        for page_id, details in playwright_details.items():
+                            current_page = details["page"]
+                            context = details["context"]
+                            browser = details["browser"]
+                            current_page_id = page_id
+                            
+                            # Update shared variables
+                            sr.Set_Shared_Variables("playwright_page", current_page)
+                            sr.Set_Shared_Variables("playwright_context", context)
+                            sr.Set_Shared_Variables("playwright_browser", browser)
+                            
+                            CommonUtil.ExecLog(sModuleInfo, f"Switched to session '{page_id}'", 1)
+                            break
+            else:
+                CommonUtil.ExecLog(sModuleInfo, f"Session '{session_name}' not found. Nothing to tear down.", 2)
+            return "passed"
+        
+        # Handle full teardown (backwards compatibility)
+        else:
+            for session in get_browser_sessions().values():
+                if not (isinstance(session, dict) and session.get("playwright_page")):
+                    continue
+                try:
+                    if session.get("selenium_driver") and session.get("selenium_driver") != "zeuz_failed":
+                        session["selenium_driver"].quit()
+                except Exception:
+                    pass
+
+            # Close all tracked pages/contexts
+            for page_id, details in list(playwright_details.items()):
+                try:
+                    if details.get("page"):
+                        await details["page"].close()
+                    if details.get("context"):
+                        await details["context"].close()
+                    if details.get("browser"):
+                        await details["browser"].close()
+                    if details.get("playwright"):
+                        await details["playwright"].stop()
+                except Exception:
+                    pass
+
+        # Close main instances
             try:
-                if details.get("page"):
-                    await details["page"].close()
-                if details.get("context"):
-                    await details["context"].close()
+                if current_page and current_page not in [d.get("page") for d in playwright_details.values()]:
+                    await current_page.close()
             except Exception:
                 pass
 
-        # Close main instances
-        try:
-            if current_page and current_page not in [d.get("page") for d in playwright_details.values()]:
-                await current_page.close()
-        except Exception:
-            pass
+            try:
+                if context:
+                    await context.close()
+            except Exception:
+                pass
 
-        try:
-            if context:
-                await context.close()
-        except Exception:
-            pass
+            try:
+                if browser:
+                    await browser.close()
+            except Exception:
+                pass
 
-        try:
-            if browser:
-                await browser.close()
-        except Exception:
-            pass
+            try:
+                if playwright_instance:
+                    await playwright_instance.stop()
+            except Exception:
+                pass
 
-        try:
-            if playwright_instance:
-                await playwright_instance.stop()
-        except Exception:
-            pass
+            # Reset all globals
+            current_page = None
+            context = None
+            browser = None
+            playwright_instance = None
+            playwright_details = {}
+            current_page_id = None
+            
+            # Clear Playwright-backed browser sessions without discarding Selenium-only sessions.
+            sessions = get_browser_sessions()
+            sessions = {
+                name: session
+                for name, session in sessions.items()
+                if not (isinstance(session, dict) and session.get("playwright_page"))
+            }
+            sr.Set_Shared_Variables("browser_sessions", sessions)
 
-        # Reset all globals
-        current_page = None
-        context = None
-        browser = None
-        playwright_instance = None
-        playwright_details = {}
-        current_page_id = None
+            CommonUtil.ExecLog(sModuleInfo, "Browser closed successfully", 1)
+            return "passed"
 
-        CommonUtil.ExecLog(sModuleInfo, "Browser closed successfully", 1)
         return "passed"
 
     except Exception:
@@ -428,7 +688,7 @@ async def Tear_Down_Playwright(step_data=None):
 
 
 @logger
-def Switch_Browser(step_data):
+async def Switch_Browser(step_data):
     """
     Switch between multiple browser instances/pages.
 
@@ -438,7 +698,7 @@ def Switch_Browser(step_data):
         switch browser      playwright action   switch browser
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global current_page, current_page_id, context
+    global current_page, current_page_id, context, browser
 
     try:
         target_id = None
@@ -448,13 +708,21 @@ def Switch_Browser(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
-                if left_l in ("driver id", "page id", "driver tag"):
+            if mid_l in ("input parameter", "optional parameter"):
+                if left_l in ("driver id", "page id", "driver tag", "session"):
                     target_id = right_v
 
         if not target_id:
             CommonUtil.ExecLog(sModuleInfo, "No driver/page ID provided", 3)
             return "zeuz_failed"
+
+        existing_session = get_browser_session(target_id)
+        if existing_session and existing_session.get("playwright_page"):
+            _set_active_playwright_session(target_id, existing_session)
+            if current_page:
+                await current_page.bring_to_front()
+            CommonUtil.ExecLog(sModuleInfo, f"Switched to page: {target_id}", 1)
+            return "passed"
 
         if target_id not in playwright_details:
             CommonUtil.ExecLog(sModuleInfo, f"Page ID '{target_id}' not found", 3)
@@ -463,12 +731,14 @@ def Switch_Browser(step_data):
         details = playwright_details[target_id]
         current_page = details["page"]
         context = details["context"]
+        browser = details["browser"]
         current_page_id = target_id
 
-        current_page.bring_to_front()
+        await current_page.bring_to_front()
 
         sr.Set_Shared_Variables("playwright_page", current_page)
         sr.Set_Shared_Variables("playwright_context", context)
+        sr.Set_Shared_Variables("playwright_browser", browser)
         
         # Set screenshot variables for CommonUtil.TakeScreenShot()
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
@@ -517,6 +787,9 @@ async def Click_Element(step_data):
     global current_page
 
     try:
+        # Handle session parameter
+        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
+        
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
@@ -535,6 +808,10 @@ async def Click_Element(step_data):
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
             right_v = right.strip()
+
+            # Skip session parameter - already handled above
+            if mid_l == "optional parameter" and left_l == "session":
+                continue
 
             if mid_l == "optional parameter":
                 if left_l == "use js":
@@ -723,6 +1000,9 @@ async def Enter_Text_In_Text_Box(step_data):
     global current_page
 
     try:
+        # Handle session parameter
+        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
+        
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
@@ -736,6 +1016,10 @@ async def Enter_Text_In_Text_Box(step_data):
         for left, mid, right in step_data:
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
+
+            # Skip session parameter - already handled above
+            if mid_l == "optional parameter" and left_l == "session":
+                continue
 
             if mid_l == "action":
                 text_value = right  # Don't strip - preserve whitespace
@@ -1238,7 +1522,7 @@ async def get_element_info(step_data):
 #########################
 
 @logger
-def Navigate(step_data):
+async def Navigate(step_data):
     """
     Navigate browser (back, forward, refresh).
 
@@ -1276,13 +1560,13 @@ def Navigate(step_data):
             nav_options["timeout"] = timeout
 
         if direction in ("back", "go back"):
-            current_page.go_back(**nav_options)
+            await current_page.go_back(**nav_options)
             CommonUtil.ExecLog(sModuleInfo, "Navigated back", 1)
         elif direction in ("forward", "go forward"):
-            current_page.go_forward(**nav_options)
+            await current_page.go_forward(**nav_options)
             CommonUtil.ExecLog(sModuleInfo, "Navigated forward", 1)
         elif direction in ("refresh", "reload"):
-            current_page.reload(**nav_options)
+            await current_page.reload(**nav_options)
             CommonUtil.ExecLog(sModuleInfo, "Page reloaded", 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, f"Unknown navigation direction: {direction}", 3)
@@ -1338,7 +1622,7 @@ def Get_Current_URL(step_data):
 #########################
 
 @logger
-def Scroll(step_data):
+async def Scroll(step_data):
     """
     Scroll the page in a direction.
 
@@ -1385,7 +1669,7 @@ def Scroll(step_data):
         elif direction == "left":
             delta_x = -pixels
 
-        current_page.mouse.wheel(delta_x, delta_y)
+        await current_page.mouse.wheel(delta_x, delta_y)
         CommonUtil.ExecLog(sModuleInfo, f"Scrolled {direction} by {pixels}px", 1)
         return "passed"
 
@@ -1613,7 +1897,7 @@ async def check_uncheck(step_data):
 #########################
 
 @logger
-def switch_window_or_tab(step_data):
+async def switch_window_or_tab(step_data):
     """
     Switch to a different window/tab.
 
@@ -1662,11 +1946,11 @@ def switch_window_or_tab(step_data):
 
         if switch_by_title:
             for page in pages:
-                page_title = page.title()
+                page_title = await page.title()
                 if partial_match:
                     if switch_by_title.lower() in page_title.lower():
                         current_page = page
-                        page.bring_to_front()
+                        await page.bring_to_front()
                         sr.Set_Shared_Variables("playwright_page", current_page)
                         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
                         CommonUtil.ExecLog(sModuleInfo, f"Switched to tab: {page_title}", 1)
@@ -1674,7 +1958,7 @@ def switch_window_or_tab(step_data):
                 else:
                     if switch_by_title.lower() == page_title.lower():
                         current_page = page
-                        page.bring_to_front()
+                        await page.bring_to_front()
                         sr.Set_Shared_Variables("playwright_page", current_page)
                         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
                         CommonUtil.ExecLog(sModuleInfo, f"Switched to tab: {page_title}", 1)
@@ -1686,10 +1970,10 @@ def switch_window_or_tab(step_data):
         elif switch_by_index is not None:
             if 0 <= switch_by_index < len(pages):
                 current_page = pages[switch_by_index]
-                current_page.bring_to_front()
+                await current_page.bring_to_front()
                 sr.Set_Shared_Variables("playwright_page", current_page)
                 CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
-                CommonUtil.ExecLog(sModuleInfo, f"Switched to tab index {switch_by_index}: {current_page.title()}", 1)
+                CommonUtil.ExecLog(sModuleInfo, f"Switched to tab index {switch_by_index}: {await current_page.title()}", 1)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, f"Invalid tab index: {switch_by_index}", 3)
@@ -1703,7 +1987,7 @@ def switch_window_or_tab(step_data):
 
 
 @logger
-def open_new_tab(step_data):
+async def open_new_tab(step_data):
     """
     Open a new browser tab.
 
@@ -1729,13 +2013,18 @@ def open_new_tab(step_data):
             if mid_l == "input parameter" and left_l in ("url", "link", "go to link"):
                 url = right_v
 
-        new_page = context.new_page()
+        new_page = await context.new_page()
         current_page = new_page
         sr.Set_Shared_Variables("playwright_page", current_page)
+        if current_page_id:
+            sessions = get_browser_sessions()
+            if current_page_id in sessions:
+                sessions[current_page_id]["playwright_page"] = current_page
+                sr.Set_Shared_Variables("browser_sessions", sessions)
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         if url:
-            new_page.goto(url)
+            await new_page.goto(url)
             CommonUtil.ExecLog(sModuleInfo, f"Opened new tab with URL: {url}", 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, "Opened new blank tab", 1)
@@ -1747,7 +2036,7 @@ def open_new_tab(step_data):
 
 
 @logger
-def close_tab(step_data):
+async def close_tab(step_data):
     """
     Close a browser tab.
 
@@ -1786,8 +2075,8 @@ def close_tab(step_data):
 
         if tab_title:
             for page in pages:
-                if tab_title.lower() in page.title().lower():
-                    page.close()
+                if tab_title.lower() in (await page.title()).lower():
+                    await page.close()
                     CommonUtil.ExecLog(sModuleInfo, f"Closed tab: {tab_title}", 1)
                     break
             else:
@@ -1795,7 +2084,7 @@ def close_tab(step_data):
                 return "zeuz_failed"
         elif tab_index is not None:
             if 0 <= tab_index < len(pages):
-                pages[tab_index].close()
+                await pages[tab_index].close()
                 CommonUtil.ExecLog(sModuleInfo, f"Closed tab at index {tab_index}", 1)
             else:
                 CommonUtil.ExecLog(sModuleInfo, f"Invalid tab index: {tab_index}", 3)
@@ -1803,7 +2092,7 @@ def close_tab(step_data):
         else:
             # Close current tab
             if current_page:
-                current_page.close()
+                await current_page.close()
                 CommonUtil.ExecLog(sModuleInfo, "Closed current tab", 1)
 
         # Switch to remaining tab if available
@@ -1811,6 +2100,11 @@ def close_tab(step_data):
         if pages:
             current_page = pages[-1]
             sr.Set_Shared_Variables("playwright_page", current_page)
+            if current_page_id:
+                sessions = get_browser_sessions()
+                if current_page_id in sessions:
+                    sessions[current_page_id]["playwright_page"] = current_page
+                    sr.Set_Shared_Variables("browser_sessions", sessions)
             CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
         return "passed"
@@ -1875,6 +2169,7 @@ async def switch_iframe(step_data):
             # In Playwright, we work with the main page directly
             # Store a flag or reset frame locator
             sr.Set_Shared_Variables("playwright_frame", None)
+            _save_current_playwright_frame(None)
             CommonUtil.ExecLog(sModuleInfo, "Switched to default content", 1)
             return "passed"
 
@@ -1889,6 +2184,7 @@ async def switch_iframe(step_data):
 
         # Store frame locator for subsequent actions
         sr.Set_Shared_Variables("playwright_frame", frame_locator)
+        _save_current_playwright_frame(frame_locator)
         CommonUtil.ExecLog(sModuleInfo, "Switched to iframe", 1)
         return "passed"
 
@@ -1903,7 +2199,7 @@ async def switch_iframe(step_data):
 #########################
 
 @logger
-def Handle_Browser_Alert(step_data):
+async def Handle_Browser_Alert(step_data):
     """
     Handle browser alerts/dialogs.
 
@@ -1958,45 +2254,30 @@ def Handle_Browser_Alert(step_data):
                 if left_l in ("timeout", "wait"):
                     timeout = int(float(right_v) * 1000)
 
-        # Set up dialog handler
-        dialog_info = {"message": None, "handled": False}
-
-        def handle_dialog(dialog):
-            dialog_info["message"] = dialog.message
-            dialog_info["type"] = dialog.type
-
-            if action in ("accept", "ok", "yes"):
-                if prompt_text:
-                    dialog.accept(prompt_text)
-                else:
-                    dialog.accept()
-            elif action in ("dismiss", "cancel", "no"):
-                dialog.dismiss()
-            else:
-                dialog.accept()
-
-            dialog_info["handled"] = True
-
-        current_page.on("dialog", handle_dialog)
-
-        # Wait for dialog
         try:
-            current_page.wait_for_event("dialog", timeout=timeout)
+            dialog = await current_page.wait_for_event("dialog", timeout=timeout)
         except PlaywrightTimeoutError:
             CommonUtil.ExecLog(sModuleInfo, "No alert appeared within timeout", 2)
-            current_page.remove_listener("dialog", handle_dialog)
             return "passed"  # Not necessarily a failure
 
-        # Remove listener
-        current_page.remove_listener("dialog", handle_dialog)
+        message = dialog.message
+        if action in ("accept", "ok", "yes"):
+            if prompt_text:
+                await dialog.accept(prompt_text)
+            else:
+                await dialog.accept()
+        elif action in ("dismiss", "cancel", "no"):
+            await dialog.dismiss()
+        else:
+            await dialog.accept()
 
         # Save text if requested
-        if save_variable and dialog_info["message"]:
-            sr.Set_Shared_Variables(save_variable, dialog_info["message"])
+        if save_variable and message:
+            sr.Set_Shared_Variables(save_variable, message)
 
         CommonUtil.ExecLog(
             sModuleInfo,
-            f"Alert handled ({action}): {dialog_info.get('message', 'N/A')}",
+            f"Alert handled ({action}): {message or 'N/A'}",
             1
         )
         return "passed"
@@ -2282,7 +2563,7 @@ async def upload_file(step_data):
 #########################
 
 @logger
-def resize_window(step_data):
+async def resize_window(step_data):
     """
     Resize the browser viewport.
 
@@ -2331,7 +2612,7 @@ def resize_window(step_data):
             width = width or current_size["width"]
             height = height or current_size["height"]
 
-        current_page.set_viewport_size({"width": width, "height": height})
+        await current_page.set_viewport_size({"width": width, "height": height})
         CommonUtil.ExecLog(sModuleInfo, f"Window resized to {width}x{height}", 1)
         return "passed"
 
@@ -2421,7 +2702,7 @@ async def Wait_For_Element(step_data):
 #########################
 
 @logger
-def Start_Tracing(step_data):
+async def Start_Tracing(step_data):
     """
     Start Playwright trace recording.
 
@@ -2456,7 +2737,7 @@ def Start_Tracing(step_data):
                 elif left_l == "sources":
                     sources = right_v in ("true", "yes", "1")
 
-        context.tracing.start(
+        await context.tracing.start(
             screenshots=screenshots,
             snapshots=snapshots,
             sources=sources
@@ -2469,7 +2750,7 @@ def Start_Tracing(step_data):
 
 
 @logger
-def Stop_Tracing(step_data):
+async def Stop_Tracing(step_data):
     """
     Stop tracing and save trace file.
 
@@ -2496,7 +2777,7 @@ def Stop_Tracing(step_data):
             if mid_l == "input parameter" and left_l == "path":
                 trace_path = right_v
 
-        context.tracing.stop(path=trace_path)
+        await context.tracing.stop(path=trace_path)
         CommonUtil.ExecLog(sModuleInfo, f"Trace saved to: {trace_path}", 1)
         return "passed"
 
@@ -2505,7 +2786,7 @@ def Stop_Tracing(step_data):
 
 
 @logger
-def Intercept_Network(step_data):
+async def Intercept_Network(step_data):
     """
     Set up network request interception.
 
@@ -2545,20 +2826,20 @@ def Intercept_Network(step_data):
             elif mid_l == "action":
                 action = right_v.lower()
 
-        def handle_route(route):
+        async def handle_route(route):
             if action == "abort":
-                route.abort()
+                await route.abort()
             elif action == "fulfill":
                 fulfill_options = {}
                 if response_body:
                     fulfill_options["body"] = response_body
                 if response_status:
                     fulfill_options["status"] = response_status
-                route.fulfill(**fulfill_options)
+                await route.fulfill(**fulfill_options)
             else:
-                route.continue_()
+                await route.continue_()
 
-        current_page.route(url_pattern, handle_route)
+        await current_page.route(url_pattern, handle_route)
         CommonUtil.ExecLog(sModuleInfo, f"Network interception set up for: {url_pattern}", 1)
         return "passed"
 
