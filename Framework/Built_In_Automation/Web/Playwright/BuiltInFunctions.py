@@ -54,7 +54,6 @@ from Framework.Built_In_Automation.Web.utils import (
     get_debug_port,
     remove_browser_session,
 )
-from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 def _get_frame_locator():
     """Helper function to get current frame locator from shared variables."""
@@ -303,8 +302,8 @@ async def Open_Browser(step_data):
                 # Handle Selenium-style capabilities where possible
                 pass
 
-        # Ensure Chrome for Testing is available
-        chrome_binary_path, success = PlaywrightUtils.ensure_chromium_downloads(sModuleInfo)
+        # Ensure Playwright's managed browser is available in Zeuz's persistent cache.
+        success = PlaywrightUtils.ensure_playwright_browser_installed(sModuleInfo, browser_name)
         if not success:
             return "zeuz_failed"
 
@@ -316,23 +315,19 @@ async def Open_Browser(step_data):
         launch_options = {
             "headless": headless,
             "slow_mo": slow_mo,
-            "devtools": devtools,
         }
         
         # Add remote debugging port for CDP connection with unique port per session
         unique_port = get_debug_port(page_id)
         all_args = args + [f"--remote-debugging-port={unique_port}"]
+        if devtools:
+            all_args.append("--auto-open-devtools-for-tabs")
         CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
         if all_args:
             launch_options["args"] = all_args
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
         
-        # Use Chrome for Testing binary if available
-        if chrome_binary_path and browser_name in ("chrome", "chromium"):
-            launch_options["executable_path"] = chrome_binary_path
-            CommonUtil.ExecLog(sModuleInfo, f"Using Chrome for Testing binary: {chrome_binary_path}", 1)
-
         # Select and launch browser
         if browser_name in ("chrome", "chromium"):
             browser = await playwright_instance.chromium.launch(**launch_options)
