@@ -1738,7 +1738,59 @@ _SCROLL_TO_TOP_JS = """
 
 
 def _is_session_step_row(left, mid):
-    return mid.strip().lower() == "optional parameter" and left.strip().lower() == "session"
+    return _normalize_step_mid(mid) == "optionalparameter" and left.strip().lower() == "session"
+
+
+def _normalize_step_mid(mid):
+    """Match LocateElement: ignore spaces/newlines in sub-field names."""
+    return (
+        mid.replace(" ", "")
+        .replace("\n", "")
+        .replace("\r", "")
+        .replace("\t", "")
+        .lower()
+    )
+
+
+def _is_element_parameter_mid(mid):
+    mid_norm = _normalize_step_mid(mid)
+    return mid_norm == "elementparameter" or (
+        "element" in mid_norm and "parameter" in mid_norm and "target" not in mid_norm
+    )
+
+
+def _is_target_parameter_mid(mid):
+    mid_norm = _normalize_step_mid(mid)
+    # UI may show only "target" on one line; "parameter" on the next (full name is still one row in data).
+    return mid_norm in ("targetparameter", "target") or (
+        "target" in mid_norm and "parameter" in mid_norm
+    )
+
+
+def _resolve_list_action_variable_name(left, mid, right, action_key):
+    """
+    Read shared-variable name from a save-*-in-list action row.
+
+    Zeuz may send the variable in the Value column (right) or Field column (left)
+    when the other column repeats the action keyword.
+    """
+    left_raw = left.strip()
+    right_raw = right.strip()
+    left_norm = left_raw.lower().replace(" ", "").replace("_", "")
+    right_norm = right_raw.lower().replace(" ", "").replace("_", "")
+    mid_norm = _normalize_step_mid(mid)
+
+    if left_norm == action_key:
+        if right_norm and right_norm != action_key:
+            return right_raw
+        return None
+
+    if mid_norm in ("playwrightaction", "seleniumaction"):
+        if right_norm == action_key and left_norm and left_norm != action_key:
+            return left_raw
+        if right_norm and right_norm != action_key:
+            return right_raw
+    return None
 
 
 def _require_playwright_page(step_data, sModuleInfo):
@@ -1788,31 +1840,59 @@ def _apply_return_does_not_contain_filter(value, exclude_rules):
     return value
 
 
-def _parse_target_kv_pairs(right, split_on_newline=False):
+def _target_param_continues_previous_target(right):
+    """True when this target-parameter row adds return/filter rules to the prior target."""
+    text = right.strip().lower()
+    return text.startswith(
+        ("return", "return_contains", "return_does_not_contain", "allow hidden", "allowhidden")
+    )
+
+
+def _parse_target_kv_pairs(right, split_on_newline=False, field_hint=None):
     """Parse target parameter value into (key, value) pairs."""
-    chunks = right.strip(",").split(",\n") if split_on_newline else right.strip(",").split(",")
+    text = right.strip().rstrip(",")
+    # UI may use comma-only (one line) or comma+newline (multi-line) separators.
+    if split_on_newline and ",\n" in text:
+        chunks = text.split(",\n")
+    else:
+        chunks = text.split(",")
     pairs = []
+    hint = (field_hint or "").strip().lower() or "class"
     for chunk in chunks:
-        chunk = chunk.strip()
+        chunk = chunk.strip().rstrip(",")
+        if not chunk:
+            continue
         if chunk.startswith("return_contains"):
             inner = chunk.split("return_contains", 1)[1].strip()[1:-1].split("=")
             pairs.append(("return_contains", inner))
         elif chunk.startswith("return_does_not_contain"):
             inner = chunk.split("return_does_not_contain", 1)[1].strip()[1:-1].split("=")
             pairs.append(("return_does_not_contain", inner))
+        elif "=" in chunk:
+            key, value = chunk.split("=", 1)
+            pairs.append((key.strip(), value.strip()))
+        elif hint:
+            # Shorthand: "productItemName" with Field column "class"
+            pairs.append((hint, chunk))
         else:
-            pairs.append(tuple(chunk.split("=", 1)))
+            pairs.append((chunk, ""))
     return pairs
 
 
 def _normalize_target_pair_values(pairs):
-    for index, (key, value) in enumerate(pairs):
+    normalized = []
+    for pair in pairs:
+        if len(pair) == 1:
+            normalized.append((pair[0].strip(), ""))
+            continue
+        key, value = pair[0], pair[1]
         key = key.strip() if isinstance(key, str) else key
         if isinstance(value, str):
             value = CommonUtil.strip1(value.strip(), '"')
         elif isinstance(value, list) and len(value) == 2:
             value = (value[0].strip().strip('"'), value[1].strip().strip('"'))
-        pairs[index] = (key, value)
+        normalized.append((key, value))
+    pairs[:] = normalized
 
 
 def _append_target_spec(target_specs, key, value, spec_index):
@@ -1966,24 +2046,46 @@ async def save_attribute_values_in_list(step_data):
             for left, mid, right in step_data:
                 if _is_session_step_row(left, mid):
                     continue
-                left = left.strip().lower()
-                mid = mid.strip().lower()
+                left_l = left.strip().lower()
+                left_key = left_l.replace(" ", "").replace("_", "")
                 right = right.strip()
-                if "target parameter" in mid:
-                    targets.append([[], "", [], []])
-                    spec_index += 1
-                    pairs = _parse_target_kv_pairs(right, split_on_newline=True)
+                if _is_target_parameter_mid(mid):
+                    if spec_index >= 0 and _target_param_continues_previous_target(right):
+                        pass  # append to current target spec
+                    else:
+                        targets.append([[], "", [], []])
+                        spec_index += 1
+                    pairs = _parse_target_kv_pairs(
+                        right, split_on_newline=True, field_hint=left_l
+                    )
                     _normalize_target_pair_values(pairs)
                     for key, value in pairs:
                         _append_target_spec(targets, key, value, spec_index)
-                elif left == "save attribute values in list":
-                    variable_name = right
-                elif left == "paired":
+                else:
+                    var_candidate = _resolve_list_action_variable_name(
+                        left,
+                        mid,
+                        right,
+                        "saveattributevaluesinlist",
+                    )
+                    if var_candidate:
+                        variable_name = var_candidate
+                if left_l == "paired":
                     paired = right.lower() != "no"
-        except Exception:
+            if not targets:
+                CommonUtil.ExecLog(sModuleInfo, "No target parameter rows found in step data", 3)
+                return "zeuz_failed"
+            if not variable_name:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "No variable name for save attribute values in list (set action value e.g. product_data)",
+                    3,
+                )
+                return "zeuz_failed"
+        except Exception as exc:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Unable to parse data. Please write data in correct format",
+                f"Unable to parse data. Please write data in correct format ({exc})",
                 3,
             )
             return "zeuz_failed"
@@ -2020,7 +2122,8 @@ async def save_attribute_values_in_list(step_data):
                 rows[index].append(value)
 
         if len(targets) == 1:
-            result = rows[0] if rows else []
+            # Match Selenium: one target => flat list of values (all elements), not rows[0] only.
+            result = list(map(list, zip(*rows)))[0] if rows else []
         elif not paired:
             result = list(map(list, zip(*rows))) if rows else []
         else:
@@ -2082,17 +2185,27 @@ async def save_web_elements_in_list(step_data):
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.strip()
-                if not has_parent_scope and mid in _ELEMENT_SCOPE_MIDS:
+                if not has_parent_scope and _is_element_parameter_mid(mid):
                     has_parent_scope = True
-                elif "target parameter" in mid:
-                    targets.append([[], [], [], []])
-                    spec_index += 1
-                    pairs = _parse_target_kv_pairs(right)
+                elif _is_target_parameter_mid(mid):
+                    if spec_index >= 0 and _target_param_continues_previous_target(right):
+                        pass
+                    else:
+                        targets.append([[], [], [], []])
+                        spec_index += 1
+                    pairs = _parse_target_kv_pairs(right, field_hint=left)
                     _normalize_target_pair_values(pairs)
                     for key, value in pairs:
                         _append_target_spec(targets, key, value, spec_index)
-                elif left == "save web elements in list":
-                    variable_name = right
+                else:
+                    var_candidate = _resolve_list_action_variable_name(
+                        left,
+                        mid,
+                        right,
+                        "savewebelementsinlist",
+                    )
+                    if var_candidate:
+                        variable_name = var_candidate
 
             if has_parent_scope:
                 parent = await PlaywrightLocator.Get_Element(
@@ -3108,10 +3221,15 @@ async def execute_javascript(step_data):
         for left, mid, right in step_data:
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
+            right_v = right.strip()
 
-            if mid_l == "action":
-                js_code = right
-            elif mid_l == "element parameter":
+            if _is_session_step_row(left, mid):
+                continue
+            if mid_l in ("playwright action", "selenium action"):
+                continue
+            if "javascript" in left_l:
+                js_code = right_v
+            elif _is_element_parameter_mid(mid):
                 has_element = True
             elif mid_l == "save parameter":
                 save_variable = left.strip()
