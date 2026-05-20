@@ -2411,6 +2411,8 @@ async def take_screenshot_playwright(step_data):
         save_variable = None
         custom_path = None
         has_element = False
+        image_type = "jpeg"
+        image_quality = CommonUtil.PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -2424,15 +2426,32 @@ async def take_screenshot_playwright(step_data):
                     full_page = right_v.lower() in ("true", "yes", "1")
                 elif left_l == "path":
                     custom_path = right_v
+                elif left_l in ("format", "type", "image type"):
+                    image_type = right_v.lower().replace("jpg", "jpeg")
+                elif left_l == "quality":
+                    image_quality = int(right_v)
             elif mid_l == "save parameter":
                 save_variable = left.strip()
+
+        if image_type not in ("jpeg", "png"):
+            CommonUtil.ExecLog(sModuleInfo, f"Unsupported screenshot format '{image_type}'. Use jpeg or png.", 3)
+            return "zeuz_failed"
 
         # Generate filename
         if custom_path:
             screenshot_path = custom_path
+            suffix = Path(screenshot_path).suffix.lower()
+            if suffix in (".png", ".jpg", ".jpeg"):
+                image_type = "png" if suffix == ".png" else "jpeg"
+            else:
+                screenshot_path = str(Path(screenshot_path).with_suffix(".jpg" if image_type == "jpeg" else ".png"))
         else:
             timestamp = time.strftime("%Y_%m_%d_%H-%M-%S")
-            screenshot_path = f"screenshot_{timestamp}.png"
+            screenshot_path = f"screenshot_{timestamp}.{'jpg' if image_type == 'jpeg' else 'png'}"
+
+        screenshot_options = {"path": screenshot_path, "type": image_type}
+        if image_type == "jpeg":
+            screenshot_options["quality"] = image_quality
 
         # Take screenshot
         if has_element:
@@ -2440,9 +2459,10 @@ async def take_screenshot_playwright(step_data):
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
-            await locator.screenshot(path=screenshot_path)
+            await locator.screenshot(**screenshot_options)
         else:
-            await current_page.screenshot(path=screenshot_path, full_page=full_page)
+            screenshot_options["full_page"] = full_page
+            await current_page.screenshot(**screenshot_options)
 
         if save_variable:
             sr.Set_Shared_Variables(save_variable, screenshot_path)
