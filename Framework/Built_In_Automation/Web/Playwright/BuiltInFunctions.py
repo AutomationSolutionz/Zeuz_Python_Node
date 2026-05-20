@@ -1737,37 +1737,173 @@ _SCROLL_TO_TOP_JS = """
 """
 
 
-async def _pw_attr_value_for_save_list(locator, search_by_attribute):
-    """Read text / tag / checked / attribute like Selenium save_attribute_values_in_list."""
-    if search_by_attribute == "text":
+def _is_session_step_row(left, mid):
+    return mid.strip().lower() == "optional parameter" and left.strip().lower() == "session"
+
+
+def _require_playwright_page(step_data, sModuleInfo):
+    """Activate session from step_data and ensure a page is open."""
+    global current_page
+    _handle_playwright_session(step_data)
+    if current_page is None:
+        CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+        return "zeuz_failed"
+    return current_page
+
+
+async def _read_element_attribute_for_list(locator, attribute_name):
+    if attribute_name == "text":
         return await locator.inner_text()
-    if search_by_attribute == "tag":
+    if attribute_name == "tag":
         tag = await locator.evaluate("el => el.tagName")
         return tag.lower() if tag else ""
-    if search_by_attribute == "checked":
+    if attribute_name == "checked":
         return str(await locator.is_checked())
-    return await locator.get_attribute(search_by_attribute)
+    return await locator.get_attribute(attribute_name)
+
+
+def _apply_return_contains_filter(value, contains_rules):
+    if not contains_rules:
+        return value
+    for rule in contains_rules:
+        if (
+            not isinstance(rule, type(value))
+            or rule in value
+            or len(rule) == 0
+        ):
+            break
+    else:
+        return None
+    return value
+
+
+def _apply_return_does_not_contain_filter(value, exclude_rules):
+    for rule in exclude_rules:
+        if (
+            isinstance(rule, type(value))
+            and rule in value
+            and len(rule) != 0
+        ):
+            return None
+    return value
+
+
+def _parse_target_kv_pairs(right, split_on_newline=False):
+    """Parse target parameter value into (key, value) pairs."""
+    chunks = right.strip(",").split(",\n") if split_on_newline else right.strip(",").split(",")
+    pairs = []
+    for chunk in chunks:
+        chunk = chunk.strip()
+        if chunk.startswith("return_contains"):
+            inner = chunk.split("return_contains", 1)[1].strip()[1:-1].split("=")
+            pairs.append(("return_contains", inner))
+        elif chunk.startswith("return_does_not_contain"):
+            inner = chunk.split("return_does_not_contain", 1)[1].strip()[1:-1].split("=")
+            pairs.append(("return_does_not_contain", inner))
+        else:
+            pairs.append(tuple(chunk.split("=", 1)))
+    return pairs
+
+
+def _normalize_target_pair_values(pairs):
+    for index, (key, value) in enumerate(pairs):
+        key = key.strip() if isinstance(key, str) else key
+        if isinstance(value, str):
+            value = CommonUtil.strip1(value.strip(), '"')
+        elif isinstance(value, list) and len(value) == 2:
+            value = (value[0].strip().strip('"'), value[1].strip().strip('"'))
+        pairs[index] = (key, value)
+
+
+def _append_target_spec(target_specs, key, value, spec_index):
+    spec = target_specs[spec_index]
+    if key == "return":
+        spec[1] = value
+    elif key == "return_contains":
+        if isinstance(value, list) and len(value) == 2:
+            spec[2].append((value[0], value[1]))
+        else:
+            spec[2].append(value)
+    elif key == "return_does_not_contain":
+        if isinstance(value, list) and len(value) == 2:
+            spec[3].append((value[0], value[1]))
+        else:
+            spec[3].append(value)
+    elif key.replace(" ", "").replace("_", "") in ("allowhidden", "allowdisable"):
+        spec[0].append(("allow hidden", "optional parameter", value))
+    else:
+        spec[0].append((key, "element parameter", value))
+
+
+async def _element_matches_return_contains(elem, rules):
+    text = await elem.inner_text()
+    tag = (await elem.evaluate("el => el.tagName")).lower()
+    for attr, needle in rules:
+        if attr == "text" and needle in text:
+            return True
+        if attr == "tag" and needle in tag:
+            return True
+        if attr not in ("text", "tag"):
+            attr_val = await elem.get_attribute(attr)
+            if attr_val is None:
+                return False
+            if needle in attr_val:
+                return True
+    return False
+
+
+async def _element_matches_return_does_not_contain(elem, rules):
+    text = await elem.inner_text()
+    tag = (await elem.evaluate("el => el.tagName")).lower()
+    for attr, needle in rules:
+        if attr == "text" and needle in text:
+            return True
+        if attr == "tag" and needle in tag:
+            return True
+        if attr not in ("text", "tag"):
+            attr_val = await elem.get_attribute(attr)
+            if attr_val is None or needle in (attr_val or ""):
+                return True
+    return False
+
+
+async def _filter_elements_return_contains(elements, contains_rules):
+    if not contains_rules:
+        return elements
+    filtered = []
+    for elem in elements:
+        if await _element_matches_return_contains(elem, contains_rules):
+            filtered.append(elem)
+    return filtered
+
+
+async def _filter_elements_return_does_not_contain(elements, exclude_rules):
+    if not exclude_rules:
+        return elements
+    return [
+        elem
+        for elem in elements
+        if not await _element_matches_return_does_not_contain(elem, exclude_rules)
+    ]
 
 
 @logger
 async def scroll_to_top(step_data):
     """
-    Scroll the main window to the top (y = 0).
+    Scroll the browser window to the top of the page (vertical offset 0).
 
     Example:
-        scroll to top    playwright action    scroll to top
+        Field               Sub Field           Value
+        scroll to top       playwright action   scroll to top
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global current_page
 
     try:
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
-
-        if current_page is None:
-            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+        page = _require_playwright_page(step_data, sModuleInfo)
+        if page == "zeuz_failed":
             return "zeuz_failed"
 
-        pre_x, pre_y, x, y = await current_page.evaluate(_SCROLL_TO_TOP_JS)
+        pre_x, pre_y, x, y = await page.evaluate(_SCROLL_TO_TOP_JS)
         CommonUtil.ExecLog(
             sModuleInfo,
             f"Scrolled to top of the html.\npre_x, pre_y, x, y = [{pre_x}, {pre_y}, {x}, {y}]",
@@ -1782,18 +1918,35 @@ async def scroll_to_top(step_data):
 @logger
 async def save_attribute_values_in_list(step_data):
     """
-    Collect attribute/text values from multiple element groups under a parent (same as Selenium).
+    Collect attribute or text values from multiple child element groups under a parent.
 
-    Use \"playwright action\" for the action row. See Selenium docs for target parameter format.
+    Each target parameter block defines locators plus optional return filters. Results are
+    stored in a shared variable as rows (paired) or columns (paired=no).
+
+    Example 1 - Product names and prices:
+        Field                               Sub Field           Value
+        aria-label                          element parameter   Calendar
+        attributes                          target parameter    data-automation="productItemName",
+                                                                class="S58f2saa25a3w1",
+                                                                return="text"
+        attributes                          target parameter    class="productPricingContainer_3gTS3",
+                                                                return="text",
+                                                                return_does_not_contain="99.99"
+        save attribute values in list       playwright action   product_rows
+
+    Example 2 - Unpaired columns:
+        Field                               Sub Field           Value
+        tag                                 element parameter   html
+        class                               target parameter    item, return="text"
+        class                               target parameter    price, return="text"
+        paired                              optional parameter  no
+        save attribute values in list       playwright action   columns_list
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global current_page
 
     try:
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
-
-        if current_page is None:
-            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+        if _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
         frame = _get_frame_locator()
@@ -1804,52 +1957,29 @@ async def save_attribute_values_in_list(step_data):
             )
             return "zeuz_failed"
 
-        all_elements = []
-        target_index = 0
-        target = []
+        targets = []
+        variable_name = ""
         paired = True
 
         try:
+            spec_index = -1
             for left, mid, right in step_data:
-                if mid.strip().lower() == "optional parameter" and left.strip().lower() == "session":
+                if _is_session_step_row(left, mid):
                     continue
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.strip()
                 if "target parameter" in mid:
-                    target.append([[], [], [], []])
-                    temp = right.strip(",").split(",\n")
-                    data = []
-                    for each in temp:
-                        data.append(each.strip().split("=", 1))
-                    for i in range(len(data)):
-                        for j in range(len(data[i])):
-                            data[i][j] = data[i][j].strip()
-                            if j == 1:
-                                data[i][j] = CommonUtil.strip1(data[i][j], '"')
-
-                    for Left, Right in data:
-                        if Left == "return":
-                            target[target_index][1] = Right
-                        elif Left == "return_contains":
-                            target[target_index][2].append(Right)
-                        elif Left == "return_does_not_contain":
-                            target[target_index][3].append(Right)
-                        elif Left.replace(" ", "").replace("_", "") in ("allowhidden", "allowdisable"):
-                            target[target_index][0].append(
-                                ("allow hidden", "optional parameter", Right)
-                            )
-                        else:
-                            target[target_index][0].append(
-                                (Left, "element parameter", Right)
-                            )
-
-                    target_index = target_index + 1
+                    targets.append([[], "", [], []])
+                    spec_index += 1
+                    pairs = _parse_target_kv_pairs(right, split_on_newline=True)
+                    _normalize_target_pair_values(pairs)
+                    for key, value in pairs:
+                        _append_target_spec(targets, key, value, spec_index)
                 elif left == "save attribute values in list":
                     variable_name = right
                 elif left == "paired":
-                    paired = False if right.lower() == "no" else True
-
+                    paired = right.lower() != "no"
         except Exception:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1858,156 +1988,116 @@ async def save_attribute_values_in_list(step_data):
             )
             return "zeuz_failed"
 
-        for each in target:
-            elist = await PlaywrightLocator.Get_Element(
-                each[0], current_page, return_all=True, frame_locator=frame, parent_locator=parent
+        element_groups = []
+        for locator_rows, return_attr, contains_rules, exclude_rules in targets:
+            elements = await PlaywrightLocator.Get_Element(
+                locator_rows,
+                current_page,
+                return_all=True,
+                frame_locator=frame,
+                parent_locator=parent,
             )
-            if elist == "zeuz_failed":
+            if elements == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Unable to locate target elements.", 3)
                 return "zeuz_failed"
-            all_elements.append(elist)
+            element_groups.append((elements, return_attr, contains_rules, exclude_rules))
 
-        variable_value_size = 0
-        for each in all_elements:
-            variable_value_size = max(variable_value_size, len(each))
+        max_len = max((len(group[0]) for group in element_groups), default=0)
+        rows = [[] for _ in range(max_len)]
 
-        variable_value = [[] for _ in range(variable_value_size)]
-
-        i = 0
-        for each in all_elements:
-            search_by_attribute = target[i][1]
-            j = 0
-            for elem in each:
-                Attribute_value = await _pw_attr_value_for_save_list(elem, search_by_attribute)
+        for elements, return_attr, contains_rules, exclude_rules in element_groups:
+            for index, elem in enumerate(elements):
+                value = await _read_element_attribute_for_list(elem, return_attr)
                 try:
-                    for search_contain in target[i][2]:
-                        if (
-                            not isinstance(search_contain, type(Attribute_value))
-                            or search_contain in Attribute_value
-                            or len(search_contain) == 0
-                        ):
-                            break
-                    else:
-                        if target[i][2]:
-                            Attribute_value = None
-
-                    for search_doesnt_contain in target[i][3]:
-                        if (
-                            isinstance(search_doesnt_contain, type(Attribute_value))
-                            and search_doesnt_contain in Attribute_value
-                            and len(search_doesnt_contain) != 0
-                        ):
-                            Attribute_value = None
+                    value = _apply_return_contains_filter(value, contains_rules)
+                    value = _apply_return_does_not_contain_filter(value, exclude_rules)
                 except Exception:
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Couldn't search by return_contains and return_does_not_contain",
                         2,
                     )
-                variable_value[j].append(Attribute_value)
-                j = j + 1
-            i = i + 1
-        if target_index == 1:
-            variable_value = list(map(list, zip(*variable_value)))[0]
-        elif not paired:
-            variable_value = list(map(list, zip(*variable_value)))
+                rows[index].append(value)
 
-        return sr.Set_Shared_Variables(variable_name, variable_value)
+        if len(targets) == 1:
+            result = rows[0] if rows else []
+        elif not paired:
+            result = list(map(list, zip(*rows))) if rows else []
+        else:
+            result = rows
+
+        return sr.Set_Shared_Variables(variable_name, result)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+_ELEMENT_SCOPE_MIDS = frozenset(
+    {
+        "element parameter",
+        "parent parameter",
+        "unique parameter",
+        "child parameter",
+        "sibling parameter",
+    }
+)
+
+
 @logger
 async def save_web_elements_in_list(step_data):
     """
-    Save lists of ElementHandle-like locators under optional parent scope (parity with Selenium).
+    Save Playwright locators for multiple element groups into a shared variable.
 
-    Omit parent element rows to capture from the whole page context.
+    Optional parent scope limits the search. Use return_contains / return_does_not_contain
+    in target parameters to filter matched elements before saving.
+
+    Example 1 - Under a container:
+        Field                           Sub Field           Value
+        id                              element parameter   product-list
+        class                           target parameter    item, return_contains=text=Phone
+        save web elements in list       playwright action   phone_items
+
+    Example 2 - Whole page (no parent rows):
+        Field                           Sub Field           Value
+        class                           target parameter    btn-primary
+        save web elements in list       playwright action   all_buttons
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global current_page
 
     try:
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
-
-        if current_page is None:
-            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+        if _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
         frame = _get_frame_locator()
-
-        has_element = False
-        all_elements = []
-        target_index = 0
-        target = []
+        targets = []
         variable_name = ""
+        has_parent_scope = False
 
         try:
+            spec_index = -1
             for left, mid, right in step_data:
-                if mid.strip().lower() == "optional parameter" and left.strip().lower() == "session":
+                if _is_session_step_row(left, mid):
                     continue
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.strip()
-                if not has_element and mid in (
-                    "element parameter",
-                    "parent parameter",
-                    "unique parameter",
-                    "child parameter",
-                    "sibling parameter",
-                ):
-                    has_element = True
+                if not has_parent_scope and mid in _ELEMENT_SCOPE_MIDS:
+                    has_parent_scope = True
                 elif "target parameter" in mid:
-                    target.append([[], [], [], []])
-                    temp = right.strip(",").split(",")
-                    data = []
-                    for each in temp:
-                        if each.strip("\n").startswith("return_contains"):
-                            data.append(
-                                [
-                                    "return_contains",
-                                    each.split("return_contains")[1].strip()[1:-1].split("="),
-                                ]
-                            )
-                        elif each.strip("\n").startswith("return_does_not_contain"):
-                            data.append(
-                                [
-                                    "return_does_not_contain",
-                                    each.split("return_does_not_contain")[1].strip()[1:-1].split("="),
-                                ]
-                            )
-                        else:
-                            data.append(each.strip().split("="))
-                    for i in range(len(data)):
-                        for j in range(len(data[i])):
-                            if isinstance(data[i][j], str):
-                                data[i][j] = data[i][j].strip()
-                            if j == 1:
-                                if isinstance(data[i][j], list):
-                                    data[i][j][0], data[i][j][1] = (
-                                        data[i][j][0].strip().strip('"'),
-                                        data[i][j][1].strip().strip('"'),
-                                    )
-                                elif isinstance(data[i][j], str):
-                                    data[i][j] = data[i][j].strip('"')
-
-                    for Left, Right in data:
-                        if Left == "return_contains":
-                            target[target_index][2].append(Right)
-                        elif Left == "return_does_not_contain":
-                            target[target_index][3].append(Right)
-                        else:
-                            target[target_index][0].append(
-                                (Left, "element parameter", Right)
-                            )
-
-                    target_index = target_index + 1
+                    targets.append([[], [], [], []])
+                    spec_index += 1
+                    pairs = _parse_target_kv_pairs(right)
+                    _normalize_target_pair_values(pairs)
+                    for key, value in pairs:
+                        _append_target_spec(targets, key, value, spec_index)
                 elif left == "save web elements in list":
                     variable_name = right
 
-            if has_element:
-                parent = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=frame)
+            if has_parent_scope:
+                parent = await PlaywrightLocator.Get_Element(
+                    step_data, current_page, frame_locator=frame
+                )
                 if parent == "zeuz_failed":
                     CommonUtil.ExecLog(
                         sModuleInfo, "Unable to locate your element with given data.", 3
@@ -2023,86 +2113,25 @@ async def save_web_elements_in_list(step_data):
             )
             return "zeuz_failed"
 
-        for each in target:
-            elist = await PlaywrightLocator.Get_Element(
-                each[0], current_page, return_all=True, frame_locator=frame, parent_locator=parent
+        element_lists = []
+        for locator_rows, _return_attr, contains_rules, exclude_rules in targets:
+            elements = await PlaywrightLocator.Get_Element(
+                locator_rows,
+                current_page,
+                return_all=True,
+                frame_locator=frame,
+                parent_locator=parent,
             )
-            if elist == "zeuz_failed":
+            if elements == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Unable to locate target elements.", 3)
                 return "zeuz_failed"
-            all_elements.append(elist)
+            elements = await _filter_elements_return_contains(elements, contains_rules)
+            elements = await _filter_elements_return_does_not_contain(elements, exclude_rules)
+            element_lists.append(elements)
 
-        cnt = 0
-        while cnt < target_index:
-            if target[cnt][2]:
-                count, to_del = 0, []
-                for elem in all_elements[cnt]:
-                    elem_text = await elem.inner_text()
-                    elem_tag = (await elem.evaluate("el => el.tagName")).lower()
-                    for each in target[cnt][2]:
-                        if each[0] == "text" and each[1] in elem_text:
-                            break
-                    else:
-                        for each in target[cnt][2]:
-                            if each[0] == "tag" and each[1] in elem_tag:
-                                break
-                        else:
-                            for each in target[cnt][2]:
-                                if (
-                                    each[0] not in ("text", "tag")
-                                    and await elem.get_attribute(each[0]) is None
-                                ):
-                                    break
-                            else:
-                                for each in target[cnt][2]:
-                                    if each[0] not in ("text", "tag") and each[1] in (
-                                        await elem.get_attribute(each[0]) or ""
-                                    ):
-                                        break
-                                else:
-                                    to_del.append(count)
-                    count += 1
-                all_elements[cnt] = CommonUtil.Delete_from_list(all_elements[cnt], to_del)
-
-            if target[cnt][3]:
-                count, to_del = 0, []
-                for elem in all_elements[cnt]:
-                    elem_text = await elem.inner_text()
-                    elem_tag = (await elem.evaluate("el => el.tagName")).lower()
-                    for each in target[cnt][3]:
-                        if each[0] == "text" and each[1] in elem_text:
-                            to_del.append(count)
-                            break
-                    else:
-                        for each in target[cnt][3]:
-                            if each[0] == "tag" and each[1] in elem_tag:
-                                to_del.append(count)
-                                break
-                        else:
-                            for each in target[cnt][3]:
-                                if (
-                                    each[0] not in ("text", "tag")
-                                    and await elem.get_attribute(each[0]) is None
-                                ):
-                                    to_del.append(count)
-                                    break
-                            else:
-                                for each in target[cnt][3]:
-                                    if each[0] not in ("text", "tag") and each[1] in (
-                                        await elem.get_attribute(each[0]) or ""
-                                    ):
-                                        to_del.append(count)
-                                        break
-
-                    count += 1
-                all_elements[cnt] = CommonUtil.Delete_from_list(all_elements[cnt], to_del)
-
-            cnt += 1
-
-        if target_index == 1:
-            return sr.Set_Shared_Variables(variable_name, all_elements[0])
-        else:
-            return sr.Set_Shared_Variables(variable_name, all_elements)
+        if len(targets) == 1:
+            return sr.Set_Shared_Variables(variable_name, element_lists[0])
+        return sr.Set_Shared_Variables(variable_name, element_lists)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -2112,15 +2141,86 @@ def _insert_string_targets(string: str, str_to_insert: str, index: int) -> str:
     return string[:index] + str_to_insert + string[index:]
 
 
+def _parse_multiple_check_targets(target_parameter_value):
+    """Parse target parameter string into (locator_key, locator_value, action) tuples."""
+    inside = False
+    temp = target_parameter_value.strip()
+    i = 0
+    while i < len(temp):
+        if temp[i] == "(":
+            inside = True
+            temp = _insert_string_targets(temp, '"', i + 1)
+        elif inside and temp[i] == ",":
+            temp = _insert_string_targets(temp, '"', i + 1)
+            temp = _insert_string_targets(temp, '"', i)
+            i += 1
+        elif temp[i] == ")":
+            inside = False
+            temp = _insert_string_targets(temp, '"', i)
+            i += 1
+        i += 1
+    temp = _insert_string_targets(temp, "[", 0)
+    temp = _insert_string_targets(temp, "]", len(temp))
+    parsed = CommonUtil.parse_value_into_object(temp)
+    return [
+        (row[0].strip().lower(), row[1].strip(), row[2].strip().lower())
+        for row in parsed
+    ]
+
+
+async def _toggle_checkbox_target(locator, action, use_js, target_label):
+    """Check or uncheck one target; logs and swallows per-target failures like Selenium."""
+    if action == "check" and await locator.is_checked():
+        CommonUtil.ExecLog("", f"{target_label} is already checked so skipped it", 1)
+        return
+    if action == "uncheck" and not await locator.is_checked():
+        CommonUtil.ExecLog("", f"{target_label} is already unchecked so skipped it", 1)
+        return
+
+    via_js = use_js
+    try:
+        if use_js:
+            await locator.evaluate("el => el.click()")
+        else:
+            try:
+                await locator.click()
+            except Exception:
+                await locator.evaluate("el => el.click()")
+                via_js = True
+        verb = "checked" if action == "check" else "unchecked"
+        suffix = " using Java Script" if via_js else ""
+        CommonUtil.ExecLog("", f"{target_label} is {verb} successfully{suffix}", 1)
+    except Exception:
+        verb = "checked" if action == "check" else "unchecked"
+        CommonUtil.ExecLog("", f"{target_label} couldn't be {verb} so skipped it", 3)
+
+
 @logger
 async def multiple_check_uncheck(data_set):
-    """Check or uncheck multiple checkbox/radio elements."""
+    """
+    Check or uncheck multiple checkbox/radio elements under one parent.
 
+    Each entry in target parameter is (locator field, locator value, check|uncheck).
+    Missing targets are skipped; the step still returns passed.
+
+    Example 1 - Basic:
+        Field                       Sub Field           Value
+        id                          element parameter   form-panel
+        target parameter            target parameter    (id, opt-a, check), (id, opt-b, uncheck)
+        multiple check uncheck      playwright action   multiple check uncheck
+
+    Example 2 - JavaScript click:
+        Field                       Sub Field           Value
+        class                       element parameter   options-group
+        use js                      optional parameter  true
+        allow hidden                optional parameter  yes
+        target parameter            target parameter    (name, hidden-opt, check)
+        multiple check uncheck      playwright action   multiple check uncheck
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global current_page
 
     use_js = False
-    inside = False
     allow_hidden = ""
     targets = None
 
@@ -2128,38 +2228,14 @@ async def multiple_check_uncheck(data_set):
         for left, mid, right in data_set:
             left = left.lower().strip()
             mid = mid.lower().strip()
-            if mid == "optional parameter" and left == "session":
+            if _is_session_step_row(left, mid):
                 continue
-            if "use js" == left:
+            if left == "use js":
                 use_js = right.strip().lower() in ("true", "yes", "ok")
-            elif "allow hidden" == left:
+            elif left == "allow hidden":
                 allow_hidden = right
-            elif "target parameter" == mid:
-                targets = []
-                temp = right.strip()
-                i = 0
-                while True:
-                    if i >= len(temp):
-                        break
-                    if temp[i] == "(":
-                        inside = True
-                        temp = _insert_string_targets(temp, '"', i + 1)
-                    elif inside and temp[i] == ",":
-                        temp = _insert_string_targets(temp, '"', i + 1)
-                        temp = _insert_string_targets(temp, '"', i)
-                        i += 1
-                    if temp[i] == ")":
-                        inside = False
-                        temp = _insert_string_targets(temp, '"', i)
-                        i += 1
-                    i += 1
-                temp = _insert_string_targets(temp, "[", 0)
-                temp = _insert_string_targets(temp, "]", len(temp))
-                temp = CommonUtil.parse_value_into_object(temp)
-                for Left, Mid, Right in temp:
-                    targets.append(
-                        (Left.strip().lower(), Mid.strip(), Right.strip().lower())
-                    )
+            elif mid == "target parameter":
+                targets = _parse_multiple_check_targets(right)
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -2171,165 +2247,95 @@ async def multiple_check_uncheck(data_set):
         return "zeuz_failed"
 
     try:
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(data_set)
+        if _require_playwright_page(data_set, sModuleInfo) == "zeuz_failed":
+            return "zeuz_failed"
+
+        frame = _get_frame_locator()
+        parent = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=frame)
+        if parent == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
+            return "zeuz_failed"
+
+        for locator_key, locator_value, action in targets:
+            locate_rows = [(locator_key, "element parameter", locator_value)]
+            if allow_hidden:
+                locate_rows.insert(0, ("allow hidden", "option", allow_hidden))
+
+            locator = await PlaywrightLocator.Get_Element(
+                locate_rows, current_page, frame_locator=frame, parent_locator=parent
+            )
+            target_label = str((locator_key, locator_value, action))
+            if locator == "zeuz_failed":
+                CommonUtil.ExecLog("", f"{target_label} was not found so skipped it", 3)
+                continue
+
+            await _toggle_checkbox_target(locator, action, use_js, target_label)
+
+        return "passed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-    if current_page is None:
-        CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
-        return "zeuz_failed"
-
-    frame = _get_frame_locator()
-    parent = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=frame)
-    if parent == "zeuz_failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
-        return "zeuz_failed"
-
-    element_params = []
-    for left, mid, right in targets:
-        if allow_hidden:
-            element_params.append(
-                [
-                    ("allow hidden", "option", allow_hidden),
-                    (left, "element parameter", mid),
-                ]
-            )
-        else:
-            element_params.append([(left, "element parameter", mid)])
-
-    all_elements = []
-    for i in element_params:
-        loc = await PlaywrightLocator.Get_Element(i, current_page, frame_locator=frame, parent_locator=parent)
-        all_elements.append(loc)
-
-    for i in range(len(all_elements)):
-        if all_elements[i] == "zeuz_failed":
-            CommonUtil.ExecLog("", str(targets[i]) + " was not found so skipped it", 3)
-            continue
-        if targets[i][2] == "check" and await all_elements[i].is_checked():
-            CommonUtil.ExecLog(
-                "", str(targets[i]) + " is already checked so skipped it", 1
-            )
-            continue
-        if targets[i][2] == "uncheck" and not await all_elements[i].is_checked():
-            CommonUtil.ExecLog(
-                "", str(targets[i]) + " is already unchecked so skipped it", 1
-            )
-            continue
-
-        try:
-            if use_js:
-                await all_elements[i].evaluate("el => el.click()")
-                if targets[i][2] == "check":
-                    CommonUtil.ExecLog(
-                        "",
-                        str(targets[i]) + " is checked successfully using Java Script",
-                        1,
-                    )
-                else:
-                    CommonUtil.ExecLog(
-                        "",
-                        str(targets[i]) + " is unchecked successfully using Java Script",
-                        1,
-                    )
-            else:
-                try:
-                    await all_elements[i].click()
-                    if targets[i][2] == "check":
-                        CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully", 1)
-                    else:
-                        CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully", 1)
-                except Exception:
-                    try:
-                        await all_elements[i].evaluate("el => el.click()")
-                        if targets[i][2] == "check":
-                            CommonUtil.ExecLog(
-                                "",
-                                str(targets[i])
-                                + " is checked successfully using Java Script",
-                                1,
-                            )
-                        else:
-                            CommonUtil.ExecLog(
-                                "",
-                                str(targets[i])
-                                + " is unchecked successfully using Java Script",
-                                1,
-                            )
-                    except Exception:
-                        if targets[i][2] == "check":
-                            CommonUtil.ExecLog(
-                                "",
-                                str(targets[i]) + " couldn't be checked so skipped it",
-                                3,
-                            )
-                        else:
-                            CommonUtil.ExecLog(
-                                "",
-                                str(targets[i]) + " couldn't be unchecked so skipped it",
-                                3,
-                            )
-        except Exception:
-            if targets[i][2] == "check":
-                CommonUtil.ExecLog(
-                    "", str(targets[i]) + " couldn't be checked so skipped it", 3
-                )
-            else:
-                CommonUtil.ExecLog(
-                    "", str(targets[i]) + " couldn't be unchecked so skipped it", 3
-                )
-
-    return "passed"
 
 
 @logger
 async def Change_Attribute_Value(step_data):
     """
-    Set a JavaScript property on the located element (e.g. value on an input).
+    Set a DOM property on the located element via JavaScript (same idea as Selenium).
 
-    Provide attribute name as the left field and new value on the right of input parameter rows.
+    The left column of an input parameter row is the property name; the right column is the value.
+
+    Example 1 - Input value:
+        Field                       Sub Field           Value
+        id                          element parameter   email-field
+        value                       input parameter     user@example.com
+        change attribute value      playwright action   change attribute value
+
+    Example 2 - Read-only flag:
+        Field                       Sub Field           Value
+        id                          element parameter   age-input
+        readOnly                    input parameter     true
+        change attribute value      playwright action   change attribute value
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global current_page
 
     try:
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
-
-        if current_page is None:
-            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+        if _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
-        change_value = ""
         attribute_name = ""
+        change_value = ""
+        for left, mid, right in step_data:
+            if _is_session_step_row(left, mid):
+                continue
+            if "input parameter" in mid.strip().lower():
+                attribute_name = left.strip().lower()
+                change_value = right
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+        locator = await PlaywrightLocator.Get_Element(
+            step_data, current_page, frame_locator=_get_frame_locator()
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
             return "zeuz_failed"
-        for left, mid, right in step_data:
-            if mid.strip().lower() == "optional parameter" and left.strip().lower() == "session":
-                continue
-            mid = mid.strip().lower()
-            left = left.strip().lower()
-            if "input parameter" in mid:
-                attribute_name = left
-                change_value = right
 
         await locator.evaluate(
-            """(el, payload) => { el[payload.name] = payload.value; }""",
+            "(el, payload) => { el[payload.name] = payload.value; }",
             {"name": attribute_name, "value": change_value},
         )
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Successfully set the value of the attribute to: %s" % change_value,
+            f"Successfully set the value of the attribute to: {change_value}",
             1,
         )
         return "passed"
+
     except Exception:
-        errMsg = "Could not find your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Could not find your element."
+        )
 
 
 #########################
