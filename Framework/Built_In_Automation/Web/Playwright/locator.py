@@ -25,7 +25,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-async def Get_Element(step_data, page, return_all=False, element_wait=None, frame_locator=None):
+async def Get_Element(step_data, page, return_all=False, element_wait=None, frame_locator=None, parent_locator=None):
     """
     Get element using Playwright's native Locator API.
 
@@ -39,6 +39,7 @@ async def Get_Element(step_data, page, return_all=False, element_wait=None, fram
         return_all: If True, return list of all matching ElementHandles
         element_wait: Override default wait timeout (in seconds)
         frame_locator: Optional frame locator for iframe context
+        parent_locator: Optional Locator to scope the search under a container element
 
     Returns:
         Locator | List[ElementHandle] | "zeuz_failed"
@@ -76,7 +77,7 @@ async def Get_Element(step_data, page, return_all=False, element_wait=None, fram
                 return "zeuz_failed"
 
         # Build the locator
-        locator = _build_locator(page, step_data, params, frame_locator)
+        locator = _build_locator(page, step_data, params, frame_locator, parent_locator)
 
         if locator is None:
             CommonUtil.ExecLog(sModuleInfo, "Could not build locator from step data", 3)
@@ -192,7 +193,7 @@ def _parse_element_params(step_data):
                 params['get_parameter'] = right_stripped.strip("%").strip("|")
 
         # Optional parameters
-        elif mid_lower == "optional parameter":
+        elif mid_lower == "optional parameter" or mid_lower == "option":
             if left_lower in ("allow hidden", "allow disable"):
                 params['allow_hidden'] = right_stripped.lower() in ("yes", "true", "ok", "1")
             elif left_lower == "wait":
@@ -231,7 +232,7 @@ def _parse_element_params(step_data):
     return params
 
 
-def _build_locator(page, step_data, params, frame_locator=None):
+def _build_locator(page, step_data, params, frame_locator=None, parent_locator=None):
     """
     Build a Playwright Locator from step data.
 
@@ -245,10 +246,14 @@ def _build_locator(page, step_data, params, frame_locator=None):
         step_data: Step data for building xpath
         params: Parsed element parameters
         frame_locator: Optional frame locator for iframe context
+        parent_locator: Scope search within this locator (overrides frame when both set).
     """
 
-    # Use frame locator if provided, otherwise use page
-    base_locator = frame_locator if frame_locator else page
+    # Parent scope wins, then iframe, then full page.
+    if parent_locator is not None:
+        base_locator = parent_locator
+    else:
+        base_locator = frame_locator if frame_locator else page
 
     # Strategy 1: Check for Playwright-native selectors (fastest path)
     for left, right in params['element_params']:
