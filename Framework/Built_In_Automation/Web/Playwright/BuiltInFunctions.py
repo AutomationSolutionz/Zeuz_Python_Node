@@ -88,6 +88,53 @@ def _set_active_playwright_session(session_name, session):
     CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
 
+async def _ensure_playwright_session(session_name, existing_session):
+    """Activate an existing Playwright session or lazily attach to a Selenium one."""
+
+    global playwright_details
+
+    if existing_session and existing_session.get("playwright_page"):
+        _set_active_playwright_session(session_name, existing_session)
+        return "passed"
+
+    if not existing_session or not existing_session.get("selenium_driver"):
+        return "zeuz_failed"
+
+    port = existing_session.get("remote_debugging_port")
+    if not port:
+        return "zeuz_failed"
+
+    try:
+        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
+
+        playwright_instance, connected_browser, connected_context, connected_page = await SeleniumBuiltInFunctions.connect_playwright_to_selenium(port=port)
+        sessions = get_browser_sessions()
+        session = sessions.setdefault(session_name, existing_session)
+        session.update({
+            "selenium_driver": existing_session.get("selenium_driver"),
+            "playwright_page": connected_page,
+            "playwright_browser": connected_browser,
+            "playwright_context": connected_context,
+            "playwright_frame": None,
+            "playwright_instance": playwright_instance,
+            "remote_debugging_port": port,
+        })
+        sr.Set_Shared_Variables("browser_sessions", sessions)
+        playwright_details[session_name] = {
+            "page": connected_page,
+            "context": connected_context,
+            "browser": connected_browser,
+            "playwright": playwright_instance,
+            "remote-debugging-port": port,
+        }
+        _set_active_playwright_session(session_name, session)
+        CommonUtil.ExecLog("_ensure_playwright_session", f"Connected Playwright to Selenium session: {session_name}", 1)
+        return "passed"
+    except Exception as e:
+        CommonUtil.ExecLog("_ensure_playwright_session", f"Failed to connect Playwright to Selenium session '{session_name}': {e}", 3)
+        return "zeuz_failed"
+
+
 def _save_current_playwright_frame(frame_locator):
     if current_page_id:
         sessions = get_browser_sessions()
@@ -96,13 +143,10 @@ def _save_current_playwright_frame(frame_locator):
             sr.Set_Shared_Variables("browser_sessions", sessions)
 
 
-def _activate_browser_session_for_action(step_data, function_name=None):
+async def _activate_browser_session_for_action(step_data, function_name=None):
     """Select the requested browser session before running Playwright actions."""
 
     session_name = extract_session_name(step_data)
-    if not session_name:
-        return "passed"
-
     create_or_cleanup_actions = {
         "Open_Browser",
         "Go_To_Link",
@@ -111,13 +155,20 @@ def _activate_browser_session_for_action(step_data, function_name=None):
     if function_name in create_or_cleanup_actions:
         return "passed"
 
+    if not session_name:
+        if current_page is None:
+            default_session = get_browser_session("default")
+            if default_session and default_session.get("selenium_driver"):
+                return await _ensure_playwright_session("default", default_session)
+        return "passed"
+
     existing_session = get_browser_session(session_name)
-    if not existing_session or not existing_session.get("playwright_page"):
+    result = await _ensure_playwright_session(session_name, existing_session)
+    if result in failed_tag_list:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
         return "zeuz_failed"
 
-    _set_active_playwright_session(session_name, existing_session)
     return "passed"
 
 
@@ -173,7 +224,7 @@ default_viewport = {"width": 1920, "height": 1080}
 #                       #
 #########################
 
-def _handle_playwright_session(step_data):
+async def _handle_playwright_session(step_data):
     """
     Helper function to handle session parameter for Playwright actions.
     
@@ -196,14 +247,17 @@ def _handle_playwright_session(step_data):
     if session_name:
         existing_session = get_browser_session(session_name)
         
-        if existing_session and existing_session.get("playwright_page"):
-            _set_active_playwright_session(session_name, existing_session)
+        if existing_session and await _ensure_playwright_session(session_name, existing_session) not in failed_tag_list:
             sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
             CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
         else:
             sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
             CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
             raise ValueError(f"Browser session '{session_name}' not found")
+    elif current_page is None:
+        default_session = get_browser_session("default")
+        if default_session and default_session.get("selenium_driver"):
+            await _ensure_playwright_session("default", default_session)
     
     return session_name, current_page, current_page_id, context, browser
 
@@ -328,12 +382,16 @@ async def Open_Browser(step_data):
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
         
+        selenium_cdp_supported = True
+
         # Select and launch browser
         if browser_name in ("chrome", "chromium"):
             browser = await playwright_instance.chromium.launch(**launch_options)
         elif browser_name == "firefox":
+            selenium_cdp_supported = False
             browser = await playwright_instance.firefox.launch(**launch_options)
         elif browser_name in ("webkit", "safari"):
+            selenium_cdp_supported = False
             browser = await playwright_instance.webkit.launch(**launch_options)
         elif browser_name in ("edge", "msedge", "microsoft edge"):
             launch_options["channel"] = "msedge"
@@ -390,13 +448,10 @@ async def Open_Browser(step_data):
         # Set screenshot variables for CommonUtil.TakeScreenShot()
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
-        # Connect Selenium to Playwright via CDP
-        selenium_driver = connect_selenium_to_playwright(port=unique_port)
-
         # Create browser session
-        create_browser_session(
+        session = create_browser_session(
             session_name=page_id,
-            selenium_driver=selenium_driver,
+            selenium_driver=None,
             playwright_page=current_page,
             playwright_browser=browser,
             playwright_context=context,
@@ -404,6 +459,8 @@ async def Open_Browser(step_data):
             playwright_instance=playwright_instance,
             remote_debugging_port=unique_port,
         )
+        session["selenium_cdp_supported"] = selenium_cdp_supported
+        sr.Set_Shared_Variables("browser_sessions", get_browser_sessions())
         CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {page_id}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Browser opened successfully (page_id: {page_id})", 1)
@@ -445,8 +502,7 @@ async def Go_To_Link(step_data):
         if session_name:
             existing_session = get_browser_session(session_name)
             
-            if existing_session and existing_session.get("playwright_page"):
-                _set_active_playwright_session(session_name, existing_session)
+            if existing_session and await _ensure_playwright_session(session_name, existing_session) not in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
             else:
                 # Session doesn't exist, open new browser with session name
@@ -463,12 +519,18 @@ async def Go_To_Link(step_data):
                     return "zeuz_failed"
         
         elif current_page is None:
-            # No session specified and no browser open
-            CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
-            result = await Open_Browser(step_data)
-            if result == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically", 3)
-                return "zeuz_failed"
+            default_session = get_browser_session("default")
+            if default_session and default_session.get("selenium_driver"):
+                result = await _ensure_playwright_session("default", default_session)
+                if result in failed_tag_list:
+                    return result
+            else:
+                # No session specified and no browser open
+                CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
+                result = await Open_Browser(step_data)
+                if result == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically", 3)
+                    return "zeuz_failed"
 
         url = None
         wait_until = "domcontentloaded"
@@ -783,7 +845,7 @@ async def Click_Element(step_data):
 
     try:
         # Handle session parameter
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
+        session_name, current_page, current_page_id, context, browser = await _handle_playwright_session(step_data)
         
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
@@ -996,7 +1058,7 @@ async def Enter_Text_In_Text_Box(step_data):
 
     try:
         # Handle session parameter
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
+        session_name, current_page, current_page_id, context, browser = await _handle_playwright_session(step_data)
         
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
