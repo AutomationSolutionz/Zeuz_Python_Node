@@ -2335,7 +2335,18 @@ def _target_param_continues_previous_target(right):
 
 
 def _parse_target_kv_pairs(right, split_on_newline=False, field_hint=None):
-    """Parse target parameter value into (key, value) pairs."""
+    """Parse target parameter value into (key, value) pairs.
+
+    Matches Selenium semantics for both list actions:
+      - save_attribute_values_in_list expects bare-string filter values:
+            return_contains="128GB" -> ('return_contains', '128GB')
+      - save_web_elements_in_list expects (attr, needle) filter pairs:
+            return_contains="text=128GB" -> ('return_contains', ('text', '128GB'))
+
+    The shape used depends on whether the value (after quote-stripping) has an
+    inner '=', mirroring Selenium's `each.split("=")` behavior on a list of length
+    1 vs 2.
+    """
     text = right.strip().rstrip(",")
     # UI may use comma-only (one line) or comma+newline (multi-line) separators.
     if split_on_newline and ",\n" in text:
@@ -2348,20 +2359,28 @@ def _parse_target_kv_pairs(right, split_on_newline=False, field_hint=None):
         chunk = chunk.strip().rstrip(",")
         if not chunk:
             continue
-        if chunk.startswith("return_contains"):
-            inner = chunk.split("return_contains", 1)[1].strip()[1:-1].split("=")
-            pairs.append(("return_contains", inner))
-        elif chunk.startswith("return_does_not_contain"):
-            inner = chunk.split("return_does_not_contain", 1)[1].strip()[1:-1].split("=")
-            pairs.append(("return_does_not_contain", inner))
-        elif "=" in chunk:
-            key, value = chunk.split("=", 1)
-            pairs.append((key.strip(), value.strip()))
-        elif hint:
-            # Shorthand: "productItemName" with Field column "class"
-            pairs.append((hint, chunk))
+        if "=" not in chunk:
+            if hint:
+                # Shorthand: "productItemName" with Field column "class"
+                pairs.append((hint, chunk))
+            else:
+                pairs.append((chunk, ""))
+            continue
+
+        key, value = chunk.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if key in ("return_contains", "return_does_not_contain"):
+            # Strip the wrapping quotes (if any) on the value first; an INNER '='
+            # then signals the attr=needle pair form used by save_web_elements_in_list.
+            inner = CommonUtil.strip1(value, '"')
+            if "=" in inner:
+                attr, needle = inner.split("=", 1)
+                pairs.append((key, (attr.strip(), needle.strip())))
+            else:
+                pairs.append((key, inner))
         else:
-            pairs.append((chunk, ""))
+            pairs.append((key, value))
     return pairs
 
 
@@ -2375,6 +2394,11 @@ def _normalize_target_pair_values(pairs):
         key = key.strip() if isinstance(key, str) else key
         if isinstance(value, str):
             value = CommonUtil.strip1(value.strip(), '"')
+        elif isinstance(value, tuple) and len(value) == 2:
+            value = (
+                CommonUtil.strip1(value[0].strip(), '"'),
+                CommonUtil.strip1(value[1].strip(), '"'),
+            )
         elif isinstance(value, list) and len(value) == 2:
             value = (value[0].strip().strip('"'), value[1].strip().strip('"'))
         normalized.append((key, value))
@@ -2386,15 +2410,9 @@ def _append_target_spec(target_specs, key, value, spec_index):
     if key == "return":
         spec[1] = value
     elif key == "return_contains":
-        if isinstance(value, list) and len(value) == 2:
-            spec[2].append((value[0], value[1]))
-        else:
-            spec[2].append(value)
+        spec[2].append(value)
     elif key == "return_does_not_contain":
-        if isinstance(value, list) and len(value) == 2:
-            spec[3].append((value[0], value[1]))
-        else:
-            spec[3].append(value)
+        spec[3].append(value)
     elif key.replace(" ", "").replace("_", "") in ("allowhidden", "allowdisable"):
         spec[0].append(("allow hidden", "optional parameter", value))
     else:
