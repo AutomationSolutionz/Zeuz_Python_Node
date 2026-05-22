@@ -11,6 +11,7 @@ Author: Zeuz/AutomationSolutionz
 declarations = (
     # Browser Management
     { "name": "open browser",                  "function": "Open_Browser",               "screenshot": "web" },
+    { "name": "open electron app",             "function": "Open_Electron_App",          "screenshot": "web" },
     { "name": "go to link",                    "function": "Go_To_Link",                 "screenshot": "web" },
     { "name": "tear down browser",             "function": "Tear_Down_Playwright",       "screenshot": "none" },
     { "name": "teardown",                      "function": "Tear_Down_Playwright",       "screenshot": "none" },
