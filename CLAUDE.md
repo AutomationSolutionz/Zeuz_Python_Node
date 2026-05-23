@@ -146,7 +146,7 @@ Variables use `%|variable_name|%` syntax:
 "%|user["name"]|%"     # Dictionary access
 ```
 
-Some Selenium actions, including `copy image into browser`, accept a single input row that can contain either a literal path or a `%|...|%` reference because the framework resolves it before the action runs.
+Some Selenium actions, including `copy image into browser`, use a single `image file` row whose value can be a literal path or a `%|...|%` expression such as `%|var|%/whatever.png` because the framework resolves it before the action runs.
 
 ### Element Location
 The unified `LocateElement.Get_Element()` supports:

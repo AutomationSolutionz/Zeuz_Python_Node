@@ -1434,8 +1434,6 @@ def capture_network_log(step_data):
             "method_filter": [],
             "include_body": False,
         }
-
-        # Parse
         for left, mid, right in step_data:
             left = left.lower().strip()
             if left == "capture network log":
@@ -5155,23 +5153,21 @@ def if_element_exists(data_set):
 @logger
 def copy_image_into_browser(data_set):
     """
-    This action will copy an image from path or a shared variable into browser, and later you can paste via ctrl+v or cmd+v.
+    This action will copy an image from path or a shared-variable expression into the browser,
+    and later you can paste via ctrl+v or cmd+v.
     Supported formats: PNG, SVG
 
     Example:
     Field	                    Sub Field	            Value
-    image file                  input parameter 	    %| image_var |%
-    copy image into browser     selenium action 	    copy image into browser
+    copy image into browser     selenium action 	    %|var|%/whatever.png
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
     try:
-        image_data = None
         image_path = ""
         mime_type = "image/png"
 
-        # Parse
         for left, mid, right in data_set:
             left = left.lower().replace(" ", "")
             mid = mid.lower().replace(" ", "")
@@ -5179,6 +5175,13 @@ def copy_image_into_browser(data_set):
 
             if left == "imagefile":
                 image_path = right
+            elif left in {"imagevariable", "imagevar"}:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Use only the 'image file' row for copy image into browser.",
+                    3,
+                )
+                return "zeuz_failed"
 
         if not image_path:
             CommonUtil.ExecLog(
@@ -5190,7 +5193,7 @@ def copy_image_into_browser(data_set):
         if not image_path:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Image path resolved to an empty value. Check the 'image file' input.",
+                "Image file resolved to an empty value. Check the 'image file' input.",
                 3,
             )
             return "zeuz_failed"
@@ -5206,7 +5209,7 @@ def copy_image_into_browser(data_set):
         if not os.path.isfile(image_path):
             CommonUtil.ExecLog(
                 sModuleInfo,
-                f"Image path is not a file: {image_path}",
+                f"Image file is not a file: {image_path}",
                 3,
             )
             return "zeuz_failed"
