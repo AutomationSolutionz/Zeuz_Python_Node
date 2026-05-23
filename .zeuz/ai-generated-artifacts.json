@@ -1,0 +1,18 @@
+[
+  {
+    "generatedAt": "2026-05-23T18:20:56.168Z",
+    "files": [
+      ".zeuz/analysis/bootstrap-context.md",
+      ".zeuz/decisions.md",
+      ".zeuz/errors.md",
+      ".zeuz/locks/.gitkeep",
+      ".zeuz/plan.md",
+      ".zeuz/skipped.md",
+      ".zeuz/snapshots.md",
+      ".zeuz/SUMMARY.md",
+      ".zeuz/tasks/TASK-001.md",
+      ".zeuz/tasks/TASK-002.md",
+      ".zeuz/test-results/.gitkeep"
+    ]
+  }
+]
