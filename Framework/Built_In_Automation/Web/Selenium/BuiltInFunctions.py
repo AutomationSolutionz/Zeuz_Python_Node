@@ -5155,17 +5155,12 @@ def if_element_exists(data_set):
 @logger
 def copy_image_into_browser(data_set):
     """
-    This action will copy an image from path or a variable into browser, and later you can paste via ctrl+v or cmd+v.
+    This action will copy an image from path or a shared variable into browser, and later you can paste via ctrl+v or cmd+v.
     Supported formats: PNG, SVG
 
-    Example 1:
+    Example:
     Field	                    Sub Field	            Value
-    image file                  input parameter 	    %| image.png |%
-    copy image into browser     selenium action 	    copy image into browser
-
-    Example 2:
-    Field	                    Sub Field	            Value
-    image variable              input parameter         %| image_var |%
+    image file                  input parameter 	    %| image_var |%
     copy image into browser     selenium action 	    copy image into browser
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -5174,7 +5169,6 @@ def copy_image_into_browser(data_set):
     try:
         image_data = None
         image_path = ""
-        variable_name = ""
         mime_type = "image/png"
 
         # Parse
@@ -5184,35 +5178,36 @@ def copy_image_into_browser(data_set):
             right = right.strip()
 
             if left == "imagefile":
-                if os.path.exists(right):
-                    image_path = right
-                else:
-                    image_path = CommonUtil.path_parser(right)
+                image_path = right
 
-            elif left == "imagevariable":
-                if os.path.exists(right):
-                    image_path = right
-                else:
-                    variable_name = right
-
-        if image_path:
-            if not os.path.exists(image_path):
-                CommonUtil.ExecLog(
-                    sModuleInfo, f"Image file not found: {image_path}", 3
-                )
-                return "zeuz_failed"
-        elif variable_name:
-            image_path = Shared_Resources.Get_Shared_Variables(variable_name)
-            if not image_path:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    f"Image path not found in variable: {variable_name}. Make sure you must be use '%| |%' syntax for any variable or attachment.",
-                    3,
-                )
-                return "zeuz_failed"
-        else:
+        if not image_path:
             CommonUtil.ExecLog(
-                sModuleInfo, "Must provide either 'image file' or 'image variable'", 3
+                sModuleInfo, "Must provide 'image file' for copy image into browser", 3
+            )
+            return "zeuz_failed"
+
+        image_path = CommonUtil.path_parser(image_path)
+        if not image_path:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Image path resolved to an empty value. Check the 'image file' input.",
+                3,
+            )
+            return "zeuz_failed"
+
+        if not os.path.exists(image_path):
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Image file not found or unreadable: {image_path}",
+                3,
+            )
+            return "zeuz_failed"
+
+        if not os.path.isfile(image_path):
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Image path is not a file: {image_path}",
+                3,
             )
             return "zeuz_failed"
 
@@ -5228,8 +5223,16 @@ def copy_image_into_browser(data_set):
             )
             return "zeuz_failed"
 
-        with open(image_path, "rb") as image_file:
-            image_data = image_file.read()
+        try:
+            with open(image_path, "rb") as image_file:
+                image_data = image_file.read()
+        except OSError as exc:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Unable to read image file '{image_path}': {exc}",
+                3,
+            )
+            return "zeuz_failed"
 
         # Convert
         image_b64 = base64.b64encode(image_data).decode("utf-8")
