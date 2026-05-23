@@ -1434,8 +1434,6 @@ def capture_network_log(step_data):
             "method_filter": [],
             "include_body": False,
         }
-
-        # Parse
         for left, mid, right in step_data:
             left = left.lower().strip()
             if left == "capture network log":
@@ -5155,29 +5153,37 @@ def if_element_exists(data_set):
 @logger
 def copy_image_into_browser(data_set):
     """
+<<<<<<< HEAD
     This action will copy an image from a single image file input into browser, and later you can paste via ctrl+v or cmd+v.
+=======
+    This action will copy an image from path or a shared-variable expression into the browser,
+    and later you can paste via ctrl+v or cmd+v.
+>>>>>>> origin/zeuz-REQ-75
     Supported formats: PNG, SVG
 
     Example:
     Field	                    Sub Field	            Value
+<<<<<<< HEAD
     image file                  input parameter 	    %|var|%/whatever.png
     copy image into browser     selenium action 	    copy image into browser
+=======
+    copy image into browser     selenium action 	    %|var|%/whatever.png
+>>>>>>> origin/zeuz-REQ-75
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
     try:
-        image_data = None
         image_path = ""
         mime_type = "image/png"
 
-        # Parse
         for left, mid, right in data_set:
             left = left.lower().replace(" ", "")
             mid = mid.lower().replace(" ", "")
             right = right.strip()
 
             if left == "imagefile":
+<<<<<<< HEAD
                 image_path = CommonUtil.path_parser(right) if right else ""
                 if not image_path and right:
                     image_path = right
@@ -5185,17 +5191,47 @@ def copy_image_into_browser(data_set):
         if not image_path:
             CommonUtil.ExecLog(
                 sModuleInfo, "Must provide a value for 'image file'", 3
+=======
+                image_path = right
+            elif left in {"imagevariable", "imagevar"}:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Use only the 'image file' row for copy image into browser.",
+                    3,
+                )
+                return "zeuz_failed"
+
+        if not image_path:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Must provide 'image file' for copy image into browser", 3
+            )
+            return "zeuz_failed"
+
+        image_path = CommonUtil.path_parser(image_path)
+        if not image_path:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Image file resolved to an empty value. Check the 'image file' input.",
+                3,
+>>>>>>> origin/zeuz-REQ-75
             )
             return "zeuz_failed"
 
         if not os.path.exists(image_path):
             CommonUtil.ExecLog(
+<<<<<<< HEAD
                 sModuleInfo, f"Image file not found: {image_path}", 3
+=======
+                sModuleInfo,
+                f"Image file not found or unreadable: {image_path}",
+                3,
+>>>>>>> origin/zeuz-REQ-75
             )
             return "zeuz_failed"
 
         if not os.path.isfile(image_path):
             CommonUtil.ExecLog(
+<<<<<<< HEAD
                 sModuleInfo, f"Image path is not a file: {image_path}", 3
             )
             return "zeuz_failed"
@@ -5203,6 +5239,11 @@ def copy_image_into_browser(data_set):
         if not os.access(image_path, os.R_OK):
             CommonUtil.ExecLog(
                 sModuleInfo, f"Image file is not readable: {image_path}", 3
+=======
+                sModuleInfo,
+                f"Image file is not a file: {image_path}",
+                3,
+>>>>>>> origin/zeuz-REQ-75
             )
             return "zeuz_failed"
 
@@ -5218,8 +5259,16 @@ def copy_image_into_browser(data_set):
             )
             return "zeuz_failed"
 
-        with open(image_path, "rb") as image_file:
-            image_data = image_file.read()
+        try:
+            with open(image_path, "rb") as image_file:
+                image_data = image_file.read()
+        except OSError as exc:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Unable to read image file '{image_path}': {exc}",
+                3,
+            )
+            return "zeuz_failed"
 
         # Convert
         image_b64 = base64.b64encode(image_data).decode("utf-8")
