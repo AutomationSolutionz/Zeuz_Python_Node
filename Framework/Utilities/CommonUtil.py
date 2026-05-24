@@ -166,6 +166,7 @@ all_threads = {}
 AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS = 3
 AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS = 0.25
 CANCELLED_RUN_STATUS = "Cancelled"
+PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY = 70
 
 # Metrics variables
 browser_perf = {}
@@ -993,10 +994,11 @@ def _get_window_screenshot_bbox():
     return None
 
 
-async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
-    """ Capture screen of mobile or desktop """
-    if performance_testing: return
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+def _is_playwright_page(driver):
+    return driver.__class__.__module__.startswith("playwright.") and hasattr(driver, "screenshot")
+
+
+def _screenshot_path(image_folder, image_name, extension="png"):
     chars_to_remove = [
         r"?",
         r"*",
@@ -1007,15 +1009,22 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
         r"\\",
         r"\/",
         r":",
-    ]  # Symbols that can't be used in filename
+    ]
+    trans_table = str.maketrans(dict.fromkeys("".join(chars_to_remove)))
+    safe_name = (image_name.translate(trans_table)).strip().replace(" ", "_")
+    return os.path.join(image_folder, safe_name + "." + extension.lstrip("."))
+
+
+async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
+    """ Capture screen of mobile or desktop """
+    if performance_testing: return
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     picture_quality = 100  # Quality of picture
     picture_size = 1920, 1080  # Size of image (for reduction in file size)
+    is_playwright_page = Method == "web" and Driver is not None and _is_playwright_page(Driver)
 
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
-    trans_table = str.maketrans(
-        dict.fromkeys("".join(chars_to_remove))
-    )  # python3 version of translate
-    ImageName = os.path.join(image_folder, (image_name.translate(trans_table)).strip().replace(" ", "_") + ".png")
+    ImageName = _screenshot_path(image_folder, image_name, "jpg" if is_playwright_page else "png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(Method), str(Driver), ImageName), 0)
     try:
         should_delay_before_capture = Method == "desktop" and sys.platform in ("linux2", "win32", "darwin")
@@ -1060,8 +1069,8 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
         # Capture screenshot of web browser
         elif Method == "web":
             # Check if it's a Playwright page or Selenium driver
-            if hasattr(Driver, 'screenshot'):  # Playwright page
-                await Driver.screenshot(path=ImageName, full_page=True)
+            if is_playwright_page:
+                await Driver.screenshot(path=ImageName, type="jpeg", quality=PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY)
             else:  # Selenium driver
                 Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
 
@@ -1077,14 +1086,15 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
             )
         # Lower the picture quality
         if os.path.exists(ImageName):  # Make sure image was saved
-            image = Image.open(ImageName)  # Re-open in standard format
-            image.thumbnail(picture_size, Image.LANCZOS)  # Resize picture to lower file size
-            image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
+            if not is_playwright_page:
+                image = Image.open(ImageName)  # Re-open in standard format
+                image.thumbnail(picture_size, Image.LANCZOS)  # Resize picture to lower file size
+                image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
 
             if debug_status:
                 # Convert image to bytearray and send it to live_log_service for streaming.
+                image = Image.open(ImageName)  # Re-open in standard format
                 image_byte_array = pil_image_to_bytearray(image)
-
                 live_log_service.binary(image_byte_array)
         else:
             ExecLog(

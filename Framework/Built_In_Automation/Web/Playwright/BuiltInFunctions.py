@@ -55,7 +55,6 @@ from Framework.Built_In_Automation.Web.utils import (
     get_debug_port,
     remove_browser_session,
 )
-from settings import ZEUZ_NODE_DOWNLOADS_DIR
 
 def _get_frame_locator():
     """Helper function to get current frame locator from shared variables."""
@@ -90,6 +89,53 @@ def _set_active_playwright_session(session_name, session):
     CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
 
+async def _ensure_playwright_session(session_name, existing_session):
+    """Activate an existing Playwright session or lazily attach to a Selenium one."""
+
+    global playwright_details
+
+    if existing_session and existing_session.get("playwright_page"):
+        _set_active_playwright_session(session_name, existing_session)
+        return "passed"
+
+    if not existing_session or not existing_session.get("selenium_driver"):
+        return "zeuz_failed"
+
+    port = existing_session.get("remote_debugging_port")
+    if not port:
+        return "zeuz_failed"
+
+    try:
+        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
+
+        playwright_instance, connected_browser, connected_context, connected_page = await SeleniumBuiltInFunctions.connect_playwright_to_selenium(port=port)
+        sessions = get_browser_sessions()
+        session = sessions.setdefault(session_name, existing_session)
+        session.update({
+            "selenium_driver": existing_session.get("selenium_driver"),
+            "playwright_page": connected_page,
+            "playwright_browser": connected_browser,
+            "playwright_context": connected_context,
+            "playwright_frame": None,
+            "playwright_instance": playwright_instance,
+            "remote_debugging_port": port,
+        })
+        sr.Set_Shared_Variables("browser_sessions", sessions)
+        playwright_details[session_name] = {
+            "page": connected_page,
+            "context": connected_context,
+            "browser": connected_browser,
+            "playwright": playwright_instance,
+            "remote-debugging-port": port,
+        }
+        _set_active_playwright_session(session_name, session)
+        CommonUtil.ExecLog("_ensure_playwright_session", f"Connected Playwright to Selenium session: {session_name}", 1)
+        return "passed"
+    except Exception as e:
+        CommonUtil.ExecLog("_ensure_playwright_session", f"Failed to connect Playwright to Selenium session '{session_name}': {e}", 3)
+        return "zeuz_failed"
+
+
 def _save_current_playwright_frame(frame_locator):
     if current_page_id:
         sessions = get_browser_sessions()
@@ -98,13 +144,10 @@ def _save_current_playwright_frame(frame_locator):
             sr.Set_Shared_Variables("browser_sessions", sessions)
 
 
-def _activate_browser_session_for_action(step_data, function_name=None):
+async def _activate_browser_session_for_action(step_data, function_name=None):
     """Select the requested browser session before running Playwright actions."""
 
     session_name = extract_session_name(step_data)
-    if not session_name:
-        return "passed"
-
     create_or_cleanup_actions = {
         "Open_Browser",
         "Go_To_Link",
@@ -113,13 +156,20 @@ def _activate_browser_session_for_action(step_data, function_name=None):
     if function_name in create_or_cleanup_actions:
         return "passed"
 
+    if not session_name:
+        if current_page is None:
+            default_session = get_browser_session("default")
+            if default_session and default_session.get("selenium_driver"):
+                return await _ensure_playwright_session("default", default_session)
+        return "passed"
+
     existing_session = get_browser_session(session_name)
-    if not existing_session or not existing_session.get("playwright_page"):
+    result = await _ensure_playwright_session(session_name, existing_session)
+    if result in failed_tag_list:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
         return "zeuz_failed"
 
-    _set_active_playwright_session(session_name, existing_session)
     return "passed"
 
 
@@ -175,7 +225,7 @@ default_viewport = {"width": 1920, "height": 1080}
 #                       #
 #########################
 
-def _handle_playwright_session(step_data):
+async def _handle_playwright_session(step_data):
     """
     Helper function to handle session parameter for Playwright actions.
     
@@ -198,14 +248,17 @@ def _handle_playwright_session(step_data):
     if session_name:
         existing_session = get_browser_session(session_name)
         
-        if existing_session and existing_session.get("playwright_page"):
-            _set_active_playwright_session(session_name, existing_session)
+        if existing_session and await _ensure_playwright_session(session_name, existing_session) not in failed_tag_list:
             sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
             CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
         else:
             sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
             CommonUtil.ExecLog(sModuleInfo, f"Browser session '{session_name}' not found", 3)
             raise ValueError(f"Browser session '{session_name}' not found")
+    elif current_page is None:
+        default_session = get_browser_session("default")
+        if default_session and default_session.get("selenium_driver"):
+            await _ensure_playwright_session("default", default_session)
     
     return session_name, current_page, current_page_id, context, browser
 
@@ -304,8 +357,8 @@ async def Open_Browser(step_data):
                 # Handle Selenium-style capabilities where possible
                 pass
 
-        # Ensure Chrome for Testing is available
-        chrome_binary_path, success = PlaywrightUtils.ensure_chromium_downloads(sModuleInfo)
+        # Ensure Playwright's managed browser is available in Zeuz's persistent cache.
+        success = PlaywrightUtils.ensure_playwright_browser_installed(sModuleInfo, browser_name)
         if not success:
             return "zeuz_failed"
 
@@ -317,29 +370,29 @@ async def Open_Browser(step_data):
         launch_options = {
             "headless": headless,
             "slow_mo": slow_mo,
-            "devtools": devtools,
         }
         
         # Add remote debugging port for CDP connection with unique port per session
         unique_port = get_debug_port(page_id)
         all_args = args + [f"--remote-debugging-port={unique_port}"]
+        if devtools:
+            all_args.append("--auto-open-devtools-for-tabs")
         CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
         if all_args:
             launch_options["args"] = all_args
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
         
-        # Use Chrome for Testing binary if available
-        if chrome_binary_path and browser_name in ("chrome", "chromium"):
-            launch_options["executable_path"] = chrome_binary_path
-            CommonUtil.ExecLog(sModuleInfo, f"Using Chrome for Testing binary: {chrome_binary_path}", 1)
+        selenium_cdp_supported = True
 
         # Select and launch browser
         if browser_name in ("chrome", "chromium"):
             browser = await playwright_instance.chromium.launch(**launch_options)
         elif browser_name == "firefox":
+            selenium_cdp_supported = False
             browser = await playwright_instance.firefox.launch(**launch_options)
         elif browser_name in ("webkit", "safari"):
+            selenium_cdp_supported = False
             browser = await playwright_instance.webkit.launch(**launch_options)
         elif browser_name in ("edge", "msedge", "microsoft edge"):
             launch_options["channel"] = "msedge"
@@ -396,13 +449,10 @@ async def Open_Browser(step_data):
         # Set screenshot variables for CommonUtil.TakeScreenShot()
         CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
-        # Connect Selenium to Playwright via CDP
-        selenium_driver = connect_selenium_to_playwright(port=unique_port)
-
         # Create browser session
-        create_browser_session(
+        session = create_browser_session(
             session_name=page_id,
-            selenium_driver=selenium_driver,
+            selenium_driver=None,
             playwright_page=current_page,
             playwright_browser=browser,
             playwright_context=context,
@@ -410,6 +460,8 @@ async def Open_Browser(step_data):
             playwright_instance=playwright_instance,
             remote_debugging_port=unique_port,
         )
+        session["selenium_cdp_supported"] = selenium_cdp_supported
+        sr.Set_Shared_Variables("browser_sessions", get_browser_sessions())
         CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {page_id}", 5)
 
         CommonUtil.ExecLog(sModuleInfo, f"Browser opened successfully (page_id: {page_id})", 1)
@@ -619,9 +671,7 @@ async def Go_To_Link(step_data):
         # Check if session exists and use it
         if session_name:
             existing_session = get_browser_session(session_name)
-
-            if existing_session and existing_session.get("playwright_page"):
-                _set_active_playwright_session(session_name, existing_session)
+            if existing_session and await _ensure_playwright_session(session_name, existing_session) not in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {session_name}", 1)
             else:
                 # Session doesn't exist, open new browser with session name
@@ -638,12 +688,18 @@ async def Go_To_Link(step_data):
                     return "zeuz_failed"
 
         elif current_page is None:
-            # No session specified and no browser open
-            CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
-            result = await Open_Browser(step_data)
-            if result == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically", 3)
-                return "zeuz_failed"
+            default_session = get_browser_session("default")
+            if default_session and default_session.get("selenium_driver"):
+                result = await _ensure_playwright_session("default", default_session)
+                if result in failed_tag_list:
+                    return result
+            else:
+                # No session specified and no browser open
+                CommonUtil.ExecLog(sModuleInfo, "No browser open. Opening browser with default settings.", 2)
+                result = await Open_Browser(step_data)
+                if result == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to open browser automatically", 3)
+                    return "zeuz_failed"
 
         url = None
         wait_until = "domcontentloaded"
@@ -1001,8 +1057,7 @@ async def Click_Element(step_data, retry=0):
 
     try:
         # Handle session parameter
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
-
+        session_name, current_page, current_page_id, context, browser = await _handle_playwright_session(step_data)
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
@@ -1040,7 +1095,7 @@ async def Click_Element(step_data, retry=0):
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
 
-            elif mid_l == "action":
+            elif "action" in mid_l:
                 if "double" in left_l:
                     double_click = True
                 elif "right" in left_l:
@@ -1169,7 +1224,7 @@ async def Double_Click_Element(step_data):
     modified_step_data = list(step_data)
     # Ensure the action indicates double click
     for i, (left, mid, right) in enumerate(modified_step_data):
-        if mid.strip().lower() == "action":
+        if "action" in mid.strip().lower():
             modified_step_data[i] = ("double click", mid, right)
             break
 
@@ -1188,7 +1243,7 @@ async def Right_Click_Element(step_data):
     """
     modified_step_data = list(step_data)
     for i, (left, mid, right) in enumerate(modified_step_data):
-        if mid.strip().lower() == "action":
+        if "action" in mid.strip().lower():
             modified_step_data[i] = ("right click", mid, right)
             break
 
@@ -1283,8 +1338,7 @@ async def Enter_Text_In_Text_Box(step_data):
 
     try:
         # Handle session parameter
-        session_name, current_page, current_page_id, context, browser = _handle_playwright_session(step_data)
-
+        session_name, current_page, current_page_id, context, browser = await _handle_playwright_session(step_data)
         if current_page is None:
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
@@ -1303,7 +1357,7 @@ async def Enter_Text_In_Text_Box(step_data):
             if mid_l == "optional parameter" and left_l == "session":
                 continue
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 text_value = right  # Don't strip - preserve whitespace
             elif mid_l == "optional parameter":
                 if left_l == "delay":
@@ -1436,7 +1490,7 @@ async def Keystroke_For_Element(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if left_l == "keystroke keys":
                     keystroke_type = "keys"
                     keystroke_value = right_v
@@ -1585,7 +1639,7 @@ async def Validate_Text(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if left_l.startswith("**"):
                     partial_match = True
                     case_insensitive = True
@@ -1933,7 +1987,7 @@ async def Navigate(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip().lower()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 direction = right_v
             elif mid_l == "optional parameter":
                 if left_l == "timeout":
@@ -3001,7 +3055,7 @@ async def Select_Deselect(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if "deselect" in left_l:
                     is_deselect = True
 
@@ -3087,7 +3141,7 @@ async def check_uncheck(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip().lower()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if "uncheck" in left_l or "uncheck" in right_v:
                     action = "uncheck"
                 else:
@@ -3611,7 +3665,7 @@ async def Handle_Browser_Alert(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 action = right_v.lower()
             elif mid_l == "input parameter":
                 if left_l in ("prompt text", "text", "send text"):
@@ -3837,6 +3891,8 @@ async def take_screenshot_playwright(step_data):
         save_variable = None
         custom_path = None
         has_element = False
+        image_type = "jpeg"
+        image_quality = CommonUtil.PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -3850,15 +3906,32 @@ async def take_screenshot_playwright(step_data):
                     full_page = right_v.lower() in ("true", "yes", "1")
                 elif left_l == "path":
                     custom_path = right_v
+                elif left_l in ("format", "type", "image type"):
+                    image_type = right_v.lower().replace("jpg", "jpeg")
+                elif left_l == "quality":
+                    image_quality = int(right_v)
             elif mid_l == "save parameter":
                 save_variable = left.strip()
+
+        if image_type not in ("jpeg", "png"):
+            CommonUtil.ExecLog(sModuleInfo, f"Unsupported screenshot format '{image_type}'. Use jpeg or png.", 3)
+            return "zeuz_failed"
 
         # Generate filename
         if custom_path:
             screenshot_path = custom_path
+            suffix = Path(screenshot_path).suffix.lower()
+            if suffix in (".png", ".jpg", ".jpeg"):
+                image_type = "png" if suffix == ".png" else "jpeg"
+            else:
+                screenshot_path = str(Path(screenshot_path).with_suffix(".jpg" if image_type == "jpeg" else ".png"))
         else:
             timestamp = time.strftime("%Y_%m_%d_%H-%M-%S")
-            screenshot_path = f"screenshot_{timestamp}.png"
+            screenshot_path = f"screenshot_{timestamp}.{'jpg' if image_type == 'jpeg' else 'png'}"
+
+        screenshot_options = {"path": screenshot_path, "type": image_type}
+        if image_type == "jpeg":
+            screenshot_options["quality"] = image_quality
 
         # Take screenshot
         if has_element:
@@ -3866,9 +3939,10 @@ async def take_screenshot_playwright(step_data):
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
-            await locator.screenshot(path=screenshot_path)
+            await locator.screenshot(**screenshot_options)
         else:
-            await current_page.screenshot(path=screenshot_path, full_page=full_page)
+            screenshot_options["full_page"] = full_page
+            await current_page.screenshot(**screenshot_options)
 
         if save_variable:
             sr.Set_Shared_Variables(save_variable, screenshot_path)
@@ -4317,7 +4391,7 @@ async def Intercept_Network(step_data):
                     response_body = right_v
                 elif left_l == "response status":
                     response_status = int(right_v)
-            elif mid_l == "action":
+            elif "action" in mid_l:
                 action = right_v.lower()
 
         async def handle_route(route):
