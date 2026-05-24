@@ -469,7 +469,12 @@ def _build_shadow_dom_locator(base_locator, params):
                     query_rows.append(parent_param)
                     break
             query_rows.append(shadow_param)
-            host_query = LocateElement.build_css_selector_query(query_rows)
+            if idx == 1:
+                host_query, host_query_type = _build_legacy_query(query_rows)
+                if host_query_type == "xpath":
+                    host_query = _as_playwright_xpath(host_query)
+            else:
+                host_query = LocateElement.build_css_selector_query(query_rows)
             if not host_query:
                 return None
             current = current.locator(host_query)

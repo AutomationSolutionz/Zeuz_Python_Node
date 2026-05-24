@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
@@ -77,9 +77,11 @@ def test_playwright_session_activation_selects_page_and_frame():
         playwright_frame=frame,
     )
 
-    result = playwright_bif._activate_browser_session_for_action(
-        [("session", "optional parameter", "buyer")],
-        "Hover_Over_Element",
+    result = asyncio.run(
+        playwright_bif._activate_browser_session_for_action(
+            [("session", "optional parameter", "buyer")],
+            "Hover_Over_Element",
+        )
     )
 
     assert result == "passed"
@@ -92,9 +94,11 @@ def test_playwright_session_activation_selects_page_and_frame():
 
 
 def test_playwright_missing_explicit_session_fails_non_create_action():
-    result = playwright_bif._activate_browser_session_for_action(
-        [("session", "optional parameter", "missing")],
-        "Validate_Text",
+    result = asyncio.run(
+        playwright_bif._activate_browser_session_for_action(
+            [("session", "optional parameter", "missing")],
+            "Validate_Text",
+        )
     )
 
     assert result == "zeuz_failed"
@@ -138,6 +142,7 @@ def test_playwright_switch_iframe_uses_index_parameter_after_default_reset():
     indexed_frame_locator = MagicMock()
     frame_locator.nth.return_value = indexed_frame_locator
     page = MagicMock()
+    page.locator.return_value.count = AsyncMock(return_value=2)
     page.frame_locator.return_value = frame_locator
     playwright_bif.current_page = page
     playwright_bif.current_page_id = "default"

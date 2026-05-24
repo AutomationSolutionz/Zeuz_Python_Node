@@ -26,25 +26,25 @@ import os
 import inspect
 import platform
 import time
-import re
+import base64
 from pathlib import Path
+from urllib.parse import urlparse
 
 from playwright.async_api import (
     async_playwright,
     Page,
     Browser,
     BrowserContext,
-    Locator,
     TimeoutError as PlaywrightTimeoutError,
     Error as PlaywrightError,
 )
 
-from Framework.Utilities import CommonUtil
+from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
-from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
+from Framework.Utilities.CommonUtil import failed_tag_list
 from . import locator as PlaywrightLocator
 from . import utils as PlaywrightUtils
 from Framework.Built_In_Automation.Web.utils import (
@@ -63,7 +63,7 @@ def _get_frame_locator():
         if frame_locator in failed_tag_list:
             return None
         return frame_locator
-    except:
+    except Exception:
         # Variable doesn't exist yet
         return None
 
@@ -204,6 +204,12 @@ def connect_selenium_to_playwright(port=9222):
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
+temp_config = str(
+    Path(os.path.abspath(__file__).split("Framework")[0])
+    / "AutomationLog"
+    / ConfigModule.get_config_value("Advanced Options", "_file")
+)
+
 # Playwright instances
 playwright_instance = None
 browser: Browser = None
@@ -213,10 +219,75 @@ current_page: Page = None
 # Multi-page/context support
 playwright_details = {}  # {"page_id": {"page": Page, "context": Context, "browser": Browser}}
 current_page_id = None
+network_log_details = {}
 
 # Default settings
 default_timeout = 30000  # 30 seconds
 default_viewport = {"width": 1920, "height": 1080}
+
+
+def _compact(value):
+    return str(value).replace(" ", "").replace("_", "").replace("-", "").lower()
+
+
+def _is_action_mid(mid):
+    return "action" in str(mid).strip().lower()
+
+
+def _truthy(value):
+    return str(value).strip().lower() in ("true", "yes", "ok", "1", "accept")
+
+
+def _is_placeholder(value, *placeholders):
+    value_l = str(value).strip().lower()
+    return not value_l or value_l in placeholders or value_l == "default"
+
+
+def _has_element_rows(step_data):
+    return any(_is_element_parameter_mid(mid) for _, mid, _ in step_data)
+
+
+def _action_row_value(step_data, *action_names):
+    names = {name.strip().lower() for name in action_names}
+    for left, mid, right in step_data:
+        if _is_action_mid(mid) and (not names or left.strip().lower() in names):
+            return str(right)
+    return None
+
+
+def _save_variable_from_action_or_save_parameter(step_data, *action_names):
+    save_variable = None
+    for left, mid, right in step_data:
+        mid_l = str(mid).strip().lower()
+        if mid_l == "save parameter":
+            save_variable = str(left).strip()
+        elif _is_action_mid(mid) and (not action_names or left.strip().lower() in action_names):
+            value = str(right).strip()
+            if not _is_placeholder(value, left.strip().lower()):
+                save_variable = value
+    return save_variable
+
+
+def _screenshot_folder():
+    try:
+        folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config)
+        if folder:
+            Path(folder).mkdir(parents=True, exist_ok=True)
+            return folder
+    except Exception:
+        pass
+    return os.getcwd()
+
+
+def _download_folder():
+    try:
+        folder = sr.Get_Shared_Variables("zeuz_download_folder")
+        if folder not in failed_tag_list:
+            Path(folder).mkdir(parents=True, exist_ok=True)
+            return folder
+    except Exception:
+        pass
+    return os.getcwd()
 
 
 #########################
@@ -292,7 +363,10 @@ async def Open_Browser(step_data):
     try:
         # Parse parameters
         url = None
+        dependency = sr.Get_Shared_Variables("dependency")
         browser_name = "chromium"
+        if isinstance(dependency, dict) and dependency.get("Browser"):
+            browser_name = dependency["Browser"].strip().lower().replace("headless", "").strip() or browser_name
         headless = False
         viewport = default_viewport.copy()
         args = []
@@ -319,7 +393,7 @@ async def Open_Browser(step_data):
                     url = right_v
                 elif left_l in ("browser", "browser name"):
                     browser_name = right_v.lower()
-                elif left_l in ("driver id", "page id", "driver tag", "session"):
+                elif _compact(left_l) in ("driverid", "pageid", "drivertag", "session"):
                     page_id = right_v
 
             elif mid_l == "optional parameter":
@@ -350,7 +424,7 @@ async def Open_Browser(step_data):
                     color_scheme = right_v
                 elif left_l == "permission":
                     permissions.append(right_v)
-                elif left_l in ("driver id", "page id", "driver tag", "session"):
+                elif _compact(left_l) in ("driverid", "pageid", "drivertag", "session"):
                     page_id = right_v    
 
             elif mid_l == "shared capability":
@@ -405,7 +479,7 @@ async def Open_Browser(step_data):
             browser = await playwright_instance.chromium.launch(**launch_options)
 
         # Context options
-        context_options = {"viewport": viewport}
+        context_options = {"viewport": viewport, "accept_downloads": True}
         if record_video:
             context_options["record_video_dir"] = video_dir or "videos/"
         if locale:
@@ -664,7 +738,7 @@ async def Go_To_Link(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "optional parameter" and left_l == "session":
+            if mid_l == "optional parameter" and _compact(left_l) in ("session", "driverid", "driver", "drivertag", "pageid"):
                 session_name = right_v
                 break
 
@@ -718,7 +792,7 @@ async def Go_To_Link(step_data):
             if left_l in ("go to link", "url", "link"):
                 url = right_v
             elif mid_l == "optional parameter":
-                if left_l == "session":
+                if _compact(left_l) in ("session", "driverid", "driver", "drivertag", "pageid"):
                     continue
                 if left_l in ("wait until", "wait_until", "waituntil"):
                     wait_until = right_v.lower()
@@ -781,6 +855,28 @@ async def Go_To_Link(step_data):
 
 
 @logger
+async def Go_To_Link_V2(step_data):
+    """Selenium-compatible v2 navigation wrapper."""
+
+    translated = []
+    for left, mid, right in step_data:
+        left_l = left.strip().lower()
+        if left_l == "go to link v2":
+            translated.append(("go to link", mid, right))
+        elif left_l == "driver tag":
+            translated.append(("session", "optional parameter", right))
+        elif left_l == "page load timeout":
+            translated.append(("wait time to page load", "optional parameter", right))
+        elif left_l == "wait for element":
+            translated.append(("wait time to appear element", "optional parameter", right))
+        elif left_l == "page load strategy":
+            translated.append(("wait until", "optional parameter", right))
+        else:
+            translated.append((left, mid, right))
+    return await Go_To_Link(translated)
+
+
+@logger
 async def Tear_Down_Playwright(step_data=None):
     """
     Close browser and clean up Playwright resources.
@@ -807,7 +903,7 @@ async def Tear_Down_Playwright(step_data=None):
                 mid_l = mid.strip().lower()
                 right_v = right.strip()
                 
-                if mid_l == "optional parameter" and left_l == "session":
+                if mid_l == "optional parameter" and _compact(left_l) in ("session", "driverid", "driver", "drivertag", "pageid"):
                     session_name = right_v
                     break
         
@@ -839,7 +935,7 @@ async def Tear_Down_Playwright(step_data=None):
                             pass
                     
                     CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
-                except Exception as e:
+                except Exception:
                     errMsg = f"Unable to tear down session '{session_name}'. may already been killed"
                     CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
                 
@@ -973,12 +1069,11 @@ async def Switch_Browser(step_data):
             right_v = right.strip()
 
             if mid_l in ("input parameter", "optional parameter"):
-                if left_l in ("driver id", "page id", "driver tag", "session"):
+                if _compact(left_l) in ("driverid", "pageid", "drivertag", "session"):
                     target_id = right_v
 
         if not target_id:
-            CommonUtil.ExecLog(sModuleInfo, "No driver/page ID provided", 3)
-            return "zeuz_failed"
+            target_id = "default"
 
         existing_session = get_browser_session(target_id)
         if existing_session and existing_session.get("playwright_page"):
@@ -1307,6 +1402,60 @@ async def Hover_Over_Element(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+async def Click_and_Download(data_set):
+    """Click an element and wait for a browser download."""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global current_page
+
+    try:
+        if current_page is None:
+            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+            return "zeuz_failed"
+
+        wait_download = 20
+        target_path = ""
+        click_dataset = []
+        for left, mid, right in data_set:
+            left_c = _compact(left)
+            mid_l = mid.strip().lower()
+            if left_c == "waitfordownload":
+                wait_download = float(right.strip())
+            elif left_c in ("folderpath", "directory", "filepath", "file", "folder") and mid_l == "optional parameter":
+                target_path = CommonUtil.path_parser(right.strip())
+            elif left_c == "automatefirefoxsavewindow":
+                continue
+            else:
+                click_dataset.append((left, mid, right))
+
+        locator = await PlaywrightLocator.Get_Element(click_dataset, current_page, frame_locator=_get_frame_locator())
+        if locator == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+
+        CommonUtil.ExecLog(sModuleInfo, f"Download started. Will wait max {wait_download} seconds...", 1)
+        async with current_page.expect_download(timeout=int(wait_download * 1000)) as download_info:
+            await locator.click()
+        download = await download_info.value
+
+        if target_path:
+            parsed_path = Path(target_path)
+            if parsed_path.suffix:
+                parsed_path.parent.mkdir(parents=True, exist_ok=True)
+                save_path = parsed_path
+            else:
+                parsed_path.mkdir(parents=True, exist_ok=True)
+                save_path = parsed_path / download.suggested_filename
+        else:
+            save_path = Path(_download_folder()) / download.suggested_filename
+        await download.save_as(str(save_path))
+        CommonUtil.ExecLog(sModuleInfo, f"File downloaded to '{save_path}'", 1)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 #########################
 #                       #
 #    Text Input         #
@@ -1521,8 +1670,13 @@ async def Keystroke_For_Element(step_data):
         key_map = {
             "CTRL": "Control",
             "CONTROL": "Control",
+            "CMD": "Meta",
+            "COMMAND": "Meta",
             "ALT": "Alt",
             "SHIFT": "Shift",
+            "PLUS": "+",
+            "MINUS": "-",
+            "DASH": "-",
             "ENTER": "Enter",
             "RETURN": "Enter",
             "TAB": "Tab",
@@ -1542,6 +1696,39 @@ async def Keystroke_For_Element(step_data):
         }
 
         if keystroke_type == "keys":
+            normalized_keystroke = keystroke_value.replace(" ", "").replace("_", "").lower()
+            if normalized_keystroke in ("ctrl+v", "control+v", "ctrlv", "controlv", "cmd+v", "cmdv", "command+v", "commandv"):
+                try:
+                    import pyperclip
+
+                    paste_text = pyperclip.paste()
+                    if has_element:
+                        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+                        if locator == "zeuz_failed":
+                            CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+                            return "zeuz_failed"
+                        await locator.evaluate("""(el, text) => {
+                            el.focus();
+                            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                            if (setter) setter.call(el, text); else el.value = text;
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        }""", paste_text)
+                    else:
+                        await current_page.evaluate("""text => {
+                            const el = document.activeElement;
+                            if (el && 'value' in el) {
+                                const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                                if (setter) setter.call(el, text); else el.value = text;
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        }""", paste_text)
+                    CommonUtil.ExecLog(sModuleInfo, "Paste successfully executed via JavaScript with events", 1)
+                    return "passed"
+                except Exception:
+                    CommonUtil.ExecLog(sModuleInfo, "JavaScript paste execution failed. Trying keypress.", 2)
+
             # Convert key names
             key = keystroke_value.upper()
             if "+" in key:
@@ -1632,7 +1819,6 @@ async def Validate_Text(step_data):
         expected_text = ""
         partial_match = False
         case_insensitive = False
-        timeout = None
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -1650,29 +1836,33 @@ async def Validate_Text(step_data):
                 expected_text = right_v
 
             elif mid_l == "optional parameter":
-                if left_l == "timeout":
-                    timeout = int(float(right_v) * 1000)
+                if left_l == "ignore case":
+                    case_insensitive = _truthy(right_v)
 
         locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
 
-        # Get actual text
-        actual_text = await locator.text_content() or ""
+        # Get visible text, matching Selenium Element.text behavior more closely.
+        try:
+            actual_text = await locator.inner_text() or ""
+        except Exception:
+            actual_text = await locator.text_content() or ""
+        actual_lines = [line for line in actual_text.split("\n") if line != ""]
 
         # Compare
         match = False
         if case_insensitive:
             if partial_match:
-                match = expected_text.lower() in actual_text.lower()
+                match = any(expected_text.lower() in line.lower() for line in actual_lines)
             else:
-                match = expected_text.lower() == actual_text.lower()
+                match = expected_text.lower() in [line.lower() for line in actual_lines]
         else:
             if partial_match:
-                match = expected_text in actual_text
+                match = any(expected_text in line for line in actual_lines)
             else:
-                match = expected_text == actual_text
+                match = expected_text in actual_lines
 
         if match:
             CommonUtil.ExecLog(sModuleInfo, f"Text validation passed: '{expected_text}'", 1)
@@ -1680,7 +1870,7 @@ async def Validate_Text(step_data):
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                f"Text validation failed.\nExpected: '{expected_text}'\nActual: '{actual_text}'",
+                f"Text validation failed.\nExpected: '{expected_text}'\nActual: '{actual_lines}'",
                 3
             )
             return "zeuz_failed"
@@ -1853,7 +2043,7 @@ async def Save_Attribute(step_data):
         # Get attribute value based on name
         attr_lower = attribute_name.lower()
         if attr_lower == "text":
-            value = await locator.text_content()
+            value = await locator.inner_text()
         elif attr_lower == "tag":
             value = (await locator.evaluate("el => el.tagName") or "").lower()
         elif attr_lower == "innertext":
@@ -1911,35 +2101,18 @@ async def get_element_info(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
 
-        save_variable = None
-        for left, mid, right in step_data:
-            if mid.strip().lower() == "save parameter":
-                save_variable = left.strip()
+        save_variable = _save_variable_from_action_or_save_parameter(step_data, "get element info")
 
         locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
 
-        # Gather element info
+        box = await locator.bounding_box()
         info = {
-            "tag_name": await locator.evaluate("el => el.tagName"),
-            "text": await locator.text_content(),
-            "inner_html": await locator.inner_html(),
-            "visible": await locator.is_visible(),
-            "enabled": await locator.is_enabled(),
-            "bounding_box": await locator.bounding_box(),
+            "size": {"width": box["width"], "height": box["height"]} if box else {},
+            "location": {"x": box["x"], "y": box["y"]} if box else {},
         }
-
-        # Get all attributes
-        attributes = await locator.evaluate("""el => {
-            const attrs = {};
-            for (const attr of el.attributes) {
-                attrs[attr.name] = attr.value;
-            }
-            return attrs;
-        }""")
-        info["attributes"] = attributes
 
         if save_variable:
             sr.Set_Shared_Variables(save_variable, info)
@@ -2034,10 +2207,7 @@ def Get_Current_URL(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
 
-        save_variable = None
-        for left, mid, right in step_data:
-            if mid.strip().lower() == "save parameter":
-                save_variable = left.strip()
+        save_variable = _save_variable_from_action_or_save_parameter(step_data, "get current url")
 
         url = current_page.url
 
@@ -2088,11 +2258,15 @@ async def Scroll(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
+            if _is_action_mid(mid_l) and left_l == "scroll":
+                direction = right_v.lower()
+            elif mid_l == "input parameter":
                 if left_l == "direction":
                     direction = right_v.lower()
                 elif left_l in ("pixel", "pixels", "amount"):
                     pixels = int(right_v)
+            elif left_l in ("pixel", "pixels", "amount"):
+                pixels = int(right_v)
 
         # Calculate delta
         delta_x = 0
@@ -2107,7 +2281,14 @@ async def Scroll(step_data):
         elif direction == "left":
             delta_x = -pixels
 
-        await current_page.mouse.wheel(delta_x, delta_y)
+        if _has_element_rows(step_data):
+            locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+            if locator == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
+                return "zeuz_failed"
+            await locator.evaluate("(el, offset) => el.scrollBy(offset.x, offset.y)", {"x": delta_x, "y": delta_y})
+        else:
+            await current_page.mouse.wheel(delta_x, delta_y)
         CommonUtil.ExecLog(sModuleInfo, f"Scrolled {direction} by {pixels}px", 1)
         return "passed"
 
@@ -2154,7 +2335,7 @@ async def scroll_to_element(step_data):
 
         method = "js"
         align_to_top = "true"
-        additional_scroll = 0.0
+        additional_scroll = 0.1
         direction = ""
 
         for left, mid, right in step_data:
@@ -2173,7 +2354,10 @@ async def scroll_to_element(step_data):
                     try:
                         additional_scroll = float(right_v)
                     except ValueError:
-                        additional_scroll = 0.0
+                        additional_scroll = 0.1
+                    direction_part = left_l.replace("additional scroll", "").strip()
+                    if direction_part in ("up", "down", "left", "right"):
+                        direction = direction_part
 
         locator = await PlaywrightLocator.Get_Element(
             step_data, current_page, frame_locator=_get_frame_locator()
@@ -2605,7 +2789,6 @@ async def save_attribute_values_in_list(step_data):
                 if _is_session_step_row(left, mid):
                     continue
                 left_l = left.strip().lower()
-                left_key = left_l.replace(" ", "").replace("_", "")
                 right = right.strip()
                 if _is_target_parameter_mid(mid):
                     if spec_index >= 0 and _target_param_continues_previous_target(right):
@@ -2841,12 +3024,20 @@ def _parse_multiple_check_targets(target_parameter_value):
 
 async def _toggle_checkbox_target(locator, action, use_js, target_label):
     """Check or uncheck one target; logs and swallows per-target failures like Selenium."""
-    if action == "check" and await locator.is_checked():
-        CommonUtil.ExecLog("", f"{target_label} is already checked so skipped it", 1)
-        return
-    if action == "uncheck" and not await locator.is_checked():
-        CommonUtil.ExecLog("", f"{target_label} is already unchecked so skipped it", 1)
-        return
+    try:
+        checked = await locator.is_checked()
+    except Exception:
+        try:
+            checked = await locator.evaluate("el => Boolean(el.checked || el.getAttribute('aria-checked') === 'true')")
+        except Exception:
+            checked = None
+    if checked is not None:
+        if action == "check" and checked:
+            CommonUtil.ExecLog("", f"{target_label} is already checked so skipped it", 1)
+            return
+        if action == "uncheck" and not checked:
+            CommonUtil.ExecLog("", f"{target_label} is already unchecked so skipped it", 1)
+            return
 
     via_js = use_js
     try:
@@ -3049,6 +3240,7 @@ async def Select_Deselect(step_data):
         select_type = "label"  # label, value, index
         select_value = None
         is_deselect = False
+        deselect_all = False
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -3058,6 +3250,8 @@ async def Select_Deselect(step_data):
             if "action" in mid_l:
                 if "deselect" in left_l:
                     is_deselect = True
+                    if "all" in left_l:
+                        deselect_all = True
 
                 if "by value" in left_l or "byvalue" in left_l:
                     select_type = "value"
@@ -3068,7 +3262,9 @@ async def Select_Deselect(step_data):
 
                 select_value = right_v
 
-        if not select_value:
+        if deselect_all:
+            select_value = ""
+        elif not select_value:
             CommonUtil.ExecLog(sModuleInfo, "No selection value provided", 3)
             return "zeuz_failed"
 
@@ -3080,21 +3276,24 @@ async def Select_Deselect(step_data):
         # Build selection option
         if select_type == "value":
             option = {"value": select_value}
-        elif select_type == "index":
+        elif select_type == "index" and select_value != "":
             option = {"index": int(select_value)}
         else:  # label
             option = {"label": select_value}
 
         if is_deselect:
             # Playwright doesn't have direct deselect, use JavaScript
-            await locator.evaluate(f"""el => {{
-                for (const opt of el.options) {{
-                    if (opt.{'value' if select_type == 'value' else 'text'} === '{select_value}') {{
+            await locator.evaluate("""(el, data) => {
+                for (const opt of el.options) {
+                    if (data.all ||
+                        (data.type === 'value' && opt.value === data.value) ||
+                        (data.type === 'label' && opt.text === data.value) ||
+                        (data.type === 'index' && opt.index === Number(data.value))) {
                         opt.selected = false;
-                    }}
-                }}
+                    }
+                }
                 el.dispatchEvent(new Event('change'));
-            }}""")
+            }""", {"all": deselect_all, "type": select_type, "value": select_value})
             CommonUtil.ExecLog(sModuleInfo, f"Deselected: {select_value}", 1)
         else:
             await locator.select_option(**option)
@@ -3155,19 +3354,100 @@ async def check_uncheck(step_data):
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
 
-        options = {}
-        if use_js:
-            options["force"] = True
-
-        if action == "check":
-            await locator.check(**options)
-            CommonUtil.ExecLog(sModuleInfo, "Checkbox checked", 1)
-        else:
-            await locator.uncheck(**options)
-            CommonUtil.ExecLog(sModuleInfo, "Checkbox unchecked", 1)
+        await _toggle_checkbox_target(locator, action, use_js, "The element")
 
         return "passed"
 
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+async def check_uncheck_all(data_set):
+    """Check or uncheck all target elements under a parent element."""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global current_page
+
+    try:
+        if current_page is None:
+            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+            return "zeuz_failed"
+
+        use_js = False
+        target = []
+        command = "check"
+        for left, mid, right in data_set:
+            left_l = left.lower().strip()
+            mid_l = mid.lower().strip()
+            if left_l == "use js":
+                use_js = _truthy(right)
+            elif mid_l == "target parameter":
+                target.append((left, "element parameter", right))
+            elif left_l == "check uncheck all":
+                command = "uncheck" if "uncheck" in right.lower() else "check"
+            elif left_l == "allow hidden":
+                target.append((left, "option", right))
+
+        parent = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=_get_frame_locator())
+        if parent == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
+            return "zeuz_failed"
+
+        all_elements = await PlaywrightLocator.Get_Element(target, current_page, return_all=True, parent_locator=parent)
+        if not all_elements or all_elements == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "No target was found", 3)
+            return "zeuz_failed"
+
+        for index, element in enumerate(all_elements, start=1):
+            suffix = "th"
+            if index == 1:
+                suffix = "st"
+            elif index == 2:
+                suffix = "nd"
+            elif index == 3:
+                suffix = "rd"
+            await _toggle_checkbox_target(element, command, use_js, f"{index}{suffix} target")
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+async def slider_bar(data_set):
+    """Set a slider by clicking at a percentage across the element."""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global current_page
+
+    try:
+        if current_page is None:
+            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+            return "zeuz_failed"
+
+        value = None
+        for left, mid, right in data_set:
+            if _is_action_mid(mid):
+                value = int(right.strip())
+        if value is None:
+            CommonUtil.ExecLog(sModuleInfo, "Slider value must be provided", 3)
+            return "zeuz_failed"
+
+        locator = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=_get_frame_locator())
+        if locator == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+            return "zeuz_failed"
+
+        box = await locator.bounding_box()
+        if not box:
+            CommonUtil.ExecLog(sModuleInfo, "Could not compute slider size", 3)
+            return "zeuz_failed"
+        x = box["x"] + (value / 100) * box["width"]
+        y = box["y"] + box["height"] / 2
+        await current_page.mouse.click(x, y)
+        CommonUtil.ExecLog(sModuleInfo, f"Successfully set the slider to %{value}", 1)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -3341,6 +3621,7 @@ async def close_tab(step_data):
 
         tab_title = None
         tab_index = None
+        close_tabs = []
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -3352,10 +3633,30 @@ async def close_tab(step_data):
                     tab_title = right_v
                 elif left_l == "tab index":
                     tab_index = int(right_v)
+                elif left_l == "tabs":
+                    close_tabs = CommonUtil.parse_value_into_object(right_v)
 
         pages = context.pages
 
-        if tab_title:
+        if close_tabs:
+            for target in close_tabs:
+                pages = context.pages
+                if isinstance(target, int):
+                    if -len(pages) <= target < len(pages):
+                        await pages[target].close()
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, f"Invalid tab index: {target}", 3)
+                        return "zeuz_failed"
+                else:
+                    target_l = str(target).lower()
+                    for page in pages:
+                        if target_l in (await page.title()).lower():
+                            await page.close()
+                            break
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, f"Tab not found: {target}", 3)
+                        return "zeuz_failed"
+        elif tab_title:
             for page in pages:
                 if tab_title.lower() in (await page.title()).lower():
                     await page.close()
@@ -3374,13 +3675,19 @@ async def close_tab(step_data):
         else:
             # Close current tab
             if current_page:
+                current_index = pages.index(current_page) if current_page in pages else len(pages) - 1
                 await current_page.close()
                 CommonUtil.ExecLog(sModuleInfo, "Closed current tab", 1)
 
         # Switch to remaining tab if available
         pages = context.pages
         if pages:
-            current_page = pages[-1]
+            if 'current_index' in locals() and current_index > 0 and current_index - 1 < len(pages):
+                current_page = pages[current_index - 1]
+            elif 'current_index' in locals():
+                current_page = pages[0]
+            else:
+                current_page = pages[-1]
             sr.Set_Shared_Variables("playwright_page", current_page)
             if current_page_id:
                 sessions = get_browser_sessions()
@@ -3667,6 +3974,12 @@ async def Handle_Browser_Alert(step_data):
 
             if "action" in mid_l:
                 action = right_v.lower()
+                if action.startswith("get text") and "=" in action:
+                    save_variable = right_v.split("=", 1)[1].strip()
+                    action = "accept"
+                elif action.startswith("send text") and "=" in action:
+                    prompt_text = right_v.split("=", 1)[1].strip()
+                    action = "accept"
             elif mid_l == "input parameter":
                 if left_l in ("prompt text", "text", "send text"):
                     prompt_text = right_v
@@ -3679,16 +3992,16 @@ async def Handle_Browser_Alert(step_data):
         try:
             dialog = await current_page.wait_for_event("dialog", timeout=timeout)
         except PlaywrightTimeoutError:
-            CommonUtil.ExecLog(sModuleInfo, "No alert appeared within timeout", 2)
-            return "passed"  # Not necessarily a failure
+            CommonUtil.ExecLog(sModuleInfo, "No alert appeared within timeout", 3)
+            return "zeuz_failed"
 
         message = dialog.message
-        if action in ("accept", "ok", "yes"):
+        if action in ("accept", "pass", "ok", "yes"):
             if prompt_text:
                 await dialog.accept(prompt_text)
             else:
                 await dialog.accept()
-        elif action in ("dismiss", "cancel", "no"):
+        elif action in ("dismiss", "reject", "fail", "cancel", "no"):
             await dialog.dismiss()
         else:
             await dialog.accept()
@@ -3899,7 +4212,11 @@ async def take_screenshot_playwright(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "element parameter":
+            if _is_action_mid(mid_l) and left_l == "take screenshot web":
+                if not _is_placeholder(right_v, "take screenshot web"):
+                    custom_path = time.strftime(right_v) + ".png"
+                    image_type = "png"
+            elif mid_l == "element parameter":
                 has_element = True
             elif mid_l == "optional parameter":
                 if left_l in ("fullscreen", "full page", "fullpage"):
@@ -3927,7 +4244,10 @@ async def take_screenshot_playwright(step_data):
                 screenshot_path = str(Path(screenshot_path).with_suffix(".jpg" if image_type == "jpeg" else ".png"))
         else:
             timestamp = time.strftime("%Y_%m_%d_%H-%M-%S")
-            screenshot_path = f"screenshot_{timestamp}.{'jpg' if image_type == 'jpeg' else 'png'}"
+            screenshot_path = str(Path(_screenshot_folder()) / f"screenshot_{timestamp}.{'jpg' if image_type == 'jpeg' else 'png'}")
+
+        if not Path(screenshot_path).is_absolute():
+            screenshot_path = str(Path(_screenshot_folder()) / screenshot_path)
 
         screenshot_options = {"path": screenshot_path, "type": image_type}
         if image_type == "jpeg":
@@ -3946,6 +4266,7 @@ async def take_screenshot_playwright(step_data):
 
         if save_variable:
             sr.Set_Shared_Variables(save_variable, screenshot_path)
+        sr.Set_Shared_Variables("zeuz_screenshot", Path(screenshot_path).name)
 
         CommonUtil.ExecLog(sModuleInfo, f"Screenshot saved: {screenshot_path}", 1)
         return "passed"
@@ -3996,14 +4317,14 @@ async def execute_javascript(step_data):
 
             if _is_session_step_row(left, mid):
                 continue
-            if mid_l in ("playwright action", "selenium action"):
-                continue
-            if "javascript" in left_l:
+            if "javascript" in left_l or (_is_action_mid(mid_l) and left_l == "execute javascript"):
                 js_code = right_v
             elif _is_element_parameter_mid(mid):
                 has_element = True
             elif mid_l == "save parameter":
                 save_variable = left.strip()
+            elif mid_l == "optional parameter" and left_l == "variable":
+                save_variable = right_v
 
         if not js_code:
             CommonUtil.ExecLog(sModuleInfo, "No JavaScript code provided", 3)
@@ -4015,8 +4336,14 @@ async def execute_javascript(step_data):
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
-            result = await locator.evaluate(js_code)
+            if "$elem" in js_code:
+                element_script = js_code.replace("$elem", "el")
+                result = await locator.evaluate(f"el => {{ {element_script} }}")
+            else:
+                result = await locator.evaluate(js_code)
         else:
+            if js_code.strip().startswith("return "):
+                js_code = f"() => {{ {js_code} }}"
             result = await current_page.evaluate(js_code)
 
         if save_variable:
@@ -4063,7 +4390,9 @@ async def upload_file(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
+            if _is_action_mid(mid_l) and left_l == "upload file" and not _is_placeholder(right_v, "upload file"):
+                file_path = right_v
+            elif mid_l == "input parameter":
                 if left_l in ("file path", "filepath", "file", "path"):
                     file_path = right_v
 
@@ -4090,6 +4419,81 @@ async def upload_file(step_data):
         CommonUtil.ExecLog(sModuleInfo, f"File uploaded: {file_path}", 1)
         return "passed"
 
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+async def copy_image_into_browser(data_set):
+    """Copy a PNG/SVG image into the browser clipboard."""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global current_page, context
+
+    try:
+        if current_page is None:
+            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+            return "zeuz_failed"
+
+        image_path = ""
+        variable_name = ""
+        for left, mid, right in data_set:
+            left_c = _compact(left)
+            right_v = right.strip()
+            if left_c == "imagefile":
+                image_path = right_v if os.path.exists(right_v) else CommonUtil.path_parser(right_v)
+            elif left_c == "imagevariable":
+                if os.path.exists(right_v):
+                    image_path = right_v
+                else:
+                    variable_name = right_v
+
+        if not image_path and variable_name:
+            image_path = sr.Get_Shared_Variables(variable_name)
+        if not image_path:
+            CommonUtil.ExecLog(sModuleInfo, "Must provide either 'image file' or 'image variable'", 3)
+            return "zeuz_failed"
+        if not os.path.exists(image_path):
+            CommonUtil.ExecLog(sModuleInfo, f"Image file not found: {image_path}", 3)
+            return "zeuz_failed"
+
+        image_l = image_path.lower()
+        if image_l.endswith(".svg"):
+            mime_type = "image/svg+xml"
+        elif image_l.endswith(".png"):
+            mime_type = "image/png"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unsupported file format. You can copy only PNG or SVG image.", 2)
+            return "zeuz_failed"
+
+        if context:
+            try:
+                parsed = urlparse(current_page.url)
+                origin = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else None
+                await context.grant_permissions(["clipboard-read", "clipboard-write"], origin=origin)
+            except Exception:
+                pass
+
+        image_b64 = base64.b64encode(Path(image_path).read_bytes()).decode("utf-8")
+        success = await current_page.evaluate("""async ({ imageB64, mimeType }) => {
+            const byteCharacters = atob(imageB64);
+            const byteArrays = [];
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+                byteArrays.push(new Uint8Array(byteNumbers));
+            }
+            const blob = new Blob(byteArrays, { type: mimeType });
+            window.focus();
+            await navigator.clipboard.write([new ClipboardItem({ [mimeType]: blob })]);
+            return true;
+        }""", {"imageB64": image_b64, "mimeType": mime_type})
+        if success:
+            CommonUtil.ExecLog(sModuleInfo, f"Image copied to clipboard: {image_path}", 1)
+            return "passed"
+        CommonUtil.ExecLog(sModuleInfo, f"Failed to copy image to clipboard: {image_path}", 3)
+        return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -4127,7 +4531,7 @@ async def resize_window(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "input parameter":
+            if mid_l in ("input parameter", "element parameter"):
                 if left_l == "width":
                     # Handle percentage
                     if "%" in right_v:
@@ -4354,6 +4758,120 @@ async def Stop_Tracing(step_data):
 
 
 @logger
+async def capture_network_log(step_data):
+    """Capture request/response metadata and save filtered network logs."""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global current_page, current_page_id, network_log_details
+
+    def parse_status_codes(code_str):
+        result = []
+        for part in code_str.split(","):
+            part = part.strip()
+            if "-" in part:
+                start, end = map(int, part.split("-"))
+                result.extend(range(start, end + 1))
+            elif part:
+                result.append(int(part))
+        return result
+
+    try:
+        if current_page is None:
+            CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
+            return "zeuz_failed"
+
+        params = {
+            "variable_name": None,
+            "mode": None,
+            "filter_domains": [],
+            "status_filter": [],
+            "method_filter": [],
+            "include_body": False,
+        }
+        for left, mid, right in step_data:
+            left_l = left.lower().strip()
+            if left_l == "capture network log":
+                params["mode"] = right.lower().strip()
+            elif left_l == "save":
+                params["variable_name"] = right.strip()
+            elif left_l == "filter domain":
+                params["filter_domains"] = [d.strip() for d in right.split(",")]
+            elif left_l == "include status code":
+                params["status_filter"] = parse_status_codes(right.strip())
+            elif left_l == "include request method":
+                params["method_filter"] = [m.strip().upper() for m in right.split(",")]
+            elif left_l == "include response body":
+                params["include_body"] = _truthy(right)
+
+        session_key = current_page_id or "default"
+        if params["mode"] == "start":
+            requests = {}
+            events = []
+
+            async def on_request(request):
+                requests[id(request)] = request
+
+            async def on_response(response):
+                request = response.request
+                entry = {
+                    "url": response.url,
+                    "status": response.status,
+                    "method": request.method,
+                    "mimeType": response.headers.get("content-type", ""),
+                    "type": request.resource_type,
+                    "timestamp": time.time(),
+                }
+                if params["include_body"]:
+                    try:
+                        entry["body"] = await response.text()
+                    except Exception:
+                        entry["body"] = "Unavailable"
+                events.append(entry)
+
+            current_page.on("request", on_request)
+            current_page.on("response", on_response)
+            network_log_details[session_key] = {"events": events, "on_request": on_request, "on_response": on_response}
+            CommonUtil.ExecLog(sModuleInfo, "Started collecting network logs...", 1)
+            return "passed"
+
+        if params["mode"] == "stop":
+            state = network_log_details.pop(session_key, {"events": []})
+            try:
+                current_page.remove_listener("request", state.get("on_request"))
+                current_page.remove_listener("response", state.get("on_response"))
+            except Exception:
+                pass
+
+            excluded_ext = (".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".eot", ".webp", ".map", ".txt")
+            excluded_mime = ("image/", "font/", "text/css", "application/javascript", "text/javascript", "application/font-", "application/x-font-")
+            api_logs = []
+            for entry in state.get("events", []):
+                url = entry.get("url", "")
+                mime_type = entry.get("mimeType", "")
+                if any(url.endswith(ext) for ext in excluded_ext) or any(mime_type.startswith(prefix) for prefix in excluded_mime):
+                    continue
+                if params["filter_domains"]:
+                    domain = urlparse(url).netloc
+                    if not any(d in domain for d in params["filter_domains"]):
+                        continue
+                if params["method_filter"] and entry.get("method", "").upper() not in params["method_filter"]:
+                    continue
+                if params["status_filter"] and entry.get("status") not in params["status_filter"]:
+                    continue
+                api_logs.append(entry)
+
+            if params["variable_name"]:
+                sr.Set_Shared_Variables(params["variable_name"], api_logs)
+                CommonUtil.ExecLog(sModuleInfo, f"Saved {len(api_logs)} network events to '{params['variable_name']}'", 1)
+            return "passed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Mode must be start or stop", 3)
+        return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not collect network logs")
+
+
+@logger
 async def Intercept_Network(step_data):
     """
     Set up network request interception.
@@ -4449,7 +4967,9 @@ async def Extract_Table_Data(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "save parameter":
+            if _is_action_mid(mid_l) and left_l == "extract table data" and not _is_placeholder(right_v, "extract table data"):
+                save_variable = right_v
+            elif mid_l == "save parameter":
                 save_variable = left.strip()
             elif mid_l == "optional parameter":
                 if left_l == "row":
@@ -4478,6 +4998,17 @@ async def Extract_Table_Data(step_data):
             });
             return data;
         }""")
+
+        if row_filter and "," not in row_filter and "-" not in row_filter:
+            try:
+                table_data = [table_data[int(row_filter.replace(" ", ""))]]
+            except Exception:
+                table_data = eval("table_data[%s]" % row_filter.replace(" ", ""))
+        if col_filter and "," not in col_filter and "-" not in col_filter:
+            try:
+                table_data = [[row[int(col_filter.replace(" ", ""))]] for row in table_data]
+            except Exception:
+                table_data = [eval("row[%s]" % col_filter.replace(" ", "")) for row in table_data]
 
         if save_variable:
             sr.Set_Shared_Variables(save_variable, table_data)
