@@ -1856,7 +1856,7 @@ def Enter_Text_In_Text_Box(step_data):
             # Skip session parameter - already handled above
             if left == "session" and mid == "optional parameter":
                 continue
-            if mid == "action":
+            if "action" in mid:
                 text_value = right
             elif left == "delay":
                 delay = float(right.strip())
