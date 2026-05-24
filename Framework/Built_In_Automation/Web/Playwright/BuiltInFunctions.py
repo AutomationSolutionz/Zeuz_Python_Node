@@ -885,7 +885,7 @@ async def Click_Element(step_data):
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
 
-            elif mid_l == "action":
+            elif "action" in mid_l:
                 if "double" in left_l:
                     double_click = True
                 elif "right" in left_l:
@@ -944,7 +944,7 @@ async def Double_Click_Element(step_data):
     modified_step_data = list(step_data)
     # Ensure the action indicates double click
     for i, (left, mid, right) in enumerate(modified_step_data):
-        if mid.strip().lower() == "action":
+        if "action" in mid.strip().lower():
             modified_step_data[i] = ("double click", mid, right)
             break
 
@@ -963,7 +963,7 @@ async def Right_Click_Element(step_data):
     """
     modified_step_data = list(step_data)
     for i, (left, mid, right) in enumerate(modified_step_data):
-        if mid.strip().lower() == "action":
+        if "action" in mid.strip().lower():
             modified_step_data[i] = ("right click", mid, right)
             break
 
@@ -1078,7 +1078,7 @@ async def Enter_Text_In_Text_Box(step_data):
             if mid_l == "optional parameter" and left_l == "session":
                 continue
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 text_value = right  # Don't strip - preserve whitespace
             elif mid_l == "optional parameter":
                 if left_l == "delay":
@@ -1171,7 +1171,7 @@ async def Keystroke_For_Element(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if left_l == "keystroke keys":
                     keystroke_type = "keys"
                     keystroke_value = right_v
@@ -1320,7 +1320,7 @@ async def Validate_Text(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if left_l.startswith("**"):
                     partial_match = True
                     case_insensitive = True
@@ -1606,7 +1606,7 @@ async def Navigate(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip().lower()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 direction = right_v
             elif mid_l == "optional parameter":
                 if left_l == "timeout":
@@ -1830,7 +1830,7 @@ async def Select_Deselect(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if "deselect" in left_l:
                     is_deselect = True
 
@@ -1916,7 +1916,7 @@ async def check_uncheck(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip().lower()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 if "uncheck" in left_l or "uncheck" in right_v:
                     action = "uncheck"
                 else:
@@ -2338,7 +2338,7 @@ async def Handle_Browser_Alert(step_data):
             mid_l = mid.strip().lower()
             right_v = right.strip()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 action = right_v.lower()
             elif mid_l == "input parameter":
                 if left_l in ("prompt text", "text", "send text"):
@@ -2575,7 +2575,7 @@ async def execute_javascript(step_data):
             left_l = left.strip().lower()
             mid_l = mid.strip().lower()
 
-            if mid_l == "action":
+            if "action" in mid_l:
                 js_code = right
             elif mid_l == "element parameter":
                 has_element = True
@@ -2938,7 +2938,7 @@ async def Intercept_Network(step_data):
                     response_body = right_v
                 elif left_l == "response status":
                     response_status = int(right_v)
-            elif mid_l == "action":
+            elif "action" in mid_l:
                 action = right_v.lower()
 
         async def handle_route(route):
