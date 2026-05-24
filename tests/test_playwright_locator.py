@@ -55,6 +55,9 @@ class FakeLocator:
     async def text_content(self):
         return self.text
 
+    async def inner_text(self):
+        return self.text
+
     async def evaluate(self, script):
         return '<button id="save">Save</button>'
 
@@ -225,7 +228,78 @@ def test_shadow_dom_builder_uses_sr_rows_and_css_query_chain():
     result = playwright_locator._build_shadow_dom_locator(page, params)
 
     assert result.query_type == "shadow css"
-    assert result.query == '*[id="host"] >> button[data-action="save"]'
+    assert result.query == 'xpath=//*[@id="host"] >> button[data-action="save"]'
+
+
+def test_raw_xpath_ignores_additional_constraints_like_selenium():
+    fake_locator = FakeLocator(count=1)
+    page = FakePage(fake_locator)
+    params = playwright_locator._parse_element_params(
+        [
+            ("xpath", "element parameter", "//button[@id='save']"),
+            ("text", "element parameter", "Ignored"),
+        ]
+    )
+
+    result = playwright_locator._build_locator(page, params["all_rows"], params)
+
+    assert result.query_type == "xpath"
+    assert page.queries == ["xpath=//button[@id='save']"]
+
+
+def test_allow_hidden_does_not_apply_visible_filter():
+    params = playwright_locator._parse_element_params(
+        [
+            ("tag", "element parameter", "button"),
+            ("allow hidden", "optional parameter", "yes"),
+        ]
+    )
+    root = FakeLocator(count=2)
+
+    result = asyncio.run(playwright_locator._resolve_single(root, params, 1000, "test"))
+
+    assert isinstance(result, FakeLocator)
+    assert result.filtered is False
+
+
+def test_resolve_single_negative_index():
+    params = playwright_locator._parse_element_params(
+        [
+            ("tag", "element parameter", "button"),
+            ("index", "element parameter", "-1"),
+        ]
+    )
+    root = FakeLocator(count=4)
+
+    result = asyncio.run(playwright_locator._resolve_single(root, params, 1000, "test"))
+
+    assert isinstance(result, FakeLocator)
+    assert result.nth_index == 3
+
+
+def test_shadow_dom_rejects_duplicate_sr_indices():
+    params = playwright_locator._parse_element_params(
+        [
+            ("id", "sr 1 element parameter", "host-a"),
+            ("class", "sr 1 element parameter", "host-b"),
+            ("tag", "element parameter", "button"),
+        ]
+    )
+    page = FakePage(FakeLocator())
+
+    assert playwright_locator._build_shadow_dom_locator(page, params) is None
+
+
+def test_shadow_dom_rejects_text_selector():
+    params = playwright_locator._parse_element_params(
+        [
+            ("text", "sr 1 element parameter", "Host"),
+            ("tag", "element parameter", "button"),
+        ]
+    )
+    page = FakePage(FakeLocator())
+
+    assert playwright_locator._build_shadow_dom_locator(page, params) is None
 
 
 def test_text_filter_matches_normalized_nbsp_text():
