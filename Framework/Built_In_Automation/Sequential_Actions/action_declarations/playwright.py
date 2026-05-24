@@ -11,6 +11,7 @@ Author: Zeuz/AutomationSolutionz
 declarations = (
     # Browser Management
     { "name": "open browser",                  "function": "Open_Browser",               "screenshot": "web" },
+    { "name": "open electron app",             "function": "Open_Electron_App",          "screenshot": "web" },
     { "name": "go to link",                    "function": "Go_To_Link",                 "screenshot": "web" },
     { "name": "tear down browser",             "function": "Tear_Down_Playwright",       "screenshot": "none" },
     { "name": "teardown",                      "function": "Tear_Down_Playwright",       "screenshot": "none" },
@@ -34,6 +35,7 @@ declarations = (
 
     # Element Information
     { "name": "save attribute",                "function": "Save_Attribute",             "screenshot": "web" },
+    { "name": "change attribute value",        "function": "Change_Attribute_Value",       "screenshot": "web" },
     { "name": "get element info",              "function": "get_element_info",           "screenshot": "web" },
     { "name": "extract table data",            "function": "Extract_Table_Data",         "screenshot": "web" },
 
@@ -45,6 +47,11 @@ declarations = (
     { "name": "scroll",                        "function": "Scroll",                     "screenshot": "web" },
     { "name": "scroll to element",             "function": "scroll_to_element",          "screenshot": "web" },
     { "name": "scroll element to top",         "function": "scroll_to_element",          "screenshot": "web" },
+    { "name": "scroll to top",                 "function": "scroll_to_top",              "screenshot": "web" },
+
+    # Lists / attributes
+    { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
+    { "name": "save web elements in list",     "function": "save_web_elements_in_list",     "screenshot": "web" },
 
     # Selection (Dropdowns/Checkboxes)
     { "name": "select by visible text",        "function": "Select_Deselect",            "screenshot": "web" },
@@ -55,6 +62,7 @@ declarations = (
     { "name": "deselect by index",             "function": "Select_Deselect",            "screenshot": "web" },
     { "name": "deselect all",                  "function": "Select_Deselect",            "screenshot": "web" },
     { "name": "check uncheck",                 "function": "check_uncheck",              "screenshot": "web" },
+    { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",        "screenshot": "web" },
 
     # Window/Tab Management
     { "name": "switch window",                 "function": "switch_window_or_tab",       "screenshot": "web" },
