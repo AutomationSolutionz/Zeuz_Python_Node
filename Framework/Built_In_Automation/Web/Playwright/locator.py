@@ -30,9 +30,40 @@ class LocatorBuildResult:
     query: Any
 
 
-async def Get_Element(step_data, page, return_all=False, element_wait=None, frame_locator=None, return_all_elements=False):
+async def Get_Element(
+    step_data,
+    page,
+    return_all=False,
+    element_wait=None,
+    frame_locator=None,
+    parent_locator=None,
+    return_all_elements=False,
+):
     """
     Resolve Zeuz step-data to a Playwright Locator.
+
+    This function parses the same step_data format as LocateElement.Get_Element()
+    but uses Playwright's Locator API for execution, preserving auto-wait and
+    lazy evaluation benefits.
+
+    Args:
+        step_data: List of (left, mid, right) tuples - standard Zeuz format
+        page: Playwright Page object
+        return_all: If True, return list of all matching ElementHandles
+        element_wait: Override default wait timeout (in seconds)
+        frame_locator: Optional frame locator for iframe context
+        parent_locator: Optional Locator to scope the search under a container element
+
+    Returns:
+        Locator | List[ElementHandle] | "zeuz_failed"
+
+    Example:
+        step_data = [
+            ("id", "element parameter", "submit-btn"),
+            ("click", "playwright action", "click"),
+        ]
+        locator = Get_Element(step_data, page)
+        locator.click()  # Auto-waits for element
 
     The returned object intentionally mirrors Selenium LocateElement.Get_Element()
     semantics where possible: visible elements are preferred by default, multiple
@@ -70,7 +101,7 @@ async def Get_Element(step_data, page, return_all=False, element_wait=None, fram
             return "zeuz_failed"
 
         timeout = _resolve_timeout(params, element_wait)
-        build_result = _build_locator(page, step_data, params, frame_locator)
+        build_result = _build_locator(page, step_data, params, frame_locator, parent_locator)
         if build_result is None or build_result.locator is None:
             CommonUtil.ExecLog(sModuleInfo, "Could not build locator from step data", 3)
             return "zeuz_failed"
@@ -158,7 +189,8 @@ def _parse_element_params(step_data):
                 params["parse_error"] = "Use '%| |%' sign at right column to get variable value"
             continue
 
-        if mid_lower == "optional parameter":
+        # Optional parameters
+        if mid_lower in ("optional parameter", "option"):
             if left_lower == "allow hidden":
                 params["allow_hidden"] = _truthy(right_stripped)
             elif left_lower == "allow disable":
@@ -229,8 +261,28 @@ def _parse_element_params(step_data):
     return params
 
 
-def _build_locator(page, step_data, params, frame_locator=None):
-    base_locator = frame_locator if frame_locator else page
+def _build_locator(page, step_data, params, frame_locator=None, parent_locator=None):
+    """
+    Build a Playwright Locator from step data.
+
+    Attempts these strategies in order:
+    1. Playwright-native selectors (test-id, role, text, etc.) - fastest
+    2. Direct xpath/css if provided
+    3. Build xpath from element parameters using existing logic
+    
+    Args:
+        page: Playwright Page object
+        step_data: Step data for building xpath
+        params: Parsed element parameters
+        frame_locator: Optional frame locator for iframe context
+        parent_locator: Scope search within this locator (overrides frame when both set).
+    """
+
+    # Parent scope wins, then iframe, then full page.
+    if parent_locator is not None:
+        base_locator = parent_locator
+    else:
+        base_locator = frame_locator if frame_locator else page
 
     if params["shadow_root_params"]:
         return _build_shadow_dom_locator(base_locator, params)
