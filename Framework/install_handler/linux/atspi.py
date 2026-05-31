@@ -1,3 +1,4 @@
+import asyncio
 import os
 from Framework.install_handler.install_log_config import get_logger
 from Framework.install_handler.utils import send_response
@@ -78,7 +79,7 @@ async def check_status():
         return False
 
     packages = PACKAGES.get(package_manager, [])
-    if check_all_packages_installed(package_manager, packages):
+    if await asyncio.to_thread(check_all_packages_installed, package_manager, packages):
         await send_response(
             {
                 "action": "status",
@@ -158,8 +159,8 @@ async def install(user_password: str = ""):
             }
         )
 
-        success, error_msg = install_packages(
-            package_manager, packages, user_password, timeout=3600
+        success, error_msg = await asyncio.to_thread(
+            install_packages, package_manager, packages, user_password, 3600
         )
 
         if success:
