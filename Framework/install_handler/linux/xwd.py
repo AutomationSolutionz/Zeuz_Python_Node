@@ -1,3 +1,4 @@
+import asyncio
 import os
 from Framework.install_handler.utils import send_response
 from .linux_utils import (
@@ -62,7 +63,7 @@ async def check_status():
         return False
 
     packages = PACKAGES.get(package_manager, [])
-    if check_all_packages_installed(package_manager, packages):
+    if await asyncio.to_thread(check_all_packages_installed, package_manager, packages):
         await send_response(
             {
                 "action": "status",
@@ -141,8 +142,8 @@ async def install(user_password: str = ""):
             }
         )
 
-        success, error_msg = install_packages(
-            package_manager, packages, user_password, timeout=300
+        success, error_msg = await asyncio.to_thread(
+            install_packages, package_manager, packages, user_password, 300
         )
 
         if success:

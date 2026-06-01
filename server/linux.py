@@ -22,6 +22,13 @@ class InspectorResponse(BaseModel):
     error: str | None = None
 
 
+class LinuxAppInfo(BaseModel):
+    """Basic application metadata exposed by /apps."""
+
+    pid: str
+    name: str
+
+
 @router.get("/inspect")
 def inspect(app_name: str | None = None):
     """Get the Linux UI DOM and screenshot."""
@@ -65,6 +72,26 @@ def inspect(app_name: str | None = None):
             status="error",
             error=str(e)
         )
+
+
+@router.get("/apps", response_model=list[LinuxAppInfo])
+def get_apps():
+    """Return available Linux applications visible to AT-SPI."""
+    from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
+    if BuiltInFunctions is None:
+        return []
+
+    try:
+        apps = []
+        raw_apps = BuiltInFunctions._get_atspi_apps()
+        # raw_apps: {pid: name}
+        for pid, name in raw_apps.items():
+            if name:
+                apps.append(LinuxAppInfo(pid=str(pid), name=name))
+
+        return sorted(apps, key=lambda app: app.name.lower())
+    except Exception:
+        return []
 
 
 async def upload_linux_ui_dump():
