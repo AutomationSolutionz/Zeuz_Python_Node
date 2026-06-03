@@ -1,6 +1,9 @@
 import hashlib
+import inspect
 import socket
+import sys
 
+from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
@@ -135,3 +138,228 @@ def get_browser_session(session_name: str) -> dict:
     
     browser_sessions = get_browser_sessions()
     return browser_sessions.get(session_name, {})
+
+
+def _find_session_name_by_object(key: str, value) -> str | None:
+    """Return the session name that owns the given browser object."""
+
+    if value is None:
+        return None
+
+    for name, session in get_browser_sessions().items():
+        if isinstance(session, dict) and session.get(key) is value:
+            return name
+
+    return None
+
+
+def _resolve_browser_session_name(step_data=None) -> str | None:
+    """Resolve the browser session to hydrate for custom Python code."""
+
+    session_name = extract_session_name(step_data)
+    if session_name:
+        return session_name
+
+    active_type = sr.shared_variables.get("active_web_driver_type")
+    if active_type == "playwright":
+        session_name = _find_session_name_by_object(
+            "playwright_page", sr.shared_variables.get("playwright_page")
+        )
+        if session_name:
+            return session_name
+    elif active_type == "selenium":
+        session_name = _find_session_name_by_object(
+            "selenium_driver", sr.shared_variables.get("selenium_driver")
+        )
+        if session_name:
+            return session_name
+
+    session_name = _find_session_name_by_object(
+        "playwright_page", sr.shared_variables.get("playwright_page")
+    )
+    if session_name:
+        return session_name
+
+    session_name = _find_session_name_by_object(
+        "selenium_driver", sr.shared_variables.get("selenium_driver")
+    )
+    if session_name:
+        return session_name
+
+    if "default" in get_browser_sessions():
+        return "default"
+
+    return None
+
+
+def _set_browser_shared_variables(session: dict):
+    """Hydrate canonical browser shared variables from a session."""
+
+    if session.get("selenium_driver") is not None:
+        sr.Set_Shared_Variables(
+            "selenium_driver", session["selenium_driver"], print_variable=False
+        )
+    if session.get("playwright_page") is not None:
+        sr.Set_Shared_Variables(
+            "playwright_page", session["playwright_page"], print_variable=False
+        )
+    if session.get("playwright_context") is not None:
+        sr.Set_Shared_Variables(
+            "playwright_context", session["playwright_context"], print_variable=False
+        )
+    if session.get("playwright_browser") is not None:
+        sr.Set_Shared_Variables(
+            "playwright_browser", session["playwright_browser"], print_variable=False
+        )
+    if session.get("playwright_frame") is not None:
+        sr.Set_Shared_Variables(
+            "playwright_frame", session["playwright_frame"], print_variable=False
+        )
+
+
+def _restore_active_web_driver_type(previous_active_type):
+    if previous_active_type:
+        sr.Set_Shared_Variables(
+            "active_web_driver_type",
+            previous_active_type,
+            print_variable=False,
+        )
+    else:
+        sr.Remove_From_Shared_Variables("active_web_driver_type")
+
+
+def _align_selenium_to_playwright_page(session: dict):
+    selenium_driver = session.get("selenium_driver")
+    playwright_page = session.get("playwright_page")
+    target_url = getattr(playwright_page, "url", None)
+
+    if not selenium_driver or not target_url:
+        return
+
+    try:
+        current_handle = selenium_driver.current_window_handle
+        for handle in selenium_driver.window_handles:
+            selenium_driver.switch_to.window(handle)
+            if selenium_driver.current_url == target_url:
+                return
+        selenium_driver.switch_to.window(current_handle)
+    except Exception:
+        pass
+
+
+async def _align_playwright_to_selenium_window(session_name: str, session: dict):
+    selenium_driver = session.get("selenium_driver")
+    playwright_context = session.get("playwright_context")
+
+    if not selenium_driver or not playwright_context:
+        return
+
+    try:
+        target_url = selenium_driver.current_url
+    except Exception:
+        return
+
+    if not target_url:
+        return
+
+    try:
+        for page in playwright_context.pages:
+            if page.url == target_url:
+                session["playwright_page"] = page
+                sessions = get_browser_sessions()
+                if session_name in sessions:
+                    sessions[session_name]["playwright_page"] = page
+                    sr.Set_Shared_Variables(
+                        "browser_sessions", sessions, print_variable=False
+                    )
+                return
+    except Exception:
+        pass
+
+
+async def hydrate_browser_compatibility_globals(step_data=None):
+    """
+    Populate canonical Selenium/Playwright shared variables for custom Python.
+
+    This uses the existing lazy CDP bridge in the Selenium and Playwright action
+    modules. It intentionally does not create user-facing convenience aliases.
+    """
+
+    sModuleInfo = "hydrate_browser_compatibility_globals : Web.utils"
+    session_name = _resolve_browser_session_name(step_data)
+    if not session_name:
+        return "passed"
+
+    session = get_browser_session(session_name)
+    if not isinstance(session, dict) or not session:
+        CommonUtil.ExecLog(
+            sModuleInfo, f"Browser session '{session_name}' not found", 2
+        )
+        return "zeuz_failed"
+
+    previous_active_type = sr.shared_variables.get("active_web_driver_type")
+
+    try:
+        if session.get("playwright_page") and not session.get("selenium_driver"):
+            if session.get("selenium_cdp_supported") is False:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Selenium compatibility is only supported for Chromium Playwright sessions: {session_name}",
+                    2,
+                )
+            else:
+                from Framework.Built_In_Automation.Web.Selenium import (
+                    BuiltInFunctions as SeleniumBuiltInFunctions,
+                )
+
+                result = SeleniumBuiltInFunctions._ensure_selenium_session(
+                    session_name, session
+                )
+                if inspect.isawaitable(result):
+                    result = await result
+                if result in ("zeuz_failed", "failed", False):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"Could not hydrate Selenium globals for browser session '{session_name}'",
+                        2,
+                    )
+
+        session = get_browser_session(session_name)
+        if session.get("selenium_driver") and not session.get("playwright_page"):
+            if session.get("remote_debugging_port"):
+                from Framework.Built_In_Automation.Web.Playwright import (
+                    BuiltInFunctions as PlaywrightBuiltInFunctions,
+                )
+
+                result = await PlaywrightBuiltInFunctions._ensure_playwright_session(
+                    session_name, session
+                )
+                if result in ("zeuz_failed", "failed", False):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"Could not hydrate Playwright globals for browser session '{session_name}'",
+                        2,
+                    )
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Playwright compatibility requires a remote debugging port for session '{session_name}'",
+                    2,
+                )
+
+        session = get_browser_session(session_name)
+        if isinstance(session, dict):
+            _align_selenium_to_playwright_page(session)
+            await _align_playwright_to_selenium_window(session_name, session)
+
+        if isinstance(session, dict):
+            _set_browser_shared_variables(session)
+
+        _restore_active_web_driver_type(previous_active_type)
+
+        CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
+        return "passed"
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        _restore_active_web_driver_type(previous_active_type)
+        return "zeuz_failed"
