@@ -29,6 +29,7 @@ import time
 import base64
 from pathlib import Path
 from urllib.parse import urlparse
+import requests
 
 from playwright.async_api import (
     async_playwright,
@@ -41,6 +42,7 @@ from playwright.async_api import (
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Utilities.decorators import logger
+from settings import ZEUZ_NODE_DOWNLOADS_DIR
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
@@ -144,6 +146,34 @@ def _save_current_playwright_frame(frame_locator):
             sr.Set_Shared_Variables("browser_sessions", sessions)
 
 
+def _get_installed_cft_chromedriver(browser_version):
+    system = platform.system().lower()
+    arch = platform.machine().lower()
+
+    if system == "windows":
+        platform_key = "win64" if arch in ("amd64", "x86_64") else "win32"
+        executable = "chromedriver.exe"
+    elif system == "darwin":
+        platform_key = "mac-arm64" if arch == "arm64" else "mac-x64"
+        executable = "chromedriver"
+    elif system == "linux":
+        platform_key = "linux64"
+        executable = "chromedriver"
+    else:
+        return None
+
+    driver_path = (
+        ZEUZ_NODE_DOWNLOADS_DIR
+        / "chrome_for_testing"
+        / "versions"
+        / browser_version
+        / "driver"
+        / f"chromedriver-{platform_key}"
+        / executable
+    )
+    return str(driver_path) if driver_path.exists() else None
+
+
 async def _activate_browser_session_for_action(step_data, function_name=None):
     """Select the requested browser session before running Playwright actions."""
 
@@ -178,11 +208,45 @@ def connect_selenium_to_playwright(port=9222):
     try:
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        from webdriver_manager.chrome import ChromeDriverManager
         
         options = Options()
         options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
-        
-        driver = webdriver.Chrome(options=options)
+
+        service = None
+        try:
+            response = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=5)
+            response.raise_for_status()
+            browser_version = (
+                response.json()
+                .get("Browser", "")
+                .split("/", 1)[-1]
+                .strip()
+            )
+            if browser_version:
+                driver_path = _get_installed_cft_chromedriver(browser_version)
+                if not driver_path:
+                    driver_path = ChromeDriverManager(
+                        driver_version=browser_version
+                    ).install()
+                service = Service(executable_path=driver_path)
+                CommonUtil.ExecLog(
+                    "connect_selenium_to_playwright",
+                    f"Using ChromeDriver matching browser version {browser_version}",
+                    1,
+                )
+        except Exception:
+            CommonUtil.ExecLog(
+                "connect_selenium_to_playwright",
+                "Could not resolve matching ChromeDriver for Playwright browser; falling back to Selenium Manager",
+                2,
+            )
+
+        if service:
+            driver = webdriver.Chrome(service=service, options=options)
+        else:
+            driver = webdriver.Chrome(options=options)
         
         from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
         SeleniumBuiltInFunctions.selenium_driver = driver
