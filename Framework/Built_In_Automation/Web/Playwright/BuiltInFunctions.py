@@ -1338,15 +1338,6 @@ async def Click_Element(step_data, retry=0):
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
 
-        # JS click - matches Selenium use_js behavior (true HTMLElement.click() via JS)
-        if use_js:
-            try:
-                await locator.evaluate("el => el.click()", timeout=action_timeout)
-                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element via JS", 1)
-                return "passed"
-            except Exception:
-                return CommonUtil.Exception_Handler(sys.exc_info())
-
         # Build click options
         click_options = {}
         if modifiers:
@@ -1361,12 +1352,16 @@ async def Click_Element(step_data, retry=0):
         # Perform click
         try:
             if double_click:
+                await locator.hover(timeout=action_timeout)
                 await locator.dblclick(**{k: v for k, v in click_options.items() if k != "click_count"})
                 CommonUtil.ExecLog(sModuleInfo, "Double click performed", 1)
             elif right_click:
                 click_options["button"] = "right"
                 await locator.click(**click_options)
                 CommonUtil.ExecLog(sModuleInfo, "Right click performed", 1)
+            elif use_js:
+                await locator.evaluate("el => el.click()", timeout=action_timeout)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element via JS", 1)
             else:
                 await locator.click(**click_options)
                 CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
