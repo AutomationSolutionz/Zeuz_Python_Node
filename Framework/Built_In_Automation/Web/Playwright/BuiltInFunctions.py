@@ -1805,13 +1805,18 @@ async def Keystroke_For_Element(step_data):
             "DELETE": "Delete",
             "SPACE": " ",
             "UP": "ArrowUp",
+            "ARROWUP": "ArrowUp",
             "DOWN": "ArrowDown",
+            "ARROWDOWN": "ArrowDown",
             "LEFT": "ArrowLeft",
+            "ARROWLEFT": "ArrowLeft",
             "RIGHT": "ArrowRight",
+            "ARROWRIGHT": "ArrowRight",
             "HOME": "Home",
             "END": "End",
             "PAGEUP": "PageUp",
             "PAGEDOWN": "PageDown",
+            "INSERT": "Insert",
         }
 
         if keystroke_type == "keys":
@@ -1849,14 +1854,20 @@ async def Keystroke_For_Element(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "JavaScript paste execution failed. Trying keypress.", 2)
 
             # Convert key names
-            key = keystroke_value.upper()
-            if "+" in key:
+            def to_playwright_key(token):
+                token = token.strip()
+                normalized_token = token.replace(" ", "").replace("_", "").replace("-", "").upper()
+                if normalized_token in key_map:
+                    return key_map[normalized_token]
+                return token if len(token) == 1 else token.capitalize()
+
+            if "+" in keystroke_value:
                 # Key combination like Ctrl+A
-                parts = key.split("+")
-                converted = [key_map.get(p.strip(), p.strip().capitalize()) for p in parts]
+                parts = keystroke_value.split("+")
+                converted = [to_playwright_key(p) for p in parts]
                 key = "+".join(converted)
             else:
-                key = key_map.get(key, keystroke_value)
+                key = to_playwright_key(keystroke_value)
 
             if has_element:
                 locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
