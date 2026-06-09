@@ -70,6 +70,17 @@ def _get_frame_locator():
         return None
 
 
+def _has_chromium_arg(args, arg_names):
+    """Return True when Chromium args already include one of the named flags."""
+
+    for arg in args:
+        normalized_arg = arg.strip()
+        for arg_name in arg_names:
+            if normalized_arg == arg_name or normalized_arg.startswith(f"{arg_name}="):
+                return True
+    return False
+
+
 def _set_active_playwright_session(session_name, session):
     """Update module globals/shared variables for a selected Playwright session."""
 
@@ -433,6 +444,7 @@ async def Open_Browser(step_data):
             browser_name = dependency["Browser"].strip().lower().replace("headless", "").strip() or browser_name
         headless = False
         viewport = default_viewport.copy()
+        resolution = None
         args = []
         timeout = default_timeout
         slow_mo = 0
@@ -465,7 +477,11 @@ async def Open_Browser(step_data):
                     headless = right_v.lower() in ("true", "yes", "1")
                 elif left_l == "resolution":
                     parts = right_v.replace("x", ",").split(",")
-                    viewport = {"width": int(parts[0].strip()), "height": int(parts[1].strip())}
+                    resolution = {
+                        "width": int(parts[0].strip()),
+                        "height": int(parts[1].strip()),
+                    }
+                    viewport = resolution.copy()
                 elif left_l in ("timeout", "wait time to page load", "page load timeout"):
                     timeout = int(float(right_v) * 1000)
                 elif left_l in ("add argument", "arg", "argument"):
@@ -513,6 +529,20 @@ async def Open_Browser(step_data):
         # Add remote debugging port for CDP connection with unique port per session
         unique_port = get_debug_port(page_id)
         all_args = args + [f"--remote-debugging-port={unique_port}"]
+        chromium_like_browser = browser_name not in ("firefox", "webkit", "safari")
+        if chromium_like_browser:
+            if resolution and not _has_chromium_arg(all_args, ("--window-size",)):
+                all_args.append(
+                    f"--window-size={resolution['width']},{resolution['height']}"
+                )
+            elif (
+                not headless
+                and not _has_chromium_arg(
+                    all_args,
+                    ("--window-size", "--start-maximized", "--kiosk"),
+                )
+            ):
+                all_args.append("--start-maximized")
         if devtools:
             all_args.append("--auto-open-devtools-for-tabs")
         CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
@@ -542,8 +572,12 @@ async def Open_Browser(step_data):
             CommonUtil.ExecLog(sModuleInfo, f"Unknown browser '{browser_name}', using chromium", 2)
             browser = await playwright_instance.chromium.launch(**launch_options)
 
-        # Context options
-        context_options = {"viewport": viewport, "accept_downloads": True}
+        # Context options. Headed Chromium sessions use the real browser window
+        # size so attached Selenium code observes Selenium-like layout behavior.
+        if selenium_cdp_supported and not headless:
+            context_options = {"no_viewport": True, "accept_downloads": True}
+        else:
+            context_options = {"viewport": viewport, "accept_downloads": True}
         if record_video:
             context_options["record_video_dir"] = video_dir or "videos/"
         if locale:
