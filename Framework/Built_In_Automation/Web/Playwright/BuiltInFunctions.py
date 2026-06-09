@@ -4767,6 +4767,7 @@ async def Wait_For_Element(step_data):
         inferred_state = "visible"
         explicit_state = None
         timeout_sec = None
+        allow_hidden = False
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -4781,6 +4782,8 @@ async def Wait_For_Element(step_data):
                     timeout_sec = float(right_v)
                 except ValueError:
                     pass
+            elif mid_l in ("optional parameter", "option") and left_l == "allow hidden":
+                allow_hidden = right_v.lower() in ("yes", "true", "ok", "enable", "enabled", "1")
             elif "action" in mid_l and left_l in ("wait", "wait disable", "wait for element"):
                 if left_l == "wait disable":
                     inferred_state = "hidden"
@@ -4791,6 +4794,11 @@ async def Wait_For_Element(step_data):
                     pass
 
         state = explicit_state or inferred_state
+        if explicit_state is None and allow_hidden:
+            if inferred_state == "visible":
+                state = "attached"
+            elif inferred_state == "hidden":
+                state = "detached"
 
         if timeout_sec is None:
             default_wait = sr.Get_Shared_Variables("element_wait")

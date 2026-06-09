@@ -338,6 +338,29 @@ def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):
     assert calls == [{"state": "visible", "timeout": 150000, "frame_locator": None}]
 
 
+def test_legacy_wait_with_allow_hidden_waits_for_attached(monkeypatch):
+    calls = []
+
+    async def fake_wait_for_element(*args, **kwargs):
+        calls.append(kwargs)
+        return "passed"
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "ready"),
+                ("allow hidden", "optional parameter", "yes"),
+                ("wait", "selenium action", "10"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls == [{"state": "attached", "timeout": 10000, "frame_locator": None}]
+
+
 def test_legacy_wait_disable_defaults_to_hidden_with_action_timeout(monkeypatch):
     calls = []
 
@@ -358,6 +381,29 @@ def test_legacy_wait_disable_defaults_to_hidden_with_action_timeout(monkeypatch)
 
     assert result == "passed"
     assert calls == [{"state": "hidden", "timeout": 7000, "frame_locator": None}]
+
+
+def test_legacy_wait_disable_with_allow_hidden_waits_for_detached(monkeypatch):
+    calls = []
+
+    async def fake_wait_for_element(*args, **kwargs):
+        calls.append(kwargs)
+        return "passed"
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "ready"),
+                ("allow hidden", "optional parameter", "yes"),
+                ("wait disable", "selenium action", "3"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls == [{"state": "detached", "timeout": 3000, "frame_locator": None}]
 
 
 def test_explicit_state_overrides_legacy_wait_default(monkeypatch):
@@ -381,6 +427,30 @@ def test_explicit_state_overrides_legacy_wait_default(monkeypatch):
 
     assert result == "passed"
     assert calls == [{"state": "detached", "timeout": 3000, "frame_locator": None}]
+
+
+def test_explicit_state_overrides_allow_hidden_state_mapping(monkeypatch):
+    calls = []
+
+    async def fake_wait_for_element(*args, **kwargs):
+        calls.append(kwargs)
+        return "passed"
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "ready"),
+                ("allow hidden", "optional parameter", "yes"),
+                ("state", "input parameter", "visible"),
+                ("wait", "selenium action", "4"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls == [{"state": "visible", "timeout": 4000, "frame_locator": None}]
 
 
 def test_resize_window_accepts_selenium_element_parameter_rows():
