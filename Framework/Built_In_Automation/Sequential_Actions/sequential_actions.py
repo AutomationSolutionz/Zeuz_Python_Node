@@ -2398,6 +2398,19 @@ def get_browser_driver_routing(action_subfield, data_set):
     return updated_action_subfield
 
 
+def normalize_legacy_playwright_action_name(action_name, action_subfield):
+    """
+    Route legacy Selenium wait aliases to the Playwright wait declaration only
+    after browser-driver routing has selected Playwright.
+    """
+    if (
+        str(action_subfield).strip().lower() == "playwright action"
+        and str(action_name).strip().lower() in ("wait", "wait disable")
+    ):
+        return "wait for element"
+    return action_name
+
+
 async def Action_Handler(_data_set, action_row, _bypass_bug=True):
     """ Finds the appropriate function for the requested action in the step data and executes it """
 
@@ -2410,6 +2423,7 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
 
     # Apply browser driver routing if applicable
     action_subfield = get_browser_driver_routing(action_subfield, _data_set)
+    action_name = normalize_legacy_playwright_action_name(action_name, action_subfield)
     
     if str(action_name).startswith("%|"):  # if shared variable
         action_name = sr.get_previous_response_variables_in_strings(action_name)

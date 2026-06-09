@@ -3,6 +3,7 @@ import asyncio
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
+from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
 from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as pw
 
 
@@ -275,6 +276,111 @@ def test_wait_for_element_uses_single_lazy_wait(monkeypatch):
 
     assert result == "passed"
     assert calls == [{"state": "attached", "timeout": 5000, "frame_locator": None}]
+
+
+def test_legacy_wait_with_playwright_driver_routes_to_playwright_wait():
+    sr.Set_Shared_Variables("BROWSER_DRIVER", "playwright")
+    data_set = [("wait", "selenium action", "150")]
+
+    action_subfield = sa.get_browser_driver_routing("selenium action", data_set)
+    action_name = sa.normalize_legacy_playwright_action_name("wait", action_subfield)
+    module, function, original_module, screenshot = sa.common.get_module_and_function(
+        action_name,
+        action_subfield,
+    )
+
+    assert (module, function, original_module, screenshot) == (
+        "playwright",
+        "Wait_For_Element",
+        "",
+        "web",
+    )
+
+
+def test_legacy_wait_with_selenium_driver_keeps_common_wait_route():
+    sr.Set_Shared_Variables("BROWSER_DRIVER", "selenium")
+    data_set = [("wait", "selenium action", "150")]
+
+    action_subfield = sa.get_browser_driver_routing("selenium action", data_set)
+    action_name = sa.normalize_legacy_playwright_action_name("wait", action_subfield)
+    module, function, original_module, screenshot = sa.common.get_module_and_function(
+        action_name,
+        action_subfield,
+    )
+
+    assert (module, function, original_module, screenshot) == (
+        "common",
+        "Wait_For_Element",
+        "selenium",
+        "none",
+    )
+
+
+def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):
+    calls = []
+
+    async def fake_wait_for_element(*args, **kwargs):
+        calls.append(kwargs)
+        return "passed"
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "ready"),
+                ("wait", "selenium action", "150"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls == [{"state": "visible", "timeout": 150000, "frame_locator": None}]
+
+
+def test_legacy_wait_disable_defaults_to_hidden_with_action_timeout(monkeypatch):
+    calls = []
+
+    async def fake_wait_for_element(*args, **kwargs):
+        calls.append(kwargs)
+        return "passed"
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "ready"),
+                ("wait disable", "playwright action", "7"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls == [{"state": "hidden", "timeout": 7000, "frame_locator": None}]
+
+
+def test_explicit_state_overrides_legacy_wait_default(monkeypatch):
+    calls = []
+
+    async def fake_wait_for_element(*args, **kwargs):
+        calls.append(kwargs)
+        return "passed"
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "ready"),
+                ("state", "input parameter", "detached"),
+                ("wait disable", "selenium action", "3"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls == [{"state": "detached", "timeout": 3000, "frame_locator": None}]
 
 
 def test_resize_window_accepts_selenium_element_parameter_rows():

@@ -4724,7 +4724,8 @@ async def Wait_For_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
             return "zeuz_failed"
 
-        state = "visible"
+        inferred_state = "visible"
+        explicit_state = None
         timeout_sec = None
 
         for left, mid, right in step_data:
@@ -4734,18 +4735,22 @@ async def Wait_For_Element(step_data):
 
             if mid_l == "input parameter":
                 if left_l in ("wait", "state"):
-                    state = right_v.lower()
+                    explicit_state = right_v.lower()
             elif mid_l == "optional parameter" and left_l == "timeout":
                 try:
                     timeout_sec = float(right_v)
                 except ValueError:
                     pass
-            elif "action" in mid_l and left_l == "wait for element":
+            elif "action" in mid_l and left_l in ("wait", "wait disable", "wait for element"):
+                if left_l == "wait disable":
+                    inferred_state = "hidden"
                 # Selenium-style: action value carries the timeout in seconds.
                 try:
                     timeout_sec = float(right_v)
                 except ValueError:
                     pass
+
+        state = explicit_state or inferred_state
 
         if timeout_sec is None:
             default_wait = sr.Get_Shared_Variables("element_wait")
