@@ -1260,8 +1260,15 @@ async def Click_Element(step_data, retry=0):
                 elif "right" in left_l:
                     right_click = True
 
+        action_timeout = timeout if timeout is not None else PlaywrightLocator.Get_Timeout(step_data)
+
         # Get element
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+        locator = await PlaywrightLocator.Get_Element(
+            step_data,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
@@ -1269,7 +1276,7 @@ async def Click_Element(step_data, retry=0):
         # Click using offset (Selenium-compatible: percentage of half element size from center)
         if offset_value:
             try:
-                box = await locator.bounding_box()
+                box = await locator.bounding_box(timeout=action_timeout)
                 if not box:
                     CommonUtil.ExecLog(sModuleInfo, "Cannot determine element bounding box for offset click", 3)
                     return "zeuz_failed"
@@ -1284,8 +1291,8 @@ async def Click_Element(step_data, retry=0):
                     click_options["modifiers"] = modifiers
                 if delay:
                     click_options["delay"] = delay
-                if timeout:
-                    click_options["timeout"] = timeout
+                if action_timeout is not None:
+                    click_options["timeout"] = action_timeout
                 if right_click:
                     click_options["button"] = "right"
                 if double_click:
@@ -1300,7 +1307,7 @@ async def Click_Element(step_data, retry=0):
         # JS click - matches Selenium use_js behavior (true HTMLElement.click() via JS)
         if use_js:
             try:
-                await locator.evaluate("el => el.click()")
+                await locator.evaluate("el => el.click()", timeout=action_timeout)
                 CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element via JS", 1)
                 return "passed"
             except Exception:
@@ -1312,8 +1319,8 @@ async def Click_Element(step_data, retry=0):
             click_options["modifiers"] = modifiers
         if delay:
             click_options["delay"] = delay
-        if timeout:
-            click_options["timeout"] = timeout
+        if action_timeout is not None:
+            click_options["timeout"] = action_timeout
         if click_count > 1:
             click_options["click_count"] = click_count
 
@@ -1333,7 +1340,7 @@ async def Click_Element(step_data, retry=0):
         except PlaywrightTimeoutError:
             # Click intercepted or element not actionable - fall back to JS click (matches Selenium behavior)
             try:
-                await locator.evaluate("el => el.click()")
+                await locator.evaluate("el => el.click()", timeout=action_timeout)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
@@ -1355,7 +1362,7 @@ async def Click_Element(step_data, retry=0):
                 return await Click_Element(step_data, retry + 1)
             # Try JS click fallback
             try:
-                await locator.evaluate("el => el.click()")
+                await locator.evaluate("el => el.click()", timeout=action_timeout)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Click failed natively; clicked successfully via JavaScript",
@@ -1445,7 +1452,14 @@ async def Hover_Over_Element(step_data):
                 elif left_l == "timeout":
                     timeout = int(float(right_v) * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+        action_timeout = timeout if timeout is not None else PlaywrightLocator.Get_Timeout(step_data)
+
+        locator = await PlaywrightLocator.Get_Element(
+            step_data,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
@@ -1455,8 +1469,8 @@ async def Hover_Over_Element(step_data):
             hover_options["force"] = True
         if offset:
             hover_options["position"] = offset
-        if timeout:
-            hover_options["timeout"] = timeout
+        if action_timeout is not None:
+            hover_options["timeout"] = action_timeout
 
         await locator.hover(**hover_options)
         CommonUtil.ExecLog(sModuleInfo, "Hover performed", 1)
@@ -1493,14 +1507,19 @@ async def Click_and_Download(data_set):
             else:
                 click_dataset.append((left, mid, right))
 
-        locator = await PlaywrightLocator.Get_Element(click_dataset, current_page, frame_locator=_get_frame_locator())
+        locator = await PlaywrightLocator.Get_Element(
+            click_dataset,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, f"Download started. Will wait max {wait_download} seconds...", 1)
         async with current_page.expect_download(timeout=int(wait_download * 1000)) as download_info:
-            await locator.click()
+            await locator.click(timeout=PlaywrightLocator.Get_Timeout(click_dataset))
         download = await download_info.value
 
         if target_path:
@@ -1582,7 +1601,14 @@ async def Enter_Text_In_Text_Box(step_data):
                 elif left_l == "timeout":
                     timeout = int(float(right.strip()) * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+        action_timeout = timeout if timeout is not None else PlaywrightLocator.Get_Timeout(step_data)
+
+        locator = await PlaywrightLocator.Get_Element(
+            step_data,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
@@ -1591,16 +1617,16 @@ async def Enter_Text_In_Text_Box(step_data):
         if use_js:
             # JS mode mirrors Selenium: click, set value, dispatch input/change events, click again.
             try:
-                await locator.evaluate("el => el.click()")
+                await locator.evaluate("el => el.click()", timeout=action_timeout)
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
             # Use JS template-literal so embedded quotes/newlines are preserved (matches Selenium).
             escaped = text_value.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
-            await locator.evaluate(f"el => {{ el.value = `{escaped}`; }}")
-            await locator.dispatch_event("input")
-            await locator.dispatch_event("change")
+            await locator.evaluate(f"el => {{ el.value = `{escaped}`; }}", timeout=action_timeout)
+            await locator.dispatch_event("input", timeout=action_timeout)
+            await locator.dispatch_event("change", timeout=action_timeout)
             try:
-                await locator.evaluate("el => el.click()")
+                await locator.evaluate("el => el.click()", timeout=action_timeout)
             except Exception:
                 pass
             CommonUtil.ExecLog(sModuleInfo, f"Successfully set the value of to text to: {text_value}", 1)
@@ -1608,7 +1634,7 @@ async def Enter_Text_In_Text_Box(step_data):
 
         # Non-JS path: click first to focus (best-effort), clear if requested, then type/fill.
         try:
-            await locator.click()
+            await locator.click(timeout=action_timeout)
         except Exception:
             CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
 
@@ -1616,24 +1642,24 @@ async def Enter_Text_In_Text_Box(step_data):
             try:
                 # Select-all + delete pattern matches Selenium clear logic across platforms.
                 if sys.platform == "darwin":
-                    await locator.press("Meta+A")
+                    await locator.press("Meta+A", timeout=action_timeout)
                 else:
-                    await locator.press("Control+A")
-                await locator.press("Delete")
+                    await locator.press("Control+A", timeout=action_timeout)
+                await locator.press("Delete", timeout=action_timeout)
             except Exception:
                 pass
             try:
                 # fill() always clears first; also handles inputs where Select-All didn't apply.
                 fill_options = {}
-                if timeout:
-                    fill_options["timeout"] = timeout
+                if action_timeout is not None:
+                    fill_options["timeout"] = action_timeout
                 if delay == 0:
                     await locator.fill(text_value, **fill_options)
                 else:
                     # Caller wants per-keystroke delay -> type after clearing.
                     type_options = {"delay": int(delay * 1000)}
-                    if timeout:
-                        type_options["timeout"] = timeout
+                    if action_timeout is not None:
+                        type_options["timeout"] = action_timeout
                     await locator.type(text_value, **type_options)
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1641,13 +1667,13 @@ async def Enter_Text_In_Text_Box(step_data):
             type_options = {}
             if delay > 0:
                 type_options["delay"] = int(delay * 1000)
-            if timeout:
-                type_options["timeout"] = timeout
+            if action_timeout is not None:
+                type_options["timeout"] = action_timeout
             await locator.type(text_value, **type_options)
 
         # Some text fields become unclickable after entering text - best-effort click.
         try:
-            await locator.click()
+            await locator.click(timeout=action_timeout)
         except Exception:
             pass
 
@@ -4180,22 +4206,34 @@ async def drag_and_drop(step_data):
             return "zeuz_failed"
 
         frame = _get_frame_locator()
-        source_locator = await PlaywrightLocator.Get_Element(source, current_page, frame_locator=frame)
+        action_timeout = PlaywrightLocator.Get_Timeout(source)
+        target_timeout = PlaywrightLocator.Get_Timeout(destination)
+        source_locator = await PlaywrightLocator.Get_Element(
+            source,
+            current_page,
+            frame_locator=frame,
+            resolve=False,
+        )
         if source_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
             return "zeuz_failed"
 
-        target_locator = await PlaywrightLocator.Get_Element(destination, current_page, frame_locator=frame)
+        target_locator = await PlaywrightLocator.Get_Element(
+            destination,
+            current_page,
+            frame_locator=frame,
+            resolve=False,
+        )
         if target_locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
             return "zeuz_failed"
 
         if destination_offset or delay is not None:
             # Manual mouse-step path so we can apply offset and/or a hold delay.
-            await source_locator.scroll_into_view_if_needed()
-            src_box = await source_locator.bounding_box()
-            await target_locator.scroll_into_view_if_needed()
-            tgt_box = await target_locator.bounding_box()
+            await source_locator.scroll_into_view_if_needed(timeout=action_timeout)
+            src_box = await source_locator.bounding_box(timeout=action_timeout)
+            await target_locator.scroll_into_view_if_needed(timeout=target_timeout)
+            tgt_box = await target_locator.bounding_box(timeout=target_timeout)
             if not src_box or not tgt_box:
                 CommonUtil.ExecLog(sModuleInfo, "Could not compute bounding box for drag and drop", 3)
                 return "zeuz_failed"
@@ -4225,7 +4263,7 @@ async def drag_and_drop(step_data):
                 await asyncio.sleep(delay)
             await current_page.mouse.up()
         else:
-            await source_locator.drag_to(target_locator)
+            await source_locator.drag_to(target_locator, timeout=action_timeout)
 
         CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
         return "passed"
@@ -4319,7 +4357,13 @@ async def take_screenshot_playwright(step_data):
 
         # Take screenshot
         if has_element:
-            locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+            screenshot_options["timeout"] = PlaywrightLocator.Get_Timeout(step_data)
+            locator = await PlaywrightLocator.Get_Element(
+                step_data,
+                current_page,
+                frame_locator=_get_frame_locator(),
+                resolve=False,
+            )
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
@@ -4394,17 +4438,24 @@ async def execute_javascript(step_data):
             CommonUtil.ExecLog(sModuleInfo, "No JavaScript code provided", 3)
             return "zeuz_failed"
 
+        action_timeout = PlaywrightLocator.Get_Timeout(step_data)
+
         # Execute JS
         if has_element:
-            locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+            locator = await PlaywrightLocator.Get_Element(
+                step_data,
+                current_page,
+                frame_locator=_get_frame_locator(),
+                resolve=False,
+            )
             if locator == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
                 return "zeuz_failed"
             if "$elem" in js_code:
                 element_script = js_code.replace("$elem", "el")
-                result = await locator.evaluate(f"el => {{ {element_script} }}")
+                result = await locator.evaluate(f"el => {{ {element_script} }}", timeout=action_timeout)
             else:
-                result = await locator.evaluate(js_code)
+                result = await locator.evaluate(js_code, timeout=action_timeout)
         else:
             if js_code.strip().startswith("return "):
                 js_code = f"() => {{ {js_code} }}"
@@ -4474,12 +4525,19 @@ async def upload_file(step_data):
                 CommonUtil.ExecLog(sModuleInfo, f"File not found: {file_path}", 3)
                 return "zeuz_failed"
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+        action_timeout = PlaywrightLocator.Get_Timeout(step_data)
+
+        locator = await PlaywrightLocator.Get_Element(
+            step_data,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return "zeuz_failed"
 
-        await locator.set_input_files(file_path)
+        await locator.set_input_files(file_path, timeout=action_timeout)
         CommonUtil.ExecLog(sModuleInfo, f"File uploaded: {file_path}", 1)
         return "passed"
 
@@ -4701,23 +4759,16 @@ async def Wait_For_Element(step_data):
 
         timeout_ms = int(timeout_sec * 1000)
 
-        locator = await PlaywrightLocator.Get_Element(
-            step_data,
-            current_page,
-            element_wait=timeout_sec,
-            frame_locator=_get_frame_locator(),
-        )
-
-        if locator == "zeuz_failed":
-            # For hidden/detached states, element not found is actually success
-            if state in ("hidden", "detached"):
-                CommonUtil.ExecLog(sModuleInfo, f"Element already {state}", 1)
-                return "passed"
-            CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
-            return "zeuz_failed"
-
         try:
-            await locator.wait_for(state=state, timeout=timeout_ms)
+            result = await PlaywrightLocator.wait_for_element(
+                step_data,
+                current_page,
+                state=state,
+                timeout=timeout_ms,
+                frame_locator=_get_frame_locator(),
+            )
+            if result == "zeuz_failed":
+                return "zeuz_failed"
             CommonUtil.ExecLog(sModuleInfo, f"Element reached state: {state}", 1)
             return "passed"
         except PlaywrightTimeoutError:
@@ -5041,7 +5092,13 @@ async def Extract_Table_Data(step_data):
                 elif left_l == "column":
                     col_filter = right_v
 
-        locator = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=_get_frame_locator())
+        action_timeout = PlaywrightLocator.Get_Timeout(step_data)
+        locator = await PlaywrightLocator.Get_Element(
+            step_data,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if locator == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Table element not found", 3)
             return "zeuz_failed"
@@ -5061,7 +5118,7 @@ async def Extract_Table_Data(step_data):
                 }
             });
             return data;
-        }""")
+        }""", timeout=action_timeout)
 
         if row_filter and "," not in row_filter and "-" not in row_filter:
             try:

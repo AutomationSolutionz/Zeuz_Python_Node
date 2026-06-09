@@ -38,6 +38,8 @@ async def Get_Element(
     frame_locator=None,
     parent_locator=None,
     return_all_elements=False,
+    resolve=True,
+    log_outer_html=False,
 ):
     """
     Resolve Zeuz step-data to a Playwright Locator.
@@ -112,6 +114,19 @@ async def Get_Element(
             5,
         )
 
+        must_resolve = _requires_resolved_lookup(params, return_all)
+        if not resolve and not must_resolve:
+            result = _first_locator(_effective_locator(build_result.locator, params))
+            if params.get("save_parameter"):
+                sr.Set_Shared_Variables(params["save_parameter"], result)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Saved element to variable '%s'" % params["save_parameter"],
+                    1,
+                )
+            sr.Set_Shared_Variables("zeuz_element", result)
+            return result
+
         if return_all:
             result = await _resolve_all(build_result.locator, params, timeout, sModuleInfo)
             if not result and params.get("text_filter"):
@@ -122,7 +137,7 @@ async def Get_Element(
                 result = await _text_filter(step_data, page, frame_locator, params, timeout, return_all)
 
         if result not in failed_tag_list:
-            if not return_all:
+            if not return_all and (log_outer_html or getattr(CommonUtil, "debug_status", False)):
                 await _log_outer_html(result, sModuleInfo)
             if params.get("save_parameter"):
                 sr.Set_Shared_Variables(params["save_parameter"], result)
@@ -139,6 +154,15 @@ async def Get_Element(
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def Get_Timeout(step_data, element_wait=None):
+    """Return the Playwright timeout in milliseconds for an element step."""
+
+    params = _parse_element_params(step_data)
+    if params.get("parse_error"):
+        raise ValueError(params["parse_error"])
+    return _resolve_timeout(params, element_wait)
 
 
 def _parse_element_params(step_data):
@@ -259,6 +283,10 @@ def _parse_element_params(step_data):
         params["element_ds"].append(row)
 
     return params
+
+
+def _requires_resolved_lookup(params, return_all=False):
+    return bool(return_all or params.get("text_filter") or params.get("index") is not None)
 
 
 def _build_locator(page, step_data, params, frame_locator=None, parent_locator=None):
@@ -634,7 +662,7 @@ async def _text_filter(step_data, page, frame_locator, original_params, timeout,
     return matches[resolved_index]
 
 
-async def wait_for_element(step_data, page, state="visible", timeout=None):
+async def wait_for_element(step_data, page, state="visible", timeout=None, frame_locator=None, parent_locator=None):
     """Wait for an element to reach a Playwright state."""
 
     sModuleInfo = "wait_for_element"
@@ -643,13 +671,13 @@ async def wait_for_element(step_data, page, state="visible", timeout=None):
         params = _parse_element_params(step_data)
         if timeout is None:
             timeout = _resolve_timeout(params, None)
-        build_result = _build_locator(page, step_data, params)
+        build_result = _build_locator(page, step_data, params, frame_locator, parent_locator)
         if build_result is None:
             CommonUtil.ExecLog(sModuleInfo, "Could not build locator from step data", 3)
             return "zeuz_failed"
 
         locator = build_result.locator
-        if state == "visible" and not params.get("allow_hidden"):
+        if not params.get("allow_hidden"):
             locator = _effective_locator(locator, params)
         if params.get("index") is not None:
             locator = locator.nth(params["index"])

@@ -7,12 +7,13 @@ from Framework.Built_In_Automation.Web.Playwright import locator as playwright_l
 
 
 class FakeLocator:
-    def __init__(self, name="root", count=1, total_count=None, texts=None, text=""):
+    def __init__(self, name="root", count=1, total_count=None, texts=None, text="", stats=None):
         self.name = name
         self._count = count
         self._total_count = count if total_count is None else total_count
         self.texts = texts
         self.text = text
+        self.stats = stats if stats is not None else {"wait": 0, "count": 0, "evaluate": 0}
         self.filtered = False
         self.nth_index = None
         self.wait_calls = []
@@ -20,33 +21,35 @@ class FakeLocator:
 
     def locator(self, query):
         self.queries.append(query)
-        return FakeLocator(f"{self.name}.locator({query})", self._count, self._total_count, self.texts, self.text)
+        return FakeLocator(f"{self.name}.locator({query})", self._count, self._total_count, self.texts, self.text, self.stats)
 
     def filter(self, **kwargs):
-        filtered = FakeLocator(f"{self.name}.filter", self._count, self._total_count, self.texts, self.text)
+        filtered = FakeLocator(f"{self.name}.filter", self._count, self._total_count, self.texts, self.text, self.stats)
         filtered.filtered = kwargs.get("visible") is True
         return filtered
 
     @property
     def first(self):
         text = self.texts[0] if self.texts else self.text
-        first = FakeLocator(f"{self.name}.first", min(self._count, 1), self._total_count, self.texts, text)
+        first = FakeLocator(f"{self.name}.first", min(self._count, 1), self._total_count, self.texts, text, self.stats)
         first.filtered = self.filtered
         return first
 
     def nth(self, index):
         text = self.texts[index] if self.texts and 0 <= index < len(self.texts) else self.text
-        nth = FakeLocator(f"{self.name}.nth({index})", 1, self._total_count, self.texts, text)
+        nth = FakeLocator(f"{self.name}.nth({index})", 1, self._total_count, self.texts, text, self.stats)
         nth.nth_index = index
         nth.filtered = self.filtered
         return nth
 
     async def wait_for(self, state="visible", timeout=None):
+        self.stats["wait"] += 1
         self.wait_calls.append((state, timeout))
         if self._count == 0:
             raise TimeoutError("not found")
 
     async def count(self):
+        self.stats["count"] += 1
         return self._count
 
     async def all(self):
@@ -59,6 +62,7 @@ class FakeLocator:
         return self.text
 
     async def evaluate(self, script):
+        self.stats["evaluate"] += 1
         return '<button id="save">Save</button>'
 
 
@@ -175,6 +179,118 @@ def test_get_element_uses_legacy_xpath_and_saves_shared_variables():
     assert page.queries == ['xpath=//button[text()="Save"]']
     assert sr.Get_Shared_Variables("saved_button") is result
     assert sr.Get_Shared_Variables("zeuz_element") is result
+
+
+def test_get_element_lazy_returns_locator_without_wait_count_or_evaluate():
+    fake_locator = FakeLocator(count=2)
+    page = FakePage(fake_locator)
+
+    result = asyncio.run(
+        playwright_locator.Get_Element(
+            [("tag", "element parameter", "button")],
+            page,
+            resolve=False,
+        )
+    )
+
+    assert result.name.endswith(".filter.first")
+    assert result.filtered is True
+    assert fake_locator.stats == {"wait": 0, "count": 0, "evaluate": 0}
+
+
+def test_get_element_lazy_respects_allow_hidden():
+    fake_locator = FakeLocator(count=2)
+    page = FakePage(fake_locator)
+
+    result = asyncio.run(
+        playwright_locator.Get_Element(
+            [
+                ("tag", "element parameter", "button"),
+                ("allow hidden", "optional parameter", "yes"),
+            ],
+            page,
+            resolve=False,
+        )
+    )
+
+    assert result.name.endswith(".first")
+    assert ".filter" not in result.name
+    assert result.filtered is False
+
+
+def test_get_timeout_parses_wait_optional_parameter():
+    timeout = playwright_locator.Get_Timeout(
+        [
+            ("tag", "element parameter", "button"),
+            ("wait", "optional parameter", "2.5"),
+        ]
+    )
+
+    assert timeout == 2500
+
+
+def test_get_element_lazy_falls_back_to_resolved_for_return_all_text_filter_and_index():
+    return_all_locator = FakeLocator(count=2)
+    return_all_result = asyncio.run(
+        playwright_locator.Get_Element(
+            [("tag", "element parameter", "button")],
+            FakePage(return_all_locator),
+            return_all=True,
+            resolve=False,
+        )
+    )
+    assert len(return_all_result) == 2
+    assert return_all_locator.stats["wait"] == 1
+    assert return_all_locator.stats["count"] >= 1
+
+    text_filter_locator = FakeLocator(count=1)
+    text_filter_result = asyncio.run(
+        playwright_locator.Get_Element(
+            [
+                ("tag", "element parameter", "button"),
+                ("text filter", "optional parameter", "true"),
+            ],
+            FakePage(text_filter_locator),
+            resolve=False,
+        )
+    )
+    assert isinstance(text_filter_result, FakeLocator)
+    assert text_filter_locator.stats["wait"] == 1
+    assert text_filter_locator.stats["count"] >= 1
+
+    indexed_locator = FakeLocator(count=2)
+    indexed_result = asyncio.run(
+        playwright_locator.Get_Element(
+            [
+                ("tag", "element parameter", "button"),
+                ("index", "element parameter", "1"),
+            ],
+            FakePage(indexed_locator),
+            resolve=False,
+        )
+    )
+    assert indexed_result.nth_index == 1
+    assert indexed_locator.stats["wait"] == 1
+    assert indexed_locator.stats["count"] >= 1
+
+
+def test_wait_for_element_builds_lazy_locator_and_waits_once():
+    fake_locator = FakeLocator(count=1)
+    page = FakePage(fake_locator)
+
+    result = asyncio.run(
+        playwright_locator.wait_for_element(
+            [
+                ("tag", "element parameter", "button"),
+                ("wait", "optional parameter", "2"),
+            ],
+            page,
+            state="visible",
+        )
+    )
+
+    assert result == "passed"
+    assert fake_locator.stats == {"wait": 1, "count": 0, "evaluate": 0}
 
 
 def test_get_element_accepts_selenium_return_all_elements_keyword():
