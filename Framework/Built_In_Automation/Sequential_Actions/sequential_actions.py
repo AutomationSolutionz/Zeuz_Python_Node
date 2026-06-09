@@ -29,6 +29,7 @@ from .action_declarations.info import actions, sub_field_match, supported_platfo
 
 # Import modules
 import inspect
+import asyncio
 import os
 import sys
 import time
@@ -1577,8 +1578,8 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                             3,
                         )
 
-        def build_subset(new_step_data):
-            result = Run_Sequential_Actions(new_step_data)
+        async def build_subset(new_step_data):
+            result = await Run_Sequential_Actions(new_step_data)
             if result in passed_tag_list or (
                 type(result) == tuple and result[0] in passed_tag_list
             ):
@@ -1736,7 +1737,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
             if loop_method == "exit_on_dataset":
                 for ndc in range(len(new_step_data)):
                     # Build the sub-set and execute
-                    result = build_subset([new_step_data[ndc]])
+                    result = await build_subset([new_step_data[ndc]])
                     if result in failed_tag_list:
                         return result, skip
 
@@ -1753,12 +1754,12 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                 for ndc in range(len(new_step_data)):  # For each data set in the sub-set
                     # Build the sub-set and execute
                     if load_testing:
-                        thread_pool.submit(build_subset, [new_step_data[ndc]])
+                        thread_pool.submit(lambda step_data: asyncio.run(build_subset(step_data)), [new_step_data[ndc]])
                         if not loop_result_for_load_testing:
                             CommonUtil.load_testing = False
                             return result, skip
                     else:
-                        result = build_subset([new_step_data[ndc]])
+                        result = await build_subset([new_step_data[ndc]])
                         if result in failed_tag_list:
                             CommonUtil.load_testing = False
                             return result, skip
@@ -1784,7 +1785,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                     len(new_step_data)
                 ):  # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset(
+                    result = await build_subset(
                         [new_step_data[ndc]]
                     )  # the dataset was conditional then break
                     if result in failed_tag_list:
@@ -1812,7 +1813,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                     len(new_step_data)
                 ):  # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset([new_step_data[ndc]])
+                    result = await build_subset([new_step_data[ndc]])
                     if result in failed_tag_list:
                         return result, skip
                     if nested_double:
@@ -1828,7 +1829,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                 for ndc in range(len(new_step_data)):
                     # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset([new_step_data[ndc]])
+                    result = await build_subset([new_step_data[ndc]])
 
                     if result in passed_tag_list:
                         combined_result = combined_result and True
@@ -2244,7 +2245,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
     return "passed", outer_skip
 
 
-def bypass_bug(*args,):
+async def bypass_bug(*args,):
     """ Suppose, there is a bug in the test product which is a pop-up that appears randomly and you need to close that pop-up
     So instead of putting that inside you testcase use this function.
     This function will read the action dataset from "Zeuz_Python_Node/bypass.json" file and run that action after every particular type action
@@ -2319,7 +2320,7 @@ def bypass_bug(*args,):
             if action_row is None:
                 continue
             CommonUtil.ExecLog("", "\n********** Starting Bypass action: %s **********\n%s" % (action_name, json.dumps(action, indent=2)), 4)
-            if Action_Handler(dataset, action_row, False) == "zeuz_failed":
+            if await Action_Handler(dataset, action_row, False) == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Bypass action failed, however continuing", 2)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Bypass action failed, however continuing")
@@ -2553,7 +2554,7 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
         CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False
-            bypass_bug(action_name, action_subfield)
+            await bypass_bug(action_name, action_subfield)
             CommonUtil.print_execlog = True
         return result  # Return result to sequential_actions()
 

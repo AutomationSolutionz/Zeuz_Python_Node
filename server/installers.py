@@ -329,7 +329,10 @@ async def _call_status_function(func):
 async def _maybe_await(func, *args, **kwargs):
     if inspect.iscoroutinefunction(func):
         return await func(*args, **kwargs)
-    return await asyncio.to_thread(func, *args, **kwargs)
+    result = await asyncio.to_thread(func, *args, **kwargs)
+    if inspect.isawaitable(result):
+        return await result
+    return result
 
 
 async def _run_job(job: Job) -> None:

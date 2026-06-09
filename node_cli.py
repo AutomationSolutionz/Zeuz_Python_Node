@@ -173,11 +173,7 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-async def destroy_session():
-    """
-    Destroy session file.
-    """
-
+def _destroy_session_file():
     # Remove session file if prompted for new authentication
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     if session_bin_path.exists():
@@ -187,11 +183,18 @@ async def destroy_session():
             print("[ERROR] failed to remove session file")
 
 
+async def destroy_session():
+    """
+    Destroy session file.
+    """
+    _destroy_session_file()
+
+
 def zeuz_authentication_prompts_for_cli():
     """
     Prompts user for inputting new credentials.
     """
-    destroy_session()
+    _destroy_session_file()
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:

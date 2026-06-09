@@ -2607,10 +2607,10 @@ def _resolve_list_action_variable_name(left, mid, right, action_key):
     return None
 
 
-def _require_playwright_page(step_data, sModuleInfo):
+async def _require_playwright_page(step_data, sModuleInfo):
     """Activate session from step_data and ensure a page is open."""
     global current_page
-    _handle_playwright_session(step_data)
+    await _handle_playwright_session(step_data)
     if current_page is None:
         CommonUtil.ExecLog(sModuleInfo, "No browser open", 3)
         return "zeuz_failed"
@@ -2811,7 +2811,7 @@ async def scroll_to_top(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        page = _require_playwright_page(step_data, sModuleInfo)
+        page = await _require_playwright_page(step_data, sModuleInfo)
         if page == "zeuz_failed":
             return "zeuz_failed"
 
@@ -2858,7 +2858,7 @@ async def save_attribute_values_in_list(step_data):
     global current_page
 
     try:
-        if _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
+        if await _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
         frame = _get_frame_locator()
@@ -3000,7 +3000,7 @@ async def save_web_elements_in_list(step_data):
     global current_page
 
     try:
-        if _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
+        if await _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
         frame = _get_frame_locator()
@@ -3199,7 +3199,7 @@ async def multiple_check_uncheck(data_set):
         return "zeuz_failed"
 
     try:
-        if _require_playwright_page(data_set, sModuleInfo) == "zeuz_failed":
+        if await _require_playwright_page(data_set, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
         frame = _get_frame_locator()
@@ -3252,7 +3252,7 @@ async def Change_Attribute_Value(step_data):
     global current_page
 
     try:
-        if _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
+        if await _require_playwright_page(step_data, sModuleInfo) == "zeuz_failed":
             return "zeuz_failed"
 
         attribute_name = ""

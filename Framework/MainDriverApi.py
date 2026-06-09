@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
+import asyncio
 import concurrent.futures
 import copy
 import json
@@ -354,14 +355,20 @@ async def call_driver_function_of_test_step(
 
                 # run in thread
                 if ConfigModule.get_config_value("RunDefinition", "threading") in passed_tag_list:
+                    thread_args = (
+                        test_steps_data,
+                        test_action_info,
+                        simple_queue,
+                        debug_actions,
+                    )
+                    thread_target = functionTocall
+                    if inspect.iscoroutinefunction(functionTocall):
+                        def thread_target(*args):
+                            return asyncio.run(functionTocall(*args))
+
                     stepThread = threading.Thread(
-                        target=functionTocall,
-                        args=(
-                            test_steps_data,
-                            test_action_info,
-                            simple_queue,
-                            debug_actions,
-                        ),
+                        target=thread_target,
+                        args=thread_args,
                     )  # start step thread
 
 
