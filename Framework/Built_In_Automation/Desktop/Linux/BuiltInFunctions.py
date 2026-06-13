@@ -983,7 +983,9 @@ def get_path_appname_from_dataset(
         save_latest_app_name(app_name)
     else:
         app_name = get_latest_app_name()
-    wait_time = float(data_dict.get("wait", wait_time) or str(wait_time or 10))
+    if wait_time == "zeuz_failed" or not wait_time:
+        wait_time = 10
+    wait_time = float(data_dict.get("wait", wait_time) or wait_time)
     index_raw = (data_dict.get("index") or "0").strip()
     if not index_raw.isdigit():
         raise ValueError("Index must be an integer.")
@@ -1141,32 +1143,63 @@ def resolve_node(
             return None
         parent_path = _node_path_string(parent_node)
 
-    if groups["sibling"]:
-        if not parent_path:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "A common PARENT of both ELEMENT and SIBLING should be provided",
-                3,
-            )
-            return None
-        sibling_dict = convert_data_set_to_dict(groups["sibling"])
-        if "app_name" not in sibling_dict and app_name:
-            sibling_dict["app_name"] = app_name
-        sibling_node = get_node(
-            sibling_dict, wait_time=wait_time, ancestor_path=parent_path
-        )
-        if sibling_node is None:
-            CommonUtil.ExecLog(sModuleInfo, "Sibling element not found", 3)
-            return None
-
     element_dict = convert_data_set_to_dict(groups["element"]) if groups["element"] else common_dict
     if "app_name" not in element_dict and app_name:
         element_dict["app_name"] = app_name
-    target_node = get_node(
-        element_dict, wait_time=wait_time, ancestor_path=parent_path
-    )
-    if target_node is None:
-        return None
+
+    if groups["sibling"]:
+        sibling_dict = convert_data_set_to_dict(groups["sibling"])
+        if "app_name" not in sibling_dict and app_name:
+            sibling_dict["app_name"] = app_name
+
+        if parent_path:
+            sibling_node = get_node(
+                sibling_dict, wait_time=wait_time, ancestor_path=parent_path
+            )
+            if sibling_node is None:
+                CommonUtil.ExecLog(sModuleInfo, "Sibling element not found", 3)
+                return None
+            target_node = get_node(
+                element_dict, wait_time=wait_time, ancestor_path=parent_path
+            )
+            if target_node is None:
+                return None
+        else:
+            # No explicit parent: find the sibling's parent in the tree and
+            # search for the element among that parent's descendants.
+            ui_tree = get_ui_tree(app_name)
+            if not ui_tree:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "UI tree not found for app_name: %s" % app_name, 3
+                )
+                return None
+            sibling_criteria = _build_criteria_from_dict(sibling_dict)
+            sibling_paths = find_paths_by_attrs(ui_tree, sibling_criteria)
+            if not sibling_paths:
+                CommonUtil.ExecLog(sModuleInfo, "Sibling element not found", 3)
+                return None
+            target_node = None
+            for sibling_path in sibling_paths:
+                if "." not in sibling_path:
+                    continue
+                candidate_parent = sibling_path.rsplit(".", 1)[0]
+                target_node = get_node(
+                    element_dict, wait_time=0, ancestor_path=candidate_parent
+                )
+                if target_node is not None:
+                    parent_path = candidate_parent
+                    break
+            if target_node is None:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Element not found among siblings", 3
+                )
+                return None
+    else:
+        target_node = get_node(
+            element_dict, wait_time=wait_time, ancestor_path=parent_path
+        )
+        if target_node is None:
+            return None
 
     if groups["child"]:
         child_dict = convert_data_set_to_dict(groups["child"])
@@ -1480,6 +1513,7 @@ def click_element_by_node(
     coords = get_node_center_coords(original_node, offset=offset)
     if coords:
         app_name = _node_app_name(original_node)
+        _activate_window_for_app(app_name)
         if method != "xdotool" and _atspi_mouse_click(
             coords, button=button, click_count=click_count, delay=delay
         ):
