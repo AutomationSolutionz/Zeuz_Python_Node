@@ -1502,6 +1502,60 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def _tc_id_from_zip_filename(run_id, zip_path):
+    """Extract tc_id from a log ZIP named {run_id}_{tc_id}.zip."""
+    basename = os.path.basename(str(zip_path))
+    if basename.lower().endswith(".zip"):
+        basename = basename[:-4]
+    prefix = run_id.replace(":", "-") + "_"
+    if basename.startswith(prefix):
+        return basename[len(prefix):]
+    return basename
+
+
+def _upload_log_zip_via_presigned_url(run_id, zip_path, timeout=600):
+    """Request a presigned URL, then PUT the ZIP bytes to object storage."""
+    tc_id = _tc_id_from_zip_filename(run_id, zip_path)
+    presign_res = RequestFormatter.request(
+        "post",
+        RequestFormatter.form_uri("save_log_and_attachment_api/"),
+        data={"run_id": run_id, "tc_id": tc_id},
+        timeout=timeout,
+    )
+    if presign_res.status_code != 200:
+        return False, presign_res.text
+
+    try:
+        presign_json = presign_res.json()
+    except Exception:
+        return False, presign_res.text
+
+    if not isinstance(presign_json, dict) or not presign_json.get("message"):
+        return False, presign_res.text
+
+    upload_url = presign_json.get("upload_url")
+    if not upload_url:
+        return False, presign_res.text
+
+    method = (presign_json.get("method") or "PUT").upper()
+    content_type = presign_json.get("content_type") or "application/zip"
+
+    with open(zip_path, "rb") as zip_file:
+        zip_data = zip_file.read()
+
+    upload_res = requests.request(
+        method,
+        upload_url,
+        data=zip_data,
+        headers={"Content-Type": content_type},
+        verify=False,
+        timeout=timeout,
+    )
+    if upload_res.status_code not in (200, 201, 204):
+        return False, upload_res.text
+    return True, None
+
+
 def upload_reports_and_zips(temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status:
@@ -1591,10 +1645,8 @@ def upload_reports_and_zips(temp_ini_file, run_id):
                 CommonUtil.ExecLog(sModuleInfo, "Could not Upload the report to server of run_id '%s'" % run_id, 3)
 
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
-            opened_zips = []
             size = 0
             for zip_file in zip_files:
-                opened_zips.append(open(str(zip_file), "rb"))
                 size += round(os.stat(str(zip_file)).st_size / 1024, 2)
 
             if size > 1024:
@@ -1603,33 +1655,33 @@ def upload_reports_and_zips(temp_ini_file, run_id):
                 size = str(round(size, 3)) + " KB"
             CommonUtil.ExecLog(sModuleInfo, "Uploading %s logs-screenshots of %s testcases of %s from:\n%s" % (CommonUtil.current_session_name, len(zip_files), size, str(zip_dir)), 5)
 
-            for _ in range(5):
-                try:
-                    files_list = []
-                    for zips in opened_zips:
-                        files_list.append(("file",zips))
-                    res = RequestFormatter.request("post",
-                            RequestFormatter.form_uri("save_log_and_attachment_api/"),
-                            files=files_list,
-                            data={"machine_name": Userid},
-                            timeout=600
+            failed_zips = []
+            for zip_file in zip_files:
+                for _ in range(5):
+                    try:
+                        ok, err_detail = _upload_log_zip_via_presigned_url(run_id, zip_file)
+                        if ok:
+                            break
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            f"Failed to upload {os.path.basename(zip_file)}, retrying...\n{err_detail}",
+                            3,
                         )
-                    if res.status_code == 200:
-                        try:
-                            res_json = res.json()
-                        except:
-                            continue
-                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                            CommonUtil.ExecLog(sModuleInfo, "Successfully Uploaded logs-screenshots to server of run_id '%s'" % run_id, 1)
-                        else:
-                            CommonUtil.ExecLog(sModuleInfo, f"Could not Upload logs-screenshots to server of run_id '{run_id}'\n\nResponse Text = {res.text}", 3)
-                        break
-                except:
-                    pass
+                    except:
+                        CommonUtil.Exception_Handler(sys.exc_info())
+                    time.sleep(4)
+                else:
+                    failed_zips.append(os.path.basename(zip_file))
 
-                time.sleep(4)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Could not Upload logs-screenshots to server of run_id '%s'" % run_id, 3)
+            if failed_zips:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Could not Upload logs-screenshots to server of run_id '%s'. Failed: %s"
+                    % (run_id, ", ".join(failed_zips)),
+                    3,
+                )
+            elif zip_files:
+                CommonUtil.ExecLog(sModuleInfo, "Successfully Uploaded logs-screenshots to server of run_id '%s'" % run_id, 1)
 
         with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
