@@ -8,7 +8,7 @@ import os
 import time
 import sys
 from typing import Any, Dict
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 import urllib.request, urllib.error, urllib.parse
 import queue
 import shutil
@@ -34,7 +34,7 @@ from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFor
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
-from settings import PROJECT_ROOT
+from settings import PROJECT_ROOT, AutomationLog_DIR
 from reporting import junit_report
 
 from genson import SchemaBuilder
@@ -1709,6 +1709,18 @@ def split_testcases(run_id_info, max_tc_in_single_session):
     return all_sessions
 
 
+def build_attachment_download_url(file_path: str) -> str:
+    """Build the ZeuZ Server attachment download API URL for a DB file_path."""
+    path = (file_path or "").strip()
+    if not path:
+        return ""
+    if not path.startswith("/"):
+        path = "/" + path
+    return RequestFormatter.form_uri(
+        f"d/api/v1/attachments/download/?file_path={quote(path, safe='')}"
+    )
+
+
 def download_attachment(attachment_info: Dict[str, Any]):
     """
     Downloads a given attachment into the 'attachments' folder.
@@ -1727,24 +1739,34 @@ def download_attachment(attachment_info: Dict[str, Any]):
 
     We can see that 512KB is the ideal chunk size for large file downloads.
     """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # assumes that the last segment after the / represents the file name
-    # if url is abc/xyz/file.txt, the file name will be file.txt
     url = attachment_info["url"]
-    file_name_start_pos = url.rfind("/") + 1
-    file_name = url[file_name_start_pos:]
+    file_name = Path(attachment_info["attachment"]["path"]).name
     file_path = attachment_info["download_dir"] / file_name
 
-    r = RequestFormatter.request("get", url, stream=True, timeout=600)
-    if r.status_code == requests.codes.ok:
-        with open(file_path, 'wb') as f:
-            for data in r.iter_content(chunk_size=512*1024):
-                f.write(data)
+    headers = RequestFormatter.add_api_key_to_headers({})
+    r = RequestFormatter.request("get", url, stream=True, timeout=600, **headers)
+    if r.status_code != requests.codes.ok:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            f"Attachment download failed: {r.status_code} url={url}",
+            3,
+        )
+        return None
+
+    with open(file_path, 'wb') as f:
+        for data in r.iter_content(chunk_size=512*1024):
+            f.write(data)
+
+    presign_url = r.url
+    CommonUtil.ExecLog(sModuleInfo, f"Downloaded: {presign_url}", 1)
 
     # Return the hash of the file and the path where its stored.
     return {
         "hash": attachment_info["attachment"]["hash"],
         "path": file_path,
+        "presign_url": presign_url,
     }
 
 
@@ -1762,9 +1784,8 @@ def download_attachments(testcase_info):
         )
     )
     attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-    attachment_db_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments_db"
+    attachment_db_path = AutomationLog_DIR / "attachments_db"
 
-    url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
     urls = []
 
     db = AttachmentDB(attachment_db_path)
@@ -1787,22 +1808,32 @@ def download_attachments(testcase_info):
 
         download_dir.mkdir(parents=True, exist_ok=True)
 
-        entry = db.exists(attachment["hash"])
+        hash_key = AttachmentDB.normalize_hash(attachment.get("hash"))
+        entry = db.exists(hash_key)
         to_append = {
-            "url": url_prefix + attachment["path"],
+            "url": build_attachment_download_url(attachment["path"]),
             "download_dir": download_dir,
             "attachment": attachment,
         }
+        if not hash_key or hash_key == "0":
+            urls.append(to_append)
+            return
+
         if entry is None:
             urls.append(to_append)
         else:
             try:
-                shutil.copyfile(str(entry["path"]), download_dir / Path(attachment["path"]).name)
-            except:
+                shutil.copyfile(entry["path"], download_dir / Path(attachment["path"]).name)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Using cached attachment (hash={hash_key}): {Path(attachment['path']).name}",
+                    1,
+                )
+            except Exception:
                 # If copy fails, the file either does not exist or we don't have
                 # permission. Download the file again and remove from db.
                 urls.append(to_append)
-                db.remove(entry["hash"])
+                db.remove(hash_key)
 
     # Test case attachments
     for attachment in testcase_info["attachments"]:
@@ -1815,7 +1846,8 @@ def download_attachments(testcase_info):
 
     results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
-        CommonUtil.ExecLog(sModuleInfo, f"Downloaded: {r}", 5)
+        if r is None:
+            continue
 
         # Copy into the attachments db.
         attachment_path_in_db = attachment_db_path / r["path"].name
@@ -1825,8 +1857,9 @@ def download_attachments(testcase_info):
             # If entry is successful, we copy the downloaded attachment to the
             # db directory.
             try:
+                Path(put["path"]).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(r["path"], put["path"])
-            except:
+            except Exception:
                 # If copying the attachment fails, we remove the entry.
                 db.remove(r["hash"])
 
