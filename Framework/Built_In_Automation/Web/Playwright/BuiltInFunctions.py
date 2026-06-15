@@ -2081,11 +2081,13 @@ async def if_element_exists(step_data):
             current_page,
             element_wait=timeout / 1000,
             frame_locator=_get_frame_locator(),
+            resolve=False,
         )
 
         found = False
         if locator != "zeuz_failed":
             try:
+                await locator.wait_for(state="attached", timeout=timeout)
                 if await locator.count() > 0:
                     found = True
             except Exception:
@@ -2939,7 +2941,7 @@ async def save_attribute_values_in_list(step_data):
             return "zeuz_failed"
 
         frame = _get_frame_locator()
-        parent = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=frame)
+        parent = await PlaywrightLocator.Get_Element(step_data, current_page, frame_locator=frame, resolve=False)
         if parent == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -3117,7 +3119,7 @@ async def save_web_elements_in_list(step_data):
 
             if has_parent_scope:
                 parent = await PlaywrightLocator.Get_Element(
-                    step_data, current_page, frame_locator=frame
+                    step_data, current_page, frame_locator=frame, resolve=False
                 )
                 if parent == "zeuz_failed":
                     CommonUtil.ExecLog(
@@ -3280,7 +3282,7 @@ async def multiple_check_uncheck(data_set):
             return "zeuz_failed"
 
         frame = _get_frame_locator()
-        parent = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=frame)
+        parent = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=frame, resolve=False)
         if parent == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
             return "zeuz_failed"
@@ -3569,7 +3571,12 @@ async def check_uncheck_all(data_set):
             elif left_l == "allow hidden":
                 target.append((left, "option", right))
 
-        parent = await PlaywrightLocator.Get_Element(data_set, current_page, frame_locator=_get_frame_locator())
+        parent = await PlaywrightLocator.Get_Element(
+            data_set,
+            current_page,
+            frame_locator=_get_frame_locator(),
+            resolve=False,
+        )
         if parent == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
             return "zeuz_failed"

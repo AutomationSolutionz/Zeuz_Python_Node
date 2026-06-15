@@ -9,8 +9,10 @@ executed with Playwright's Locator API.
 """
 
 import inspect
+import os
 import re
 import sys
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,6 +30,9 @@ class LocatorBuildResult:
     locator: Any
     query_type: str
     query: Any
+
+
+_LOCATOR_TIMING_ENV = "ZEUZ_PLAYWRIGHT_LOCATOR_TIMING"
 
 
 async def Get_Element(
@@ -103,6 +108,8 @@ async def Get_Element(
             return "zeuz_failed"
 
         timeout = _resolve_timeout(params, element_wait)
+        timing_enabled = _locator_timing_enabled()
+        lookup_started = time.perf_counter() if timing_enabled else None
         build_result = _build_locator(page, step_data, params, frame_locator, parent_locator)
         if build_result is None or build_result.locator is None:
             CommonUtil.ExecLog(sModuleInfo, "Could not build locator from step data", 3)
@@ -117,6 +124,12 @@ async def Get_Element(
         must_resolve = _requires_resolved_lookup(params, return_all)
         if not resolve and not must_resolve:
             result = _first_locator(_effective_locator(build_result.locator, params))
+            _log_locator_timing(
+                sModuleInfo,
+                build_result.query_type,
+                lookup_started,
+                "lazy",
+            )
             if params.get("save_parameter"):
                 sr.Set_Shared_Variables(params["save_parameter"], result)
                 CommonUtil.ExecLog(
@@ -129,12 +142,21 @@ async def Get_Element(
 
         if return_all:
             result = await _resolve_all(build_result.locator, params, timeout, sModuleInfo)
+            timing_mode = "return_all"
             if not result and params.get("text_filter"):
                 result = await _text_filter(step_data, page, frame_locator, params, timeout, return_all)
         else:
             result = await _resolve_single(build_result.locator, params, timeout, sModuleInfo)
+            timing_mode = "eager-resolve"
             if result == "zeuz_failed" and params.get("text_filter"):
                 result = await _text_filter(step_data, page, frame_locator, params, timeout, return_all)
+
+        _log_locator_timing(
+            sModuleInfo,
+            build_result.query_type,
+            lookup_started,
+            timing_mode,
+        )
 
         if result not in failed_tag_list:
             if not return_all and (log_outer_html or getattr(CommonUtil, "debug_status", False)):
@@ -315,10 +337,6 @@ def _build_locator(page, step_data, params, frame_locator=None, parent_locator=N
     if params["shadow_root_params"]:
         return _build_shadow_dom_locator(base_locator, params)
 
-    native_locator = _build_native_locator(base_locator, params)
-    if native_locator is not None:
-        return native_locator
-
     if params["unique_params"]:
         legacy_locator = _build_legacy_locator(base_locator, params)
         if legacy_locator is not None:
@@ -327,6 +345,14 @@ def _build_locator(page, step_data, params, frame_locator=None, parent_locator=N
     raw_locator = _build_raw_locator(base_locator, step_data)
     if raw_locator is not None:
         return raw_locator
+
+    native_locator = _build_native_locator(base_locator, params)
+    if native_locator is not None:
+        return native_locator
+
+    css_fast_locator = _build_css_fast_locator(base_locator, params)
+    if css_fast_locator is not None:
+        return css_fast_locator
 
     legacy_locator = _build_legacy_locator(base_locator, params)
     if legacy_locator is not None:
@@ -370,6 +396,47 @@ def _build_raw_locator(base_locator, step_data):
     return None
 
 
+def _build_css_fast_locator(base_locator, params):
+    """Use CSS only for simple selectors where it preserves Selenium query semantics."""
+
+    if (
+        _has_relationship_params(params)
+        or params["unique_params"]
+        or params.get("text_filter")
+        or not params["element_params"]
+    ):
+        return None
+
+    tag = "*"
+    attr_selectors = []
+    for left, right in params["element_params"]:
+        key = str(left).strip()
+        key_lower = key.lower()
+        value = str(right).strip()
+        if not value:
+            return None
+        if key_lower == "tag":
+            if tag != "*" or not _is_css_identifier(value):
+                return None
+            tag = value
+            continue
+        if key_lower in ("text", "*text") or key_lower.startswith("*"):
+            return None
+        if key_lower == "class":
+            if any(ch.isspace() for ch in value):
+                return None
+            attr_selectors.append(f'[class~="{_css_string(value)}"]')
+            continue
+        if not _is_css_attribute_name(key):
+            return None
+        attr_selectors.append(f'[{key}="{_css_string(value)}"]')
+
+    query = tag + "".join(attr_selectors)
+    if query == "*":
+        return None
+    return LocatorBuildResult(base_locator.locator(query), "css-fast", query)
+
+
 def _build_legacy_locator(base_locator, params):
     query, query_type = _build_legacy_query(params["locator_rows"])
     if not query or not query_type:
@@ -410,14 +477,18 @@ def _build_unique_locator(base_locator, unique_key, unique_value):
     if key in ("accessibility id", "accessibility-id", "content-desc", "content desc"):
         return base_locator.locator(_as_playwright_xpath(f"//*[@aria-label={_xpath_literal(value)}]"))
     if key == "id":
-        return base_locator.locator(_as_playwright_xpath(f"//*[@id={_xpath_literal(value)}]"))
+        return base_locator.locator(f'[id="{_css_string(value)}"]')
     if key == "name":
-        return base_locator.locator(_as_playwright_xpath(f"//*[@name={_xpath_literal(value)}]"))
+        return base_locator.locator(f'[name="{_css_string(value)}"]')
     if key == "class":
+        if not any(ch.isspace() for ch in value):
+            return base_locator.locator(f'[class~="{_css_string(value)}"]')
         klass = _xpath_literal(f" {value} ")
         return base_locator.locator(
             _as_playwright_xpath(f"//*[contains(concat(' ', normalize-space(@class), ' '), {klass})]")
         )
+    if key == "tag" and _is_css_identifier(value):
+        return base_locator.locator(value)
     if key == "tag":
         return base_locator.locator(_as_playwright_xpath(f"//{value}"))
     if key == "css":
@@ -439,6 +510,8 @@ def _build_unique_locator(base_locator, unique_key, unique_value):
     if key.startswith("*"):
         attr = key[1:]
         return base_locator.locator(_as_playwright_xpath(f"//*[contains(@{attr},{_xpath_literal(value)})]"))
+    if _is_css_attribute_name(key):
+        return base_locator.locator(f'[{key}="{_css_string(value)}"]')
     return base_locator.locator(_as_playwright_xpath(f"//*[@{key}={_xpath_literal(value)}]"))
 
 
@@ -818,6 +891,33 @@ def _opening_tag(outer_html):
 def _as_playwright_xpath(query):
     query = str(query).strip()
     return query if query.startswith("xpath=") else f"xpath={query}"
+
+
+def _css_string(value):
+    return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\A ")
+
+
+def _is_css_identifier(value):
+    return re.match(r"^-?[_a-zA-Z][_a-zA-Z0-9-]*$", str(value)) is not None
+
+
+def _is_css_attribute_name(value):
+    return re.match(r"^[A-Za-z_][A-Za-z0-9_.:-]*$", str(value)) is not None
+
+
+def _locator_timing_enabled():
+    return os.getenv(_LOCATOR_TIMING_ENV, "").strip().lower() in ("1", "yes", "true", "on")
+
+
+def _log_locator_timing(sModuleInfo, strategy, started, mode):
+    if started is None:
+        return
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    CommonUtil.ExecLog(
+        sModuleInfo,
+        f"Playwright locator timing: strategy={strategy}, mode={mode}, elapsed_ms={elapsed_ms:.2f}",
+        1,
+    )
 
 
 def _xpath_literal(value):

@@ -160,7 +160,7 @@ def test_resolve_single_honors_index_after_visibility_filter():
     assert result.filtered is True
 
 
-def test_get_element_uses_legacy_xpath_and_saves_shared_variables():
+def test_get_element_uses_css_fast_path_and_saves_shared_variables():
     fake_locator = FakeLocator(count=2)
     page = FakePage(fake_locator)
 
@@ -168,7 +168,7 @@ def test_get_element_uses_legacy_xpath_and_saves_shared_variables():
         playwright_locator.Get_Element(
             [
                 ("tag", "element parameter", "button"),
-                ("text", "element parameter", "Save"),
+                ("id", "element parameter", "save"),
                 ("saved_button", "save parameter", "yes"),
             ],
             page,
@@ -176,9 +176,78 @@ def test_get_element_uses_legacy_xpath_and_saves_shared_variables():
     )
 
     assert result.name.endswith(".filter.first")
-    assert page.queries == ['xpath=//button[text()="Save"]']
+    assert page.queries == ['button[id="save"]']
     assert sr.Get_Shared_Variables("saved_button") is result
     assert sr.Get_Shared_Variables("zeuz_element") is result
+
+
+def test_get_element_keeps_text_selector_on_legacy_xpath():
+    fake_locator = FakeLocator(count=1)
+    page = FakePage(fake_locator)
+
+    result = asyncio.run(
+        playwright_locator.Get_Element(
+            [
+                ("tag", "element parameter", "button"),
+                ("text", "element parameter", "Save"),
+            ],
+            page,
+        )
+    )
+
+    assert result.name.endswith(".filter.first")
+    assert page.queries == ['xpath=//button[text()="Save"]']
+
+
+def test_css_fast_path_supports_common_simple_selectors():
+    params = playwright_locator._parse_element_params(
+        [
+            ("tag", "element parameter", "input"),
+            ("id", "element parameter", "email"),
+            ("name", "element parameter", "user[email]"),
+            ("class", "element parameter", "field"),
+            ("data-testid", "element parameter", 'login"email'),
+        ]
+    )
+    page = FakePage(FakeLocator())
+
+    result = playwright_locator._build_locator(page, params["all_rows"], params)
+
+    assert result.query_type == "css-fast"
+    assert result.query == 'input[id="email"][name="user[email]"][class~="field"][data-testid="login\\"email"]'
+    assert page.queries == [result.query]
+
+
+def test_css_fast_path_rejects_complex_selectors_that_need_xpath_parity():
+    text_params = playwright_locator._parse_element_params(
+        [
+            ("tag", "element parameter", "button"),
+            ("*text", "element parameter", "Save"),
+        ]
+    )
+    page = FakePage(FakeLocator())
+
+    text_result = playwright_locator._build_locator(page, text_params["all_rows"], text_params)
+
+    assert text_result.query_type == "xpath"
+    assert page.queries == ['xpath=//button[contains(text(),"Save")]']
+
+    relationship_params = playwright_locator._parse_element_params(
+        [
+            ("tag", "element parameter", "input"),
+            ("id", "parent parameter", "form"),
+        ]
+    )
+    relationship_page = FakePage(FakeLocator())
+
+    relationship_result = playwright_locator._build_locator(
+        relationship_page,
+        relationship_params["all_rows"],
+        relationship_params,
+    )
+
+    assert relationship_result.query_type == "xpath"
+    assert "ancestor::*" in relationship_result.query
 
 
 def test_get_element_lazy_returns_locator_without_wait_count_or_evaluate():
@@ -274,6 +343,26 @@ def test_get_element_lazy_falls_back_to_resolved_for_return_all_text_filter_and_
     assert indexed_locator.stats["count"] >= 1
 
 
+def test_indexed_simple_selector_still_uses_css_fast_path():
+    fake_locator = FakeLocator(count=2)
+    page = FakePage(fake_locator)
+
+    result = asyncio.run(
+        playwright_locator.Get_Element(
+            [
+                ("tag", "element parameter", "button"),
+                ("id", "element parameter", "save"),
+                ("index", "element parameter", "1"),
+            ],
+            page,
+            resolve=False,
+        )
+    )
+
+    assert result.nth_index == 1
+    assert page.queries == ['button[id="save"]']
+
+
 def test_wait_for_element_builds_lazy_locator_and_waits_once():
     fake_locator = FakeLocator(count=1)
     page = FakePage(fake_locator)
@@ -306,7 +395,7 @@ def test_get_element_accepts_selenium_return_all_elements_keyword():
     )
 
     assert len(result) == 2
-    assert page.queries == ["xpath=//button"]
+    assert page.queries == ["button"]
 
 
 def test_unique_parameter_takes_precedence_over_raw_xpath_like_selenium():
@@ -328,7 +417,28 @@ def test_unique_parameter_takes_precedence_over_raw_xpath_like_selenium():
     )
 
     assert result.query_type == "unique"
-    assert page.queries == ['xpath=//*[@id="primary"]']
+    assert page.queries == ['[id="primary"]']
+
+
+def test_unique_simple_selectors_use_css_fast_paths():
+    selector_cases = [
+        ("id", "primary", '[id="primary"]'),
+        ("name", "email", '[name="email"]'),
+        ("class", "primary", '[class~="primary"]'),
+        ("tag", "button", "button"),
+        ("data-testid", "save", '[data-testid="save"]'),
+    ]
+
+    for key, value, expected_query in selector_cases:
+        page = FakePage(FakeLocator())
+        params = playwright_locator._parse_element_params(
+            [(key, "unique parameter", value)]
+        )
+
+        result = playwright_locator._build_locator(page, params["all_rows"], params)
+
+        assert result.query_type == "unique"
+        assert page.queries == [expected_query]
 
 
 def test_shadow_dom_builder_uses_sr_rows_and_css_query_chain():

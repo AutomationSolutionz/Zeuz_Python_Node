@@ -442,7 +442,7 @@ def test_slider_bar_uses_lazy_locator(monkeypatch):
     assert pw.current_page.mouse.calls == [("click", 60.0, 35.0)]
 
 
-def test_if_element_exists_uses_resolved_lookup(monkeypatch):
+def test_if_element_exists_uses_lazy_lookup_with_explicit_short_check(monkeypatch):
     locator = FakeLocator()
     calls = []
 
@@ -462,8 +462,9 @@ def test_if_element_exists_uses_resolved_lookup(monkeypatch):
     )
 
     assert result == "passed"
-    assert "resolve" not in calls[0]
+    assert calls[0]["resolve"] is False
     assert ("count",) in locator.calls
+    assert locator.wait_calls == [{"state": "attached", "timeout": 1000}]
 
 
 def test_wait_for_element_uses_single_lazy_wait(monkeypatch):
