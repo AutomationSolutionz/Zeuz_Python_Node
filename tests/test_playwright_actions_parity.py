@@ -12,6 +12,8 @@ class FakePage:
         self.url = "https://example.test/current"
         self.viewport_size = {"width": 1000, "height": 800}
         self.evaluated = []
+        self.keyboard = FakeKeyboard()
+        self.mouse = FakeMouse()
 
     async def evaluate(self, script, arg=None):
         self.evaluated.append((script, arg))
@@ -19,6 +21,28 @@ class FakePage:
 
     async def set_viewport_size(self, size):
         self.viewport_size = size
+
+
+class FakeKeyboard:
+    def __init__(self):
+        self.calls = []
+
+    async def press(self, key):
+        self.calls.append(("press", key))
+
+    async def type(self, text, **kwargs):
+        self.calls.append(("type", text, kwargs))
+
+
+class FakeMouse:
+    def __init__(self):
+        self.calls = []
+
+    async def wheel(self, delta_x, delta_y):
+        self.calls.append(("wheel", delta_x, delta_y))
+
+    async def click(self, x, y):
+        self.calls.append(("click", x, y))
 
 
 class FakeLocator:
@@ -35,9 +59,38 @@ class FakeLocator:
     async def text_content(self):
         return self.text
 
+    async def inner_html(self):
+        return self.text
+
+    async def input_value(self):
+        return self.text
+
     async def evaluate(self, script, arg=None, **kwargs):
         self.evaluated.append((script, arg, kwargs))
         return "locator-result"
+
+    async def get_attribute(self, name):
+        self.calls.append(("get_attribute", name))
+        return "attr-result"
+
+    async def is_checked(self):
+        self.calls.append(("is_checked",))
+        return False
+
+    async def is_visible(self):
+        self.calls.append(("is_visible",))
+        return True
+
+    async def is_enabled(self):
+        self.calls.append(("is_enabled",))
+        return True
+
+    async def is_disabled(self):
+        self.calls.append(("is_disabled",))
+        return False
+
+    async def select_option(self, **kwargs):
+        self.calls.append(("select_option", kwargs))
 
     async def set_input_files(self, file_path, **kwargs):
         self.files = file_path
@@ -229,6 +282,164 @@ def test_upload_file_passes_wait_timeout(monkeypatch, tmp_path):
     assert result == "passed"
     assert calls[0]["resolve"] is False
     assert locator.calls[-1] == ("set_input_files", str(upload_file), {"timeout": 4000})
+
+
+def test_keystroke_keys_uses_lazy_locator_and_async_delay(monkeypatch):
+    locator = FakeLocator()
+    get_element_calls = []
+    sleep_calls = []
+
+    async def fake_get_element(*args, **kwargs):
+        get_element_calls.append(kwargs)
+        return locator
+
+    async def fake_sleep(delay):
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
+    monkeypatch.setattr(pw.asyncio, "sleep", fake_sleep)
+
+    result = asyncio.run(
+        pw.Keystroke_For_Element(
+            [
+                ("id", "element parameter", "search"),
+                ("delay", "optional parameter", "0.25"),
+                ("keystroke keys", "playwright action", "Tab,2"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert get_element_calls[0]["resolve"] is False
+    assert locator.calls == [("press", "Tab", {}), ("press", "Tab", {})]
+    assert sleep_calls == [0.25, 0.25]
+
+
+def test_validate_text_uses_lazy_locator(monkeypatch):
+    locator = FakeLocator("Header\nSuccess\nFooter")
+    calls = []
+
+    async def fake_get_element(*args, **kwargs):
+        calls.append(kwargs)
+        return locator
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
+
+    result = asyncio.run(
+        pw.Validate_Text(
+            [
+                ("id", "element parameter", "message"),
+                ("validate full text", "playwright action", "Success"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls[0]["resolve"] is False
+    assert ("count",) not in locator.calls
+
+
+def test_select_uses_lazy_locator(monkeypatch):
+    locator = FakeLocator()
+    calls = []
+
+    async def fake_get_element(*args, **kwargs):
+        calls.append(kwargs)
+        return locator
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
+
+    result = asyncio.run(
+        pw.Select_Deselect(
+            [
+                ("id", "element parameter", "country"),
+                ("select by value", "playwright action", "US"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls[0]["resolve"] is False
+    assert locator.calls == [("select_option", {"value": "US"})]
+
+
+def test_check_uncheck_uses_lazy_locator(monkeypatch):
+    locator = FakeLocator()
+    calls = []
+
+    async def fake_get_element(*args, **kwargs):
+        calls.append(kwargs)
+        return locator
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
+
+    result = asyncio.run(
+        pw.check_uncheck(
+            [
+                ("id", "element parameter", "agree"),
+                ("check", "playwright action", "check"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls[0]["resolve"] is False
+    assert locator.calls == [("is_checked",), ("click", {})]
+
+
+def test_scroll_to_element_uses_lazy_locator_without_default_extra_delay(monkeypatch):
+    locator = FakeLocator()
+    calls = []
+    sleep_calls = []
+
+    async def fake_get_element(*args, **kwargs):
+        calls.append(kwargs)
+        return locator
+
+    async def fake_sleep(delay):
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
+    monkeypatch.setattr(pw.asyncio, "sleep", fake_sleep)
+
+    result = asyncio.run(
+        pw.scroll_to_element(
+            [
+                ("id", "element parameter", "footer"),
+                ("scroll to element", "playwright action", "scroll to element"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls[0]["resolve"] is False
+    assert sleep_calls == []
+    assert locator.evaluated[-1][0] == "el => el.scrollIntoView(true)"
+
+
+def test_slider_bar_uses_lazy_locator(monkeypatch):
+    locator = FakeLocator()
+    calls = []
+
+    async def fake_get_element(*args, **kwargs):
+        calls.append(kwargs)
+        return locator
+
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
+
+    result = asyncio.run(
+        pw.slider_bar(
+            [
+                ("id", "element parameter", "volume"),
+                ("slider bar", "playwright action", "25"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert calls[0]["resolve"] is False
+    assert locator.calls == [("bounding_box", {})]
+    assert pw.current_page.mouse.calls == [("click", 60.0, 35.0)]
 
 
 def test_if_element_exists_uses_resolved_lookup(monkeypatch):
