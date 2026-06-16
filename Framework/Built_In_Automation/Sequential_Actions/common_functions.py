@@ -6,7 +6,7 @@
 """
 
 import difflib
-import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
+import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess, mimetypes
 import itertools
 import platform
 from pathlib import Path
@@ -4829,27 +4829,91 @@ def upload_attachment_to_global(data_set):
     try:
         var_path = None
         replace = False
+        var_name = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "attachment path" == left:
                var_path = CommonUtil.path_parser(right)
             if "replace" == left:
                 replace = right.lower().strip() == "true"
+            if "upload attachment to global" == left:
+                var_name = right.strip()
 
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
+        if not os.path.isfile(var_path):
+            CommonUtil.ExecLog(sModuleInfo, f"File does not exist: {var_path}", 3)
+            return "zeuz_failed"
+
+        filename = os.path.basename(var_path)
+        content_type, _ = mimetypes.guess_type(filename)
+        presign_body = {"filename": filename, "replace": replace}
+        if content_type:
+            presign_body["content_type"] = content_type
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        res = RequestFormatter.request("post",
-            RequestFormatter.form_uri("global_file_upload/"),
-            files={"file": open(var_path,'rb')},
+        presign_res = RequestFormatter.request(
+            "post",
+            RequestFormatter.form_uri("d/api/v1/global-attachments/presign/"),
+            json=presign_body,
             verify=False,
-            data={"replace": replace},
-            **headers)
+            **headers,
+        )
+        if presign_res.status_code == 401:
+            CommonUtil.ExecLog(sModuleInfo, "Global attachment presign failed: invalid or missing API key", 3)
+            return "zeuz_failed"
+        if presign_res.status_code == 400:
+            CommonUtil.ExecLog(sModuleInfo, f"Global attachment presign failed: {presign_res.text}", 3)
+            return "zeuz_failed"
+        presign_res.raise_for_status()
 
+        presign_json = presign_res.json()
+        upload_url = presign_json.get("upload_url")
+        file_path = presign_json.get("file_path")
+        method = (presign_json.get("method") or "PUT").upper()
+        if not upload_url or not file_path:
+            CommonUtil.ExecLog(sModuleInfo, "Global attachment presign failed: invalid response", 3)
+            return "zeuz_failed"
 
-        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
+        put_headers = {}
+        if content_type:
+            put_headers["Content-Type"] = content_type
+        with open(var_path, "rb") as f:
+            upload_res = requests.request(
+                method,
+                upload_url,
+                data=f,
+                headers=put_headers,
+                verify=False,
+            )
+        if upload_res.status_code != 200:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Global attachment upload to storage failed: {upload_res.status_code}",
+                3,
+            )
+            return "zeuz_failed"
+
+        complete_res = RequestFormatter.request(
+            "post",
+            RequestFormatter.form_uri("d/api/v1/global-attachments/complete/"),
+            json={"file_path": file_path},
+            verify=False,
+            **headers,
+        )
+        if complete_res.status_code == 401:
+            CommonUtil.ExecLog(sModuleInfo, "Global attachment complete failed: invalid or missing API key", 3)
+            return "zeuz_failed"
+        if complete_res.status_code == 400:
+            CommonUtil.ExecLog(sModuleInfo, f"Global attachment complete failed: {complete_res.text}", 3)
+            return "zeuz_failed"
+        complete_res.raise_for_status()
+
+        if var_name:
+            sr.Set_Shared_Variables(var_name, file_path)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachments", 1)
         return "passed"
 
     except:
