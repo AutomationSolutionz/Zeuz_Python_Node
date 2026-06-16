@@ -218,6 +218,9 @@ async def Login(
     log_dir: os.PathLike | None = None,
 ):
     console = Console()
+    STATE.target_server = server_name or None
+    STATE.last_connect_error = None
+    STATE.connection_state = "authenticating" if server_name else "disconnected"
 
     # Login to ZeuZ server.
     user_data = UserData(
@@ -248,6 +251,11 @@ async def Login(
         # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
 
         if status_code == 200:
+            STATE.connected_server = server_name
+            STATE.target_server = None
+            STATE.connection_state = "connected"
+            STATE.last_connect_error = None
+
             user_data = UserData(
                 username=data["user"]["username"],
                 email=data["user"]["email"],
@@ -278,6 +286,10 @@ async def Login(
             console.print(table)
         elif status_code == 502:
             print(Fore.YELLOW + "Server offline. Retrying after 30s")
+            STATE.connected_server = None
+            STATE.target_server = server_name or None
+            STATE.connection_state = "offline"
+            STATE.last_connect_error = "Server offline"
             await asyncio.sleep(30)
             STATE.reconnect_with_credentials = LoginCredentials(
                 server=ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address").strip('"').strip(),
@@ -287,6 +299,10 @@ async def Login(
         else:
             line_color = Fore.RED
             print(line_color + "Incorrect credentials, please try again.")
+            STATE.connected_server = None
+            STATE.target_server = server_name or None
+            STATE.connection_state = "failed"
+            STATE.last_connect_error = "Incorrect credentials"
             # server_name, api = zeuz_authentication_prompts_for_cli()
             # api = api.strip('"')
 
@@ -295,10 +311,18 @@ async def Login(
             return
     except ConnectionError:
         print("Failed to connect to the server, retrying after 30s")
+        STATE.connected_server = None
+        STATE.target_server = server_name or None
+        STATE.connection_state = "offline"
+        STATE.last_connect_error = "Failed to connect to the server"
         await asyncio.sleep(30)
         return
     except Exception as e:
         traceback.print_exc()
+        STATE.connected_server = None
+        STATE.target_server = server_name or None
+        STATE.connection_state = "failed"
+        STATE.last_connect_error = str(e)
         return
 
     node_id = CommonUtil.MachineInfo().getLocalUser().lower()
@@ -1380,6 +1404,10 @@ async def main():
     )
 
     if len(server_name) == 0 and len(api) == 0:
+        STATE.connected_server = None
+        STATE.target_server = None
+        STATE.connection_state = "disconnected"
+        STATE.last_connect_error = None
         console.print(
             "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
             style="bold red",
@@ -1388,6 +1416,10 @@ async def main():
         await asyncio.sleep(1)
 
     else:
+        STATE.connected_server = None
+        STATE.target_server = server_name
+        STATE.connection_state = "authenticating"
+        STATE.last_connect_error = None
         asyncio.create_task(
             Login(
                 server_name=server_name,
@@ -1396,9 +1428,13 @@ async def main():
         )
     while True:
         if STATE.reconnect_with_credentials is not None:
-            await destroy_session()
             server_name = STATE.reconnect_with_credentials.server
             api_key = STATE.reconnect_with_credentials.api_key
+            STATE.connected_server = None
+            STATE.target_server = server_name or None
+            STATE.connection_state = "authenticating" if server_name and api_key else "disconnected"
+            STATE.last_connect_error = None
+            await destroy_session()
             await set_new_credentials(server=server_name, api_key=api_key)
 
             STATE.reconnect_with_credentials = None
@@ -1414,6 +1450,10 @@ async def main():
             )
 
             if len(server_name) == 0 and len(api) == 0:
+                STATE.connected_server = None
+                STATE.target_server = None
+                STATE.connection_state = "disconnected"
+                STATE.last_connect_error = None
                 console.print(
                     "\n" + ":red_circle: " + "Zeuz Node is disconnected.",
                     style="bold red",
