@@ -4884,12 +4884,22 @@ def download_attachment_from_global(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
             return "zeuz_failed"
 
+        file_path = f"/global_folder/{var_name}"
+        url = MainDriverApi.build_attachment_download_url(file_path)
         headers = RequestFormatter.add_api_key_to_headers({})
-        url = RequestFormatter.form_uri(f"static/global_folder/{var_name}")
-        local_filename = url.split('/')[-1]
-        with RequestFormatter.request("get", url, stream=True, verify=False,**headers) as r:
+        local_path = os.path.join(var_path, var_name)
+        with RequestFormatter.request("get", url, stream=True, verify=False, **headers) as r:
+            if r.status_code == 401:
+                CommonUtil.ExecLog(sModuleInfo, "Attachment download failed: invalid or missing API key", 3)
+                return "zeuz_failed"
+            if r.status_code == 403:
+                CommonUtil.ExecLog(sModuleInfo, "Attachment download failed: attachment not in user's project/team", 3)
+                return "zeuz_failed"
+            if r.status_code == 404:
+                CommonUtil.ExecLog(sModuleInfo, "Attachment download failed: file not found in storage", 3)
+                return "zeuz_failed"
             r.raise_for_status()
-            with open(var_path+'/'+local_filename, 'wb') as f:
+            with open(local_path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
