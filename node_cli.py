@@ -251,9 +251,9 @@ async def Login(
         # ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", "dummy")
 
         if status_code == 200:
-            STATE.connected_server = server_name
-            STATE.target_server = None
-            STATE.connection_state = "connected"
+            STATE.connected_server = None
+            STATE.target_server = server_name or None
+            STATE.connection_state = "authenticating"
             STATE.last_connect_error = None
 
             user_data = UserData(
