@@ -2047,8 +2047,10 @@ def Click_Element(data_set, retry=0):
     if location == "":
         try:
             if use_js:
-                # Click on element.
-                selenium_driver.execute_script("arguments[0].click();", Element)
+                selenium_driver.execute_script(
+                    "var e=arguments[0];['mousedown','mouseup','click'].forEach(function(t){e.dispatchEvent(new MouseEvent(t,{bubbles:true,cancelable:true,view:window,buttons:1}));})",
+                    Element,
+                )
             else:
                 handle_clickability_and_click(data_set, Element)
 
