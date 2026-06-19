@@ -1162,6 +1162,7 @@ def get_path_appname_from_dataset(
     data_dict: dict[str, str],
     wait_time=Shared_Resources.Get_Shared_Variables("element_wait", False),
     ancestor_path: str | None = None,
+    fail_log_level: int = 3,
 ) -> tuple[str | None, str | None]:
     """Resolve (path, app_name) from a flattened element dict.
 
@@ -1177,7 +1178,7 @@ def get_path_appname_from_dataset(
         save_latest_app_name(app_name)
     else:
         app_name = get_latest_app_name()
-    if wait_time == "zeuz_failed" or not wait_time:
+    if wait_time == "zeuz_failed" or wait_time is None or wait_time is False:
         wait_time = 10
     wait_time = float(data_dict.get("wait", wait_time) or wait_time)
     index_raw = (data_dict.get("index") or "0").strip()
@@ -1204,7 +1205,7 @@ def get_path_appname_from_dataset(
                 time.sleep(0.5)
                 continue
             CommonUtil.ExecLog(
-                "", "No elements found matching criteria: %s" % data_dict, 3
+                "", "No elements found matching criteria: %s" % data_dict, fail_log_level
             )
             return None, app_name
         if len(paths) == 1:
@@ -1228,6 +1229,7 @@ def get_node(
     data_dict: dict[str, str],
     wait_time=Shared_Resources.Get_Shared_Variables("element_wait", False),
     ancestor_path: str | None = None,
+    fail_log_level: int = 3,
 ) -> Accessible | None:
     """Resolve an Accessible from a flattened element dict.
 
@@ -1242,10 +1244,11 @@ def get_node(
         return None
     try:
         path, app_name = get_path_appname_from_dataset(
-            data_dict, wait_time=wait_time, ancestor_path=ancestor_path
+            data_dict, wait_time=wait_time, ancestor_path=ancestor_path,
+            fail_log_level=fail_log_level,
         )
         if not path:
-            CommonUtil.ExecLog(sModuleInfo, "No path found in the dataset", 3)
+            CommonUtil.ExecLog(sModuleInfo, "No path found in the dataset", fail_log_level)
             return None
         if not app_name:
             CommonUtil.ExecLog(sModuleInfo, "No app_name found in the dataset", 3)
@@ -1376,12 +1379,22 @@ def resolve_node(
             for sibling_path in sibling_paths:
                 if "." not in sibling_path:
                     continue
-                candidate_parent = sibling_path.rsplit(".", 1)[0]
-                target_node = get_node(
-                    element_dict, wait_time=0, ancestor_path=candidate_parent
-                )
+                # Walk up ancestor levels until the target is found.
+                # The immediate parent of the sibling may not share a common
+                # parent with the target (e.g. AT-SPI titlebars vs toolbars).
+                ancestor = sibling_path.rsplit(".", 1)[0]
+                while ancestor:
+                    target_node = get_node(
+                        element_dict, wait_time=0, ancestor_path=ancestor,
+                        fail_log_level=0,
+                    )
+                    if target_node is not None:
+                        parent_path = ancestor
+                        break
+                    if "." not in ancestor:
+                        break
+                    ancestor = ancestor.rsplit(".", 1)[0]
                 if target_node is not None:
-                    parent_path = candidate_parent
                     break
             if target_node is None:
                 CommonUtil.ExecLog(
