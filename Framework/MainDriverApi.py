@@ -1004,7 +1004,7 @@ def run_test_case(
         # Variable"; set to 0 to disable. The Test_Shared_Variables guard keeps a
         # user/runtime-supplied value from being overwritten by this default.
         if not shared.Test_Shared_Variables("action_timeout"):
-            shared.Set_Shared_Variables("action_timeout", 300)
+            shared.Set_Shared_Variables("action_timeout", 1800)
 
         _color = "white"
         # danger_style = Style(color=_color, blink=False, bold=True)

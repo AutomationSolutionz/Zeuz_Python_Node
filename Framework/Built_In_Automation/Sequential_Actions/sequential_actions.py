@@ -97,7 +97,7 @@ step_exit_pass_called = False
 # thread that is stuck inside a blocking call, so on timeout we stop waiting,
 # abandon the worker (it is a daemon thread, so it never blocks node shutdown),
 # spin up a fresh worker for the next action, and report the step as failed.
-_DEFAULT_ACTION_TIMEOUT = 300
+_DEFAULT_ACTION_TIMEOUT = 1800
 _action_worker = None
 _action_worker_local = threading.local()
 
