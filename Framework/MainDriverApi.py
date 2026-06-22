@@ -999,6 +999,12 @@ def run_test_case(
         shared.Set_Shared_Variables("zeuz_attachments_dir", (Path(temp_ini_file).parent/"attachments").__str__())
         if not shared.Test_Shared_Variables("element_wait"):
             shared.Set_Shared_Variables("element_wait", 10)
+        # Max seconds any single action may run before it is aborted and the
+        # step is failed. Configurable as a runtime parameter or via "Set Shared
+        # Variable"; set to 0 to disable. The Test_Shared_Variables guard keeps a
+        # user/runtime-supplied value from being overwritten by this default.
+        if not shared.Test_Shared_Variables("action_timeout"):
+            shared.Set_Shared_Variables("action_timeout", 300)
 
         _color = "white"
         # danger_style = Style(color=_color, blink=False, bold=True)
