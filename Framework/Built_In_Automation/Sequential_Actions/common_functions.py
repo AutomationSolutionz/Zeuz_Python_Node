@@ -619,7 +619,11 @@ def Sleep(data_set):
     try:
         seconds = float(data_set[0][2])
         CommonUtil.ExecLog(sModuleInfo, f"Sleeping for {seconds} seconds", 1)
-        time.sleep(seconds)
+        elapsed = 0.0
+        chunk = 0.1
+        while elapsed < seconds:
+            time.sleep(min(chunk, seconds - elapsed))
+            elapsed += chunk
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
