@@ -813,6 +813,42 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         pass
 
 
+def _normalize_auto_teardown_mode(value):
+    value = str(value).strip().lower()
+    if value in ("off", "no", "false", "disable"):
+        return "off"
+    if value in ("on_run_end", "on_run_start_and_end"):
+        return value
+    return "on"
+
+
+def _auto_teardown_mode():
+    return _normalize_auto_teardown_mode(shared.Get_Shared_Variables("zeuz_auto_teardown", log=False))
+
+
+def _auto_teardown_at_run_start():
+    return _auto_teardown_mode() in ("on", "on_run_start_and_end")
+
+
+def _auto_teardown_after_test_case():
+    return _auto_teardown_mode() == "on"
+
+
+def _auto_teardown_at_run_end():
+    return _auto_teardown_mode() in ("on_run_end", "on_run_start_and_end")
+
+
+def _payload_contains_selected_test_case(run_id_info, index):
+    selected_test_cases = run_id_info.get("deploy_test_cases", [])
+    current_test_cases = [
+        tc.get("testcase_no")
+        for tc in run_id_info.get("test_cases", [])
+    ]
+    if not selected_test_cases or not current_test_cases:
+        return True
+    return selected_test_cases[index] in current_test_cases
+
+
 def advanced_float(text:str) -> float:
     try:
         return float(text)
@@ -1138,7 +1174,7 @@ def run_test_case(
             send_dom_variables()
         else:
             CommonUtil.Join_Thread_and_Return_Result("screenshot")
-            if str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
+            if _auto_teardown_after_test_case():
                 cleanup_driver_instances()
             shared.Clean_Up_Shared_Variables(run_id)
 
@@ -1970,8 +2006,9 @@ def main(device_dict, all_run_id_info):
 
             if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
+            CommonUtil.global_var["zeuz_auto_teardown"] = run_id
 
-            if not CommonUtil.debug_status and str(shared.Get_Shared_Variables("zeuz_auto_teardown")).strip().lower() not in ("off", "no", "false", "disable"):
+            if not CommonUtil.debug_status and _auto_teardown_at_run_start() and _payload_contains_selected_test_case(run_id_info, 0):
                 cleanup_driver_instances()
 
             if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
@@ -2185,6 +2222,9 @@ def main(device_dict, all_run_id_info):
 
                 session_cnt += 1
                 CommonUtil.ExecLog(sModuleInfo, "Execution time = %s sec" % round(TimeDiff, 3), 5)
+
+            if not CommonUtil.debug_status and _auto_teardown_at_run_end() and _payload_contains_selected_test_case(run_id_info, -1):
+                cleanup_driver_instances()
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 
