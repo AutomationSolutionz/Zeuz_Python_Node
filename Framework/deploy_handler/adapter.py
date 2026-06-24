@@ -107,6 +107,7 @@ def adapt(message: str, node_id: str) -> List[Dict]:
         "team_id": r["deployInfo"]["teamId"],
 
         "test_cases": read_test_cases(r["testCases"]),
+        "deploy_test_cases": list(r["deployInfo"].get("testCases", [])),
 
         "dependency_list": {
             "Browser": r["deployInfo"]["dependency"]["browser"],
