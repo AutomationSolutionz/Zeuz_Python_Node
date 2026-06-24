@@ -1,6 +1,6 @@
 # Author: sazid
 
-from typing import Any, Callable
+from typing import Any, Callable, Coroutine
 import traceback
 import asyncio
 import random
@@ -9,7 +9,6 @@ import httpx
 from colorama import Fore
 from pathlib import Path
 from urllib.parse import urlparse
-import requests
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
@@ -30,7 +29,7 @@ class DeployHandler:
 
     def __init__(
         self,
-        on_connect_callback: Callable[[bool], None],
+        on_connect_callback: Callable[[bool], Coroutine[Any, Any, None]],
         response_callback: Callable[[Any], None],
         cancel_callback: Callable[[], None],
         done_callback: Callable[[], bool],
@@ -281,9 +280,8 @@ class DeployHandler:
             if reconnect:
                 await asyncio.sleep(random.randint(1, 3))
 
-            await self.on_connect_callback(reconnect)
-
             try:
+                await self.on_connect_callback(reconnect)
                 reconnect = True
                 resp = await RequestFormatter.async_request("get", host, timeout=70)
                 if resp is None:
