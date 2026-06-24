@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-import time
 from typing import Any, Dict, Union
 import os
 import requests
@@ -24,94 +23,64 @@ class AttachmentDB:
         self.init_db()
 
     @staticmethod
-    def normalize_hash(hash_value: Any) -> str:
-        if hash_value is None:
+    def make_key(path: str, uploaded_at: str) -> str:
+        if not path or uploaded_at is None or str(uploaded_at).strip() == "":
             return ""
-        return str(hash_value).strip()
+        return f"{path.strip()}|{str(uploaded_at).strip()}"
 
-    def exists(self, hash: str) -> Union[Dict[str, str], None]:
+    def exists(self, path: str, uploaded_at: str) -> Union[Dict[str, str], None]:
         """
-        exists returns a Path indicating whether the attachment exists in the
-        database. None is returned if it does not exist.
+        exists returns an entry if the attachment is recorded in the database.
+        None is returned if it does not exist.
         """
-        hash_key = self.normalize_hash(hash)
-        if not hash_key or hash_key == "0":
+        key = self.make_key(path, uploaded_at)
+        if not key:
             return None
 
         db = self.get_db()
 
         # TODO: Cleanup old attachments/db entries here.
 
-        if hash_key not in db:
+        if key not in db:
             return None
 
-        entry = db[hash_key]
-        cached_path = Path(entry["path"])
-        if not cached_path.is_file():
-            cached_path = self.db_directory / hash_key
+        return db[key]
 
-        if not cached_path.is_file():
-            del db[hash_key]
-            self.save_db(db)
-            return None
-
-        resolved_path = str(cached_path.resolve())
-        if entry["path"] != resolved_path:
-            entry["path"] = resolved_path
-            db[hash_key] = entry
-            self.save_db(db)
-
-        return entry
-
-    def remove(self, hash: str) -> bool:
+    def remove(self, path: str, uploaded_at: str) -> bool:
         """
-        remove removes an attachment with the given hash from the db and returns
-        True if successful.
+        remove removes an attachment with the given path and uploaded_at from
+        the db and returns True if successful.
         """
-        hash_key = self.normalize_hash(hash)
-        if not hash_key:
+        key = self.make_key(path, uploaded_at)
+        if not key:
             return False
 
         db = self.get_db()
 
-        if hash_key in db:
-            del db[hash_key]
+        if key in db:
+            del db[key]
             self.save_db(db)
             return True
 
         return False
 
-    def put(self, filepath: Path, hash: str):
+    def put(self, filepath: Path, path: str, uploaded_at: str):
         """
-        put puts the attachment into the db.
+        put records the attachment's local file path in the db.
         """
-        hash_key = self.normalize_hash(hash)
-        if not hash_key or hash_key == "0":
+        key = self.make_key(path, uploaded_at)
+        if not key:
             return None
 
         db = self.get_db()
 
-        if hash_key in db:
-            return db[hash_key]
-
-        modified_at = time.time()
-
-        # We add a random suffix to the filepath to make sure files with same
-        # names but different hashes do not overwrite each other. Specially
-        # important if there are multiple attachments across multiple test
-        # cases/steps with the same file name.
-        self.db_directory.mkdir(parents=True, exist_ok=True)
-        path = filepath.with_name(hash_key).resolve()
-
         entry = {
-            "hash": hash_key,
-            "path": str(path),
-            "modified_at": modified_at,
+            "path": str(filepath.resolve()),
+            "server_path": path.strip(),
+            "uploaded_at": str(uploaded_at).strip(),
         }
 
-        # Add new entry to db with the given hash.
-        db[hash_key] = entry
-
+        db[key] = entry
         self.save_db(db)
 
         return entry

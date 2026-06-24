@@ -38,7 +38,6 @@ def read_steps(steps_pb) -> List[Dict]:
                 "path": attachment["path"],
                 "uploaded_by": attachment["uploadedBy"],
                 "uploaded_at": attachment["uploadedAt"],
-                "hash": attachment["hash"],
             })
 
         steps.append(
@@ -75,7 +74,6 @@ def read_test_cases(test_cases_pb) -> List[Dict]:
                 "path": attachment["path"],
                 "uploaded_by": attachment["uploadedBy"],
                 "uploaded_at": attachment["uploadedAt"],
-                "hash": attachment["hash"],
             })
 
         test_cases.append({

@@ -1820,10 +1820,9 @@ def download_attachment(attachment_info: Dict[str, Any]):
     presign_url = r.url
     CommonUtil.ExecLog(sModuleInfo, f"Downloaded: {presign_url}", 1)
 
-    # Return the hash of the file and the path where its stored.
     return {
-        "hash": attachment_info["attachment"]["hash"],
-        "path": file_path,
+        "attachment": attachment_info["attachment"],
+        "local_path": file_path,
         "presign_url": presign_url,
     }
 
@@ -1850,9 +1849,9 @@ def download_attachments(testcase_info):
 
     def download_or_copy(attachment):
         """
-        Puts the given attachment to the "to be downloaded" list or if its found
-        in the attachment db, it'll copy it from the db to the "attachments"
-        folder.
+        Puts the given attachment to the "to be downloaded" list unless the file
+        already exists at the target path for the same server path and
+        uploaded_at.
         """
 
         download_dir = attachment_path
@@ -1866,32 +1865,31 @@ def download_attachments(testcase_info):
 
         download_dir.mkdir(parents=True, exist_ok=True)
 
-        hash_key = AttachmentDB.normalize_hash(attachment.get("hash"))
-        entry = db.exists(hash_key)
-        to_append = {
-            "url": build_attachment_download_url(attachment["path"]),
-            "download_dir": download_dir,
-            "attachment": attachment,
-        }
-        if not hash_key or hash_key == "0":
-            urls.append(to_append)
+        server_path = attachment["path"]
+        uploaded_at = attachment.get("uploaded_at", "")
+        target_file = download_dir / Path(server_path).name
+
+        if not AttachmentDB.make_key(server_path, uploaded_at):
+            urls.append({
+                "url": build_attachment_download_url(server_path),
+                "download_dir": download_dir,
+                "attachment": attachment,
+            })
             return
 
-        if entry is None:
-            urls.append(to_append)
-        else:
-            try:
-                shutil.copyfile(entry["path"], download_dir / Path(attachment["path"]).name)
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    f"Using cached attachment (hash={hash_key}): {Path(attachment['path']).name}",
-                    1,
-                )
-            except Exception:
-                # If copy fails, the file either does not exist or we don't have
-                # permission. Download the file again and remove from db.
-                urls.append(to_append)
-                db.remove(hash_key)
+        if db.exists(server_path, uploaded_at) and target_file.is_file():
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Skipping attachment (already downloaded): {target_file.name}",
+                1,
+            )
+            return
+
+        urls.append({
+            "url": build_attachment_download_url(server_path),
+            "download_dir": download_dir,
+            "attachment": attachment,
+        })
 
     # Test case attachments
     for attachment in testcase_info["attachments"]:
@@ -1907,19 +1905,11 @@ def download_attachments(testcase_info):
         if r is None:
             continue
 
-        # Copy into the attachments db.
-        attachment_path_in_db = attachment_db_path / r["path"].name
+        attachment = r["attachment"]
+        server_path = attachment["path"]
+        uploaded_at = attachment.get("uploaded_at", "")
 
-        put = db.put(attachment_path_in_db, r["hash"])
-        if put:
-            # If entry is successful, we copy the downloaded attachment to the
-            # db directory.
-            try:
-                Path(put["path"]).parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(r["path"], put["path"])
-            except Exception:
-                # If copying the attachment fails, we remove the entry.
-                db.remove(r["hash"])
+        db.put(r["local_path"], server_path, uploaded_at)
 
 
 # main function
