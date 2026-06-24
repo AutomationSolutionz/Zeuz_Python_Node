@@ -22,16 +22,32 @@ class InspectorResponse(BaseModel):
     error: str | None = None
 
 
+class LinuxWindowInfo(BaseModel):
+    """A single top-level window belonging to an application."""
+
+    id: str
+    title: str
+    x: int = 0
+    y: int = 0
+    width: int = 0
+    height: int = 0
+
+
 class LinuxAppInfo(BaseModel):
     """Basic application metadata exposed by /apps."""
 
     pid: str
     name: str
+    windows: list[LinuxWindowInfo] = []
 
 
 @router.get("/inspect")
-def inspect(app_name: str | None = None):
-    """Get the Linux UI DOM and screenshot."""
+def inspect(app_name: str | None = None, window_id: str | None = None):
+    """Get the Linux UI DOM and screenshot.
+
+    `window_id` optionally pins the screenshot to a specific top-level
+    window of the app (an app may have multiple windows; see /linux/apps).
+    """
     from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
     if BuiltInFunctions is None:
         return InspectorResponse(status="error", error="Linux automation module not available")
@@ -41,20 +57,20 @@ def inspect(app_name: str | None = None):
         target_app = app_name
         if not target_app:
             target_app = BuiltInFunctions.get_latest_app_name()
-        
+
         if not target_app:
              return InspectorResponse(status="error", error="No application specified and no latest app found.")
 
         # Capture UI
-        xml_content = BuiltInFunctions.get_ui_tree(target_app)
+        xml_content = BuiltInFunctions.get_ui_tree(target_app, window_id=window_id)
         if not xml_content:
              return InspectorResponse(status="error", error=f"Failed to get UI tree for app: {target_app}")
 
         # Capture Screenshot
         full_screenshot_path = os.path.abspath(SCREENSHOT_PATH)
-        
+
         screenshot_base64 = None
-        if BuiltInFunctions.capture_screenshot(full_screenshot_path, target_app):
+        if BuiltInFunctions.capture_screenshot(full_screenshot_path, target_app, window_id=window_id):
             try:
                 with open(full_screenshot_path, 'rb') as img_file:
                     screenshot_bytes = img_file.read()
@@ -87,7 +103,11 @@ def get_apps():
         # raw_apps: {pid: name}
         for pid, name in raw_apps.items():
             if name:
-                apps.append(LinuxAppInfo(pid=str(pid), name=name))
+                windows = [
+                    LinuxWindowInfo(**w)
+                    for w in BuiltInFunctions.get_windows_for_pid(pid)
+                ]
+                apps.append(LinuxAppInfo(pid=str(pid), name=name, windows=windows))
 
         return sorted(apps, key=lambda app: app.name.lower())
     except Exception:
