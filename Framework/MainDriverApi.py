@@ -1252,7 +1252,7 @@ def send_dom_variables():
                         if attr_name.startswith('__'):
                             continue
                         try:
-                            attr_value = getattr(var_value, attr_name)
+                            attr_value = inspect.getattr_static(var_value, attr_name)
                             dir_[attr_name] = str(type(attr_value))
                         except Exception:  # ignore getattr errors
                             pass
