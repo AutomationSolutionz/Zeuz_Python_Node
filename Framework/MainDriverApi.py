@@ -1171,7 +1171,8 @@ def run_test_case(
             pass
 
         if CommonUtil.debug_status:
-            send_dom_variables()
+            if ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in CommonUtil.affirmative_words:
+                send_dom_variables()
         else:
             CommonUtil.Join_Thread_and_Return_Result("screenshot")
             if _auto_teardown_after_test_case():
@@ -1251,7 +1252,7 @@ def send_dom_variables():
                         if attr_name.startswith('__'):
                             continue
                         try:
-                            attr_value = getattr(var_value, attr_name)
+                            attr_value = inspect.getattr_static(var_value, attr_name)
                             dir_[attr_name] = str(type(attr_value))
                         except Exception:  # ignore getattr errors
                             pass
