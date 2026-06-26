@@ -377,6 +377,36 @@ def test_playwright_connection_failure(mock_exec_log, mock_step_data_playwright_
         assert result == "zeuz_failed"
 
 
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
+def test_playwright_switch_falls_back_when_debug_port_missing(
+    mock_exec_log, mock_driver, mock_step_data_playwright_title
+):
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Google"
+    mock_driver.current_url = "https://www.google.com"
+    mock_driver.capabilities = {}
+    mock_driver.switch_to.window.return_value = None
+
+    with patch.dict(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details",
+        {},
+        clear=True,
+    ), patch(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id",
+        None,
+    ):
+        result = switch_window_or_tab(mock_step_data_playwright_title)
+
+    mock_exec_log.assert_any_call(
+        "switch_window_or_tab : BuiltInFunctions",
+        "Playwright tab switching requires a Chromium remote debugging port. Falling back to Selenium",
+        2,
+    )
+    assert result == "passed"
+
+
 # Parametrized tests for better coverage
 @pytest.mark.parametrize(
     "playwright_flag,expected_playwright",

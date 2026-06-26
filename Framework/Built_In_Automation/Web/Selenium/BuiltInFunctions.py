@@ -219,6 +219,40 @@ def get_driver():
     return selenium_driver
 
 
+def _get_remote_debugging_port_from_driver(driver):
+    try:
+        chrome_options = driver.capabilities.get("goog:chromeOptions", {})
+        edge_options = driver.capabilities.get("ms:edgeOptions", {})
+        debugger_address = chrome_options.get("debuggerAddress") or edge_options.get(
+            "debuggerAddress"
+        )
+        if not debugger_address:
+            return None
+
+        parsed_address = urlparse(
+            debugger_address
+            if "://" in debugger_address
+            else f"//{debugger_address}"
+        )
+        return parsed_address.port
+    except Exception:
+        return None
+
+
+def _get_remote_debugging_port():
+    driver_details = selenium_details.get(current_driver_id, {})
+    debug_port = driver_details.get("remote-debugging-port")
+    if debug_port:
+        return debug_port
+
+    debug_port = _get_remote_debugging_port_from_driver(
+        driver_details.get("driver") or selenium_driver
+    )
+    if debug_port and current_driver_id in selenium_details:
+        selenium_details[current_driver_id]["remote-debugging-port"] = debug_port
+    return debug_port
+
+
 @logger
 def find_exe_in_path(exe):
     """Search the path for an executable"""
@@ -838,7 +872,10 @@ def Go_To_Link_V2(step_data):
         selenium_driver.set_page_load_timeout(page_load_timeout_sec)
         selenium_details[driver_tag] = dict()
         selenium_details[driver_tag]["driver"] = selenium_driver
-        current_driver_id = selenium_driver
+        selenium_details[driver_tag]["remote-debugging-port"] = (
+            _get_remote_debugging_port_from_driver(selenium_driver)
+        )
+        current_driver_id = driver_tag
         Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
 
         # Handle headless mode window maximize
@@ -1138,6 +1175,11 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
                     selenium_driver.maximize_window()
             else:
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
+
+            if debug_port is None:
+                debug_port = _get_remote_debugging_port_from_driver(
+                    Shared_Resources.Get_Shared_Variables("selenium_driver")
+                )
 
             selenium_details[driver_id] = {
                 "driver": Shared_Resources.Get_Shared_Variables("selenium_driver"),
@@ -3609,6 +3651,16 @@ def switch_window_or_tab(step_data):
         import time  # Import time for both Playwright and Selenium paths
 
         if playwright_enabled:
+            debug_port = _get_remote_debugging_port()
+            if not debug_port:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Playwright tab switching requires a Chromium remote debugging port. Falling back to Selenium",
+                    2,
+                )
+                playwright_enabled = False
+
+        if playwright_enabled:
             CommonUtil.ExecLog(sModuleInfo, "Playwright is enabled (using async API)", 1)
             import asyncio
             from playwright.async_api import async_playwright
@@ -3616,9 +3668,6 @@ def switch_window_or_tab(step_data):
             # Async function to handle Playwright operations
             async def run_playwright_switch():
                 async with async_playwright() as p:
-                    debug_port = selenium_details[current_driver_id][
-                        "remote-debugging-port"
-                    ]
                     browser = await p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
                     context = browser.contexts[0]
                     pages = context.pages
@@ -3846,6 +3895,16 @@ def close_tab(step_data):
 
     try:
         if playwright_enabled:
+            debug_port = _get_remote_debugging_port()
+            if not debug_port:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Playwright tab closing requires a Chromium remote debugging port. Falling back to Selenium",
+                    2,
+                )
+                playwright_enabled = False
+
+        if playwright_enabled:
             # --- Playwright tab closing ---
             CommonUtil.ExecLog(sModuleInfo, "Using Playwright for tab closing (async API)", 1)
             import asyncio
@@ -3854,7 +3913,6 @@ def close_tab(step_data):
             # Async function to handle Playwright operations
             async def run_playwright_close():
                 async with async_playwright() as p:
-                    debug_port = selenium_details[current_driver_id]["remote-debugging-port"]
                     browser = await p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
                     context = browser.contexts[0]
                     pages = context.pages

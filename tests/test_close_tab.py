@@ -407,6 +407,37 @@ def test_playwright_fallback_to_selenium(
     assert result == "passed"
 
 
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
+def test_playwright_close_falls_back_when_debug_port_missing(
+    mock_exec_log, mock_driver, mock_step_data_playwright
+):
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Test Tab"
+    mock_driver.capabilities = {}
+    mock_driver.close.return_value = None
+    mock_driver.switch_to.window.return_value = None
+
+    with patch.dict(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details",
+        {},
+        clear=True,
+    ), patch(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id",
+        None,
+    ):
+        result = close_tab(mock_step_data_playwright)
+
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Playwright tab closing requires a Chromium remote debugging port. Falling back to Selenium",
+        2,
+    )
+    mock_driver.close.assert_called_once()
+    assert result == "passed"
+
+
 def test_filter_non_page_tabs():
     """Test that non-page type tabs are filtered out"""
     # This test verifies the filtering logic in the Playwright section
