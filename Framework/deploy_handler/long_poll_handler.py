@@ -44,6 +44,26 @@ class DeployHandler:
 
         self.backoff_time = 0
 
+    def _current_server(self) -> str | None:
+        server = (
+            ConfigModule.get_config_value("Authentication", "server_address")
+            .strip('"')
+            .strip()
+        )
+        return server or None
+
+    def _mark_deploy_connected(self) -> None:
+        STATE.connected_server = self._current_server()
+        STATE.target_server = None
+        STATE.connection_state = "connected"
+        STATE.last_connect_error = None
+
+    def _mark_deploy_unavailable(self, message: str, failed: bool = False) -> None:
+        STATE.connected_server = None
+        STATE.target_server = self._current_server()
+        STATE.connection_state = "failed" if failed else "offline"
+        STATE.last_connect_error = message
+
     async def on_message(self, message) -> bool:
         """Returns True if the handler should quit, False otherwise."""
         if message == self.COMMAND_DONE:
@@ -265,11 +285,19 @@ class DeployHandler:
                 reconnect = True
                 resp = await RequestFormatter.async_request("get", host, timeout=70)
                 if resp is None:
+                    self._mark_deploy_unavailable("Deploy service returned no response")
                     break
 
                 if resp.content.startswith(self.ERROR_PREFIX):
+                    self._mark_deploy_unavailable(
+                        resp.content.decode("utf-8", errors="replace"),
+                        failed=True,
+                    )
                     self.on_error(resp.content)
                     continue
+
+                if resp.ok:
+                    self._mark_deploy_connected()
 
                 if resp.ok and print_online:
                     print_online = False
@@ -280,6 +308,7 @@ class DeployHandler:
                     continue
 
                 if resp.status_code == httpx.codes.BAD_GATEWAY:
+                    self._mark_deploy_unavailable("Deploy service returned 502 Bad Gateway")
                     print_online = True
                     print(Fore.YELLOW + "Server offline. Retrying after 30s")
                     await asyncio.sleep(30)
@@ -291,6 +320,9 @@ class DeployHandler:
                         resp.status_code,
                         "| reconnecting",
                     )
+                    self._mark_deploy_unavailable(
+                        f"Deploy service returned status code {resp.status_code}"
+                    )
 
                     # Encountered a server error, retry.
                     await asyncio.sleep(random.randint(1, 3))
@@ -301,11 +333,28 @@ class DeployHandler:
                     break
 
                 reconnect = False
-            except Exception as e:
+            except (
+                requests.exceptions.ConnectTimeout,
+                requests.exceptions.ReadTimeout,
+                requests.exceptions.ConnectionError,
+            ) as e:
+                # Nginx down, VM down, network issue, docker-compose stopped
                 if STATE.reconnect_with_credentials is not None:
                     return None
                 print_online = True
+                self._mark_deploy_unavailable(str(e) or "Deploy service connection error")
                 print(e)
                 print(Fore.YELLOW + "Retrying after 30s")
                 await asyncio.sleep(30)
 
+            except Exception as e:
+                if STATE.reconnect_with_credentials is not None:
+                    return None
+                print_online = True
+                self._mark_deploy_unavailable(
+                    str(e) or "Unexpected deploy service error",
+                    failed=True,
+                )
+                print(e)
+                print(Fore.YELLOW + "Retrying after 30s")
+                await asyncio.sleep(30)

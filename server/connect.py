@@ -15,10 +15,16 @@ class ConnectRequest(BaseModel):
 
 async def set_new_credentials(server: str, api_key: str):
     """Store new credentials in the settings file."""
+    server = server.strip()
+    api_key = api_key.strip()
     STATE.reconnect_with_credentials = LoginCredentials(
-        server=server.strip(),
-        api_key=api_key.strip(),
+        server=server,
+        api_key=api_key,
     )
+    STATE.connected_server = None
+    STATE.target_server = server or None
+    STATE.last_connect_error = None
+    STATE.connection_state = "authenticating" if server and api_key else "disconnected"
 
 
 @router.post("", status_code=200)
