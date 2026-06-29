@@ -863,6 +863,38 @@ def start_appium_server():
         )
 
 
+def reset_uiautomator2_server(serial=""):
+    """Force-stop the on-device Appium UiAutomator2 server processes.
+
+    The transient "UiAutomation not connected" SessionNotCreatedException leaves the
+    io.appium.uiautomator2.server[.test] instrumentation in a broken state. Stopping
+    these packages (plus io.appium.settings) before retrying lets the next session
+    re-launch the instrumentation cleanly, which makes driver creation far more
+    reliable on slow or just-booted emulators/devices. Best-effort: never raises.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        serial_arg = "-s %s" % serial if serial else ""
+        for package in (
+            "io.appium.uiautomator2.server",
+            "io.appium.uiautomator2.server.test",
+            "io.appium.settings",
+        ):
+            try:
+                subprocess.run(
+                    "adb %s shell am force-stop %s" % (serial_arg, package),
+                    shell=True,
+                    timeout=30,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except Exception:
+                pass  # One package failing must not stop the others
+        CommonUtil.ExecLog(sModuleInfo, "Reset on-device UiAutomator2 server state before retry", 0)
+    except Exception:
+        pass  # Cleanup is best-effort and must never break the retry flow
+
+
 @logger
 def start_appium_driver(
     package_name="",
@@ -940,6 +972,16 @@ def start_appium_driver(
                 desired_caps["noReset"] = "true"  # Do not clear application cache
             desired_caps["newCommandTimeout"] = 6000  # Command timeout before appium destroys instance
             desired_caps["automationName"] = "UiAutomator2"
+            # Reliability tuning to mitigate the transient "UiAutomation not connected"
+            # SessionNotCreatedException on slow / just-booted emulators and devices.
+            # setdefault so a user-supplied desired capability still wins.
+            desired_caps.setdefault("uiautomator2ServerLaunchTimeout", 90000)
+            desired_caps.setdefault("uiautomator2ServerInstallTimeout", 90000)
+            desired_caps.setdefault("uiautomator2ServerReadTimeout", 90000)
+            desired_caps.setdefault("adbExecTimeout", 60000)
+            desired_caps.setdefault("androidInstallTimeout", 120000)
+            desired_caps.setdefault("disableWindowAnimation", True)
+            desired_caps.setdefault("ignoreHiddenApiPolicyError", True)
             if not adbOptions.is_android_connected(device_serial):
                 CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                 return "zeuz_failed", launch_app
@@ -1045,22 +1087,34 @@ def start_appium_driver(
         # Create Appium instance with capabilities
         try:
             count = 1
-            while count <= 5:
+            max_attempts = 5
+            is_android = str(appium_details[device_id]["type"]).lower() == "android"
+            appium_driver = None  # Reset so a stale global from a previous run can't masquerade as success
+            while count <= max_attempts:
                 try:
                     capabilities_options = UiAutomator2Options().load_capabilities(desired_caps)
                     appium_driver = webdriver.Remote("http://127.0.0.1:%d" % appium_port, options=capabilities_options)  # Create instance
-                    Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
 
-                    if appium_driver:
-                        break
-                    count += 1
-                    time.sleep(10)
-                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
+                    if appium_driver and getattr(appium_driver, "session_id", None):
+                        Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
+                        break  # Got a real session, done
+
+                    # Object created but no session id -> treat as a failed attempt
+                    appium_driver = None
+                    CommonUtil.ExecLog(sModuleInfo, "Appium driver attempt %d/%d returned no session, trying again" % (count, max_attempts), 2)
                 except:
-                    count += 1
-                    time.sleep(10)
+                    appium_driver = None
                     CommonUtil.Exception_Handler(sys.exc_info())
-                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver (attempt %d/%d), trying again" % (count, max_attempts), 2)
+
+                # Clean up the broken on-device UiAutomator2 server before retrying. The
+                # "UiAutomation not connected" failure leaves the instrumentation in a bad
+                # state; force-stopping it lets the next NEW_SESSION start cleanly.
+                if is_android and count < max_attempts:
+                    reset_uiautomator2_server(appium_details[device_id]["serial"])
+
+                count += 1
+                time.sleep(min(5 * count, 20))  # Back off a bit longer each attempt
 
             if appium_driver:  # Make sure we get the instance
                 appium_details[device_id]["driver"] = appium_driver
