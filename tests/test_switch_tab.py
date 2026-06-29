@@ -122,6 +122,19 @@ def mock_selenium_details():
     }
 
 
+@pytest.fixture
+def mock_cdp_env():
+    """Patch selenium_details with a debug port for Playwright switch_tab tests."""
+    with patch.dict(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details",
+        {"test_driver": {"remote-debugging-port": 9222}},
+    ), patch(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id",
+        "test_driver",
+    ):
+        yield
+
+
 def test_parse_data_failure():
     """Test handling of malformed step_data"""
     malformed_data = [("invalid", "data")]
@@ -212,148 +225,119 @@ def test_selenium_switch_by_index_success(mock_exec_log, mock_driver, mock_step_
     mock_driver.switch_to.window.assert_called_with("window2")  # Index 1
     # Check that success message was logged
     mock_exec_log.assert_any_call(
-        "switch_window_or_tab : BuiltInFunctions", 
-        "Tab switched to index 1 title Tab at Index 1", 
-        1
+        "switch_window_or_tab : BuiltInFunctions",
+        "Tab switched to index 1 title 'Tab at Index 1'",
+        1,
     )
     assert result == "passed"
 
 
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
-@patch("time.sleep")
 def test_playwright_switch_by_title_success(
-    mock_sleep, mock_exec_log, mock_driver, mock_step_data_playwright_title, mock_playwright_objects
+    mock_exec_log, mock_driver, mock_run_async, mock_step_data_playwright_title, mock_cdp_env
 ):
     """Test Playwright tab switching by title - success case"""
-    # Configure selenium_details and current_driver_id mock
-    with patch.dict("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details", 
-                   {"test_driver": {"remote-debugging-port": 9222}}), \
-         patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id", "test_driver"):
-        
-        # Configure selenium driver mock for re-alignment
-        mock_driver.window_handles = ["window1", "window2"]
-        mock_driver.current_url = "https://www.google.com"
-        mock_driver.title = "Google"
-        mock_driver.switch_to.window.return_value = None
+    mock_run_async.return_value = {
+        "status": "found",
+        "target_url": "https://www.google.com",
+    }
+    mock_driver.window_handles = ["window1", "window2"]
+    mock_driver.current_url = "https://www.google.com"
+    mock_driver.title = "Google"
+    mock_driver.switch_to.window.return_value = None
 
-        with patch(
-            "playwright.sync_api.sync_playwright",
-            return_value=mock_playwright_objects["playwright"],
-        ):
-            result = switch_window_or_tab(mock_step_data_playwright_title)
+    result = switch_window_or_tab(mock_step_data_playwright_title)
 
-        # Verify Playwright bring_to_front was called
-        mock_playwright_objects["page1"].bring_to_front.assert_called_once()
-        
-        # Verify Selenium re-alignment was attempted
-        assert mock_driver.switch_to.window.call_count >= 1
-        
-        # Check that success message was logged
-        mock_exec_log.assert_any_call(
-            "switch_window_or_tab : BuiltInFunctions", 
-            "Selenium aligned to: Google", 
-            1
-        )
-        assert result == "passed"
+    mock_run_async.assert_called_once()
+    assert mock_driver.switch_to.window.call_count >= 1
+    mock_exec_log.assert_any_call(
+        "switch_window_or_tab : BuiltInFunctions",
+        "Tab switch and Selenium aligned to: Google",
+        1,
+    )
+    assert result == "passed"
 
 
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_switch_by_title_not_found(
-    mock_exec_log, mock_playwright_objects
+    mock_exec_log, mock_run_async, mock_cdp_env
 ):
     """Test Playwright tab switching by title - title not found"""
-    # Configure selenium_details and current_driver_id mock
-    with patch.dict("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details", 
-                   {"test_driver": {"remote-debugging-port": 9222}}), \
-         patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id", "test_driver"):
-        
-        step_data = [
-            ("window title", "input parameter", "NonExistentTitle"),
-            ("playwright", "option", "true"),
-            ("switch window/tab", "selenium action", "switch window or frame"),
-        ]
+    mock_run_async.return_value = {
+        "status": "not_found",
+        "error": "Playwright: No tab with title 'NonExistentTitle' found",
+    }
 
-        with patch(
-            "playwright.sync_api.sync_playwright",
-            return_value=mock_playwright_objects["playwright"],
-        ):
-            result = switch_window_or_tab(step_data)
+    step_data = [
+        ("window title", "input parameter", "NonExistentTitle"),
+        ("playwright", "option", "true"),
+        ("switch window/tab", "selenium action", "switch window or frame"),
+    ]
 
-        # Check that error message was logged
-        mock_exec_log.assert_any_call(
-            "switch_window_or_tab : BuiltInFunctions", 
-            "Playwright: No tab with title 'NonExistentTitle' found", 
-            3
-        )
-        assert result == "zeuz_failed"
+    result = switch_window_or_tab(step_data)
+
+    mock_exec_log.assert_any_call(
+        "switch_window_or_tab : BuiltInFunctions",
+        "Playwright: No tab with title 'NonExistentTitle' found",
+        3,
+    )
+    assert result == "zeuz_failed"
 
 
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_switch_by_index_not_supported(
-    mock_exec_log, mock_step_data_playwright_index, mock_playwright_objects
+    mock_exec_log, mock_run_async, mock_step_data_playwright_index, mock_cdp_env
 ):
     """Test Playwright tab switching by index - not supported"""
-    # Configure selenium_details and current_driver_id mock
-    with patch.dict("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details", 
-                   {"test_driver": {"remote-debugging-port": 9222}}), \
-         patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id", "test_driver"):
-        
-        with patch(
-            "playwright.sync_api.sync_playwright",
-            return_value=mock_playwright_objects["playwright"],
-        ):
-            result = switch_window_or_tab(mock_step_data_playwright_index)
+    mock_run_async.return_value = {
+        "status": "not_supported",
+        "error": "Index-based tab switching is not supported with Playwright. Use title-based switching instead.",
+    }
 
-        # Check that error message was logged
-        mock_exec_log.assert_any_call(
-            "switch_window_or_tab : BuiltInFunctions", 
-            "Index-based tab switching is not supported with Playwright. Use title-based switching instead.", 
-            3
-        )
-        assert result == "zeuz_failed"
+    result = switch_window_or_tab(mock_step_data_playwright_index)
+
+    mock_exec_log.assert_any_call(
+        "switch_window_or_tab : BuiltInFunctions",
+        "Index-based tab switching is not supported with Playwright. Use title-based switching instead.",
+        3,
+    )
+    assert result == "zeuz_failed"
 
 
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
-@patch("time.sleep")
 def test_playwright_alignment_failure(
-    mock_sleep, mock_exec_log, mock_driver, mock_playwright_objects
+    mock_exec_log, mock_driver, mock_run_async, mock_cdp_env
 ):
     """Test Playwright tab switching - Selenium alignment failure"""
-    # Configure selenium_details and current_driver_id mock
-    with patch.dict("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details", 
-                   {"test_driver": {"remote-debugging-port": 9222}}), \
-         patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id", "test_driver"):
-        
-        # Configure selenium driver mock - URLs don't match for alignment
-        mock_driver.window_handles = ["window1", "window2"]
-        mock_driver.current_url = "https://www.different.com"
-        mock_driver.title = "Different Title"
-        mock_driver.switch_to.window.return_value = None
+    mock_run_async.return_value = {
+        "status": "found",
+        "target_url": "https://www.google.com",
+    }
+    mock_driver.window_handles = ["window1", "window2"]
+    mock_driver.current_url = "https://www.different.com"
+    mock_driver.title = "Different Title"
+    mock_driver.switch_to.window.return_value = None
 
-        step_data = [
-            ("window title", "input parameter", "Google"),
-            ("playwright", "option", "true"),
-            ("switch window/tab", "selenium action", "switch window or frame"),
-        ]
+    step_data = [
+        ("window title", "input parameter", "Google"),
+        ("playwright", "option", "true"),
+        ("switch window/tab", "selenium action", "switch window or frame"),
+    ]
 
-        with patch(
-            "playwright.sync_api.sync_playwright",
-            return_value=mock_playwright_objects["playwright"],
-        ):
-            result = switch_window_or_tab(step_data)
+    result = switch_window_or_tab(step_data)
 
-        # Verify Playwright bring_to_front was called
-        mock_playwright_objects["page1"].bring_to_front.assert_called_once()
-        
-        # Check that alignment failure message was logged
-        mock_exec_log.assert_any_call(
-            "switch_window_or_tab : BuiltInFunctions", 
-            "Failed to align Selenium with target tab", 
-            3
-        )
-        assert result == "zeuz_failed"
+    mock_exec_log.assert_any_call(
+        "switch_window_or_tab : BuiltInFunctions",
+        "Failed to align Selenium with target tab",
+        3,
+    )
+    assert result == "zeuz_failed"
 
 
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
@@ -375,6 +359,36 @@ def test_playwright_connection_failure(mock_exec_log, mock_step_data_playwright_
 
         # Verify that exception was handled and returns failure
         assert result == "zeuz_failed"
+
+
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
+def test_playwright_switch_falls_back_when_debug_port_missing(
+    mock_exec_log, mock_driver, mock_step_data_playwright_title
+):
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Google"
+    mock_driver.current_url = "https://www.google.com"
+    mock_driver.capabilities = {}
+    mock_driver.switch_to.window.return_value = None
+
+    with patch.dict(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details",
+        {},
+        clear=True,
+    ), patch(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id",
+        None,
+    ):
+        result = switch_window_or_tab(mock_step_data_playwright_title)
+
+    mock_exec_log.assert_any_call(
+        "switch_window_or_tab : BuiltInFunctions",
+        "Playwright tab switching requires a Chromium remote debugging port. Falling back to Selenium",
+        2,
+    )
+    assert result == "passed"
 
 
 # Parametrized tests for better coverage
