@@ -24,6 +24,7 @@ from Framework.install_handler.android.android_emulator import (
     create_avd_from_system_image,
     launch_avd,
 )
+from Framework.install_handler.system_info.system_info import get_formatted_system_info
 
 
 router = APIRouter(prefix="/installer", tags=["installer"])
@@ -39,9 +40,10 @@ FORWARD_TO_REMOTE = os.getenv("INSTALLER_FORWARD_REMOTE", "").lower() in (
 )
 ANDROID_CATEGORIES = {"Android", "AndroidEmulator"}
 WEB_CATEGORIES = {"Web"}
+NATIVE_CATEGORIES = {"Linux", "Windows", "MacOS"}
 
 # Combined categories for patching
-PATCH_CATEGORIES = ANDROID_CATEGORIES | WEB_CATEGORIES
+PATCH_CATEGORIES = ANDROID_CATEGORIES | WEB_CATEGORIES | NATIVE_CATEGORIES
 
 # --- Models --- #
 
@@ -336,21 +338,30 @@ async def _maybe_await(func, *args, **kwargs):
 
 
 async def _run_job(job: Job) -> None:
-    async with SEM:
-        JOB_STORE.update(job.id, status="running")
-        EVENT_BUS.publish(_make_event(job.id, "job.started", None))
-        token = _event_context.set(job.id)
-        try:
-            result = await _dispatch_job(job)
-            JOB_STORE.update(job.id, status="succeeded", result=result)
-            EVENT_BUS.publish(_make_event(job.id, "job.completed", {"result": result}))
-        except Exception as exc:
-            JOB_STORE.update(job.id, status="failed", error=str(exc))
-            EVENT_BUS.publish(
-                _make_event(job.id, "job.failed", {"error": str(exc)})
-            )
-        finally:
-            _event_context.reset(token)
+    # Status checks are read-only and fast — skip the concurrency semaphore
+    # so they don't queue behind running installs.
+    if job.action == "status":
+        await _execute_job(job)
+    else:
+        async with SEM:
+            await _execute_job(job)
+
+
+async def _execute_job(job: Job) -> None:
+    JOB_STORE.update(job.id, status="running")
+    EVENT_BUS.publish(_make_event(job.id, "job.started", None))
+    token = _event_context.set(job.id)
+    try:
+        result = await _dispatch_job(job)
+        JOB_STORE.update(job.id, status="succeeded", result=result)
+        EVENT_BUS.publish(_make_event(job.id, "job.completed", {"result": result}))
+    except Exception as exc:
+        JOB_STORE.update(job.id, status="failed", error=str(exc))
+        EVENT_BUS.publish(
+            _make_event(job.id, "job.failed", {"error": str(exc)})
+        )
+    finally:
+        _event_context.reset(token)
 
 
 async def _dispatch_job(job: Job) -> Any:
@@ -396,6 +407,9 @@ async def _dispatch_job(job: Job) -> Any:
         if not name:
             raise RuntimeError("name is required")
         return await _maybe_await(launch_avd, name)
+
+    if action == "system_info":
+        return await get_formatted_system_info()
 
     raise RuntimeError(f"Unsupported action: {action}")
 
@@ -634,6 +648,19 @@ async def all_events():
             EVENT_BUS.unsubscribe("*", queue)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# --- System info --- #
+
+
+@router.get("/system-info", response_model=SystemInfoResponse)
+async def system_info():
+    data = await get_formatted_system_info()
+    return SystemInfoResponse(
+        node_id=install_utils.read_node_id(),
+        generated_at=time.time(),
+        data=data,
+    )
 
 
 # --- Installer log download (node-side; Zeuz UI fetches from node host:port) --- #

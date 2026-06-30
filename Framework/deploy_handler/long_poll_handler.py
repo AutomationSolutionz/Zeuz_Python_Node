@@ -1,6 +1,6 @@
 # Author: sazid
 
-from typing import Any, Callable
+from typing import Any, Callable, Coroutine
 import traceback
 import asyncio
 import random
@@ -9,7 +9,6 @@ import httpx
 from colorama import Fore
 from pathlib import Path
 from urllib.parse import urlparse
-import requests
 
 from Framework.Utilities import RequestFormatter, ConfigModule, CommonUtil
 from Framework.Utilities.RequestFormatter import REQUEST_TIMEOUT
@@ -30,7 +29,7 @@ class DeployHandler:
 
     def __init__(
         self,
-        on_connect_callback: Callable[[bool], None],
+        on_connect_callback: Callable[[bool], Coroutine[Any, Any, None]],
         response_callback: Callable[[Any], None],
         cancel_callback: Callable[[], None],
         done_callback: Callable[[], bool],
@@ -44,6 +43,26 @@ class DeployHandler:
         self.done_callback = done_callback
 
         self.backoff_time = 0
+
+    def _current_server(self) -> str | None:
+        server = (
+            ConfigModule.get_config_value("Authentication", "server_address")
+            .strip('"')
+            .strip()
+        )
+        return server or None
+
+    def _mark_deploy_connected(self) -> None:
+        STATE.connected_server = self._current_server()
+        STATE.target_server = None
+        STATE.connection_state = "connected"
+        STATE.last_connect_error = None
+
+    def _mark_deploy_unavailable(self, message: str, failed: bool = False) -> None:
+        STATE.connected_server = None
+        STATE.target_server = self._current_server()
+        STATE.connection_state = "failed" if failed else "offline"
+        STATE.last_connect_error = message
 
     async def on_message(self, message) -> bool:
         """Returns True if the handler should quit, False otherwise."""
@@ -261,17 +280,24 @@ class DeployHandler:
             if reconnect:
                 await asyncio.sleep(random.randint(1, 3))
 
-            await self.on_connect_callback(reconnect)
-
             try:
+                await self.on_connect_callback(reconnect)
                 reconnect = True
                 resp = await RequestFormatter.async_request("get", host, timeout=70)
                 if resp is None:
+                    self._mark_deploy_unavailable("Deploy service returned no response")
                     break
 
                 if resp.content.startswith(self.ERROR_PREFIX):
+                    self._mark_deploy_unavailable(
+                        resp.content.decode("utf-8", errors="replace"),
+                        failed=True,
+                    )
                     self.on_error(resp.content)
                     continue
+
+                if resp.ok:
+                    self._mark_deploy_connected()
 
                 if resp.ok and print_online:
                     print_online = False
@@ -282,6 +308,7 @@ class DeployHandler:
                     continue
 
                 if resp.status_code == httpx.codes.BAD_GATEWAY:
+                    self._mark_deploy_unavailable("Deploy service returned 502 Bad Gateway")
                     print_online = True
                     print(Fore.YELLOW + "Server offline. Retrying after 30s")
                     await asyncio.sleep(30)
@@ -292,6 +319,9 @@ class DeployHandler:
                         "[deploy] Request Error, status code:",
                         resp.status_code,
                         "| reconnecting",
+                    )
+                    self._mark_deploy_unavailable(
+                        f"Deploy service returned status code {resp.status_code}"
                     )
 
                     # Encountered a server error, retry.
@@ -312,6 +342,7 @@ class DeployHandler:
                 if STATE.reconnect_with_credentials is not None:
                     return None
                 print_online = True
+                self._mark_deploy_unavailable(str(e) or "Deploy service connection error")
                 print(e)
                 print(Fore.YELLOW + "Retrying after 30s")
                 await asyncio.sleep(30)
@@ -320,7 +351,10 @@ class DeployHandler:
                 if STATE.reconnect_with_credentials is not None:
                     return None
                 print_online = True
+                self._mark_deploy_unavailable(
+                    str(e) or "Unexpected deploy service error",
+                    failed=True,
+                )
                 print(e)
                 print(Fore.YELLOW + "Retrying after 30s")
                 await asyncio.sleep(30)
-

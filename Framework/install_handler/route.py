@@ -12,6 +12,7 @@ from .android import (
 from .ios import xcode, simulator
 from .macos import xcode as macos_xcode
 from .windows import inspector
+from .linux import linux_inspector
 from .android import android_emulator, emulator_windows_linux, emulator
 
 services = [
@@ -198,6 +199,26 @@ services = [
                 "os": ["darwin"],
                 "status_function": macos_xcode.check_status,
                 "install_function": macos_xcode.install,
+                "user_password": True,
+            }
+        ],
+    },
+    {
+        "category": "Linux",
+        "group": {
+            "check_text": "Check all",
+            "install_text": "Install all",
+        },
+        "services": [
+            {
+                "name": "Linux Inspector",
+                "status": "none",
+                "comment": "System packages and Python libraries required for Linux desktop automation.",
+                "check_text": "Check status",
+                "install_text": "Install",
+                "os": ["linux"],
+                "status_function": linux_inspector.check_status,
+                "install_function": linux_inspector.install,
                 "user_password": True,
             }
         ],

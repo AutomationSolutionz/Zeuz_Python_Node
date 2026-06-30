@@ -108,6 +108,19 @@ def mock_cdp_response():
     return mock_response
 
 
+@pytest.fixture
+def mock_cdp_env():
+    """Patch selenium_details with a debug port for Playwright close_tab tests."""
+    with patch.dict(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details",
+        {"test_driver": {"remote-debugging-port": 9222}},
+    ), patch(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id",
+        "test_driver",
+    ):
+        yield
+
+
 def test_parse_data_failure():
     """Test handling of malformed step_data"""
     malformed_data = [("invalid", "data")]
@@ -181,181 +194,193 @@ def test_selenium_close_multiple_tabs_by_index(mock_exec_log, mock_driver):
     assert result == "passed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
-def test_playwright_close_tab_by_title(
-    mock_exec_log, mock_urlopen, mock_step_data_with_title, mock_playwright_objects
+def test_playwright_close_falls_back_when_debug_port_missing(
+    mock_exec_log, mock_driver, mock_step_data_with_title
 ):
-    """Test Playwright closing tab by title"""
-    # Mock CDP response
-    mock_urlopen.return_value.__enter__.return_value = mock_playwright_objects["page"]
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1", "window2"]
+    mock_driver.title = "Google"
+    mock_driver.close.return_value = None
+    mock_driver.switch_to.window.return_value = None
 
-    with patch(
-        "playwright.sync_api.sync_playwright",
-        return_value=mock_playwright_objects["playwright"],
+    with patch.dict(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_details",
+        {},
+        clear=True,
+    ), patch(
+        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.current_driver_id",
+        None,
     ):
         result = close_tab(mock_step_data_with_title)
 
-    # Verify the tab was closed
-    mock_playwright_objects["page"].close.assert_called_once()
-    # Check that the success message was logged (among other calls)
     mock_exec_log.assert_any_call(
-        "close_tab : BuiltInFunctions", "Playwright: Tab closed 'Google'", 1
+        "close_tab : BuiltInFunctions",
+        "Playwright tab closing requires a Chromium remote debugging port. Falling back to Selenium",
+        2,
+    )
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Using Selenium for tab closing (Playwright fallback)",
+        1,
     )
     assert result == "passed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
+def test_playwright_close_falls_back_when_no_title_or_index(
+    mock_exec_log, mock_driver, mock_step_data_playwright, mock_cdp_env
+):
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Test Tab"
+    mock_driver.close.return_value = None
+    mock_driver.switch_to.window.return_value = None
+
+    result = close_tab(mock_step_data_playwright)
+
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Playwright tab closing requires tab title or tab index. Falling back to Selenium",
+        2,
+    )
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Using Selenium for tab closing (Playwright fallback)",
+        1,
+    )
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Current tab closed 'Test Tab'",
+        1,
+    )
+    mock_driver.close.assert_called_once()
+    assert result == "passed"
+
+
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
+def test_playwright_close_tab_by_title(
+    mock_exec_log, mock_run_async, mock_step_data_with_title, mock_cdp_env
+):
+    """Test Playwright closing tab by title"""
+    mock_run_async.return_value = {"status": "closed", "page_title": "Google"}
+
+    result = close_tab(mock_step_data_with_title)
+
+    mock_run_async.assert_called_once()
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions", "Tab closed 'Google'", 1
+    )
+    assert result == "passed"
+
+
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_close_tab_by_index(
-    mock_exec_log, mock_urlopen, mock_step_data_with_index, mock_playwright_objects
+    mock_exec_log, mock_run_async, mock_step_data_with_index, mock_cdp_env
 ):
     """Test Playwright closing tab by index"""
-    # Mock CDP response
-    mock_response = MagicMock()
-    mock_response.read.return_value = json.dumps(
-        [
-            {"type": "page", "url": "https://www.google.com", "title": "Google"},
-            {"type": "page", "url": "https://www.youtube.com", "title": "YouTube"},
-        ]
-    ).encode()
-    mock_urlopen.return_value.__enter__.return_value = mock_response
+    mock_run_async.return_value = {"status": "closed", "page_title": "YouTube"}
 
-    # Fix: Set the mock page URL to match what the function expects
-    # The function reverses the target_urls, so index 0 will be 'https://www.youtube.com'
-    mock_playwright_objects["page"].url = "https://www.youtube.com"
+    result = close_tab(mock_step_data_with_index)
 
-    with patch(
-        "playwright.sync_api.sync_playwright",
-        return_value=mock_playwright_objects["playwright"],
-    ):
-        result = close_tab(mock_step_data_with_index)
-
-    # Verify the tab was closed
-    mock_playwright_objects["page"].close.assert_called_once()
-    # Check that the success message was logged (among other calls)
+    mock_run_async.assert_called_once()
     mock_exec_log.assert_any_call(
-        "close_tab : BuiltInFunctions", "Playwright: Tab closed at  index 0", 1
+        "close_tab : BuiltInFunctions", "Tab closed 'YouTube'", 1
     )
     assert result == "passed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_close_current_active_tab(
-    mock_exec_log, mock_urlopen, mock_step_data_playwright, mock_playwright_objects
+    mock_exec_log, mock_driver, mock_step_data_playwright, mock_cdp_env
 ):
-    """Test Playwright closing current active tab"""
-    # Mock CDP response
-    mock_response = MagicMock()
-    mock_response.read.return_value = json.dumps(
-        [{"type": "page", "url": "https://www.google.com", "title": "Google"}]
-    ).encode()
-    mock_urlopen.return_value.__enter__.return_value = mock_response
+    """Playwright without tab title/index falls back to Selenium current-tab close"""
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Google"
+    mock_driver.close.return_value = None
+    mock_driver.switch_to.window.return_value = None
 
-    # Mock page to have focus
-    mock_playwright_objects["page"].evaluate.return_value = True
+    result = close_tab(mock_step_data_playwright)
 
-    with patch(
-        "playwright.sync_api.sync_playwright",
-        return_value=mock_playwright_objects["playwright"],
-    ):
-        result = close_tab(mock_step_data_playwright)
-
-    # Verify the tab was closed
-    mock_playwright_objects["page"].close.assert_called_once()
-    # Check that the success message was logged (among other calls)
     mock_exec_log.assert_any_call(
-        "close_tab : BuiltInFunctions", "Playwright: Current tab closed 'Google'", 1
+        "close_tab : BuiltInFunctions",
+        "Playwright tab closing requires tab title or tab index. Falling back to Selenium",
+        2,
     )
+    mock_driver.close.assert_called_once()
     assert result == "passed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_close_last_remaining_tab(
-    mock_exec_log, mock_urlopen, mock_step_data_playwright, mock_playwright_objects
+    mock_exec_log, mock_driver, mock_step_data_playwright, mock_cdp_env
 ):
-    """Test Playwright closing the last remaining tab"""
-    # Mock CDP response
-    mock_response = MagicMock()
-    mock_response.read.return_value = json.dumps(
-        [{"type": "page", "url": "https://www.google.com", "title": "Google"}]
-    ).encode()
-    mock_urlopen.return_value.__enter__.return_value = mock_response
+    """Closing the last tab via Selenium fallback still passes"""
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Google"
+    mock_driver.close.return_value = None
+    mock_driver.switch_to.window.return_value = None
 
-    # Mock page to not have focus (will fall back to CDP)
-    mock_playwright_objects["page"].evaluate.return_value = False
+    result = close_tab(mock_step_data_playwright)
 
-    with patch(
-        "playwright.sync_api.sync_playwright",
-        return_value=mock_playwright_objects["playwright"],
-    ):
-        result = close_tab(mock_step_data_playwright)
-
-    # Verify the tab was closed (should work even for last tab)
-    mock_playwright_objects["page"].close.assert_called_once()
+    mock_driver.close.assert_called_once()
     assert result == "passed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_no_tabs_found(
-    mock_exec_log, mock_urlopen, mock_step_data_playwright
+    mock_exec_log, mock_driver, mock_run_async, mock_step_data_with_title, mock_cdp_env
 ):
-    """Test Playwright when no tabs are found"""
-    # Mock CDP response
-    mock_response = MagicMock()
-    mock_response.read.return_value = json.dumps(
-        [{"type": "page", "url": "https://www.google.com", "title": "Google"}]
-    ).encode()
-    mock_urlopen.return_value.__enter__.return_value = mock_response
+    """Test Playwright when no tabs are found, then Selenium also fails"""
+    mock_run_async.return_value = {
+        "status": "no_tabs",
+        "error": "Playwright: No tabs found to close",
+    }
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.title = "Other Tab"
+    mock_driver.switch_to.window.return_value = None
 
-    # Mock Playwright objects - no pages
-    mock_context = MagicMock()
-    mock_context.pages = []
+    result = close_tab(mock_step_data_with_title)
 
-    mock_browser = MagicMock()
-    mock_browser.contexts = [mock_context]
-
-    mock_playwright = MagicMock()
-    mock_playwright.chromium.connect_over_cdp.return_value = mock_browser
-    mock_playwright.__enter__.return_value = mock_playwright
-    mock_playwright.__exit__.return_value = None
-
-    with patch("playwright.sync_api.sync_playwright", return_value=mock_playwright):
-        result = close_tab(mock_step_data_playwright)
-
-    # Verify error message
     mock_exec_log.assert_any_call(
         "close_tab : BuiltInFunctions", "Playwright: No tabs found to close", 3
+    )
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Falling back to Selenium for tab closing",
+        2,
+    )
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions", "No tab with title 'Google' found", 3
     )
     assert result == "zeuz_failed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
-def test_playwright_invalid_tab_index(mock_exec_log, mock_urlopen):
-    """Test Playwright with invalid tab index"""
-    # Mock CDP response
-    mock_response = MagicMock()
-    mock_response.read.return_value = json.dumps(
-        [{"type": "page", "url": "https://www.google.com", "title": "Google"}]
-    ).encode()
-    mock_urlopen.return_value.__enter__.return_value = mock_response
-
-    # Mock Playwright objects
-    mock_page = MagicMock()
-    mock_context = MagicMock()
-    mock_context.pages = [mock_page]
-
-    mock_browser = MagicMock()
-    mock_browser.contexts = [mock_context]
-
-    mock_playwright = MagicMock()
-    mock_playwright.chromium.connect_over_cdp.return_value = mock_playwright
-    mock_playwright.__enter__.return_value = mock_playwright
-    mock_playwright.__exit__.return_value = None
+def test_playwright_invalid_tab_index(
+    mock_exec_log, mock_driver, mock_run_async, mock_cdp_env
+):
+    """Test Playwright with invalid tab index, then Selenium validation failure"""
+    mock_run_async.return_value = {
+        "status": "invalid_index",
+        "error": "Playwright: Invalid tab index 'invalid'",
+    }
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1"]
+    mock_driver.switch_to.window.return_value = None
 
     step_data_invalid_index = [
         ("close tab", "selenium action", "close tab"),
@@ -363,46 +388,43 @@ def test_playwright_invalid_tab_index(mock_exec_log, mock_urlopen):
         ("tab index", "input parameter", "invalid"),
     ]
 
-    with patch("playwright.sync_api.sync_playwright", return_value=mock_playwright):
-        result = close_tab(step_data_invalid_index)
+    result = close_tab(step_data_invalid_index)
 
-    # Verify error message
     mock_exec_log.assert_any_call(
         "close_tab : BuiltInFunctions", "Playwright: Invalid tab index 'invalid'", 3
+    )
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions", "Invalid tab index 'invalid'", 3
     )
     assert result == "zeuz_failed"
 
 
-@patch("urllib.request.urlopen")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions._switch_tab_run_async")
+@patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver")
 @patch("Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.CommonUtil.ExecLog")
 def test_playwright_fallback_to_selenium(
-    mock_exec_log, mock_urlopen, mock_step_data_playwright
+    mock_exec_log, mock_driver, mock_run_async, mock_step_data_with_title, mock_cdp_env
 ):
-    """Test Playwright fallback to Selenium when Playwright fails"""
-    # Mock CDP response to fail
-    mock_urlopen.side_effect = Exception("Connection failed")
+    """Test Playwright fallback to Selenium when Playwright raises"""
+    mock_run_async.side_effect = Exception("Connection failed")
+    mock_driver.current_window_handle = "window1"
+    mock_driver.window_handles = ["window1", "window2"]
+    mock_driver.title = "Google"
+    mock_driver.close.return_value = None
+    mock_driver.switch_to.window.return_value = None
 
-    # Mock selenium driver for fallback
-    with patch(
-        "Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions.selenium_driver"
-    ) as mock_driver:
-        mock_driver.current_window_handle = "window1"
-        mock_driver.window_handles = ["window1"]
-        mock_driver.title = "Test Tab"
-        mock_driver.close.return_value = None
-        mock_driver.switch_to.window.return_value = None
+    result = close_tab(mock_step_data_with_title)
 
-        result = close_tab(mock_step_data_playwright)
-
-    # Verify fallback message and Selenium execution
-    # The actual error message is about CDP connection failure
     mock_exec_log.assert_any_call(
         "close_tab : BuiltInFunctions",
-        "Playwright tab closing failed: BrowserType.connect_over_cdp: connect ECONNREFUSED ::1:9222\nCall log:\n  - <ws preparing> retrieving websocket url from http://localhost:9222\n. Falling back to Selenium",
+        "Playwright tab closing failed: Connection failed. Falling back to Selenium",
         2,
     )
-
-    # Verify that Selenium was used as fallback
+    mock_exec_log.assert_any_call(
+        "close_tab : BuiltInFunctions",
+        "Using Selenium for tab closing (Playwright fallback)",
+        1,
+    )
     mock_driver.close.assert_called_once()
     assert result == "passed"
 
