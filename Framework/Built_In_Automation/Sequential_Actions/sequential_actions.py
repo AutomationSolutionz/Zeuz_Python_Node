@@ -2525,6 +2525,9 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "zeuz_failed"
         run_function = getattr(eval(module), function)  # create a reference to the function
+        # Capture the BEFORE-action screen (debug/chatbot only) so the validator can
+        # compare it against the AFTER capture taken once the action completes.
+        CommonUtil.TakeScreenShot(function, pre_action=True)
         start_time = time.perf_counter()
         if pre_sleep:
             time.sleep(pre_sleep)
