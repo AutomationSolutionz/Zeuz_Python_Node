@@ -100,6 +100,30 @@ def build_css_selector_query(dataset:list[list[str]]) -> str:
         return ""
 
 get_element_return_type = list[selenium.webdriver.remote.webelement.WebElement] | Literal["zeuz_failed"] | selenium.webdriver.remote.webelement.WebElement
+
+
+def _shadow_host_query(idx, shadow_param, parent_params, playwright=False):
+    shadow_host_query = None
+    query_type = None
+    for idx2, parent_param in parent_params:
+        if idx == idx2:
+            if idx == 1:
+                shadow_host_query, query_type = _construct_query([parent_param, shadow_param])
+            else:
+                shadow_host_query = build_css_selector_query([parent_param, shadow_param])
+            break
+
+    if not shadow_host_query:
+        if idx == 1:
+            shadow_host_query, query_type = _construct_query([shadow_param])
+        else:
+            shadow_host_query = build_css_selector_query([shadow_param])
+
+    if playwright and query_type == "xpath":
+        return _locator_xpath(shadow_host_query), "shadow css"
+    return shadow_host_query, By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
+
+
 def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[str]], Filter: str, element_wait: float, return_all_elements: bool) -> get_element_return_type:
     """Traverses nested shadow roots and returns the target element"""
 
@@ -151,27 +175,33 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
         parent_params.sort(key=lambda x: x[0])
         shadow_root_params.sort(key=lambda x: x[0])
 
+        if driver_type == "playwright":
+            async def _run():
+                global generic_driver
+                current_root = generic_driver
+                query_parts = []
+                for idx, shadow_param in shadow_root_params:
+                    shadow_host_query, _locator_type = _shadow_host_query(idx, shadow_param, parent_params, playwright=True)
+                    shadow_host_index = _locate_index_number([shadow_param]) or 0
+                    CommonUtil.ExecLog(sModuleInfo, f"To locate the Element we used shadow css:\n{shadow_host_query}", 5)
+                    current_root = current_root.locator(shadow_host_query).nth(shadow_host_index)
+                    query_parts.append(shadow_host_query)
+
+                element_query = build_css_selector_query(element_ds)
+                query_parts.append(element_query)
+                CommonUtil.ExecLog(sModuleInfo, f"To locate the Element we used shadow css:\n{' >> '.join(query_parts)}", 5)
+                previous_root = generic_driver
+                try:
+                    generic_driver = current_root
+                    return await _get_xpath_or_css_element(element_query, "css", element_ds, _locate_index_number(element_ds), Filter, return_all_elements, element_wait)
+                finally:
+                    generic_driver = previous_root
+
+            return _run()
+
         # Traverse each shadow root level
         for idx, shadow_param in shadow_root_params:
-            shadow_host_query = None
-            locator_type = None
-            for idx2, parent_param in parent_params:
-                if idx == idx2:
-                    if idx == 1: 
-                        shadow_host_query, query_type = _construct_query([parent_param, shadow_param])
-                        locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
-                    else:
-                        shadow_host_query = build_css_selector_query([parent_param, shadow_param])
-                    break
-
-            # Build CSS selector for the current shadow host
-            if not shadow_host_query:
-                if idx == 1:  # First shadow root without parent, use XPath
-                    shadow_host_query, query_type = _construct_query([shadow_param])
-                    locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
-                else:
-                    shadow_host_query = build_css_selector_query([shadow_param])
-                    locator_type = By.CSS_SELECTOR
+            shadow_host_query, locator_type = _shadow_host_query(idx, shadow_param, parent_params)
             shadow_host_index = _locate_index_number([shadow_param]) or 0
 
             CommonUtil.ExecLog(
@@ -225,6 +255,14 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         # Check the driver that is given and set the driver type
         global driver_type
         driver_type = _driver_type(query_debug)
+
+        if driver_type == "playwright":
+            try:
+                frame = sr.Get_Shared_Variables("playwright_frame", log=False)
+                if frame not in failed_tag_list and frame is not None and not hasattr(driver, "filter"):
+                    generic_driver = frame
+            except Exception:
+                pass
 
         # Checking whether the given element is web element or web driver
         if isinstance(driver, selenium.webdriver.remote.webelement.WebElement):
@@ -310,28 +348,41 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     get_parameter = row[2].strip().strip("%").strip("|")
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign at right column to get variable value", 3)
+                    if driver_type == "playwright":
+                        return _async_value("zeuz_failed")
                     return "zeuz_failed"
-            elif row[1].strip().lower() == "optional parameter":
+            elif row[1].strip().lower() in ("optional parameter", "option"):
                 left = row[0].strip().lower()
                 right = row[2].strip().lower()
                 if left in ("allow hidden", "allow disable"):
-                    Filter = left if right in ("yes", "true", "ok") else Filter
+                    Filter = left if right in ("yes", "true", "ok", "1", "enable", "enabled") else Filter
                 elif left == "wait":
-                    element_wait = float(right)
+                    try:
+                        element_wait = float(right)
+                    except Exception:
+                        CommonUtil.ExecLog(sModuleInfo, "Wait optional parameter must be numeric", 3)
+                        if driver_type == "playwright":
+                            return _async_value("zeuz_failed")
+                        return "zeuz_failed"
                 elif left == "text filter":
-                    text_filter_cond = right in ("yes", "true", "ok", "enable")
+                    text_filter_cond = right in ("yes", "true", "ok", "1", "enable", "enabled")
             elif row[1].strip().lower().startswith("sr"):
                 shadow_root_ds.append([row[0], row[1], row[2]])
             else:
                 element_ds.append([row[0], row[1], row[2]])
 
         if len(shadow_root_ds) > 0:
-            return shadow_root_elements(shadow_root_ds, element_ds, Filter, element_wait, return_all_elements)
+            result = shadow_root_elements(shadow_root_ds, element_ds, Filter, element_wait, return_all_elements)
+            if driver_type == "playwright":
+                return _finalize_async_result(result, False, step_data_set, Filter, element_wait, return_all_elements, save_parameter, sModuleInfo)
+            return result
 
         if get_parameter != "":
 
             result = sr.parse_variable(get_parameter)
             result = CommonUtil.ZeuZ_map_code_decoder(result)   # Decode if this is a ZeuZ_map_code
+            if result in failed_tag_list and driver_type == "playwright":
+                result = sr.Get_Shared_Variables(get_parameter, log=False)
             if result not in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -339,6 +390,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     % get_parameter,
                     1,
                 )
+                if driver_type == "playwright":
+                    return _async_value(result)
                 return result
             else:
                 CommonUtil.ExecLog(
@@ -346,6 +399,8 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                     "Element named '%s' not found in shared variables" % get_parameter,
                     3,
                 )
+                if driver_type == "playwright":
+                    return _async_value("zeuz_failed")
                 return "zeuz_failed"
 
         if driver_type == "pyautogui":
@@ -362,10 +417,14 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
 
         if query_type in ("xpath", "css", "unique"):
             result = _get_xpath_or_css_element(element_query, query_type, step_data_set, index_number, Filter, return_all_elements, element_wait)
+            if driver_type == "playwright":
+                return _finalize_async_result(result, text_filter_cond, step_data_set, Filter, element_wait, return_all_elements, save_parameter, sModuleInfo)
             if result == "zeuz_failed" and text_filter_cond:
                 result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
         else:
             result = "zeuz_failed"
+            if driver_type == "playwright":
+                return _async_value(result)
 
         """ The following code should have handled element_click_interception_exception according to doc but it cannot handle yet kept the code for rnd """
         # try:
@@ -413,6 +472,56 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+async def _async_value(result):
+    return result
+
+
+async def _finalize_async_result(result, text_filter_cond, step_data_set, Filter, element_wait, return_all_elements, save_parameter, sModuleInfo):
+    try:
+        if inspect.isawaitable(result):
+            result = await result
+        if result == "zeuz_failed" and text_filter_cond:
+            result = text_filter(step_data_set, Filter, element_wait, return_all_elements)
+            if inspect.isawaitable(result):
+                result = await result
+        if result not in failed_tag_list:
+            if save_parameter != "":
+                sr.Set_Shared_Variables(save_parameter, result)
+            sr.Set_Shared_Variables("zeuz_element", result)
+            return result
+        return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _text_filter_match(element_text, filters, similar_texts):
+    for f in filters:
+        if element_text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub(r'\s+', '', element_text.lower().replace("\xa0", "")):
+            similar_texts.append(element_text)
+        if f[0].startswith("**") and f[2].lower().replace("\xa0", " ") in element_text.lower().replace("\xa0", " "):
+            return True
+        elif f[0].startswith("*") and f[2].replace("\xa0", " ") in element_text.replace("\xa0", " "):
+            return True
+        elif f[2].replace("\xa0", " ") == element_text.replace("\xa0", " "):
+            return True
+    return False
+
+
+def _text_filter_result(tmp_results, similar_texts, index_number, return_all_elements, sModuleInfo):
+    if return_all_elements:
+        CommonUtil.ExecLog(sModuleInfo, f"Returning {len(tmp_results)} elements after applying Text Filter", 1)
+        return tmp_results
+    if len(tmp_results) == 0:
+        CommonUtil.ExecLog(sModuleInfo, "Found no element after applying Text Filter", 3)
+        if len(similar_texts) > 0:
+            CommonUtil.ExecLog(sModuleInfo, f"These are the similar texts found in the HTML: {str(similar_texts)[1:-1]}", 3)
+        return "zeuz_failed"
+    if len(tmp_results) == index_number + 1 == 1:
+        return tmp_results[index_number]
+    CommonUtil.ExecLog(sModuleInfo, f"Found {len(tmp_results)} elements after applying Text Filter. Returning the element of index {index_number}", 1)
+    return tmp_results[index_number]
+
+
 def text_filter(step_data_set, Filter, element_wait, return_all_elements):
     """
     suppose dom has <div>Hello &nbsp;World</div>
@@ -458,36 +567,33 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
         else:
             return "zeuz_failed"
 
+        if driver_type == "playwright":
+            async def _run():
+                candidates = await result if inspect.isawaitable(result) else result
+                if candidates == "zeuz_failed":
+                    return "zeuz_failed"
+                tmp_results = []
+                similar_texts = []
+                for element in candidates:
+                    try:
+                        element_text = await element.text_content() or ""
+                    except Exception:
+                        element_text = ""
+                    if _text_filter_match(element_text, filters, similar_texts):
+                        tmp_results.append(element)
+                return _text_filter_result(tmp_results, similar_texts, index_number, return_all_elements, sModuleInfo)
+
+            return _run()
+
         tmp_results = []
         similar_texts = []
         for element in result:
-            for f in filters:
-                if element.text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub(r'\s+', '', element.text.lower().replace("\xa0", "")):
-                    similar_texts.append(element.text)
-                if f[0].startswith("**") and f[2].lower().replace("\xa0", " ") in element.text.lower().replace("\xa0", " "):
-                    break
-                elif f[0].startswith("*") and f[2].replace("\xa0", " ") in element.text.replace("\xa0", " "):
-                    break
-                elif f[2].replace("\xa0", " ") == element.text.replace("\xa0", " "):
-                    break
-            else:
-                continue
-            tmp_results.append(element)
+            if _text_filter_match(element.text, filters, similar_texts):
+                tmp_results.append(element)
 
-        if return_all_elements:
-            CommonUtil.ExecLog(sModuleInfo, f"Returning {len(tmp_results)} elements after applying Text Filter", 1)
-            return result
-        if len(tmp_results) == 0:
-            CommonUtil.ExecLog(sModuleInfo, "Found no element after applying Text Filter", 3)
-            if len(similar_texts) > 0:
-                CommonUtil.ExecLog(sModuleInfo, f"These are the similar texts found in the HTML: {str(similar_texts)[1:-1]}", 3)
-            return "zeuz_failed"
-        CommonUtil.ExecLog(sModuleInfo, f"Original text of the element is '{tmp_results[index_number].text}'", 1)
-        if len(tmp_results) == index_number + 1 == 1:
-            return tmp_results[index_number]
-        else:
-            CommonUtil.ExecLog(sModuleInfo, f"Found {len(tmp_results)} elements after applying Text Filter. Returning the element of index {index_number}", 1)
-            return tmp_results[index_number]
+        if tmp_results and not return_all_elements:
+            CommonUtil.ExecLog(sModuleInfo, f"Original text of the element is '{tmp_results[index_number].text}'", 1)
+        return _text_filter_result(tmp_results, similar_texts, index_number, return_all_elements, sModuleInfo)
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -529,7 +635,7 @@ def _construct_query(step_data_set, web_element_object=False):
     """
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        collect_all_attribute = [x[0] for x in step_data_set]
+        collect_all_attribute = [x[0].strip().lower().replace(" ", "_") for x in step_data_set]
 
         child_parameter_list = []
         element_parameter_list = []
@@ -566,13 +672,13 @@ def _construct_query(step_data_set, web_element_object=False):
 
         if (
             unique_ref_exists
-            and driver_type in ("appium", "selenium")
+            and driver_type in ("appium", "selenium", "playwright")
         ):  # for unique identifier
             return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
-        elif "css_selector" in collect_all_attribute and "xpath" not in collect_all_attribute:
+        elif any(x in collect_all_attribute for x in ("css", "css_selector")) and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw css query
-            return ([x for x in step_data_set if "css" in x[0]][0][2]), "css"
+            return ([x for x in step_data_set if "css" in x[0].strip().lower()][0][2]), "css"
         elif "xpath" in collect_all_attribute and "css" not in collect_all_attribute:
             # return the raw xpath command with xpath as type. We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw xpath query
@@ -703,6 +809,8 @@ def _driver_type(query_debug):
         print(driver_string)
         if query_debug == True:
             return "debug"
+        elif hasattr(generic_driver, "locator") and not hasattr(generic_driver, "find_elements"):
+            driver_type = "playwright"
         elif "selenium" in driver_string or "browser" in driver_string:
             driver_type = "selenium"
         elif "appium" in driver_string:
@@ -742,13 +850,13 @@ def _construct_xpath_list(parameter_list, add_dot=False):
             attribute_value = each_data_row[2]
             quote = "'" if '"' in attribute_value else '"'
 
-            if attribute == "text" and driver_type in ("selenium", "xml"):  # exact search
+            if attribute == "text" and driver_type in ("selenium", "xml", "playwright"):  # exact search
                 text_value = f'[text()={quote}{attribute_value}{quote}]'
                 element_main_body_list.append(text_value)
-            elif attribute == "*text" and driver_type in ("selenium", "xml"):  # partial search
+            elif attribute == "*text" and driver_type in ("selenium", "xml", "playwright"):  # partial search
                 text_value = f'[contains(text(),{quote}{attribute_value}{quote})]'
                 element_main_body_list.append(text_value)
-            elif attribute == "**text" and driver_type in ("selenium", "xml"):  # partial search + ignore case
+            elif attribute == "**text" and driver_type in ("selenium", "xml", "playwright"):  # partial search + ignore case
                 text_value = f'[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),{quote}{attribute_value.lower()}{quote})]'
                 element_main_body_list.append(text_value)
 
@@ -1158,6 +1266,53 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
             element_wait = int(sr.Get_Shared_Variables("element_wait"))
         end = time.time() + element_wait
 
+        if driver_type == "playwright":
+            async def _run():
+                if css_xpath == "unique":
+                    locator = _unique_locator(generic_driver, element_query[0], element_query[1])
+                elif css_xpath == "xpath":
+                    locator = generic_driver.locator(_locator_xpath(element_query))
+                elif css_xpath == "css":
+                    locator = generic_driver.locator(element_query)
+                else:
+                    return "zeuz_failed"
+
+                effective_locator = locator if Filter == "allow hidden" else locator.filter(visible=True)
+                if (
+                    _has_action_row(data_set, "playwright action")
+                    and not return_all_elements
+                    and index_number is None
+                    and not _has_text_filter(data_set)
+                ):
+                    return _first_locator(effective_locator)
+
+                state = "attached" if Filter == "allow hidden" else "visible"
+                try:
+                    await _first_locator(effective_locator).wait_for(state=state, timeout=int(float(element_wait) * 1000))
+                except Exception:
+                    CommonUtil.ExecLog(sModuleInfo, "No elements found matching locator", 3)
+                    return "zeuz_failed"
+
+                all_matching_elements = await effective_locator.all()
+                displayed_len = len(all_matching_elements)
+                hidden_len = 0
+                if Filter != "allow hidden":
+                    try:
+                        hidden_len = max(await locator.count() - displayed_len, 0)
+                    except Exception:
+                        hidden_len = 0
+                return _select_element_from_matches(
+                    all_matching_elements,
+                    hidden_len,
+                    displayed_len,
+                    index_number,
+                    Filter,
+                    return_all_elements,
+                    sModuleInfo,
+                )
+
+            return _run()
+
         while True:
             if css_xpath == "unique" and (driver_type == "appium" or driver_type == "selenium"):  # for unique id
                 try:
@@ -1232,85 +1387,180 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
             displayed_len = len(all_matching_elements)
             hidden_len = len(all_matching_elements_visible_invisible) - displayed_len
 
-        if return_all_elements:
-            if Filter == "allow hidden":
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden elements and %s displayed elements. Returning all of them"
-                    % (hidden_len, displayed_len),
-                    1
-                )
-            else:
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden elements and %s displayed elements. Returning %s displayed elements only"
-                    % (hidden_len, displayed_len, displayed_len),
-                    1
-                )
-            return all_matching_elements
-        elif len(all_matching_elements) == 0:
-            if hidden_len > 0 and Filter != "allow hidden":
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden elements and no displayed elements. Nothing to return.\n" % hidden_len +
-                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
-                    3
-                )
-            return "zeuz_failed"
-        elif len(all_matching_elements) == 1 and index_number is None:
-            if hidden_len > 0 and Filter != "allow hidden":
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden elements and %s displayed elements. Returning the displayed element only\n" % (hidden_len, displayed_len) +
-                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing index",
-                    2
-                )
-            elif Filter == "allow hidden":
-                CommonUtil.ExecLog("", "Found %s hidden element and %s displayed element" % (hidden_len, displayed_len), 1)
-            return all_matching_elements[0]
-        elif len(all_matching_elements) > 1 and index_number is None:
-            if hidden_len > 0 and Filter != "allow hidden":
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden elements and %s displayed elements. Returning the first displayed element only\n" % (hidden_len, displayed_len) +
-                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing index",
-                    2
-                )
-            elif Filter != "allow hidden":
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s displayed elements. Returning the first displayed element only. Consider providing index" % displayed_len,
-                    2
-                )
-            else:
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden elements and %s displayed elements. Returning the first element only. Consider providing index" % (hidden_len, displayed_len),
-                    2
-                )
-            return all_matching_elements[0]
-        elif len(all_matching_elements) == 1 and index_number not in (-1, 0):
-            if hidden_len > 0 and Filter != "allow hidden":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Found %s hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % (hidden_len, displayed_len) +
-                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
-                    2,
-                )
-            elif Filter != "allow hidden":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Found 0 hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % displayed_len,
-                    2,
-                )
-            elif Filter == "allow hidden":
-                CommonUtil.ExecLog(
-                    "",
-                    "Found %s hidden element and %s displayed element but you provided a wrong index number. Returning the only element" % (hidden_len, displayed_len),
-                    2
-                )
-            return all_matching_elements[0]
-        elif len(all_matching_elements) == 1 and index_number in (-1, 0):
+        return _select_element_from_matches(
+            all_matching_elements,
+            hidden_len,
+            displayed_len,
+            index_number,
+            Filter,
+            return_all_elements,
+            sModuleInfo,
+        )
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+        # Don't want to show error messages from here, especially for wait_for_element()
+        # CommonUtil.ExecLog(sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0)
+        # return "zeuz_failed"
+
+
+def _locator_xpath(query):
+    query = str(query).strip()
+    return query if query.startswith("xpath=") else f"xpath={query}"
+
+
+def _css_string(value):
+    return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\A ")
+
+
+def _xpath_literal(value):
+    value = str(value)
+    if '"' not in value:
+        return f'"{value}"'
+    if "'" not in value:
+        return f"'{value}'"
+    return "concat(%s)" % ", '\"', ".join(f'"{part}"' for part in value.split('"'))
+
+
+def _first_locator(locator):
+    first = getattr(locator, "first")
+    return first() if callable(first) else first
+
+
+def _has_action_row(data_set, action_subfield):
+    return any(action_subfield in str(mid).strip().lower() for _left, mid, _right in data_set)
+
+
+def _has_text_filter(data_set):
+    for left, mid, right in data_set:
+        if str(left).strip().lower() == "text filter" and str(mid).strip().lower() in ("optional parameter", "option"):
+            return str(right).strip().lower() in ("yes", "true", "ok", "1", "enable", "enabled")
+    return False
+
+
+def _unique_locator(base, unique_key, unique_value):
+    unique_key = str(unique_key).strip().lower()
+    unique_value = str(unique_value).strip()
+    if unique_key in ("id", "name"):
+        return base.locator(f'[{unique_key}="{_css_string(unique_value)}"]')
+    if unique_key == "class":
+        return base.locator(f'[class~="{_css_string(unique_value)}"]')
+    if unique_key == "tag":
+        return base.locator(unique_value)
+    if unique_key == "css":
+        return base.locator(unique_value)
+    if unique_key == "xpath":
+        return base.locator(_locator_xpath(unique_value))
+    if unique_key == "text":
+        return base.locator(_locator_xpath(f"//*[text()={_xpath_literal(unique_value)}]"))
+    if unique_key == "*text":
+        return base.locator(_locator_xpath(f"//*[contains(text(),{_xpath_literal(unique_value)})]"))
+    if unique_key.startswith("*"):
+        return base.locator(_locator_xpath(f"//*[contains(@{unique_key.lstrip('*')},{_xpath_literal(unique_value)})]"))
+    return base.locator(f'[{unique_key}="{_css_string(unique_value)}"]')
+
+
+def _select_element_from_matches(all_matching_elements, hidden_len, displayed_len, index_number, Filter, return_all_elements, sModuleInfo):
+    if return_all_elements:
+        if Filter == "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning all of them"
+                % (hidden_len, displayed_len),
+                1
+            )
+        else:
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning %s displayed elements only"
+                % (hidden_len, displayed_len, displayed_len),
+                1
+            )
+        return all_matching_elements
+    elif len(all_matching_elements) == 0:
+        if hidden_len > 0 and Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and no displayed elements. Nothing to return.\n" % hidden_len +
+                "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
+                3
+            )
+        return "zeuz_failed"
+    elif len(all_matching_elements) == 1 and index_number is None:
+        if hidden_len > 0 and Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning the displayed element only\n" % (hidden_len, displayed_len) +
+                "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing index",
+                2
+            )
+        elif Filter == "allow hidden":
+            CommonUtil.ExecLog("", "Found %s hidden element and %s displayed element" % (hidden_len, displayed_len), 1)
+        return all_matching_elements[0]
+    elif len(all_matching_elements) > 1 and index_number is None:
+        if hidden_len > 0 and Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning the first displayed element only\n" % (hidden_len, displayed_len) +
+                "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing index",
+                2
+            )
+        elif Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s displayed elements. Returning the first displayed element only. Consider providing index" % displayed_len,
+                2
+            )
+        else:
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning the first element only. Consider providing index" % (hidden_len, displayed_len),
+                2
+            )
+        return all_matching_elements[0]
+    elif len(all_matching_elements) == 1 and index_number not in (-1, 0):
+        if hidden_len > 0 and Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Found %s hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % (hidden_len, displayed_len) +
+                "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
+                2,
+            )
+        elif Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Found 0 hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % displayed_len,
+                2,
+            )
+        elif Filter == "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden element and %s displayed element but you provided a wrong index number. Returning the only element" % (hidden_len, displayed_len),
+                2
+            )
+        return all_matching_elements[0]
+    elif len(all_matching_elements) == 1 and index_number in (-1, 0):
+        if hidden_len > 0 and Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning the displayed element of index %s\n" % (hidden_len, displayed_len, index_number) +
+                "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
+                1
+            )
+        elif Filter != "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found 0 hidden elements and %s displayed elements. Returning the displayed element of index %s" % (displayed_len, index_number),
+                1
+            )
+        elif Filter == "allow hidden":
+            CommonUtil.ExecLog(
+                "",
+                "Found %s hidden elements and %s displayed elements. Returning the element of index %s" % (hidden_len, displayed_len, index_number),
+                1
+            )
+        return all_matching_elements[0]
+    elif len(all_matching_elements) > 1 and index_number is not None:
+        if -len(all_matching_elements) <= index_number < len(all_matching_elements):
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     "",
@@ -1324,64 +1574,36 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
                     "Found 0 hidden elements and %s displayed elements. Returning the displayed element of index %s" % (displayed_len, index_number),
                     1
                 )
-            elif Filter == "allow hidden":
+            else:
                 CommonUtil.ExecLog(
                     "",
                     "Found %s hidden elements and %s displayed elements. Returning the element of index %s" % (hidden_len, displayed_len, index_number),
                     1
                 )
-            return all_matching_elements[0]
-        elif len(all_matching_elements) > 1 and index_number is not None:
-            # if (len(all_matching_elements) - 1) < abs(index_number):
-            if -len(all_matching_elements) <= index_number < len(all_matching_elements):
-                if hidden_len > 0 and Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Returning the displayed element of index %s\n" % (hidden_len, displayed_len, index_number) +
-                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
-                        1
-                    )
-                elif Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found 0 hidden elements and %s displayed elements. Returning the displayed element of index %s" % (displayed_len, index_number),
-                        1
-                    )
-                else:
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Returning the element of index %s" % (hidden_len, displayed_len, index_number),
-                        1
-                    )
-                return all_matching_elements[index_number]
-            else:
-                if hidden_len > 0 and Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
-                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
-                        3
-                    )
-                elif Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
-                        3
-                    )
-                else:
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
-                        3
-                    )
-                return "zeuz_failed"
+            return all_matching_elements[index_number]
         else:
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
+                    3
+                )
+            elif Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
+                    3
+                )
+            else:
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
+                    3
+                )
             return "zeuz_failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-        # Don't want to show error messages from here, especially for wait_for_element()
-        # CommonUtil.ExecLog(sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0)
-        # return "zeuz_failed"
+    else:
+        return "zeuz_failed"
 
 
 def filter_elements(all_matching_elements_visible_invisible, Filter):

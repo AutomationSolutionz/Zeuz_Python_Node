@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
+import asyncio
 import concurrent.futures
 import copy
 import json
@@ -307,7 +308,7 @@ def terminate_thread(thread):   # To kill running thread
         raise SystemError("PyThreadState_SetAsyncExc failed")
 
 # call the function of a test step that is in its driver file
-def call_driver_function_of_test_step(
+async def call_driver_function_of_test_step(
     sModuleInfo,
     all_step_info,
     StepSeq,
@@ -338,6 +339,7 @@ def call_driver_function_of_test_step(
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
+                print(functionTocall)
             except Exception as e:
                 CommonUtil.Exception_Handler(
                     sys.exc_info(),
@@ -353,14 +355,20 @@ def call_driver_function_of_test_step(
 
                 # run in thread
                 if ConfigModule.get_config_value("RunDefinition", "threading") in passed_tag_list:
+                    thread_args = (
+                        test_steps_data,
+                        test_action_info,
+                        simple_queue,
+                        debug_actions,
+                    )
+                    thread_target = functionTocall
+                    if inspect.iscoroutinefunction(functionTocall):
+                        def thread_target(*args):
+                            return asyncio.run(functionTocall(*args))
+
                     stepThread = threading.Thread(
-                        target=functionTocall,
-                        args=(
-                            test_steps_data,
-                            test_action_info,
-                            simple_queue,
-                            debug_actions,
-                        ),
+                        target=thread_target,
+                        args=thread_args,
                     )  # start step thread
 
 
@@ -405,12 +413,20 @@ def call_driver_function_of_test_step(
                                 CommonUtil.Exception_Handler(sys.exc_info())
                 else:
                     # run sequentially
-                    sStepResult = functionTocall(
-                        test_steps_data,
-                        test_action_info,
-                        simple_queue,
-                        debug_actions,
-                    )
+                    if inspect.iscoroutinefunction(functionTocall):
+                        sStepResult = await functionTocall(
+                            test_steps_data,
+                            test_action_info,
+                            simple_queue,
+                            debug_actions,
+                        )
+                    else:
+                        sStepResult = functionTocall(
+                            test_steps_data,
+                            test_action_info,
+                            simple_queue,
+                            debug_actions,
+                        )
             except:
                 CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
                 sStepResult = "zeuz_failed"
@@ -437,7 +453,7 @@ def call_driver_function_of_test_step(
 
 
 # runs all test steps of a test case
-def run_all_test_steps_in_a_test_case(
+async def run_all_test_steps_in_a_test_case(
     testcase_info,
     test_case,
     sModuleInfo,
@@ -632,7 +648,7 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.ExecLog(sModuleInfo, "STEP-%s is skipped" % StepSeq, 2)
                 sStepResult = "skipped"
             else:
-                sStepResult = call_driver_function_of_test_step(
+                sStepResult = await call_driver_function_of_test_step(
                     sModuleInfo,
                     all_step_info,
                     StepSeq,
@@ -797,13 +813,20 @@ def zip_and_delete_tc_folder(
     FL.DeleteFolder(path)
 
 
-def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
+async def cleanup_driver_instances():  # cleans up driver(selenium, playwright, appium) instances
     try:  # if error happens. we don't care, main driver should not stop, pass in exception
         import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
+        import Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions as Playwright
+        try:
+            await Playwright.Tear_Down_Playwright()
+        except:
+            pass
+        
         try:
             Selenium.Tear_Down_Selenium()
         except:
             pass
+        
         if shared.Test_Shared_Variables("appium_details"):
             import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
             driver = shared.Remove_From_Shared_Variables("appium_details")
@@ -998,7 +1021,7 @@ def check_test_skip(run_id, tc_num, skip_remaining=True) -> bool:
     return False
 
 
-def run_test_case(
+async def run_test_case(
     TestCaseID,
     sModuleInfo,
     run_id,
@@ -1062,7 +1085,7 @@ def run_test_case(
         if check_test_skip(run_id, tc_num):
             sTestStepResultList = ['SKIPPED' for i in range(len(testcase_info['steps']))]
         else:
-            sTestStepResultList = run_all_test_steps_in_a_test_case(
+            sTestStepResultList = await run_all_test_steps_in_a_test_case(
                 testcase_info,
                 test_case,
                 sModuleInfo,
@@ -1176,7 +1199,7 @@ def run_test_case(
         else:
             CommonUtil.Join_Thread_and_Return_Result("screenshot")
             if _auto_teardown_after_test_case():
-                cleanup_driver_instances()
+                await cleanup_driver_instances()
             shared.Clean_Up_Shared_Variables(run_id)
 
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -1875,7 +1898,7 @@ def download_attachments(testcase_info):
 
 
 # main function
-def main(device_dict, all_run_id_info):
+async def main(device_dict, all_run_id_info):
     try:
         # get module info
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1988,7 +2011,7 @@ def main(device_dict, all_run_id_info):
                 if "debug_step_actions" in run_id_info:
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
                 if run_id_info["debug_clean"] == "YES":
-                    cleanup_driver_instances()
+                    await cleanup_driver_instances()
                     shared.Clean_Up_Shared_Variables(run_id)
             driver_list = ["Not needed currently"]
 
@@ -2010,7 +2033,7 @@ def main(device_dict, all_run_id_info):
             CommonUtil.global_var["zeuz_auto_teardown"] = run_id
 
             if not CommonUtil.debug_status and _auto_teardown_at_run_start() and _payload_contains_selected_test_case(run_id_info, 0):
-                cleanup_driver_instances()
+                await cleanup_driver_instances()
 
             if not shared.Test_Shared_Variables("zeuz_collect_browser_log"):
                 shared.Set_Shared_Variables("zeuz_collect_browser_log", "on")
@@ -2163,7 +2186,7 @@ def main(device_dict, all_run_id_info):
                             )
                         except Exception as e:
                             CommonUtil.ExecLog(sModuleInfo, str(e), 3)
-                            run_test_case(
+                            await run_test_case(
                                 test_case_no,
                                 sModuleInfo,
                                 run_id,
@@ -2181,7 +2204,7 @@ def main(device_dict, all_run_id_info):
 
 
                     else:
-                        run_test_case(
+                        await run_test_case(
                             test_case_no,
                             sModuleInfo,
                             run_id,
@@ -2225,7 +2248,7 @@ def main(device_dict, all_run_id_info):
                 CommonUtil.ExecLog(sModuleInfo, "Execution time = %s sec" % round(TimeDiff, 3), 5)
 
             if not CommonUtil.debug_status and _auto_teardown_at_run_end() and _payload_contains_selected_test_case(run_id_info, -1):
-                cleanup_driver_instances()
+                await cleanup_driver_instances()
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 

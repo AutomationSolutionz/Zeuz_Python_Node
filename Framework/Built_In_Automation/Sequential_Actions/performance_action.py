@@ -1,8 +1,9 @@
+import asyncio
 import time
 import threading
 import inspect
 from concurrent import futures
-from typing import Callable, List, Tuple, Union, Any
+from typing import Awaitable, Callable, List, Tuple, Union, Any
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 from Framework.Utilities import CommonUtil
@@ -76,7 +77,7 @@ class CycleLoadShape(LoadShape):
 
 def performance_action_handler(
     data_set: List[List[str]],
-    run_sequential_actions: Callable[[List[int]], Tuple[str, List[int]]],
+    run_sequential_actions: Callable[[List[int]], Awaitable[Tuple[str, List[int]]]],
     timestamp_func: Callable[[], str],
 ) -> Tuple[str, List[int], List[Any]]:
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -156,7 +157,7 @@ def performance_action_handler(
 
             timestamp = timestamp_func()
             start_time = time.perf_counter_ns()
-            result = run_sequential_actions(actions_to_execute)
+            result = asyncio.run(run_sequential_actions(actions_to_execute))
             end_time = time.perf_counter_ns()
 
             max_parallel_thread_count = max(max_parallel_thread_count, threading.active_count())
