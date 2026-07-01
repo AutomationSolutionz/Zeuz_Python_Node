@@ -836,7 +836,10 @@ def get_extended_info(accessible):
     except Exception:
         pass
     try:
-        state_set = accessible.getStateSet()
+        try:
+            state_set = accessible.getStateSet()
+        except Exception:
+            state_set = accessible.get_state_set()
         states = [pyatspi.stateToString(s) or "" for s in state_set.getStates()]
         if states:
             info_str += f' states="{",".join(states)}"'
