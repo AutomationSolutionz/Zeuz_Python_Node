@@ -467,9 +467,15 @@ async def RunProcess(node_id, log_dir=None):
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
             await install_handler.cancel_run()
-            await MainDriverApi.main(
-                device_dict=device_info,
-                all_run_id_info=node_json,
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                lambda: asyncio.run(
+                    MainDriverApi.main(
+                        device_dict=device_info,
+                        all_run_id_info=node_json,
+                    )
+                ),
             )
 
         async def on_connect_callback(reconnected: bool):
