@@ -2482,7 +2482,7 @@ def get_browser_driver_routing(action_subfield, data_set):
     Returns:
         str: Updated action_subfield based on browser driver parameter
         
-    This function checks if there is a "browser driver" optional parameter in the data set or a BROWSER_DRIVER in runtime parameters.
+    This function checks if there is a "browser driver" optional parameter in the data set or a zeuz_browser_driver in runtime parameters.
     If any of them are present, it updates the action_subfield to the value specified.
     If both are present, it uses the action-level optional parameter.
     If neither are present, it returns the original action_subfield.
@@ -2497,7 +2497,7 @@ def get_browser_driver_routing(action_subfield, data_set):
     updated_action_subfield = action_subfield
 
     # Get the runtime parameter for browser driver preference
-    browser_driver_runtime_parameter = sr.shared_variables.get("BROWSER_DRIVER")
+    browser_driver_runtime_parameter = sr.shared_variables.get("zeuz_browser_driver")
 
     # If runtime parameter is present and valid, update the action subfield
     if browser_driver_runtime_parameter and browser_driver_runtime_parameter.strip().lower() in ("playwright", "selenium"):

@@ -491,7 +491,7 @@ def test_wait_for_element_uses_single_lazy_wait(monkeypatch):
 
 
 def test_legacy_wait_with_playwright_driver_routes_to_playwright_wait():
-    sr.Set_Shared_Variables("BROWSER_DRIVER", "playwright")
+    sr.Set_Shared_Variables("zeuz_browser_driver", "playwright")
     data_set = [("wait", "selenium action", "150")]
 
     action_subfield = sa.get_browser_driver_routing("selenium action", data_set)
@@ -510,7 +510,7 @@ def test_legacy_wait_with_playwright_driver_routes_to_playwright_wait():
 
 
 def test_legacy_wait_with_selenium_driver_keeps_common_wait_route():
-    sr.Set_Shared_Variables("BROWSER_DRIVER", "selenium")
+    sr.Set_Shared_Variables("zeuz_browser_driver", "selenium")
     data_set = [("wait", "selenium action", "150")]
 
     action_subfield = sa.get_browser_driver_routing("selenium action", data_set)
