@@ -880,6 +880,14 @@ def TakeScreenShot(function_name, local_run=False, pre_action=False):
         Method = screen_capture_type
         Driver = screen_capture_driver
 
+        # The driver for web/mobile may not exist yet when the BEFORE frame is requested
+        # (e.g. Go_To_Link launches the browser, so no selenium_driver exists until the
+        # action runs). A missing driver for a pre-action capture is expected, not an
+        # error, so skip it silently instead of announcing the capture and then logging a
+        # level-3 error from Thread_ScreenShot.
+        if pre_action and Method in ("mobile", "web") and Driver is None:
+            return
+
         # Decide if screenshot should be captured
         if (
             take_screenshot_settings.lower() == "false"
