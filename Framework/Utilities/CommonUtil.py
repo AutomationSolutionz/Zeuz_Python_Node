@@ -854,9 +854,20 @@ def set_screenshot_vars(shared_variables):
         ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
 
 
-async def TakeScreenShot(function_name, local_run=False):
-    """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
+async def TakeScreenShot(function_name, local_run=False, pre_action=False):
+    """Capture an action screenshot.
+
+    When pre_action=True, captures the screen state *before* the action runs so the
+    debug/chatbot validator can compare BEFORE vs AFTER. The pre-action capture only
+    runs in debug mode (the only mode that streams screenshots over live_log), is taken
+    synchronously without the post-action settle delay (we want the current state, not a
+    settled one), and is tagged with a distinct log marker so consumers can label it.
+    """
     if not ws_ss_log or performance_testing: return
+    # The before-image is only consumed by the debug/chatbot live_log stream, so skip it
+    # entirely for normal runs to avoid extra capture latency and screenshot volume.
+    if pre_action and not debug_status:
+        return
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
@@ -874,6 +885,14 @@ async def TakeScreenShot(function_name, local_run=False):
         Method = screen_capture_type
         Driver = screen_capture_driver
 
+        # The driver for web/mobile may not exist yet when the BEFORE frame is requested
+        # (e.g. Go_To_Link launches the browser, so no selenium_driver exists until the
+        # action runs). A missing driver for a pre-action capture is expected, not an
+        # error, so skip it silently instead of announcing the capture and then logging a
+        # level-3 error from Thread_ScreenShot.
+        if pre_action and Method in ("mobile", "web") and Driver is None:
+            return
+
         # Decide if screenshot should be captured
         if (
             take_screenshot_settings.lower() == "false"
@@ -884,9 +903,13 @@ async def TakeScreenShot(function_name, local_run=False):
                 sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0
             )
             return
+        capture_marker = (
+            "Capturing Pre-Action Screenshot for Action" if pre_action
+            else "Capturing Screenshot for Action"
+        )
         ExecLog(
             "",
-            "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method),
+            "********** %s: %s Method: %s **********" % (capture_marker, function_name, Method),
             4,
         )
         if current_action_name.strip().lower() in ("none", "undefined"):
@@ -902,6 +925,15 @@ async def TakeScreenShot(function_name, local_run=False):
                 if c >= 100:
                     break
             image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + filename
+
+        if pre_action:
+            # Capture synchronously and without the settle delay so the BEFORE frame is
+            # streamed over live_log before the action executes (and before the AFTER
+            # frame), keeping the two distinguishable in order on the consumer side.
+            await Thread_ScreenShot(
+                function_name, image_folder, Method, Driver, image_name + "_pre", skip_delay=True
+            )
+            return
 
         await Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name)
 
@@ -1015,8 +1047,8 @@ def _screenshot_path(image_folder, image_name, extension="png"):
     return os.path.join(image_folder, safe_name + "." + extension.lstrip("."))
 
 
-async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
-    """ Capture screen of mobile or desktop """
+async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name, skip_delay=False):
+    """Capture screen of mobile, desktop, Selenium, or Playwright."""
     if performance_testing: return
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     picture_quality = 100  # Quality of picture
@@ -1040,7 +1072,7 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
                 return
             should_delay_before_capture = True
 
-        if should_delay_before_capture and not _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
+        if should_delay_before_capture and not skip_delay and not _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
             return
 
         # Capture screenshot of desktop

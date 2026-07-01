@@ -2665,6 +2665,9 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
             if result in failed_tag_list:
                 return result
         run_function = getattr(eval(module), function)  # create a reference to the function
+        # Capture the BEFORE-action screen (debug/chatbot only) so the validator can
+        # compare it against the AFTER capture taken once the action completes.
+        await CommonUtil.TakeScreenShot(function, pre_action=True)
         start_time = time.perf_counter()
         if pre_sleep:
             time.sleep(pre_sleep)
