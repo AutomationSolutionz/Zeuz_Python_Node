@@ -2130,7 +2130,6 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
 
     elif module == "playwright":
         try:
-            from Framework.Built_In_Automation.Web.Playwright import locator as PlaywrightLocator
             from Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions import current_page
             
             wait = 10
@@ -2145,7 +2144,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 logic_decision = False
                 log_msg += "Browser not open\n"
             else:
-                Element = await PlaywrightLocator.Get_Element(data_set, current_page, element_wait=wait)
+                Element = await LocateElement.Get_Element(data_set, current_page, element_wait=wait)
                 if Element == "zeuz_failed":
                     CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                     logic_decision = False

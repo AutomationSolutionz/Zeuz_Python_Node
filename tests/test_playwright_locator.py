@@ -2,49 +2,52 @@ import asyncio
 
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
+    LocateElement,
 )
-from Framework.Built_In_Automation.Web.Playwright import locator as playwright_locator
 
 
 class FakeLocator:
-    def __init__(self, name="root", count=1, total_count=None, texts=None, text="", stats=None):
+    def __init__(self, name="root", count=1, texts=None, text="", stats=None):
         self.name = name
         self._count = count
-        self._total_count = count if total_count is None else total_count
-        self.texts = texts
+        self.texts = texts or []
         self.text = text
-        self.stats = stats if stats is not None else {"wait": 0, "count": 0, "evaluate": 0}
+        self.stats = stats if stats is not None else {"wait": 0, "count": 0}
         self.filtered = False
         self.nth_index = None
-        self.wait_calls = []
         self.queries = []
+        self.children = {}
 
     def locator(self, query):
         self.queries.append(query)
-        return FakeLocator(f"{self.name}.locator({query})", self._count, self._total_count, self.texts, self.text, self.stats)
+        child = self.children.get(query)
+        if child:
+            return child
+        return FakeLocator(f"{self.name}.locator({query})", self._count, self.texts, self.text, self.stats)
 
     def filter(self, **kwargs):
-        filtered = FakeLocator(f"{self.name}.filter", self._count, self._total_count, self.texts, self.text, self.stats)
+        filtered = FakeLocator(f"{self.name}.filter", self._count, self.texts, self.text, self.stats)
         filtered.filtered = kwargs.get("visible") is True
         return filtered
 
     @property
     def first(self):
         text = self.texts[0] if self.texts else self.text
-        first = FakeLocator(f"{self.name}.first", min(self._count, 1), self._total_count, self.texts, text, self.stats)
+        first = FakeLocator(f"{self.name}.first", min(self._count, 1), self.texts, text, self.stats)
         first.filtered = self.filtered
         return first
 
     def nth(self, index):
-        text = self.texts[index] if self.texts and 0 <= index < len(self.texts) else self.text
-        nth = FakeLocator(f"{self.name}.nth({index})", 1, self._total_count, self.texts, text, self.stats)
+        text = self.texts[index] if 0 <= index < len(self.texts) else self.text
+        nth = FakeLocator(f"{self.name}.nth({index})", 1, self.texts, text, self.stats)
         nth.nth_index = index
         nth.filtered = self.filtered
+        nth.queries = self.queries
+        nth.children = self.children
         return nth
 
     async def wait_for(self, state="visible", timeout=None):
         self.stats["wait"] += 1
-        self.wait_calls.append((state, timeout))
         if self._count == 0:
             raise TimeoutError("not found")
 
@@ -58,227 +61,103 @@ class FakeLocator:
     async def text_content(self):
         return self.text
 
-    async def inner_text(self):
-        return self.text
-
-    async def evaluate(self, script):
-        self.stats["evaluate"] += 1
-        return '<button id="save">Save</button>'
-
 
 class FakePage:
-    def __init__(self, locator_result):
-        self.locator_result = locator_result
+    def __init__(self, locator_result=None):
+        self.locator_result = locator_result or FakeLocator()
         self.queries = []
+        self.children = {}
 
     def locator(self, query):
         self.queries.append(query)
-        return self.locator_result
+        return self.children.get(query, self.locator_result)
+
+
+def run(coro):
+    return asyncio.run(coro)
 
 
 def setup_function():
     sr.shared_variables.clear()
     sr.Set_Shared_Variables("element_wait", 1)
+    LocateElement.driver_type = None
 
 
-def test_parser_preserves_numbered_relationship_and_shadow_rows():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "button"),
-            ("class", "parent 2 parameter", "panel"),
-            ("id", "sr 1 element parameter", "shadow-host"),
-            ("wait", "optional parameter", "3"),
-        ]
-    )
-
-    assert params["element_params"] == [("tag", "button")]
-    assert params["parent_params"] == [("class", "parent 2 parameter", "panel")]
-    assert params["shadow_root_params"] == [("id", "sr 1 element parameter", "shadow-host")]
-    assert ("id", "sr 1 element parameter", "shadow-host") not in params["locator_rows"]
-    assert params["wait"] == 3
-
-
-def test_legacy_query_matches_selenium_for_tag_and_text():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "button"),
-            ("text", "element parameter", "Save"),
-        ]
-    )
-
-    query, query_type = playwright_locator._build_legacy_query(params["locator_rows"])
-
-    assert query_type == "xpath"
-    assert query == '//button[text()="Save"]'
-
-
-def test_legacy_query_preserves_parent_child_sibling_rows():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "input"),
-            ("type", "element parameter", "password"),
-            ("id", "parent parameter", "login-form"),
-            ("text", "child parameter", "Required"),
-        ]
-    )
-
-    query, query_type = playwright_locator._build_legacy_query(params["locator_rows"])
-
-    assert query_type == "xpath"
-    assert "input" in query
-    assert '[@type="password"]' in query
-    assert 'ancestor::*[@id="login-form"]' in query
-    assert 'descendant::*[text()="Required"]' in query
-
-
-def test_resolve_single_returns_first_for_multiple_matches():
-    params = playwright_locator._parse_element_params(
-        [("tag", "element parameter", "button")]
-    )
-    root = FakeLocator(count=3)
-
-    result = asyncio.run(playwright_locator._resolve_single(root, params, 1000, "test"))
-
-    assert isinstance(result, FakeLocator)
-    assert result.name.endswith(".filter.first")
-    assert result.filtered is True
-
-
-def test_resolve_single_honors_index_after_visibility_filter():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "button"),
-            ("index", "element parameter", "2"),
-        ]
-    )
-    root = FakeLocator(count=4)
-
-    result = asyncio.run(playwright_locator._resolve_single(root, params, 1000, "test"))
-
-    assert isinstance(result, FakeLocator)
-    assert result.nth_index == 2
-    assert result.filtered is True
-
-
-def test_get_element_uses_css_fast_path_and_saves_shared_variables():
+def test_normal_playwright_action_returns_lazy_visible_first_locator():
     fake_locator = FakeLocator(count=2)
     page = FakePage(fake_locator)
 
-    result = asyncio.run(
-        playwright_locator.Get_Element(
+    result = run(
+        LocateElement.Get_Element(
             [
                 ("tag", "element parameter", "button"),
-                ("id", "element parameter", "save"),
-                ("saved_button", "save parameter", "yes"),
+                ("click", "playwright action", "click"),
             ],
             page,
         )
     )
 
     assert result.name.endswith(".filter.first")
-    assert page.queries == ['button[id="save"]']
-    assert sr.Get_Shared_Variables("saved_button") is result
-    assert sr.Get_Shared_Variables("zeuz_element") is result
+    assert result.filtered is True
+    assert fake_locator.stats == {"wait": 0, "count": 0}
 
 
-def test_get_element_keeps_text_selector_on_legacy_xpath():
-    fake_locator = FakeLocator(count=1)
+def test_conditional_non_action_lookup_resolves_and_fails_on_no_match():
+    fake_locator = FakeLocator(count=0)
     page = FakePage(fake_locator)
 
-    result = asyncio.run(
-        playwright_locator.Get_Element(
-            [
-                ("tag", "element parameter", "button"),
-                ("text", "element parameter", "Save"),
-            ],
+    result = run(
+        LocateElement.Get_Element(
+            [("tag", "element parameter", "missing")],
             page,
         )
     )
 
-    assert result.name.endswith(".filter.first")
-    assert page.queries == ['xpath=//button[text()="Save"]']
+    assert result == "zeuz_failed"
+    assert fake_locator.stats["wait"] == 1
 
 
-def test_css_fast_path_supports_common_simple_selectors():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "input"),
-            ("id", "element parameter", "email"),
-            ("name", "element parameter", "user[email]"),
-            ("class", "element parameter", "field"),
-            ("data-testid", "element parameter", 'login"email'),
-        ]
-    )
-    page = FakePage(FakeLocator())
-
-    result = playwright_locator._build_locator(page, params["all_rows"], params)
-
-    assert result.query_type == "css-fast"
-    assert result.query == 'input[id="email"][name="user[email]"][class~="field"][data-testid="login\\"email"]'
-    assert page.queries == [result.query]
-
-
-def test_css_fast_path_rejects_complex_selectors_that_need_xpath_parity():
-    text_params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "button"),
-            ("*text", "element parameter", "Save"),
-        ]
-    )
-    page = FakePage(FakeLocator())
-
-    text_result = playwright_locator._build_locator(page, text_params["all_rows"], text_params)
-
-    assert text_result.query_type == "xpath"
-    assert page.queries == ['xpath=//button[contains(text(),"Save")]']
-
-    relationship_params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "input"),
-            ("id", "parent parameter", "form"),
-        ]
-    )
-    relationship_page = FakePage(FakeLocator())
-
-    relationship_result = playwright_locator._build_locator(
-        relationship_page,
-        relationship_params["all_rows"],
-        relationship_params,
-    )
-
-    assert relationship_result.query_type == "xpath"
-    assert "ancestor::*" in relationship_result.query
-
-
-def test_get_element_lazy_returns_locator_without_wait_count_or_evaluate():
+def test_return_all_elements_resolves_all_locators():
     fake_locator = FakeLocator(count=2)
-    page = FakePage(fake_locator)
 
-    result = asyncio.run(
-        playwright_locator.Get_Element(
+    result = run(
+        LocateElement.Get_Element(
             [("tag", "element parameter", "button")],
-            page,
-            resolve=False,
+            FakePage(fake_locator),
+            return_all_elements=True,
         )
     )
 
-    assert result.name.endswith(".filter.first")
-    assert result.filtered is True
-    assert fake_locator.stats == {"wait": 0, "count": 0, "evaluate": 0}
+    assert len(result) == 2
+    assert fake_locator.stats["wait"] == 1
 
 
-def test_get_element_lazy_respects_allow_hidden():
+def test_parent_locator_scopes_search():
+    parent = FakeLocator("parent", count=1)
+
+    result = run(
+        LocateElement.Get_Element(
+            [("tag", "element parameter", "span")],
+            parent,
+            return_all_elements=True,
+        )
+    )
+
+    assert parent.queries == ["xpath=//span"]
+    assert len(result) == 1
+
+
+def test_allow_hidden_skips_visible_filter_for_lazy_action():
     fake_locator = FakeLocator(count=2)
-    page = FakePage(fake_locator)
 
-    result = asyncio.run(
-        playwright_locator.Get_Element(
+    result = run(
+        LocateElement.Get_Element(
             [
                 ("tag", "element parameter", "button"),
                 ("allow hidden", "optional parameter", "yes"),
+                ("click", "playwright action", "click"),
             ],
-            page,
-            resolve=False,
+            FakePage(fake_locator),
         )
     )
 
@@ -287,263 +166,138 @@ def test_get_element_lazy_respects_allow_hidden():
     assert result.filtered is False
 
 
-def test_get_timeout_parses_wait_optional_parameter():
-    timeout = playwright_locator.Get_Timeout(
-        [
-            ("tag", "element parameter", "button"),
-            ("wait", "optional parameter", "2.5"),
-        ]
-    )
+def test_relationship_rows_use_shared_query_builder_for_playwright():
+    page = FakePage(FakeLocator(count=1))
 
-    assert timeout == 2500
-
-
-def test_get_element_lazy_falls_back_to_resolved_for_return_all_text_filter_and_index():
-    return_all_locator = FakeLocator(count=2)
-    return_all_result = asyncio.run(
-        playwright_locator.Get_Element(
-            [("tag", "element parameter", "button")],
-            FakePage(return_all_locator),
-            return_all=True,
-            resolve=False,
+    run(
+        LocateElement.Get_Element(
+            [
+                ("tag", "element parameter", "input"),
+                ("type", "element parameter", "password"),
+                ("id", "parent parameter", "login-form"),
+                ("text", "child parameter", "Required"),
+                ("click", "playwright action", "click"),
+            ],
+            page,
         )
     )
-    assert len(return_all_result) == 2
-    assert return_all_locator.stats["wait"] == 1
-    assert return_all_locator.stats["count"] >= 1
 
-    text_filter_locator = FakeLocator(count=1)
-    text_filter_result = asyncio.run(
-        playwright_locator.Get_Element(
+    assert page.queries == ['xpath=//input[@type="password"][descendant::*[text()="Required"]][(ancestor::*[@id="login-form"])[last()]]']
+
+
+def test_index_handling_resolves_nth_locator():
+    fake_locator = FakeLocator(count=4)
+
+    result = run(
+        LocateElement.Get_Element(
             [
                 ("tag", "element parameter", "button"),
+                ("index", "element parameter", "2"),
+            ],
+            FakePage(fake_locator),
+        )
+    )
+
+    assert result.nth_index == 2
+
+
+def test_text_filter_matches_normalized_nbsp_text():
+    page = FakePage(FakeLocator(count=0))
+    page.children["xpath=//div"] = FakeLocator(count=2, texts=["Hello\xa0World", "Other"])
+
+    result = run(
+        LocateElement.Get_Element(
+            [
+                ("tag", "element parameter", "div"),
+                ("text", "element parameter", "Hello World"),
                 ("text filter", "optional parameter", "true"),
             ],
-            FakePage(text_filter_locator),
-            resolve=False,
+            page,
         )
     )
-    assert isinstance(text_filter_result, FakeLocator)
-    assert text_filter_locator.stats["wait"] == 1
-    assert text_filter_locator.stats["count"] >= 1
 
-    indexed_locator = FakeLocator(count=2)
-    indexed_result = asyncio.run(
-        playwright_locator.Get_Element(
+    assert result.text == "Hello\xa0World"
+
+
+def test_save_and_get_shared_variable():
+    saved = run(
+        LocateElement.Get_Element(
             [
                 ("tag", "element parameter", "button"),
-                ("index", "element parameter", "1"),
+                ("saved_button", "save parameter", "yes"),
+                ("click", "playwright action", "click"),
             ],
-            FakePage(indexed_locator),
-            resolve=False,
+            FakePage(FakeLocator()),
         )
     )
-    assert indexed_result.nth_index == 1
-    assert indexed_locator.stats["wait"] == 1
-    assert indexed_locator.stats["count"] >= 1
+
+    result = run(
+        LocateElement.Get_Element(
+            [("saved_button", "get parameter", "%|saved_button|%")],
+            FakePage(FakeLocator()),
+        )
+    )
+
+    assert result is saved
 
 
-def test_indexed_simple_selector_still_uses_css_fast_path():
-    fake_locator = FakeLocator(count=2)
-    page = FakePage(fake_locator)
+def test_raw_xpath_and_css():
+    page = FakePage(FakeLocator())
 
-    result = asyncio.run(
-        playwright_locator.Get_Element(
+    run(LocateElement.Get_Element([("xpath", "element parameter", "//button")], page))
+    run(LocateElement.Get_Element([("css selector", "element parameter", "button.save")], page))
+
+    assert page.queries == ["xpath=//button", "button.save"]
+
+
+def test_unique_parameter_takes_precedence_over_raw_xpath():
+    page = FakePage(FakeLocator())
+
+    run(
+        LocateElement.Get_Element(
             [
-                ("tag", "element parameter", "button"),
-                ("id", "element parameter", "save"),
-                ("index", "element parameter", "1"),
+                ("id", "unique parameter", "primary"),
+                ("xpath", "element parameter", "//button[@id='secondary']"),
             ],
             page,
-            resolve=False,
         )
     )
 
-    assert result.nth_index == 1
-    assert page.queries == ['button[id="save"]']
+    assert page.queries == ['[id="primary"]']
 
 
-def test_wait_for_element_builds_lazy_locator_and_waits_once():
-    fake_locator = FakeLocator(count=1)
-    page = FakePage(fake_locator)
+def test_shadow_dom_rows_build_locator_chain():
+    host = FakeLocator("host", count=1)
+    page = FakePage(FakeLocator())
+    page.children['xpath=//*[@id="host"]'] = host
 
-    result = asyncio.run(
-        playwright_locator.wait_for_element(
+    result = run(
+        LocateElement.Get_Element(
             [
+                ("id", "sr 1 element parameter", "host"),
                 ("tag", "element parameter", "button"),
-                ("wait", "optional parameter", "2"),
+                ("data-action", "element parameter", "save"),
             ],
-            page,
-            state="visible",
-        )
-    )
-
-    assert result == "passed"
-    assert fake_locator.stats == {"wait": 1, "count": 0, "evaluate": 0}
-
-
-def test_get_element_accepts_selenium_return_all_elements_keyword():
-    fake_locator = FakeLocator(count=2)
-    page = FakePage(fake_locator)
-
-    result = asyncio.run(
-        playwright_locator.Get_Element(
-            [("tag", "element parameter", "button")],
             page,
             return_all_elements=True,
         )
     )
 
-    assert len(result) == 2
-    assert page.queries == ["button"]
+    assert page.queries == ['xpath=//*[@id="host"]']
+    assert host.queries == ['button[data-action="save"]']
+    assert len(result) == 1
 
 
-def test_unique_parameter_takes_precedence_over_raw_xpath_like_selenium():
-    fake_locator = FakeLocator(count=1)
-    page = FakePage(fake_locator)
+def test_shared_playwright_frame_scope_for_page_driver():
+    frame = FakeLocator("frame", count=1)
+    sr.Set_Shared_Variables("playwright_frame", frame)
 
-    result = playwright_locator._build_locator(
-        page,
-        [
-            ("id", "unique parameter", "primary"),
-            ("xpath", "element parameter", "//button[@id='secondary']"),
-        ],
-        playwright_locator._parse_element_params(
-            [
-                ("id", "unique parameter", "primary"),
-                ("xpath", "element parameter", "//button[@id='secondary']"),
-            ]
-        ),
-    )
-
-    assert result.query_type == "unique"
-    assert page.queries == ['[id="primary"]']
-
-
-def test_unique_simple_selectors_use_css_fast_paths():
-    selector_cases = [
-        ("id", "primary", '[id="primary"]'),
-        ("name", "email", '[name="email"]'),
-        ("class", "primary", '[class~="primary"]'),
-        ("tag", "button", "button"),
-        ("data-testid", "save", '[data-testid="save"]'),
-    ]
-
-    for key, value, expected_query in selector_cases:
-        page = FakePage(FakeLocator())
-        params = playwright_locator._parse_element_params(
-            [(key, "unique parameter", value)]
-        )
-
-        result = playwright_locator._build_locator(page, params["all_rows"], params)
-
-        assert result.query_type == "unique"
-        assert page.queries == [expected_query]
-
-
-def test_shadow_dom_builder_uses_sr_rows_and_css_query_chain():
-    params = playwright_locator._parse_element_params(
-        [
-            ("id", "sr 1 element parameter", "host"),
-            ("tag", "element parameter", "button"),
-            ("data-action", "element parameter", "save"),
-        ]
-    )
-    page = FakePage(FakeLocator())
-
-    result = playwright_locator._build_shadow_dom_locator(page, params)
-
-    assert result.query_type == "shadow css"
-    assert result.query == 'xpath=//*[@id="host"] >> button[data-action="save"]'
-
-
-def test_raw_xpath_ignores_additional_constraints_like_selenium():
-    fake_locator = FakeLocator(count=1)
-    page = FakePage(fake_locator)
-    params = playwright_locator._parse_element_params(
-        [
-            ("xpath", "element parameter", "//button[@id='save']"),
-            ("text", "element parameter", "Ignored"),
-        ]
-    )
-
-    result = playwright_locator._build_locator(page, params["all_rows"], params)
-
-    assert result.query_type == "xpath"
-    assert page.queries == ["xpath=//button[@id='save']"]
-
-
-def test_allow_hidden_does_not_apply_visible_filter():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "button"),
-            ("allow hidden", "optional parameter", "yes"),
-        ]
-    )
-    root = FakeLocator(count=2)
-
-    result = asyncio.run(playwright_locator._resolve_single(root, params, 1000, "test"))
-
-    assert isinstance(result, FakeLocator)
-    assert result.filtered is False
-
-
-def test_resolve_single_negative_index():
-    params = playwright_locator._parse_element_params(
-        [
-            ("tag", "element parameter", "button"),
-            ("index", "element parameter", "-1"),
-        ]
-    )
-    root = FakeLocator(count=4)
-
-    result = asyncio.run(playwright_locator._resolve_single(root, params, 1000, "test"))
-
-    assert isinstance(result, FakeLocator)
-    assert result.nth_index == 3
-
-
-def test_shadow_dom_rejects_duplicate_sr_indices():
-    params = playwright_locator._parse_element_params(
-        [
-            ("id", "sr 1 element parameter", "host-a"),
-            ("class", "sr 1 element parameter", "host-b"),
-            ("tag", "element parameter", "button"),
-        ]
-    )
-    page = FakePage(FakeLocator())
-
-    assert playwright_locator._build_shadow_dom_locator(page, params) is None
-
-
-def test_shadow_dom_rejects_text_selector():
-    params = playwright_locator._parse_element_params(
-        [
-            ("text", "sr 1 element parameter", "Host"),
-            ("tag", "element parameter", "button"),
-        ]
-    )
-    page = FakePage(FakeLocator())
-
-    assert playwright_locator._build_shadow_dom_locator(page, params) is None
-
-
-def test_text_filter_matches_normalized_nbsp_text():
-    page = FakePage(FakeLocator(count=2, texts=["Hello\xa0World", "Other"]))
-
-    result = asyncio.run(
-        playwright_locator._text_filter(
-            [
-                ("tag", "element parameter", "div"),
-                ("text", "element parameter", "Hello World"),
-            ],
-            page,
-            None,
-            {"allow_hidden": False, "index": None, "sibling_params": []},
-            1000,
-            False,
+    run(
+        LocateElement.Get_Element(
+            [("tag", "element parameter", "button")],
+            FakePage(FakeLocator()),
+            return_all_elements=True,
         )
     )
 
-    assert isinstance(result, FakeLocator)
-    assert result.text == "Hello\xa0World"
+    assert frame.queries == ["xpath=//button"]

@@ -227,7 +227,7 @@ def test_click_uses_lazy_locator_and_wait_timeout(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert locator.calls[-1] == ("click", {"timeout": 2000})
 
 
@@ -253,7 +253,7 @@ def test_enter_text_uses_lazy_locator_and_wait_timeout(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert ("type", "Alice", {"timeout": 3000}) in locator.calls
 
 
@@ -280,7 +280,7 @@ def test_upload_file_passes_wait_timeout(monkeypatch, tmp_path):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert locator.calls[-1] == ("set_input_files", str(upload_file), {"timeout": 4000})
 
 
@@ -310,7 +310,7 @@ def test_keystroke_keys_uses_lazy_locator_and_async_delay(monkeypatch):
     )
 
     assert result == "passed"
-    assert get_element_calls[0]["resolve"] is False
+    assert "resolve" not in get_element_calls[0]
     assert locator.calls == [("press", "Tab", {}), ("press", "Tab", {})]
     assert sleep_calls == [0.25, 0.25]
 
@@ -335,7 +335,7 @@ def test_validate_text_uses_lazy_locator(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert ("count",) not in locator.calls
 
 
@@ -359,7 +359,7 @@ def test_select_uses_lazy_locator(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert locator.calls == [("select_option", {"value": "US"})]
 
 
@@ -383,7 +383,7 @@ def test_check_uncheck_uses_lazy_locator(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert locator.calls == [("is_checked",), ("click", {})]
 
 
@@ -412,7 +412,7 @@ def test_scroll_to_element_uses_lazy_locator_without_default_extra_delay(monkeyp
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert sleep_calls == []
     assert locator.evaluated[-1][0] == "el => el.scrollIntoView(true)"
 
@@ -437,7 +437,7 @@ def test_slider_bar_uses_lazy_locator(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert locator.calls == [("bounding_box", {})]
     assert pw.current_page.mouse.calls == [("click", 60.0, 35.0)]
 
@@ -462,19 +462,20 @@ def test_if_element_exists_uses_lazy_lookup_with_explicit_short_check(monkeypatc
     )
 
     assert result == "passed"
-    assert calls[0]["resolve"] is False
+    assert "resolve" not in calls[0]
     assert ("count",) in locator.calls
     assert locator.wait_calls == [{"state": "attached", "timeout": 1000}]
 
 
 def test_wait_for_element_uses_single_lazy_wait(monkeypatch):
+    locator = FakeLocator()
     calls = []
 
-    async def fake_wait_for_element(*args, **kwargs):
+    async def fake_get_element(*args, **kwargs):
         calls.append(kwargs)
-        return "passed"
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -487,7 +488,8 @@ def test_wait_for_element_uses_single_lazy_wait(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls == [{"state": "attached", "timeout": 5000, "frame_locator": None}]
+    assert calls == [{}]
+    assert locator.wait_calls == [{"state": "attached", "timeout": 5000}]
 
 
 def test_legacy_wait_with_playwright_driver_routes_to_playwright_wait():
@@ -529,13 +531,12 @@ def test_legacy_wait_with_selenium_driver_keeps_common_wait_route():
 
 
 def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):
-    calls = []
+    locator = FakeLocator()
 
-    async def fake_wait_for_element(*args, **kwargs):
-        calls.append(kwargs)
-        return "passed"
+    async def fake_get_element(*args, **kwargs):
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -547,17 +548,16 @@ def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls == [{"state": "visible", "timeout": 150000, "frame_locator": None}]
+    assert locator.wait_calls == [{"state": "visible", "timeout": 150000}]
 
 
 def test_legacy_wait_with_allow_hidden_waits_for_attached(monkeypatch):
-    calls = []
+    locator = FakeLocator()
 
-    async def fake_wait_for_element(*args, **kwargs):
-        calls.append(kwargs)
-        return "passed"
+    async def fake_get_element(*args, **kwargs):
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -570,17 +570,16 @@ def test_legacy_wait_with_allow_hidden_waits_for_attached(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls == [{"state": "attached", "timeout": 10000, "frame_locator": None}]
+    assert locator.wait_calls == [{"state": "attached", "timeout": 10000}]
 
 
 def test_legacy_wait_disable_defaults_to_hidden_with_action_timeout(monkeypatch):
-    calls = []
+    locator = FakeLocator()
 
-    async def fake_wait_for_element(*args, **kwargs):
-        calls.append(kwargs)
-        return "passed"
+    async def fake_get_element(*args, **kwargs):
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -592,17 +591,16 @@ def test_legacy_wait_disable_defaults_to_hidden_with_action_timeout(monkeypatch)
     )
 
     assert result == "passed"
-    assert calls == [{"state": "hidden", "timeout": 7000, "frame_locator": None}]
+    assert locator.wait_calls == [{"state": "hidden", "timeout": 7000}]
 
 
 def test_legacy_wait_disable_with_allow_hidden_waits_for_detached(monkeypatch):
-    calls = []
+    locator = FakeLocator()
 
-    async def fake_wait_for_element(*args, **kwargs):
-        calls.append(kwargs)
-        return "passed"
+    async def fake_get_element(*args, **kwargs):
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -615,17 +613,16 @@ def test_legacy_wait_disable_with_allow_hidden_waits_for_detached(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls == [{"state": "detached", "timeout": 3000, "frame_locator": None}]
+    assert locator.wait_calls == [{"state": "detached", "timeout": 3000}]
 
 
 def test_explicit_state_overrides_legacy_wait_default(monkeypatch):
-    calls = []
+    locator = FakeLocator()
 
-    async def fake_wait_for_element(*args, **kwargs):
-        calls.append(kwargs)
-        return "passed"
+    async def fake_get_element(*args, **kwargs):
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -638,17 +635,16 @@ def test_explicit_state_overrides_legacy_wait_default(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls == [{"state": "detached", "timeout": 3000, "frame_locator": None}]
+    assert locator.wait_calls == [{"state": "detached", "timeout": 3000}]
 
 
 def test_explicit_state_overrides_allow_hidden_state_mapping(monkeypatch):
-    calls = []
+    locator = FakeLocator()
 
-    async def fake_wait_for_element(*args, **kwargs):
-        calls.append(kwargs)
-        return "passed"
+    async def fake_get_element(*args, **kwargs):
+        return locator
 
-    monkeypatch.setattr(pw.PlaywrightLocator, "wait_for_element", fake_wait_for_element)
+    monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
 
     result = asyncio.run(
         pw.Wait_For_Element(
@@ -662,7 +658,7 @@ def test_explicit_state_overrides_allow_hidden_state_mapping(monkeypatch):
     )
 
     assert result == "passed"
-    assert calls == [{"state": "visible", "timeout": 4000, "frame_locator": None}]
+    assert locator.wait_calls == [{"state": "visible", "timeout": 4000}]
 
 
 def test_resize_window_accepts_selenium_element_parameter_rows():
