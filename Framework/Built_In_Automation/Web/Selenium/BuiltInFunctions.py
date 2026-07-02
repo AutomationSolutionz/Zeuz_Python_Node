@@ -897,15 +897,9 @@ async def Open_Browser(browser, browser_options: BrowserOptions, session_name: s
             chrome_bin = browser_options["chrome"].get("binary_location", None)
             driver_bin = browser_options["chrome"].get("driver_path", None)
 
-            if chrome_bin and driver_bin:
-                # Use Chrome for Testing binaries
-                service = Service(executable_path=driver_bin)
+            service = Service(executable_path=driver_bin) if driver_bin else Service()
+            if chrome_bin:
                 options.binary_location = chrome_bin
-                CommonUtil.ExecLog(sModuleInfo, "Using Chrome for Testing binaries", 1)
-            else:
-                # Use standard ChromeDriverManager
-                service = Service()
-                CommonUtil.ExecLog(sModuleInfo, "Using standard Chrome binaries", 1)
 
             try:
                 selenium_driver = webdriver.Chrome(
@@ -1288,6 +1282,14 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                     browser_options[browser]["page_load_strategy"] = right.strip()
                 elif left == "debuggeraddress":
                     browser_options[browser]["debugger_address"] = right.strip()
+                elif left == "chromebin" and browser == "chrome":
+                    browser_options["chrome"]["binary_location"] = CommonUtil.path_parser(
+                        right.strip()
+                    )
+                elif left == "driverbin" and browser == "chrome":
+                    browser_options["chrome"]["driver_path"] = CommonUtil.path_parser(
+                        right.strip()
+                    )
 
         debug_port = None
         if browser in browser_options:
@@ -1299,37 +1301,49 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
                     debug_port = int(arg.split("=")[1])
                     break
 
+        custom_chrome_bin = browser_options["chrome"].get("binary_location")
+        custom_driver_bin = browser_options["chrome"].get("driver_path")
+
         if dependency["Browser"] in (
             "Chrome",
             "ChromeHeadless",
         ) and not browser_options["chrome"].get("debugger_address", ""):
-            cft = ChromeForTesting()
-
-            if chrome_version:
-                if chrome_version.strip().lower() in ("beta", "dev", "canary"):
-                    chrome_channel = chrome_version.strip().capitalize()
-                    chrome_version = None
-                else:
-                    chrome_version = chrome_version.strip()
-
-            chrome_bin, driver_bin = cft.setup_chrome_for_testing(
-                chrome_version, chrome_channel
-            )
-
-            if chrome_bin and driver_bin:
-                browser_options["chrome"]["binary_location"] = str(chrome_bin)
-                browser_options["chrome"]["driver_path"] = str(driver_bin)
+            if custom_chrome_bin or custom_driver_bin:
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    f"Using Chrome for Testing {chrome_version or 'latest'}",
+                    "Using custom Chrome binary/chromedriver from step data",
                     1,
                 )
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Failed to get Chrome for Testing binaries. Using system Chrome",
-                    2,
+                cft = ChromeForTesting()
+
+                if chrome_version:
+                    if chrome_version.strip().lower() in ("beta", "dev", "canary"):
+                        chrome_channel = chrome_version.strip().capitalize()
+                        chrome_version = None
+                    else:
+                        chrome_version = chrome_version.strip()
+
+                chrome_bin, driver_bin = cft.setup_chrome_for_testing(
+                    chrome_version, chrome_channel
                 )
+
+                if chrome_bin:
+                    browser_options["chrome"]["binary_location"] = str(chrome_bin)
+                if driver_bin:
+                    browser_options["chrome"]["driver_path"] = str(driver_bin)
+                if chrome_bin:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        f"Using Chrome for Testing {chrome_version or 'latest'}",
+                        1,
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Failed to get Chrome for Testing binaries. Using system Chrome",
+                        2,
+                    )
 
         if not driver_id:
             if len(selenium_details.keys()) == 0:
