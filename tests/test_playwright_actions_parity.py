@@ -2,6 +2,7 @@ import asyncio
 
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
+    LocateElement,
 )
 from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
 from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as pw
@@ -528,6 +529,64 @@ def test_legacy_wait_with_selenium_driver_keeps_common_wait_route():
         "selenium",
         "none",
     )
+
+
+def test_conditional_action_routes_to_playwright_from_runtime_driver():
+    sr.Set_Shared_Variables("zeuz_browser_driver", "playwright")
+    data_set = [("true", "selenium conditional action", "p")]
+
+    action_subfield = sa.get_browser_driver_routing(
+        "selenium conditional action",
+        data_set,
+    )
+
+    assert action_subfield == "playwright conditional action"
+
+
+def test_conditional_action_optional_driver_overrides_runtime_driver():
+    sr.Set_Shared_Variables("zeuz_browser_driver", "playwright")
+    data_set = [
+        ("browser driver", "optional parameter", "selenium"),
+        ("true", "selenium conditional action", "p"),
+    ]
+
+    action_subfield = sa.get_browser_driver_routing(
+        "selenium conditional action",
+        data_set,
+    )
+
+    assert action_subfield == "selenium conditional action"
+
+
+def test_selenium_conditional_uses_playwright_when_runtime_driver_set(monkeypatch):
+    sr.Set_Shared_Variables("zeuz_browser_driver", "playwright")
+    page = FakePage()
+    pw.current_page = page
+    calls = []
+
+    async def fake_get_element(data_set, driver, element_wait=None):
+        calls.append((data_set, driver, element_wait))
+        return object()
+
+    monkeypatch.setattr(sa, "load_sa_modules", lambda module: "passed")
+    monkeypatch.setattr(LocateElement, "Get_Element", fake_get_element)
+
+    result, to_skip = asyncio.run(
+        sa.Conditional_Action_Handler(
+            [[("id", "element parameter", "ready"), ("true", "selenium conditional action", "p")]],
+            0,
+        )
+    )
+
+    assert result == "passed"
+    assert to_skip == []
+    assert calls == [
+        (
+            [("id", "element parameter", "ready"), ("true", "selenium conditional action", "p")],
+            page,
+            10,
+        )
+    ]
 
 
 def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):

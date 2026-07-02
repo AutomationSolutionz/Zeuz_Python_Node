@@ -2077,6 +2077,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 stored = True
                 result = right  # Retrieve the saved result (already converted from shared variable)
             elif "conditional action" in mid:
+                mid = get_browser_driver_routing(mid, data_set)
                 module = mid.strip().split(" ")[0]
                 actions_for_true = get_data_set_nums(right)
         load_sa_modules(module)
@@ -2114,6 +2115,14 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
+            session_activator = getattr(eval(module), "_activate_browser_session_for_action", None)
+            if session_activator:
+                result = session_activator(data_set)
+                if inspect.iscoroutine(result):
+                    result = await result
+                if result in failed_tag_list:
+                    raise RuntimeError("Browser session activation failed")
+
             Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
@@ -2130,7 +2139,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
 
     elif module == "playwright":
         try:
-            from Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions import current_page
+            from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as PlaywrightBuiltInFunctions
             
             wait = 10
             for left, mid, right in data_set:
@@ -2139,12 +2148,16 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
-            if current_page is None:
+            result = await PlaywrightBuiltInFunctions._activate_browser_session_for_action(data_set)
+            if result in failed_tag_list:
+                raise RuntimeError("Browser session activation failed")
+
+            if PlaywrightBuiltInFunctions.current_page is None:
                 CommonUtil.ExecLog(sModuleInfo, "No browser open for Playwright conditional action", 3)
                 logic_decision = False
                 log_msg += "Browser not open\n"
             else:
-                Element = await LocateElement.Get_Element(data_set, current_page, element_wait=wait)
+                Element = await LocateElement.Get_Element(data_set, PlaywrightBuiltInFunctions.current_page, element_wait=wait)
                 if Element == "zeuz_failed":
                     CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                     logic_decision = False
@@ -2488,9 +2501,15 @@ def get_browser_driver_routing(action_subfield, data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # If the action subfield is not for playwright or selenium, return as is
-    if action_subfield not in ("playwright action", "selenium action"):
-        return action_subfield
+    original_action_subfield = action_subfield
+    action_subfield = str(action_subfield).strip().lower()
+    action_parts = action_subfield.split(" ", 1)
+    if (
+        len(action_parts) != 2
+        or action_parts[0] not in ("playwright", "selenium")
+        or action_parts[1] not in ("action", "conditional action", "conditional actions")
+    ):
+        return original_action_subfield
     
     # Initialize the updated action subfield with the original action subfield
     updated_action_subfield = action_subfield
@@ -2501,7 +2520,7 @@ def get_browser_driver_routing(action_subfield, data_set):
     # If runtime parameter is present and valid, update the action subfield
     if browser_driver_runtime_parameter and browser_driver_runtime_parameter.strip().lower() in ("playwright", "selenium"):
         CommonUtil.ExecLog(sModuleInfo, "Runtime parameter for browser driver preference detected", 5)
-        updated_action_subfield = browser_driver_runtime_parameter.strip().lower() + " action"
+        updated_action_subfield = browser_driver_runtime_parameter.strip().lower() + " " + action_parts[1]
 
     # Check if there is an optional parameter for browser driver in the data set
     for left, mid, right in data_set:
@@ -2516,7 +2535,7 @@ def get_browser_driver_routing(action_subfield, data_set):
                 CommonUtil.ExecLog(sModuleInfo, "Both runtime parameter and optional parameter for browser driver detected, using optional parameter", 2)
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Optional parameter for browser driver preference detected in action", 5)
-            updated_action_subfield = right.strip().lower() + " action"
+            updated_action_subfield = right.strip().lower() + " " + action_parts[1]
             break
     
     # If the action subfield has changed, log the change
