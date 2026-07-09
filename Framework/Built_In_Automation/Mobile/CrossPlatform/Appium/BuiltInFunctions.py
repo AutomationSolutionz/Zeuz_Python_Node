@@ -5050,16 +5050,28 @@ def Save_Attribute_appium(step_data):
         return "passed"
 
     try:
-        Element = LocateElement.Get_Element(step_data, appium_driver)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "zeuz_failed"
-
+        variable_name = None
+        new_ds = []
         for each_step_data_item in step_data:
             if "save parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
                 attribute_name = each_step_data_item[0].strip().lower()
-                break
+            else:
+                new_ds.append(each_step_data_item)
+
+        if variable_name is None:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Variable name should be mentioned. Example: (text, save parameter, var_name)",
+                3,
+            )
+            return "zeuz_failed"
+
+        Element = LocateElement.Get_Element(new_ds, appium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+
         try:
             if attribute_name == "text":
                 attribute_value = Element.text
