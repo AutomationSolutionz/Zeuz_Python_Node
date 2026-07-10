@@ -17,6 +17,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from appium.webdriver.common.appiumby import AppiumBy
 import selenium
 from xml.etree.ElementTree import tostring, fromstring
 global WebDriver_Wait
@@ -1127,7 +1128,9 @@ def auto_scroll_appium(data_set, element_query):
     try:
         # Find scrollable element differently per platform
         if platform == "android":
-            scrollable_elements = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+            scrollable_elements = generic_driver.find_elements(
+                AppiumBy.ANDROID_UIAUTOMATOR, "new UiSelector().scrollable(true)"
+            )
             if not scrollable_elements:
                 return []
             scrollable_element = scrollable_elements[0]
@@ -1136,7 +1139,7 @@ def auto_scroll_appium(data_set, element_query):
 
         # Get scroll options
         auto_scroll = False
-        inset = 0.1
+        inset = 0.5
         position = 0.5
         max_try = 10
         direction = "up"

@@ -1983,7 +1983,7 @@ def swipe_in_direction(data_set):
             direction,
         )
         try:
-            appium_driver.find_element_by_android_uiautomator(final_search_string)
+            appium_driver.find_element(AppiumBy.ANDROID_UIAUTOMATOR, final_search_string)
         except:
             pass
         CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
@@ -2657,7 +2657,7 @@ def Smart_Scroll_To_Element(data_set):
             return "zeuz_failed"
 
         desired_dataset = []
-        inset = 0.1
+        inset = 0.5
         position = 0.5
         height = scrollable_element.size["height"]
         width = scrollable_element.size["width"]
@@ -5517,7 +5517,7 @@ def swipe_appium(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
         return "zeuz_failed"
 
-    inset = 0.1
+    inset = 0.5
     position = 0.5
     height = scrollable_element.size["height"]
     width = scrollable_element.size["width"]
@@ -5637,7 +5637,7 @@ def scroll_to_element(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
             return "zeuz_failed"
         desired_dataset = []
-        inset = 0.1
+        inset = 0.5
         position = 0.5
         height = scrollable_element.size["height"]
         width = scrollable_element.size["width"]
