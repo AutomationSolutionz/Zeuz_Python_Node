@@ -95,6 +95,7 @@ def renew_token():
     r = session.post(
         url=form_uri("/zsvc/auth/v1/renew"),
         verify=False,
+        timeout=70,
     )
 
     data = {}
@@ -124,6 +125,7 @@ def login():
         url=form_uri("/zsvc/auth/v1/login"),
         json=payload,
         verify=False,
+        timeout=70,
     )
 
 

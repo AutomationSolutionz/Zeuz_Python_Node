@@ -722,9 +722,10 @@ async def run_all_test_steps_in_a_test_case(
                     )
 
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                thr = executor.submit(upload_step_report, run_id, test_case, this_step["step_sequence"], this_step["step_id"], after_execution_dict)
-                CommonUtil.SaveThread("step_report", thr)
+            executor = concurrent.futures.ThreadPoolExecutor()
+            thr = executor.submit(upload_step_report, run_id, test_case, this_step["step_sequence"], this_step["step_id"], after_execution_dict)
+            CommonUtil.SaveThread("step_report", thr)
+            executor.shutdown(wait=False)
 
             StepSeq += 1
             CommonUtil.step_index += 1
