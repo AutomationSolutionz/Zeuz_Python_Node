@@ -143,6 +143,78 @@ class _ActionTimeoutWorker:
         return payload
 
 
+def _force_kill_hung_browser_sessions():
+    """Best-effort kill of any live Selenium chromedriver/browser process trees.
+
+    Called after an action_timeout abort, since Tear_Down_Selenium is never
+    reached for the timed-out action and driver.quit() itself can hang on the
+    same unresponsive chromedriver. Must never raise or block -- this runs
+    from inside a TimeoutError handler.
+    """
+    try:
+        import psutil
+    except Exception:
+        return
+
+    drivers = []
+    try:
+        from Framework.Built_In_Automation.Web import utils as web_utils
+        for session in web_utils.get_browser_sessions().values():
+            if isinstance(session, dict) and session.get("selenium_driver") is not None:
+                drivers.append(session["selenium_driver"])
+    except Exception:
+        pass
+
+    try:
+        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
+        for detail in BuiltInFunctions.selenium_details.values():
+            if isinstance(detail, dict) and detail.get("driver") is not None:
+                drivers.append(detail["driver"])
+    except Exception:
+        pass
+
+    seen_pids = set()
+    for driver in drivers:
+        try:
+            pid = driver.service.process.pid
+        except Exception:
+            continue
+        if pid is None or pid in seen_pids:
+            continue
+        seen_pids.add(pid)
+        _kill_process_tree(pid)
+
+
+def _kill_process_tree(pid):
+    try:
+        import psutil
+        root = psutil.Process(pid)
+    except Exception:
+        return
+
+    try:
+        procs = root.children(recursive=True) + [root]
+    except Exception:
+        procs = [root]
+
+    for proc in procs:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+
+    try:
+        _gone, alive = psutil.wait_procs(procs, timeout=5)
+    except Exception:
+        alive = procs
+
+    for proc in alive:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+
 def _get_action_timeout():
     """Resolve the `action_timeout` shared variable to seconds (float).
 
@@ -193,6 +265,7 @@ async def _run_action_with_timeout(run_function, data_set):
         # thread won't block shutdown) and create a fresh worker for the next
         # action so its queues start clean.
         _action_worker = None
+        _force_kill_hung_browser_sessions()
         CommonUtil.ExecLog(
             sModuleInfo,
             "Action exceeded the action_timeout of %s second(s) and was aborted. "
@@ -204,6 +277,7 @@ async def _run_action_with_timeout(run_function, data_set):
         try:
             return await asyncio.wait_for(result, timeout=timeout)
         except TimeoutError:
+            _force_kill_hung_browser_sessions()
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Action exceeded the action_timeout of %s second(s) and was aborted. "
