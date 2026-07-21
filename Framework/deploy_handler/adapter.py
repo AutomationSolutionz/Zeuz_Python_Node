@@ -9,6 +9,35 @@ from typing import Any, Dict, List
 # from pb.v1.deploy_response_message_pb2 import DeployResponse
 
 
+def normalize_mobile_execution(value: str) -> tuple[str, Dict[str, Any]]:
+    """Separate the mobile platform from its local execution target."""
+    raw_value = (value or "").strip()
+    normalized = raw_value.lower().replace("_", " ").replace("-", " ")
+    normalized = " ".join(normalized.split())
+
+    if normalized in {"android headless", "android emulator headless"}:
+        return "Android", {
+            "target": "emulator",
+            "headless": True,
+            "avd": "auto",
+        }
+    if normalized == "android":
+        return "Android", {
+            "target": "auto",
+            "headless": False,
+            "avd": "auto",
+        }
+    if normalized == "ios simulator":
+        return "iOS", {
+            "target": "simulator",
+            "headless": False,
+        }
+    return raw_value, {
+        "target": "device",
+        "headless": False,
+    }
+
+
 def read_actions(actions_pb) -> List[Dict]:
     actions = []
     for action in actions_pb:
@@ -96,6 +125,9 @@ def adapt(message: str, node_id: str) -> List[Dict]:
     """
 
     r = json.loads(message)
+    mobile_platform, mobile_execution = normalize_mobile_execution(
+        r["deployInfo"]["dependency"]["mobile"]
+    )
 
     # TODO: Check r.server_version and create different adapeter classes for new
     # schemaa changes.
@@ -113,8 +145,10 @@ def adapt(message: str, node_id: str) -> List[Dict]:
 
         "dependency_list": {
             "Browser": r["deployInfo"]["dependency"]["browser"],
-            "Mobile": r["deployInfo"]["dependency"]["mobile"],
+            "Mobile": mobile_platform,
         },
+
+        "mobile_execution": mobile_execution,
 
         "device_info": None,
 

@@ -128,6 +128,14 @@ def get_npm_path():
         return node_dir / "bin" / "npm"
 
 
+def get_node_path():
+    """Get the Node.js binary managed by ZeuZ."""
+    node_dir = get_node_dir()
+    if platform.system() == "Windows":
+        return node_dir / "node.exe"
+    return node_dir / "bin" / "node"
+
+
 def get_appium_path():
     """Get appium binary path."""
     node_dir = get_node_dir()
@@ -137,16 +145,91 @@ def get_appium_path():
         return node_dir / "bin" / "appium"
 
 
-def install_drivers(drivers):
-    """Install specified Appium drivers."""
-    appium_path = get_appium_path()
+def get_local_node_env():
+    """Build an environment that always resolves ZeuZ's Node.js before system Node.js."""
+    env = os.environ.copy()
+    node_dir = get_node_dir()
+    bin_dir = node_dir if platform.system() == "Windows" else node_dir / "bin"
+    path_parts = [
+        part
+        for part in env.get("PATH", "").split(os.pathsep)
+        if part and Path(part) != bin_dir
+    ]
+    env["PATH"] = os.pathsep.join([str(bin_dir), *path_parts])
+    return env
 
-    for driver in drivers:
+
+def _run_local(command, **kwargs):
+    kwargs.setdefault("env", get_local_node_env())
+    return subprocess.run(command, **kwargs)
+
+
+def _command_error(result):
+    output = (result.stderr or result.stdout or "").strip()
+    return output[-1000:] if output else f"exit code {result.returncode}"
+
+
+def install_drivers(drivers):
+    """Install only missing Appium drivers and verify the resulting state."""
+    requested = list(dict.fromkeys(drivers))
+    if not requested:
+        return True
+
+    try:
+        installed = set(check_appium_drivers())
+    except Exception as exc:
+        print(f"ERROR: Could not inspect installed Appium drivers: {exc}")
+        return False
+
+    for driver in requested:
+        if driver in installed:
+            print(f"Appium driver {driver} is already installed; skipping")
+            continue
+
+        print(f"Installing Appium driver {driver}...")
         try:
-            subprocess.run([str(appium_path), "driver", "install", driver], check=True)
-            print(f"Successfully installed {driver} driver")
-        except subprocess.CalledProcessError:
-            print(f"Warning: Failed to install {driver} driver, continuing...")
+            result = _run_local(
+                [str(get_appium_path()), "driver", "install", driver],
+                capture_output=True,
+                text=True,
+                timeout=900,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            print(f"ERROR: Appium driver {driver} installation could not run: {exc}")
+            return False
+
+        if result.returncode != 0:
+            # Another process may have installed it after our initial check.
+            try:
+                if driver in check_appium_drivers():
+                    print(
+                        f"Appium driver {driver} became available during installation"
+                    )
+                    installed.add(driver)
+                    continue
+            except Exception:
+                pass
+            print(
+                f"ERROR: Failed to install Appium driver {driver}: "
+                f"{_command_error(result)}"
+            )
+            return False
+
+        print(f"Successfully installed Appium driver {driver}")
+        installed.add(driver)
+
+    try:
+        verified = set(check_appium_drivers())
+    except Exception as exc:
+        print(f"ERROR: Could not verify Appium drivers after installation: {exc}")
+        return False
+
+    missing = [driver for driver in requested if driver not in verified]
+    if missing:
+        print(f"ERROR: Required Appium drivers are still missing: {', '.join(missing)}")
+        return False
+    return True
 
 
 def install_appium():
@@ -157,13 +240,43 @@ def install_appium():
         raise Exception("npm not found. Install Node.js first.")
 
     print("Installing Appium...")
-    subprocess.run(
-        [str(npm_path), "install", "-g", "appium", "--strict-ssl=false"], check=True
+    result = _run_local(
+        [
+            str(npm_path),
+            "install",
+            "-g",
+            "appium",
+            "--prefix",
+            str(get_node_dir()),
+            "--strict-ssl=false",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=900,
+        check=False,
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"Appium installation failed: {_command_error(result)}")
+
+    appium_path = get_appium_path()
+    version = _run_local(
+        [str(appium_path), "--version"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    if version.returncode != 0:
+        raise RuntimeError(
+            f"Appium was installed but is not executable: {_command_error(version)}"
+        )
+    print(f"Appium {version.stdout.strip()} installed at {appium_path}")
 
     print("Installing Appium drivers...")
-    install_drivers(get_required_drivers())
+    if not install_drivers(get_required_drivers()):
+        raise RuntimeError("One or more required Appium drivers could not be prepared")
     print("Appium installation completed")
+    return True
 
 
 def update_path():
@@ -175,8 +288,8 @@ def update_path():
         bin_dir = str(node_dir / "bin")
 
     current_path = os.environ.get("PATH", "")
-    if bin_dir not in current_path:
-        os.environ["PATH"] = f"{bin_dir}{os.pathsep}{current_path}"
+    path_parts = [part for part in current_path.split(os.pathsep) if part != bin_dir]
+    os.environ["PATH"] = os.pathsep.join([bin_dir, *path_parts])
 
 
 def get_required_drivers():
@@ -198,52 +311,65 @@ def check_appium_drivers():
         return []
 
     try:
-        result = subprocess.run(
-            [str(appium_path), "driver", "list", "--json"],
+        result = _run_local(
+            [str(appium_path), "driver", "list", "--installed", "--json"],
             capture_output=True,
             text=True,
+            timeout=60,
+            check=False,
         )
+        if result.returncode != 0:
+            raise RuntimeError(_command_error(result))
         drivers_data = json.loads(result.stdout)
+        if not isinstance(drivers_data, dict):
+            raise ValueError("Appium returned an invalid driver list")
         return [
-            name for name, info in drivers_data.items() if info.get("installed", False)
+            name
+            for name, info in drivers_data.items()
+            if isinstance(info, dict) and info.get("installed", False)
         ]
-    except:  # noqa: E722
-        return []
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        raise RuntimeError(f"Unable to query Appium drivers: {exc}") from exc
 
 
 def check_installations():
     """Check if Node.js, Appium and required drivers are installed."""
-    node_dir = get_node_dir()
-    node_bin = node_dir / ("node.exe" if platform.system() == "Windows" else "bin/node")
+    node_bin = get_node_path()
+    node_installed = False
+    if node_bin.exists():
+        result = _run_local(
+            [str(node_bin), "--version"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        node_installed = result.returncode == 0
 
-    # Check for Appium in global npm modules
-    npm_path = get_npm_path()
+    appium_path = get_appium_path()
     appium_installed = False
-
-    if npm_path.exists():
-        try:
-            result = subprocess.run(
-                [str(npm_path), "list", "-g", "--json", "appium"],
-                capture_output=True,
-                text=True,
-            )
-            npm_data = json.loads(result.stdout)
-            appium_installed = "appium" in npm_data.get("dependencies", {})
-        except:  # noqa: E722
-            pass
+    if node_installed and appium_path.exists():
+        result = _run_local(
+            [str(appium_path), "--version"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        appium_installed = result.returncode == 0
 
     # Check drivers
     required_drivers = get_required_drivers()
     installed_drivers = check_appium_drivers() if appium_installed else []
     missing_drivers = [d for d in required_drivers if d not in installed_drivers]
 
-    return node_bin.exists(), appium_installed, missing_drivers
+    return node_installed, appium_installed, missing_drivers
 
 
 def install_missing_drivers(missing_drivers):
     """Install missing Appium drivers."""
     print("Installing missing Appium drivers...")
-    install_drivers(missing_drivers)
+    return install_drivers(missing_drivers)
 
 
 def check_and_remove_global_appium():
@@ -330,14 +456,33 @@ def setup_nodejs_appium():
         if not appium_installed:
             install_appium()
         elif missing_drivers:
-            install_missing_drivers(missing_drivers)
+            if not install_missing_drivers(missing_drivers):
+                raise RuntimeError(
+                    "Required Appium drivers could not be installed: "
+                    f"{', '.join(missing_drivers)}"
+                )
         else:
             print("Appium and all required drivers already installed")
 
-        print("Node.js and Appium setup completed successfully")
+        node_installed, appium_installed, missing_drivers = check_installations()
+        if not node_installed:
+            raise RuntimeError("ZeuZ-managed Node.js could not be verified")
+        if not appium_installed:
+            raise RuntimeError("ZeuZ-managed Appium could not be verified")
+        if missing_drivers:
+            raise RuntimeError(
+                "Required Appium drivers are missing after setup: "
+                f"{', '.join(missing_drivers)}"
+            )
+
+        installed_drivers = check_appium_drivers()
+        print(
+            "Node.js and Appium setup verified successfully "
+            f"(drivers: {', '.join(installed_drivers) or 'none'})"
+        )
         return True
     except Exception as e:
-        print(f"Error during setup: {e}")
+        print(f"ERROR: Node.js/Appium setup was not completed: {e}")
         return False
 
 

@@ -885,12 +885,18 @@ async def TakeScreenShot(function_name, local_run=False, pre_action=False):
         Method = screen_capture_type
         Driver = screen_capture_driver
 
-        # The driver for web/mobile may not exist yet when the BEFORE frame is requested
-        # (e.g. Go_To_Link launches the browser, so no selenium_driver exists until the
-        # action runs). A missing driver for a pre-action capture is expected, not an
-        # error, so skip it silently instead of announcing the capture and then logging a
-        # level-3 error from Thread_ScreenShot.
-        if pre_action and Method in ("mobile", "web") and Driver is None:
+        # The driver for web/mobile may not exist around a launch action. Before the
+        # action this is expected; after a failed launch, the action already logged the
+        # useful root cause. Do not add a second level-3 screenshot error for a driver
+        # that was never created.
+        if Method in ("mobile", "web") and Driver is None:
+            if not pre_action:
+                ExecLog(
+                    sModuleInfo,
+                    "Skipping screenshot because the %s driver is not available"
+                    % Method,
+                    0,
+                )
             return
 
         # Decide if screenshot should be captured

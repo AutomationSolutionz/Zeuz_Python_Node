@@ -16,7 +16,7 @@ async def check_status() -> bool:
        # Use the check function from nodejs_appium_installer
        node_installed, appium_installed, missing_drivers = check_installations()
        
-       if appium_installed:
+       if appium_installed and not missing_drivers:
            # Get the installation location
            appium_path = get_appium_path()
            node_dir = get_node_dir()
@@ -51,6 +51,22 @@ async def check_status() -> bool:
                }
            })
            return True
+       elif appium_installed:
+           missing_text = ", ".join(missing_drivers)
+           logger.warning(
+               "[installer][android-appium] Missing required drivers: %s",
+               missing_text,
+           )
+           await send_response({
+               "action": "status",
+               "data": {
+                   "category": "Android",
+                   "name": "Appium",
+                   "status": "not installed",
+                   "comment": f"Appium is installed, but required drivers are missing: {missing_text}",
+               }
+           })
+           return False
        else:
            logger.info("[installer][android-appium] Not installed")
            await send_response({
@@ -71,7 +87,7 @@ async def check_status() -> bool:
                "category": "Android",
                "name": "Appium",
                "status": "not installed",
-               "comment": "Run the ZeuZ Node, it will automatically install Appium",
+               "comment": f"Unable to verify Appium: {str(e)[:160]}",
            }
        })
        return False

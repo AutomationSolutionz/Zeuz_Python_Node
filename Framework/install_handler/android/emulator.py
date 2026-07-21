@@ -8,11 +8,10 @@ import asyncio
 import re
 import random
 import traceback
-import tempfile
 from pathlib import Path
-from settings import ZEUZ_NODE_DOWNLOADS_DIR
 from Framework.install_handler.utils import send_response, debug
 from Framework.install_handler.android.android_sdk import _get_sdk_root
+from Framework.install_handler.android.emulator_manager import ensure_android_emulator
 from Framework.install_handler.install_log_config import get_logger
 
 logger = get_logger()
@@ -286,91 +285,36 @@ async def get_available_avds() -> list[dict]:
 
 async def launch_avd(avd_name: str) -> bool:
     """
-    Launch AVD using emulator command determined by OS.
-    Non-blocking - the emulator starts in the background.
-    Sends response to server on success or failure.
+    Launch an AVD and wait until it is safe for automation.
     """
     try:
-        sdk_root = _get_sdk_root()
-        emulator_path = get_emulator_command()
-        env = _build_android_process_env(sdk_root)
-        sanitized_name = re.sub(r"[^a-zA-Z0-9._-]", "_", avd_name) or "avd"
-        log_dir = Path(tempfile.gettempdir()) / "zeuz" / "android_emulator_logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / f"{sanitized_name}.log"
-
-        def _spawn_emulator(cmd: list[str]) -> subprocess.Popen:
-            with open(log_path, "w", encoding="utf-8") as log_file:
-                return subprocess.Popen(
-                    cmd,
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True,  # Detach from parent process
-                    env=env
-                )
-
-        # Try launch with explicit sdk-root first.
-        process = _spawn_emulator([emulator_path, "-avd", avd_name, "-sdk-root", str(sdk_root)])
-        await asyncio.sleep(3)
-        returncode = process.poll()
-
-        # macOS compatibility: retry without -sdk-root if first launch exits immediately.
-        if returncode is not None and _is_darwin():
-            if debug:
-                logger.debug("[installer][emulator] Emulator exited quickly with -sdk-root on macOS. Retrying without -sdk-root.")
-            process = _spawn_emulator([emulator_path, "-avd", avd_name])
-            await asyncio.sleep(3)
-            returncode = process.poll()
-
-        if returncode is not None:
-            launch_hint = _read_file_tail(log_path)
-            error_msg = f"Emulator process for {avd_name} exited immediately (code {returncode})."
-            if launch_hint:
-                error_msg += f" Output hint: {launch_hint[:500]}"
-            logger.error("[installer][emulator] %s", error_msg)
-            await send_response({
-                "action": "status",
-                "data": {
-                    "category": "AndroidEmulator",
-                    "name": avd_name,
-                    "status": "not installed",
-                    "comment": error_msg,
-                }
-            })
-            return False
-        
-        logger.info("[installer][emulator] Launching AVD: %s... (PID: %s)", avd_name, process.pid)
-        
-        # Send success response to server
+        await send_response({
+            "action": "status",
+            "data": {
+                "category": "AndroidEmulator",
+                "name": avd_name,
+                "status": "installing",
+                "comment": f"Starting {avd_name} and waiting for Android to become stable...",
+            }
+        })
+        target = await asyncio.to_thread(
+            ensure_android_emulator,
+            requested_avd=avd_name,
+            headless=False,
+        )
         await send_response({
             "action": "status",
             "data": {
                 "category": "AndroidEmulator",
                 "name": avd_name,
                 "status": "installed",
-                "comment": f"Emulator {avd_name} is launching (PID: {process.pid})",
+                "comment": f"Emulator {avd_name} is ready on {target.serial}",
             }
         })
         return True
-
-    except FileNotFoundError:
-        error_msg = f"Emulator executable not found"
-        logger.error("[installer][emulator] %s", error_msg)
-        await send_response({
-            "action": "status",
-            "data": {
-                "category": "AndroidEmulator",
-                "name": avd_name,
-                "status": "not installed",
-                "comment": f"Failed to launch {avd_name}: {error_msg}",
-            }
-        })
-        return False
     except Exception as e:
         error_msg = f"Failed to launch AVD {avd_name}: {e}"
-    
         logger.error("[installer][emulator] %s", error_msg)
-        traceback.print_exc()
         await send_response({
             "action": "status",
             "data": {
@@ -1928,4 +1872,3 @@ async def create_avd_from_system_image(device_param: str) -> bool:
 
 
 ########################################
-
