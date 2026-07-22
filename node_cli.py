@@ -127,10 +127,11 @@ def setup_nodejs_appium():
     try:
         import nodejs_appium_installer
 
-        nodejs_appium_installer.setup_nodejs_appium()
+        return nodejs_appium_installer.setup_nodejs_appium()
     except Exception as e:
         print(f"Warning: Failed to setup Node.js and Appium: {e}")
         print("Continuing without Node.js/Appium setup...")
+        return False
 
 
 # Tells node whether it should run a test set/deployment only once and quit.
@@ -1385,7 +1386,11 @@ async def main():
         os._exit(1)
 
     if not disable_mobile_install:
-        setup_nodejs_appium()
+        if not setup_nodejs_appium():
+            print(
+                "WARNING: The ZeuZ Node will continue, but local mobile actions "
+                "are unavailable until Node.js/Appium setup succeeds."
+            )
         update_java_path()
         update_android_sdk_path()
         update_outdated_modules()

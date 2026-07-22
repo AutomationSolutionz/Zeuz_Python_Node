@@ -3,70 +3,100 @@
 # -*- coding: cp1252 -*-
 
 
-import sys, subprocess, time
-from Framework.Utilities import CommonUtil
 import json
+import shutil
+import subprocess
+import sys
+
+from Framework.install_handler.android.android_sdk import get_adb_path
 
 # These create the device name we give to each device
 device_name = "device "
 device_cnt = 1
 
 
+def _get_adb_executable():
+    """Prefer the ZeuZ-managed adb and fall back to a native adb on PATH."""
+    managed_adb = get_adb_path()
+    if managed_adb.is_file():
+        return str(managed_adb)
+    return shutil.which("adb")
+
+
+def _adb_output(adb_executable, *args, timeout=30):
+    return subprocess.check_output(
+        [adb_executable, *args],
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
+
+
 def get_all_connected_android_info():
-    """ For all connected Android devices, get specified information and return in a dictionary with the serial number as the top level key """
+    """For all connected Android devices, get specified information and return in a dictionary with the serial number as the top level key"""
 
     global device_cnt
     try:
         android_list = []
         device_list = {}
 
-        # adb commands
-        android_cmd_os_version = "shell getprop ro.build.version.release"
-        android_cmd_model = "shell getprop ro.product.model"
-        android_cmd_name = "shell getprop ro.product.name"
-        android_cmd_mfg = "shell getprop ro.product.manufacturer"
-        android_cmd_imei = "shell dumpsys iphonesubinfo"
-        android_cmd_alt_imei = "shell service call iphonesubinfo 1"  # Usually needed for CDMA phones
+        adb_executable = _get_adb_executable()
+        if not adb_executable:
+            return {}
 
         # Get list of devices
-        # One report of this blocking the next line, so disabled: result = subprocess.check_output('adb kill-server', shell=True) # Stop adb server, to ensure this works properly
-        subprocess.check_output("adb start-server", shell=True, encoding="utf-8")
-        result = subprocess.check_output("adb devices", shell=True, encoding="utf-8")
-        result = result.replace("List of devices attached", "")
-        result = result.replace("\r", "")
-        result = result.replace("\t", " ")
-        result = result.split("\n")
-        for device in result:
-            if "device" in device:
-                android_list.append(str(device.split(" ")[0]).strip())
+        _adb_output(adb_executable, "start-server")
+        result = _adb_output(adb_executable, "devices")
+        for line in result.replace("\r", "").splitlines():
+            fields = line.split()
+            if len(fields) >= 2 and fields[1] == "device":
+                android_list.append(fields[0])
 
         if len(android_list) == 0:
             return False
         # Get device information
         for serial in android_list:
             # Execute commands
-            os_version = subprocess.check_output(
-                "adb -s %s %s" % (serial, android_cmd_os_version),
-                shell=True,
-                encoding="utf-8",
+            os_version = _adb_output(
+                adb_executable,
+                "-s",
+                serial,
+                "shell",
+                "getprop",
+                "ro.build.version.release",
             )
-            model = subprocess.check_output(
-                "adb -s %s %s" % (serial, android_cmd_model),
-                shell=True,
-                encoding="utf-8",
+            model = _adb_output(
+                adb_executable,
+                "-s",
+                serial,
+                "shell",
+                "getprop",
+                "ro.product.model",
             )
-            name = subprocess.check_output(
-                "adb -s  %s %s" % (serial, android_cmd_name),
-                shell=True,
-                encoding="utf-8",
+            name = _adb_output(
+                adb_executable,
+                "-s",
+                serial,
+                "shell",
+                "getprop",
+                "ro.product.name",
             )
-            mfg = subprocess.check_output(
-                "adb -s %s %s" % (serial, android_cmd_mfg), shell=True, encoding="utf-8"
+            mfg = _adb_output(
+                adb_executable,
+                "-s",
+                serial,
+                "shell",
+                "getprop",
+                "ro.product.manufacturer",
             )
-            imei = subprocess.check_output(
-                "adb -s %s %s" % (serial, android_cmd_imei),
-                shell=True,
-                encoding="utf-8",
+            imei = _adb_output(
+                adb_executable,
+                "-s",
+                serial,
+                "shell",
+                "dumpsys",
+                "iphonesubinfo",
             )
 
             # Cleanup of results
@@ -81,10 +111,15 @@ def get_all_connected_android_info():
                     imei.split(" ")[-1]
                 ).strip()  # Last word on this line is IMEI
             else:  # Try alternative method to get imei
-                imei = subprocess.check_output(
-                    "adb -s %s %s" % (serial, android_cmd_alt_imei),
-                    shell=True,
-                    encoding="utf-8",
+                imei = _adb_output(
+                    adb_executable,
+                    "-s",
+                    serial,
+                    "shell",
+                    "service",
+                    "call",
+                    "iphonesubinfo",
+                    "1",
                 )
                 imei = imei.split(" ")
                 final = ""
@@ -120,7 +155,7 @@ def get_all_connected_android_info():
 
 
 def get_all_connected_ios_info():
-    """ For all connected IOS devices, get specified information and return in a dictionary with the UUID as the top level key """
+    """For all connected IOS devices, get specified information and return in a dictionary with the UUID as the top level key"""
 
     global device_cnt
     try:
@@ -184,10 +219,9 @@ def get_all_connected_ios_info():
 
 
 def get_all_booted_ios_simulator_info():
-    """ For all booted simulator IOS devices, get specified information and return in a dictionary with the UUID as the top level key """
+    """For all booted simulator IOS devices, get specified information and return in a dictionary with the UUID as the top level key"""
     global device_cnt
     try:
-
         device_list = {}
         all_ios_simulators = subprocess.check_output(
             "xcrun simctl list --json", shell=True, encoding="utf-8"
@@ -230,7 +264,7 @@ def get_all_booted_ios_simulator_info():
 
 
 def get_all_connected_device_info():
-    """ For all connected IOS and Android devices, get specified information and return in a dictionary with the serial number/UUID as the top level key """
+    """For all connected IOS and Android devices, get specified information and return in a dictionary with the serial number/UUID as the top level key"""
 
     try:
         device_list = {}

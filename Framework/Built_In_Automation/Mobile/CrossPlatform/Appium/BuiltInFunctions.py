@@ -37,6 +37,12 @@ from selenium.webdriver.common.actions import interaction
 from selenium.webdriver.common.action_chains import ActionChains
 from appium.webdriver.common.appiumby import AppiumBy
 from Framework.Utilities import ConfigModule
+from Framework.install_handler.android.emulator_manager import (
+    EmulatorRuntimeError,
+    ensure_android_emulator,
+    list_running_emulators,
+    wait_for_android_runtime_stability,
+)
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
@@ -212,148 +218,190 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
     # Only used when launching an application, which creates the appium instance.
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global device_id, device_serial, appium_details
+    global device_id, device_serial, appium_details, appium_driver
     CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1)
 
     try:
-        # Get list of connected devices
-        devices = {}  # Temporarily store connected device serial numberspick
         all_device_info = All_Device_Info.get_all_connected_device_info()
+        current_dependency = (
+            Shared_Resources.Get_Shared_Variables("dependency")
+            if Shared_Resources.Test_Shared_Variables("dependency")
+            else {}
+        )
+        expected_platform = str(current_dependency.get("Mobile", "")).lower().strip()
+        candidates = {
+            name: info
+            for name, info in all_device_info.items()
+            if not expected_platform
+            or str(info.get("type", "")).lower().strip() == expected_platform
+        }
 
-        # Ensure we have at least one device connected
-        if len(all_device_info) == 0:
+        if not candidates:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Could not detect any connected devices. Ensure at least one is attached via USB, and that it is authorized - Trusted / USB Debugging enabled",
+                f"Could not detect a connected {expected_platform or 'mobile'} device",
                 3,
             )
             return "zeuz_failed"
 
-        imei = ""
-        device_name = ""
-        product_version = ""
-        serial = ""
-        did = ""
-        device_type = ""
+        requested = str(serial_or_name or "").lower().strip()
+        ignored_identifiers = {"", "launch", "na", "n/a", "none", "default"}
+        selected_name = ""
 
-        # Check if serial provided is a real serial number, name or rubish that should be ignored
-        serial_check = False
-        for device in all_device_info:  # For each device serial number
-            if serial_or_name.lower() == device.lower():
-                serial = all_device_info[device]["id"]  # Save serial number
-                device_type = all_device_info[device]["type"].lower()  # Save device type android/ios
-                imei = all_device_info[device]["imei"]
-                device_name = all_device_info[device]["model"]
-                product_version = all_device_info[device]["osver"]
-                did = device
-                serial_check = True  # Flag as found
-                CommonUtil.ExecLog(sModuleInfo, "Found serial number in data set: %s" % serial, 0)
-                break
+        if requested not in ignored_identifiers:
+            for name, info in candidates.items():
+                identifiers = {
+                    name.lower(),
+                    str(info.get("id", "")).lower(),
+                    str(info.get("model", "")).lower(),
+                    str(info.get("devname", "")).lower(),
+                    str(info.get("avd_name", "")).lower(),
+                }
+                if requested in identifiers:
+                    selected_name = name
+                    break
 
-        # Check if user provided name - must be accompanied by device_info, sent by server
-        if serial_check == False:
-            for dname in device_info:
-                if serial_or_name.lower() == dname.lower():
-                    did = dname  # Save device name
-                    serial = device_info[did]["id"]  # Save serial number
-                    device_type = device_info[did]["type"].lower()  # Save device type android/ios
-                    imei = device_info[did]["imei"]
-                    device_name = all_device_info[device]["model"]
-                    product_version = all_device_info[device]["osver"]
-                    serial_check = True
+        if not selected_name and isinstance(device_info, dict):
+            for deployed_name, deployed_info in device_info.items():
+                if not isinstance(deployed_info, dict):
+                    continue
+                deployed_serial = str(deployed_info.get("id", ""))
+                for name, info in candidates.items():
+                    if deployed_serial and deployed_serial == str(info.get("id", "")):
+                        selected_name = name
+                        break
+                if selected_name:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Found device name in data set: %s" % did, 0
+                        sModuleInfo,
+                        f"Found device selected at deploy: {deployed_name}",
+                        1,
                     )
                     break
 
-        ### If we were given either a serial/uuid or name in the data set, we should now have what we need to run ###
+        if not selected_name:
+            selected_name = next(iter(candidates))
 
-        # Not found, so now we have to look at the device_info dictionary from the server to determine the device to use
-        if serial_check == False:
-            # At least one device sent by server
-            if len(device_info) > 0:
-                did = "device 1"
-                serial = device_info[did]["id"]
-                imei = device_info[did]["imei"]
-                device_type = device_info[did]["type"].lower()
-                device_name = all_device_info[device]["model"]
-                product_version = all_device_info[device]["osver"]
-                CommonUtil.ExecLog(sModuleInfo, "Found a device selected at Deploy: %s" % did, 1)
-
-            # Lastly, if nothing above is set, the user did not specify anything, and we have no information from the server. Pick a connected device, and fail if there are none
-            else:  # No devices sent, none specified
-                for device in devices:
-                    did = "default"
-                    serial = device  # Get Serial
-                    device_type = devices[device]  # Get type
-                    CommonUtil.ExecLog(sModuleInfo, "No device information found. Picked one that is connected: %s" % serial, 2)
-                    break  # Only take the first device'''
-
-        # At the end, we should have at least one device
-        if serial != "" and device_type != "" and did != "":
-            # Verify this device was not already selected and run previously
-            if did in appium_details:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "The selected device was previously run. You cannot run it more than once in a session. Either your step data is calling the 'launch' action multiple times without specifying specific devices, or you did not call the 'teardown' action in a previous run.",
-                    2,
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "If test case fails, please quit node, and make sure you have added tear down in your test.",
-                    2,
-                )
-                return "passed"
-
-            # Verify this device is actually connected
-            if not serial_in_devices(serial, all_device_info):
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Although we have a selected device, it did not appear in the list of connected devices. Please ensure the device information aligns with what is connected: %s (%s)"
-                    % (did, serial),
-                    3,
-                )
-                return "zeuz_failed"
-
-            # Global variables for quick access to currently selected device
-            device_serial = serial
-            device_id = did
-
-            # Global variable that holds data required by appium
-            appium_details[device_id] = {}
-            if "driver" not in appium_details[device_id]:
-                appium_details[device_id]["driver"] = None  # Initialize appium driver object
-            if "server" not in appium_details[device_id]:
-                appium_details[device_id]["server"] = None
-            appium_details[device_id]["serial"] = serial
-            appium_details[device_id]["type"] = device_type
-            appium_details[device_id]["imei"] = imei
-            appium_details[device_id]["platform_version"] = product_version
-            appium_details[device_id]["device_name"] = device_name
-
-            # Store in shared variable, so it doens't get forgotten
-            Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
-            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)  # Save device id, because functions outside this file may require it
-
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Matched provided device identifier as %s (%s)" % (device_id, serial),
-                1,
-            )
-            return "passed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Although we found connected devices, provided information could not get all required information. Found devices: %s | Deployed device list: %s"
-                % (str(devices), str(device_info)),
-                3,
-            )
+        selected = candidates[selected_name]
+        serial = str(selected.get("id", ""))
+        device_type = str(selected.get("type", "")).lower().strip()
+        if not serial or not device_type:
+            CommonUtil.ExecLog(sModuleInfo, "Selected device information is incomplete", 3)
             return "zeuz_failed"
+
+        device_serial = serial
+        device_id = selected_name
+        if device_id in appium_details:
+            appium_driver = appium_details[device_id].get("driver")
+        else:
+            appium_details[device_id] = {
+                "driver": None,
+                "server": None,
+                "serial": serial,
+                "type": device_type,
+                "imei": selected.get("imei", ""),
+                "platform_version": selected.get("osver", ""),
+                "device_name": selected.get("model", ""),
+            }
+
+        Shared_Resources.Set_Shared_Variables(
+            "device_serial", device_serial, protected=True
+        )
+        Shared_Resources.Set_Shared_Variables(
+            "device_id", device_id, protected=True
+        )
+        if appium_driver is not None:
+            Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Matched provided device identifier as %s (%s)" % (device_id, serial),
+            1,
+        )
+        return "passed"
 
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error trying to read device information"
         )
+
+
+def _get_mobile_execution_config():
+    if Shared_Resources.Test_Shared_Variables("mobile_execution"):
+        value = Shared_Resources.Get_Shared_Variables("mobile_execution")
+        if isinstance(value, dict):
+            return value
+    return {"target": "auto", "headless": False, "avd": "auto"}
+
+
+def _prepare_android_device_for_launch(
+    requested_avd="auto",
+    requested_serial="",
+    headless=None,
+    boot_timeout=180,
+    stability_seconds=12,
+):
+    """Start or stabilize an emulator when the selected Android target needs one."""
+    execution = _get_mobile_execution_config()
+    target_type = str(execution.get("target", "auto")).lower().strip()
+    if headless is None:
+        headless = bool(execution.get("headless", False))
+    if not requested_avd or str(requested_avd).lower().strip() == "auto":
+        requested_avd = execution.get("avd", "auto")
+
+    connected = All_Device_Info.get_all_connected_device_info()
+    android_serials = {
+        str(info.get("id", ""))
+        for info in connected.values()
+        if str(info.get("type", "")).lower().strip() == "android"
+    }
+    running_emulators = list_running_emulators()
+    running_serials = {item.serial for item in running_emulators}
+    physical_serials = android_serials - running_serials
+
+    preferred_serial = str(requested_serial or "").strip()
+    ignored_serials = {"", "launch", "auto", "default", "none", "na", "n/a"}
+    if preferred_serial.lower() in ignored_serials:
+        selected_devices = (
+            Shared_Resources.Get_Shared_Variables("device_info")
+            if Shared_Resources.Test_Shared_Variables("device_info")
+            else {}
+        )
+        if isinstance(selected_devices, dict):
+            preferred_serial = next(
+                (
+                    str(info.get("id", ""))
+                    for info in selected_devices.values()
+                    if isinstance(info, dict)
+                    and str(info.get("id", "")) in running_serials
+                ),
+                preferred_serial,
+            )
+
+    must_use_emulator = target_type == "emulator" or bool(headless)
+    selected_an_emulator = preferred_serial in running_serials
+    should_prepare_emulator = must_use_emulator or selected_an_emulator or (
+        bool(running_emulators) and not physical_serials
+    )
+    if not should_prepare_emulator and android_serials:
+        return ""
+
+    target = ensure_android_emulator(
+        requested_avd=str(requested_avd or "auto"),
+        requested_serial=preferred_serial,
+        headless=bool(headless),
+        boot_timeout=int(boot_timeout),
+        stability_seconds=int(stability_seconds),
+    )
+    refreshed_device_info = All_Device_Info.get_all_connected_device_info()
+    Shared_Resources.Set_Shared_Variables(
+        "device_info", refreshed_device_info, protected=True
+    )
+    CommonUtil.ExecLog(
+        "prepare_android_device_for_launch",
+        f"Android emulator '{target.avd_name}' is ready on {target.serial}",
+        1,
+    )
+    return target.serial
 
 
 @logger
@@ -562,6 +610,7 @@ def launch_application(data_set):
     # Recall appium details
     if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
         device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retrieve device_info
+    device_order = []
     if Shared_Resources.Test_Shared_Variables("device_order"):
         device_order = Shared_Resources.Get_Shared_Variables("device_order")
 
@@ -600,6 +649,10 @@ def launch_application(data_set):
             macos = ""
             no_reset = False
             work_profile = False
+            requested_avd = "auto"
+            emulator_headless = None
+            emulator_boot_timeout = 180
+            system_ui_stability_seconds = 12
 
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -619,6 +672,23 @@ def launch_application(data_set):
                         no_reset = True
                     else:
                         no_reset = False
+                elif "optional parameter" in mid and "=" in right:
+                    key, value = map(lambda item: item.strip(), right.split("=", 1))
+                    normalized_key = key.lower().replace("_", " ").replace("-", " ")
+                    normalized_key = " ".join(normalized_key.split())
+                    if normalized_key in {"avd", "avd name", "emulator avd"}:
+                        requested_avd = value
+                    elif normalized_key in {"headless", "emulator headless"}:
+                        emulator_headless = value.lower() in (
+                            "yes", "true", "1", "on", "enable", "enabled"
+                        )
+                    elif normalized_key in {"emulator boot timeout", "avd boot timeout"}:
+                        emulator_boot_timeout = max(30, int(value))
+                    elif normalized_key in {
+                        "system ui stability seconds",
+                        "emulator stability seconds",
+                    }:
+                        system_ui_stability_seconds = max(4, int(value))
                 elif mid == "action":
                     serial = right.lower().strip()
 
@@ -626,6 +696,40 @@ def launch_application(data_set):
             desiredcaps = dict()
             desiredcaps['unicodeKeyboard'] = False
             desiredcaps['resetKeyboard'] = False
+
+            current_dependency = (
+                Shared_Resources.Get_Shared_Variables("dependency")
+                if Shared_Resources.Test_Shared_Variables("dependency")
+                else {}
+            )
+            is_local_android = (
+                not ios
+                and not macos
+                and (
+                    str(current_dependency.get("Mobile", "")).lower().strip()
+                    == "android"
+                    or bool(package_name)
+                )
+            )
+            if is_local_android:
+                try:
+                    prepared_serial = _prepare_android_device_for_launch(
+                        requested_avd=requested_avd,
+                        requested_serial=serial,
+                        headless=emulator_headless,
+                        boot_timeout=emulator_boot_timeout,
+                        stability_seconds=system_ui_stability_seconds,
+                    )
+                    if prepared_serial:
+                        serial = prepared_serial
+                    if Shared_Resources.Test_Shared_Variables("device_info"):
+                        device_info = Shared_Resources.Get_Shared_Variables(
+                            "device_info"
+                        )
+                except EmulatorRuntimeError as exc:
+                    CommonUtil.ExecLog(sModuleInfo, str(exc), 3)
+                    return "zeuz_failed"
+
             # Set the global variable for the preferred connected device
             if find_correct_device_on_first_run(serial, device_info) in failed_tag_list and macos == "":
                 return "zeuz_failed"
@@ -639,8 +743,24 @@ def launch_application(data_set):
                 left, mid = left.strip().lower(), mid.strip().lower()
                 if "optional parameter" in mid and "=" in right:
                     # key, value
-                    k, v = map(lambda x: x.strip(), right.split("="))
-                    if left in (device_type, "multi"):
+                    k, v = map(lambda x: x.strip(), right.split("=", 1))
+                    normalized_key = k.lower().replace("_", " ").replace("-", " ")
+                    normalized_key = " ".join(normalized_key.split())
+                    emulator_runtime_keys = {
+                        "avd",
+                        "avd name",
+                        "emulator avd",
+                        "headless",
+                        "emulator headless",
+                        "emulator boot timeout",
+                        "avd boot timeout",
+                        "system ui stability seconds",
+                        "emulator stability seconds",
+                    }
+                    if (
+                        left in (device_type, "multi")
+                        and normalized_key not in emulator_runtime_keys
+                    ):
                         desiredcaps[k] = v
 
             # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
@@ -712,6 +832,34 @@ def launch_application(data_set):
 
             if launch_app and macos == "":  # if ios simulator then no need to launch app again
                 appium_driver.activate_app(package_name)  # Launch program configured in the Appium capabilities
+                if (
+                    appium_details[device_id]["type"] == "android"
+                    and any(
+                        emulator.serial == device_serial
+                        for emulator in list_running_emulators()
+                    )
+                ):
+                    try:
+                        def select_system_ui_wait():
+                            appium_driver.find_element(
+                                AppiumBy.ID,
+                                "android:id/aerr_wait",
+                            ).click()
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Selected Wait on the System UI not responding dialog",
+                                2,
+                            )
+                            return True
+
+                        wait_for_android_runtime_stability(
+                            device_serial,
+                            stability_seconds=system_ui_stability_seconds,
+                            anr_wait_action=select_system_ui_wait,
+                        )
+                    except EmulatorRuntimeError as exc:
+                        CommonUtil.ExecLog(sModuleInfo, str(exc), 3)
+                        return "zeuz_failed"
             CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
     except Exception:
@@ -5890,4 +6038,3 @@ def pan_action(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data for Pan. Please write data in correct format")
-

@@ -2018,6 +2018,14 @@ async def main(device_dict, all_run_id_info):
 
             final_dependency = run_id_info["dependency_list"]
             shared.Set_Shared_Variables("dependency", final_dependency, protected=True)
+            shared.Set_Shared_Variables(
+                "mobile_execution",
+                run_id_info.get(
+                    "mobile_execution",
+                    {"target": "auto", "headless": False, "avd": "auto"},
+                ),
+                protected=True,
+            )
 
             final_run_params_from_server = run_id_info["run_time"]
             final_run_params = {}
