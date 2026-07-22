@@ -228,13 +228,37 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             if Shared_Resources.Test_Shared_Variables("dependency")
             else {}
         )
-        expected_platform = str(current_dependency.get("Mobile", "")).lower().strip()
+
+        # The devices the server deployed for THIS run are authoritative about the
+        # target platform (e.g. an iOS test always carries type "IOS"). Only fall
+        # back to the node's "Mobile" dependency when the deploy payload has no
+        # usable type. Using the dependency as the primary signal is wrong because
+        # a node can advertise "Mobile": "Android" while still running an iOS test,
+        deployed_types = {
+            str(info.get("type", "")).lower().strip()
+            for info in (device_info.values() if isinstance(device_info, dict) else [])
+            if isinstance(info, dict) and str(info.get("type", "")).strip()
+        }
+        if len(deployed_types) == 1:
+            expected_platform = next(iter(deployed_types))
+        else:
+            expected_platform = str(current_dependency.get("Mobile", "")).lower().strip()
+
         candidates = {
             name: info
             for name, info in all_device_info.items()
             if not expected_platform
             or str(info.get("type", "")).lower().strip() == expected_platform
         }
+
+        # Local detection may not surface the deployed device yet (common for iOS
+        # simulators that Appium boots on demand). Trust the server's device_info
+        if not candidates and isinstance(device_info, dict):
+            candidates = {
+                name: info
+                for name, info in device_info.items()
+                if isinstance(info, dict) and str(info.get("id", "")).strip()
+            }
 
         if not candidates:
             CommonUtil.ExecLog(
@@ -891,6 +915,18 @@ def is_port_in_use(port):
         return s.connect_ex(("localhost", port)) == 0
 
 
+def get_appium_server_log_path():
+    """Absolute path of the file the Appium server output is redirected to."""
+    try:
+        log_dir = os.path.join(
+            os.path.abspath(__file__).split("Framework")[0], "AutomationLog"
+        )
+        os.makedirs(log_dir, exist_ok=True)
+        return os.path.join(log_dir, "appium_server.log")
+    except Exception:
+        return ""
+
+
 def get_appium_server_log_target():
     """Return a target for the Appium server subprocess' stdout/stderr.
 
@@ -899,15 +935,54 @@ def get_appium_server_log_target():
     to a log file for debugging. Falls back to DEVNULL if the file can't be
     opened so a logging problem never blocks the server from starting.
     """
+    log_path = get_appium_server_log_path()
+    if not log_path:
+        return subprocess.DEVNULL
     try:
-        log_dir = os.path.join(
-            os.path.abspath(__file__).split("Framework")[0], "AutomationLog"
-        )
-        os.makedirs(log_dir, exist_ok=True)
         # buffering=1 (line-buffered) so the log is readable while Appium runs.
-        return open(os.path.join(log_dir, "appium_server.log"), "a", buffering=1)
+        return open(log_path, "a", buffering=1)
     except Exception:
         return subprocess.DEVNULL
+
+
+# Strips ANSI colour/CSI escape sequences that Appium writes to its log. The
+# character class is deliberately broad (Appium sometimes emits malformed codes
+# such as "\x1b[38;5;-175m") so every sequence is cleaned, not just well-formed ones.
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;:?!<>=\-]*[a-zA-Z]")
+
+
+def surface_appium_error_log(context="", max_lines=60):
+    """Echo the tail of the Appium server log to the ZeuZ console after a failure.
+
+    Appium's output is normally redirected to a file so the console stays clean.
+    But when something actually goes wrong (e.g. an xcodebuild/WebDriverAgent build
+    failure), the real cause lives ONLY in that file. On failure we print the most
+    recent log lines so the user can see WHY it failed without digging through the
+    log manually. Best-effort: never raises.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        from collections import deque
+
+        log_path = get_appium_server_log_path()
+        if not log_path or not os.path.isfile(log_path):
+            return
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as handle:
+            # deque keeps only the last max_lines in memory even for a big log.
+            recent = deque(handle, maxlen=max_lines)
+        cleaned = [_ANSI_ESCAPE_RE.sub("", line).rstrip() for line in recent]
+        cleaned = [line for line in cleaned if line.strip()]
+        if not cleaned:
+            return
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Appium failed%s. Most recent Appium server log below "
+            "(full log: %s):" % (" - " + context if context else "", log_path),
+            3,
+        )
+        CommonUtil.ExecLog(sModuleInfo, "\n".join(cleaned), 3)
+    except Exception:
+        pass  # Surfacing the error must never itself break the run
 
 
 @logger
@@ -1307,6 +1382,10 @@ def start_appium_driver(
                 appium_driver = None
                 Shared_Resources.Set_Shared_Variables("appium_driver", appium_driver)
                 CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
+                # The retries above are suppressed to keep the console clean; on
+                # final failure surface the real cause from the Appium log so the
+                # user sees WHY it failed (e.g. an xcodebuild/WebDriverAgent error).
+                surface_appium_error_log("could not create the Appium driver after %d attempts" % max_attempts)
                 return "zeuz_failed", launch_app
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
