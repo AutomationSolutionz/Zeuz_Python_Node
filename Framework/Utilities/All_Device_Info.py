@@ -164,7 +164,13 @@ def get_all_connected_ios_info():
 
         # Get list of UUIDs
         ios_list = subprocess.check_output(
-            "idevice_id -l", shell=True, encoding="utf-8"
+            "idevice_id -l",
+            shell=True,
+            encoding="utf-8",
+            # Suppress shell "command not found" noise (e.g. when libimobiledevice
+            # is not installed, common on Android-only runs) from leaking to the
+            # console.
+            stderr=subprocess.DEVNULL,
         )
         ios_list = ios_list.split("\n")
 
@@ -175,13 +181,19 @@ def get_all_connected_ios_info():
             info = ""
             try:
                 info = subprocess.check_output(
-                    "ideviceinfo -u %s" % uuid, shell=True, encoding="utf-8"
+                    "ideviceinfo -u %s" % uuid,
+                    shell=True,
+                    encoding="utf-8",
+                    stderr=subprocess.DEVNULL,
                 )
             except:
                 pass
             if "ProductType" not in info:
                 info = subprocess.check_output(
-                    "ideviceinfo -s -u %s" % uuid, shell=True, encoding="utf-8"
+                    "ideviceinfo -s -u %s" % uuid,
+                    shell=True,
+                    encoding="utf-8",
+                    stderr=subprocess.DEVNULL,
                 )  # Try simple mode which gets everything we need except IMEI
             # info = info.encode('ascii', 'ignore') # !!!!Needed, but not working
             info = info.split("\n")
