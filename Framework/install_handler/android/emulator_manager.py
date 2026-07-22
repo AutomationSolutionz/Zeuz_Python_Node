@@ -73,6 +73,128 @@ def _android_process_env() -> dict[str, str]:
     return env
 
 
+def _candidate_sdk_roots() -> list[Path]:
+    """SDK roots to search for an AVD's system image, most-preferred first.
+
+    ZeuZ's managed SDK is always tried first so that setups where the image lives
+    inside the managed SDK (the normal Windows/Linux case) keep their current
+    behaviour unchanged. Only when the image is missing there do we fall back to
+    an SDK provided by the user's environment (e.g. an Android Studio install).
+    """
+    roots: list[Path] = [_get_sdk_root()]
+    for var in ("ANDROID_SDK_ROOT", "ANDROID_HOME"):
+        value = os.environ.get(var, "").strip()
+        if value:
+            roots.append(Path(value))
+    system = platform.system()
+    if system == "Darwin":
+        roots.append(Path.home() / "Library" / "Android" / "sdk")
+    elif system == "Linux":
+        roots.append(Path.home() / "Android" / "Sdk")
+    elif system == "Windows":
+        local_app_data = os.environ.get("LOCALAPPDATA", "").strip()
+        if local_app_data:
+            roots.append(Path(local_app_data) / "Android" / "Sdk")
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root)
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
+def _find_avd_config_dir(avd_name: str) -> Path | None:
+    """Locate an AVD's ``.avd`` directory (which holds ``config.ini``).
+
+    AVDs live under an AVD home that is independent of the SDK root. We honour the
+    standard override variables and fall back to ``~/.android/avd``. The
+    authoritative pointer is ``<name>.ini`` (it stores the real ``path=``), with a
+    direct ``<name>.avd`` lookup as a fallback.
+    """
+    avd_homes: list[Path] = []
+    for var in ("ANDROID_AVD_HOME", "ANDROID_EMULATOR_HOME"):
+        value = os.environ.get(var, "").strip()
+        if value:
+            avd_homes.append(Path(value))
+    for var in ("ANDROID_SDK_HOME", "ANDROID_PREFS_ROOT"):
+        value = os.environ.get(var, "").strip()
+        if value:
+            avd_homes.append(Path(value) / ".android" / "avd")
+    avd_homes.append(Path.home() / ".android" / "avd")
+
+    for avd_home in avd_homes:
+        pointer = avd_home / f"{avd_name}.ini"
+        if pointer.is_file():
+            try:
+                for line in pointer.read_text(
+                    encoding="utf-8", errors="ignore"
+                ).splitlines():
+                    if line.strip().startswith("path="):
+                        avd_dir = Path(line.split("=", 1)[1].strip())
+                        if avd_dir.is_dir():
+                            return avd_dir
+            except Exception:
+                pass  # Fall through to the direct-directory fallback
+        direct = avd_home / f"{avd_name}.avd"
+        if direct.is_dir():
+            return direct
+    return None
+
+
+def _resolve_emulator_sdk_root(avd_name: str) -> Path:
+    """Return the SDK root whose ``system-images`` tree holds the AVD's image.
+
+    The emulator resolves the relative ``image.sysdir.1`` from ``config.ini``
+    against ANDROID_SDK_ROOT, so pointing it at an SDK that lacks the image makes
+    it fail with "Broken AVD system path". We pick the first candidate SDK root
+    that actually contains the image; ZeuZ's managed SDK is checked first, so
+    setups that already work are left untouched. Falls back to the managed SDK
+    when nothing matches (e.g. absolute image paths, or config we can't read).
+    """
+    default_root = _get_sdk_root()
+    avd_dir = _find_avd_config_dir(avd_name)
+    if avd_dir is None:
+        return default_root
+
+    system_image_subdir = ""
+    try:
+        for line in (avd_dir / "config.ini").read_text(
+            encoding="utf-8", errors="ignore"
+        ).splitlines():
+            if line.strip().startswith("image.sysdir.1="):
+                system_image_subdir = line.split("=", 1)[1].strip()
+                break
+    except Exception:
+        return default_root
+
+    if not system_image_subdir:
+        return default_root
+
+    for root in _candidate_sdk_roots():
+        if (root / system_image_subdir).is_dir():
+            return root
+    return default_root
+
+
+def _emulator_process_env(avd_name: str) -> dict[str, str]:
+    """Process env for launching ``avd_name``, pointed at an SDK that has its image."""
+    env = _android_process_env()
+    sdk_root = _resolve_emulator_sdk_root(avd_name)
+    if str(sdk_root) != env.get("ANDROID_SDK_ROOT"):
+        logger.info(
+            "[emulator-runtime] AVD %s system image not found under the managed "
+            "SDK; using SDK root %s instead.",
+            avd_name,
+            sdk_root,
+        )
+    env["ANDROID_HOME"] = str(sdk_root)
+    env["ANDROID_SDK_ROOT"] = str(sdk_root)
+    return env
+
+
 def get_emulator_path() -> Path:
     executable = "emulator.exe" if platform.system() == "Windows" else "emulator"
     return _get_sdk_root() / "emulator" / executable
@@ -258,7 +380,7 @@ def _spawn_emulator(
     popen_options = {
         "stdout": None,
         "stderr": subprocess.STDOUT,
-        "env": _android_process_env(),
+        "env": _emulator_process_env(avd_name),
     }
     if os.name == "nt":
         popen_options["creationflags"] = getattr(

@@ -891,6 +891,25 @@ def is_port_in_use(port):
         return s.connect_ex(("localhost", port)) == 0
 
 
+def get_appium_server_log_target():
+    """Return a target for the Appium server subprocess' stdout/stderr.
+
+    Keeps the raw Appium/ADB/HTTP output out of the ZeuZ console (matching the
+    Windows behaviour of running Appium in its own window) while still writing it
+    to a log file for debugging. Falls back to DEVNULL if the file can't be
+    opened so a logging problem never blocks the server from starting.
+    """
+    try:
+        log_dir = os.path.join(
+            os.path.abspath(__file__).split("Framework")[0], "AutomationLog"
+        )
+        os.makedirs(log_dir, exist_ok=True)
+        # buffering=1 (line-buffered) so the log is readable while Appium runs.
+        return open(os.path.join(log_dir, "appium_server.log"), "a", buffering=1)
+    except Exception:
+        return subprocess.DEVNULL
+
+
 @logger
 def start_appium_server():
     """ Starts the external Appium server """
@@ -931,6 +950,14 @@ def start_appium_server():
             )
             return "zeuz_failed"
 
+        # On non-Windows platforms subprocess.Popen inherits the parent console's
+        # stdout/stderr, which floods the ZeuZ console with raw Appium/ADB/HTTP
+        # logs. Windows avoids this by launching Appium in its own minimized cmd
+        # window. To match that behaviour, redirect the server output to a log
+        # file so the console stays clean while the logs remain available for
+        # debugging.
+        appium_log_output = get_appium_server_log_target()
+
         try:
             appium_server = None
             if sys.platform == "win32":  # We need to open appium in it's own command dos box on Windows
@@ -944,12 +971,16 @@ def start_appium_server():
                     "%s -p %s"
                     % (appium_binary, str(appium_port)),
                     shell=True,
+                    stdout=appium_log_output,
+                    stderr=subprocess.STDOUT,
                 )
             elif sys.platform == "linux" or sys.platform == "linux2":
                 appium_server = subprocess.Popen(
                     "%s -p %s"
                     % (appium_binary, str(appium_port)),
                     shell=True,
+                    stdout=appium_log_output,
+                    stderr=subprocess.STDOUT,
                 )
             else:
                 try:
@@ -957,12 +988,12 @@ def start_appium_server():
                     appium_binary_path = os.path.abspath(os.path.join(appium_binary_path, os.pardir))
                     env = {"PATH": str(appium_binary_path)}
                     appium_server = subprocess.Popen(
-                        subprocess.Popen(
-                            "%s -p %s"
-                            % (appium_binary, str(appium_port)),
-                            shell=True,
-                        ),
+                        "%s -p %s"
+                        % (appium_binary, str(appium_port)),
+                        shell=True,
                         env=env,
+                        stdout=appium_log_output,
+                        stderr=subprocess.STDOUT,
                     )
                 except:
                     CommonUtil.ExecLog(

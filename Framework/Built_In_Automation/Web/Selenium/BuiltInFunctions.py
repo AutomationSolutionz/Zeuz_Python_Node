@@ -503,6 +503,23 @@ def start_appium_server():
             )
             return "zeuz_failed"
 
+        # On non-Windows platforms subprocess.Popen inherits the parent console's
+        # stdout/stderr, which floods the ZeuZ console with raw Appium/ADB/HTTP
+        # logs. Windows avoids this by launching Appium in its own minimized cmd
+        # window. To match that behaviour, redirect the server output to a log
+        # file so the console stays clean while the logs remain available for
+        # debugging.
+        try:
+            _log_dir = os.path.join(
+                os.path.abspath(__file__).split("Framework")[0], "AutomationLog"
+            )
+            os.makedirs(_log_dir, exist_ok=True)
+            appium_log_output = open(
+                os.path.join(_log_dir, "appium_server.log"), "a", buffering=1
+            )
+        except Exception:
+            appium_log_output = subprocess.DEVNULL
+
         try:
             appium_server = None
             if (
@@ -520,12 +537,16 @@ def start_appium_server():
                     "%s --allow-insecure chromedriver_autodownload -p %s"
                     % (appium_binary, str(appium_port)),
                     shell=True,
+                    stdout=appium_log_output,
+                    stderr=subprocess.STDOUT,
                 )
             elif sys.platform == "linux" or sys.platform == "linux2":
                 appium_server = subprocess.Popen(
                     "%s --allow-insecure chromedriver_autodownload -p %s"
                     % (appium_binary, str(appium_port)),
                     shell=True,
+                    stdout=appium_log_output,
+                    stderr=subprocess.STDOUT,
                 )
             else:
                 try:
@@ -539,6 +560,8 @@ def start_appium_server():
                         % (appium_binary, str(appium_port)),
                         shell=True,
                         env=env,
+                        stdout=appium_log_output,
+                        stderr=subprocess.STDOUT,
                     )
                 except:
                     CommonUtil.ExecLog(
