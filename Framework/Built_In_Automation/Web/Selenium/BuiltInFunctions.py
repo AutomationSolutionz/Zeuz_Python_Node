@@ -15,6 +15,7 @@ Description: Sequential Actions for controlling Web Browsers - All main Web Brow
 #########################
 import platform
 import sys, os, time, inspect, shutil, subprocess, json, re
+import atexit
 import socket
 import requests
 import psutil
@@ -699,12 +700,37 @@ def Open_Electron_App(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def stop_xvfb():
+    """Stop the current Xvfb server, if any. Never raises.
+
+    Tear_Down_Selenium normally does this, but it is skipped whenever a run
+    ends abnormally (notably an action_timeout abort), which used to strand an
+    Xvfb process -- and with it a stale $DISPLAY that pyautogui's import-time
+    connection keeps pointing at. Safe to call repeatedly.
+    """
+    global vdisplay
+    if vdisplay is None:
+        return
+    try:
+        vdisplay.stop()
+    except Exception:
+        pass
+    finally:
+        vdisplay = None
+
+
+atexit.register(stop_xvfb)
+
+
 @logger
 def use_xvfb_or_headless(callback):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     if platform.system() == "Linux":
         try:
             global vdisplay
+            # Reclaim any previous server first -- otherwise each new session
+            # orphans one and moves $DISPLAY out from under pyautogui.
+            stop_xvfb()
             vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
             vdisplay.start()
         except:
@@ -3817,10 +3843,7 @@ def Tear_Down_Selenium(step_data=[]):
                 selenium_driver = None
                 current_driver_id = driver_id
 
-        global vdisplay
-        if vdisplay:
-            vdisplay.stop()
-            vdisplay = None
+        stop_xvfb()
 
         return "passed"
     except Exception:

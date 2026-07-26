@@ -30,7 +30,9 @@ from .action_declarations.info import actions, sub_field_match, supported_platfo
 # Import modules
 import inspect
 import asyncio
+import ctypes
 import os
+import platform
 import sys
 import time
 import json
@@ -94,10 +96,15 @@ step_exit_pass_called = False
 #
 # A single, *reused* worker thread is used (not one-per-action) so libraries
 # with thread affinity -- notably Playwright's sync API and its greenlets --
-# keep running on the same thread across actions. Python cannot force-kill a
-# thread that is stuck inside a blocking call, so on timeout we stop waiting,
-# abandon the worker (it is a daemon thread, so it never blocks node shutdown),
-# spin up a fresh worker for the next action, and report the step as failed.
+# keep running on the same thread across actions. On timeout we stop waiting,
+# retire the worker, spin up a fresh one for the next action, and report the
+# step as failed.
+#
+# Retiring is deliberate: a worker cannot simply be dropped. Python cannot
+# force-kill a thread parked in a blocking C call, but a dropped worker may
+# still own shared library state -- most damagingly python-xlib's `recv_active`
+# flag, which sends every later worker into a pure-Python busy-spin that never
+# ends. See _retire_worker / _reset_xlib_display.
 _DEFAULT_ACTION_TIMEOUT = 1800
 _action_worker = None
 _action_worker_local = threading.local()
@@ -141,6 +148,110 @@ class _ActionTimeoutWorker:
             _exc_type, exc_value, exc_tb = payload
             raise exc_value.with_traceback(exc_tb)
         return payload
+
+
+_THREAD_COUNT_WARN_AT = 20
+_thread_count_warned = False
+
+
+def _warn_if_thread_count_high():
+    """Log once if live threads climb past a sane ceiling.
+
+    A steadily rising count means workers are being retired without dying --
+    the failure mode this module previously hit silently for days. Cheap
+    canary; never raises.
+    """
+    global _thread_count_warned
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        alive = threading.active_count()
+        if alive < _THREAD_COUNT_WARN_AT or _thread_count_warned:
+            return
+        _thread_count_warned = True
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "%d live threads -- abandoned action workers may not be exiting. "
+            "Expect degraded performance on this node." % alive,
+            2,
+        )
+    except Exception:
+        pass
+
+
+def _terminate_thread(thread):
+    """Best-effort: raise SystemExit inside `thread` so it unwinds and exits.
+
+    PyThreadState_SetAsyncExc only lands when the target next executes Python
+    bytecode -- which is exactly the case that matters here. A worker spinning
+    in python-xlib's rq.reply() retry loop is running pure Python and will pick
+    it up. One parked in a blocking C call ignores it, but such a thread is
+    idle and costs nothing. Never raises: this runs inside a timeout handler.
+    """
+    if thread is None or not thread.is_alive() or thread.ident is None:
+        return
+    try:
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_long(thread.ident), ctypes.py_object(SystemExit)
+        )
+        if res > 1:
+            # Affected more than the target -- revert, per the CPython docs.
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_long(thread.ident), None
+            )
+    except Exception:
+        pass
+
+
+def _reset_xlib_display():
+    """Drop and rebuild pyautogui's shared X11 connection. Never raises.
+
+    pyautogui binds a single process-wide `Display` at import time and every
+    action worker shares it. python-xlib guards that connection with a
+    `recv_active` flag: whichever thread is receiving sets it, and all others
+    return immediately from send_and_recv to spin in rq.reply()'s retry loop
+    until the receiver hands over. If the receiving thread is abandoned
+    mid-action the flag is never cleared, so every later worker busy-spins on
+    a full core forever -- unrecoverable for the life of the process.
+
+    Rebuilding the connection after a timeout resets that state. If the
+    reconnect fails we leave the global as None: pyautogui then raises on the
+    next call, which is a clean failure rather than an unkillable spin.
+    """
+    if platform.system() != "Linux":
+        return
+    for mod_name in ("pyautogui._pyautogui_x11", "mouseinfo"):
+        module = sys.modules.get(mod_name)
+        if module is None or getattr(module, "_display", None) is None:
+            continue
+        try:
+            module._display.close()
+        except Exception:
+            pass
+        module._display = None
+        try:
+            from Xlib.display import Display
+
+            module._display = Display(os.environ["DISPLAY"])
+        except Exception:
+            pass
+
+
+def _retire_worker(worker, grace=5):
+    """Terminate an abandoned action worker instead of leaking it.
+
+    A worker abandoned mid-action can leave shared library state owned by a
+    thread that never returns, so simply dropping the reference costs a CPU
+    core permanently (see _reset_xlib_display). Kill it, give it a moment to
+    unwind, then clear the poisoned X11 state it may have been holding.
+    """
+    if worker is None:
+        return
+    try:
+        _terminate_thread(worker.thread)
+        worker.thread.join(grace)
+    except Exception:
+        pass
+    _reset_xlib_display()
 
 
 def _force_kill_hung_browser_sessions():
@@ -256,16 +367,19 @@ async def _run_action_with_timeout(run_function, data_set):
         return result
 
     if _action_worker is None:
+        _warn_if_thread_count_high()
         _action_worker = _ActionTimeoutWorker()
 
     try:
         result = _action_worker.run(run_function, (data_set,), timeout)
     except TimeoutError:
-        # The worker is still stuck on the timed-out action. Abandon it (daemon
-        # thread won't block shutdown) and create a fresh worker for the next
-        # action so its queues start clean.
-        _action_worker = None
+        # The worker is still stuck on the timed-out action. Retire it and
+        # create a fresh worker for the next action so its queues start clean.
+        # Retiring rather than merely dropping the reference matters: a leaked
+        # worker can keep a full core busy for the life of the node.
+        dead_worker, _action_worker = _action_worker, None
         _force_kill_hung_browser_sessions()
+        _retire_worker(dead_worker)
         CommonUtil.ExecLog(
             sModuleInfo,
             "Action exceeded the action_timeout of %s second(s) and was aborted. "
