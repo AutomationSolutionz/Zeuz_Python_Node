@@ -99,6 +99,35 @@ function injectInspectorUI() {
       opacity: 1;
     }
 
+    /* Hint tooltip: explains how to start/stop inspecting */
+    .hint {
+      position: absolute;
+      padding: 7px 11px;
+      background: #1f2937;
+      color: #f9fafb;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 500;
+      border-radius: 8px;
+      white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    .hint.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .hint b {
+      color: #c4b5fd;
+      font-weight: 700;
+    }
+    .hint.active b {
+      color: #fca5a5;
+    }
+
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
       70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
@@ -122,16 +151,56 @@ function injectInspectorUI() {
   // close btn
   const closeBtn = document.createElement('div');
   closeBtn.className = 'close-btn';
-  closeBtn.innerHTML = '✕';
+  closeBtn.innerHTML = '\u2715';
   
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     host.remove(); // remove the whole UI
   });
 
+  // hint tooltip
+  const hint = document.createElement('div');
+  hint.className = 'hint';
+
   container.appendChild(btn);
   container.appendChild(closeBtn);
+  container.appendChild(hint);
   shadow.appendChild(container);
+
+  // hint: keeps the click / right-click affordance discoverable
+  let hintTimer = null;
+
+  const placeHint = () => {
+    const rect = host.getBoundingClientRect();
+    const onRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
+    hint.style.left = onRightHalf ? 'auto' : '0';
+    hint.style.right = onRightHalf ? '0' : 'auto';
+
+    const nearTop = rect.top < 70;
+    hint.style.top = nearTop ? 'calc(100% + 10px)' : 'auto';
+    hint.style.bottom = nearTop ? 'auto' : 'calc(100% + 10px)';
+  };
+
+  const showHint = (autoHideMs) => {
+    const active = btn.classList.contains('active');
+    hint.classList.toggle('active', active);
+    hint.innerHTML = active
+      ? 'Inspecting \u2014 <b>right-click</b> the icon to stop'
+      : '<b>Click</b> the icon to start inspecting';
+    placeHint();
+    hint.classList.add('show');
+
+    clearTimeout(hintTimer);
+    hintTimer = autoHideMs ? setTimeout(() => hint.classList.remove('show'), autoHideMs) : null;
+  };
+
+  const hideHint = () => {
+    clearTimeout(hintTimer);
+    hint.classList.remove('show');
+  };
+
+  container.addEventListener('mouseenter', () => showHint());
+  container.addEventListener('mouseleave', hideHint);
 
   // drag
   let isDragging = false;
@@ -206,7 +275,17 @@ function injectInspectorUI() {
     } else if (request.action === 'deactivate') {
       btn.classList.remove('active');
       btnImg.src = chrome.runtime.getURL('zeuz.png');
+    } else {
+      return;
     }
+    // announce the new state, so the way in/out is never a guess
+    chrome.storage.local.set({ zeuzInspectorUsed: true });
+    showHint(4000);
+  });
+
+  // first-run nudge, until the user has toggled the inspector at least once
+  chrome.storage.local.get({ zeuzInspectorUsed: false }, (result) => {
+    if (!result.zeuzInspectorUsed) showHint(5000);
   });
 }
 

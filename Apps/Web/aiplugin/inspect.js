@@ -49,6 +49,15 @@ setInterval(() => {
 
 }, 5000);
 
+// Attribute panel limits: pages can carry huge attribute payloads (inline styles,
+// data-* blobs), showing all of it makes the panel cover the page.
+const MAX_ATTR_VALUE_CHARS = 60;
+const MAX_ATTR_TOTAL_CHARS = 200;
+
+// How long the pointer must stay inside an iframe before we spotlight it.
+const IFRAME_DWELL_MS = 1500;
+const FRAME_MESSAGE_TAG = 'zeuz-iframe-spotlight';
+
 class Inspector {
 	constructor() {
 		this.win = window;
@@ -57,12 +66,23 @@ class Inspector {
 		this.draw = this.draw.bind(this);
 		this.getData = this.getData.bind(this);
 		this.setOptions = this.setOptions.bind(this);
+		this.onFrameMessage = this.onFrameMessage.bind(this);
+		this.startFrameDwell = this.startFrameDwell.bind(this);
+		this.endFrameDwell = this.endFrameDwell.bind(this);
+		this.onFrameMouseOut = this.onFrameMouseOut.bind(this);
+		this.syncSpotlight = this.syncSpotlight.bind(this);
+		this.trackPointer = this.trackPointer.bind(this);
 
 		this.cssNode = 'xpath-css';
 		this.overlayElement = 'xpath-overlay';
 		this.modalNode = 'zeuzMyModal';
 		this.elementNode = 'zeuzMyElement';
+		this.spotlightNode = 'zeuz-iframe-spotlight-host';
 
+		this.isTopFrame = window.top === window.self;
+		this.dwellTimer = null;
+		this.dwellActive = false;
+		this.spotlightHost = null;
 	}
 
 
@@ -294,7 +314,6 @@ class Inspector {
 	}
 
 	getOptions() {
-		console.log(navigator.userAgentData.platform);
 		const storage = browserAppData.storage && (browserAppData.storage.local);
 		const promise = storage.get({
 			inspector: true,
@@ -355,9 +374,10 @@ class Inspector {
 		host.id = 'zeuz-attributes-host';
 		Object.assign(host.style, {
 			position: 'fixed',
-			top: '10px',
-			left: '10px',
-			zIndex: '2147483647',
+			top: '12px',
+			left: '12px',
+			// just under the floating button, so the panel can never bury it
+			zIndex: '2147483640',
 			pointerEvents: 'none'
 		});
 		document.body.appendChild(host);
@@ -366,26 +386,72 @@ class Inspector {
 		const style = document.createElement('style');
 		style.textContent = `
 			.attributes-container {
-				background: rgba(0, 0, 0, 0.8);
+				background: rgba(0, 0, 0, 0.82);
 				color: white;
 				padding: 6px 10px;
-				border-radius: 4px;
+				border-radius: 6px;
 				font-family: monospace;
 				font-size: 11px;
-				max-width: 300px;
+				line-height: 1.45;
+				max-width: 320px;
 				word-break: break-all;
 				backdrop-filter: blur(4px);
 				border: 1px solid rgba(255, 255, 255, 0.2);
+			}
+			.tag {
+				color: #c4b5fd;
+				font-weight: bold;
+			}
+			.attrs:empty, .more:empty {
+				display: none;
+			}
+			.more {
+				color: rgba(255, 255, 255, 0.55);
+				font-style: italic;
 			}
 		`;
 		shadow.appendChild(style);
 
 		const container = document.createElement('div');
 		container.className = 'attributes-container';
+
+		const tag = document.createElement('div');
+		tag.className = 'tag';
+		const attrs = document.createElement('div');
+		attrs.className = 'attrs';
+		const more = document.createElement('div');
+		more.className = 'more';
+		container.append(tag, attrs, more);
 		shadow.appendChild(container);
 
 		this.attributesHost = host;
-		this.attributesContainer = container;
+		this.attributesTag = tag;
+		this.attributesText = attrs;
+		this.attributesMore = more;
+	}
+
+	renderAttributes(node) {
+		const names = node.getAttributeNames();
+		const parts = [];
+		let total = 0;
+
+		for (const name of names) {
+			if (total >= MAX_ATTR_TOTAL_CHARS) break;
+			let value = node.getAttribute(name) || '';
+			if (value.length > MAX_ATTR_VALUE_CHARS) {
+				// escaped, not literal: keeps this file pure ASCII so a page
+				// charset other than UTF-8 cannot mangle the glyph
+				value = value.slice(0, MAX_ATTR_VALUE_CHARS) + '\u2026';
+			}
+			const part = `${name}="${value}"`;
+			parts.push(part);
+			total += part.length;
+		}
+
+		const hidden = names.length - parts.length;
+		this.attributesTag.textContent = `<${node.localName}>`;
+		this.attributesText.textContent = parts.join(' ');
+		this.attributesMore.textContent = hidden > 0 ? `+${hidden} more attribute${hidden > 1 ? 's' : ''}` : '';
 	}
 
 	createSuccessMessage() {
@@ -433,17 +499,33 @@ class Inspector {
 		this.successContainer = container;
 	}
 
-	updateAttributePosition(mouseY) {
-		if (this.attributesHost) {
-			const isTopHalf = mouseY < window.innerHeight / 2;
-			if (isTopHalf) {
-				this.attributesHost.style.top = 'auto';
-				this.attributesHost.style.bottom = '10px';
-			} else {
-				this.attributesHost.style.top = '10px';
-				this.attributesHost.style.bottom = 'auto';
-			}
-		}
+	// mouseover alone is not enough: moving across one large element never
+	// re-fires it, so the panel would stay in a stale corner.
+	trackPointer(e) {
+		if (this.positionFrame) return;
+		const x = e.clientX;
+		const y = e.clientY;
+		this.positionFrame = requestAnimationFrame(() => {
+			this.positionFrame = null;
+			this.updateAttributePosition(x, y);
+		});
+	}
+
+	// Park the panel in whichever of the 4 corners is opposite the cursor,
+	// so it never sits under the element being inspected.
+	updateAttributePosition(mouseX, mouseY) {
+		if (!this.attributesHost) return;
+
+		const margin = '12px';
+		const toRight = mouseX < window.innerWidth / 2;
+		const toBottom = mouseY < window.innerHeight / 2;
+
+		Object.assign(this.attributesHost.style, {
+			left: toRight ? 'auto' : margin,
+			right: toRight ? margin : 'auto',
+			top: toBottom ? 'auto' : margin,
+			bottom: toBottom ? margin : 'auto'
+		});
 	}
 
 	copyText(XPath) {
@@ -485,15 +567,13 @@ class Inspector {
 		}
 
 		// position based on mouse location
-		this.updateAttributePosition(e.clientY);
+		this.updateAttributePosition(e.clientX, e.clientY);
+		this.renderAttributes(node);
 
-		let elementText = "";
-		for (let name of e.target.getAttributeNames()) {
-			let value = e.target.getAttribute(name);
-			elementText += `${name}="${value}" `;
+		// pointer is back on the host page, so any iframe spotlight is stale
+		if (this.spotlightHost && node !== this.spotlightFrame) {
+			this.hideSpotlight();
 		}
-
-		this.attributesContainer.textContent = elementText.trim();
 	}
 
 	activate() {
@@ -508,11 +588,21 @@ class Inspector {
 		// add listeners
 		document.addEventListener('click', this.getData, true);
 		this.options.inspector && (document.addEventListener('mouseover', this.draw));
+		this.options.inspector && (document.addEventListener('mousemove', this.trackPointer, { passive: true }));
+
+		// iframe spotlight: children report dwell, every frame relays it upwards
+		window.addEventListener('message', this.onFrameMessage);
+		if (!this.isTopFrame) {
+			document.addEventListener('mouseover', this.startFrameDwell);
+			document.addEventListener('mouseout', this.onFrameMouseOut);
+		}
 	}
 
 	deactivate() {
 		// remove overlay
 		this.removeOverlay();
+		this.endFrameDwell();
+		this.hideSpotlight();
 
 		let Remove = [
 			this.cssNode,
@@ -529,12 +619,195 @@ class Inspector {
 		// remove listeners
 		document.removeEventListener('click', this.getData, true);
 		this.options && this.options.inspector && (document.removeEventListener('mouseover', this.draw));
+		document.removeEventListener('mousemove', this.trackPointer);
+		cancelAnimationFrame(this.positionFrame);
+		this.positionFrame = null;
+		window.removeEventListener('message', this.onFrameMessage);
+		document.removeEventListener('mouseover', this.startFrameDwell);
+		document.removeEventListener('mouseout', this.onFrameMouseOut);
 
 		// reset
 		this.attributesHost = null;
-		this.attributesContainer = null;
+		this.attributesTag = null;
+		this.attributesText = null;
+		this.attributesMore = null;
 		this.successHost = null;
 		this.successContainer = null;
+	}
+
+	/* ---------------- iframe spotlight ---------------- */
+
+	// Inside a frame: once the pointer has stayed here long enough, ask the top
+	// frame to dim everything but us.
+	startFrameDwell() {
+		if (this.dwellTimer || this.dwellActive) return;
+		this.dwellTimer = setTimeout(() => {
+			this.dwellTimer = null;
+			this.dwellActive = true;
+			window.parent.postMessage({
+				tag: FRAME_MESSAGE_TAG,
+				type: 'focus',
+				rect: null,
+				label: (document.title || location.hostname || '').slice(0, 60)
+			}, '*');
+		}, IFRAME_DWELL_MS);
+	}
+
+	// relatedTarget is null only when the pointer crosses out of this document
+	onFrameMouseOut(e) {
+		if (!e.relatedTarget) this.endFrameDwell();
+	}
+
+	endFrameDwell() {
+		clearTimeout(this.dwellTimer);
+		this.dwellTimer = null;
+		if (!this.dwellActive) return;
+		this.dwellActive = false;
+		window.parent.postMessage({ tag: FRAME_MESSAGE_TAG, type: 'blur' }, '*');
+	}
+
+	onFrameMessage(e) {
+		const data = e.data;
+		if (!data || data.tag !== FRAME_MESSAGE_TAG) return;
+
+		if (data.type === 'blur') {
+			if (this.attributesHost) this.attributesHost.style.visibility = 'visible';
+			this.isTopFrame ? this.hideSpotlight() : window.parent.postMessage(data, '*');
+			return;
+		}
+
+		const frame = this.findFrameElement(e.source);
+		if (!frame) return;
+
+		// The pointer is inside the frame now and the frame highlights its own
+		// element. Our highlight is still sitting on the <iframe> tag, which
+		// would tint the whole frame, and our panel still shows that tag.
+		this.removeOverlay();
+		if (this.attributesHost) this.attributesHost.style.visibility = 'hidden';
+
+		// translate the child's rect into this frame's viewport coordinates
+		const frameRect = frame.getBoundingClientRect();
+		const style = window.getComputedStyle(frame);
+		const originX = frameRect.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+		const originY = frameRect.top + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
+		const rect = data.rect
+			? { left: originX + data.rect.left, top: originY + data.rect.top, width: data.rect.width, height: data.rect.height }
+			: { left: frameRect.left, top: frameRect.top, width: frameRect.width, height: frameRect.height };
+
+		if (this.isTopFrame) {
+			this.showSpotlight(frame, rect, data.label);
+		} else {
+			window.parent.postMessage({ tag: FRAME_MESSAGE_TAG, type: 'focus', rect, label: data.label }, '*');
+		}
+	}
+
+	findFrameElement(sourceWindow) {
+		return Array.from(document.querySelectorAll('iframe, frame'))
+			.find(frame => frame.contentWindow === sourceWindow);
+	}
+
+	showSpotlight(frame, rect, label) {
+		if (!this.spotlightHost) {
+			const host = document.createElement('div');
+			host.id = this.spotlightNode;
+			Object.assign(host.style, {
+				position: 'fixed',
+				inset: '0',
+				overflow: 'hidden',
+				pointerEvents: 'none',
+				zIndex: '2147483000',
+				opacity: '0',
+				transition: 'opacity 0.25s ease'
+			});
+			document.body.appendChild(host);
+
+			const shadow = host.attachShadow({ mode: 'open' });
+			const style = document.createElement('style');
+			style.textContent = `
+				.hole {
+					position: fixed;
+					border-radius: 6px;
+					box-shadow: 0 0 0 100vmax rgba(15, 23, 42, 0.55), 0 0 26px rgba(167, 139, 250, 0.55);
+					outline: 2px solid rgba(167, 139, 250, 0.95);
+				}
+				.label {
+					position: fixed;
+					padding: 3px 8px;
+					background: rgba(167, 139, 250, 0.95);
+					color: #1f1147;
+					font-family: sans-serif;
+					font-size: 11px;
+					font-weight: 600;
+					border-radius: 4px;
+					white-space: nowrap;
+					max-width: 60vw;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+			`;
+			const hole = document.createElement('div');
+			hole.className = 'hole';
+			const badge = document.createElement('div');
+			badge.className = 'label';
+			shadow.append(style, hole, badge);
+
+			this.spotlightHost = host;
+			this.spotlightHole = hole;
+			this.spotlightLabel = badge;
+
+			window.addEventListener('scroll', this.syncSpotlight, true);
+			window.addEventListener('resize', this.syncSpotlight);
+			requestAnimationFrame(() => host && (host.style.opacity = '1'));
+		}
+
+		this.spotlightFrame = frame;
+		// keep the offset of nested frames so scrolling can re-derive the rect
+		const frameRect = frame.getBoundingClientRect();
+		this.spotlightOffset = { x: rect.left - frameRect.left, y: rect.top - frameRect.top };
+		this.spotlightLabel.textContent = label ? `\u29C9 iframe \u2014 ${label}` : '\u29C9 iframe';
+		this.placeSpotlight(rect);
+	}
+
+	placeSpotlight(rect) {
+		this.spotlightSize = { width: rect.width, height: rect.height };
+		Object.assign(this.spotlightHole.style, {
+			left: rect.left + 'px',
+			top: rect.top + 'px',
+			width: rect.width + 'px',
+			height: rect.height + 'px'
+		});
+		const above = rect.top > 28;
+		Object.assign(this.spotlightLabel.style, {
+			left: rect.left + 'px',
+			top: (above ? rect.top - 24 : rect.top + 8) + 'px'
+		});
+	}
+
+	syncSpotlight() {
+		if (!this.spotlightHost || !this.spotlightFrame) return;
+		const frameRect = this.spotlightFrame.getBoundingClientRect();
+		this.placeSpotlight({
+			left: frameRect.left + this.spotlightOffset.x,
+			top: frameRect.top + this.spotlightOffset.y,
+			width: this.spotlightSize.width,
+			height: this.spotlightSize.height
+		});
+	}
+
+	hideSpotlight() {
+		if (!this.spotlightHost) return;
+		if (this.attributesHost) this.attributesHost.style.visibility = 'visible';
+		window.removeEventListener('scroll', this.syncSpotlight, true);
+		window.removeEventListener('resize', this.syncSpotlight);
+
+		const host = this.spotlightHost;
+		host.style.opacity = '0';
+		setTimeout(() => host.remove(), 250);
+
+		this.spotlightHost = null;
+		this.spotlightHole = null;
+		this.spotlightLabel = null;
+		this.spotlightFrame = null;
 	}
 
 	getXPath(el) {
