@@ -119,6 +119,11 @@ ai_recorder_public_path = str(
     / "AI_Recorder_2"
     / "public"
 )
+DEFAULT_CHROMIUM_ARGUMENTS = (
+    "--ignore-certificate-errors",
+    "--ignore-ssl-errors",
+    "--zeuz_pid_finder",
+)
 
 # Disable WebdriverManager SSL verification.
 os.environ["WDM_SSL_VERIFY"] = "0"
@@ -199,7 +204,10 @@ def _ensure_selenium_session(session_name, existing_session):
     try:
         from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as PlaywrightBuiltInFunctions
 
-        driver = PlaywrightBuiltInFunctions.connect_selenium_to_playwright(port=port)
+        driver = PlaywrightBuiltInFunctions.connect_selenium_to_playwright(
+            port=port,
+            driver_path=existing_session.get("driver_path"),
+        )
         if driver in failed_tag_list:
             return "zeuz_failed"
 
@@ -759,6 +767,26 @@ def set_extension_variables():
         )
 
 
+def get_zeuz_ai_extension_arguments(browser):
+    """Return Zeuz AI extension arguments for supported headed debug browsers."""
+    if not (
+        CommonUtil.debug_status
+        and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower()
+        in ("true", "on", "enable", "yes", "on_debug")
+        and browser in ("chrome", "microsoft edge chromium")
+    ):
+        return []
+
+    set_extension_variables()
+    extension_paths = f"{aiplugin_path},{ai_recorder_path}"
+    return [
+        "--disable-features=DisableLoadExtensionCommandLineSwitch",
+        f"--disable-extensions-except={extension_paths}",
+        f"--load-extension={extension_paths}",
+        "--allow-running-insecure-content",
+    ]
+
+
 def generate_options(browser: str, browser_options: BrowserOptions):
     """Adds capabilities and options for Browser/WebDriver"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -837,18 +865,8 @@ def generate_options(browser: str, browser_options: BrowserOptions):
     for key, value in browser_options["capabilities"].items():
         options.set_capability(key, value)
 
-    # On Debug run open inspector with credentials
-    if (
-        CommonUtil.debug_status
-        and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower()
-        in ("true", "on", "enable", "yes", "on_debug")
-        and browser in ("chrome", "microsoft edge chromium")
-    ):
-        set_extension_variables()
-        options.add_argument("--disable-features=DisableLoadExtensionCommandLineSwitch")
-        options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
-        # This is for running extension on a http server to call a https request
-        options.add_argument("--allow-running-insecure-content")
+    for argument in get_zeuz_ai_extension_arguments(browser):
+        options.add_argument(argument)
 
     msg += (
         f"Capabilities: {json.dumps(options.capabilities, indent=2)}\n"
@@ -1190,13 +1208,7 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
         )
         apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
         default_chromium_arguments = {
-            "add_argument": [
-                "--ignore-certificate-errors",
-                "--ignore-ssl-errors",
-                "--zeuz_pid_finder",
-                # "--remote-debugging-port=9222",  # Required for playright
-                # "--no-sandbox"
-            ],
+            "add_argument": list(DEFAULT_CHROMIUM_ARGUMENTS),
             "add_experimental_option": {
                 "prefs": {
                     # "profile.default_content_settings.popups": 0,
@@ -1327,13 +1339,6 @@ async def Go_To_Link(dataset: Dataset) -> ReturnType:
             "ChromeHeadless",
         ) and not browser_options["chrome"].get("debugger_address", ""):
             cft = ChromeForTesting()
-
-            if chrome_version:
-                if chrome_version.strip().lower() in ("beta", "dev", "canary"):
-                    chrome_channel = chrome_version.strip().capitalize()
-                    chrome_version = None
-                else:
-                    chrome_version = chrome_version.strip()
 
             chrome_bin, driver_bin = cft.setup_chrome_for_testing(
                 chrome_version, chrome_channel

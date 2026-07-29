@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -168,3 +169,87 @@ def test_playwright_switch_iframe_uses_index_parameter_after_default_reset():
     frame_locator.nth.assert_called_once_with(1)
     assert sr.Get_Shared_Variables("playwright_frame") is indexed_frame_locator
     assert browser_utils.get_browser_session("default")["playwright_frame"] is indexed_frame_locator
+
+
+def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
+    monkeypatch.setattr(playwright_bif.CommonUtil, "ExecLog", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        playwright_bif.CommonUtil,
+        "set_screenshot_vars",
+        lambda *args, **kwargs: None,
+    )
+    normalize = playwright_bif.ChromeForTesting.normalize_version_and_channel
+    assert normalize("138.0.7204.92") == ("138.0.7204.92", "Stable")
+    for channel in ("Stable", "Beta", "Dev", "Canary"):
+        assert normalize(channel.lower()) == (None, channel)
+
+    chrome_bin = Path("/cache/chrome")
+    driver_bin = Path("/cache/chromedriver")
+    cft = MagicMock()
+    cft.setup_chrome_for_testing.return_value = (chrome_bin, driver_bin)
+    monkeypatch.setattr(playwright_bif, "ChromeForTesting", lambda: cft)
+
+    async def run_inline(function, *args):
+        return function(*args)
+
+    monkeypatch.setattr(playwright_bif.asyncio, "to_thread", run_inline)
+    monkeypatch.setattr(playwright_bif, "get_debug_port", lambda session_name: 9250)
+
+    page = MagicMock()
+    context = MagicMock()
+    context.pages = []
+    context.new_page = AsyncMock(return_value=page)
+    browser = MagicMock()
+    context.browser = browser
+    browser.new_context = AsyncMock(return_value=context)
+    playwright = MagicMock()
+    playwright.chromium.launch = AsyncMock(return_value=browser)
+    playwright.chromium.launch_persistent_context = AsyncMock(return_value=context)
+    starter = MagicMock()
+    starter.start = AsyncMock(return_value=playwright)
+    monkeypatch.setattr(playwright_bif, "async_playwright", lambda: starter)
+    extension_args = [
+        "--disable-features=DisableLoadExtensionCommandLineSwitch",
+        f"--disable-extensions-except={selenium_bif.aiplugin_path},{selenium_bif.ai_recorder_path}",
+        f"--load-extension={selenium_bif.aiplugin_path},{selenium_bif.ai_recorder_path}",
+        "--allow-running-insecure-content",
+    ]
+    prepare_extensions = MagicMock()
+    monkeypatch.setattr(selenium_bif.CommonUtil, "debug_status", True)
+    monkeypatch.setattr(
+        selenium_bif.ConfigModule,
+        "get_config_value",
+        lambda section, key, *args: "true"
+        if (section, key) == ("Inspector", "ai_plugin")
+        else "",
+    )
+    monkeypatch.setattr(selenium_bif, "set_extension_variables", prepare_extensions)
+    sr.Set_Shared_Variables("dependency", {"Browser": "Chrome"})
+
+    result = asyncio.run(
+        playwright_bif.Open_Browser(
+            [("chrome:version", "optional parameter", "138.0.7204.92")]
+        )
+    )
+
+    assert result == "passed"
+    cft.setup_chrome_for_testing.assert_called_once_with("138.0.7204.92", None)
+    launch_options = playwright.chromium.launch_persistent_context.await_args.kwargs
+    assert launch_options["executable_path"] == str(chrome_bin)
+    assert launch_options["headless"] is False
+    assert set(selenium_bif.DEFAULT_CHROMIUM_ARGUMENTS + tuple(extension_args)) <= set(
+        launch_options["args"]
+    )
+    prepare_extensions.assert_called_once_with()
+    playwright.chromium.launch.assert_not_awaited()
+    session = browser_utils.get_browser_session("default")
+    assert session["driver_path"] == str(driver_bin)
+    assert asyncio.run(playwright_bif.Open_Browser([])) == "passed"
+    cft.setup_chrome_for_testing.assert_called_once()
+    playwright.chromium.launch_persistent_context.assert_awaited_once()
+
+    selenium_driver = object()
+    attach = MagicMock(return_value=selenium_driver)
+    monkeypatch.setattr(playwright_bif, "connect_selenium_to_playwright", attach)
+    assert selenium_bif._ensure_selenium_session("default", session) == "passed"
+    attach.assert_called_once_with(port=9250, driver_path=str(driver_bin))

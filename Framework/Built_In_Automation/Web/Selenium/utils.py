@@ -33,6 +33,13 @@ class ChromeForTesting:
     CHROME_VERSIONS_DIR = CHROME_BASE_DIR / "versions"
     CHROME_INFO_FILE = CHROME_BASE_DIR / "info.json"
     CHROME_LINUX_UNAVAILABLE_DEPS_FILE = CHROME_BASE_DIR / "unavailable_linux_deps.txt"
+    CHANNELS = {
+        "stable": "Stable",
+        "beta": "Beta",
+        "dev": "Dev",
+        "canary": "Canary",
+    }
+    MIN_VERSION = (115, 0, 5763, 0)
 
     def __init__(self):
         self.system = platform.system().lower()
@@ -251,8 +258,15 @@ class ChromeForTesting:
 
     def get_latest_version(self, channel="Stable", force_check=False):
         """Get the latest Chrome version with caching"""
+        channel = self.CHANNELS.get(str(channel).strip().lower())
+        if not channel:
+            raise ValueError("Chrome channel must be Stable, Beta, Dev, or Canary")
+
         info = self._load_info()
-        latest_info = info.get("latest", {})
+        latest_by_channel = info.get("channels", {})
+        latest_info = latest_by_channel.get(channel, {})
+        if channel == "Stable" and not latest_info:
+            latest_info = info.get("latest", {})
         cached_version = latest_info.get("version", "")
         last_check_str = latest_info.get("last_check", "")
 
@@ -287,10 +301,13 @@ class ChromeForTesting:
         new_version = data["channels"][channel]["version"]
 
         # Update info
-        info["latest"] = {
+        latest_info = {
             "version": new_version,
             "last_check": datetime.date.today().isoformat(),
         }
+        info.setdefault("channels", {})[channel] = latest_info
+        if channel == "Stable":
+            info["latest"] = latest_info
         self._save_info(info)
 
         return new_version
@@ -534,23 +551,49 @@ class ChromeForTesting:
         print(f"\nSuccessfully installed Chrome for Testing {version}")
         print(f"Installation directory: {version_dir.resolve()}")
 
+    @classmethod
+    def normalize_version_and_channel(cls, version=None, channel=None):
+        """Normalize an exact CfT version or a release channel."""
+        version = str(version).strip() if version is not None else ""
+        channel = str(channel).strip() if channel is not None else ""
+
+        if version.lower() in cls.CHANNELS:
+            channel = cls.CHANNELS[version.lower()]
+            version = ""
+        else:
+            channel = cls.CHANNELS.get(channel.lower() or "stable")
+
+        if not channel:
+            raise ValueError("Chrome channel must be Stable, Beta, Dev, or Canary")
+        if not version or version.lower() == "system":
+            return version.lower() or None, channel
+
+        try:
+            version_parts = tuple(int(part) for part in version.split("."))
+        except ValueError:
+            raise ValueError(
+                "Chrome version must be an exact numeric version or Stable, Beta, Dev, or Canary"
+            ) from None
+
+        if len(version_parts) != 4:
+            raise ValueError(
+                "Chrome version must be an exact four-part version, for example 138.0.7204.92"
+            )
+        if version_parts < cls.MIN_VERSION:
+            raise ValueError("Chrome for Testing version must be at least 115.0.5763.0")
+
+        return version, channel
+
     def setup_chrome_for_testing(self, version=None, channel=None):
         """Setup Chrome for testing, install if necessary"""
+        version, channel = self.normalize_version_and_channel(version, channel)
+
         # Clean up old versions first
         self.cleanup_old_versions()
 
-        if not channel:
-            channel = "Stable"
-
-        if version:
-            if version < "115.0.5763.0":
-                print("Chrome for testing version must be at least: '115.0.5763.0'")
-                return None, None
-            if version.strip().lower() == "system":
-                print(
-                    "Forcefully trying to use regular chrome instead of chrome for testing."
-                )
-                return None, None
+        if version == "system":
+            print("Forcefully trying to use regular chrome instead of chrome for testing.")
+            return None, None
 
         # Use latest version if not specified
         if not version:

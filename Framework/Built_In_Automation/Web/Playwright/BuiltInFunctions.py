@@ -42,13 +42,12 @@ from playwright.async_api import (
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Utilities.decorators import logger
-from settings import ZEUZ_NODE_DOWNLOADS_DIR
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
 from Framework.Built_In_Automation.Shared_Resources import LocateElement as PlaywrightLocator
 from Framework.Utilities.CommonUtil import failed_tag_list
-from . import utils as PlaywrightUtils
+from Framework.Built_In_Automation.Web.Selenium.utils import ChromeForTesting
 from Framework.Built_In_Automation.Web.utils import (
     create_browser_session,
     extract_session_name,
@@ -159,34 +158,6 @@ def _save_current_playwright_frame(frame_locator):
             sr.Set_Shared_Variables("browser_sessions", sessions)
 
 
-def _get_installed_cft_chromedriver(browser_version):
-    system = platform.system().lower()
-    arch = platform.machine().lower()
-
-    if system == "windows":
-        platform_key = "win64" if arch in ("amd64", "x86_64") else "win32"
-        executable = "chromedriver.exe"
-    elif system == "darwin":
-        platform_key = "mac-arm64" if arch == "arm64" else "mac-x64"
-        executable = "chromedriver"
-    elif system == "linux":
-        platform_key = "linux64"
-        executable = "chromedriver"
-    else:
-        return None
-
-    driver_path = (
-        ZEUZ_NODE_DOWNLOADS_DIR
-        / "chrome_for_testing"
-        / "versions"
-        / browser_version
-        / "driver"
-        / f"chromedriver-{platform_key}"
-        / executable
-    )
-    return str(driver_path) if driver_path.exists() else None
-
-
 async def _activate_browser_session_for_action(step_data, function_name=None):
     """Select the requested browser session before running Playwright actions."""
 
@@ -216,7 +187,7 @@ async def _activate_browser_session_for_action(step_data, function_name=None):
     return "passed"
 
 
-def connect_selenium_to_playwright(port=9222):
+def connect_selenium_to_playwright(port=9222, driver_path=None):
     """Connect Selenium to Playwright browser via CDP"""
     try:
         from selenium import webdriver
@@ -227,34 +198,39 @@ def connect_selenium_to_playwright(port=9222):
         options = Options()
         options.add_experimental_option("debuggerAddress", f"127.0.0.1:{port}")
 
-        service = None
-        try:
-            response = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=5)
-            response.raise_for_status()
-            browser_version = (
-                response.json()
-                .get("Browser", "")
-                .split("/", 1)[-1]
-                .strip()
+        service = Service(executable_path=str(driver_path)) if driver_path else None
+        if service:
+            CommonUtil.ExecLog(
+                "connect_selenium_to_playwright",
+                f"Using cached ChromeDriver: {driver_path}",
+                1,
             )
-            if browser_version:
-                driver_path = _get_installed_cft_chromedriver(browser_version)
-                if not driver_path:
+        else:
+            try:
+                response = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=5)
+                response.raise_for_status()
+                browser_version = (
+                    response.json()
+                    .get("Browser", "")
+                    .split("/", 1)[-1]
+                    .strip()
+                )
+                if browser_version:
                     driver_path = ChromeDriverManager(
                         driver_version=browser_version
                     ).install()
-                service = Service(executable_path=driver_path)
+                    service = Service(executable_path=driver_path)
+                    CommonUtil.ExecLog(
+                        "connect_selenium_to_playwright",
+                        f"Using ChromeDriver matching browser version {browser_version}",
+                        1,
+                    )
+            except Exception:
                 CommonUtil.ExecLog(
                     "connect_selenium_to_playwright",
-                    f"Using ChromeDriver matching browser version {browser_version}",
-                    1,
+                    "Could not resolve matching ChromeDriver for Playwright browser; falling back to Selenium Manager",
+                    2,
                 )
-        except Exception:
-            CommonUtil.ExecLog(
-                "connect_selenium_to_playwright",
-                "Could not resolve matching ChromeDriver for Playwright browser; falling back to Selenium Manager",
-                2,
-            )
 
         if service:
             driver = webdriver.Chrome(service=service, options=options)
@@ -431,7 +407,7 @@ async def Open_Browser(step_data):
         add argument        optional parameter  --disable-gpu
         open browser        playwright action   open browser
 
-    Supported browsers: chrome, chromium, firefox, webkit, safari, edge
+    Supported browsers: chrome, chromium, chrome-beta
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global playwright_instance, browser, context, current_page
@@ -442,9 +418,13 @@ async def Open_Browser(step_data):
         url = None
         dependency = sr.Get_Shared_Variables("dependency")
         browser_name = "chromium"
+        dependency_browser = ""
         if isinstance(dependency, dict) and dependency.get("Browser"):
-            browser_name = dependency["Browser"].strip().lower().replace("headless", "").strip() or browser_name
-        headless = False
+            dependency_browser = dependency["Browser"].strip().lower()
+            browser_name = dependency_browser
+        headless = dependency_browser.replace(" ", "") == "chromeheadless"
+        headless_explicit = False
+        chrome_version = None
         viewport = default_viewport.copy()
         resolution = None
         args = []
@@ -476,6 +456,7 @@ async def Open_Browser(step_data):
 
             elif mid_l == "optional parameter":
                 if left_l == "headless":
+                    headless_explicit = True
                     headless = right_v.lower() in ("true", "yes", "1")
                 elif left_l == "resolution":
                     parts = right_v.replace("x", ",").split(",")
@@ -513,9 +494,50 @@ async def Open_Browser(step_data):
                 # Handle Selenium-style capabilities where possible
                 pass
 
-        # Ensure Playwright's managed browser is available in Zeuz's persistent cache.
-        success = PlaywrightUtils.ensure_playwright_browser_installed(sModuleInfo, browser_name)
-        if not success:
+            if _compact(left_l) == "chrome:version":
+                chrome_version = right_v
+
+        compact_browser_name = _compact(browser_name)
+        if compact_browser_name == "chromeheadless":
+            browser_name = "chrome"
+            if not headless_explicit:
+                headless = True
+        elif compact_browser_name in ("chrome", "chromium", "chromebeta"):
+            browser_name = "chrome-beta" if compact_browser_name == "chromebeta" else compact_browser_name
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Playwright only supports Chrome/Chromium; browser '{browser_name}' is not supported",
+                3,
+            )
+            return "zeuz_failed"
+
+        if chrome_version and chrome_version.strip().lower() == "system":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Playwright requires Chrome for Testing; chrome:version = system is not supported",
+                3,
+            )
+            return "zeuz_failed"
+
+        existing_session = get_browser_session(page_id)
+        if existing_session:
+            result = await _ensure_playwright_session(page_id, existing_session)
+            if result not in failed_tag_list:
+                if url:
+                    await current_page.goto(url, wait_until="domcontentloaded")
+                CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {page_id}", 1)
+                return "passed"
+
+        chrome_channel = "Beta" if browser_name == "chrome-beta" else None
+        chrome_bin, driver_bin = await asyncio.to_thread(
+            lambda: ChromeForTesting().setup_chrome_for_testing(
+                chrome_version,
+                chrome_channel,
+            )
+        )
+        if not chrome_bin or not driver_bin:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to setup Chrome for Testing browser and driver", 3)
             return "zeuz_failed"
 
         # Launch Playwright
@@ -526,25 +548,34 @@ async def Open_Browser(step_data):
         launch_options = {
             "headless": headless,
             "slow_mo": slow_mo,
+            "executable_path": str(chrome_bin),
         }
         
         # Add remote debugging port for CDP connection with unique port per session
         unique_port = get_debug_port(page_id)
-        all_args = args + [f"--remote-debugging-port={unique_port}"]
-        chromium_like_browser = browser_name not in ("firefox", "webkit", "safari")
-        if chromium_like_browser:
-            if resolution and not _has_chromium_arg(all_args, ("--window-size",)):
-                all_args.append(
-                    f"--window-size={resolution['width']},{resolution['height']}"
-                )
-            elif (
-                not headless
-                and not _has_chromium_arg(
-                    all_args,
-                    ("--window-size", "--start-maximized", "--kiosk"),
-                )
-            ):
-                all_args.append("--start-maximized")
+        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
+
+        selenium_browser_name = "chromeheadless" if headless else "chrome"
+        all_args = (
+            list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
+            + args
+            + SeleniumBuiltInFunctions.get_zeuz_ai_extension_arguments(
+                selenium_browser_name
+            )
+            + [f"--remote-debugging-port={unique_port}"]
+        )
+        if resolution and not _has_chromium_arg(all_args, ("--window-size",)):
+            all_args.append(
+                f"--window-size={resolution['width']},{resolution['height']}"
+            )
+        elif (
+            not headless
+            and not _has_chromium_arg(
+                all_args,
+                ("--window-size", "--start-maximized", "--kiosk"),
+            )
+        ):
+            all_args.append("--start-maximized")
         if devtools:
             all_args.append("--auto-open-devtools-for-tabs")
         CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
@@ -552,31 +583,10 @@ async def Open_Browser(step_data):
             launch_options["args"] = all_args
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
-        
-        selenium_cdp_supported = True
-
-        # Select and launch browser
-        if browser_name in ("chrome", "chromium"):
-            browser = await playwright_instance.chromium.launch(**launch_options)
-        elif browser_name == "firefox":
-            selenium_cdp_supported = False
-            browser = await playwright_instance.firefox.launch(**launch_options)
-        elif browser_name in ("webkit", "safari"):
-            selenium_cdp_supported = False
-            browser = await playwright_instance.webkit.launch(**launch_options)
-        elif browser_name in ("edge", "msedge", "microsoft edge"):
-            launch_options["channel"] = "msedge"
-            browser = await playwright_instance.chromium.launch(**launch_options)
-        elif browser_name == "chrome-beta":
-            launch_options["channel"] = "chrome-beta"
-            browser = await playwright_instance.chromium.launch(**launch_options)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, f"Unknown browser '{browser_name}', using chromium", 2)
-            browser = await playwright_instance.chromium.launch(**launch_options)
 
         # Context options. Headed Chromium sessions use the real browser window
         # size so attached Selenium code observes Selenium-like layout behavior.
-        if selenium_cdp_supported and not headless:
+        if not headless:
             context_options = {"no_viewport": True, "accept_downloads": True}
         else:
             context_options = {"viewport": viewport, "accept_downloads": True}
@@ -593,10 +603,22 @@ async def Open_Browser(step_data):
         if color_scheme:
             context_options["color_scheme"] = color_scheme
 
-        # Create context and page
-        context = await browser.new_context(**context_options)
+        extension_enabled = any(
+            argument.startswith("--load-extension=") for argument in all_args
+        )
+        if extension_enabled:
+            context = await playwright_instance.chromium.launch_persistent_context(
+                "",
+                **launch_options,
+                **context_options,
+            )
+            browser = context.browser
+        else:
+            browser = await playwright_instance.chromium.launch(**launch_options)
+            context = await browser.new_context(**context_options)
+
         context.set_default_timeout(timeout)
-        current_page = await context.new_page()
+        current_page = context.pages[0] if context.pages else await context.new_page()
         current_page_id = page_id
 
         # Store in details
@@ -606,6 +628,7 @@ async def Open_Browser(step_data):
             "browser": browser,
             "playwright": playwright_instance,
             "remote-debugging-port": unique_port,
+            "driver-path": str(driver_bin),
         }
 
         # Navigate if URL provided
@@ -634,7 +657,8 @@ async def Open_Browser(step_data):
             playwright_instance=playwright_instance,
             remote_debugging_port=unique_port,
         )
-        session["selenium_cdp_supported"] = selenium_cdp_supported
+        session["selenium_cdp_supported"] = True
+        session["driver_path"] = str(driver_bin)
         sr.Set_Shared_Variables("browser_sessions", get_browser_sessions())
         CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {page_id}", 5)
 
