@@ -51,6 +51,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Built_In_Automation.Shared_Resources import LocateElement as PlaywrightLocator
 from Framework.Utilities.CommonUtil import failed_tag_list
+from . import utils as PlaywrightUtils
 from Framework.Built_In_Automation.Web.Selenium.utils import (
     ChromeExtensionDownloader,
     ChromeForTesting,
@@ -499,7 +500,7 @@ async def Open_Browser(step_data):
         add argument        optional parameter  --disable-gpu
         open browser        playwright action   open browser
 
-    Supported browsers: chrome, chromium, chrome-beta
+    Supported browsers: chrome, chromium, chrome-beta, firefox, webkit, safari, edge
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global playwright_instance, browser, context, current_page
@@ -621,19 +622,27 @@ async def Open_Browser(step_data):
                 element_wait = float(right_v)
 
         compact_browser_name = _compact(browser_name)
-        if compact_browser_name == "chromeheadless":
-            browser_name = "chrome"
+        if compact_browser_name.endswith("headless"):
+            compact_browser_name = compact_browser_name.removesuffix("headless")
             if not headless_explicit:
                 headless = True
-        elif compact_browser_name in ("chrome", "chromium", "chromebeta"):
+        if compact_browser_name in ("chrome", "chromium", "chromebeta"):
             browser_name = "chrome-beta" if compact_browser_name == "chromebeta" else compact_browser_name
+        elif compact_browser_name == "firefox":
+            browser_name = "firefox"
+        elif compact_browser_name in ("webkit", "safari"):
+            browser_name = "safari" if compact_browser_name == "safari" else "webkit"
+        elif compact_browser_name in ("edge", "msedge", "microsoftedge"):
+            browser_name = "edge"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                f"Playwright only supports Chrome/Chromium; browser '{browser_name}' is not supported",
+                f"Playwright browser '{browser_name}' is not supported",
                 3,
             )
             return "zeuz_failed"
+        shared_cft_browser = browser_name in ("chrome", "chromium", "chrome-beta")
+        chromium_browser = shared_cft_browser or browser_name == "edge"
 
         from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
 
@@ -694,13 +703,21 @@ async def Open_Browser(step_data):
         wait_until = _page_load_wait_until(page_load_strategy)
 
         if (
-            not debugger_address
+            shared_cft_browser
+            and not debugger_address
             and chrome_version
             and chrome_version.strip().lower() == "system"
         ):
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Playwright requires Chrome for Testing; chrome:version = system is not supported",
+                3,
+            )
+            return "zeuz_failed"
+        if not chromium_browser and debugger_address:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "debugger address is only supported for Chromium browsers",
                 3,
             )
             return "zeuz_failed"
@@ -716,16 +733,29 @@ async def Open_Browser(step_data):
                 CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {page_id}", 1)
                 return "passed"
 
+        if not shared_cft_browser:
+            browser_ready = await asyncio.to_thread(
+                PlaywrightUtils.ensure_playwright_browser_installed,
+                sModuleInfo,
+                browser_name,
+            )
+            if not browser_ready:
+                return "zeuz_failed"
+
         chrome_channel = "Beta" if browser_name == "chrome-beta" else None
         chrome_bin = driver_bin = None
-        if not debugger_address:
+        if shared_cft_browser and not debugger_address:
             chrome_bin, driver_bin = await asyncio.to_thread(
                 lambda: ChromeForTesting().setup_chrome_for_testing(
                     chrome_version,
                     chrome_channel,
                 )
             )
-        if not debugger_address and (not chrome_bin or not driver_bin):
+        if (
+            shared_cft_browser
+            and not debugger_address
+            and (not chrome_bin or not driver_bin)
+        ):
             CommonUtil.ExecLog(sModuleInfo, "Failed to setup Chrome for Testing browser and driver", 3)
             return "zeuz_failed"
 
@@ -749,13 +779,16 @@ async def Open_Browser(step_data):
                 else f"http://{debugger_address}"
             )
             unique_port = urlparse(debugger_endpoint).port
-        else:
+        elif chromium_browser:
             debugger_endpoint = None
             unique_port = get_debug_port(page_id)
+        else:
+            debugger_endpoint = None
+            unique_port = None
 
         extension_files = []
         encoded_extensions = []
-        if not debugger_address:
+        if shared_cft_browser and not debugger_address:
             resolved_chrome_version = next(
                 (
                     parent.name
@@ -779,14 +812,15 @@ async def Open_Browser(step_data):
                         value,
                     )
                 )
-        extension_dirs = _unpack_playwright_extensions(
-            extension_files,
-            encoded_extensions,
+        extension_dirs = (
+            _unpack_playwright_extensions(extension_files, encoded_extensions)
+            if shared_cft_browser
+            else []
         )
 
         selenium_browser_name = "chromeheadless" if headless else "chrome"
         zeuz_extension_args = []
-        if not debugger_address:
+        if shared_cft_browser and not debugger_address:
             zeuz_extension_args = (
                 SeleniumBuiltInFunctions.get_zeuz_ai_extension_arguments(
                     selenium_browser_name
@@ -818,9 +852,13 @@ async def Open_Browser(step_data):
             )
 
         all_args = []
-        if not debugger_address:
+        if chromium_browser and not debugger_address:
             all_args = (
-                list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
+                (
+                    list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
+                    if shared_cft_browser
+                    else []
+                )
                 + args
                 + extension_args
                 + [f"--remote-debugging-port={unique_port}"]
@@ -840,6 +878,8 @@ async def Open_Browser(step_data):
             if devtools:
                 all_args.append("--auto-open-devtools-for-tabs")
             CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
+        elif not debugger_address:
+            all_args = args
         if all_args:
             launch_options["args"] = all_args
         excluded_switches = experimental_options.get("excludeSwitches", [])
@@ -866,7 +906,7 @@ async def Open_Browser(step_data):
 
         # Context options. Headed Chromium sessions use the real browser window
         # size so attached Selenium code observes Selenium-like layout behavior.
-        if not headless:
+        if chromium_browser and not headless:
             context_options = {"no_viewport": True, "accept_downloads": True}
         else:
             context_options = {"viewport": viewport, "accept_downloads": True}
@@ -918,12 +958,12 @@ async def Open_Browser(step_data):
             if mobile_emulation.get("userAgent"):
                 context_options["user_agent"] = mobile_emulation["userAgent"]
 
-        extension_enabled = any(
+        extension_enabled = shared_cft_browser and any(
             argument.startswith("--load-extension=") for argument in all_args
         )
         user_data_dir = (
             _write_chrome_preferences(preferences)
-            if preferences and not debugger_address
+            if shared_cft_browser and preferences and not debugger_address
             else None
         )
         if debugger_address:
@@ -943,7 +983,16 @@ async def Open_Browser(step_data):
             )
             browser = context.browser
         else:
-            browser = await playwright_instance.chromium.launch(**launch_options)
+            if shared_cft_browser:
+                browser_type = playwright_instance.chromium
+            elif browser_name == "firefox":
+                browser_type = playwright_instance.firefox
+            elif browser_name in ("webkit", "safari"):
+                browser_type = playwright_instance.webkit
+            else:
+                browser_type = playwright_instance.chromium
+                launch_options["channel"] = "msedge"
+            browser = await browser_type.launch(**launch_options)
             context = await browser.new_context(**context_options)
 
         context.set_default_timeout(timeout)
@@ -991,7 +1040,7 @@ async def Open_Browser(step_data):
             playwright_instance=playwright_instance,
             remote_debugging_port=unique_port,
         )
-        session["selenium_cdp_supported"] = True
+        session["selenium_cdp_supported"] = shared_cft_browser
         session["driver_path"] = str(driver_bin) if driver_bin else None
         session["playwright_wait_until"] = wait_until
         session["user_data_dir"] = user_data_dir

@@ -367,3 +367,74 @@ def test_playwright_supports_selenium_debugger_address(monkeypatch):
         "http://127.0.0.1:9333"
     )
     assert browser_utils.get_browser_session("default")["remote_debugging_port"] == 9333
+
+
+def test_playwright_restores_non_cft_browser_launches(monkeypatch):
+    monkeypatch.setattr(playwright_bif.CommonUtil, "ExecLog", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        playwright_bif.CommonUtil,
+        "set_screenshot_vars",
+        lambda *args, **kwargs: None,
+    )
+    installer = MagicMock(return_value=True)
+    monkeypatch.setattr(
+        playwright_bif.PlaywrightUtils,
+        "ensure_playwright_browser_installed",
+        installer,
+    )
+    cft_factory = MagicMock(side_effect=AssertionError("CfT should not be resolved"))
+    monkeypatch.setattr(playwright_bif, "ChromeForTesting", cft_factory)
+    monkeypatch.setattr(playwright_bif, "get_debug_port", lambda session_name: 9250)
+
+    async def run_inline(function, *args):
+        return function(*args)
+
+    monkeypatch.setattr(playwright_bif.asyncio, "to_thread", run_inline)
+
+    launches = {}
+    for requested_browser, browser_type_name in (
+        ("FirefoxHeadless", "firefox"),
+        ("webkit", "webkit"),
+        ("safari", "webkit"),
+        ("edge", "chromium"),
+    ):
+        sr.shared_variables.clear()
+        playwright_bif.current_page = None
+        playwright_bif.current_page_id = None
+        playwright_bif.context = None
+        playwright_bif.browser = None
+
+        page = MagicMock()
+        context = MagicMock()
+        context.pages = []
+        context.new_page = AsyncMock(return_value=page)
+        browser = MagicMock()
+        browser.new_context = AsyncMock(return_value=context)
+        playwright = MagicMock()
+        for name in ("chromium", "firefox", "webkit"):
+            getattr(playwright, name).launch = AsyncMock(return_value=browser)
+        starter = MagicMock()
+        starter.start = AsyncMock(return_value=playwright)
+        monkeypatch.setattr(playwright_bif, "async_playwright", lambda: starter)
+
+        result = asyncio.run(
+            playwright_bif.Open_Browser(
+                [("browser", "input parameter", requested_browser)]
+            )
+        )
+
+        assert result == "passed"
+        launch = getattr(playwright, browser_type_name).launch
+        launch.assert_awaited_once()
+        launches[requested_browser] = launch.await_args.kwargs
+        session = browser_utils.get_browser_session("default")
+        assert session["selenium_cdp_supported"] is False
+        assert session["driver_path"] is None
+
+    assert installer.call_args_list[0].args[1] == "firefox"
+    assert installer.call_args_list[1].args[1] == "webkit"
+    assert installer.call_args_list[2].args[1] == "safari"
+    assert installer.call_args_list[3].args[1] == "edge"
+    assert launches["FirefoxHeadless"]["headless"] is True
+    assert launches["edge"]["channel"] == "msedge"
+    cft_factory.assert_not_called()
