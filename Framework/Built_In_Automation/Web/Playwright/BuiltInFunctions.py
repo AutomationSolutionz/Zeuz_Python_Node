@@ -21,10 +21,14 @@ Author: Zeuz/AutomationSolutionz
 """
 
 import asyncio
+import hashlib
+import json
+import shutil
 import sys
 import os
 import inspect
 import platform
+import tempfile
 import time
 import base64
 from pathlib import Path
@@ -47,7 +51,10 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Built_In_Automation.Shared_Resources import LocateElement as PlaywrightLocator
 from Framework.Utilities.CommonUtil import failed_tag_list
-from Framework.Built_In_Automation.Web.Selenium.utils import ChromeForTesting
+from Framework.Built_In_Automation.Web.Selenium.utils import (
+    ChromeExtensionDownloader,
+    ChromeForTesting,
+)
 from Framework.Built_In_Automation.Web.utils import (
     create_browser_session,
     extract_session_name,
@@ -82,6 +89,87 @@ def _has_chromium_arg(args, arg_names):
     return False
 
 
+def _page_load_wait_until(strategy):
+    strategy = str(strategy or "eager").strip().lower()
+    try:
+        return {
+            "normal": "load",
+            "eager": "domcontentloaded",
+            "none": "commit",
+            "load": "load",
+            "domcontentloaded": "domcontentloaded",
+            "networkidle": "networkidle",
+            "commit": "commit",
+        }[strategy]
+    except KeyError:
+        raise ValueError(
+            "page load strategy must be normal, eager, none, load, domcontentloaded, networkidle, or commit"
+        ) from None
+
+
+def _write_chrome_preferences(preferences):
+    """Write Selenium-style dotted Chrome preferences to a temporary profile."""
+    nested_preferences = {}
+    for key, value in preferences.items():
+        target = nested_preferences
+        parts = key.split(".")
+        for part in parts[:-1]:
+            target = target.setdefault(part, {})
+        target[parts[-1]] = value
+
+    user_data_dir = Path(tempfile.mkdtemp(prefix="zeuz-playwright-"))
+    default_profile = user_data_dir / "Default"
+    default_profile.mkdir()
+    (default_profile / "Preferences").write_text(json.dumps(nested_preferences))
+    return str(user_data_dir)
+
+
+def _cleanup_chrome_profile(user_data_dir):
+    if not user_data_dir:
+        return
+    profile = Path(user_data_dir)
+    if (
+        profile.parent == Path(tempfile.gettempdir())
+        and profile.name.startswith("zeuz-playwright-")
+    ):
+        shutil.rmtree(profile, ignore_errors=True)
+
+
+def _unpack_playwright_extensions(extension_files, encoded_extensions):
+    """Cache CRX/base64 extension payloads and return unpacked directories."""
+    payloads = [Path(path).read_bytes() for path in extension_files]
+    for encoded_extension in encoded_extensions:
+        try:
+            payloads.append(
+                base64.b64decode("".join(encoded_extension.split()), validate=True)
+            )
+        except Exception:
+            raise ValueError("add encoded extension contains invalid base64 data") from None
+
+    if not payloads:
+        return []
+
+    downloader = ChromeExtensionDownloader()
+    extension_dirs = []
+    for payload in payloads:
+        cache_dir = (
+            downloader.CHROME_EXTENSIONS_DIR
+            / "playwright"
+            / hashlib.sha256(payload).hexdigest()
+        )
+        crx_path = cache_dir / "extension.crx"
+        unpacked_path = cache_dir / "extension"
+        if not (unpacked_path / "manifest.json").exists():
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            crx_path.write_bytes(payload)
+            downloader.extract_extension(crx_path)
+        if not (unpacked_path / "manifest.json").exists():
+            raise ValueError("Chrome extension does not contain a manifest.json")
+        extension_dirs.append(str(unpacked_path))
+
+    return list(dict.fromkeys(extension_dirs))
+
+
 def _set_active_playwright_session(session_name, session):
     """Update module globals/shared variables for a selected Playwright session."""
 
@@ -97,6 +185,10 @@ def _set_active_playwright_session(session_name, session):
     sr.Set_Shared_Variables("playwright_context", context)
     sr.Set_Shared_Variables("playwright_browser", browser)
     sr.Set_Shared_Variables("playwright_frame", session.get("playwright_frame"))
+    sr.Set_Shared_Variables(
+        "playwright_wait_until",
+        session.get("playwright_wait_until", "domcontentloaded"),
+    )
     sr.Set_Shared_Variables("active_web_driver_type", "playwright")
     if session.get("selenium_driver"):
         sr.Set_Shared_Variables("selenium_driver", session["selenium_driver"])
@@ -425,6 +517,15 @@ async def Open_Browser(step_data):
         headless = dependency_browser.replace(" ", "") == "chromeheadless"
         headless_explicit = False
         chrome_version = None
+        extension_values = []
+        encoded_extension_values = []
+        chromium_argument_values = []
+        experimental_option_values = []
+        preference_values = []
+        shared_capability_values = []
+        debugger_address = None
+        page_load_strategy = "eager"
+        element_wait = None
         viewport = default_viewport.copy()
         resolution = None
         args = []
@@ -491,11 +592,33 @@ async def Open_Browser(step_data):
                     page_id = right_v    
 
             elif mid_l == "shared capability":
-                # Handle Selenium-style capabilities where possible
-                pass
+                shared_capability_values.append(right_v)
 
-            if _compact(left_l) == "chrome:version":
+            left_compact = _compact(left_l)
+            if left_compact == "chrome:version":
                 chrome_version = right_v
+            elif mid_l in ("chromium option", "chrome option"):
+                if left_compact == "addargument":
+                    chromium_argument_values.append(right_v)
+                elif left_compact == "addexperimentaloption":
+                    experimental_option_values.append(right_v)
+                elif left_compact == "addextension":
+                    extension_values.append(right_v)
+                elif left_compact == "addencodedextension":
+                    encoded_extension_values.append(right_v)
+                elif left_compact == "setpreference":
+                    preference_values.append(right_v)
+                elif left_compact == "pageloadstrategy":
+                    page_load_strategy = right_v
+                elif left_compact == "debuggeraddress":
+                    debugger_address = right_v
+
+            if left_compact in (
+                "waittimetoappearelement",
+                "waitforelement",
+                "elementwait",
+            ):
+                element_wait = float(right_v)
 
         compact_browser_name = _compact(browser_name)
         if compact_browser_name == "chromeheadless":
@@ -512,7 +635,69 @@ async def Open_Browser(step_data):
             )
             return "zeuz_failed"
 
-        if chrome_version and chrome_version.strip().lower() == "system":
+        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
+
+        capabilities = {}
+        for value in shared_capability_values:
+            parsed = CommonUtil.parse_value_into_object(value)
+            if not isinstance(parsed, dict):
+                raise ValueError("shared capability must be a dictionary")
+            capabilities.update(parsed)
+
+        experimental_options = {}
+        for value in experimental_option_values:
+            experimental_options.update(
+                SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                    "addexperimentaloption",
+                    value,
+                )
+            )
+        preferences = {}
+        for value in preference_values:
+            preferences.update(
+                SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                    "setpreference",
+                    value,
+                )
+            )
+        for value in chromium_argument_values:
+            args.extend(
+                SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                    "addargument",
+                    value,
+                )
+            )
+
+        chrome_options = capabilities.get("goog:chromeOptions", {})
+        if isinstance(chrome_options, dict):
+            args.extend(chrome_options.get("args", []))
+            if chrome_options.get("extensions"):
+                encoded_extension_values.append(
+                    repr(chrome_options["extensions"])
+                )
+            experimental_options.update(
+                {
+                    key: value
+                    for key, value in chrome_options.items()
+                    if key not in ("args", "extensions")
+                }
+            )
+        preferences.update(experimental_options.get("prefs", {}))
+        debugger_address = (
+            debugger_address
+            or experimental_options.get("debuggerAddress")
+        )
+        page_load_strategy = capabilities.get(
+            "pageLoadStrategy",
+            page_load_strategy,
+        )
+        wait_until = _page_load_wait_until(page_load_strategy)
+
+        if (
+            not debugger_address
+            and chrome_version
+            and chrome_version.strip().lower() == "system"
+        ):
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Playwright requires Chrome for Testing; chrome:version = system is not supported",
@@ -525,18 +710,22 @@ async def Open_Browser(step_data):
             result = await _ensure_playwright_session(page_id, existing_session)
             if result not in failed_tag_list:
                 if url:
-                    await current_page.goto(url, wait_until="domcontentloaded")
+                    await current_page.goto(url, wait_until=wait_until)
+                if element_wait is not None:
+                    sr.Set_Shared_Variables("element_wait", element_wait)
                 CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {page_id}", 1)
                 return "passed"
 
         chrome_channel = "Beta" if browser_name == "chrome-beta" else None
-        chrome_bin, driver_bin = await asyncio.to_thread(
-            lambda: ChromeForTesting().setup_chrome_for_testing(
-                chrome_version,
-                chrome_channel,
+        chrome_bin = driver_bin = None
+        if not debugger_address:
+            chrome_bin, driver_bin = await asyncio.to_thread(
+                lambda: ChromeForTesting().setup_chrome_for_testing(
+                    chrome_version,
+                    chrome_channel,
+                )
             )
-        )
-        if not chrome_bin or not driver_bin:
+        if not debugger_address and (not chrome_bin or not driver_bin):
             CommonUtil.ExecLog(sModuleInfo, "Failed to setup Chrome for Testing browser and driver", 3)
             return "zeuz_failed"
 
@@ -548,39 +737,130 @@ async def Open_Browser(step_data):
         launch_options = {
             "headless": headless,
             "slow_mo": slow_mo,
-            "executable_path": str(chrome_bin),
         }
+        if chrome_bin:
+            launch_options["executable_path"] = str(chrome_bin)
         
         # Add remote debugging port for CDP connection with unique port per session
-        unique_port = get_debug_port(page_id)
-        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
+        if debugger_address:
+            debugger_endpoint = (
+                debugger_address
+                if "://" in debugger_address
+                else f"http://{debugger_address}"
+            )
+            unique_port = urlparse(debugger_endpoint).port
+        else:
+            debugger_endpoint = None
+            unique_port = get_debug_port(page_id)
+
+        extension_files = []
+        encoded_extensions = []
+        if not debugger_address:
+            resolved_chrome_version = next(
+                (
+                    parent.name
+                    for parent in Path(chrome_bin).parents
+                    if parent.parent.name == "versions"
+                ),
+                chrome_version,
+            )
+            for value in extension_values:
+                extension_files.extend(
+                    SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                        "addextension",
+                        value,
+                        resolved_chrome_version,
+                    )
+                )
+            for value in encoded_extension_values:
+                encoded_extensions.extend(
+                    SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                        "addencodedextension",
+                        value,
+                    )
+                )
+        extension_dirs = _unpack_playwright_extensions(
+            extension_files,
+            encoded_extensions,
+        )
 
         selenium_browser_name = "chromeheadless" if headless else "chrome"
-        all_args = (
-            list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
-            + args
-            + SeleniumBuiltInFunctions.get_zeuz_ai_extension_arguments(
-                selenium_browser_name
+        zeuz_extension_args = []
+        if not debugger_address:
+            zeuz_extension_args = (
+                SeleniumBuiltInFunctions.get_zeuz_ai_extension_arguments(
+                    selenium_browser_name
+                )
             )
-            + [f"--remote-debugging-port={unique_port}"]
-        )
-        if resolution and not _has_chromium_arg(all_args, ("--window-size",)):
-            all_args.append(
-                f"--window-size={resolution['width']},{resolution['height']}"
+        extension_args = []
+        for argument in zeuz_extension_args:
+            if argument.startswith("--load-extension="):
+                extension_dirs.extend(argument.split("=", 1)[1].split(","))
+            elif not argument.startswith("--disable-extensions-except="):
+                extension_args.append(argument)
+        extension_dirs = list(dict.fromkeys(extension_dirs))
+        if extension_dirs:
+            extension_paths = ",".join(extension_dirs)
+            if not any(
+                argument.startswith(
+                    "--disable-features=DisableLoadExtensionCommandLineSwitch"
+                )
+                for argument in extension_args
+            ):
+                extension_args.append(
+                    "--disable-features=DisableLoadExtensionCommandLineSwitch"
+                )
+            extension_args.extend(
+                (
+                    f"--disable-extensions-except={extension_paths}",
+                    f"--load-extension={extension_paths}",
+                )
             )
-        elif (
-            not headless
-            and not _has_chromium_arg(
-                all_args,
-                ("--window-size", "--start-maximized", "--kiosk"),
+
+        all_args = []
+        if not debugger_address:
+            all_args = (
+                list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
+                + args
+                + extension_args
+                + [f"--remote-debugging-port={unique_port}"]
             )
-        ):
-            all_args.append("--start-maximized")
-        if devtools:
-            all_args.append("--auto-open-devtools-for-tabs")
-        CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
+            if resolution and not _has_chromium_arg(all_args, ("--window-size",)):
+                all_args.append(
+                    f"--window-size={resolution['width']},{resolution['height']}"
+                )
+            elif (
+                not headless
+                and not _has_chromium_arg(
+                    all_args,
+                    ("--window-size", "--start-maximized", "--kiosk"),
+                )
+            ):
+                all_args.append("--start-maximized")
+            if devtools:
+                all_args.append("--auto-open-devtools-for-tabs")
+            CommonUtil.ExecLog(sModuleInfo, f"Using remote debugging port {unique_port} for session '{page_id}'", 1)
         if all_args:
             launch_options["args"] = all_args
+        excluded_switches = experimental_options.get("excludeSwitches", [])
+        if excluded_switches:
+            launch_options["ignore_default_args"] = [
+                switch if switch.startswith("--") else f"--{switch}"
+                for switch in excluded_switches
+            ]
+        proxy = capabilities.get("proxy")
+        if isinstance(proxy, dict):
+            proxy_server = proxy.get("server") or proxy.get("sslProxy") or proxy.get("httpProxy")
+            if proxy_server:
+                if "://" not in proxy_server:
+                    proxy_server = f"http://{proxy_server}"
+                launch_options["proxy"] = {"server": proxy_server}
+                no_proxy = proxy.get("noProxy")
+                if no_proxy:
+                    launch_options["proxy"]["bypass"] = (
+                        ",".join(no_proxy) if isinstance(no_proxy, list) else str(no_proxy)
+                    )
+        downloads_path = downloads_path or preferences.get("download.default_directory")
         if downloads_path:
             launch_options["downloads_path"] = downloads_path
 
@@ -602,13 +882,62 @@ async def Open_Browser(step_data):
             context_options["permissions"] = permissions
         if color_scheme:
             context_options["color_scheme"] = color_scheme
+        if capabilities.get("acceptInsecureCerts") is not None:
+            context_options["ignore_https_errors"] = bool(
+                capabilities["acceptInsecureCerts"]
+            )
+
+        mobile_emulation = experimental_options.get("mobileEmulation")
+        if isinstance(mobile_emulation, dict):
+            device_name = mobile_emulation.get("deviceName")
+            if device_name:
+                device = playwright_instance.devices.get(device_name)
+                if not device:
+                    raise ValueError(f"Unknown Playwright device: {device_name}")
+                context_options.pop("no_viewport", None)
+                context_options.update(
+                    {
+                        key: value
+                        for key, value in device.items()
+                        if key != "default_browser_type"
+                    }
+                )
+            device_metrics = mobile_emulation.get("deviceMetrics", {})
+            if device_metrics:
+                context_options.pop("no_viewport", None)
+                context_options["viewport"] = {
+                    "width": device_metrics["width"],
+                    "height": device_metrics["height"],
+                }
+                context_options["device_scale_factor"] = device_metrics.get(
+                    "pixelRatio",
+                    1,
+                )
+                context_options["is_mobile"] = device_metrics.get("mobile", True)
+                context_options["has_touch"] = device_metrics.get("touch", True)
+            if mobile_emulation.get("userAgent"):
+                context_options["user_agent"] = mobile_emulation["userAgent"]
 
         extension_enabled = any(
             argument.startswith("--load-extension=") for argument in all_args
         )
-        if extension_enabled:
+        user_data_dir = (
+            _write_chrome_preferences(preferences)
+            if preferences and not debugger_address
+            else None
+        )
+        if debugger_address:
+            browser = await playwright_instance.chromium.connect_over_cdp(
+                debugger_endpoint
+            )
+            if not browser.contexts:
+                raise ValueError(
+                    f"No browser context found at debugger address {debugger_address}"
+                )
+            context = browser.contexts[0]
+        elif extension_enabled or user_data_dir:
             context = await playwright_instance.chromium.launch_persistent_context(
-                "",
+                user_data_dir or "",
                 **launch_options,
                 **context_options,
             )
@@ -628,19 +957,24 @@ async def Open_Browser(step_data):
             "browser": browser,
             "playwright": playwright_instance,
             "remote-debugging-port": unique_port,
-            "driver-path": str(driver_bin),
+            "driver-path": str(driver_bin) if driver_bin else None,
+            "user-data-dir": user_data_dir,
         }
 
         # Navigate if URL provided
         if url:
-            await current_page.goto(url, wait_until="domcontentloaded")
+            await current_page.goto(url, wait_until=wait_until)
             CommonUtil.ExecLog(sModuleInfo, f"Navigated to: {url}", 1)
 
         # Save to shared variables for compatibility
         sr.Set_Shared_Variables("playwright_page", current_page)
         sr.Set_Shared_Variables("playwright_context", context)
         sr.Set_Shared_Variables("playwright_browser", browser)
-        sr.Set_Shared_Variables("element_wait", timeout / 1000)  # In seconds
+        sr.Set_Shared_Variables(
+            "element_wait",
+            element_wait if element_wait is not None else timeout / 1000,
+        )
+        sr.Set_Shared_Variables("playwright_wait_until", wait_until)
         sr.Set_Shared_Variables("active_web_driver_type", "playwright")
         
         # Set screenshot variables for CommonUtil.TakeScreenShot()
@@ -658,7 +992,9 @@ async def Open_Browser(step_data):
             remote_debugging_port=unique_port,
         )
         session["selenium_cdp_supported"] = True
-        session["driver_path"] = str(driver_bin)
+        session["driver_path"] = str(driver_bin) if driver_bin else None
+        session["playwright_wait_until"] = wait_until
+        session["user_data_dir"] = user_data_dir
         sr.Set_Shared_Variables("browser_sessions", get_browser_sessions())
         CommonUtil.ExecLog(sModuleInfo, f"Created browser session: {page_id}", 5)
 
@@ -900,7 +1236,9 @@ async def Go_To_Link(step_data):
                     return "zeuz_failed"
 
         url = None
-        wait_until = "domcontentloaded"
+        wait_until = sr.Get_Shared_Variables("playwright_wait_until")
+        if wait_until in failed_tag_list:
+            wait_until = "domcontentloaded"
         timeout = None
         element_wait_sec = None
         window_size_x = None
@@ -937,6 +1275,11 @@ async def Go_To_Link(step_data):
                         window_size_y = int(parts[1].strip())
                     except (ValueError, IndexError):
                         pass
+            if (
+                mid_l in ("chromium option", "chrome option")
+                and left_compact == "pageloadstrategy"
+            ):
+                wait_until = _page_load_wait_until(right_v)
 
         if not url:
             CommonUtil.ExecLog(sModuleInfo, "No URL provided", 3)
@@ -1057,6 +1400,7 @@ async def Tear_Down_Playwright(step_data=None):
                             session_selenium.quit()
                         except Exception:
                             pass
+                    _cleanup_chrome_profile(existing_session.get("user_data_dir"))
                     
                     CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
                 except Exception:
@@ -1117,6 +1461,7 @@ async def Tear_Down_Playwright(step_data=None):
                         await details["browser"].close()
                     if details.get("playwright"):
                         await details["playwright"].stop()
+                    _cleanup_chrome_profile(details.get("user-data-dir"))
                 except Exception:
                     pass
 

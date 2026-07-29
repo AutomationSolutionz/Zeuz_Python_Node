@@ -782,11 +782,18 @@ class ChromeExtensionDownloader:
                 # Check CRX header
                 magic = f.read(4)
 
-                if magic == b"Cr24":  # CRX v3 format
-                    # Skip header (version + header length fields)
-                    f.read(8)
-                    header_length = struct.unpack("<I", f.read(4))[0]
-                    f.seek(16 + header_length)  # Skip to ZIP data
+                if magic == b"Cr24":
+                    version = struct.unpack("<I", f.read(4))[0]
+                    if version == 3:
+                        header_length = struct.unpack("<I", f.read(4))[0]
+                        f.seek(12 + header_length)
+                    elif version == 2:
+                        public_key_length, signature_length = struct.unpack(
+                            "<II", f.read(8)
+                        )
+                        f.seek(16 + public_key_length + signature_length)
+                    else:
+                        raise Exception(f"Unsupported CRX version: {version}")
                 elif magic[0:2] == b"PK":  # ZIP file format
                     f.seek(0)  # Rewind to start
                 else:

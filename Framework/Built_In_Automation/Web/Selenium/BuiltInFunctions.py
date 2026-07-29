@@ -1165,7 +1165,7 @@ def parse_and_verify_datatype(left: str, right: str, chrome_version=None):
             for ext_id in extension_ids:
                 downloader = ChromeExtensionDownloader(chrome_version=chrome_version)
                 result = downloader.setup_chrome_extension_download(extension_id=ext_id)
-                if result.get("crx_path"):
+                if result and result.get("crx_path"):
                     extension_crxs.append(result["crx_path"])
 
             return extension_crxs

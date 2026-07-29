@@ -1,4 +1,8 @@
 import asyncio
+import base64
+import json
+import struct
+import zipfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -203,6 +207,16 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
     context.browser = browser
     browser.new_context = AsyncMock(return_value=context)
     playwright = MagicMock()
+    playwright.devices = {
+        "Test Phone": {
+            "default_browser_type": "chromium",
+            "viewport": {"width": 390, "height": 844},
+            "device_scale_factor": 2,
+            "is_mobile": True,
+            "has_touch": True,
+            "user_agent": "Test Phone",
+        }
+    }
     playwright.chromium.launch = AsyncMock(return_value=browser)
     playwright.chromium.launch_persistent_context = AsyncMock(return_value=context)
     starter = MagicMock()
@@ -228,7 +242,30 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
 
     result = asyncio.run(
         playwright_bif.Open_Browser(
-            [("chrome:version", "optional parameter", "138.0.7204.92")]
+            [
+                ("chrome:version", "optional parameter", "138.0.7204.92"),
+                ("add argument", "chromium option", "['--disable-gpu']"),
+                (
+                    "add experimental option",
+                    "chromium option",
+                    "{'prefs': {'profile.test': 1}, "
+                    "'excludeSwitches': ['disable-popup-blocking'], "
+                    "'mobileEmulation': {'deviceName': 'Test Phone'}}",
+                ),
+                (
+                    "set preference",
+                    "chrome option",
+                    "{'download.prompt_for_download': False}",
+                ),
+                ("page load strategy", "chromium option", "normal"),
+                ("wait for element", "optional parameter", "17"),
+                (
+                    "capabilities",
+                    "shared capability",
+                    "{'acceptInsecureCerts': True, "
+                    "'proxy': {'httpProxy': 'proxy.test:8080'}}",
+                ),
+            ]
         )
     )
 
@@ -237,6 +274,11 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
     launch_options = playwright.chromium.launch_persistent_context.await_args.kwargs
     assert launch_options["executable_path"] == str(chrome_bin)
     assert launch_options["headless"] is False
+    assert "--disable-gpu" in launch_options["args"]
+    assert launch_options["ignore_default_args"] == ["--disable-popup-blocking"]
+    assert launch_options["ignore_https_errors"] is True
+    assert launch_options["viewport"] == {"width": 390, "height": 844}
+    assert launch_options["proxy"] == {"server": "http://proxy.test:8080"}
     assert set(selenium_bif.DEFAULT_CHROMIUM_ARGUMENTS + tuple(extension_args)) <= set(
         launch_options["args"]
     )
@@ -244,6 +286,14 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
     playwright.chromium.launch.assert_not_awaited()
     session = browser_utils.get_browser_session("default")
     assert session["driver_path"] == str(driver_bin)
+    assert session["playwright_wait_until"] == "load"
+    assert sr.Get_Shared_Variables("element_wait") == 17
+    user_data_dir = playwright.chromium.launch_persistent_context.await_args.args[0]
+    preferences = json.loads(
+        (Path(user_data_dir) / "Default" / "Preferences").read_text()
+    )
+    assert preferences["profile"]["test"] == 1
+    assert preferences["download"]["prompt_for_download"] is False
     assert asyncio.run(playwright_bif.Open_Browser([])) == "passed"
     cft.setup_chrome_for_testing.assert_called_once()
     playwright.chromium.launch_persistent_context.assert_awaited_once()
@@ -253,3 +303,67 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
     monkeypatch.setattr(playwright_bif, "connect_selenium_to_playwright", attach)
     assert selenium_bif._ensure_selenium_session("default", session) == "passed"
     attach.assert_called_once_with(port=9250, driver_path=str(driver_bin))
+    playwright_bif._cleanup_chrome_profile(user_data_dir)
+
+
+def test_playwright_unpacks_crx_and_encoded_extensions(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        playwright_bif.ChromeExtensionDownloader,
+        "CHROME_EXTENSIONS_DIR",
+        tmp_path / "cache",
+    )
+    zip_path = tmp_path / "extension.zip"
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.writestr("manifest.json", '{"manifest_version": 3, "name": "Test"}')
+    crx_payload = b"Cr24" + struct.pack("<II", 3, 0) + zip_path.read_bytes()
+    crx_path = tmp_path / "extension.crx"
+    crx_path.write_bytes(crx_payload)
+
+    extension_dirs = playwright_bif._unpack_playwright_extensions(
+        [crx_path],
+        [base64.b64encode(crx_payload).decode()],
+    )
+
+    assert len(extension_dirs) == 1
+    assert (Path(extension_dirs[0]) / "manifest.json").is_file()
+
+
+def test_playwright_supports_selenium_debugger_address(monkeypatch):
+    monkeypatch.setattr(playwright_bif.CommonUtil, "ExecLog", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        playwright_bif.CommonUtil,
+        "set_screenshot_vars",
+        lambda *args, **kwargs: None,
+    )
+    cft_factory = MagicMock(side_effect=AssertionError("CfT should not be resolved"))
+    monkeypatch.setattr(playwright_bif, "ChromeForTesting", cft_factory)
+    page = MagicMock()
+    context = MagicMock()
+    context.pages = [page]
+    browser = MagicMock()
+    browser.contexts = [context]
+    playwright = MagicMock()
+    playwright.chromium.connect_over_cdp = AsyncMock(return_value=browser)
+    starter = MagicMock()
+    starter.start = AsyncMock(return_value=playwright)
+    monkeypatch.setattr(playwright_bif, "async_playwright", lambda: starter)
+    sr.Set_Shared_Variables("dependency", {"Browser": "Chrome"})
+
+    result = asyncio.run(
+        playwright_bif.Open_Browser(
+            [
+                (
+                    "debugger address",
+                    "chromium option",
+                    "127.0.0.1:9333",
+                )
+            ]
+        )
+    )
+
+    assert result == "passed"
+    cft_factory.assert_not_called()
+    playwright.chromium.connect_over_cdp.assert_awaited_once_with(
+        "http://127.0.0.1:9333"
+    )
+    assert browser_utils.get_browser_session("default")["remote_debugging_port"] == 9333
