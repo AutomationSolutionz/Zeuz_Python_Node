@@ -250,7 +250,8 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
                     "chromium option",
                     "{'prefs': {'profile.test': 1}, "
                     "'excludeSwitches': ['disable-popup-blocking'], "
-                    "'mobileEmulation': {'deviceName': 'Test Phone'}}",
+                    "'mobileEmulation': {'deviceName': 'Test Phone'}, "
+                    "'localState': {'browser': {'test': True}}}",
                 ),
                 (
                     "set preference",
@@ -263,7 +264,8 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
                     "capabilities",
                     "shared capability",
                     "{'acceptInsecureCerts': True, "
-                    "'proxy': {'httpProxy': 'proxy.test:8080'}}",
+                    "'proxy': {'httpProxy': 'proxy.test:8080'}, "
+                    "'unhandledPromptBehavior': 'accept'}",
                 ),
             ]
         )
@@ -288,12 +290,17 @@ def test_playwright_uses_shared_cft_pair_for_selenium_attachment(monkeypatch):
     assert session["driver_path"] == str(driver_bin)
     assert session["playwright_wait_until"] == "load"
     assert sr.Get_Shared_Variables("element_wait") == 17
+    page.on.assert_called_once()
+    assert page.on.call_args.args[0] == "dialog"
     user_data_dir = playwright.chromium.launch_persistent_context.await_args.args[0]
     preferences = json.loads(
         (Path(user_data_dir) / "Default" / "Preferences").read_text()
     )
     assert preferences["profile"]["test"] == 1
     assert preferences["download"]["prompt_for_download"] is False
+    assert json.loads((Path(user_data_dir) / "Local State").read_text())[
+        "browser"
+    ]["test"] is True
     assert asyncio.run(playwright_bif.Open_Browser([])) == "passed"
     cft.setup_chrome_for_testing.assert_called_once()
     playwright.chromium.launch_persistent_context.assert_awaited_once()
@@ -390,13 +397,55 @@ def test_playwright_restores_non_cft_browser_launches(monkeypatch):
         return function(*args)
 
     monkeypatch.setattr(playwright_bif.asyncio, "to_thread", run_inline)
+    unpack_extensions = MagicMock(return_value=["/extensions/custom"])
+    monkeypatch.setattr(
+        playwright_bif,
+        "_unpack_playwright_extensions",
+        unpack_extensions,
+    )
 
     launches = {}
-    for requested_browser, browser_type_name in (
-        ("FirefoxHeadless", "firefox"),
-        ("webkit", "webkit"),
-        ("safari", "webkit"),
-        ("edge", "chromium"),
+    for requested_browser, browser_type_name, option_rows in (
+        (
+            "FirefoxHeadless",
+            "firefox",
+            [
+                ("add argument", "firefox option", "['--safe-mode']"),
+                ("set preference", "firefox option", "{'browser.test': True}"),
+                ("page load strategy", "firefox option", "normal"),
+                (
+                    "capabilities",
+                    "shared capability",
+                    "{'moz:firefoxOptions': {'args': ['--private'], "
+                    "'prefs': {'browser.shared': 1}}}",
+                ),
+            ],
+        ),
+        (
+            "webkit",
+            "webkit",
+            [("add argument", "safari option", "['--webkit-test']")],
+        ),
+        (
+            "safari",
+            "webkit",
+            [("add argument", "safari option", "['--safari-test']")],
+        ),
+        (
+            "edge",
+            "chromium",
+            [
+                ("add argument", "edge option", "['--edge-test']"),
+                ("set preference", "edge option", "{'profile.edge': True}"),
+                ("add encoded extension", "edge option", "['ZW5jb2RlZA==']"),
+                (
+                    "capabilities",
+                    "shared capability",
+                    "{'ms:edgeOptions': {'args': ['--edge-shared']}, "
+                    "'timeouts': {'implicit': 9000, 'pageLoad': 45000}}",
+                ),
+            ],
+        ),
     ):
         sr.shared_variables.clear()
         playwright_bif.current_page = None
@@ -413,18 +462,25 @@ def test_playwright_restores_non_cft_browser_launches(monkeypatch):
         playwright = MagicMock()
         for name in ("chromium", "firefox", "webkit"):
             getattr(playwright, name).launch = AsyncMock(return_value=browser)
+        playwright.chromium.launch_persistent_context = AsyncMock(
+            return_value=context
+        )
         starter = MagicMock()
         starter.start = AsyncMock(return_value=playwright)
         monkeypatch.setattr(playwright_bif, "async_playwright", lambda: starter)
 
         result = asyncio.run(
             playwright_bif.Open_Browser(
-                [("browser", "input parameter", requested_browser)]
+                [("browser", "input parameter", requested_browser)] + option_rows
             )
         )
 
         assert result == "passed"
-        launch = getattr(playwright, browser_type_name).launch
+        launch = (
+            playwright.chromium.launch_persistent_context
+            if requested_browser == "edge"
+            else getattr(playwright, browser_type_name).launch
+        )
         launch.assert_awaited_once()
         launches[requested_browser] = launch.await_args.kwargs
         session = browser_utils.get_browser_session("default")
@@ -436,5 +492,24 @@ def test_playwright_restores_non_cft_browser_launches(monkeypatch):
     assert installer.call_args_list[2].args[1] == "safari"
     assert installer.call_args_list[3].args[1] == "edge"
     assert launches["FirefoxHeadless"]["headless"] is True
+    assert launches["FirefoxHeadless"]["args"] == ["--safe-mode", "--private"]
+    assert launches["FirefoxHeadless"]["firefox_user_prefs"] == {
+        "browser.test": True,
+        "browser.shared": 1,
+    }
+    assert launches["webkit"]["args"] == ["--webkit-test"]
+    assert launches["safari"]["args"] == ["--safari-test"]
     assert launches["edge"]["channel"] == "msedge"
+    assert "--edge-test" in launches["edge"]["args"]
+    assert "--edge-shared" in launches["edge"]["args"]
+    assert "--load-extension=/extensions/custom" in launches["edge"]["args"]
+    edge_session = browser_utils.get_browser_session("default")
+    assert sr.Get_Shared_Variables("element_wait") == 9
+    user_data_dir = edge_session["user_data_dir"]
+    assert json.loads(
+        (Path(user_data_dir) / "Default" / "Preferences").read_text()
+    )["profile"]["edge"] is True
+    context.set_default_navigation_timeout.assert_called_with(45000)
+    playwright_bif._cleanup_chrome_profile(user_data_dir)
+    unpack_extensions.assert_called_once_with([], ["ZW5jb2RlZA=="])
     cft_factory.assert_not_called()

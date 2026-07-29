@@ -108,7 +108,7 @@ def _page_load_wait_until(strategy):
         ) from None
 
 
-def _write_chrome_preferences(preferences):
+def _write_chrome_preferences(preferences, local_state=None):
     """Write Selenium-style dotted Chrome preferences to a temporary profile."""
     nested_preferences = {}
     for key, value in preferences.items():
@@ -122,6 +122,8 @@ def _write_chrome_preferences(preferences):
     default_profile = user_data_dir / "Default"
     default_profile.mkdir()
     (default_profile / "Preferences").write_text(json.dumps(nested_preferences))
+    if local_state:
+        (user_data_dir / "Local State").write_text(json.dumps(local_state))
     return str(user_data_dir)
 
 
@@ -518,11 +520,7 @@ async def Open_Browser(step_data):
         headless = dependency_browser.replace(" ", "") == "chromeheadless"
         headless_explicit = False
         chrome_version = None
-        extension_values = []
-        encoded_extension_values = []
-        chromium_argument_values = []
-        experimental_option_values = []
-        preference_values = []
+        browser_option_rows = []
         shared_capability_values = []
         debugger_address = None
         page_load_strategy = "eager"
@@ -598,21 +596,14 @@ async def Open_Browser(step_data):
             left_compact = _compact(left_l)
             if left_compact == "chrome:version":
                 chrome_version = right_v
-            elif mid_l in ("chromium option", "chrome option"):
-                if left_compact == "addargument":
-                    chromium_argument_values.append(right_v)
-                elif left_compact == "addexperimentaloption":
-                    experimental_option_values.append(right_v)
-                elif left_compact == "addextension":
-                    extension_values.append(right_v)
-                elif left_compact == "addencodedextension":
-                    encoded_extension_values.append(right_v)
-                elif left_compact == "setpreference":
-                    preference_values.append(right_v)
-                elif left_compact == "pageloadstrategy":
-                    page_load_strategy = right_v
-                elif left_compact == "debuggeraddress":
-                    debugger_address = right_v
+            elif mid_l in (
+                "chromium option",
+                "chrome option",
+                "edge option",
+                "firefox option",
+                "safari option",
+            ):
+                browser_option_rows.append((left_compact, mid_l, right_v))
 
             if left_compact in (
                 "waittimetoappearelement",
@@ -646,52 +637,88 @@ async def Open_Browser(step_data):
 
         from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as SeleniumBuiltInFunctions
 
+        allowed_option_mids = {
+            "chrome": ("chromium option", "chrome option"),
+            "chromium": ("chromium option", "chrome option"),
+            "chrome-beta": ("chromium option", "chrome option"),
+            "edge": ("chromium option", "chrome option", "edge option"),
+            "firefox": ("firefox option",),
+            "webkit": ("safari option",),
+            "safari": ("safari option",),
+        }[browser_name]
+        extension_values = []
+        encoded_extension_values = []
+        experimental_options = {}
+        preferences = {}
+        firefox_preferences = {}
+        for left_compact, mid_l, right_v in browser_option_rows:
+            if mid_l not in allowed_option_mids:
+                continue
+            if left_compact == "addargument":
+                args.extend(
+                    SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                        "addargument",
+                        right_v,
+                    )
+                )
+            elif left_compact == "addexperimentaloption" and chromium_browser:
+                experimental_options.update(
+                    SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                        "addexperimentaloption",
+                        right_v,
+                    )
+                )
+            elif left_compact == "addextension" and chromium_browser:
+                extension_values.append(right_v)
+            elif left_compact == "addencodedextension" and chromium_browser:
+                encoded_extension_values.append(right_v)
+            elif left_compact == "setpreference":
+                target = firefox_preferences if browser_name == "firefox" else preferences
+                target.update(
+                    SeleniumBuiltInFunctions.parse_and_verify_datatype(
+                        "setpreference",
+                        right_v,
+                    )
+                )
+            elif left_compact == "pageloadstrategy":
+                page_load_strategy = right_v
+            elif left_compact == "debuggeraddress" and chromium_browser:
+                debugger_address = right_v
+
         capabilities = {}
         for value in shared_capability_values:
             parsed = CommonUtil.parse_value_into_object(value)
             if not isinstance(parsed, dict):
                 raise ValueError("shared capability must be a dictionary")
             capabilities.update(parsed)
+        if shared_cft_browser and not chrome_version:
+            capability_version = str(capabilities.get("browserVersion", "")).strip()
+            if capability_version:
+                chrome_version = capability_version
 
-        experimental_options = {}
-        for value in experimental_option_values:
-            experimental_options.update(
-                SeleniumBuiltInFunctions.parse_and_verify_datatype(
-                    "addexperimentaloption",
-                    value,
-                )
-            )
-        preferences = {}
-        for value in preference_values:
-            preferences.update(
-                SeleniumBuiltInFunctions.parse_and_verify_datatype(
-                    "setpreference",
-                    value,
-                )
-            )
-        for value in chromium_argument_values:
-            args.extend(
-                SeleniumBuiltInFunctions.parse_and_verify_datatype(
-                    "addargument",
-                    value,
-                )
-            )
-
-        chrome_options = capabilities.get("goog:chromeOptions", {})
-        if isinstance(chrome_options, dict):
-            args.extend(chrome_options.get("args", []))
-            if chrome_options.get("extensions"):
+        vendor_options = capabilities.get(
+            "ms:edgeOptions" if browser_name == "edge" else "goog:chromeOptions",
+            {},
+        )
+        if chromium_browser and isinstance(vendor_options, dict):
+            args.extend(vendor_options.get("args", []))
+            if vendor_options.get("extensions"):
                 encoded_extension_values.append(
-                    repr(chrome_options["extensions"])
+                    repr(vendor_options["extensions"])
                 )
             experimental_options.update(
                 {
                     key: value
-                    for key, value in chrome_options.items()
+                    for key, value in vendor_options.items()
                     if key not in ("args", "extensions")
                 }
             )
+        firefox_options = capabilities.get("moz:firefoxOptions", {})
+        if browser_name == "firefox" and isinstance(firefox_options, dict):
+            args.extend(firefox_options.get("args", []))
+            firefox_preferences.update(firefox_options.get("prefs", {}))
         preferences.update(experimental_options.get("prefs", {}))
+        local_state = experimental_options.get("localState", {})
         debugger_address = (
             debugger_address
             or experimental_options.get("debuggerAddress")
@@ -770,6 +797,10 @@ async def Open_Browser(step_data):
         }
         if chrome_bin:
             launch_options["executable_path"] = str(chrome_bin)
+        elif browser_name == "edge":
+            launch_options["channel"] = "msedge"
+        if firefox_preferences:
+            launch_options["firefox_user_prefs"] = firefox_preferences
         
         # Add remote debugging port for CDP connection with unique port per session
         if debugger_address:
@@ -788,15 +819,17 @@ async def Open_Browser(step_data):
 
         extension_files = []
         encoded_extensions = []
-        if shared_cft_browser and not debugger_address:
-            resolved_chrome_version = next(
-                (
-                    parent.name
-                    for parent in Path(chrome_bin).parents
-                    if parent.parent.name == "versions"
-                ),
-                chrome_version,
-            )
+        if chromium_browser and not debugger_address:
+            resolved_chrome_version = chrome_version
+            if chrome_bin:
+                resolved_chrome_version = next(
+                    (
+                        parent.name
+                        for parent in Path(chrome_bin).parents
+                        if parent.parent.name == "versions"
+                    ),
+                    chrome_version,
+                )
             for value in extension_values:
                 extension_files.extend(
                     SeleniumBuiltInFunctions.parse_and_verify_datatype(
@@ -814,13 +847,19 @@ async def Open_Browser(step_data):
                 )
         extension_dirs = (
             _unpack_playwright_extensions(extension_files, encoded_extensions)
-            if shared_cft_browser
+            if chromium_browser
             else []
         )
 
-        selenium_browser_name = "chromeheadless" if headless else "chrome"
+        selenium_browser_name = (
+            "microsoft edge chromium"
+            if browser_name == "edge"
+            else "chromeheadless"
+            if headless
+            else "chrome"
+        )
         zeuz_extension_args = []
-        if shared_cft_browser and not debugger_address:
+        if chromium_browser and not debugger_address:
             zeuz_extension_args = (
                 SeleniumBuiltInFunctions.get_zeuz_ai_extension_arguments(
                     selenium_browser_name
@@ -854,11 +893,7 @@ async def Open_Browser(step_data):
         all_args = []
         if chromium_browser and not debugger_address:
             all_args = (
-                (
-                    list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
-                    if shared_cft_browser
-                    else []
-                )
+                list(SeleniumBuiltInFunctions.DEFAULT_CHROMIUM_ARGUMENTS)
                 + args
                 + extension_args
                 + [f"--remote-debugging-port={unique_port}"]
@@ -958,14 +993,12 @@ async def Open_Browser(step_data):
             if mobile_emulation.get("userAgent"):
                 context_options["user_agent"] = mobile_emulation["userAgent"]
 
-        extension_enabled = shared_cft_browser and any(
+        extension_enabled = chromium_browser and any(
             argument.startswith("--load-extension=") for argument in all_args
         )
-        user_data_dir = (
-            _write_chrome_preferences(preferences)
-            if shared_cft_browser and preferences and not debugger_address
-            else None
-        )
+        user_data_dir = None
+        if chromium_browser and (preferences or local_state) and not debugger_address:
+            user_data_dir = _write_chrome_preferences(preferences, local_state)
         if debugger_address:
             browser = await playwright_instance.chromium.connect_over_cdp(
                 debugger_endpoint
@@ -991,13 +1024,43 @@ async def Open_Browser(step_data):
                 browser_type = playwright_instance.webkit
             else:
                 browser_type = playwright_instance.chromium
-                launch_options["channel"] = "msedge"
             browser = await browser_type.launch(**launch_options)
             context = await browser.new_context(**context_options)
 
         context.set_default_timeout(timeout)
+        capability_timeouts = capabilities.get("timeouts", {})
+        if isinstance(capability_timeouts, dict):
+            context.set_default_navigation_timeout(
+                capability_timeouts.get("pageLoad", timeout)
+            )
+            if element_wait is None and capability_timeouts.get("implicit") is not None:
+                element_wait = float(capability_timeouts["implicit"]) / 1000
         current_page = context.pages[0] if context.pages else await context.new_page()
         current_page_id = page_id
+        prompt_behavior = str(
+            capabilities.get("unhandledPromptBehavior", "")
+        ).strip().lower()
+        if prompt_behavior:
+            if prompt_behavior.startswith("accept"):
+                async def handle_dialog(dialog):
+                    await dialog.accept()
+            elif prompt_behavior.startswith("dismiss"):
+                async def handle_dialog(dialog):
+                    await dialog.dismiss()
+            elif prompt_behavior == "ignore":
+                def handle_dialog(dialog):
+                    pass
+            else:
+                raise ValueError(
+                    "unhandledPromptBehavior must be accept, dismiss, "
+                    "accept and notify, dismiss and notify, or ignore"
+                )
+
+            def configure_dialog_handler(page):
+                page.on("dialog", handle_dialog)
+
+            configure_dialog_handler(current_page)
+            context.on("page", configure_dialog_handler)
 
         # Store in details
         playwright_details[page_id] = {
