@@ -5259,6 +5259,7 @@ async def Wait_For_Element(step_data):
         explicit_state = None
         timeout_sec = None
         allow_hidden = False
+        selenium_compatibility = False
 
         for left, mid, right in step_data:
             left_l = left.strip().lower()
@@ -5276,6 +5277,7 @@ async def Wait_For_Element(step_data):
             elif mid_l in ("optional parameter", "option") and left_l == "allow hidden":
                 allow_hidden = right_v.lower() in ("yes", "true", "ok", "enable", "enabled", "1")
             elif "action" in mid_l and left_l in ("wait", "wait disable", "wait for element"):
+                selenium_compatibility = mid_l == "selenium action"
                 if left_l == "wait disable":
                     inferred_state = "hidden"
                 # Selenium-style: action value carries the timeout in seconds.
@@ -5302,6 +5304,33 @@ async def Wait_For_Element(step_data):
                 timeout_sec = 10
 
         timeout_ms = int(timeout_sec * 1000)
+
+        if selenium_compatibility and explicit_state is None and not allow_hidden:
+            if state == "visible":
+                locator = await PlaywrightLocator.Get_Element(
+                    step_data,
+                    current_page,
+                    element_wait=timeout_sec,
+                )
+                if locator == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Timeout waiting for element to be visible", 3)
+                    return "zeuz_failed"
+                CommonUtil.ExecLog(sModuleInfo, "Element reached Selenium-compatible state: visible", 1)
+                return "passed"
+
+            end = time.monotonic() + timeout_sec
+            while time.monotonic() < end:
+                locator = await PlaywrightLocator.Get_Element(
+                    step_data,
+                    current_page,
+                    element_wait=min(0.2, end - time.monotonic()),
+                )
+                if locator == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Element reached Selenium-compatible state: hidden", 1)
+                    return "passed"
+                await asyncio.sleep(min(0.1, max(end - time.monotonic(), 0)))
+            CommonUtil.ExecLog(sModuleInfo, "Timeout waiting for element to be hidden", 3)
+            return "zeuz_failed"
 
         try:
             locator = await PlaywrightLocator.Get_Element(step_data, current_page)
