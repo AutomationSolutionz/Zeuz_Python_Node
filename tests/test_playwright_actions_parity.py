@@ -9,12 +9,18 @@ from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as pw
 
 
 class FakePage:
-    def __init__(self):
+    def __init__(self, locator_result=None):
         self.url = "https://example.test/current"
         self.viewport_size = {"width": 1000, "height": 800}
         self.evaluated = []
         self.keyboard = FakeKeyboard()
         self.mouse = FakeMouse()
+        self.locator_result = locator_result
+        self.queries = []
+
+    def locator(self, query):
+        self.queries.append(query)
+        return self.locator_result
 
     async def evaluate(self, script, arg=None):
         self.evaluated.append((script, arg))
@@ -47,12 +53,13 @@ class FakeMouse:
 
 
 class FakeLocator:
-    def __init__(self, text=""):
+    def __init__(self, text="", selenium_displayed=True):
         self.text = text
         self.evaluated = []
         self.files = None
         self.calls = []
         self.wait_calls = []
+        self.selenium_displayed = selenium_displayed
 
     async def inner_text(self):
         return self.text
@@ -68,6 +75,8 @@ class FakeLocator:
 
     async def evaluate(self, script, arg=None, **kwargs):
         self.evaluated.append((script, arg, kwargs))
+        if "apply(null, [element])" in script:
+            return self.selenium_displayed
         return "locator-result"
 
     async def get_attribute(self, name):
@@ -118,6 +127,18 @@ class FakeLocator:
 
     async def wait_for(self, **kwargs):
         self.wait_calls.append(kwargs)
+
+    def filter(self, **kwargs):
+        self.calls.append(("filter", kwargs))
+        return self
+
+    @property
+    def first(self):
+        return self
+
+    def nth(self, index):
+        self.calls.append(("nth", index))
+        return self
 
     async def count(self):
         self.calls.append(("count",))
@@ -591,8 +612,10 @@ def test_selenium_conditional_uses_playwright_when_runtime_driver_set(monkeypatc
 
 def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):
     locator = FakeLocator()
+    calls = []
 
     async def fake_get_element(*args, **kwargs):
+        calls.append(kwargs)
         return locator
 
     monkeypatch.setattr(pw.PlaywrightLocator, "Get_Element", fake_get_element)
@@ -607,7 +630,49 @@ def test_legacy_wait_defaults_to_visible_with_action_timeout(monkeypatch):
     )
 
     assert result == "passed"
-    assert locator.wait_calls == [{"state": "visible", "timeout": 150000}]
+    assert calls == [{"element_wait": 150.0}]
+    assert locator.wait_calls == []
+
+
+def test_routed_legacy_wait_uses_single_shared_locator_wait():
+    locator = FakeLocator()
+    pw.current_page = FakePage(locator)
+    sr.Set_Shared_Variables("element_wait", 60)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("*class", "parent parameter", "navbar-expand-lg container-fluid navbar"),
+                ("*class", "element parameter", "small-nav"),
+                ("wait", "selenium action", "30"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert pw.current_page.queries == [
+        'xpath=//*[contains(@class,"small-nav")][(ancestor::*[contains(@class,"navbar-expand-lg container-fluid navbar")])[last()]]'
+    ]
+    assert locator.evaluated
+    assert locator.wait_calls == []
+
+
+def test_routed_legacy_wait_disable_uses_selenium_displayedness():
+    locator = FakeLocator(selenium_displayed=False)
+    pw.current_page = FakePage(locator)
+
+    result = asyncio.run(
+        pw.Wait_For_Element(
+            [
+                ("id", "element parameter", "hidden"),
+                ("wait disable", "selenium action", "0.1"),
+            ]
+        )
+    )
+
+    assert result == "passed"
+    assert locator.evaluated
+    assert locator.wait_calls == []
 
 
 def test_legacy_wait_with_allow_hidden_waits_for_attached(monkeypatch):

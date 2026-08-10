@@ -7,7 +7,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 
 
 class FakeLocator:
-    def __init__(self, name="root", count=1, texts=None, text="", stats=None):
+    def __init__(self, name="root", count=1, texts=None, text="", stats=None, selenium_displayed=True):
         self.name = name
         self._count = count
         self.texts = texts or []
@@ -17,29 +17,30 @@ class FakeLocator:
         self.nth_index = None
         self.queries = []
         self.children = {}
+        self.selenium_displayed = selenium_displayed
 
     def locator(self, query):
         self.queries.append(query)
         child = self.children.get(query)
         if child:
             return child
-        return FakeLocator(f"{self.name}.locator({query})", self._count, self.texts, self.text, self.stats)
+        return FakeLocator(f"{self.name}.locator({query})", self._count, self.texts, self.text, self.stats, self.selenium_displayed)
 
     def filter(self, **kwargs):
-        filtered = FakeLocator(f"{self.name}.filter", self._count, self.texts, self.text, self.stats)
+        filtered = FakeLocator(f"{self.name}.filter", self._count, self.texts, self.text, self.stats, self.selenium_displayed)
         filtered.filtered = kwargs.get("visible") is True
         return filtered
 
     @property
     def first(self):
         text = self.texts[0] if self.texts else self.text
-        first = FakeLocator(f"{self.name}.first", min(self._count, 1), self.texts, text, self.stats)
+        first = FakeLocator(f"{self.name}.first", min(self._count, 1), self.texts, text, self.stats, self.selenium_displayed)
         first.filtered = self.filtered
         return first
 
     def nth(self, index):
         text = self.texts[index] if 0 <= index < len(self.texts) else self.text
-        nth = FakeLocator(f"{self.name}.nth({index})", 1, self.texts, text, self.stats)
+        nth = FakeLocator(f"{self.name}.nth({index})", 1, self.texts, text, self.stats, self.selenium_displayed)
         nth.nth_index = index
         nth.filtered = self.filtered
         nth.queries = self.queries
@@ -60,6 +61,10 @@ class FakeLocator:
 
     async def text_content(self):
         return self.text
+
+    async def evaluate(self, expression, **kwargs):
+        self.stats["evaluate"] = self.stats.get("evaluate", 0) + 1
+        return self.selenium_displayed
 
 
 class FakePage:
@@ -100,6 +105,61 @@ def test_normal_playwright_action_returns_lazy_visible_first_locator():
     assert result.name.endswith(".filter.first")
     assert result.filtered is True
     assert fake_locator.stats == {"wait": 0, "count": 0}
+
+
+def test_regular_action_row_forms_return_lazy_relationship_locator():
+    expected_query = 'xpath=//*[contains(@class,"small-nav")][(ancestor::*[contains(@class,"navbar-expand-lg container-fluid navbar")])[last()]]'
+
+    for action_subfield in ("action", "playwright action"):
+        fake_locator = FakeLocator(count=1)
+        page = FakePage(fake_locator)
+
+        result = run(
+            LocateElement.Get_Element(
+                [
+                    ("*class", "parent parameter", "navbar-expand-lg container-fluid navbar"),
+                    ("*class", "element parameter", "small-nav"),
+                    ("wait", action_subfield, "30"),
+                ],
+                page,
+            )
+        )
+
+        assert page.queries == [expected_query]
+        assert result.name.endswith(".filter.first")
+        assert fake_locator.stats == {"wait": 0, "count": 0}
+
+
+def test_selenium_action_uses_selenium_displayedness_for_relationship_locator():
+    fake_locator = FakeLocator(count=1)
+    page = FakePage(fake_locator)
+
+    result = run(
+        LocateElement.Get_Element(
+            [
+                ("*class", "parent parameter", "navbar-expand-lg container-fluid navbar"),
+                ("*class", "element parameter", "small-nav"),
+                ("wait", "selenium action", "30"),
+            ],
+            page,
+            element_wait=1,
+        )
+    )
+
+    assert result.nth_index == 0
+    assert fake_locator.stats == {"wait": 0, "count": 1, "evaluate": 1}
+
+
+def test_selenium_action_rejects_element_hidden_by_selenium_displayedness():
+    result = run(
+        LocateElement.Get_Element(
+            [("id", "element parameter", "hidden"), ("wait", "selenium action", "1")],
+            FakePage(FakeLocator(selenium_displayed=False)),
+            element_wait=0.01,
+        )
+    )
+
+    assert result == "zeuz_failed"
 
 
 def test_conditional_non_action_lookup_resolves_and_fails_on_no_match():

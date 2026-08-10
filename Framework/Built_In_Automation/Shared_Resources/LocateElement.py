@@ -4,6 +4,7 @@
 Created on Jun 21, 2017
 @author: Built_In_Automation Solutionz Inc.
 """
+import asyncio
 import sys, time, re
 import inspect
 import traceback
@@ -19,6 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from appium.webdriver.common.appiumby import AppiumBy
 import selenium
+from selenium.webdriver.remote import webelement as selenium_webelement
 from xml.etree.ElementTree import tostring, fromstring
 global WebDriver_Wait
 WebDriver_Wait = 2
@@ -1280,9 +1282,19 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
                 else:
                     return "zeuz_failed"
 
+                if (
+                    _has_selenium_action_row(data_set)
+                    and Filter != "allow hidden"
+                    and not return_all_elements
+                    and index_number is None
+                    and not _has_text_filter(data_set)
+                    and not _has_explicit_wait_state(data_set)
+                ):
+                    return await _first_selenium_displayed_locator(locator, element_wait)
+
                 effective_locator = locator if Filter == "allow hidden" else locator.filter(visible=True)
                 if (
-                    _has_action_row(data_set, "playwright action")
+                    _has_browser_action_row(data_set)
                     and not return_all_elements
                     and index_number is None
                     and not _has_text_filter(data_set)
@@ -1429,8 +1441,60 @@ def _first_locator(locator):
     return first() if callable(first) else first
 
 
-def _has_action_row(data_set, action_subfield):
-    return any(action_subfield in str(mid).strip().lower() for _left, mid, _right in data_set)
+def _has_browser_action_row(data_set):
+    return any(
+        str(mid).strip().lower() in ("action", "selenium action", "playwright action")
+        for _left, mid, _right in data_set
+    )
+
+
+def _has_selenium_action_row(data_set):
+    return any(
+        str(mid).strip().lower() == "selenium action"
+        for _left, mid, _right in data_set
+    )
+
+
+def _has_explicit_wait_state(data_set):
+    return any(
+        str(left).strip().lower() in ("wait", "state")
+        and str(mid).strip().lower() == "input parameter"
+        for left, mid, _right in data_set
+    )
+
+
+def _selenium_is_displayed_expression():
+    if selenium_webelement.isDisplayed_js is None:
+        selenium_webelement._load_js()
+    return f"(element) => ({selenium_webelement.isDisplayed_js}).apply(null, [element])"
+
+
+async def _first_selenium_displayed_locator(locator, element_wait):
+    end = time.monotonic() + float(element_wait)
+    expression = _selenium_is_displayed_expression()
+
+    while True:
+        remaining = end - time.monotonic()
+        if remaining <= 0:
+            return "zeuz_failed"
+
+        try:
+            count = await locator.count()
+        except Exception:
+            count = 0
+
+        for index in range(count):
+            candidate = locator.nth(index)
+            try:
+                if await candidate.evaluate(
+                    expression,
+                    timeout=min(remaining * 1000, 250),
+                ):
+                    return candidate
+            except Exception:
+                pass
+
+        await asyncio.sleep(min(0.1, remaining))
 
 
 def _has_text_filter(data_set):
