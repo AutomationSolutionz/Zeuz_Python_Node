@@ -1358,9 +1358,12 @@ async def Go_To_Link(step_data):
                     return "zeuz_failed"
 
         url = None
-        wait_until = sr.Get_Shared_Variables("playwright_wait_until")
-        if wait_until in failed_tag_list:
-            wait_until = "domcontentloaded"
+        wait_until = get_browser_session(
+            session_name or current_page_id or "default"
+        ).get(
+            "playwright_wait_until",
+            sr.shared_variables.get("playwright_wait_until", "domcontentloaded"),
+        )
         timeout = None
         element_wait_sec = None
         window_size_x = None

@@ -37,13 +37,25 @@ def test_browser_session_and_runtime_parameter_survive_tc_cleanup():
     playwright_bif.CommonUtil.global_var["zeuz_browser_driver"] = "run-1"
     sr.Set_Shared_Variables("temporary", "remove me")
     page = MagicMock()
-    browser_utils.create_browser_session("default", playwright_page=page)
+    page.goto = AsyncMock()
+    session = browser_utils.create_browser_session("default", playwright_page=page)
+    session["playwright_wait_until"] = "load"
+    playwright_bif.current_page = page
+    playwright_bif.current_page_id = "default"
 
     assert sr.Clean_Up_Shared_Variables("run-1") == "passed"
 
     assert browser_utils.get_browser_session("default")["playwright_page"] is page
     assert sr.Get_Shared_Variables("zeuz_browser_driver") == "playwright"
     assert not sr.Test_Shared_Variables("temporary")
+    assert asyncio.run(
+        playwright_bif.Go_To_Link(
+            [("go to link", "playwright action", "https://example.test")]
+        )
+    ) == "passed"
+    page.goto.assert_awaited_once_with(
+        "https://example.test", wait_until="load"
+    )
 
 
 def test_main_driver_serializes_overlapping_runs(monkeypatch):
