@@ -819,7 +819,7 @@ async def for_loop_action(step_data, data_set_no):
                 values = get_data_set_nums(sr.get_previous_response_variables_in_strings(row[2].strip()), step_loop)
                 if step_loop:
                     loop_steps = [list(range(len(CommonUtil.all_step_dataset[i]))) if i in values else [] for i in list(range(len(CommonUtil.all_step_dataset)))]
-                    CommonUtil.disabled_step += [i+1 for i in values]
+                    CommonUtil.loop_consumed_step += [i+1 for i in values]
                 else:
                     loop_steps[step_index] += values
                 # outer_skip += loop_this_data_sets
@@ -934,6 +934,13 @@ async def for_loop_action(step_data, data_set_no):
             sr.Set_Shared_Variables(each_varname, each_val)
             for step_cnt, each_step in enumerate(loop_steps):
                 if len(each_step) == 0: continue
+                if (step_cnt + 1) in CommonUtil.disabled_step:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "STEP-%s is disabled. Skipping execution inside step loop" % (step_cnt + 1),
+                        2
+                    )
+                    continue
                 inner_skip = []
                 outer_skip = each_step
                 CommonUtil.current_step_no = str(step_cnt+1)
@@ -1041,11 +1048,9 @@ async def for_loop_action(step_data, data_set_no):
                             CommonUtil.ExecLog(sModuleInfo, "Condition matched. Continuing to next iteration", 1)
                             cont_break = True
                             break
-
                     if step_exit_fail_called or step_exit_pass_called:
                         die = True
                         break
-
                 if die or cont_break:
                     break
             if die:

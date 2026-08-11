@@ -641,7 +641,7 @@ async def run_all_test_steps_in_a_test_case(
             sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
-            if StepSeq in CommonUtil.disabled_step or not this_step['step_enable']:
+            if StepSeq in CommonUtil.disabled_step or StepSeq in CommonUtil.loop_consumed_step or not this_step['step_enable']:
                 CommonUtil.ExecLog(sModuleInfo, "STEP-%s is disabled" % StepSeq, 2)
                 sStepResult = "skipped"
             elif CommonUtil.testcase_exit:
@@ -2110,6 +2110,7 @@ async def main(device_dict, all_run_id_info):
                     }
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid, run_id=run_id)
                     CommonUtil.disabled_step = []
+                    CommonUtil.loop_consumed_step = []
                     CommonUtil.testcase_exit = ""
 
                     # Download test case and step attachments
