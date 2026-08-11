@@ -1389,7 +1389,9 @@ def Clean_Up_Shared_Variables(run_id):
         global shared_variables
         temp = {}
         for var in shared_variables:
-            if var in CommonUtil.global_var and CommonUtil.global_var[var] == run_id:
+            if var == "browser_sessions" or (
+                var in CommonUtil.global_var and CommonUtil.global_var[var] == run_id
+            ):
                 temp[var] = shared_variables[var]
         shared_variables = temp
         return "passed"

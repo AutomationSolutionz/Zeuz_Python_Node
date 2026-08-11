@@ -204,6 +204,12 @@ async def _ensure_playwright_session(session_name, existing_session):
     global playwright_details
 
     if existing_session and existing_session.get("playwright_page"):
+        page = existing_session["playwright_page"]
+        try:
+            if callable(getattr(page, "is_closed", None)) and page.is_closed() is True:
+                return "zeuz_failed"
+        except Exception:
+            return "zeuz_failed"
         _set_active_playwright_session(session_name, existing_session)
         return "passed"
 
@@ -759,6 +765,10 @@ async def Open_Browser(step_data):
                     sr.Set_Shared_Variables("element_wait", element_wait)
                 CommonUtil.ExecLog(sModuleInfo, f"Using existing browser session: {page_id}", 1)
                 return "passed"
+            if existing_session.get("playwright_page"):
+                await Tear_Down_Playwright(
+                    [("session", "optional parameter", page_id)]
+                )
 
         if not shared_cft_browser:
             browser_ready = await asyncio.to_thread(
@@ -1491,33 +1501,36 @@ async def Tear_Down_Playwright(step_data=None):
             existing_session = get_browser_session(session_name)
             
             if existing_session and existing_session.get("playwright_page"):
+                cleanup_failed = False
+                for resource in (
+                    existing_session.get("playwright_page"),
+                    existing_session.get("playwright_context"),
+                    existing_session.get("playwright_browser"),
+                ):
+                    try:
+                        if resource:
+                            await resource.close()
+                    except Exception:
+                        cleanup_failed = True
                 try:
-                    # Close the specific session's page and context
-                    session_page = existing_session["playwright_page"]
-                    session_context = existing_session["playwright_context"]
-                    session_browser = existing_session["playwright_browser"]
-                    session_playwright = existing_session.get("playwright_instance")
-                    session_selenium = existing_session.get("selenium_driver")
-                    
-                    if session_page:
-                        await session_page.close()
-                    if session_context:
-                        await session_context.close()
-                    if session_browser:
-                        await session_browser.close()
-                    if session_playwright:
-                        await session_playwright.stop()
-                    if session_selenium and session_selenium != "zeuz_failed":
-                        try:
-                            session_selenium.quit()
-                        except Exception:
-                            pass
-                    _cleanup_chrome_profile(existing_session.get("user_data_dir"))
-                    
-                    CommonUtil.ExecLog(sModuleInfo, f"Teared down session '{session_name}'", 1)
+                    if existing_session.get("playwright_instance"):
+                        await existing_session["playwright_instance"].stop()
                 except Exception:
-                    errMsg = f"Unable to tear down session '{session_name}'. may already been killed"
-                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+                    cleanup_failed = True
+                try:
+                    session_selenium = existing_session.get("selenium_driver")
+                    if session_selenium and session_selenium != "zeuz_failed":
+                        session_selenium.quit()
+                except Exception:
+                    cleanup_failed = True
+                _cleanup_chrome_profile(existing_session.get("user_data_dir"))
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Teared down session '{session_name}'"
+                    if not cleanup_failed
+                    else f"Session '{session_name}' was already partially closed",
+                    1 if not cleanup_failed else 2,
+                )
                 
                 remove_browser_session(session_name)
                 

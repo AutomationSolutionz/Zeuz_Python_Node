@@ -237,6 +237,8 @@ def _align_selenium_to_playwright_page(session: dict):
         return
 
     try:
+        if selenium_driver.current_url == target_url:
+            return
         current_handle = selenium_driver.current_window_handle
         for handle in selenium_driver.window_handles:
             selenium_driver.switch_to.window(handle)
@@ -298,6 +300,7 @@ async def hydrate_browser_compatibility_globals(step_data=None):
         return "zeuz_failed"
 
     previous_active_type = sr.shared_variables.get("active_web_driver_type")
+    attached_driver = None
 
     try:
         if session.get("playwright_page") and not session.get("selenium_driver"):
@@ -323,6 +326,8 @@ async def hydrate_browser_compatibility_globals(step_data=None):
                         f"Could not hydrate Selenium globals for browser session '{session_name}'",
                         2,
                     )
+                else:
+                    attached_driver = "selenium"
 
         session = get_browser_session(session_name)
         if session.get("selenium_driver") and not session.get("playwright_page"):
@@ -340,6 +345,8 @@ async def hydrate_browser_compatibility_globals(step_data=None):
                         f"Could not hydrate Playwright globals for browser session '{session_name}'",
                         2,
                     )
+                else:
+                    attached_driver = "playwright"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -349,8 +356,12 @@ async def hydrate_browser_compatibility_globals(step_data=None):
 
         session = get_browser_session(session_name)
         if isinstance(session, dict):
-            _align_selenium_to_playwright_page(session)
-            await _align_playwright_to_selenium_window(session_name, session)
+            if attached_driver == "selenium" or (
+                not attached_driver and previous_active_type == "playwright"
+            ):
+                _align_selenium_to_playwright_page(session)
+            elif attached_driver == "playwright" or previous_active_type == "selenium":
+                await _align_playwright_to_selenium_window(session_name, session)
 
         if isinstance(session, dict):
             _set_browser_shared_variables(session)

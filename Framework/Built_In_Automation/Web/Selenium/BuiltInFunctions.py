@@ -182,7 +182,11 @@ def _set_active_selenium_session(session_name, session):
 def _ensure_selenium_session(session_name, existing_session):
     """Activate an existing Selenium session or lazily attach to a Playwright one."""
 
-    if existing_session and existing_session.get("selenium_driver"):
+    if (
+        existing_session
+        and existing_session.get("selenium_driver")
+        and getattr(existing_session["selenium_driver"], "session_id", True)
+    ):
         _set_active_selenium_session(session_name, existing_session)
         return "passed"
 

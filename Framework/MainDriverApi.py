@@ -93,6 +93,10 @@ device_info = {}
 # if other linked machine failed in a linked run
 failed_due_to_linked_fail = False
 
+# ponytail: MainDriver uses process-wide browser and report state; isolate that
+# state per run before allowing concurrent executions in one Node process.
+_main_execution_lock = asyncio.Lock()
+
 
 def post_runid_cleanup():
     """Run node cleanup tasks that should execute after each run_id."""
@@ -2039,7 +2043,6 @@ async def main(device_dict, all_run_id_info):
 
             if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
-            CommonUtil.global_var["zeuz_auto_teardown"] = run_id
 
             if not CommonUtil.debug_status and _auto_teardown_at_run_start() and _payload_contains_selected_test_case(run_id_info, 0):
                 await cleanup_driver_instances()
@@ -2060,6 +2063,23 @@ async def main(device_dict, all_run_id_info):
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
             global_attachment = GlobalAttachment()
             shared.Set_Shared_Variables("global_attachments", global_attachment)
+            CommonUtil.global_var.update(
+                dict.fromkeys(
+                    (
+                        "dependency",
+                        "mobile_execution",
+                        "run_time_params",
+                        *final_run_params,
+                        "zeuz_auto_teardown",
+                        "zeuz_collect_browser_log",
+                        "zeuz_enable_variable_logging",
+                        "run_id",
+                        "node_id",
+                        "global_attachments",
+                    ),
+                    run_id,
+                )
+            )
 
             all_testcases_info = run_id_info["test_cases"]
             TestSetStartTime = time.time()
@@ -2297,6 +2317,14 @@ async def main(device_dict, all_run_id_info):
     except:
         CommonUtil.debug_code_error(sys.exc_info())
         return None
+
+
+_run_main = main
+
+
+async def main(device_dict, all_run_id_info):
+    async with _main_execution_lock:
+        return await _run_main(device_dict, all_run_id_info)
 
 
 

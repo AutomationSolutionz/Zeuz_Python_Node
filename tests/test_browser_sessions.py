@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+from Framework import MainDriverApi
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
@@ -18,6 +19,7 @@ from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selen
 
 def setup_function():
     sr.shared_variables.clear()
+    playwright_bif.CommonUtil.global_var.clear()
     selenium_bif.selenium_driver = None
     selenium_bif.current_driver_id = None
     selenium_bif.selenium_details = {}
@@ -25,7 +27,119 @@ def setup_function():
     playwright_bif.current_page_id = None
     playwright_bif.context = None
     playwright_bif.browser = None
+    playwright_bif.playwright_instance = None
     playwright_bif.playwright_details = {}
+
+
+def test_browser_session_and_runtime_parameter_survive_tc_cleanup():
+    sr.Set_Shared_Variables("run_id", "run-1")
+    sr.Set_Shared_Variables("zeuz_browser_driver", "playwright")
+    playwright_bif.CommonUtil.global_var["zeuz_browser_driver"] = "run-1"
+    sr.Set_Shared_Variables("temporary", "remove me")
+    page = MagicMock()
+    browser_utils.create_browser_session("default", playwright_page=page)
+
+    assert sr.Clean_Up_Shared_Variables("run-1") == "passed"
+
+    assert browser_utils.get_browser_session("default")["playwright_page"] is page
+    assert sr.Get_Shared_Variables("zeuz_browser_driver") == "playwright"
+    assert not sr.Test_Shared_Variables("temporary")
+
+
+def test_main_driver_serializes_overlapping_runs(monkeypatch):
+    active = 0
+    peak = 0
+
+    async def fake_main(*_args):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return "pass"
+
+    async def run_both():
+        monkeypatch.setattr(MainDriverApi, "_main_execution_lock", asyncio.Lock())
+        return await asyncio.gather(
+            MainDriverApi.main({}, []), MainDriverApi.main({}, [])
+        )
+
+    monkeypatch.setattr(MainDriverApi, "_run_main", fake_main)
+
+    assert asyncio.run(run_both()) == ["pass", "pass"]
+    assert peak == 1
+
+
+def test_browser_hydration_attaches_once_and_aligns_from_active_driver(monkeypatch):
+    page = MagicMock()
+    page.url = "https://example.test"
+    session = browser_utils.create_browser_session(
+        "default",
+        playwright_page=page,
+        playwright_context=MagicMock(),
+        playwright_browser=MagicMock(),
+    )
+    sr.Set_Shared_Variables("active_web_driver_type", "playwright")
+    driver = MagicMock()
+    driver.current_url = page.url
+
+    def attach(_session_name, existing_session):
+        existing_session["selenium_driver"] = driver
+        return "passed"
+
+    ensure_selenium = MagicMock(side_effect=attach)
+    align_selenium = MagicMock()
+    align_playwright = AsyncMock()
+    monkeypatch.setattr(selenium_bif, "_ensure_selenium_session", ensure_selenium)
+    monkeypatch.setattr(
+        browser_utils, "_align_selenium_to_playwright_page", align_selenium
+    )
+    monkeypatch.setattr(
+        browser_utils, "_align_playwright_to_selenium_window", align_playwright
+    )
+
+    assert asyncio.run(browser_utils.hydrate_browser_compatibility_globals()) == "passed"
+    assert sr.Clean_Up_Shared_Variables("run-1") == "passed"
+    sr.Set_Shared_Variables("active_web_driver_type", "playwright")
+    assert asyncio.run(browser_utils.hydrate_browser_compatibility_globals()) == "passed"
+
+    ensure_selenium.assert_called_once_with("default", session)
+    assert align_selenium.call_count == 2
+    align_playwright.assert_not_awaited()
+    assert sr.Get_Shared_Variables("selenium_driver") is driver
+    assert sr.Get_Shared_Variables("active_web_driver_type") == "playwright"
+
+
+def test_session_teardown_continues_after_stale_page_close():
+    page = MagicMock()
+    page.close = AsyncMock(side_effect=RuntimeError("already closed"))
+    context = MagicMock()
+    context.close = AsyncMock()
+    browser = MagicMock()
+    browser.close = AsyncMock()
+    playwright = MagicMock()
+    playwright.stop = AsyncMock()
+    selenium = MagicMock()
+    browser_utils.create_browser_session(
+        "default",
+        selenium_driver=selenium,
+        playwright_page=page,
+        playwright_context=context,
+        playwright_browser=browser,
+        playwright_instance=playwright,
+    )
+
+    assert asyncio.run(
+        playwright_bif.Tear_Down_Playwright(
+            [("session", "optional parameter", "default")]
+        )
+    ) == "passed"
+
+    context.close.assert_awaited_once()
+    browser.close.assert_awaited_once()
+    playwright.stop.assert_awaited_once()
+    selenium.quit.assert_called_once()
+    assert browser_utils.get_browser_session("default") == {}
 
 
 def test_selenium_session_activation_selects_driver():
