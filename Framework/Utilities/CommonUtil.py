@@ -821,6 +821,27 @@ screen_capture_driver, screen_capture_type = (
 )  # Initialize global variables for TakeScreenShot()
 
 
+AUTO_SCREEN_CAPTURE = "auto"
+
+
+def _resolve_auto_screen_capture(shared_variables):
+    """Pick the capture type for an action that is not tied to a platform.
+
+    Common actions (e.g. "sleep") are shared by every module, so their
+    declaration cannot name a platform up front. "auto" defers that choice to
+    here, where the drivers the test actually has open are visible.
+
+    Only web is resolved today: a sleep is most often used to let a page settle,
+    and the whole point of the capture is to show the page state once the wait
+    is over. Everything else stays "none" so no other module changes behaviour.
+    Add a "mobile" branch here if the same is ever wanted for Appium runs.
+    """
+    for driver_key in ("selenium_driver", "playwright_page"):
+        if shared_variables.get(driver_key) is not None:
+            return "web"
+    return "none"
+
+
 def set_screenshot_vars(shared_variables):
     """ Save screen capture type and selenium/appium driver objects as global variables, so TakeScreenShot() can access them """
     # We can't import Shared Variables due to cyclic imports causing local runs to break, so this is the work around
@@ -832,6 +853,8 @@ def set_screenshot_vars(shared_variables):
     try:
         if "screen_capture" in shared_variables:  # Type of screenshot (desktop/mobile)
             screen_capture_type = shared_variables["screen_capture"]
+        if screen_capture_type == AUTO_SCREEN_CAPTURE:
+            screen_capture_type = _resolve_auto_screen_capture(shared_variables)
         if screen_capture_type == "mobile":  # Appium driver object
             if "device_id" in shared_variables:
                 device_id = shared_variables[
@@ -1053,6 +1076,40 @@ def _screenshot_path(image_folder, image_name, extension="png"):
     return os.path.join(image_folder, safe_name + "." + extension.lstrip("."))
 
 
+_linux_capture_screenshot = None  # None = not resolved yet, False = resolution failed
+
+
+def _get_linux_capture_screenshot():
+    """Resolve the Linux desktop screenshot function once per process.
+
+    The Linux module pulls in optional system dependencies (AT-SPI, python-xlib)
+    that are absent on headless VMs, and a module that fails to import is never
+    cached in sys.modules — so importing it per screenshot re-ran its dependency
+    install and re-raised per screenshot. Catch BaseException (it used to call
+    sys.exit(), and SystemExit slips straight past `except Exception`) and cache
+    the outcome, so a missing desktop stack costs one warning, not a traceback
+    on every capture.
+    """
+    global _linux_capture_screenshot
+
+    if _linux_capture_screenshot is None:
+        try:
+            from Framework.Built_In_Automation.Desktop.Linux.BuiltInFunctions import (
+                capture_screenshot as linux_capture_screenshot,
+            )
+
+            _linux_capture_screenshot = linux_capture_screenshot
+        except BaseException as e:
+            ExecLog(
+                MODULE_NAME,
+                "Linux desktop screenshot support is unavailable: %s: %s" % (type(e).__name__, e),
+                3,
+            )
+            _linux_capture_screenshot = False
+
+    return _linux_capture_screenshot or None
+
+
 async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name, skip_delay=False):
     """Capture screen of mobile, desktop, Selenium, or Playwright."""
     if performance_testing: return
@@ -1084,21 +1141,15 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
         # Capture screenshot of desktop
         if Method == "desktop":
             if sys.platform in ("linux", "linux2"):
-                # Import Linux screenshot function for AT-SPI desktop automation
-                try:
-                    if sys.platform in ("linux", "linux2"):
-                        from Framework.Built_In_Automation.Desktop.Linux.BuiltInFunctions import capture_screenshot as linux_capture_screenshot
-                except Exception:
-                    linux_capture_screenshot = None
-                if linux_capture_screenshot:
-                    linux_capture_screenshot(ImageName)
-                else:
+                linux_capture_screenshot = _get_linux_capture_screenshot()
+                if linux_capture_screenshot is None:
                     ExecLog(
                         sModuleInfo,
                         "Linux screenshot module not available",
                         3,
                     )
                     return
+                linux_capture_screenshot(ImageName)
             elif sys.platform == "win32" or sys.platform == "darwin":
                 bbox = _get_window_screenshot_bbox()
                 image = ImageGrab_Mac_Win.grab(bbox)
