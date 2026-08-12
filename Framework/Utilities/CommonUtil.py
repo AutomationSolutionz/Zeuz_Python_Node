@@ -1083,7 +1083,7 @@ def _get_linux_capture_screenshot():
     """Resolve the Linux desktop screenshot function once per process.
 
     The Linux module pulls in optional system dependencies (AT-SPI, python-xlib)
-    that are absent on headless VMs, and a module that fails to import is never
+    that are absent on most nodes, and a module that fails to import is never
     cached in sys.modules — so importing it per screenshot re-ran its dependency
     install and re-raised per screenshot. Catch BaseException (it used to call
     sys.exit(), and SystemExit slips straight past `except Exception`) and cache

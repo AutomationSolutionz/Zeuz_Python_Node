@@ -14,9 +14,11 @@ from Framework.module_installer import install_missing_modules
 # ---------------------------------------------------------------------------
 # Optional system dependencies.
 #
-# pyatspi (AT-SPI2) is a GObject-Introspection binding shipped by the distro
-# (python3-pyatspi + gir1.2-atspi-2.0) and it needs a running accessibility bus,
-# so it is simply absent on headless servers, CI boxes and VMs. python-xlib is
+# pyatspi (AT-SPI2) is a thin Python layer over the GObject-Introspection
+# "Atspi" typelib, so the pip side (python3-pyatspi + pygobject) is only half of
+# it: the system typelib (gir1.2-atspi-2.0 / at-spi2-core) and a running
+# accessibility bus are required too. Having a display is not enough -- AT-SPI
+# is just as absent on a VNC/Xvfb desktop as on a bare server. python-xlib is
 # only used by the XComposite screenshot path, which already falls back to xwd.
 #
 # Importing this module therefore must never abort the process: CommonUtil
@@ -90,7 +92,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 )
 from Framework.Utilities.decorators import logger
 
-_SETUP_HINT = "Install them by running Installer/setup_linux_inspector.sh."
+_SETUP_HINT = "Installer/setup_linux_inspector.sh"
 
 
 def is_atspi_available() -> bool:
@@ -101,9 +103,11 @@ def is_atspi_available() -> bool:
 def atspi_unavailable_message() -> str:
     """Actionable message for callers that need AT-SPI but cannot have it."""
     return (
-        "Linux desktop automation requires AT-SPI2 (pyatspi), which is not available on "
-        f"this machine ({ATSPI_IMPORT_ERROR}). It needs the distro accessibility packages "
-        f"and a running accessibility bus, so it cannot work on a headless node. {_SETUP_HINT}"
+        "Linux desktop automation requires AT-SPI2 (pyatspi), which is not importable on "
+        f"this machine ({ATSPI_IMPORT_ERROR}). Beyond the Python bindings it needs the system "
+        "AT-SPI2 typelib and a running accessibility bus -- on Debian/Ubuntu install "
+        "'at-spi2-core gir1.2-atspi-2.0' (or your distro's equivalent). "
+        f"See {_SETUP_HINT} for the X tools and accessibility settings."
     )
 
 
@@ -114,7 +118,7 @@ if ATSPI_IMPORT_ERROR:
 if XLIB_IMPORT_ERROR:
     sys.stderr.write(
         f"Warning: python-xlib is not available ({XLIB_IMPORT_ERROR}); "
-        f"screenshots fall back to xwd. {_SETUP_HINT}\n"
+        f"screenshots fall back to xwd. See {_SETUP_HINT}.\n"
     )
 
 
