@@ -3,6 +3,7 @@
 
 import selenium
 import sys
+import asyncio
 import inspect
 import os, os.path, threading
 import ast
@@ -1110,6 +1111,73 @@ def _get_linux_capture_screenshot():
     return _linux_capture_screenshot or None
 
 
+SCREENSHOT_CAPTURE_TIMEOUT_SECONDS = 60
+SCREENSHOT_CAPTURE_POLL_SECONDS = 0.05
+
+
+def _log_capture_timeout(sModuleInfo, function_name, Method):
+    ExecLog(
+        sModuleInfo,
+        "Screenshot for Action: %s Method: %s did not finish within %s seconds and was "
+        "abandoned -- the browser/device is not responding. Continuing the run."
+        % (function_name, Method, SCREENSHOT_CAPTURE_TIMEOUT_SECONDS),
+        2,
+    )
+
+
+async def _capture_with_timeout(capture, sModuleInfo, function_name, Method):
+    """Run one screen capture bounded by a timeout, without blocking the loop.
+
+    Selenium and Appium screenshots are synchronous HTTP calls with no read
+    timeout of their own -- `RemoteConnection._timeout` defaults to
+    `socket._GLOBAL_DEFAULT_TIMEOUT`, so urllib3 waits forever -- and
+    `TakeScreenShot` runs outside `_run_action_with_timeout`. A wedged browser
+    therefore blocked the event loop indefinitely, parking the run on the
+    "Capturing Screenshot" log line with no timeout able to recover it.
+
+    The sync capture runs on a *daemon* thread and is simply abandoned on
+    timeout -- the same trade-off `_ActionTimeoutWorker` makes for a hung
+    action. It must be a daemon (and must not use the default executor, whose
+    threads `loop.shutdown_default_executor()` joins) so an abandoned capture
+    can never hold up node shutdown. Any exception is re-raised on this thread
+    so the existing handlers in `Thread_ScreenShot` still see it.
+
+    `capture` is a plain callable (Selenium/Appium/desktop) or an awaitable
+    (Playwright, already async). Returns True when it finished in time.
+    """
+    if inspect.isawaitable(capture):
+        try:
+            await asyncio.wait_for(capture, timeout=SCREENSHOT_CAPTURE_TIMEOUT_SECONDS)
+            return True
+        except (asyncio.TimeoutError, TimeoutError):
+            _log_capture_timeout(sModuleInfo, function_name, Method)
+            return False
+
+    done = threading.Event()
+    failure = {}
+
+    def runner():
+        try:
+            capture()
+        except BaseException:
+            failure["exc_info"] = sys.exc_info()
+        finally:
+            done.set()
+
+    threading.Thread(target=runner, name="zeuz_screenshot_capture", daemon=True).start()
+
+    deadline = time.monotonic() + SCREENSHOT_CAPTURE_TIMEOUT_SECONDS
+    while not done.is_set():
+        if time.monotonic() >= deadline:
+            _log_capture_timeout(sModuleInfo, function_name, Method)
+            return False
+        await asyncio.sleep(SCREENSHOT_CAPTURE_POLL_SECONDS)
+
+    if "exc_info" in failure:
+        raise failure["exc_info"][1].with_traceback(failure["exc_info"][2])
+    return True
+
+
 async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name, skip_delay=False):
     """Capture screen of mobile, desktop, Selenium, or Playwright."""
     if performance_testing: return
@@ -1138,6 +1206,11 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
         if should_delay_before_capture and not skip_delay and not _wait_for_debug_screenshot_delay(sModuleInfo, function_name, Method):
             return
 
+        # Every capture below is bounded: a hung browser/device must not park the run.
+        def _desktop_grab():
+            image = ImageGrab_Mac_Win.grab(_get_window_screenshot_bbox())
+            image.save(ImageName, format="PNG")  # Save to disk
+
         # Capture screenshot of desktop
         if Method == "desktop":
             if sys.platform in ("linux", "linux2"):
@@ -1149,23 +1222,37 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
                         3,
                     )
                     return
-                linux_capture_screenshot(ImageName)
+                if not await _capture_with_timeout(
+                    lambda: linux_capture_screenshot(ImageName), sModuleInfo, function_name, Method
+                ):
+                    return
             elif sys.platform == "win32" or sys.platform == "darwin":
-                bbox = _get_window_screenshot_bbox()
-                image = ImageGrab_Mac_Win.grab(bbox)
-                image.save(ImageName, format="PNG")  # Save to disk
+                if not await _capture_with_timeout(_desktop_grab, sModuleInfo, function_name, Method):
+                    return
 
         # Capture screenshot of web browser
         elif Method == "web":
             # Check if it's a Playwright page or Selenium driver
             if is_playwright_page:
-                await Driver.screenshot(path=ImageName, type="jpeg", quality=PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY)
+                captured = await _capture_with_timeout(
+                    Driver.screenshot(path=ImageName, type="jpeg", quality=PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY),
+                    sModuleInfo, function_name, Method,
+                )
             else:  # Selenium driver
-                Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
+                # Must be .png, otherwise an exception occurs
+                captured = await _capture_with_timeout(
+                    lambda: Driver.get_screenshot_as_file(ImageName), sModuleInfo, function_name, Method
+                )
+            if not captured:
+                return
 
         # Capture screenshot of mobile
         elif Method == "mobile":
-            Driver.save_screenshot(ImageName)  # Must be .png, otherwise an exception occurs
+            # Must be .png, otherwise an exception occurs
+            if not await _capture_with_timeout(
+                lambda: Driver.save_screenshot(ImageName), sModuleInfo, function_name, Method
+            ):
+                return
         else:
             ExecLog(
                 sModuleInfo,
