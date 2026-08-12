@@ -11,43 +11,115 @@ from typing import List, Literal, Tuple, Optional, Any, Callable
 
 from Framework.module_installer import install_missing_modules
 
+# ---------------------------------------------------------------------------
+# Optional system dependencies.
+#
+# pyatspi (AT-SPI2) is a thin Python layer over the GObject-Introspection
+# "Atspi" typelib, so the pip side (python3-pyatspi + pygobject) is only half of
+# it: the system typelib (gir1.2-atspi-2.0 / at-spi2-core) and a running
+# accessibility bus are required too. Having a display is not enough -- AT-SPI
+# is just as absent on a VNC/Xvfb desktop as on a bare server. python-xlib is
+# only used by the XComposite screenshot path, which already falls back to xwd.
+#
+# Importing this module therefore must never abort the process: CommonUtil
+# imports it just to take a desktop screenshot, and screenshot capture
+# (xdotool/xwd/XComposite based) does not need AT-SPI at all. A missing
+# dependency is recorded here and reported by the AT-SPI actions themselves as
+# an ordinary step failure.
+# ---------------------------------------------------------------------------
+
 try:
     import pyatspi
     from pyatspi.action import Action
     from pyatspi.editabletext import EditableText, Text
-except ImportError:
+
+    ATSPI_IMPORT_ERROR: Optional[str] = None
+except Exception:
     install_missing_modules(["python3-pyatspi==1.19.0", "pygobject==3.50.1"])
     try:
         import pyatspi
         from pyatspi.action import Action
         from pyatspi.editabletext import EditableText, Text
-    except ImportError:
-        sys.stderr.write(
-            "Error: system dependency is not installed. Install them by running Installer/setup_linux_inspector.sh.\n"
-        )
-        sys.exit(1)
+
+        ATSPI_IMPORT_ERROR = None
+    except Exception as atspi_error:
+        # pyatspi raises ImportError when the module is missing and ValueError
+        # ("Namespace Atspi not available") when the GI typelib is missing.
+        ATSPI_IMPORT_ERROR = f"{type(atspi_error).__name__}: {atspi_error}"
+
+        # The Accessible protocol below annotates methods with these interfaces,
+        # and annotations in a class body are evaluated at class-creation time,
+        # so the names must exist even when the real interfaces do not.
+        Action = EditableText = Text = Any  # type: ignore[misc,assignment]
+
+        class _AtspiUnavailable:
+            """Stand-in for the `pyatspi` module when AT-SPI is not installed.
+
+            Every attribute access raises, so an AT-SPI-dependent action fails as
+            a normal step failure with an actionable message (actions wrap their
+            body in try/except) instead of taking the node down.
+            """
+
+            def __getattr__(self, name: str):
+                raise RuntimeError(atspi_unavailable_message())
+
+        pyatspi = _AtspiUnavailable()  # type: ignore[assignment]
 
 try:
     from Xlib import X, display as xlib_display
     from Xlib.ext import composite as xlib_composite  # noqa: F401  registers ext methods
     from Xlib.error import XError
-except ImportError:
+
+    XLIB_IMPORT_ERROR: Optional[str] = None
+except Exception:
     install_missing_modules(["python-xlib==0.33"])
     try:
         from Xlib import X, display as xlib_display
         from Xlib.ext import composite as xlib_composite  # noqa: F401
         from Xlib.error import XError
-    except ImportError:
-        sys.stderr.write(
-            "Error: python-xlib is not installed. Install it by running Installer/setup_linux_inspector.sh.\n"
-        )
-        sys.exit(1)
+
+        XLIB_IMPORT_ERROR = None
+    except Exception as xlib_error:
+        XLIB_IMPORT_ERROR = f"{type(xlib_error).__name__}: {xlib_error}"
+        X = xlib_display = None  # type: ignore[assignment]
+
+        class XError(Exception):  # type: ignore[no-redef]
+            """Placeholder so `except XError` stays valid without python-xlib."""
 
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
 from Framework.Utilities.decorators import logger
+
+_SETUP_HINT = "Installer/setup_linux_inspector.sh"
+
+
+def is_atspi_available() -> bool:
+    """True when the AT-SPI2 bindings imported successfully."""
+    return ATSPI_IMPORT_ERROR is None
+
+
+def atspi_unavailable_message() -> str:
+    """Actionable message for callers that need AT-SPI but cannot have it."""
+    return (
+        "Linux desktop automation requires AT-SPI2 (pyatspi), which is not importable on "
+        f"this machine ({ATSPI_IMPORT_ERROR}). Beyond the Python bindings it needs the system "
+        "AT-SPI2 typelib and a running accessibility bus -- on Debian/Ubuntu install "
+        "'at-spi2-core gir1.2-atspi-2.0' (or your distro's equivalent). "
+        f"See {_SETUP_HINT} for the X tools and accessibility settings."
+    )
+
+
+# Warn once, at import, rather than per action: the node keeps running, but
+# whoever reads the console should know why Linux desktop actions will fail.
+if ATSPI_IMPORT_ERROR:
+    sys.stderr.write(f"Warning: {atspi_unavailable_message()}\n")
+if XLIB_IMPORT_ERROR:
+    sys.stderr.write(
+        f"Warning: python-xlib is not available ({XLIB_IMPORT_ERROR}); "
+        f"screenshots fall back to xwd. See {_SETUP_HINT}.\n"
+    )
 
 
 class Collection: ...
@@ -328,6 +400,14 @@ def _capture_via_composite(file_path: str, winid: str) -> bool:
     Composite extension absent, deps missing, X errors) so the caller can
     fall back to a different strategy.
     """
+    if xlib_display is None:
+        CommonUtil.ExecLog(
+            MODULE_NAME,
+            f"Composite capture skipped: python-xlib unavailable ({XLIB_IMPORT_ERROR})",
+            4,
+        )
+        return False
+
     try:
         from PIL import Image
     except ImportError as e:
@@ -1013,7 +1093,13 @@ def _get_frame_geometry_for_window(window_id: str) -> dict | None:
     Used to align captured screenshots with the AT-SPI accessibility tree, whose
     coordinates may differ from the X11 window's geometry by the window
     decoration (title bar) offset.
+
+    Returns None when AT-SPI is unavailable, so the caller keeps the full
+    window pixmap instead of losing the screenshot entirely.
     """
+    if not is_atspi_available():
+        return None
+
     geometry = _get_window_geometry(window_id)
     if not geometry:
         return None
