@@ -166,6 +166,59 @@ def test_action_worker_keeps_affinity_after_timeout():
     assert len(set(thread_ids)) == 1
 
 
+def test_switch_iframe_resets_then_selects_locator(monkeypatch):
+    frame = object()
+    state = {"page": object(), "frame": object(), "frame_stack": [object()]}
+    seen = []
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    monkeypatch.setattr(
+        playwright_actions,
+        "_element",
+        lambda rows, **_: seen.extend(rows) or SimpleNamespace(content_frame=frame),
+    )
+    monkeypatch.setattr(
+        playwright_actions.sr, "Set_Shared_Variables", lambda *_args, **_kwargs: None
+    )
+
+    assert playwright_actions.switch_iframe([
+        ("index", "iframe parameter", "default content"),
+        ("id", "iframe parameter", "frame_two"),
+        ("switch iframe", "playwright action", "switch iframe"),
+    ]) == "passed"
+
+    assert state["frame"] is frame
+    assert state["frame_stack"] == [None]
+    assert ("id", "element parameter", "frame_two") in seen
+    assert not any(right == "default content" for _, _, right in seen)
+
+
+def test_go_to_link_clears_previous_iframe(monkeypatch):
+    class Page:
+        url = "https://example.test/inside-frame"
+
+        def goto(self, url, **_kwargs):
+            self.url = url
+
+    page = Page()
+    state = {
+        "page": page,
+        "frame": object(),
+        "frame_stack": [object()],
+        "wait_until": "load",
+        "wired_pages": {id(page)},
+    }
+    monkeypatch.setattr(playwright_actions, "_launch", lambda _rows: state)
+    monkeypatch.setattr(playwright_actions, "_set_active", lambda _driver_id: None)
+
+    assert playwright_actions.Go_To_Link([
+        ("go to link", "playwright action", "https://example.test/login"),
+    ]) == "passed"
+
+    assert page.url == "https://example.test/login"
+    assert state["frame"] is None
+    assert state["frame_stack"] == []
+
+
 @pytest.fixture(scope="module")
 def page():
     if not shutil.which("google-chrome"):

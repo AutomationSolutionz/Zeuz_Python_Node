@@ -153,6 +153,7 @@ def _on_dialog(state, dialog):
 def _wire_page(state, page):
     state["page"] = page
     state["frame"] = None
+    state["frame_stack"] = []
     wired_pages = state.setdefault("wired_pages", set())
     if id(page) in wired_pages:
         return
@@ -341,6 +342,8 @@ def _launch(data_set):
 def Go_To_Link(data_set):
     try:
         state = _launch(data_set)
+        _wire_page(state, state["page"])
+        _set_active(current_driver_id)
         url = next(
             (
                 right
@@ -740,6 +743,14 @@ def switch_iframe(data_set):
         right.lower() in ("default", "default content", "main", "top")
         for _, _, right in frame_rows
     )
+    if reset:
+        state["frame"] = None
+        stack.clear()
+        frame_rows = [
+            row
+            for row in frame_rows
+            if row[2].lower() not in ("default", "default content", "main", "top")
+        ]
     indexed = next(
         (
             right
@@ -748,9 +759,11 @@ def switch_iframe(data_set):
         ),
         None,
     )
-    if command in ("default", "default content", "main", "top") or reset:
+    if command in ("default", "default content", "main", "top"):
         state["frame"] = None
         stack.clear()
+    elif reset and not frame_rows:
+        pass
     elif command in ("parent", "parent frame"):
         state["frame"] = stack.pop() if stack else None
     elif command.lstrip("-").isdigit() or indexed is not None:
@@ -801,6 +814,11 @@ def switch_iframe(data_set):
                     right,
                 )
                 for left, middle, right in _rows(data_set)
+                if not (
+                    middle in ("iframe parameter", "frame parameter")
+                    and right.lower()
+                    in ("default", "default content", "main", "top")
+                )
             ]
             element = _element(locator_rows, root=state["page"])
             if element in failed_tag_list:
