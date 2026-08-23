@@ -27,6 +27,8 @@ Locators accept exact attributes and text (`id`, `name`, `text`), partial matche
 
 Launch rows support raw browser arguments, page-load strategy, resolution/viewport, proxy, locale, user agent, permissions, HTTPS error handling, Firefox preferences, download behavior, and Chromium `debugger address` CDP attachment. Opera fails explicitly.
 
+The viewport uses runtime `window_size_x` and `window_size_y` when both are set, otherwise it defaults to 1920×1080 to match Selenium's maximized/headless node behavior. An explicit `resolution` row takes precedence.
+
 Unknown Selenium capabilities, Chrome version pinning, experimental options, and extension sideloading on branded Chrome/Edge are logged and ignored because they do not have a safe equivalent. The installer exposes bundled Firefox and WebKit; branded Chrome and Edge continue through their existing installers.
 
 ## Execute Python compatibility

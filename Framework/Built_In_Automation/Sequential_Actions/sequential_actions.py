@@ -2501,6 +2501,8 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
+        if row == action_row:
+            new_row[1] = action_subfield
         if row[1].strip().lower() in ("optional parameter", "optional option"):
             if row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
                 screenshot = row[2].strip().lower()
@@ -2521,9 +2523,9 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 continue
 
         new_row[1] = new_row[1].replace("optional action", "action").replace("bypass","").replace("optional option","optional parameter").strip()
-        if module in row[1]:
+        if module in new_row[1]:
             new_row[1] = new_row[1].replace(module, "").strip()
-        if original_module != "" and original_module in row[1]:
+        if original_module != "" and original_module in new_row[1]:
             new_row[1] = new_row[1].replace(original_module, "").strip()
         data_set.append(tuple(new_row))
 

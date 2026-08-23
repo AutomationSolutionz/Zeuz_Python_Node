@@ -126,6 +126,17 @@ def _free_local_port():
         return sock.getsockname()[1]
 
 
+def _configured_viewport():
+    try:
+        width = int(ConfigModule.get_config_value("RunDefinition", "window_size_x"))
+        height = int(ConfigModule.get_config_value("RunDefinition", "window_size_y"))
+        if width > 0 and height > 0:
+            return {"width": width, "height": height}
+    except (TypeError, ValueError):
+        pass
+    return {"width": 1920, "height": 1080}
+
+
 def _selenium_cdp_address(browser_name, debugger, arguments):
     if not any(name in browser_name for name in ("chrome", "edge", "chromium")):
         return None
@@ -233,6 +244,17 @@ def _on_dialog(state, dialog):
         dialog.dismiss()
 
 
+def _request_post_data(request):
+    try:
+        return request.post_data
+    except Exception:
+        try:
+            data = request.post_data_buffer
+            return data.decode("utf-8", errors="replace") if data else None
+        except Exception:
+            return None
+
+
 def _wire_page(state, page):
     state["page"] = page
     state["frame"] = None
@@ -251,7 +273,7 @@ def _wire_page(state, page):
                 "method": request.method,
                 "url": request.url,
                 "headers": request.headers,
-                "post_data": request.post_data,
+                "post_data": _request_post_data(request),
             }
         )
         if state["capturing_network"]
@@ -297,7 +319,7 @@ def _launch(data_set):
 
     headless = "headless" in browser_name
     launch = {"headless": headless}
-    context_options = {"accept_downloads": True}
+    context_options = {"accept_downloads": True, "viewport": _configured_viewport()}
     wait_until = "load"
     url = None
     debugger = None

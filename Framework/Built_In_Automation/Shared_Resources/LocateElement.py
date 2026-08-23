@@ -1449,6 +1449,11 @@ def _playwright_css(rows):
     return tag + "".join(parts)
 
 
+def _playwright_is_visible(locator):
+    # Selenium treats a zero-sized container as displayed when it has visible children.
+    return locator.is_visible() or locator.locator(":visible").count() > 0
+
+
 def _playwright_get_element(step_data_set, root, return_all_elements=False, element_wait=None):
     """Execute the existing ZeuZ locator grammar with Playwright locators."""
     try:
@@ -1535,7 +1540,7 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
             candidates = []
             for position in range(locator.count()):
                 candidate = locator.nth(position)
-                if not allow_hidden and not candidate.is_visible():
+                if not allow_hidden and not _playwright_is_visible(candidate):
                     continue
                 if not allow_disabled and not candidate.is_enabled():
                     continue

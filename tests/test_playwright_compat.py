@@ -111,6 +111,64 @@ def test_backend_routing(monkeypatch):
     )
 
 
+def test_routed_common_wait_receives_normalized_action_row(monkeypatch):
+    rows = [
+        ("*class", "parent parameter", "navbar-expand-lg container-fluid navbar"),
+        ("*class", "element parameter", "small-nav"),
+        ("wait", "selenium action", "30"),
+    ]
+    captured = []
+    values = {
+        "zeuz_browser_driver": "playwright",
+        "zeuz_prettify_limit": 500,
+        "action_timeout": 5,
+    }
+    monkeypatch.setattr(
+        sequential_actions.sr,
+        "Get_Shared_Variables",
+        lambda name, **_: values.get(name, "zeuz_failed"),
+    )
+    monkeypatch.setattr(
+        sequential_actions.sr, "Set_Shared_Variables", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(sequential_actions.sr, "Shared_Variable_Export", lambda: {})
+    monkeypatch.setattr(sequential_actions, "load_sa_modules", lambda _module: None)
+    monkeypatch.setattr(
+        sequential_actions,
+        "playwright",
+        SimpleNamespace(get_driver=lambda: object()),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        sequential_actions.common,
+        "shared_variable_to_value",
+        lambda data_set: data_set,
+    )
+    monkeypatch.setattr(
+        sequential_actions.common,
+        "Wait_For_Element",
+        lambda data_set: captured.extend(data_set) or "passed",
+    )
+    monkeypatch.setattr(
+        sequential_actions.ConfigModule,
+        "get_config_value",
+        lambda *_args, **_kwargs: "false",
+    )
+    monkeypatch.setattr(
+        sequential_actions.CommonUtil,
+        "TakeScreenShot",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        sequential_actions.CommonUtil,
+        "set_screenshot_vars",
+        lambda *_args, **_kwargs: None,
+    )
+
+    assert sequential_actions.Action_Handler(rows, rows[-1]) == "passed"
+    assert ("wait", "action", "30") in captured
+
+
 def test_selenium_conditional_uses_active_playwright_driver(monkeypatch):
     page = object()
     values = {"zeuz_browser_driver": "playwright"}
@@ -233,6 +291,48 @@ def test_selenium_cdp_address(monkeypatch):
     assert playwright_actions._selenium_cdp_address("firefox", None, []) is None
 
 
+def test_playwright_viewport_uses_runtime_size_or_selenium_default(monkeypatch):
+    values = {"window_size_x": "", "window_size_y": ""}
+    monkeypatch.setattr(
+        playwright_actions.ConfigModule,
+        "get_config_value",
+        lambda _section, key: values[key],
+    )
+
+    assert playwright_actions._configured_viewport() == {"width": 1920, "height": 1080}
+
+    values.update(window_size_x="1440", window_size_y="900")
+    assert playwright_actions._configured_viewport() == {"width": 1440, "height": 900}
+
+
+def test_binary_request_body_does_not_escape_network_listener():
+    class Request:
+        post_data_buffer = b"\xf1binary"
+
+        @property
+        def post_data(self):
+            raise UnicodeDecodeError("utf-8", b"\xf1", 0, 1, "invalid byte")
+
+    assert playwright_actions._request_post_data(Request()) == "�binary"
+
+
+def test_playwright_visibility_accepts_zero_sized_container_with_visible_child():
+    class Locator:
+        def __init__(self, visible, descendants=0):
+            self.visible = visible
+            self.descendants = descendants
+
+        def is_visible(self):
+            return self.visible
+
+        def locator(self, selector):
+            assert selector == ":visible"
+            return SimpleNamespace(count=lambda: self.descendants)
+
+    assert LocateElement._playwright_is_visible(Locator(False, descendants=1))
+    assert not LocateElement._playwright_is_visible(Locator(False))
+
+
 def test_selenium_bridge_attach_publish_and_close(monkeypatch):
     from selenium import webdriver
 
@@ -300,6 +400,7 @@ def page():
         <section data-zone="MainArea"><div class="Card Alpha"><button id="SAVE-One">Save now</button></div></section>
         <ul><li class="item">one</li><li class="item">two</li><li class="item">three</li></ul>
         <button id="disabled" disabled>Disabled</button><button id="hidden" hidden>Hidden</button>
+        <span id="zero-height" style="display:block;height:0"><span>Visible child</span></span>
         <x-host></x-host>
         <iframe srcdoc="<button id='inside'>Inside</button>"></iframe>
         <script>
@@ -375,6 +476,11 @@ def test_hidden_disabled_frame_and_shadow(page):
         element_wait=0.5,
     )
     assert hidden.inner_text() == "Hidden"
+
+    zero_height = LocateElement.Get_Element(
+        [("id", "element parameter", "zero-height")], page, element_wait=0.5
+    )
+    assert zero_height.inner_text() == "Visible child"
 
     frame = next(frame for frame in page.frames if frame != page.main_frame)
     assert (
