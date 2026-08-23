@@ -804,6 +804,13 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
             Selenium.Tear_Down_Selenium()
         except:
             pass
+        if shared.Test_Shared_Variables("playwright_page"):
+            try:
+                from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
+                from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as Playwright
+                sequential_actions._run_action_with_timeout(Playwright.Tear_Down_Selenium, [])
+            except Exception:
+                pass
         if shared.Test_Shared_Variables("appium_details"):
             import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
             driver = shared.Remove_From_Shared_Variables("appium_details")
@@ -1267,7 +1274,15 @@ def send_dom_variables():
             except Exception as e:
                 CommonUtil.ExecLog(sModuleInfo, str(e), 2)
 
-        if shared.Test_Shared_Variables('selenium_driver'):
+        if shared.Test_Shared_Variables('playwright_page'):
+            try:
+                from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
+                from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as Playwright
+                dom = sequential_actions._run_action_with_timeout(Playwright.get_dom, [])
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, sys.exc_info(), 2)
+                dom = None
+        elif shared.Test_Shared_Variables('selenium_driver'):
             try:
                 selenium_driver = shared.Get_Shared_Variables("selenium_driver")
                 dom = selenium_driver.execute_script("""

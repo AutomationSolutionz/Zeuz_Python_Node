@@ -12,6 +12,7 @@ from . import (
     database,
     performance,
     security,
+    playwright,
 )
 
 modules = (
@@ -27,6 +28,7 @@ modules = (
     database,
     performance,
     security,
+    playwright,
 )
 
 # This will be exported and contains all the actions.

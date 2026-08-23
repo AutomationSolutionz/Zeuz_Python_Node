@@ -103,6 +103,7 @@ dependencies = [
     "mysql-connector-python==9.5.0",
     "oracledb>=3.4.1",
     "androguard>=4.1.2",
+    "playwright>=1.55.0",
 ]
 
 [dependency-groups]
