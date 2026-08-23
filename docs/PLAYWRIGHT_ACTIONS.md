@@ -28,3 +28,9 @@ Locators accept exact attributes and text (`id`, `name`, `text`), partial matche
 Launch rows support raw browser arguments, page-load strategy, resolution/viewport, proxy, locale, user agent, permissions, HTTPS error handling, Firefox preferences, download behavior, and Chromium `debugger address` CDP attachment. Opera fails explicitly.
 
 Unknown Selenium capabilities, Chrome version pinning, experimental options, and extension sideloading on branded Chrome/Edge are logged and ignored because they do not have a safe equivalent. The installer exposes bundled Firefox and WebKit; branded Chrome and Edge continue through their existing installers.
+
+## Execute Python compatibility
+
+Playwright-launched Chrome and Edge expose a Selenium CDP bridge as the existing `selenium_driver` shared/global variable. Existing `execute python code` rows such as `selenium_driver.execute_script(...)` therefore control the same browser without test-data changes. The bridge is selected with its Playwright driver ID and detached during Playwright teardown; it does not own or close the browser.
+
+This bridge is unavailable for Firefox and WebKit because Selenium's debugger attachment is Chromium-only. Commands that ChromeDriver itself does not support for debugger-attached sessions remain unsupported.

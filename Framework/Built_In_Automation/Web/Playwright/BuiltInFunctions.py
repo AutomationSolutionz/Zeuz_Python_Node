@@ -4,9 +4,11 @@ import ast
 import base64
 import functools
 import inspect
+import socket
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -99,12 +101,93 @@ def _set_active(driver_id):
     playwright_page = state["page"]
     sr.Set_Shared_Variables("playwright_page", playwright_page)
     sr.Set_Shared_Variables("common_driver", state.get("frame") or playwright_page)
+    _publish_selenium_bridge(state.get("selenium_bridge"))
     sr.Set_Shared_Variables("zeuz_active_browser_backend", "playwright")
     owners = sr.Get_Shared_Variables("zeuz_browser_backends", log=False)
     owners = owners if isinstance(owners, dict) else {}
     owners[driver_id] = "playwright"
     sr.Set_Shared_Variables("zeuz_browser_backends", owners)
     CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
+
+
+def _publish_selenium_bridge(driver):
+    from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
+
+    selenium.selenium_driver = driver
+    if driver is None:
+        sr.Remove_From_Shared_Variables("selenium_driver")
+    else:
+        sr.Set_Shared_Variables("selenium_driver", driver)
+
+
+def _free_local_port():
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def _selenium_cdp_address(browser_name, debugger, arguments):
+    if not any(name in browser_name for name in ("chrome", "edge", "chromium")):
+        return None
+    if debugger:
+        parsed = urlparse(debugger if "://" in debugger else "//" + debugger)
+        if not parsed.hostname or not parsed.port:
+            raise ValueError(f"Invalid debugger address '{debugger}'")
+        return f"{parsed.hostname}:{parsed.port}"
+
+    port = None
+    for index, argument in enumerate(arguments):
+        if str(argument).startswith("--remote-debugging-port="):
+            port = int(str(argument).split("=", 1)[1])
+            if port == 0:
+                port = _free_local_port()
+                arguments[index] = f"--remote-debugging-port={port}"
+            break
+    if port is None:
+        port = _free_local_port()
+        arguments.extend(
+            [f"--remote-debugging-port={port}", "--remote-debugging-address=127.0.0.1"]
+        )
+    return f"127.0.0.1:{port}"
+
+
+def _attach_selenium_bridge(state, browser_name, debugger_address):
+    if not debugger_address:
+        state["selenium_bridge"] = None
+        _log(
+            "Selenium execute-python compatibility is unavailable for Playwright Firefox/WebKit",
+            2,
+        )
+        return
+    try:
+        from selenium import webdriver
+
+        if "edge" in browser_name:
+            from selenium.webdriver.edge.options import Options
+
+            options = Options()
+            options.debugger_address = debugger_address
+            driver = webdriver.Edge(options=options)
+        else:
+            from selenium.webdriver.chrome.options import Options
+
+            options = Options()
+            options.debugger_address = debugger_address
+            driver = webdriver.Chrome(options=options)
+        state["selenium_bridge"] = driver
+        _log("Attached Selenium compatibility bridge to Playwright browser", 1)
+    except Exception as error:
+        state["selenium_bridge"] = None
+        _log(f"Could not attach Selenium compatibility bridge: {error}", 2)
+
+
+def _close_selenium_bridge(state):
+    driver = state.pop("selenium_bridge", None)
+    if driver is not None:
+        try:
+            driver.quit()
+        except Exception:
+            _log("Unable to close Selenium compatibility bridge", 2)
 
 
 def _parse(value):
@@ -286,6 +369,7 @@ def _launch(data_set):
         elif middle == "shared capability":
             _log(f"Playwright ignores unsupported Selenium capability '{left}'", 2)
 
+    selenium_cdp_address = _selenium_cdp_address(browser_name, debugger, arguments)
     launch["args"] = arguments
     if firefox_prefs:
         launch["firefox_user_prefs"] = firefox_prefs
@@ -300,6 +384,7 @@ def _launch(data_set):
         "network": [],
         "capturing_network": False,
         "wait_until": wait_until,
+        "selenium_bridge": None,
     }
 
     if debugger:
@@ -332,6 +417,7 @@ def _launch(data_set):
     state["browser"], state["context"] = browser, context
     page = context.pages[-1] if context.pages else context.new_page()
     _wire_page(state, page)
+    _attach_selenium_bridge(state, browser_name, selenium_cdp_address)
     playwright_details[driver_id] = state
     _set_active(driver_id)
     if url:
@@ -384,6 +470,7 @@ def Tear_Down_Selenium(data_set=()):
             if not state:
                 continue
             try:
+                _close_selenium_bridge(state)
                 state["context"].close()
             finally:
                 state["browser"].close()
@@ -401,6 +488,7 @@ def Tear_Down_Selenium(data_set=()):
             _playwright = None
             current_driver_id = playwright_page = None
             sr.Remove_From_Shared_Variables("playwright_page")
+            _publish_selenium_bridge(None)
         return "passed"
     except Exception:
         _log("Unable to tear down Playwright browsers", 2)

@@ -219,6 +219,70 @@ def test_go_to_link_clears_previous_iframe(monkeypatch):
     assert state["frame_stack"] == []
 
 
+def test_selenium_cdp_address(monkeypatch):
+    monkeypatch.setattr(playwright_actions, "_free_local_port", lambda: 32123)
+    arguments = []
+
+    assert playwright_actions._selenium_cdp_address(
+        "chrome", None, arguments
+    ) == "127.0.0.1:32123"
+    assert "--remote-debugging-port=32123" in arguments
+    assert playwright_actions._selenium_cdp_address(
+        "microsoft edge chromium", "http://localhost:9222", []
+    ) == "localhost:9222"
+    assert playwright_actions._selenium_cdp_address("firefox", None, []) is None
+
+
+def test_selenium_bridge_attach_publish_and_close(monkeypatch):
+    from selenium import webdriver
+
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Test_Shared_Variables",
+        lambda name: name == "dependency",
+    )
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Get_Shared_Variables",
+        lambda name, **_: {"Browser": "Chrome"} if name == "dependency" else "zeuz_failed",
+    )
+    from Framework.Built_In_Automation.Web.Selenium import (
+        BuiltInFunctions as selenium_actions,
+    )
+
+    bridge = SimpleNamespace(quit=lambda: setattr(bridge, "closed", True))
+    captured = {}
+    monkeypatch.setattr(
+        webdriver,
+        "Chrome",
+        lambda **kwargs: captured.setdefault("options", kwargs["options"]) and bridge,
+    )
+    monkeypatch.setattr(selenium_actions, "selenium_driver", None)
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Set_Shared_Variables",
+        lambda name, value, **_: captured.__setitem__(name, value),
+    )
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Remove_From_Shared_Variables",
+        lambda name: captured.pop(name, None),
+    )
+    state = {}
+
+    playwright_actions._attach_selenium_bridge(state, "chrome", "127.0.0.1:32123")
+    playwright_actions._publish_selenium_bridge(state["selenium_bridge"])
+
+    assert state["selenium_bridge"] is bridge
+    assert captured["options"].debugger_address == "127.0.0.1:32123"
+    assert captured["selenium_driver"] is bridge
+    assert selenium_actions.selenium_driver is bridge
+
+    playwright_actions._close_selenium_bridge(state)
+    assert bridge.closed is True
+    assert "selenium_bridge" not in state
+
+
 @pytest.fixture(scope="module")
 def page():
     if not shutil.which("google-chrome"):
