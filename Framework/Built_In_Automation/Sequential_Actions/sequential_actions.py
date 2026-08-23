@@ -92,7 +92,7 @@ step_exit_pass_called = False
 # dedicated worker thread and wait at most `action_timeout` seconds for it.
 #
 # A single, *reused* worker thread is used (not one-per-action) so libraries
-# with thread affinity -- notably Playwright's sync API and its greenlets --
+# with thread affinity -- notably browser-driver APIs --
 # keep running on the same thread across actions. Python cannot force-kill a
 # thread that is stuck inside a blocking call, so on timeout we stop waiting,
 # abandon the worker (it is a daemon thread, so it never blocks node shutdown),
@@ -234,11 +234,6 @@ def load_sa_modules(
             global selenium
             from Framework.Built_In_Automation.Web.Selenium import (
                 BuiltInFunctions as selenium,
-            )
-        elif module == "playwright":
-            global playwright
-            from Framework.Built_In_Automation.Web.Playwright import (
-                BuiltInFunctions as playwright,
             )
         elif module == "rest":
             global rest
