@@ -206,6 +206,16 @@ def _run_action_with_timeout(run_function, data_set):
         )
         return "zeuz_failed"
 
+
+def _get_conditional_element(args):
+    data_set, module, wait = args
+    return LocateElement.Get_Element(
+        data_set, globals()[module].get_driver(), element_wait=wait
+    )
+
+
+_get_conditional_element._zeuz_thread_affine = True
+
 from pathlib import Path
 if os.path.exists(Path(__file__).parent.parent.parent.parent / "bypass.json"):
     bypass_exist = True
@@ -2056,7 +2066,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 stored = True
                 result = right  # Retrieve the saved result (already converted from shared variable)
             elif "conditional action" in mid:
-                module = mid.strip().split(" ")[0]
+                module = _route_playwright_action("", mid.strip(), data_set).split()[0]
                 actions_for_true = get_data_set_nums(right)
         load_sa_modules(module)
 
@@ -2084,7 +2094,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     # *** Old method of conditional actions in the if statements below. Only kept for backwards compatibility *** #
 
-    elif module == "appium" or module == "selenium":
+    elif module in ("appium", "selenium", "playwright"):
         try:
             wait = 10
             for left, mid, right in data_set:
@@ -2093,7 +2103,9 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
-            Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
+            Element = _run_action_with_timeout(
+                _get_conditional_element, (data_set, module, wait)
+            )
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                 logic_decision = False

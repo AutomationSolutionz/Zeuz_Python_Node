@@ -1,6 +1,7 @@
 import shutil
 import threading
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -55,10 +56,22 @@ def test_backend_routing(monkeypatch):
         sequential_actions._route_playwright_action("click", "selenium action", [])
         == "selenium action"
     )
+    assert (
+        sequential_actions._route_playwright_action("", "selenium conditional action", [])
+        == "selenium conditional action"
+    )
     values["zeuz_browser_driver"] = "PlAyWrIgHt"
     assert (
         sequential_actions._route_playwright_action("click", "selenium action", [])
         == "playwright action"
+    )
+    assert (
+        sequential_actions._route_playwright_action("", "selenium conditional action", [])
+        == "playwright conditional action"
+    )
+    assert (
+        sequential_actions._route_playwright_action("", "playwright conditional action", [])
+        == "playwright conditional action"
     )
     assert (
         sequential_actions._route_playwright_action("click", "playwright action", [])
@@ -96,6 +109,44 @@ def test_backend_routing(monkeypatch):
         )
         == "playwright action"
     )
+
+
+def test_selenium_conditional_uses_active_playwright_driver(monkeypatch):
+    page = object()
+    values = {"zeuz_browser_driver": "playwright"}
+    seen = []
+    caller_thread = threading.get_ident()
+    monkeypatch.setattr(
+        sequential_actions.sr,
+        "Get_Shared_Variables",
+        lambda name, **_: values.get(name, "zeuz_failed"),
+    )
+    monkeypatch.setattr(sequential_actions, "load_sa_modules", lambda _module: None)
+    monkeypatch.setattr(
+        sequential_actions,
+        "playwright",
+        SimpleNamespace(get_driver=lambda: page),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        sequential_actions.LocateElement,
+        "Get_Element",
+        lambda _rows, driver, **_: seen.append(
+            (driver, threading.get_ident())
+        ) or object(),
+    )
+
+    result, _skip = sequential_actions.Conditional_Action_Handler(
+        [[
+            ("id", "element parameter", "button1"),
+            ("true", "selenium conditional action", ""),
+        ]],
+        0,
+    )
+
+    assert result == "passed"
+    assert seen[0][0] is page
+    assert seen[0][1] != caller_thread
 
 
 def test_action_worker_keeps_affinity_after_timeout():
