@@ -2005,6 +2005,9 @@ def main(device_dict, all_run_id_info):
                 if run_id_info["debug_clean"] == "YES":
                     cleanup_driver_instances()
                     shared.Clean_Up_Shared_Variables(run_id)
+            take_screenshot_override = ConfigModule.get_config_value("Advanced Options", "take_screenshot").strip().lower()
+            if take_screenshot_override in CommonUtil.affirmative_words + CommonUtil.negative_words:
+                ConfigModule.remote_config["take_screenshot"] = take_screenshot_override in CommonUtil.affirmative_words
             driver_list = ["Not needed currently"]
 
             final_dependency = run_id_info["dependency_list"]
