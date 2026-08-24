@@ -335,6 +335,20 @@ def test_reused_browser_applies_element_wait(monkeypatch):
     assert shared["element_wait"] == 60.0
 
 
+def test_selenium_style_page_up_key(monkeypatch):
+    pressed = []
+    monkeypatch.setattr(
+        playwright_actions,
+        "get_page",
+        lambda: SimpleNamespace(keyboard=SimpleNamespace(press=pressed.append)),
+    )
+
+    assert playwright_actions.Keystroke_For_Element([
+        ("keystroke keys", "selenium action", "PAGE_UP"),
+    ]) == "passed"
+    assert pressed == ["PageUp"]
+
+
 def test_selenium_cdp_address(monkeypatch):
     monkeypatch.setattr(playwright_actions, "_free_local_port", lambda: 32123)
     arguments = []

@@ -694,6 +694,8 @@ _KEYS = {
     "DELETE": "Delete",
     "HOME": "Home",
     "END": "End",
+    "PAGEUP": "PageUp",
+    "PAGEDOWN": "PageDown",
     "UP": "ArrowUp",
     "DOWN": "ArrowDown",
     "LEFT": "ArrowLeft",
@@ -721,7 +723,7 @@ def Keystroke_For_Element(data_set):
     else:
         key, _, count = value.partition(",")
         combo = "+".join(
-            _KEYS.get(part.strip().upper(), part.strip()) for part in key.split("+")
+            _KEYS.get(_key(part).upper(), part.strip()) for part in key.split("+")
         )
         for _ in range(int(count or 1)):
             element.press(combo) if element else keyboard.press(combo)
