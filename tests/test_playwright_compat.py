@@ -291,6 +291,62 @@ def test_selenium_cdp_address(monkeypatch):
     assert playwright_actions._selenium_cdp_address("firefox", None, []) is None
 
 
+def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
+    class Page:
+        def __init__(self, context):
+            self.context = context
+            self.url = "about:blank"
+
+        def on(self, *_args):
+            pass
+
+    class Context:
+        pages = []
+
+        def on(self, *_args):
+            pass
+
+        def new_page(self):
+            return Page(self)
+
+    class Browser:
+        def new_context(self, **_kwargs):
+            return Context()
+
+    class Chromium:
+        def launch(self, **kwargs):
+            captured["launch"] = kwargs
+            return Browser()
+
+    class ChromeForTesting:
+        def setup_chrome_for_testing(self, version, channel):
+            captured["version"] = version
+            captured["channel"] = channel
+            return "/tmp/chrome", "/tmp/chromedriver"
+
+    captured = {}
+    monkeypatch.setattr(playwright_actions, "_playwright", SimpleNamespace(chromium=Chromium()))
+    monkeypatch.setattr(playwright_actions, "playwright_details", {})
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Get_Shared_Variables",
+        lambda name, **_: {"Browser": "Chrome"} if name == "dependency" else None,
+    )
+    monkeypatch.setattr(playwright_actions, "_attach_selenium_bridge", lambda *_args: None)
+    monkeypatch.setattr(playwright_actions, "_set_active", lambda *_args: None)
+    monkeypatch.setattr(
+        "Framework.Built_In_Automation.Web.Selenium.utils.ChromeForTesting",
+        ChromeForTesting,
+    )
+
+    playwright_actions._launch([("chrome:version", "optional parameter", "beta")])
+
+    assert captured["version"] is None
+    assert captured["channel"] == "Beta"
+    assert captured["launch"]["executable_path"] == "/tmp/chrome"
+    assert "channel" not in captured["launch"]
+
+
 def test_playwright_viewport_uses_runtime_size_or_selenium_default(monkeypatch):
     values = {"window_size_x": "", "window_size_y": ""}
     monkeypatch.setattr(

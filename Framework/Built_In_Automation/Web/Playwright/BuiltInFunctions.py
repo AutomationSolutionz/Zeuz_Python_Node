@@ -323,6 +323,7 @@ def _launch(data_set):
     wait_until = "load"
     url = None
     debugger = None
+    chrome_version = None
     firefox_prefs = {}
     arguments = []
 
@@ -359,6 +360,8 @@ def _launch(data_set):
             }.get(right.lower(), "load")
         elif key == "debuggeraddress":
             debugger = right
+        elif key in ("chromeversion", "chrome:version"):
+            chrome_version = right.strip()
         elif key in ("proxy", "proxyserver"):
             context_options["proxy"] = (
                 value if isinstance(value, dict) else {"server": right}
@@ -383,7 +386,6 @@ def _launch(data_set):
         elif key in (
             "addextension",
             "addencodedextension",
-            "chromeversion",
             "setcapability",
             "addexperimentaloption",
         ):
@@ -428,7 +430,33 @@ def _launch(data_set):
             browser_type = _playwright.webkit
         else:
             browser_type = _playwright.chromium
-            launch["channel"] = "msedge" if "edge" in browser_name else "chrome"
+            if "edge" in browser_name:
+                launch["channel"] = "msedge"
+            elif "chrome" in browser_name:
+                from Framework.Built_In_Automation.Web.Selenium.utils import (
+                    ChromeForTesting,
+                )
+
+                channel = None
+                if chrome_version and chrome_version.lower() in (
+                    "beta",
+                    "dev",
+                    "canary",
+                ):
+                    channel, chrome_version = chrome_version.capitalize(), None
+                chrome_bin, _ = ChromeForTesting().setup_chrome_for_testing(
+                    chrome_version, channel
+                )
+                if chrome_bin:
+                    launch["executable_path"] = str(chrome_bin)
+                    _log(
+                        f"Using Chrome for Testing {chrome_version or channel or 'latest'}",
+                        1,
+                    )
+                else:
+                    launch["channel"] = "chrome"
+            else:
+                launch["channel"] = "chrome"
         browser = browser_type.launch(**launch)
         context = browser.new_context(
             **{key: value for key, value in context_options.items() if key != "timeout"}
