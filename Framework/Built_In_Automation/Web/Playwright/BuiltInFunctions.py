@@ -8,7 +8,7 @@ import socket
 import sys
 import time
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urldefrag, urlparse
 
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -308,6 +308,11 @@ def _launch(data_set):
     from playwright.sync_api import sync_playwright
 
     global _playwright
+    rows = _rows(data_set)
+    for left, _middle, right in rows:
+        if _key(left) in ("waittimetoappearelement", "waitforelement"):
+            sr.Set_Shared_Variables("element_wait", float(right))
+
     dependency = sr.Get_Shared_Variables("dependency")
     browser_name = str(dependency.get("Browser", "Chrome")).strip().lower()
     if "opera" in browser_name:
@@ -325,19 +330,16 @@ def _launch(data_set):
     launch = {"headless": headless}
     context_options = {"accept_downloads": True, "viewport": _configured_viewport()}
     wait_until = "load"
-    url = None
     debugger = None
     chrome_version = None
     chrome_driver_path = None
     firefox_prefs = {}
     arguments = []
 
-    for left, middle, right in _rows(data_set):
+    for left, middle, right in rows:
         key = _key(left)
         value = _parse(right)
-        if key in ("gotolink", "gotolinkv2") and right:
-            url = right
-        elif key in ("waittimetopageload", "pageloadtimeout"):
+        if key in ("waittimetopageload", "pageloadtimeout"):
             context_options["timeout"] = float(right) * 1000
         elif key == "resolution":
             width, height = (
@@ -478,8 +480,6 @@ def _launch(data_set):
     )
     playwright_details[driver_id] = state
     _set_active(driver_id)
-    if url:
-        page.goto(url, wait_until=wait_until)
     return state
 
 
@@ -496,8 +496,15 @@ def Go_To_Link(data_set):
             ),
             None,
         )
-        if url and state["page"].url != url:
-            state["page"].goto(url, wait_until=state["wait_until"])
+        if url:
+            page = state["page"]
+            same_document_hash = (
+                urlparse(url).fragment
+                and urldefrag(page.url).url == urldefrag(url).url
+            )
+            page.goto(url, wait_until=state["wait_until"])
+            if same_document_hash:
+                page.reload(wait_until=state["wait_until"])
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(

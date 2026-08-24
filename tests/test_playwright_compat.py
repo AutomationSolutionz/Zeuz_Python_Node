@@ -254,8 +254,9 @@ def test_go_to_link_clears_previous_iframe(monkeypatch):
     class Page:
         url = "https://example.test/inside-frame"
 
-        def goto(self, url, **_kwargs):
+        def goto(self, url, **kwargs):
             self.url = url
+            self.wait_until = kwargs["wait_until"]
 
     page = Page()
     state = {
@@ -273,8 +274,65 @@ def test_go_to_link_clears_previous_iframe(monkeypatch):
     ]) == "passed"
 
     assert page.url == "https://example.test/login"
+    assert page.wait_until == "load"
     assert state["frame"] is None
     assert state["frame_stack"] == []
+
+
+def test_go_to_link_navigates_hash_route(monkeypatch):
+    class Page:
+        url = "https://example.test/#/login"
+
+        def goto(self, url, **kwargs):
+            self.gotos.append(url)
+            self.goto_wait_until = kwargs["wait_until"]
+            self.url = url
+
+        def reload(self, **kwargs):
+            self.reload_wait_until = kwargs["wait_until"]
+
+    page = Page()
+    page.gotos = []
+    state = {
+        "page": page,
+        "frame": None,
+        "frame_stack": [],
+        "wait_until": "load",
+        "wired_pages": {id(page)},
+    }
+    monkeypatch.setattr(playwright_actions, "_launch", lambda _rows: state)
+    monkeypatch.setattr(playwright_actions, "_set_active", lambda _driver_id: None)
+
+    assert playwright_actions.Go_To_Link([
+        ("go to link", "playwright action", page.url),
+    ]) == "passed"
+    assert page.gotos == [page.url]
+    assert page.goto_wait_until == "load"
+    assert page.reload_wait_until == "load"
+
+
+def test_reused_browser_applies_element_wait(monkeypatch):
+    state = {"page": object()}
+    shared = {}
+    monkeypatch.setattr(playwright_actions, "playwright_details", {"default": state})
+    monkeypatch.setattr(playwright_actions, "_set_active", lambda _driver_id: None)
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Get_Shared_Variables",
+        lambda name, **_kwargs: {"Browser": "Chrome"}
+        if name == "dependency"
+        else None,
+    )
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Set_Shared_Variables",
+        lambda name, value, **_kwargs: shared.__setitem__(name, value),
+    )
+
+    assert playwright_actions._launch([
+        ("wait time to appear element", "optional parameter", "60"),
+    ]) is state
+    assert shared["element_wait"] == 60.0
 
 
 def test_selenium_cdp_address(monkeypatch):
@@ -325,6 +383,7 @@ def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
             return "/tmp/chrome", "/tmp/chromedriver"
 
     captured = {}
+    shared = {}
     monkeypatch.setattr(playwright_actions, "_playwright", SimpleNamespace(chromium=Chromium()))
     monkeypatch.setattr(playwright_actions, "playwright_details", {})
     monkeypatch.setattr(
@@ -335,16 +394,25 @@ def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
     monkeypatch.setattr(playwright_actions, "_attach_selenium_bridge", lambda *_args: None)
     monkeypatch.setattr(playwright_actions, "_set_active", lambda *_args: None)
     monkeypatch.setattr(
+        playwright_actions.sr,
+        "Set_Shared_Variables",
+        lambda name, value, **_kwargs: shared.__setitem__(name, value),
+    )
+    monkeypatch.setattr(
         "Framework.Built_In_Automation.Web.Selenium.utils.ChromeForTesting",
         ChromeForTesting,
     )
 
-    playwright_actions._launch([("chrome:version", "optional parameter", "beta")])
+    playwright_actions._launch([
+        ("chrome:version", "optional parameter", "beta"),
+        ("wait time to appear element", "optional parameter", "60"),
+    ])
 
     assert captured["version"] is None
     assert captured["channel"] == "Beta"
     assert captured["launch"]["executable_path"] == "/tmp/chrome"
     assert "channel" not in captured["launch"]
+    assert shared["element_wait"] == 60.0
 
 
 def test_playwright_viewport_uses_runtime_size_or_selenium_default(monkeypatch):
