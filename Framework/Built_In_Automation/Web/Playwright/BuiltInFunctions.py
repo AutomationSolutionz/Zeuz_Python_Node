@@ -162,7 +162,7 @@ def _selenium_cdp_address(browser_name, debugger, arguments):
     return f"127.0.0.1:{port}"
 
 
-def _attach_selenium_bridge(state, browser_name, debugger_address):
+def _attach_selenium_bridge(state, browser_name, debugger_address, driver_path=None):
     if not debugger_address:
         state["selenium_bridge"] = None
         _log(
@@ -181,10 +181,14 @@ def _attach_selenium_bridge(state, browser_name, debugger_address):
             driver = webdriver.Edge(options=options)
         else:
             from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
 
             options = Options()
             options.debugger_address = debugger_address
-            driver = webdriver.Chrome(options=options)
+            driver = webdriver.Chrome(
+                options=options,
+                service=Service(executable_path=driver_path) if driver_path else None,
+            )
         state["selenium_bridge"] = driver
         _log("Attached Selenium compatibility bridge to Playwright browser", 1)
     except Exception as error:
@@ -324,6 +328,7 @@ def _launch(data_set):
     url = None
     debugger = None
     chrome_version = None
+    chrome_driver_path = None
     firefox_prefs = {}
     arguments = []
 
@@ -444,11 +449,12 @@ def _launch(data_set):
                     "canary",
                 ):
                     channel, chrome_version = chrome_version.capitalize(), None
-                chrome_bin, _ = ChromeForTesting().setup_chrome_for_testing(
+                chrome_bin, chrome_driver = ChromeForTesting().setup_chrome_for_testing(
                     chrome_version, channel
                 )
                 if chrome_bin:
                     launch["executable_path"] = str(chrome_bin)
+                    chrome_driver_path = str(chrome_driver)
                     _log(
                         f"Using Chrome for Testing {chrome_version or channel or 'latest'}",
                         1,
@@ -467,7 +473,9 @@ def _launch(data_set):
     state["browser"], state["context"] = browser, context
     page = context.pages[-1] if context.pages else context.new_page()
     _wire_page(state, page)
-    _attach_selenium_bridge(state, browser_name, selenium_cdp_address)
+    _attach_selenium_bridge(
+        state, browser_name, selenium_cdp_address, chrome_driver_path
+    )
     playwright_details[driver_id] = state
     _set_active(driver_id)
     if url:

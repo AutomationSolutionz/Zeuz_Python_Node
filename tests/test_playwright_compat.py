@@ -411,7 +411,7 @@ def test_selenium_bridge_attach_publish_and_close(monkeypatch):
     monkeypatch.setattr(
         webdriver,
         "Chrome",
-        lambda **kwargs: captured.setdefault("options", kwargs["options"]) and bridge,
+        lambda **kwargs: captured.update(kwargs) or bridge,
     )
     monkeypatch.setattr(selenium_actions, "selenium_driver", None)
     monkeypatch.setattr(
@@ -426,11 +426,14 @@ def test_selenium_bridge_attach_publish_and_close(monkeypatch):
     )
     state = {}
 
-    playwright_actions._attach_selenium_bridge(state, "chrome", "127.0.0.1:32123")
+    playwright_actions._attach_selenium_bridge(
+        state, "chrome", "127.0.0.1:32123", "/tmp/chromedriver"
+    )
     playwright_actions._publish_selenium_bridge(state["selenium_bridge"])
 
     assert state["selenium_bridge"] is bridge
     assert captured["options"].debugger_address == "127.0.0.1:32123"
+    assert captured["service"].path == "/tmp/chromedriver"
     assert captured["selenium_driver"] is bridge
     assert selenium_actions.selenium_driver is bridge
 
