@@ -1007,20 +1007,58 @@ def upload_file(data_set):
 
 
 def drag_and_drop(data_set):
-    source = [
-        (left, middle.replace("source ", "").replace("src ", ""), right)
-        for left, middle, right in _rows(data_set)
-        if "source " in middle or "src " in middle
-    ]
-    target = [
-        (left, middle.replace("destination ", "").replace("dst ", ""), right)
-        for left, middle, right in _rows(data_set)
-        if "destination " in middle or "dst " in middle
-    ]
-    src, dst = _element(source), _element(target)
-    if src in failed_tag_list or dst in failed_tag_list:
+    source, target, shared_options = [], [], []
+    destination_offset = delay = None
+    optional_types = ("option", "optional parameter", "optional option")
+    for left, middle, right in _rows(data_set):
+        if middle.startswith(("source ", "src ")):
+            source.append((left, middle.split(" ", 1)[1], right))
+        elif middle.startswith(("destination ", "dst ")):
+            target.append((left, middle.split(" ", 1)[1], right))
+        elif _key(left) in ("wait", "allowdisable", "allowhidden") and middle in optional_types:
+            shared_options.append((left, "optional parameter", right))
+        elif _key(left) == "destinationoffset" and middle in optional_types:
+            destination_offset = right
+        elif _key(left) == "delay":
+            delay = float(right)
+
+    non_locators = (*optional_types, "save parameter")
+    if not source or all(middle in non_locators for _, middle, _ in source):
+        return _fail("Please provide a source element locator")
+    if not target or all(middle in non_locators for _, middle, _ in target):
+        return _fail("Please provide a destination element locator")
+    source.extend(shared_options)
+    target.extend(shared_options)
+
+    src = _element(source)
+    if src in failed_tag_list:
         return "zeuz_failed"
-    src.drag_to(dst)
+    dst = _element(target)
+    if dst in failed_tag_list:
+        return "zeuz_failed"
+
+    target_position = None
+    if destination_offset:
+        x, y = (float(part) for part in destination_offset.split(",", 1))
+        box = dst.bounding_box()
+        if not box:
+            return _fail("Destination element has no bounding box")
+        target_position = {
+            "x": box["width"] / 2 * (1 + x / 100),
+            "y": box["height"] / 2 * (1 + y / 100),
+        }
+
+    if delay is None:
+        src.drag_to(dst, **({"target_position": target_position} if target_position else {}))
+    else:
+        src.hover()
+        page = get_page()
+        page.mouse.down()
+        try:
+            dst.hover(**({"position": target_position} if target_position else {}))
+            page.wait_for_timeout(delay * 1000)
+        finally:
+            page.mouse.up()
     return "passed"
 
 

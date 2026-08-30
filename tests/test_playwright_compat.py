@@ -471,6 +471,112 @@ def test_playwright_visibility_accepts_zero_sized_container_with_visible_child()
     assert not LocateElement._playwright_is_visible(Locator(False))
 
 
+def test_drag_and_drop_requires_both_locators(monkeypatch):
+    errors = []
+    monkeypatch.setattr(
+        playwright_actions,
+        "_fail",
+        lambda message: errors.append(message) or "zeuz_failed",
+    )
+    monkeypatch.setattr(
+        playwright_actions,
+        "_element",
+        lambda _rows: pytest.fail("missing locators must fail before lookup"),
+    )
+
+    assert playwright_actions.drag_and_drop([
+        ("id", "dst element parameter", "target"),
+    ]) == "zeuz_failed"
+    assert playwright_actions.drag_and_drop([
+        ("id", "src element parameter", "source"),
+    ]) == "zeuz_failed"
+    assert errors == [
+        "Please provide a source element locator",
+        "Please provide a destination element locator",
+    ]
+
+
+def test_drag_and_drop_optional_subfields_pass_step_validation():
+    assert sequential_actions.common.verify_step_data([[
+        ("id", "src element parameter", "source"),
+        ("wait", "src optional parameter", "10"),
+        ("id", "dst element parameter", "target"),
+        ("wait", "dst optional parameter", "10"),
+        ("drag and drop", "selenium action", ""),
+    ]]) == "passed"
+
+
+def test_drag_and_drop_uses_native_offset_and_shared_locator_options(monkeypatch):
+    class Source:
+        def drag_to(self, target, **options):
+            dragged.append((target, options))
+
+    class Target:
+        def bounding_box(self):
+            return {"width": 200, "height": 100}
+
+    source, target = Source(), Target()
+    located, dragged = [], []
+    monkeypatch.setattr(
+        playwright_actions,
+        "_element",
+        lambda rows: located.append(rows) or (source if len(located) == 1 else target),
+    )
+
+    assert playwright_actions.drag_and_drop([
+        ("id", "src element parameter", "source"),
+        ("id", "dst element parameter", "target"),
+        ("wait", "option", "2"),
+        ("allow hidden", "optional option", "true"),
+        ("destination offset", "optional parameter", "50,-100"),
+    ]) == "passed"
+
+    assert located == [
+        [
+            ("id", "element parameter", "source"),
+            ("wait", "optional parameter", "2"),
+            ("allow hidden", "optional parameter", "true"),
+        ],
+        [
+            ("id", "element parameter", "target"),
+            ("wait", "optional parameter", "2"),
+            ("allow hidden", "optional parameter", "true"),
+        ],
+    ]
+    assert dragged == [(target, {"target_position": {"x": 150, "y": 0}})]
+
+
+def test_drag_and_drop_delay_releases_mouse(monkeypatch):
+    events = []
+    source = SimpleNamespace(hover=lambda: events.append("source hover"))
+    target = SimpleNamespace(
+        hover=lambda **options: events.append(("target hover", options))
+    )
+    elements = iter((source, target))
+    page = SimpleNamespace(
+        mouse=SimpleNamespace(
+            down=lambda: events.append("mouse down"),
+            up=lambda: events.append("mouse up"),
+        ),
+        wait_for_timeout=lambda milliseconds: events.append(("wait", milliseconds)),
+    )
+    monkeypatch.setattr(playwright_actions, "_element", lambda _rows: next(elements))
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: page)
+
+    assert playwright_actions.drag_and_drop([
+        ("id", "src element parameter", "source"),
+        ("id", "dst element parameter", "target"),
+        ("delay", "optional parameter", "0.25"),
+    ]) == "passed"
+    assert events == [
+        "source hover",
+        "mouse down",
+        ("target hover", {}),
+        ("wait", 250),
+        "mouse up",
+    ]
+
+
 def test_selenium_bridge_attach_publish_and_close(monkeypatch):
     from selenium import webdriver
 
