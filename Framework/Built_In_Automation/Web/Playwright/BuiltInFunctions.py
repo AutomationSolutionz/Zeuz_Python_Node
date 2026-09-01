@@ -1387,6 +1387,7 @@ def capture_network_log(data_set):
         state["capturing_network"] = True
     else:
         state["capturing_network"] = False
+        captured_network, state["network"] = state["network"], []
         variable = next(
             (
                 right
@@ -1434,7 +1435,7 @@ def capture_network_log(data_set):
             ".map",
         )
         logs = []
-        for captured in state["network"]:
+        for captured in captured_network:
             if captured.get("type") == "request" or captured["url"].lower().endswith(
                 static
             ):
@@ -1449,7 +1450,11 @@ def capture_network_log(data_set):
             response = item.pop("_response", None)
             if include_body:
                 try:
-                    item["body"] = response.body().decode(errors="replace")
+                    item["body"] = (
+                        response.body().decode(errors="replace")
+                        if response.request.timing["responseEnd"] != -1
+                        else "Unavailable"
+                    )
                 except Exception:
                     item["body"] = "Unavailable"
             logs.append(item)

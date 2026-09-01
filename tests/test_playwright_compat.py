@@ -454,6 +454,46 @@ def test_binary_request_body_does_not_escape_network_listener():
     assert playwright_actions._request_post_data(Request()) == "�binary"
 
 
+def test_network_capture_does_not_read_unfinished_response_body(monkeypatch):
+    class Response:
+        request = SimpleNamespace(timing={"responseEnd": -1})
+
+        def body(self):
+            raise AssertionError("unfinished response body must not be read")
+
+    state = {
+        "capturing_network": True,
+        "network": [
+            {
+                "url": "https://example.com/events",
+                "status": 200,
+                "method": "GET",
+                "mimeType": "text/event-stream",
+                "type": "eventsource",
+                "timestamp": 1,
+                "_response": Response(),
+            }
+        ],
+    }
+    saved = {}
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Set_Shared_Variables",
+        lambda name, value: saved.__setitem__(name, value),
+    )
+
+    assert playwright_actions.capture_network_log(
+        [
+            ("capture network log", "playwright action", "stop"),
+            ("include response body", "input parameter", "true"),
+            ("save", "element parameter", "browser_network_log"),
+        ]
+    ) == "passed"
+    assert saved["browser_network_log"][0]["body"] == "Unavailable"
+    assert state["network"] == []
+
+
 def test_playwright_visibility_accepts_zero_sized_container_with_visible_child():
     class Locator:
         def __init__(self, visible, descendants=0):
