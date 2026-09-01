@@ -1460,7 +1460,6 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
         save_parameter = ""
         get_parameter = ""
         allow_hidden = False
-        allow_disabled = False
         text_filter_enabled = False
         normal_rows = []
         shadow_rows = {}
@@ -1477,8 +1476,6 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
                 enabled = right.strip().lower() in ("yes", "true", "ok", "enable", "1")
                 if key == "allow hidden":
                     allow_hidden = enabled
-                elif key in ("allow disable", "allow disabled"):
-                    allow_disabled = enabled
                 elif key == "wait":
                     element_wait = float(right)
                 elif key == "text filter":
@@ -1542,8 +1539,6 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
                 candidate = locator.nth(position)
                 if not allow_hidden and not _playwright_is_visible(candidate):
                     continue
-                if not allow_disabled and not candidate.is_enabled():
-                    continue
                 shadow_text = next(
                     ((r[0].strip().lower(), r[2]) for r in normal_rows if r[0].strip().lower() in ("text", "*text", "**text")),
                     None,
@@ -1571,7 +1566,14 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
         else:
             index = _locate_index_number(normal_rows)
             index = 0 if index is None else index
-            if not candidates or not -len(candidates) <= index < len(candidates):
+            if len(candidates) == 1 and index not in (-1, 0):
+                CommonUtil.ExecLog(
+                    MODULE_NAME,
+                    f"Index {index} is invalid; returning the only visible element",
+                    2,
+                )
+                index = 0
+            elif not candidates or not -len(candidates) <= index < len(candidates):
                 return "zeuz_failed"
             result = candidates[index]
 

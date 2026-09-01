@@ -511,6 +511,153 @@ def test_playwright_visibility_accepts_zero_sized_container_with_visible_child()
     assert not LocateElement._playwright_is_visible(Locator(False))
 
 
+def test_visible_disabled_element_is_located_and_its_live_value_saved(monkeypatch):
+    element = SimpleNamespace(
+        is_visible=lambda: True,
+        is_enabled=lambda: False,
+        locator=lambda _selector: SimpleNamespace(count=lambda: 0),
+        get_attribute=lambda _name: None,
+        input_value=lambda: "user@example.test",
+    )
+    matches = SimpleNamespace(count=lambda: 1, nth=lambda _index: element)
+    root = SimpleNamespace(locator=lambda _selector: matches)
+    saved = {}
+
+    def save(name, value, **_kwargs):
+        saved[name] = value
+        return "passed"
+
+    monkeypatch.setattr(LocateElement.sr, "Set_Shared_Variables", save)
+    monkeypatch.setattr(
+        playwright_actions,
+        "_element",
+        lambda rows: LocateElement._playwright_get_element(rows, root, element_wait=0),
+    )
+
+    rows = [("id", "element parameter", "disabled")]
+    assert LocateElement._playwright_get_element(rows, root, element_wait=0) is element
+    assert playwright_actions.Save_Attribute([
+        *rows,
+        ("value", "save parameter", "user_email"),
+    ]) == "passed"
+    assert saved["user_email"] == "user@example.test"
+
+
+def test_invalid_index_falls_back_only_for_one_visible_candidate(monkeypatch):
+    warnings = []
+
+    def root_with(elements):
+        matches = SimpleNamespace(
+            count=lambda: len(elements),
+            nth=lambda index: elements[index],
+        )
+        return SimpleNamespace(locator=lambda _selector: matches)
+
+    def candidate():
+        return SimpleNamespace(
+            is_visible=lambda: True,
+            locator=lambda _selector: SimpleNamespace(count=lambda: 0),
+        )
+
+    monkeypatch.setattr(LocateElement.sr, "Set_Shared_Variables", lambda *_args: None)
+    monkeypatch.setattr(
+        LocateElement.CommonUtil,
+        "ExecLog",
+        lambda _module, message, level: warnings.append((message, level)),
+    )
+    rows = [
+        ("class", "element parameter", "item"),
+        ("index", "element parameter", "5"),
+    ]
+    only = candidate()
+
+    assert LocateElement._playwright_get_element(
+        rows, root_with([only]), element_wait=0
+    ) is only
+    assert warnings == [("Index 5 is invalid; returning the only visible element", 2)]
+    assert LocateElement._playwright_get_element(
+        rows, root_with([candidate(), candidate()]), element_wait=0
+    ) == "zeuz_failed"
+
+
+def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
+    events = []
+    element = SimpleNamespace(
+        get_attribute=lambda _name: "password",
+        clear=lambda: events.append("clear"),
+        press_sequentially=lambda value, **options: events.append((value, options)),
+    )
+    monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
+
+    assert playwright_actions.Enter_Text_In_Text_Box([
+        ("id", "element parameter", "password"),
+        ("delay", "optional parameter", "0.05"),
+        ("text", "playwright action", "secret"),
+    ]) == "passed"
+    assert events == ["clear", ("secret", {"delay": 50})]
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        ("clear", "optional parameter", "false"),
+        ("append", "optional parameter", "true"),
+    ],
+)
+def test_text_preserves_existing_value_when_requested(monkeypatch, option):
+    events = []
+    element = SimpleNamespace(
+        get_attribute=lambda _name: "text",
+        clear=lambda: events.append("clear"),
+        press_sequentially=lambda value, **options: events.append((value, options)),
+    )
+    monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
+
+    assert playwright_actions.Enter_Text_In_Text_Box([
+        ("id", "element parameter", "name"),
+        option,
+        ("text", "playwright action", "more"),
+    ]) == "passed"
+    assert events == [("more", {})]
+
+
+def test_file_inputs_work_through_text_and_locator_free_upload(monkeypatch, tmp_path):
+    file_path = tmp_path / "upload.txt"
+    file_path.write_text("content")
+    text_uploads = []
+    text_input = SimpleNamespace(
+        get_attribute=lambda _name: "file",
+        set_input_files=text_uploads.append,
+    )
+    monkeypatch.setattr(playwright_actions, "_element", lambda _rows: text_input)
+
+    assert playwright_actions.Enter_Text_In_Text_Box([
+        ("id", "element parameter", "file"),
+        ("text", "playwright action", str(file_path)),
+    ]) == "passed"
+    assert text_uploads == [str(file_path)]
+
+    upload_files = []
+    upload_input = SimpleNamespace(set_input_files=upload_files.append)
+    selectors = []
+    page = SimpleNamespace(
+        locator=lambda selector: selectors.append(selector)
+        or SimpleNamespace(first=upload_input)
+    )
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: page)
+    monkeypatch.setattr(
+        playwright_actions,
+        "_element",
+        lambda _rows: pytest.fail("locator-free upload must select the first file input"),
+    )
+
+    assert playwright_actions.upload_file([
+        ("upload file", "playwright action", str(file_path)),
+    ]) == "passed"
+    assert selectors == ["input[type=file]"]
+    assert upload_files == [str(file_path)]
+
+
 def test_drag_and_drop_requires_both_locators(monkeypatch):
     errors = []
     monkeypatch.setattr(
@@ -613,6 +760,7 @@ def test_drag_and_drop_delay_releases_mouse(monkeypatch):
     assert events == [
         "source hover",
         "mouse down",
+        ("target hover", {}),
         ("target hover", {}),
         ("wait", 250),
         "mouse up",
@@ -740,17 +888,8 @@ def test_locator_grammar(page, rows, expected):
 
 
 def test_hidden_disabled_frame_and_shadow(page):
-    assert (
-        LocateElement.Get_Element(
-            [("id", "element parameter", "disabled")], page, element_wait=0.1
-        )
-        == "zeuz_failed"
-    )
     disabled = LocateElement.Get_Element(
-        [
-            ("id", "element parameter", "disabled"),
-            ("allow disable", "optional parameter", "true"),
-        ],
+        [("id", "element parameter", "disabled")],
         page,
         element_wait=0.5,
     )

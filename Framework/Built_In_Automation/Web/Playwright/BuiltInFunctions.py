@@ -735,11 +735,25 @@ def Enter_Text_In_Text_Box(data_set):
     if element in failed_tag_list:
         return "zeuz_failed"
     value = _action(data_set)
+    if (element.get_attribute("type") or "").lower() == "file":
+        element.set_input_files(CommonUtil.path_parser(value))
+        return "passed"
+
     append = any(
         _key(left) == "append" and right.lower() in CommonUtil.affirmative_words
         for left, _, right in _rows(data_set)
     )
-    element.type(value) if append else element.fill(value)
+    clear = not any(
+        _key(left) == "clear" and right.lower() in ("no", "false")
+        for left, _, right in _rows(data_set)
+    )
+    delay = next(
+        (float(right) * 1000 for left, _, right in _rows(data_set) if _key(left) == "delay"),
+        0,
+    )
+    if clear and not append:
+        element.clear()
+    element.press_sequentially(value, **({"delay": delay} if delay else {}))
     return "passed"
 
 
@@ -990,7 +1004,17 @@ def switch_iframe(data_set):
 
 
 def upload_file(data_set):
-    element = _element(data_set)
+    locator_rows = any(
+        middle.endswith("parameter")
+        and middle
+        not in ("optional parameter", "input parameter", "save parameter", "get parameter")
+        for _left, middle, _right in _rows(data_set)
+    )
+    element = (
+        _element(data_set)
+        if locator_rows
+        else get_driver().locator("input[type=file]").first
+    )
     if element in failed_tag_list:
         return "zeuz_failed"
     files = _parse(_action(data_set))
@@ -1058,7 +1082,9 @@ def drag_and_drop(data_set):
         page = get_page()
         page.mouse.down()
         try:
-            dst.hover(**({"position": target_position} if target_position else {}))
+            hover_options = {"position": target_position} if target_position else {}
+            dst.hover(**hover_options)
+            dst.hover(**hover_options)
             page.wait_for_timeout(delay * 1000)
         finally:
             page.mouse.up()
@@ -1095,6 +1121,8 @@ def Save_Attribute(data_set):
         value = element.evaluate("element => element.tagName.toLowerCase()")
     elif attribute == "checked":
         value = element.is_checked()
+    elif attribute == "value":
+        value = element.input_value()
     else:
         value = element.get_attribute(attribute)
     return sr.Set_Shared_Variables(variable, value)
@@ -1131,6 +1159,8 @@ def save_attribute_values_in_list(data_set):
             value = (
                 element.inner_text()
                 if attribute == "text"
+                else element.input_value()
+                if attribute == "value"
                 else element.get_attribute(attribute)
             )
             if all(
