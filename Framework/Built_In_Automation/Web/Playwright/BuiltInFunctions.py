@@ -1010,7 +1010,10 @@ def drag_and_drop(data_set):
     source, target, shared_options = [], [], []
     destination_offset = delay = None
     optional_types = ("option", "optional parameter", "optional option")
-    for left, middle, right in _rows(data_set):
+    for raw_left, raw_middle, raw_right in data_set:
+        left = str(raw_left).strip()
+        middle = str(raw_middle).strip().lower()
+        right = str(raw_right)
         if middle.startswith(("source ", "src ")):
             source.append((left, middle.split(" ", 1)[1], right))
         elif middle.startswith(("destination ", "dst ")):
@@ -1020,7 +1023,7 @@ def drag_and_drop(data_set):
         elif _key(left) == "destinationoffset" and middle in optional_types:
             destination_offset = right
         elif _key(left) == "delay":
-            delay = float(right)
+            delay = float(right.strip())
 
     non_locators = (*optional_types, "save parameter")
     if not source or all(middle in non_locators for _, middle, _ in source):

@@ -525,6 +525,7 @@ def test_drag_and_drop_uses_native_offset_and_shared_locator_options(monkeypatch
 
     assert playwright_actions.drag_and_drop([
         ("id", "src element parameter", "source"),
+        ("text", "src child parameter", " Assets"),
         ("id", "dst element parameter", "target"),
         ("wait", "option", "2"),
         ("allow hidden", "optional option", "true"),
@@ -534,6 +535,7 @@ def test_drag_and_drop_uses_native_offset_and_shared_locator_options(monkeypatch
     assert located == [
         [
             ("id", "element parameter", "source"),
+            ("text", "child parameter", " Assets"),
             ("wait", "optional parameter", "2"),
             ("allow hidden", "optional parameter", "true"),
         ],
