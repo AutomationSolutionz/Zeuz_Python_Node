@@ -22,6 +22,11 @@ from Framework.Utilities.CommonUtil import failed_tag_list
 
 
 MODULE_NAME = inspect.getmodulename(__file__)
+temp_config = str(
+    Path(__file__).resolve().parents[4]
+    / "AutomationLog"
+    / ConfigModule.get_config_value("Advanced Options", "_file")
+)
 playwright_details = {}
 playwright_page = None
 current_driver_id = None
@@ -1252,7 +1257,7 @@ def take_screenshot_selenium(data_set):
         for left, _, right in _rows(data_set)
     )
     folder = ConfigModule.get_config_value(
-        "sectionOne", "screen_capture_folder", str(Path.cwd())
+        "sectionOne", "screen_capture_folder", temp_config
     )
     Path(folder).mkdir(parents=True, exist_ok=True)
     filename = time.strftime(filename_format) + ".png"
