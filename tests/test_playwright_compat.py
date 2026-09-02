@@ -44,6 +44,11 @@ def test_declaration_parity_and_callables():
     )
 
 
+def test_playwright_module_loads():
+    assert sequential_actions.load_sa_modules("playwright") == "passed"
+    assert sequential_actions.playwright is playwright_actions
+
+
 def test_backend_routing(monkeypatch):
     values = {}
     monkeypatch.setattr(
