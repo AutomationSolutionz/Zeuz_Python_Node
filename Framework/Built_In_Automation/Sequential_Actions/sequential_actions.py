@@ -29,7 +29,6 @@ from .action_declarations.info import actions, sub_field_match, supported_platfo
 
 # Import modules
 import inspect
-import asyncio
 import os
 import sys
 import time
@@ -230,7 +229,7 @@ def _get_action_timeout():
         return _DEFAULT_ACTION_TIMEOUT
 
 
-async def _run_action_with_timeout(run_function, data_set):
+def _run_action_with_timeout(run_function, data_set):
     """Execute run_function(data_set), enforcing the action_timeout cap.
 
     Returns the action's result, or "zeuz_failed" (with a logged error) if it
@@ -250,16 +249,13 @@ async def _run_action_with_timeout(run_function, data_set):
         or getattr(CommonUtil, "load_testing", False)
         or getattr(_action_worker_local, "in_worker", False)
     ):
-        result = run_function(data_set)
-        if inspect.iscoroutine(result):
-            return await result
-        return result
+        return run_function(data_set)
 
     if _action_worker is None:
         _action_worker = _ActionTimeoutWorker()
 
     try:
-        result = _action_worker.run(run_function, (data_set,), timeout)
+        return _action_worker.run(run_function, (data_set,), timeout)
     except TimeoutError:
         # The worker is still stuck on the timed-out action. Abandon it (daemon
         # thread won't block shutdown) and create a fresh worker for the next
@@ -273,20 +269,6 @@ async def _run_action_with_timeout(run_function, data_set):
             3,
         )
         return "zeuz_failed"
-    if inspect.iscoroutine(result):
-        try:
-            return await asyncio.wait_for(result, timeout=timeout)
-        except TimeoutError:
-            _force_kill_hung_browser_sessions()
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Action exceeded the action_timeout of %s second(s) and was aborted. "
-                "Marking the step as failed." % timeout,
-                3,
-            )
-            return "zeuz_failed"
-    return result
-
 from pathlib import Path
 if os.path.exists(Path(__file__).parent.parent.parent.parent / "bypass.json"):
     bypass_exist = True
@@ -381,22 +363,8 @@ def write_browser_logs():
     try:
         if str(sr.Get_Shared_Variables("zeuz_collect_browser_log")).strip().lower() in ("false", "no", "off", "disable"):
             return
-        drivers = []
-        if sr.Test_Shared_Variables("browser_sessions"):
-            browser_sessions = sr.Get_Shared_Variables("browser_sessions", log=False)
-            if isinstance(browser_sessions, dict):
-                drivers.extend(
-                    session.get("selenium_driver")
-                    for session in browser_sessions.values()
-                    if isinstance(session, dict) and session.get("selenium_driver")
-                )
         if sr.Test_Shared_Variables("selenium_driver"):
-            drivers.append(sr.Get_Shared_Variables("selenium_driver"))
-        seen = set()
-        for driver in drivers:
-            if id(driver) in seen:
-                continue
-            seen.add(id(driver))
+            driver = sr.Get_Shared_Variables("selenium_driver")
             for browser_log in driver.get_log("browser"):
                 CommonUtil.ExecLog(sModuleInfo, browser_log["message"], 6,print_Execlog=CommonUtil.show_browser_log)
     except Exception as e:
@@ -497,7 +465,7 @@ def if_else_log_for_actions(left, next_level_step_data, statement="if"):
     return left + ".... condition matched\n" + "Running actions: " + log_actions
 
 
-async def If_else_action(step_data, data_set_no):
+def If_else_action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -744,7 +712,7 @@ async def If_else_action(step_data, data_set_no):
                 )
                 return "zeuz_failed"
             if data_set_index not in inner_skip:
-                result, skip = await Run_Sequential_Actions(
+                result, skip = Run_Sequential_Actions(
                     [data_set_index]
                 ) # Running
                 inner_skip = list(set(inner_skip+skip))
@@ -777,7 +745,7 @@ def sanitize_deprecated_dataset(value):
     return value
 
 
-async def for_loop_action(step_data, data_set_no):
+def for_loop_action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -966,7 +934,7 @@ async def for_loop_action(step_data, data_set_no):
                         sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
                         sr.test_action_info = CommonUtil.all_action_info[step_index]
                         return "zeuz_failed", outer_skip
-                    result, skip = await Run_Sequential_Actions([data_set_index])
+                    result, skip = Run_Sequential_Actions([data_set_index])
                     inner_skip = list(set(inner_skip + skip))
                     outer_skip = list(set(outer_skip + inner_skip))
 
@@ -1066,7 +1034,7 @@ async def for_loop_action(step_data, data_set_no):
         return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
-async def While_Loop_Action(step_data, data_set_no):
+def While_Loop_Action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -1165,7 +1133,7 @@ async def While_Loop_Action(step_data, data_set_no):
                             3
                         )
                         return "zeuz_failed", outer_skip
-                    result, skip = await Run_Sequential_Actions(
+                    result, skip = Run_Sequential_Actions(
                         [data_set_index]
                     )  # new edit: full step data is passed. [step_data[data_set_index]])
                     # Recursively call this function until all called data sets are complete
@@ -1267,7 +1235,7 @@ def ticker_linear_shape(seconds, callable, *args, **kwargs):
         seconds -= 1
 
 
-async def Sequential_Actions(
+def Sequential_Actions(
     step_data,
     test_action_info,
     debug_actions=None,
@@ -1286,13 +1254,13 @@ async def Sequential_Actions(
     # sr.Set_Shared_Variables("test_action_info", test_action_info, protected=True, print_variable=False)
     sr.test_action_info = test_action_info
 
-    result, skip_for_loop = await Run_Sequential_Actions([], debug_actions)
+    result, skip_for_loop = Run_Sequential_Actions([], debug_actions)
     # empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
     return result
 
 
-async def Run_Sequential_Actions(
+def Run_Sequential_Actions(
     data_set_list=None, debug_actions=None
 ):  # data_set_no will used in recursive conditional action call
     if data_set_list is None:
@@ -1318,7 +1286,7 @@ async def Run_Sequential_Actions(
                     data_set_list.append(i)
 
         if len(data_set_list) == 0 and CommonUtil.debug_status and not sr.Test_Shared_Variables("selenium_driver") and ConfigModule.get_config_value("Inspector", "ai_plugin").strip().lower() in CommonUtil.affirmative_words:
-            return await Action_Handler([["browser", "selenium action", "browser"]], ["browser", "selenium action", "browser"]), []
+            return Action_Handler([["browser", "selenium action", "browser"]], ["browser", "selenium action", "browser"]), []
 
         for dataset_cnt in data_set_list:  # For each data set within step data
             data_set = step_data[dataset_cnt]  # Save data set to variable
@@ -1414,7 +1382,7 @@ async def Run_Sequential_Actions(
 
                 # If middle column = action, call action handler, but always return a pass
                 elif "optional action" in action_name:
-                    result = await Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
+                    result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
                     if result == "zeuz_failed":
                         CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
                     result = "passed"
@@ -1422,7 +1390,7 @@ async def Run_Sequential_Actions(
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
                     if action_name.lower().strip() == "windows conditional action":
-                        result, to_skip = await Conditional_Action_Handler(step_data, dataset_cnt)
+                        result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
@@ -1433,7 +1401,7 @@ async def Run_Sequential_Actions(
 
                     elif action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
                         # old style conditional action
-                        result, to_skip = await Conditional_Action_Handler(step_data, dataset_cnt)
+                        result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
@@ -1442,7 +1410,7 @@ async def Run_Sequential_Actions(
                         break
 
                     else:
-                        result, to_skip = await If_else_action(step_data, dataset_cnt)
+                        result, to_skip = If_else_action(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
@@ -1453,7 +1421,7 @@ async def Run_Sequential_Actions(
                 # Simulate a while/for loop with the specified data sets
                 elif "loop action" in action_name:
                     if action_name.lower().strip() == "for loop action":
-                        result, skip_for_loop = await for_loop_action(step_data, dataset_cnt)
+                        result, skip_for_loop = for_loop_action(step_data, dataset_cnt)
                         skip = list(set(skip + skip_for_loop))
                         if result in failed_tag_list:
                             return "zeuz_failed", skip_for_loop
@@ -1461,7 +1429,7 @@ async def Run_Sequential_Actions(
                     elif action_name.lower().strip() not in ("while loop action", "for loop action"):
                         # old style loop action
                         # CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
-                        result, skip_for_loop = await Loop_Action_Handler(data_set, row, dataset_cnt)
+                        result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
                         skip = skip_for_loop
 
                         position_of_loop_action = dataset_cnt
@@ -1491,7 +1459,7 @@ async def Run_Sequential_Actions(
                             return "zeuz_failed", skip_for_loop
                 elif "loop" in action_name:
                     if "while" in action_name.lower():
-                        result, skip_for_loop = await While_Loop_Action(step_data, dataset_cnt)
+                        result, skip_for_loop = While_Loop_Action(step_data, dataset_cnt)
                     skip = list(set(skip + skip_for_loop))
                     if result in failed_tag_list:
                         return "zeuz_failed", skip_for_loop
@@ -1561,7 +1529,7 @@ async def Run_Sequential_Actions(
 
                 # If middle column = action, call action handler
                 elif "action" in action_name:  # Must be last, since it's a single word that also exists in other action types
-                    result = await Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
+                    result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
                     if row[0].lower().strip() in ("step exit", "testcase exit"):
                         global step_exit_fail_called, step_exit_pass_called
                         CommonUtil.ExecLog(sModuleInfo, f"{row[0].lower().strip()} Exit called. Stopping Test Step.", 1)
@@ -1591,12 +1559,12 @@ async def Run_Sequential_Actions(
                                     continue
 
                                 CommonUtil.ExecLog(sModuleInfo, "Action failed. Trying bypass #%d" % (i + 1), 1)
-                                result = await Action_Handler(bypass_data_set[i], bypass_row[i])
+                                result = Action_Handler(bypass_data_set[i], bypass_row[i])
                                 if result in failed_tag_list:  # This also failed, so chances are first failure was real
                                     continue  # Try the next bypass, if any
                                 else:  # Bypass passed, which indicates there was something blocking the element in the first place
                                     CommonUtil.ExecLog(sModuleInfo, "Bypass passed. Retrying original action", 1)
-                                    result = await Action_Handler(data_set, row)  # Retry failed original data set
+                                    result = Action_Handler(data_set, row)  # Retry failed original data set
                                     if result in failed_tag_list:  # Still a failure, give up
                                         return "zeuz_failed", skip_for_loop
                                     break  # No need to process more bypasses
@@ -1622,7 +1590,7 @@ async def Run_Sequential_Actions(
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-async def Loop_Action_Handler(data, row, dataset_cnt):
+def Loop_Action_Handler(data, row, dataset_cnt):
     """ Performs a sub-set of the data set in a loop, similar to a for or while loop """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1781,8 +1749,8 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                             3,
                         )
 
-        async def build_subset(new_step_data):
-            result = await Run_Sequential_Actions(new_step_data)
+        def build_subset(new_step_data):
+            result = Run_Sequential_Actions(new_step_data)
             if result in passed_tag_list or (
                 type(result) == tuple and result[0] in passed_tag_list
             ):
@@ -1940,7 +1908,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
             if loop_method == "exit_on_dataset":
                 for ndc in range(len(new_step_data)):
                     # Build the sub-set and execute
-                    result = await build_subset([new_step_data[ndc]])
+                    result = build_subset([new_step_data[ndc]])
                     if result in failed_tag_list:
                         return result, skip
 
@@ -1957,12 +1925,12 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                 for ndc in range(len(new_step_data)):  # For each data set in the sub-set
                     # Build the sub-set and execute
                     if load_testing:
-                        thread_pool.submit(lambda step_data: asyncio.run(build_subset(step_data)), [new_step_data[ndc]])
+                        thread_pool.submit(build_subset, [new_step_data[ndc]])
                         if not loop_result_for_load_testing:
                             CommonUtil.load_testing = False
                             return result, skip
                     else:
-                        result = await build_subset([new_step_data[ndc]])
+                        result = build_subset([new_step_data[ndc]])
                         if result in failed_tag_list:
                             CommonUtil.load_testing = False
                             return result, skip
@@ -1988,7 +1956,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                     len(new_step_data)
                 ):  # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = await build_subset(
+                    result = build_subset(
                         [new_step_data[ndc]]
                     )  # the dataset was conditional then break
                     if result in failed_tag_list:
@@ -2016,7 +1984,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                     len(new_step_data)
                 ):  # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = await build_subset([new_step_data[ndc]])
+                    result = build_subset([new_step_data[ndc]])
                     if result in failed_tag_list:
                         return result, skip
                     if nested_double:
@@ -2032,7 +2000,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
                 for ndc in range(len(new_step_data)):
                     # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = await build_subset([new_step_data[ndc]])
+                    result = build_subset([new_step_data[ndc]])
 
                     if result in passed_tag_list:
                         combined_result = combined_result and True
@@ -2121,7 +2089,7 @@ async def Loop_Action_Handler(data, row, dataset_cnt):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-async def Conditional_Action_Handler(step_data, dataset_cnt):
+def Conditional_Action_Handler(step_data, dataset_cnt):
     """ Process conditional actions, called only by Sequential_Actions() """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -2151,7 +2119,6 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 stored = True
                 result = right  # Retrieve the saved result (already converted from shared variable)
             elif "conditional action" in mid:
-                mid = get_browser_driver_routing(mid, data_set)
                 module = mid.strip().split(" ")[0]
                 actions_for_true = get_data_set_nums(right)
         load_sa_modules(module)
@@ -2189,14 +2156,6 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
-            session_activator = getattr(eval(module), "_activate_browser_session_for_action", None)
-            if session_activator:
-                result = session_activator(data_set)
-                if inspect.iscoroutine(result):
-                    result = await result
-                if result in failed_tag_list:
-                    raise RuntimeError("Browser session activation failed")
-
             Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
@@ -2205,40 +2164,6 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
             else:
                 logic_decision = True
                 log_msg += "Element is found\n"
-
-        except:  # Element doesn't exist, proceed with the step data following the fail/false path
-            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
-            logic_decision = False
-            log_msg += "Element is not found\n"
-
-    elif module == "playwright":
-        try:
-            from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as PlaywrightBuiltInFunctions
-            
-            wait = 10
-            for left, mid, right in data_set:
-                mid = mid.lower()
-                left = left.lower()
-                if "optional parameter" in mid and "wait" in left:
-                    wait = float(right.strip())
-
-            result = await PlaywrightBuiltInFunctions._activate_browser_session_for_action(data_set)
-            if result in failed_tag_list:
-                raise RuntimeError("Browser session activation failed")
-
-            if PlaywrightBuiltInFunctions.current_page is None:
-                CommonUtil.ExecLog(sModuleInfo, "No browser open for Playwright conditional action", 3)
-                logic_decision = False
-                log_msg += "Browser not open\n"
-            else:
-                Element = await LocateElement.Get_Element(data_set, PlaywrightBuiltInFunctions.current_page, element_wait=wait)
-                if Element == "zeuz_failed":
-                    CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
-                    logic_decision = False
-                    log_msg += "Element is not found\n"
-                else:
-                    logic_decision = True
-                    log_msg += "Element is found\n"
 
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
@@ -2447,7 +2372,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
                 2
             )
         if data_set_index not in inner_skip:
-            result, skip = await Run_Sequential_Actions(
+            result, skip = Run_Sequential_Actions(
                 [data_set_index]
             )  # Running
             inner_skip = list(set(inner_skip + skip))
@@ -2460,7 +2385,7 @@ async def Conditional_Action_Handler(step_data, dataset_cnt):
     return "passed", outer_skip
 
 
-async def bypass_bug(*args,):
+def bypass_bug(*args,):
     """ Suppose, there is a bug in the test product which is a pop-up that appears randomly and you need to close that pop-up
     So instead of putting that inside you testcase use this function.
     This function will read the action dataset from "Zeuz_Python_Node/bypass.json" file and run that action after every particular type action
@@ -2535,7 +2460,7 @@ async def bypass_bug(*args,):
             if action_row is None:
                 continue
             CommonUtil.ExecLog("", "\n********** Starting Bypass action: %s **********\n%s" % (action_name, json.dumps(action, indent=2)), 4)
-            if await Action_Handler(dataset, action_row, False) == "zeuz_failed":
+            if Action_Handler(dataset, action_row, False) == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Bypass action failed, however continuing", 2)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Bypass action failed, however continuing")
@@ -2557,82 +2482,7 @@ def compare_variable_names(set, dataset):
         CommonUtil.compare_action_varnames = {"left": "Left", "right": "Right"}
 
 
-def get_browser_driver_routing(action_subfield, data_set):
-    """
-    Check if browser driver optional parameter is present and route to appropriate driver.
-    
-    Args:
-        action_subfield (str): The original action subfield (e.g., "selenium action", "playwright action")
-        data_set (list): The data set containing optional parameters
-        
-    Returns:
-        str: Updated action_subfield based on browser driver parameter
-        
-    This function checks if there is a "browser driver" optional parameter in the data set or a zeuz_browser_driver in runtime parameters.
-    If any of them are present, it updates the action_subfield to the value specified.
-    If both are present, it uses the action-level optional parameter.
-    If neither are present, it returns the original action_subfield.
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    original_action_subfield = action_subfield
-    action_subfield = str(action_subfield).strip().lower()
-    action_parts = action_subfield.split(" ", 1)
-    if (
-        len(action_parts) != 2
-        or action_parts[0] not in ("playwright", "selenium")
-        or action_parts[1] not in ("action", "conditional action", "conditional actions")
-    ):
-        return original_action_subfield
-    
-    # Initialize the updated action subfield with the original action subfield
-    updated_action_subfield = action_subfield
-
-    # Get the runtime parameter for browser driver preference
-    browser_driver_runtime_parameter = sr.shared_variables.get("zeuz_browser_driver")
-
-    # If runtime parameter is present and valid, update the action subfield
-    if browser_driver_runtime_parameter and browser_driver_runtime_parameter.strip().lower() in ("playwright", "selenium"):
-        CommonUtil.ExecLog(sModuleInfo, "Runtime parameter for browser driver preference detected", 5)
-        updated_action_subfield = browser_driver_runtime_parameter.strip().lower() + " " + action_parts[1]
-
-    # Check if there is an optional parameter for browser driver in the data set
-    for left, mid, right in data_set:
-        # If optional parameter is present and valid, update the action subfield
-        if (mid.strip().lower().startswith("optional") 
-            and left.strip().lower() == "browser driver" 
-            and right.strip().lower() in ("playwright", "selenium")):
-
-            # If runtime parameter is also present, action-level optional parameter will take precedence
-            if browser_driver_runtime_parameter:
-                # log a warning for browser driver preference in two places
-                CommonUtil.ExecLog(sModuleInfo, "Both runtime parameter and optional parameter for browser driver detected, using optional parameter", 2)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Optional parameter for browser driver preference detected in action", 5)
-            updated_action_subfield = right.strip().lower() + " " + action_parts[1]
-            break
-    
-    # If the action subfield has changed, log the change
-    if action_subfield != updated_action_subfield:
-        CommonUtil.ExecLog(sModuleInfo, "Browser action changed from %s to %s" % (action_subfield, updated_action_subfield), 1)
-
-    return updated_action_subfield
-
-
-def normalize_legacy_playwright_action_name(action_name, action_subfield):
-    """
-    Route legacy Selenium wait aliases to the Playwright wait declaration only
-    after browser-driver routing has selected Playwright.
-    """
-    if (
-        str(action_subfield).strip().lower() == "playwright action"
-        and str(action_name).strip().lower() in ("wait", "wait disable")
-    ):
-        return "wait for element"
-    return action_name
-
-
-async def Action_Handler(_data_set, action_row, _bypass_bug=True):
+def Action_Handler(_data_set, action_row, _bypass_bug=True):
     """ Finds the appropriate function for the requested action in the step data and executes it """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2642,10 +2492,6 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
     action_name = action_row[0]
     action_subfield = action_row[1]
 
-    # Apply browser driver routing if applicable
-    action_subfield = get_browser_driver_routing(action_subfield, _data_set)
-    action_name = normalize_legacy_playwright_action_name(action_name, action_subfield)
-    
     if str(action_name).startswith("%|"):  # if shared variable
         action_name = sr.get_previous_response_variables_in_strings(action_name)
 
@@ -2750,23 +2596,16 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "zeuz_failed"
-        session_activator = getattr(eval(module), "_activate_browser_session_for_action", None)
-        if session_activator:
-            result = session_activator(data_set, function)
-            if inspect.iscoroutine(result):
-                result = await result
-            if result in failed_tag_list:
-                return result
         run_function = getattr(eval(module), function)  # create a reference to the function
         # Capture the BEFORE-action screen (debug/chatbot only) so the validator can
         # compare it against the AFTER capture taken once the action completes.
-        await CommonUtil.TakeScreenShot(function, pre_action=True)
+        CommonUtil.TakeScreenShot(function, pre_action=True)
         start_time = time.perf_counter()
         if pre_sleep:
             time.sleep(pre_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
             time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
-        result = await _run_action_with_timeout(run_function, data_set)  # Execute action, enforcing action_timeout
+        result = _run_action_with_timeout(run_function, data_set)  # Execute action, enforcing action_timeout
         if post_sleep:
             time.sleep(post_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
@@ -2786,11 +2625,11 @@ async def Action_Handler(_data_set, action_row, _bypass_bug=True):
         compare_variable_names(False, [])
         if performance_action.zeuz_cycle != -1:
             CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
-        await CommonUtil.TakeScreenShot(function)
+        CommonUtil.TakeScreenShot(function)
         CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False
-            await bypass_bug(action_name, action_subfield)
+            bypass_bug(action_name, action_subfield)
             CommonUtil.print_execlog = True
         return result  # Return result to sequential_actions()
 

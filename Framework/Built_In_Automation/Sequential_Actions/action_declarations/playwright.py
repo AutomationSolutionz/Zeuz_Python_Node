@@ -11,9 +11,7 @@ Author: Zeuz/AutomationSolutionz
 declarations = (
     # Browser Management
     { "name": "open browser",                  "function": "Open_Browser",               "screenshot": "web" },
-    { "name": "open electron app",             "function": "Open_Electron_App",          "screenshot": "web" },
     { "name": "go to link",                    "function": "Go_To_Link",                 "screenshot": "web" },
-    { "name": "go to link v2",                 "function": "Go_To_Link_V2",              "screenshot": "web" },
     { "name": "tear down browser",             "function": "Tear_Down_Playwright",       "screenshot": "none" },
     { "name": "teardown",                      "function": "Tear_Down_Playwright",       "screenshot": "none" },
     { "name": "switch browser",                "function": "Switch_Browser",             "screenshot": "none" },
@@ -23,7 +21,6 @@ declarations = (
     { "name": "double click",                  "function": "Double_Click_Element",       "screenshot": "web" },
     { "name": "right click",                   "function": "Right_Click_Element",        "screenshot": "web" },
     { "name": "hover",                         "function": "Hover_Over_Element",         "screenshot": "web" },
-    { "name": "click and download",            "function": "Click_and_Download",         "screenshot": "web" },
 
     # Text Input
     { "name": "text",                          "function": "Enter_Text_In_Text_Box",     "screenshot": "web" },
@@ -37,8 +34,6 @@ declarations = (
 
     # Element Information
     { "name": "save attribute",                "function": "Save_Attribute",             "screenshot": "web" },
-    { "name": "change attribute value",        "function": "Change_Attribute_Value",       "screenshot": "web" },
-    { "name": "capture network log",           "function": "capture_network_log",        "screenshot": "web" },
     { "name": "get element info",              "function": "get_element_info",           "screenshot": "web" },
     { "name": "extract table data",            "function": "Extract_Table_Data",         "screenshot": "web" },
 
@@ -50,11 +45,6 @@ declarations = (
     { "name": "scroll",                        "function": "Scroll",                     "screenshot": "web" },
     { "name": "scroll to element",             "function": "scroll_to_element",          "screenshot": "web" },
     { "name": "scroll element to top",         "function": "scroll_to_element",          "screenshot": "web" },
-    { "name": "scroll to top",                 "function": "scroll_to_top",              "screenshot": "web" },
-
-    # Lists / attributes
-    { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
-    { "name": "save web elements in list",     "function": "save_web_elements_in_list",     "screenshot": "web" },
 
     # Selection (Dropdowns/Checkboxes)
     { "name": "select by visible text",        "function": "Select_Deselect",            "screenshot": "web" },
@@ -65,9 +55,6 @@ declarations = (
     { "name": "deselect by index",             "function": "Select_Deselect",            "screenshot": "web" },
     { "name": "deselect all",                  "function": "Select_Deselect",            "screenshot": "web" },
     { "name": "check uncheck",                 "function": "check_uncheck",              "screenshot": "web" },
-    { "name": "check uncheck all",             "function": "check_uncheck_all",          "screenshot": "web" },
-    { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",        "screenshot": "web" },
-    { "name": "slider bar",                    "function": "slider_bar",                 "screenshot": "web" },
 
     # Window/Tab Management
     { "name": "switch window",                 "function": "switch_window_or_tab",       "screenshot": "web" },
@@ -93,7 +80,6 @@ declarations = (
 
     # File Upload
     { "name": "upload file",                   "function": "upload_file",                "screenshot": "web" },
-    { "name": "copy image into browser",       "function": "copy_image_into_browser",    "screenshot": "web" },
 
     # Window Management
     { "name": "resize window",                 "function": "resize_window",              "screenshot": "web" },

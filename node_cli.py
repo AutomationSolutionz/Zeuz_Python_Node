@@ -174,7 +174,11 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-def _destroy_session_file():
+async def destroy_session():
+    """
+    Destroy session file.
+    """
+
     # Remove session file if prompted for new authentication
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     if session_bin_path.exists():
@@ -184,18 +188,11 @@ def _destroy_session_file():
             print("[ERROR] failed to remove session file")
 
 
-async def destroy_session():
-    """
-    Destroy session file.
-    """
-    _destroy_session_file()
-
-
 def zeuz_authentication_prompts_for_cli():
     """
     Prompts user for inputting new credentials.
     """
-    _destroy_session_file()
+    destroy_session()
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:
@@ -468,9 +465,13 @@ async def RunProcess(node_id, log_dir=None):
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
             await install_handler.cancel_run()
-            await MainDriverApi.main(
-                device_dict=device_info,
-                all_run_id_info=node_json,
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                lambda: MainDriverApi.main(
+                    device_dict=device_info,
+                    all_run_id_info=node_json,
+                ),
             )
 
         async def on_connect_callback(reconnected: bool):
