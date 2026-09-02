@@ -158,7 +158,7 @@ def shadow_root_elements(shadow_root_ds: list[list[str]], element_ds: list[list[
             locator_type = None
             for idx2, parent_param in parent_params:
                 if idx == idx2:
-                    if idx == 1: 
+                    if idx == 1:
                         shadow_host_query, query_type = _construct_query([parent_param, shadow_param])
                         locator_type = By.XPATH if query_type == "xpath" else By.CSS_SELECTOR
                     else:
@@ -219,6 +219,10 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
     good when you are just trying to see how your step data would be converted to a query for testing local runs
     """
+    if _is_playwright_object(driver):
+        return _playwright_get_element(
+            step_data_set, driver, return_all_elements=return_all_elements, element_wait=element_wait
+        )
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global generic_driver
@@ -1422,6 +1426,170 @@ def _locate_index_number(step_data_set):
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info(), None, "Index = 0 is set")
         return None
+
+
+def _is_playwright_object(value):
+    module = type(value).__module__
+    return module.startswith("playwright.") and hasattr(value, "locator")
+
+
+def _playwright_css(rows):
+    """CSS for shadow-host traversal; Playwright pierces open roots natively."""
+    parts = []
+    tag = "*"
+    for left, _middle, right in rows:
+        key = left.strip().lower()
+        if key == "tag":
+            tag = right.strip()
+        elif key in ("css", "css selector", "css_selector"):
+            return right.strip()
+        elif key not in ("index", "text", "*text", "**text", "xpath"):
+            attr = key.lstrip("*")
+            escaped = right.replace("\\", "\\\\").replace('"', '\\"')
+            operator = "*=" if "*" in key else "="
+            flag = " i" if key.startswith("**") else ""
+            parts.append(f'[{attr}{operator}"{escaped}"{flag}]')
+    return tag + "".join(parts)
+
+
+def _playwright_is_visible(locator):
+    # Selenium treats a zero-sized container as displayed when it has visible children.
+    return locator.is_visible() or locator.locator(":visible").count() > 0
+
+
+def _playwright_get_element(step_data_set, root, return_all_elements=False, element_wait=None):
+    """Execute the existing ZeuZ locator grammar with Playwright locators."""
+    try:
+        save_parameter = ""
+        get_parameter = ""
+        allow_hidden = False
+        text_filter_enabled = False
+        normal_rows = []
+        shadow_rows = {}
+
+        for raw in step_data_set:
+            left, middle, right = (str(raw[0]), str(raw[1]), str(raw[2]))
+            mid = middle.strip().lower()
+            key = left.strip().lower()
+            if mid == "save parameter":
+                save_parameter = "" if right == "ignore" else left
+            elif mid == "get parameter":
+                get_parameter = right.strip().strip("%").strip("|")
+            elif mid in ("optional parameter", "optional option"):
+                enabled = right.strip().lower() in ("yes", "true", "ok", "enable", "1")
+                if key == "allow hidden":
+                    allow_hidden = enabled
+                elif key == "wait":
+                    element_wait = float(right)
+                elif key == "text filter":
+                    text_filter_enabled = enabled
+            elif mid.startswith("sr "):
+                match = re.match(r"sr\s+(\d+)(?:\s+\w+)?\s+(?:parent|element)\s+parameter", mid)
+                if match:
+                    shadow_rows.setdefault(int(match.group(1)), []).append((left, "element parameter", right))
+            else:
+                normal_rows.append((left, middle, right))
+
+        if get_parameter:
+            result = sr.parse_variable(get_parameter)
+            return result if result not in failed_tag_list else "zeuz_failed"
+
+        for level in sorted(shadow_rows):
+            rows = shadow_rows[level]
+            index = _locate_index_number(rows) or 0
+            root = root.locator(_playwright_css(rows)).nth(index)
+
+        raw_css = next((right for left, _middle, right in normal_rows if left.strip().lower() in ("css", "css selector", "css_selector")), None)
+        raw_xpath = next((right for left, _middle, right in normal_rows if left.strip().lower() == "xpath"), None)
+
+        global driver_type
+        previous_type = driver_type
+        driver_type = "selenium"  # query construction is browser-neutral XPath
+        try:
+            if raw_css is not None:
+                query, query_type = raw_css, "css"
+            elif raw_xpath is not None:
+                query, query_type = raw_xpath, "xpath"
+            else:
+                query, query_type = _construct_query(normal_rows, _is_playwright_locator(root))
+        finally:
+            driver_type = previous_type
+
+        if shadow_rows and raw_css is None and raw_xpath is None:
+            locator = root.locator(_playwright_css(normal_rows))
+        elif query_type == "unique":
+            key, value = query
+            key = key.strip().lower()
+            if key in ("css", "css selector", "css_selector"):
+                locator = root.locator(value)
+            elif key == "xpath":
+                locator = root.locator("xpath=" + value)
+            elif key == "text":
+                locator = root.get_by_text(value, exact=True)
+            elif key == "*text":
+                locator = root.get_by_text(value, exact=False)
+            else:
+                locator = root.locator(_playwright_css([(key, "element parameter", value)]))
+        else:
+            locator = root.locator(("xpath=" if query_type == "xpath" else "") + query)
+
+        timeout = float(element_wait if element_wait is not None else sr.Get_Shared_Variables("element_wait"))
+        deadline = time.monotonic() + timeout
+        candidates = []
+        while True:
+            candidates = []
+            for position in range(locator.count()):
+                candidate = locator.nth(position)
+                if not allow_hidden and not _playwright_is_visible(candidate):
+                    continue
+                shadow_text = next(
+                    ((r[0].strip().lower(), r[2]) for r in normal_rows if r[0].strip().lower() in ("text", "*text", "**text")),
+                    None,
+                ) if shadow_rows else None
+                if shadow_text:
+                    mode, wanted_text = shadow_text
+                    actual_text = candidate.inner_text()
+                    if mode == "text" and actual_text != wanted_text:
+                        continue
+                    if mode == "*text" and wanted_text not in actual_text:
+                        continue
+                    if mode == "**text" and wanted_text.lower() not in actual_text.lower():
+                        continue
+                if text_filter_enabled:
+                    wanted = next((r[2] for r in normal_rows if r[0].strip().lower().endswith("text")), None)
+                    if wanted is not None and wanted not in candidate.inner_text():
+                        continue
+                candidates.append(candidate)
+            if candidates or time.monotonic() >= deadline:
+                break
+            time.sleep(min(0.05, max(0, deadline - time.monotonic())))
+
+        if return_all_elements:
+            result = candidates
+        else:
+            index = _locate_index_number(normal_rows)
+            index = 0 if index is None else index
+            if len(candidates) == 1 and index not in (-1, 0):
+                CommonUtil.ExecLog(
+                    MODULE_NAME,
+                    f"Index {index} is invalid; returning the only visible element",
+                    2,
+                )
+                index = 0
+            elif not candidates or not -len(candidates) <= index < len(candidates):
+                return "zeuz_failed"
+            result = candidates[index]
+
+        if save_parameter:
+            sr.Set_Shared_Variables(save_parameter, result)
+        sr.Set_Shared_Variables("zeuz_element", result)
+        return result
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _is_playwright_locator(value):
+    return type(value).__name__ == "Locator" and type(value).__module__.startswith("playwright.")
 
 
 def _pyautogui(step_data_set):

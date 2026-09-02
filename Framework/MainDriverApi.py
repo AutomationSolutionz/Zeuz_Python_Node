@@ -805,6 +805,13 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
             Selenium.Tear_Down_Selenium()
         except:
             pass
+        if shared.Test_Shared_Variables("playwright_page"):
+            try:
+                from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
+                from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as Playwright
+                sequential_actions._run_action_with_timeout(Playwright.Tear_Down_Selenium, [])
+            except Exception:
+                pass
         if shared.Test_Shared_Variables("appium_details"):
             import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
             driver = shared.Remove_From_Shared_Variables("appium_details")
@@ -1268,7 +1275,15 @@ def send_dom_variables():
             except Exception as e:
                 CommonUtil.ExecLog(sModuleInfo, str(e), 2)
 
-        if shared.Test_Shared_Variables('selenium_driver'):
+        if shared.Test_Shared_Variables('playwright_page'):
+            try:
+                from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
+                from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as Playwright
+                dom = sequential_actions._run_action_with_timeout(Playwright.get_dom, [])
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, sys.exc_info(), 2)
+                dom = None
+        elif shared.Test_Shared_Variables('selenium_driver'):
             try:
                 selenium_driver = shared.Get_Shared_Variables("selenium_driver")
                 dom = selenium_driver.execute_script("""
@@ -1991,6 +2006,9 @@ def main(device_dict, all_run_id_info):
                 if run_id_info["debug_clean"] == "YES":
                     cleanup_driver_instances()
                     shared.Clean_Up_Shared_Variables(run_id)
+            take_screenshot_override = ConfigModule.get_config_value("Advanced Options", "take_screenshot").strip().lower()
+            if take_screenshot_override in CommonUtil.affirmative_words + CommonUtil.negative_words:
+                ConfigModule.remote_config["take_screenshot"] = take_screenshot_override in CommonUtil.affirmative_words
             driver_list = ["Not needed currently"]
 
             final_dependency = run_id_info["dependency_list"]

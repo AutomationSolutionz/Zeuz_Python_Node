@@ -38,6 +38,7 @@ def create_settings_config_file():
         "_file": "temp_config.ini",
         "_file_upload_path": "TestExecutionLog",
         "stop_live_log": False,
+        "take_screenshot": "",
     }
     config["Inspector"] = {
         "Window": "",
@@ -68,7 +69,7 @@ def get_config_value(section, key, location: os.PathLike | None = None):
     """
     try:
         global remote_config
-        if key in remote_config:
+        if section == "RunDefinition" and key in remote_config:
             return str(remote_config[key])
 
         config = configparser.ConfigParser()

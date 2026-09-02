@@ -723,7 +723,8 @@ def Save_Text(data_set):
 
     try:
         # !!! Seems like a really round about way of just removing \n. Why not use replace()?
-        list_of_element_text = Element.text.split("\n")  # Split multi-line text
+        element_text = Element.inner_text() if type(Element).__module__.startswith("playwright.") else Element.text
+        list_of_element_text = element_text.split("\n")  # Split multi-line text
         visible_list_of_element_text = ""
         for each_text_item in list_of_element_text:  # For each line of text
             if each_text_item != "":

@@ -92,7 +92,7 @@ step_exit_pass_called = False
 # dedicated worker thread and wait at most `action_timeout` seconds for it.
 #
 # A single, *reused* worker thread is used (not one-per-action) so libraries
-# with thread affinity -- notably Playwright's sync API and its greenlets --
+# with thread affinity -- notably browser-driver APIs --
 # keep running on the same thread across actions. Python cannot force-kill a
 # thread that is stuck inside a blocking call, so on timeout we stop waiting,
 # abandon the worker (it is a daemon thread, so it never blocks node shutdown),
@@ -108,6 +108,7 @@ class _ActionTimeoutWorker:
     def __init__(self):
         self._in_q = queue.Queue()
         self._out_q = queue.Queue()
+        self._job_id = 0
         self.thread = threading.Thread(
             target=self._loop, name="zeuz_action_worker", daemon=True
         )
@@ -118,11 +119,11 @@ class _ActionTimeoutWorker:
         # instead of submitting back to the worker and deadlocking on it.
         _action_worker_local.in_worker = True
         while True:
-            func, args = self._in_q.get()
+            job_id, func, args = self._in_q.get()
             try:
-                self._out_q.put(("ok", func(*args)))
+                self._out_q.put((job_id, "ok", func(*args)))
             except BaseException:  # propagate any error to the calling thread
-                self._out_q.put(("err", sys.exc_info()))
+                self._out_q.put((job_id, "err", sys.exc_info()))
 
     def run(self, func, args, timeout):
         """Run func(*args), waiting at most `timeout` seconds.
@@ -131,11 +132,18 @@ class _ActionTimeoutWorker:
         exception thrown by func on the calling thread (so existing exception
         handling is preserved).
         """
-        self._in_q.put((func, args))
-        try:
-            kind, payload = self._out_q.get(timeout=timeout)
-        except queue.Empty:
-            raise TimeoutError()
+        self._job_id += 1
+        job_id = self._job_id
+        self._in_q.put((job_id, func, args))
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while True:
+            try:
+                wait = None if deadline is None else max(0, deadline - time.monotonic())
+                completed_id, kind, payload = self._out_q.get(timeout=wait)
+            except queue.Empty:
+                raise TimeoutError()
+            if completed_id == job_id:
+                break
         if kind == "err":
             _exc_type, exc_value, exc_tb = payload
             raise exc_value.with_traceback(exc_tb)
@@ -243,11 +251,11 @@ def _run_action_with_timeout(run_function, data_set):
 
     timeout = _get_action_timeout()
 
-    if (
-        timeout <= 0
-        or load_testing
-        or getattr(CommonUtil, "load_testing", False)
-        or getattr(_action_worker_local, "in_worker", False)
+    thread_affine = getattr(run_function, "_zeuz_thread_affine", False)
+    if getattr(_action_worker_local, "in_worker", False):
+        return run_function(data_set)
+    if not thread_affine and (
+        timeout <= 0 or load_testing or getattr(CommonUtil, "load_testing", False)
     ):
         return run_function(data_set)
 
@@ -255,12 +263,13 @@ def _run_action_with_timeout(run_function, data_set):
         _action_worker = _ActionTimeoutWorker()
 
     try:
-        return _action_worker.run(run_function, (data_set,), timeout)
+        return _action_worker.run(run_function, (data_set,), timeout if timeout > 0 else None)
     except TimeoutError:
-        # The worker is still stuck on the timed-out action. Abandon it (daemon
-        # thread won't block shutdown) and create a fresh worker for the next
-        # action so its queues start clean.
-        _action_worker = None
+        # Most timed-out workers are abandoned. Thread-affine libraries keep
+        # their worker so a late completion, screenshot, or cleanup never hops
+        # to a different thread.
+        if not getattr(run_function, "_zeuz_thread_affine", False):
+            _action_worker = None
         _force_kill_hung_browser_sessions()
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -269,6 +278,15 @@ def _run_action_with_timeout(run_function, data_set):
             3,
         )
         return "zeuz_failed"
+def _get_conditional_element(args):
+    data_set, module, wait = args
+    return LocateElement.Get_Element(
+        data_set, globals()[module].get_driver(), element_wait=wait
+    )
+
+
+_get_conditional_element._zeuz_thread_affine = True
+
 from pathlib import Path
 if os.path.exists(Path(__file__).parent.parent.parent.parent / "bypass.json"):
     bypass_exist = True
@@ -2114,7 +2132,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 stored = True
                 result = right  # Retrieve the saved result (already converted from shared variable)
             elif "conditional action" in mid:
-                module = mid.strip().split(" ")[0]
+                module = _route_playwright_action("", mid.strip(), data_set).split()[0]
                 actions_for_true = get_data_set_nums(right)
         load_sa_modules(module)
 
@@ -2142,7 +2160,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     # *** Old method of conditional actions in the if statements below. Only kept for backwards compatibility *** #
 
-    elif module == "appium" or module == "selenium":
+    elif module in ("appium", "selenium", "playwright"):
         try:
             wait = 10
             for left, mid, right in data_set:
@@ -2151,7 +2169,9 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
-            Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
+            Element = _run_action_with_timeout(
+                _get_conditional_element, (data_set, module, wait)
+            )
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                 logic_decision = False
@@ -2493,6 +2513,8 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     if str(action_subfield).startswith("%|"):  # if shared variable
         action_subfield = sr.get_previous_response_variables_in_strings(action_subfield)
 
+    action_subfield = _route_playwright_action(action_name, action_subfield, _data_set)
+
     if action_subfield.lower().startswith("windows"):
         python_folder = []
         for location in subprocess.getoutput("where python").split("\n"):
@@ -2520,6 +2542,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             return "zeuz_failed" 
 
     module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute
+    is_playwright_action = module == "playwright" or original_module == "playwright"
     CommonUtil.prettify_limit = sr.Get_Shared_Variables("zeuz_prettify_limit")
 
     if module in failed_tag_list or module == "" or function == "":  # New, make sure we have a function
@@ -2544,6 +2567,8 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
+        if row == action_row:
+            new_row[1] = action_subfield
         if row[1].strip().lower() in ("optional parameter", "optional option"):
             if row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
                 screenshot = row[2].strip().lower()
@@ -2564,9 +2589,9 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
                 continue
 
         new_row[1] = new_row[1].replace("optional action", "action").replace("bypass","").replace("optional option","optional parameter").strip()
-        if module in row[1]:
+        if module in new_row[1]:
             new_row[1] = new_row[1].replace(module, "").strip()
-        if original_module != "" and original_module in row[1]:
+        if original_module != "" and original_module in new_row[1]:
             new_row[1] = new_row[1].replace(original_module, "").strip()
         data_set.append(tuple(new_row))
 
@@ -2594,13 +2619,25 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         run_function = getattr(eval(module), function)  # create a reference to the function
         # Capture the BEFORE-action screen (debug/chatbot only) so the validator can
         # compare it against the AFTER capture taken once the action completes.
-        CommonUtil.TakeScreenShot(function, pre_action=True)
+        if not is_playwright_action:
+            CommonUtil.TakeScreenShot(function, pre_action=True)
         start_time = time.perf_counter()
         if pre_sleep:
             time.sleep(pre_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
             time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
-        result = _run_action_with_timeout(run_function, data_set)  # Execute action, enforcing action_timeout
+        if is_playwright_action:
+            def run_playwright_action(rows):
+                CommonUtil.TakeScreenShot(function, pre_action=True)
+                value = run_function(rows)
+                CommonUtil.TakeScreenShot(function)
+                return value
+            run_playwright_action._zeuz_thread_affine = True
+            result = _run_action_with_timeout(run_playwright_action, data_set)
+        else:
+            result = _run_action_with_timeout(run_function, data_set)  # Execute action, enforcing action_timeout
+        if module == "selenium":
+            _record_selenium_browser(action_name, data_set, result)
         if post_sleep:
             time.sleep(post_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
@@ -2620,7 +2657,8 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         compare_variable_names(False, [])
         if performance_action.zeuz_cycle != -1:
             CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
-        CommonUtil.TakeScreenShot(function)
+        if not is_playwright_action:
+            CommonUtil.TakeScreenShot(function)
         CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:
             CommonUtil.print_execlog = False
@@ -2631,6 +2669,66 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     except Exception:
         CommonUtil.print_execlog = True
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _row_driver_id(data_set, default="default"):
+    for left, _middle, right in data_set:
+        if left.replace(" ", "").replace("_", "").replace("-", "").lower() in ("driverid", "drivertag"):
+            return right.strip() or default
+    return default
+
+
+def _browser_owners():
+    owners = sr.Get_Shared_Variables("zeuz_browser_backends", log=False)
+    return owners if isinstance(owners, dict) else {}
+
+
+def _route_playwright_action(action_name, action_subfield, data_set):
+    """Keep old Selenium routing unless Playwright was explicitly selected."""
+    words = action_subfield.lower().split()
+    if action_name == "open electron app" and "playwright" in words:
+        return re.sub("playwright", "selenium", action_subfield, flags=re.IGNORECASE)
+    if action_name == "accessibility test" and "playwright" in words:
+        return re.sub("playwright", "selenium", action_subfield, flags=re.IGNORECASE)
+    if "playwright" in words or "selenium" not in words:
+        return action_subfield
+    try:
+        requested = str(sr.Get_Shared_Variables("zeuz_browser_driver", log=False)).strip().lower()
+    except Exception:
+        requested = ""
+    if requested != "playwright" or action_name == "accessibility test":
+        return action_subfield
+    if action_name == "open electron app":
+        return action_subfield
+
+    owners = _browser_owners()
+    active = sr.Get_Shared_Variables("zeuz_active_browser_backend", log=False)
+    if action_name == "switch browser":
+        active = owners.get(_row_driver_id(data_set), "playwright")
+    if active == "selenium":
+        return action_subfield
+    return re.sub("selenium", "playwright", action_subfield, flags=re.IGNORECASE)
+
+
+def _record_selenium_browser(action_name, data_set, result):
+    if result in failed_tag_list or action_name not in (
+        "open electron app", "switch browser", "tear down browser", "teardown"
+    ):
+        return
+    owners = _browser_owners()
+    driver_id = _row_driver_id(data_set)
+    if action_name == "open electron app":
+        owners[driver_id] = "selenium"
+        sr.Set_Shared_Variables("zeuz_active_browser_backend", "selenium")
+    elif action_name == "switch browser" and owners.get(driver_id) == "selenium":
+        sr.Set_Shared_Variables("zeuz_active_browser_backend", "selenium")
+    elif action_name in ("tear down browser", "teardown"):
+        if any(left.replace(" ", "").lower() == "driverid" for left, _, _ in data_set):
+            owners.pop(driver_id, None)
+        else:
+            owners = {key: value for key, value in owners.items() if value != "selenium"}
+        sr.Set_Shared_Variables("zeuz_active_browser_backend", "playwright")
+    sr.Set_Shared_Variables("zeuz_browser_backends", owners)
 
 
 '''if 49 pass

@@ -843,7 +843,12 @@ def set_screenshot_vars(shared_variables):
                     "driver"
                 ]  # Driver for selected device
         if screen_capture_type == "web":  # Selenium driver object
-            if "selenium_driver" in shared_variables:
+            if (
+                shared_variables.get("zeuz_active_browser_backend") == "playwright"
+                and "playwright_page" in shared_variables
+            ):
+                screen_capture_driver = shared_variables["playwright_page"]
+            elif "selenium_driver" in shared_variables:
                 screen_capture_driver = shared_variables["selenium_driver"]
     except:
         ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
@@ -936,6 +941,9 @@ def TakeScreenShot(function_name, local_run=False, pre_action=False):
             )
             return
 
+        if Driver is not None and type(Driver).__module__.startswith("playwright."):
+            Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name)
+            return
         thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
         SaveThread("screenshot", thread)
 
@@ -1099,7 +1107,10 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name, s
 
         # Capture screenshot of web browser
         elif Method == "web":
-            Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
+            if type(Driver).__module__.startswith("playwright."):
+                Driver.screenshot(path=ImageName)
+            else:
+                Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
 
         # Capture screenshot of mobile
         elif Method == "mobile":

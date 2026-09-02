@@ -90,12 +90,6 @@ Referenced repos:
 
 ## Browser Downloads & WebDrivers
 
-### Playwright Browsers
-
-| Domain | Purpose |
-|--------|---------|
-| `playwright.azureedge.net` | Playwright browser binaries (Chromium, Firefox, WebKit) |
-
 ### Selenium / WebDriver Manager
 
 | Domain | Purpose |
@@ -293,9 +287,6 @@ raw.githubusercontent.com
 codeload.github.com
 objects.githubusercontent.com
 github-releases.githubusercontent.com
-
-# ── Playwright Browsers ──────────────────────────────────────
-playwright.azureedge.net
 
 # ── Selenium / WebDrivers ────────────────────────────────────
 googlechromelabs.github.io
