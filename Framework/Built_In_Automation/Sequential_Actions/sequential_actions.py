@@ -307,11 +307,6 @@ def load_sa_modules(
             from Framework.Built_In_Automation.Web.Selenium import (
                 BuiltInFunctions as selenium,
             )
-        elif module == "playwright":
-            global playwright
-            from Framework.Built_In_Automation.Web.Playwright import (
-                BuiltInFunctions as playwright,
-            )
         elif module == "rest":
             global rest
             from Framework.Built_In_Automation.Web.REST import BuiltInFunctions as rest
