@@ -1577,6 +1577,12 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
                 )
                 index = 0
             elif not candidates or not -len(candidates) <= index < len(candidates):
+                CommonUtil.ExecLog(
+                    MODULE_NAME,
+                    f"Unable to locate your element with given data: {locator}; "
+                    f"index={index}, matches={len(candidates)}, allow_hidden={allow_hidden}",
+                    3,
+                )
                 return "zeuz_failed"
             result = candidates[index]
 

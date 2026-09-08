@@ -892,6 +892,62 @@ def test_locator_grammar(page, rows, expected):
     assert element.inner_text() == expected
 
 
+def test_evaluator_text_does_not_reselect_existing_user(page, monkeypatch):
+    saved = {}
+
+    def save(name, value, **_kwargs):
+        saved[name] = value
+        return "passed"
+
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", save)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    test_page = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: test_page)
+    try:
+        test_page.set_content(
+            '<div id="evaluators"><button class="user-tags" style="white-space:pre">Existing Test User </button></div>'
+        )
+        assert test_page.locator("button").inner_text().endswith(" ")
+        assert playwright_actions.save_attribute_values_in_list([
+            ("id", "element parameter", "evaluators"),
+            ("attributes", "target parameter", 'tag="button", return="text"'),
+            ("save attribute values in list", "action", "existing"),
+        ]) == "passed"
+        # Match Selenium's observed whitespace handling using synthetic names.
+        assert saved["existing"] == ["Existing Test User"]
+        wanted = ["New Test User", "Existing Test User"]
+        assert [name for name in wanted if name not in saved["existing"]] == ["New Test User"]
+        assert playwright_actions.Save_Attribute([
+            ("tag", "element parameter", "button"),
+            ("text", "save parameter", "name"),
+        ]) == "passed"
+        assert saved["name"] == "Existing Test User"
+        for mode in ("validate full text", "validate partial text"):
+            assert playwright_actions.Validate_Text([
+                ("tag", "element parameter", "button"),
+                (mode, "action", "Existing Test User"),
+            ]) == "passed"
+    finally:
+        test_page.close()
+
+
+def test_missing_validation_element_logs_locator_failure(monkeypatch):
+    logs = []
+    root = SimpleNamespace(locator=lambda _selector: SimpleNamespace(count=lambda: 0))
+    monkeypatch.setattr(LocateElement.CommonUtil, "ExecLog", lambda *args: logs.append(args))
+    monkeypatch.setattr(
+        playwright_actions, "_element",
+        lambda rows: LocateElement._playwright_get_element(rows, root, element_wait=0),
+    )
+    assert playwright_actions.Validate_Text([
+        ("tag", "element parameter", "button"),
+        ("*text", "element parameter", "Existing Test User"),
+        ("validate partial text", "action", "Existing Test User"),
+    ]) == "zeuz_failed"
+    assert any("Unable to locate" in message and "matches=0" in message and level == 3
+               for _module, message, level in logs)
+
+
 def test_hidden_disabled_frame_and_shadow(page):
     disabled = LocateElement.Get_Element(
         [("id", "element parameter", "disabled")],

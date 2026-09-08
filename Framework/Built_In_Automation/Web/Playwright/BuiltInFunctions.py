@@ -774,7 +774,7 @@ def Validate_Text(data_set):
         ),
         ("", ""),
     )
-    actual = element.inner_text()
+    actual = element.inner_text().strip()
     ignore_case = any(
         _key(left) == "ignorecase" and right.lower() in CommonUtil.affirmative_words
         for left, _, right in _rows(data_set)
@@ -1121,7 +1121,7 @@ def Save_Attribute(data_set):
     if element in failed_tag_list or not variable:
         return "zeuz_failed"
     if attribute == "text":
-        value = element.inner_text()
+        value = element.inner_text().strip()
     elif attribute == "tag":
         value = element.evaluate("element => element.tagName.toLowerCase()")
     elif attribute == "checked":
@@ -1162,7 +1162,7 @@ def save_attribute_values_in_list(data_set):
         for element in _element(rows, all_elements=True, root=parent):
             attribute = spec.get("return", ["text"])[0]
             value = (
-                element.inner_text()
+                element.inner_text().strip()
                 if attribute == "text"
                 else element.input_value()
                 if attribute == "value"
