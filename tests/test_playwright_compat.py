@@ -448,17 +448,6 @@ def test_playwright_viewport_uses_runtime_size_or_selenium_default(monkeypatch):
     assert playwright_actions._configured_viewport() == {"width": 1440, "height": 900}
 
 
-def test_binary_request_body_does_not_escape_network_listener():
-    class Request:
-        post_data_buffer = b"\xf1binary"
-
-        @property
-        def post_data(self):
-            raise UnicodeDecodeError("utf-8", b"\xf1", 0, 1, "invalid byte")
-
-    assert playwright_actions._request_post_data(Request()) == "�binary"
-
-
 def test_network_capture_does_not_read_unfinished_response_body(monkeypatch):
     class Response:
         request = SimpleNamespace(timing={"responseEnd": -1})
@@ -497,6 +486,183 @@ def test_network_capture_does_not_read_unfinished_response_body(monkeypatch):
     ) == "passed"
     assert saved["browser_network_log"][0]["body"] == "Unavailable"
     assert state["network"] == []
+
+
+def test_cdp_capture_releases_sessions_on_start_and_stop_errors(monkeypatch):
+    class Session:
+        detached = False
+
+        def on(self, *args):
+            pass
+
+        def remove_listener(self, *args):
+            pass
+
+        def send(self, method, params=None):
+            if method == "Network.enable":
+                raise RuntimeError("page closed during capture startup")
+
+        def detach(self):
+            self.detached = True
+
+    session = Session()
+    page = object()
+    state = {
+        "browser": SimpleNamespace(browser_type=SimpleNamespace(name="chromium")),
+        "context": SimpleNamespace(pages=[page], new_cdp_session=lambda _: session),
+        "network": [],
+    }
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    # Bypass the standard action guard to assert both the exception and cleanup.
+    with pytest.raises(RuntimeError, match="page closed"):
+        playwright_actions.capture_network_log.__wrapped__([
+            ("capture network log", "playwright action", "start"),
+        ])
+    assert session.detached
+    assert state["capturing_network"] is False
+    assert not state.get("network_sessions")
+
+    session.detached = False
+    state["network_sessions"] = {page: session}
+    with pytest.raises(ValueError):
+        playwright_actions.capture_network_log.__wrapped__([
+            ("capture network log", "playwright action", "stop"),
+            ("include status code", "input parameter", "invalid"),
+        ])
+    assert session.detached
+    assert not state.get("network_sessions")
+
+
+def test_cdp_capture_reuses_browser_without_retaining_network_objects(page, monkeypatch):
+    from collections import Counter
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<html>Capture test</html>")
+
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            self.send_response(307 if self.path == "/redirect" else 201)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            if self.path == "/redirect":
+                self.send_header("Location", "/payload")
+            self.end_headers()
+            self.wfile.write(b'"' + b"x" * 65536 + b'"')
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    context = page.context.browser.new_context()
+    state = {
+        "browser": context.browser, "context": context, "network": [],
+        "capturing_network": False, "downloads": [],
+    }
+    saved = {}
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    monkeypatch.setattr(playwright_actions, "playwright_details", {"default": state})
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda k, v: saved.__setitem__(k, v))
+    start = [("capture network log", "playwright action", "start")]
+    stop = [
+        ("capture network log", "playwright action", "stop"),
+        ("include response body", "input parameter", "true"),
+        ("include status code", "input parameter", "200-399"),
+        ("include request method", "input parameter", "POST"),
+        ("filter domain", "input parameter", "127.0.0.1,localhost"),
+        ("save", "element parameter", "captured"),
+    ]
+    try:
+        tab = context.new_page()
+        playwright_actions._wire_page(state, tab)
+        tab.goto(f"http://127.0.0.1:{server.server_port}")
+        tab.evaluate("localStorage.setItem('login', 'retained')")
+        tab.evaluate("""url => {
+            const frame = document.createElement('iframe');
+            frame.src = url;
+            document.body.appendChild(frame);
+        }""", f"http://localhost:{server.server_port}/frame")
+        tab.frame_locator("iframe").locator("body").wait_for()
+        child = tab.frames[1]
+
+        def counts():
+            objects = Counter(type(obj).__name__ for obj in tab._impl_obj._connection._objects.values())
+            return {key: objects[key] for key in ("Request", "Response", "CDPSession")}
+
+        baseline = counts()
+        for _ in range(5):
+            assert playwright_actions.capture_network_log(start) == "passed"
+            tab.evaluate("""async () => {
+                for (let i = 0; i < 50; i++) {
+                    await (await fetch('/payload', {method: 'POST', body: 'p'.repeat(32768)})).text();
+                }
+                await (await fetch('/redirect', {method: 'POST'})).text();
+                await (await fetch('/ignored')).text();
+            }""")
+            child.evaluate("async () => await (await fetch('/payload', {method: 'POST'})).text()")
+            assert playwright_actions.capture_network_log(stop) == "passed"
+            logs = saved["captured"]
+            assert len(logs) == 53
+            assert any("localhost" in item["url"] for item in logs)
+            assert sum(item["status"] == 307 for item in logs) == 1
+            assert all(item["body"] == '"' + "x" * 65536 + '"' for item in logs if item["status"] == 201)
+            assert all(not key.startswith("_") for item in logs for key in item)
+            assert state["network"] == []
+            assert not state.get("network_sessions")
+            assert not state.get("network_listeners")
+            assert counts() == baseline
+
+        # No capture listeners means requests made between tests stay unreported.
+        tab.evaluate("async () => await (await fetch('/payload', {method: 'POST'})).text()")
+        assert counts() == baseline
+
+        # A skipped stop action or repeated start must also release the session.
+        assert playwright_actions.capture_network_log(start) == "passed"
+        assert playwright_actions.capture_network_log(start) == "passed"
+        assert playwright_actions.cleanup_network_captures() == "passed"
+        assert counts() == baseline
+        assert not tab.is_closed()
+        assert tab.evaluate("localStorage.getItem('login')") == "retained"
+    finally:
+        playwright_actions.cleanup_network_captures()
+        context.close()
+        server.shutdown()
+        server.server_close()
+        thread.join()
+
+
+def test_testcase_exception_cleans_capture_on_action_worker(monkeypatch):
+    from Framework import MainDriverApi
+
+    detached_on = []
+    session = SimpleNamespace(
+        send=lambda *_: None,
+        detach=lambda: detached_on.append(threading.get_ident()),
+    )
+    state = {"network": ["unfinished"], "network_sessions": {"page": session}}
+    monkeypatch.setattr(playwright_actions, "playwright_details", {"default": state})
+    monkeypatch.setattr(MainDriverApi.CommonUtil, "Exception_Handler", lambda *_: None)
+    monkeypatch.setattr(MainDriverApi.CommonUtil, "CreateJsonReport", lambda **_: None)
+    monkeypatch.setattr(MainDriverApi.ConfigModule, "get_config_value", lambda *_: "")
+
+    def fail_before_steps():
+        raise RuntimeError("test failed before completing network capture")
+
+    monkeypatch.setattr(MainDriverApi.CommonUtil, "clear_performance_metrics", fail_before_steps)
+    assert MainDriverApi.run_test_case(
+        "TEST-1", "capture cleanup test", "run", "unused.ini", {"title": "capture"},
+        {}, False, "8.0.0",
+    ) == "passed"
+    assert len(detached_on) == 1
+    assert detached_on[0] != threading.get_ident()
+    assert state["network"] == []
+    assert state["capturing_network"] is False
 
 
 def test_playwright_visibility_accepts_zero_sized_container_with_visible_child():

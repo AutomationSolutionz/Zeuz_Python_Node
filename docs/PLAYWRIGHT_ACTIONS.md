@@ -36,3 +36,71 @@ Unknown Selenium capabilities, Chrome version pinning, experimental options, and
 Playwright-launched Chrome and Edge expose a Selenium CDP bridge as the existing `selenium_driver` shared/global variable. Existing `execute python code` rows such as `selenium_driver.execute_script(...)` therefore control the same browser without test-data changes. The bridge is selected with its Playwright driver ID and detached during Playwright teardown; it does not own or close the browser.
 
 This bridge is unavailable for Firefox and WebKit because Selenium's debugger attachment is Chromium-only. Commands that ChromeDriver itself does not support for debugger-attached sessions remain unsupported.
+
+## Network capture: Firefox/WebKit memory retention and OOM
+
+**Known limitation:** long-running Firefox or WebKit (Safari) sessions that use
+`capture network log` can retain network objects between tests, particularly with
+`zeuz_auto_teardown=False` and `include response body=true`. The Chromium capture
+fix does not eliminate this risk in Firefox/WebKit.
+
+### Symptoms and cause
+
+Watch for Python/Playwright-driver memory growing across tests, eventual
+out-of-memory (OOM) kills, or a run abruptly stopping without a Python traceback.
+On Linux, an OOM-related systemd scope shutdown can also remove the tmux pane or
+session even though the VM never rebooted. These symptoms alone do not prove
+network retention; inspect kernel logs for `Out of memory`, `Killed process`, and
+the system journal for `oom-kill`. The process chosen for the kill is not
+necessarily the only large memory consumer.
+
+Playwright's event-based network API creates live `Request`/`Response` objects
+that can remain referenced inside its connection/dispatcher registries. Reading
+response bodies can additionally cache data in the Playwright driver. Clearing
+ZeuZ's `state["network"]`, deleting the saved output variable, or calling Python
+`gc.collect()` does not release objects still referenced by Playwright. Removing
+listeners stops future reporting but does not dispose of previously reported
+objects. Reloading the page is not equivalent to closing it.
+
+The original retention was reproduced on Chromium with Playwright **1.62.0**;
+the Firefox/WebKit fallback retains the same kind of event-based capture. A
+Firefox/WebKit OOM was **not separately reproduced** during that investigation.
+Recheck retention behavior when changing Playwright versions. See Playwright's
+[request-history lifetime documentation](https://playwright.dev/python/docs/api/class-page#page-requests).
+
+### Current implementation and safe mitigations
+
+- **Chrome/Edge/Chromium:** capture uses a temporary CDP session through
+  Playwright's `context.new_cdp_session()`. It collects plain network details and
+  retrieves bodies without creating Playwright request/response history. Stop
+  disables tracking and detaches the session. This does not use Selenium to
+  capture traffic and does not close the browser or clear login state.
+- **Firefox/WebKit:** CDP is unavailable. Capture therefore uses native
+  Playwright response events, subscribed only between start and stop. Test-end
+  cleanup also removes unfinished captures, including after failures, regardless
+  of `zeuz_auto_teardown`. This limits capture lifetime, but does not guarantee
+  release of the internal request/response history.
+- If session reuse is unnecessary, use `zeuz_auto_teardown=on`. Otherwise, close
+  and recreate the page/context or explicitly tear down the browser at suitable
+  test boundaries, accounting for lost page state and any required login.
+  Avoid capturing traffic or response bodies that the tests do not need.
+- More RAM/swap provides headroom, not a retention fix. Do not substitute
+  `page.requests()` for complete capture without changing the action contract:
+  its bounded recent-request history can omit earlier requests from a test.
+
+### Where to investigate
+
+In [Playwright/BuiltInFunctions.py](../Framework/Built_In_Automation/Web/Playwright/BuiltInFunctions.py),
+start with `_capture_network_page` (Firefox/WebKit fallback),
+`_capture_network_target` (Chromium CDP), `capture_network_log`, and
+`_stop_network_capture`. `cleanup_network_captures` is called on the action worker
+from the `run_test_case` finalizer in [MainDriverApi.py](../Framework/MainDriverApi.py).
+
+The regression test
+`test_cdp_capture_reuses_browser_without_retaining_network_objects` in
+[test_playwright_compat.py](../tests/test_playwright_compat.py) checks repeated
+Chromium captures, iframe traffic, retained object counts, and preserved session
+state. It is not a Firefox/WebKit memory regression test. For those engines,
+compare repeated captures on one long-lived page with page/context teardown;
+check object retention as well as RSS, since freeing objects need not immediately
+return allocated memory to the OS.

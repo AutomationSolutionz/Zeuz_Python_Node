@@ -253,17 +253,6 @@ def _on_dialog(state, dialog):
         dialog.dismiss()
 
 
-def _request_post_data(request):
-    try:
-        return request.post_data
-    except Exception:
-        try:
-            data = request.post_data_buffer
-            return data.decode("utf-8", errors="replace") if data else None
-        except Exception:
-            return None
-
-
 def _wire_page(state, page):
     state["page"] = page
     state["frame"] = None
@@ -274,36 +263,8 @@ def _wire_page(state, page):
     wired_pages.add(id(page))
     page.on("dialog", lambda dialog: _on_dialog(state, dialog))
     page.on("download", lambda download: state["downloads"].append(download))
-    page.on(
-        "request",
-        lambda request: state["network"].append(
-            {
-                "type": "request",
-                "method": request.method,
-                "url": request.url,
-                "headers": request.headers,
-                "post_data": _request_post_data(request),
-            }
-        )
-        if state["capturing_network"]
-        else None,
-    )
-    page.on(
-        "response",
-        lambda response: state["network"].append(
-            {
-                "url": response.url,
-                "status": response.status,
-                "method": response.request.method,
-                "mimeType": response.headers.get("content-type", "").split(";", 1)[0],
-                "type": response.request.resource_type,
-                "timestamp": time.time(),
-                "_response": response,
-            }
-        )
-        if state["capturing_network"]
-        else None,
-    )
+    if state["capturing_network"]:
+        _capture_network_page(state, page)
     if not state.get("page_listener"):
         page.context.on("page", lambda new_page: _wire_page(state, new_page))
         state["page_listener"] = True
@@ -540,6 +501,7 @@ def Tear_Down_Selenium(data_set=()):
             if not state:
                 continue
             try:
+                _stop_network_capture(state)
                 _close_selenium_bridge(state)
                 state["context"].close()
             finally:
@@ -1414,13 +1376,130 @@ def Change_Attribute_Value(data_set):
     return "passed"
 
 
+def _network_listener(state, emitter, event, callback):
+    emitter.on(event, callback)
+    state.setdefault("network_listeners", []).append((emitter, event, callback))
+
+
+def _capture_network_target(state, target):
+    sessions = state.setdefault("network_sessions", {})
+    if target in sessions:
+        return
+    try:
+        session = state["context"].new_cdp_session(target)
+    except Exception as error:
+        # In-process iframes are already covered by their parent's session.
+        if "does not have a separate CDP session" in str(error):
+            return
+        raise
+    sessions[target] = session
+    pending = {}
+    _network_listener(state, session, "close", lambda _: sessions.pop(target, None))
+
+    def response_received(event):
+        if not state["capturing_network"]:
+            return
+        response = event["response"]
+        item = pending.setdefault(event["requestId"], {"method": ""})
+        item.update({
+            "url": response["url"],
+            "status": response["status"],
+            "mimeType": response.get("mimeType", "").split(";", 1)[0],
+            "type": event.get("type", "other").lower(),
+            "timestamp": time.time(),
+            "_session": session,
+            "_request_id": event["requestId"],
+            "_finished": False,
+        })
+        state["network"].append(item)
+
+    def request_started(event):
+        if not state["capturing_network"]:
+            return
+        if "redirectResponse" in event:
+            response_received({**event, "response": event["redirectResponse"]})
+        pending[event["requestId"]] = {"method": event["request"]["method"]}
+
+    def request_finished(event):
+        item = pending.pop(event["requestId"], None)
+        if item is not None:
+            item["_finished"] = "errorText" not in event
+
+    _network_listener(state, session, "Network.requestWillBeSent", request_started)
+    _network_listener(state, session, "Network.responseReceived", response_received)
+    _network_listener(state, session, "Network.loadingFinished", request_finished)
+    _network_listener(state, session, "Network.loadingFailed", request_finished)
+    # Let Chrome manage its bounded response cache; do not copy POST bodies or
+    # create Playwright Request/Response objects for this long-lived browser.
+    session.send("Network.enable", {"maxPostDataSize": 0})
+
+
+def _capture_network_page(state, page):
+    if state["browser"].browser_type.name == "chromium":
+        _capture_network_target(state, page)
+        for frame in page.frames:
+            if frame != page.main_frame:
+                _capture_network_target(state, frame)
+        _network_listener(
+            state, page, "framenavigated",
+            lambda frame: _capture_network_target(state, frame)
+            if state["capturing_network"] and frame != page.main_frame else None,
+        )
+    else:
+        # ponytail: Firefox/WebKit have no CDP. Keep their existing response API, but
+        # subscribe only during capture (their retained history still requires
+        # page/context teardown for long-running sessions).
+        _network_listener(state, page, "response", lambda response: state["network"].append({
+            "url": response.url,
+            "status": response.status,
+            "method": response.request.method,
+            "mimeType": response.headers.get("content-type", "").split(";", 1)[0],
+            "type": response.request.resource_type,
+            "timestamp": time.time(),
+            "_response": response,
+        }) if state["capturing_network"] else None)
+
+
+def _stop_network_capture(state):
+    state["capturing_network"] = False
+    state["network"] = []
+    for emitter, event, callback in state.pop("network_listeners", []):
+        emitter.remove_listener(event, callback)
+    for session in state.pop("network_sessions", {}).values():
+        try:
+            session.send("Network.disable")
+        except Exception:
+            pass  # The page may already have closed or crashed.
+        finally:
+            try:
+                session.detach()
+            except Exception:
+                pass
+
+
+def cleanup_network_captures(data_set=()):
+    for state in playwright_details.values():
+        _stop_network_capture(state)
+    return "passed"
+
+
+cleanup_network_captures._zeuz_thread_affine = True
+
+
 def capture_network_log(data_set):
     state = _state()
     command = _action(data_set).lower()
     if command == "start":
-        state["network"] = []
+        _stop_network_capture(state)
         state["capturing_network"] = True
-    else:
+        try:
+            for page in state["context"].pages:
+                _capture_network_page(state, page)
+        except Exception:
+            _stop_network_capture(state)
+            raise
+        return "passed"
+    try:
         state["capturing_network"] = False
         captured_network, state["network"] = state["network"], []
         variable = next(
@@ -1481,20 +1560,34 @@ def capture_network_log(data_set):
                 continue
             if statuses and captured["status"] not in statuses:
                 continue
-            item = dict(captured)
-            response = item.pop("_response", None)
+            item = {key: value for key, value in captured.items() if not key.startswith("_")}
             if include_body:
                 try:
-                    item["body"] = (
-                        response.body().decode(errors="replace")
-                        if response.request.timing["responseEnd"] != -1
-                        else "Unavailable"
-                    )
+                    if "_session" in captured:
+                        if not captured["_finished"]:
+                            item["body"] = "Unavailable"
+                        else:
+                            result = captured["_session"].send(
+                                "Network.getResponseBody", {"requestId": captured["_request_id"]}
+                            )
+                            item["body"] = (
+                                base64.b64decode(result["body"]).decode(errors="replace")
+                                if result.get("base64Encoded") else result["body"]
+                            )
+                    else:
+                        response = captured["_response"]
+                        item["body"] = (
+                            response.body().decode(errors="replace")
+                            if response.request.timing["responseEnd"] != -1
+                            else "Unavailable"
+                        )
                 except Exception:
                     item["body"] = "Unavailable"
             logs.append(item)
         if variable:
             sr.Set_Shared_Variables(variable, logs)
+    finally:
+        _stop_network_capture(state)
     return "passed"
 
 

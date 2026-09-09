@@ -1223,6 +1223,15 @@ def run_test_case(
         after_execution_dict["logid"] = TCLogFile
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         return "passed"
+    finally:
+        # Capture lifetime is per test, even when the browser/login is retained.
+        Playwright = sys.modules.get("Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions")
+        if Playwright is not None and Playwright.playwright_details:
+            try:
+                from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
+                sequential_actions._run_action_with_timeout(Playwright.cleanup_network_captures, [])
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to clean up Playwright network capture", 2)
 
 
 def send_dom_variables():
