@@ -543,14 +543,19 @@ class ChromeForTesting:
             channel = "Stable"
 
         if version:
-            if version < "115.0.5763.0":
-                print("Chrome for testing version must be at least: '115.0.5763.0'")
+            version = version.strip()
+            if version.lower() == "system":
+                print("Forcefully trying to use regular chrome instead of chrome for testing.")
                 return None, None
-            if version.strip().lower() == "system":
-                print(
-                    "Forcefully trying to use regular chrome instead of chrome for testing."
-                )
-                return None, None
+            if version.lower() in ("stable", "beta", "dev", "canary"):
+                channel, version = version.capitalize(), None
+            else:
+                parts = version.split(".")
+                if len(parts) != 4 or not all(part.isascii() and part.isdecimal() for part in parts):
+                    raise ValueError(f"Invalid Chrome for Testing version: {version}")
+                if tuple(map(int, parts)) < (115, 0, 5763, 0):
+                    print("Chrome for testing version must be at least: '115.0.5763.0'")
+                    return None, None
 
         # Use latest version if not specified
         if not version:

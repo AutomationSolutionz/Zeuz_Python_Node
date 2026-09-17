@@ -254,8 +254,9 @@ def _run_action_with_timeout(run_function, data_set):
     thread_affine = getattr(run_function, "_zeuz_thread_affine", False)
     if getattr(_action_worker_local, "in_worker", False):
         return run_function(data_set)
-    if not thread_affine and (
-        timeout <= 0 or load_testing or getattr(CommonUtil, "load_testing", False)
+    if (
+        load_testing or getattr(CommonUtil, "load_testing", False)
+        or (not thread_affine and timeout <= 0)
     ):
         return run_function(data_set)
 
@@ -265,10 +266,8 @@ def _run_action_with_timeout(run_function, data_set):
     try:
         return _action_worker.run(run_function, (data_set,), timeout if timeout > 0 else None)
     except TimeoutError:
-        # Most timed-out workers are abandoned. Thread-affine libraries keep
-        # their worker so a late completion, screenshot, or cleanup never hops
-        # to a different thread.
-        if not getattr(run_function, "_zeuz_thread_affine", False):
+        # Keep thread-affine sessions on their owning worker if the call finishes late.
+        if not thread_affine:
             _action_worker = None
         _force_kill_hung_browser_sessions()
         CommonUtil.ExecLog(

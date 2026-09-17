@@ -173,7 +173,7 @@ def test_review_electron_ports(monkeypatch):
     monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: {"Browser": "Chrome"})
     from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
 
-    sockets, ports = [], []
+    sockets, ports, closed = [], [], []
     def launch(**kwargs):
         port = int(next(arg.split("=", 1)[1] for arg in kwargs["options"].arguments
                         if arg.startswith("--remote-debugging-port=")))
@@ -181,7 +181,7 @@ def test_review_electron_ports(monkeypatch):
         sockets.append(sock)
         sock.bind(("127.0.0.1", port))
         ports.append(port)
-        return SimpleNamespace(implicitly_wait=lambda _: None)
+        return SimpleNamespace(implicitly_wait=lambda _: None, quit=lambda: closed.append(port))
     monkeypatch.setenv("WDM_ARCHITECTURE", "x64")
     monkeypatch.setattr(selenium.webdriver, "Chrome", launch)
     monkeypatch.setattr(selenium, "ChromeDriverManager", lambda **_: SimpleNamespace(install=lambda: "/tmp/chromedriver"))
@@ -193,13 +193,15 @@ def test_review_electron_ports(monkeypatch):
     monkeypatch.setattr(selenium, "selenium_driver", None)
     monkeypatch.setattr(selenium, "current_driver_id", None)
     try:
-        for driver_id in ("one", "two"):
+        for driver_id in ("one", "two", "one"):
             assert selenium.Open_Electron_App([
                 (selenium.platform.system().lower(), "input parameter", "/tmp/electron"),
                 ("driverid", "optional parameter", driver_id)
             ]) == "passed"
             assert selenium.selenium_details[driver_id]["remote-debugging-port"] == ports[-1]
+            assert selenium.selenium_details[driver_id]["driver"] is selenium.selenium_driver
         assert ports[0] != ports[1]
+        assert closed == [ports[0]]
     finally:
         for sock in sockets:
             sock.close()
@@ -571,7 +573,7 @@ def test_open_new_tab_makes_new_page_active(monkeypatch):
 def test_reused_browser_applies_element_wait(monkeypatch):
     state = {"page": object()}
     shared = {}
-    monkeypatch.setattr(playwright_actions, "playwright_details", {"default": state})
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"default": state})
     monkeypatch.setattr(playwright_actions, "_set_active", lambda _driver_id: None)
     monkeypatch.setattr(
         playwright_actions.sr,
@@ -695,8 +697,8 @@ def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
 
     captured = {}
     shared = {}
-    monkeypatch.setattr(playwright_actions, "_playwright", SimpleNamespace(chromium=Chromium()))
-    monkeypatch.setattr(playwright_actions, "playwright_details", {})
+    monkeypatch.setattr(playwright_actions._browser_state, "_playwright", SimpleNamespace(chromium=Chromium()))
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {})
     monkeypatch.setattr(
         playwright_actions.sr,
         "Get_Shared_Variables",
@@ -859,7 +861,7 @@ def test_cdp_capture_reuses_browser_without_retaining_network_objects(page, monk
     }
     saved = {}
     monkeypatch.setattr(playwright_actions, "_state", lambda: state)
-    monkeypatch.setattr(playwright_actions, "playwright_details", {"default": state})
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"default": state})
     monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda k, v: saved.__setitem__(k, v))
     start = [("capture network log", "playwright action", "start")]
     stop = [
@@ -938,7 +940,9 @@ def test_testcase_exception_cleans_capture_on_action_worker(monkeypatch):
         detach=lambda: detached_on.append(threading.get_ident()),
     )
     state = {"network": ["unfinished"], "network_sessions": {"page": session}}
-    monkeypatch.setattr(playwright_actions, "playwright_details", {"default": state})
+    sequential_actions._run_action_with_timeout(
+        lambda _: setattr(playwright_actions._browser_state, "playwright_details", {"default": state}), []
+    )
     monkeypatch.setattr(MainDriverApi.CommonUtil, "Exception_Handler", lambda *_: None)
     monkeypatch.setattr(MainDriverApi.CommonUtil, "CreateJsonReport", lambda **_: None)
     monkeypatch.setattr(MainDriverApi.ConfigModule, "get_config_value", lambda *_: "")

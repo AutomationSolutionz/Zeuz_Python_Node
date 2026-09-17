@@ -52,7 +52,7 @@ async def check_status():
 
 async def install():
     logger.info("[installer][web-playwright] Installing Firefox and WebKit...")
-    code, output = await _run("install", "firefox", "webkit")
+    code, output = await _run("install", "--with-deps", "firefox", "webkit")
     if code:
         logger.error("[installer][web-playwright] %s", output)
         await _status(False, "Failed to install Playwright Firefox and WebKit.")

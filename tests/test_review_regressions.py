@@ -66,3 +66,105 @@ def test_chrome_cache_keeps_channels_separate(monkeypatch, tmp_path):
     assert chrome.get_latest_version("Stable", force_check=True) == "102"
     assert chrome.get_latest_version("Beta") == "101"
     assert get.call_count == 3
+
+
+def test_chrome_version_validation_and_channel_resolution(tmp_path):
+    chrome = utils.ChromeForTesting.__new__(utils.ChromeForTesting)
+    chrome.CHROME_VERSIONS_DIR = tmp_path
+    chrome.cleanup_old_versions = Mock()
+    chrome.get_latest_version = Mock(return_value="130.0.6723.1")
+    chrome.is_version_installed = Mock(return_value=True)
+    chrome._update_installed_version_date = Mock()
+    chrome.get_chrome_binary_path = chrome.get_driver_binary_path = lambda _: tmp_path
+    for version in ("99.0.0.0", "114.0.9999.0", "115.0.5762.9", "system"):
+        assert chrome.setup_chrome_for_testing(version) == (None, None)
+    for version in ("115.0.5763.0", "130.0.1.0"):
+        assert chrome.setup_chrome_for_testing(version) == (tmp_path, tmp_path)
+    assert chrome.setup_chrome_for_testing(" Beta ") == (tmp_path, tmp_path)
+    chrome.get_latest_version.assert_called_once_with(channel="Beta", force_check=False)
+    for version in ("bad", "130", "../../tmp", "130.0.x.0"):
+        try:
+            chrome.setup_chrome_for_testing(version)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(version)
+
+
+def test_affine_timeout_preserves_worker_and_performance_concurrency(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
+    from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as pw
+
+    monkeypatch.setattr(sa, "_action_worker", None)
+    monkeypatch.setattr(sa, "_get_action_timeout", lambda: 0.05)
+    monkeypatch.setattr(sa, "load_testing", False)
+    monkeypatch.setattr(sa.CommonUtil, "load_testing", False)
+    monkeypatch.setattr(sa, "_force_kill_hung_browser_sessions", lambda: None)
+    monkeypatch.setattr(sa.CommonUtil, "ExecLog", lambda *_: None)
+    release = threading.Event()
+
+    def blocked(_):
+        pw._browser_state.current_driver_id = "retained"
+        release.wait(5)
+    blocked._zeuz_thread_affine = True
+    try:
+        assert sa._run_action_with_timeout(blocked, []) == "zeuz_failed"
+        worker = sa._action_worker
+        assert worker is not None
+        release.set()
+        monkeypatch.setattr(sa, "_get_action_timeout", lambda: 2)
+        def resume(_):
+            return pw._browser_state.current_driver_id
+        resume._zeuz_thread_affine = True
+        assert sa._run_action_with_timeout(resume, []) == "retained"
+        assert sa._action_worker is worker
+    finally:
+        release.set()
+
+    monkeypatch.setattr(sa.CommonUtil, "load_testing", True)
+    barrier = threading.Barrier(2)
+
+    def journey(value):
+        caller = threading.get_ident()
+        def action(_):
+            pw._browser_state.current_driver_id = value
+            barrier.wait(timeout=2)
+            assert pw._browser_state.current_driver_id == value
+            assert threading.get_ident() == caller
+            return "passed"
+        action._zeuz_thread_affine = True
+        return sa._run_action_with_timeout(action, [])
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(journey, ("one", "two"))) == ["passed", "passed"]
+
+
+def test_custom_driver_sync_and_async_steps(monkeypatch):
+    from Framework import MainDriverApi as main
+
+    monkeypatch.setattr(main.CommonUtil, "ExecLog", lambda *_: None)
+    async def async_step(data, info, result_queue, debug):
+        await asyncio.sleep(0)
+        result_queue.put("passed")
+        return "passed"
+    def sync_step(data, info, result_queue, debug):
+        result_queue.put("passed")
+        return "passed"
+    for step in (async_step, sync_step):
+        monkeypatch.setattr(main.importlib, "import_module", lambda _: SimpleNamespace(step=step))
+        for threaded in ("true", "false"):
+            monkeypatch.setattr(main.ConfigModule, "get_config_value", lambda *_: threaded)
+            assert main.call_driver_function_of_test_step(
+                "test", [{"step_driver_type": "custom", "step_function": "step"}],
+                1, 1, "step", [], [],
+            ) == "PASSED"
+
+
+def test_playwright_installer_includes_dependencies(monkeypatch):
+    from Framework.install_handler.web import playwright_browsers as installer
+    from unittest.mock import AsyncMock
+    run = AsyncMock(return_value=(0, ""))
+    monkeypatch.setattr(installer, "_run", run)
+    monkeypatch.setattr(installer, "_status", AsyncMock())
+    assert asyncio.run(installer.install()) is True
+    run.assert_awaited_once_with("install", "--with-deps", "firefox", "webkit")

@@ -524,10 +524,13 @@ def Open_Electron_App(data_set):
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info())
 
-        if driver_id in selenium_details:
-            pass  # we need to decide later based on the situation
-        else:
-            selenium_details[driver_id] = {"driver": selenium_driver, "remote-debugging-port": electron_port}
+        previous = selenium_details.get(driver_id, {}).get("driver")
+        selenium_details[driver_id] = {"driver": selenium_driver, "remote-debugging-port": electron_port}
+        if previous is not None and previous is not selenium_driver:
+            try:
+                previous.quit()
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to close previous Electron driver", 2)
         current_driver_id = driver_id
         _publish_active_browser()
         return "passed"

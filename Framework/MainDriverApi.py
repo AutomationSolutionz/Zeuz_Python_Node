@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
+import asyncio
 import concurrent.futures
 import copy
 import json
@@ -351,10 +352,16 @@ def call_driver_function_of_test_step(
                 simple_queue = queue.Queue()
                 screen_capture = "Desktop"      # No need of screen capture. Need to delete this
 
+                def invoke_step(*args):
+                    result = functionTocall(*args)
+                    if inspect.iscoroutine(result):
+                        return asyncio.run(result)
+                    return result
+
                 # run in thread
                 if ConfigModule.get_config_value("RunDefinition", "threading") in passed_tag_list:
                     stepThread = threading.Thread(
-                        target=functionTocall,
+                        target=invoke_step,
                         args=(
                             test_steps_data,
                             test_action_info,
@@ -405,7 +412,7 @@ def call_driver_function_of_test_step(
                                 CommonUtil.Exception_Handler(sys.exc_info())
                 else:
                     # run sequentially
-                    sStepResult = functionTocall(
+                    sStepResult = invoke_step(
                         test_steps_data,
                         test_action_info,
                         simple_queue,
@@ -1226,7 +1233,7 @@ def run_test_case(
     finally:
         # Capture lifetime is per test, even when the browser/login is retained.
         Playwright = sys.modules.get("Framework.Built_In_Automation.Web.Playwright.BuiltInFunctions")
-        if Playwright is not None and Playwright.playwright_details:
+        if Playwright is not None:
             try:
                 from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
                 sequential_actions._run_action_with_timeout(Playwright.cleanup_network_captures, [])

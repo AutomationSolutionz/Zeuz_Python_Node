@@ -7,6 +7,7 @@ import inspect
 import socket
 import sys
 import time
+import threading
 from pathlib import Path
 from urllib.parse import urldefrag, urlparse
 
@@ -27,10 +28,19 @@ temp_config = str(
     / "AutomationLog"
     / ConfigModule.get_config_value("Advanced Options", "_file")
 )
-playwright_details = {}
-playwright_page = None
-current_driver_id = None
-_playwright = None
+
+
+class _BrowserState(threading.local):
+    """Keep sync Playwright objects on their action or performance thread."""
+
+    def __init__(self):
+        self.playwright_details = {}
+        self.playwright_page = None
+        self.current_driver_id = None
+        self._playwright = None
+
+
+_browser_state = _BrowserState()
 
 
 def _log(message, level=1):
@@ -64,15 +74,15 @@ def _driver_id(data_set, default=None):
     for left, _middle, right in _rows(data_set):
         if _key(left) in ("driverid", "drivertag"):
             return right.strip() or "default"
-    return default or current_driver_id or "default"
+    return default or _browser_state.current_driver_id or "default"
 
 
 def _state():
-    if current_driver_id not in playwright_details:
+    if _browser_state.current_driver_id not in _browser_state.playwright_details:
         raise RuntimeError(
             "No active Playwright browser. Run 'open browser' or 'go to link' first."
         )
-    return playwright_details[current_driver_id]
+    return _browser_state.playwright_details[_browser_state.current_driver_id]
 
 
 def get_driver():
@@ -100,12 +110,11 @@ def _element(data_set, all_elements=False, root=None):
 
 
 def _set_active(driver_id):
-    global current_driver_id, playwright_page
-    current_driver_id = driver_id
-    state = playwright_details[driver_id]
-    playwright_page = state["page"]
-    sr.Set_Shared_Variables("playwright_page", playwright_page)
-    sr.Set_Shared_Variables("common_driver", state.get("frame") or playwright_page)
+    _browser_state.current_driver_id = driver_id
+    state = _browser_state.playwright_details[driver_id]
+    _browser_state.playwright_page = state["page"]
+    sr.Set_Shared_Variables("playwright_page", _browser_state.playwright_page)
+    sr.Set_Shared_Variables("common_driver", state.get("frame") or _browser_state.playwright_page)
     _publish_selenium_bridge(state.get("selenium_bridge"))
     sr.Set_Shared_Variables("zeuz_active_browser_backend", "playwright")
     owners = sr.Get_Shared_Variables("zeuz_browser_backends", log=False)
@@ -273,7 +282,6 @@ def _wire_page(state, page):
 def _launch(data_set):
     from playwright.sync_api import sync_playwright
 
-    global _playwright
     rows = _rows(data_set)
     for left, _middle, right in rows:
         if _key(left) in ("waittimetoappearelement", "waitforelement"):
@@ -285,12 +293,12 @@ def _launch(data_set):
         raise RuntimeError("Opera is not supported by Playwright")
 
     driver_id = _driver_id(data_set, "default")
-    if driver_id in playwright_details:
+    if driver_id in _browser_state.playwright_details:
         _set_active(driver_id)
-        return playwright_details[driver_id]
+        return _browser_state.playwright_details[driver_id]
 
-    if _playwright is None:
-        _playwright = sync_playwright().start()
+    if _browser_state._playwright is None:
+        _browser_state._playwright = sync_playwright().start()
 
     headless = "headless" in browser_name
     launch = {"headless": headless}
@@ -390,7 +398,7 @@ def _launch(data_set):
                 "CDP debugger attachment is only supported for Chromium browsers"
             )
         endpoint = debugger if "://" in debugger else "http://" + debugger
-        browser = _playwright.chromium.connect_over_cdp(endpoint)
+        browser = _browser_state._playwright.chromium.connect_over_cdp(endpoint)
         context = (
             browser.contexts[0]
             if browser.contexts
@@ -398,11 +406,11 @@ def _launch(data_set):
         )
     else:
         if "firefox" in browser_name:
-            browser_type = _playwright.firefox
+            browser_type = _browser_state._playwright.firefox
         elif "safari" in browser_name or "webkit" in browser_name:
-            browser_type = _playwright.webkit
+            browser_type = _browser_state._playwright.webkit
         else:
-            browser_type = _playwright.chromium
+            browser_type = _browser_state._playwright.chromium
             if "edge" in browser_name:
                 launch["channel"] = "msedge"
             elif "chrome" in browser_name:
@@ -444,7 +452,7 @@ def _launch(data_set):
     _attach_selenium_bridge(
         state, browser_name, selenium_cdp_address, chrome_driver_path
     )
-    playwright_details[driver_id] = state
+    _browser_state.playwright_details[driver_id] = state
     _set_active(driver_id)
     return state
 
@@ -453,7 +461,7 @@ def Go_To_Link(data_set):
     try:
         state = _launch(data_set)
         _wire_page(state, state["page"])
-        _set_active(current_driver_id)
+        _set_active(_browser_state.current_driver_id)
         url = next(
             (
                 right
@@ -488,16 +496,15 @@ def Open_Electron_App(data_set):
 
 
 def Tear_Down_Selenium(data_set=()):
-    global _playwright, current_driver_id, playwright_page
     try:
         requested = (
             _driver_id(data_set)
             if any(_key(left) in ("driverid", "drivertag") for left, _, _ in _rows(data_set))
             else None
         )
-        ids = [requested] if requested else list(playwright_details)
+        ids = [requested] if requested else list(_browser_state.playwright_details)
         for driver_id in ids:
-            state = playwright_details.pop(driver_id, None)
+            state = _browser_state.playwright_details.pop(driver_id, None)
             if not state:
                 continue
             try:
@@ -512,13 +519,13 @@ def Tear_Down_Selenium(data_set=()):
             if owners.get(driver_id) == "playwright":
                 owners.pop(driver_id, None)
         sr.Set_Shared_Variables("zeuz_browser_backends", owners)
-        if playwright_details:
-            _set_active(next(iter(playwright_details)))
+        if _browser_state.playwright_details:
+            _set_active(next(iter(_browser_state.playwright_details)))
         else:
-            if _playwright is not None:
-                _playwright.stop()
-            _playwright = None
-            current_driver_id = playwright_page = None
+            if _browser_state._playwright is not None:
+                _browser_state._playwright.stop()
+            _browser_state._playwright = None
+            _browser_state.current_driver_id = _browser_state.playwright_page = None
             sr.Remove_From_Shared_Variables("playwright_page")
             _publish_selenium_bridge(None)
         return "passed"
@@ -529,7 +536,7 @@ def Tear_Down_Selenium(data_set=()):
 
 def Switch_Browser(data_set):
     driver_id = _driver_id(data_set, "default")
-    if driver_id not in playwright_details:
+    if driver_id not in _browser_state.playwright_details:
         return _fail(f"Driver_id='{driver_id}' not found")
     _set_active(driver_id)
     return "passed"
@@ -842,7 +849,7 @@ def open_new_tab(data_set):
     url = _action(data_set)
     if url and url.lower() not in ("open new tab", "new tab"):
         page.goto(url)
-    _set_active(current_driver_id)
+    _set_active(_browser_state.current_driver_id)
     return "passed"
 
 
@@ -884,7 +891,7 @@ def switch_window_or_tab(data_set):
         return _fail("Requested tab/window was not found")
     _wire_page(_state(), page)
     page.bring_to_front()
-    _set_active(current_driver_id)
+    _set_active(_browser_state.current_driver_id)
     return "passed"
 
 
@@ -911,7 +918,7 @@ def close_tab(data_set):
         page.close()
     if state["context"].pages:
         _wire_page(state, state["context"].pages[-1])
-        _set_active(current_driver_id)
+        _set_active(_browser_state.current_driver_id)
     return "passed"
 
 
@@ -1606,7 +1613,7 @@ def _stop_network_capture(state):
 
 
 def cleanup_network_captures(data_set=()):
-    for state in playwright_details.values():
+    for state in _browser_state.playwright_details.values():
         _stop_network_capture(state)
     return "passed"
 
