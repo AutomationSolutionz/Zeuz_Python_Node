@@ -229,6 +229,15 @@ def _parse(value):
             return value
 
 
+def _alert_instruction(data_set):
+    value = _action(data_set).strip()
+    prompt = next((right.strip() for left, middle, right in _rows(data_set)
+                   if middle == "input parameter" and left.lower() in ("prompt text", "text", "send text")), None)
+    if _key(value).startswith("sendtext") and "=" in value:
+        prompt = value.split("=", 1)[1].strip()
+    return ("dismiss" if value.lower() in ("reject", "decline", "fail", "no", "cancel", "dismiss") else "accept"), prompt
+
+
 def _next_alert_instruction():
     try:
         step_data = sr.Get_Shared_Variables("step_data", log=False)
@@ -237,20 +246,17 @@ def _next_alert_instruction():
             return "dismiss", None
         for left, middle, right in _rows(step_data[index]):
             if left.lower() == "handle alert" and "action" in middle:
-                value = right.strip()
-                lower = value.lower()
-                if lower.startswith("send text"):
-                    return "accept", value.split("=", 1)[-1].strip()
-                if lower in ("reject", "fail", "no", "cancel", "dismiss"):
-                    return "dismiss", None
-                return "accept", None
+                return _alert_instruction(step_data[index])
     except Exception:
         pass
     return "dismiss", None
 
 
 def _on_dialog(state, dialog):
-    instruction, prompt = _next_alert_instruction()
+    instruction, prompt = (
+        _alert_instruction(state["alert_rows"])
+        if "alert_rows" in state else _next_alert_instruction()
+    )
     state["dialog"] = {
         "text": dialog.message,
         "type": dialog.type,
@@ -832,12 +838,25 @@ def Select_Deselect(data_set):
 
 
 def Handle_Browser_Alert(data_set):
-    cached = _state().get("dialog")
-    if not cached:
-        return _fail("No Playwright dialog was captured")
-    value = _action(data_set)
-    if value.lower().startswith("get text"):
-        name = value.split("=", 1)[-1].strip()
+    state = _state()
+    if not state.get("dialog"):
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+        timeout = next((float(right) for left, middle, right in _rows(data_set)
+                        if middle == "optional parameter" and left.lower() in ("wait", "timeout")), 5)
+        state["alert_rows"] = data_set
+        try:
+            get_page().wait_for_event("dialog", timeout=timeout * 1000)
+        except PlaywrightTimeoutError:
+            return _fail("No alert appeared within timeout")
+        finally:
+            state.pop("alert_rows", None)
+    cached = state.pop("dialog")
+    value = _action(data_set).strip()
+    name = next((left for left, middle, _ in _rows(data_set) if middle == "save parameter"), None)
+    if _key(value).startswith("gettext") and "=" in value:
+        name = value.split("=", 1)[1].strip()
+    if name:
         sr.Set_Shared_Variables(name, cached["text"])
     return "passed"
 

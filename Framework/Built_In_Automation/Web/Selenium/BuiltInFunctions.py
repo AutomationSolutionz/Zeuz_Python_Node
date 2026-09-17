@@ -685,7 +685,7 @@ def generate_options(browser: str, browser_options: BrowserOptions):
     ):
         set_extension_variables()
         options.add_argument("--disable-features=DisableLoadExtensionCommandLineSwitch")
-        options.add_argument(f"load-extension={aiplugin_path},{ai_recorder_path}")
+        options.add_argument(f"--load-extension={aiplugin_path},{ai_recorder_path}")
         # This is for running extension on a http server to call a https request
         options.add_argument("--allow-running-insecure-content")
 
@@ -5008,13 +5008,11 @@ def playwright(dataset):
     try:
         from playwright.sync_api import sync_playwright
 
-        devtools_url = (
-            selenium_driver.command_executor._url.replace("http://", "ws://")
-            + "/devtools/browser"
-        )
+        debug_port = _switch_tab_get_debug_port()
+        if not debug_port:
+            raise ValueError("The active Selenium browser has no CDP debugging port")
         with sync_playwright() as p:
-            # browser = p.chromium.connect(browserURL=devtools_url)
-            browser = p.chromium.connect_over_cdp("http://localhost:9222")
+            browser = p.chromium.connect_over_cdp(f"http://localhost:{debug_port}")
             page = browser.contexts[0].pages[0]
 
             # source = page.locator("//div[contains(text(), 'abcd')]")

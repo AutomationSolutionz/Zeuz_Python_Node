@@ -168,3 +168,86 @@ def test_playwright_installer_includes_dependencies(monkeypatch):
     monkeypatch.setattr(installer, "_status", AsyncMock())
     assert asyncio.run(installer.install()) is True
     run.assert_awaited_once_with("install", "--with-deps", "firefox", "webkit")
+
+
+def test_existing_channel_cache_works_offline(monkeypatch):
+    chrome = utils.ChromeForTesting.__new__(utils.ChromeForTesting)
+    monkeypatch.delenv("CHROME_DAYS_BEFORE_FETCH", raising=False)
+    monkeypatch.setattr(chrome, "_load_info", lambda: {"channels": {
+        channel: {"version": version, "last_check": datetime.date.today().isoformat()}
+        for channel, version in (("Stable", "100"), ("Beta", "101"))
+    }})
+    monkeypatch.setattr(utils.requests, "get", Mock(side_effect=AssertionError("Network used")))
+    assert chrome.get_latest_version("Stable") == "100"
+    assert chrome.get_latest_version("Beta") == "101"
+
+
+def test_execute_python_sync_and_top_level_await(monkeypatch):
+    from Framework.Built_In_Automation.Sequential_Actions import common_functions as common
+
+    namespace = {}
+    monkeypatch.setattr(common.sr, "shared_variables", namespace)
+    monkeypatch.setattr(common.CommonUtil, "ExecLog", lambda *_args, **_kwargs: None)
+    for code in ("answer = 41", "import asyncio\nawait asyncio.sleep(0)\nanswer += 1"):
+        assert common.execute_python_code([("execute python code", "action", code)]) == "passed"
+    assert namespace["answer"] == 42
+    assert common.execute_python_code([("execute python code", "action", "await missing()")]) == "zeuz_failed"
+
+
+def test_debug_extensions_and_active_cdp_port(monkeypatch):
+    from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+    monkeypatch.setitem(sr.shared_variables, "dependency", {"Browser": "Chrome"})
+    from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
+    from playwright import sync_api
+
+    monkeypatch.setattr(selenium.CommonUtil, "debug_status", True)
+    monkeypatch.setattr(selenium.ConfigModule, "get_config_value", lambda *_: "true")
+    monkeypatch.setattr(selenium, "set_extension_variables", lambda: None)
+    for browser, engine in (("chrome", "chrome"), ("microsoft edge chromium", "edge")):
+        options = selenium.generate_options(browser, {"capabilities": {}, engine: {
+            "add_argument": [], "add_experimental_option": {},
+            "add_extension": [], "add_encoded_extension": [],
+        }})
+        assert f"--load-extension={selenium.aiplugin_path},{selenium.ai_recorder_path}" in options.arguments
+
+    driver = SimpleNamespace(capabilities={"goog:chromeOptions": {"debuggerAddress": "localhost:32123"}})
+    monkeypatch.setattr(selenium, "selenium_driver", driver)
+    monkeypatch.setattr(selenium, "current_driver_id", "active")
+    monkeypatch.setattr(selenium, "selenium_details", {"active": {"driver": driver}})
+    page = SimpleNamespace(wait_for_event=Mock())
+    connect = Mock(return_value=SimpleNamespace(contexts=[SimpleNamespace(pages=[page])]))
+    manager = Mock()
+    manager.__enter__ = Mock(return_value=SimpleNamespace(chromium=SimpleNamespace(connect_over_cdp=connect)))
+    manager.__exit__ = Mock(return_value=False)
+    monkeypatch.setattr(sync_api, "sync_playwright", lambda: manager)
+    assert selenium.playwright([]) == "passed"
+    connect.assert_called_once_with("http://localhost:32123")
+
+
+def test_delayed_and_cached_alert_rows(monkeypatch):
+    from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions as pw
+    from playwright.sync_api import TimeoutError
+
+    state, saved = {}, {}
+    rows = [("handle alert", "action", "accept"),
+            ("prompt text", "input parameter", "answer"),
+            ("message", "save parameter", ""), ("wait", "optional parameter", "0.25")]
+    dialog = SimpleNamespace(message="question", type="prompt", accept=Mock(), dismiss=Mock())
+    def wait(event, timeout):
+        assert (event, timeout) == ("dialog", 250)
+        pw._on_dialog(state, dialog)
+    monkeypatch.setattr(pw, "_state", lambda: state)
+    monkeypatch.setattr(pw, "get_page", lambda: SimpleNamespace(wait_for_event=wait))
+    monkeypatch.setattr(pw.sr, "Set_Shared_Variables", lambda name, value: saved.update({name: value}))
+    assert pw.Handle_Browser_Alert(rows) == "passed"
+    dialog.accept.assert_called_once_with("answer")
+    assert saved == {"message": "question"}
+    assert state == {}
+    monkeypatch.setattr(pw.CommonUtil, "current_action_no", "1")
+    monkeypatch.setattr(pw.sr, "Get_Shared_Variables", lambda *_args, **_kwargs: [[], rows])
+    pw._on_dialog(state, dialog)
+    assert pw.Handle_Browser_Alert(rows) == "passed"
+    assert dialog.accept.call_count == 2
+    monkeypatch.setattr(pw, "get_page", lambda: SimpleNamespace(wait_for_event=Mock(side_effect=TimeoutError("timeout"))))
+    assert pw.Handle_Browser_Alert(rows) == "zeuz_failed"
+    assert state == {}

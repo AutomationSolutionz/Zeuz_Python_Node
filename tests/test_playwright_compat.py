@@ -270,6 +270,16 @@ def test_review_browser_action_parity(page, monkeypatch):
         assert tab.evaluate("prompt('question')") == "answer"
         assert playwright_actions.Handle_Browser_Alert([("handle alert", "action", "get text=alert")]) == "passed"
         assert saved["alert"] == "question"
+        monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+        tab.evaluate("setTimeout(() => { window.answer = prompt('delayed'); }, 100)")
+        assert playwright_actions.Handle_Browser_Alert([
+            ("handle alert", "action", "accept"),
+            ("prompt text", "input parameter", "delayed answer"),
+            ("delayed_message", "save parameter", ""),
+            ("wait", "optional parameter", "2"),
+        ]) == "passed"
+        assert tab.evaluate("window.answer") == "delayed answer"
+        assert saved["delayed_message"] == "delayed"
     finally:
         context.close()
 

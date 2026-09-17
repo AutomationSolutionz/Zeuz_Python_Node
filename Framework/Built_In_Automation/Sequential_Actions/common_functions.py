@@ -6,6 +6,7 @@
 """
 
 import difflib
+import asyncio
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
 import itertools
 import platform
@@ -3752,7 +3753,11 @@ def execute_python_code(data_set):
         sr.shared_variables["print"] = _print
         previous_vars = set(sr.shared_variables)
 
-        try: exec(Code, sr.shared_variables)
+        try:
+            compiled = compile(Code, "<execute_python_code>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+            result = eval(compiled, sr.shared_variables)
+            if inspect.iscoroutine(result):
+                asyncio.run(result)
         except: return CommonUtil.Exception_Handler(sys.exc_info())
 
         try:
