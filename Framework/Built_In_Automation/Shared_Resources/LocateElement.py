@@ -481,7 +481,7 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
 
         if return_all_elements:
             CommonUtil.ExecLog(sModuleInfo, f"Returning {len(tmp_results)} elements after applying Text Filter", 1)
-            return result
+            return tmp_results
         if len(tmp_results) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Found no element after applying Text Filter", 3)
             if len(similar_texts) > 0:
@@ -534,7 +534,10 @@ def _construct_query(step_data_set, web_element_object=False):
     """
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        collect_all_attribute = [x[0] for x in step_data_set]
+        collect_all_attribute = [x[0].strip().lower() for x in step_data_set]
+        raw_css_names = ("css", "css selector", "css_selector")
+        has_raw_css = any(name in collect_all_attribute for name in raw_css_names)
+        has_raw_xpath = "xpath" in collect_all_attribute
 
         child_parameter_list = []
         element_parameter_list = []
@@ -574,11 +577,11 @@ def _construct_query(step_data_set, web_element_object=False):
             and driver_type in ("appium", "selenium")
         ):  # for unique identifier
             return [unique_parameter_list[0][0], unique_parameter_list[0][2]], "unique"
-        elif "css_selector" in collect_all_attribute and "xpath" not in collect_all_attribute:
+        elif has_raw_css and not has_raw_xpath:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw css query
-            return ([x for x in step_data_set if "css" in x[0]][0][2]), "css"
-        elif "xpath" in collect_all_attribute and "css" not in collect_all_attribute:
+            return next(x[2] for x in step_data_set if x[0].strip().lower() in raw_css_names), "css"
+        elif has_raw_xpath and not has_raw_css:
             # return the raw xpath command with xpath as type. We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw xpath query
             return ([x for x in step_data_set if "xpath" in x[0]][0][2]), "xpath"

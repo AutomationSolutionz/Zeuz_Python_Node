@@ -316,6 +316,35 @@ def test_go_to_link_navigates_hash_route(monkeypatch):
     assert page.reload_wait_until == "load"
 
 
+def test_open_new_tab_makes_new_page_active(monkeypatch):
+    old_page = object()
+    new_page = SimpleNamespace(on=lambda *_args: None)
+    state = {
+        "page": old_page,
+        "frame": object(),
+        "frame_stack": [object()],
+        "context": SimpleNamespace(new_page=lambda: new_page),
+        "wired_pages": set(),
+        "page_listener": True,
+        "capturing_network": False,
+        "downloads": [],
+    }
+    active_pages = []
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    monkeypatch.setattr(
+        playwright_actions,
+        "_set_active",
+        lambda _driver_id: active_pages.append(state["page"]),
+    )
+
+    assert playwright_actions.open_new_tab([
+        ("open new tab", "playwright action", "open new tab"),
+    ]) == "passed"
+    assert state["page"] is new_page
+    assert state["frame"] is None
+    assert active_pages == [new_page]
+
+
 def test_reused_browser_applies_element_wait(monkeypatch):
     state = {"page": object()}
     shared = {}
@@ -338,6 +367,46 @@ def test_reused_browser_applies_element_wait(monkeypatch):
         ("wait time to appear element", "optional parameter", "60"),
     ]) is state
     assert shared["element_wait"] == 60.0
+
+
+def test_go_to_link_v2_retains_driver_tag(monkeypatch):
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Test_Shared_Variables",
+        lambda name: name == "dependency",
+    )
+    monkeypatch.setattr(
+        playwright_actions.sr,
+        "Get_Shared_Variables",
+        lambda name: {"Browser": "Chrome"} if name == "dependency" else None,
+    )
+    from Framework.Built_In_Automation.Web.Selenium import (
+        BuiltInFunctions as selenium_actions,
+    )
+
+    driver = SimpleNamespace(
+        set_page_load_timeout=lambda _timeout: None,
+        maximize_window=lambda: None,
+    )
+    monkeypatch.setattr(selenium_actions.webdriver, "Chrome", lambda **_kwargs: driver)
+    monkeypatch.setattr(selenium_actions, "selenium_details", {})
+    monkeypatch.setattr(selenium_actions, "current_driver_id", None)
+    monkeypatch.setattr(
+        selenium_actions.Shared_Resources, "Set_Shared_Variables", lambda *_args: None
+    )
+    monkeypatch.setattr(
+        selenium_actions.Shared_Resources, "Shared_Variable_Export", lambda: {}
+    )
+    monkeypatch.setattr(selenium_actions.CommonUtil, "ExecLog", lambda *_args: None)
+    monkeypatch.setattr(
+        selenium_actions.CommonUtil, "set_screenshot_vars", lambda *_args: None
+    )
+
+    assert selenium_actions.Go_To_Link_V2.__wrapped__([
+        ("driver tag", "optional parameter", "checkout"),
+    ]) == "passed"
+    assert selenium_actions.current_driver_id == "checkout"
+    assert selenium_actions.selenium_details["checkout"]["driver"] is driver
 
 
 def test_selenium_style_page_up_key(monkeypatch):
@@ -749,6 +818,35 @@ def test_invalid_index_falls_back_only_for_one_visible_candidate(monkeypatch):
     assert LocateElement._playwright_get_element(
         rows, root_with([candidate(), candidate()]), element_wait=0
     ) == "zeuz_failed"
+
+
+def test_text_filter_returns_only_matching_elements(monkeypatch):
+    wanted = SimpleNamespace(text="Wanted")
+    unwanted = SimpleNamespace(text="Other")
+    monkeypatch.setattr(LocateElement, "_construct_query", lambda _rows: ("*", "css"))
+    monkeypatch.setattr(
+        LocateElement,
+        "_get_xpath_or_css_element",
+        lambda *_args: [wanted, unwanted],
+    )
+    monkeypatch.setattr(LocateElement.CommonUtil, "ExecLog", lambda *_args: None)
+
+    assert LocateElement.text_filter(
+        [
+            ("tag", "element parameter", "div"),
+            ("text", "element parameter", "Wanted"),
+        ],
+        "",
+        0,
+        True,
+    ) == [wanted]
+
+
+@pytest.mark.parametrize("name", ["css", "css selector", "css_selector"])
+def test_raw_css_locator_names(name):
+    assert LocateElement._construct_query([
+        (name, "element parameter", ".target"),
+    ]) == (".target", "css")
 
 
 def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):

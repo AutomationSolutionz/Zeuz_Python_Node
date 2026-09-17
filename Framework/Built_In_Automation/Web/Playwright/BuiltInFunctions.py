@@ -805,6 +805,7 @@ def Handle_Browser_Alert(data_set):
 def open_new_tab(data_set):
     state = _state()
     page = state["context"].new_page()
+    _wire_page(state, page)
     url = _action(data_set)
     if url and url.lower() not in ("open new tab", "new tab"):
         page.goto(url)
