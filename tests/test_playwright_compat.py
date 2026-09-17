@@ -1069,6 +1069,80 @@ def test_text_filter_returns_only_matching_elements(monkeypatch):
     ) == [wanted]
 
 
+def test_uncapped_dom_and_teardown_use_browser_worker(monkeypatch):
+    monkeypatch.setattr(sequential_actions, "_action_worker", None)
+    monkeypatch.setattr(sequential_actions, "_get_action_timeout", lambda: 0)
+    monkeypatch.setattr(sequential_actions, "load_testing", False)
+    monkeypatch.setattr(sequential_actions.CommonUtil, "load_testing", False)
+    monkeypatch.setattr(playwright_actions, "_publish_selenium_bridge", lambda _: None)
+    calls = []
+
+    def record(value):
+        calls.append((value, threading.get_ident()))
+        return value
+
+    def setup(_):
+        playwright_actions._browser_state.current_driver_id = "test"
+        playwright_actions._browser_state.playwright_details = {"test": {
+            "page": SimpleNamespace(evaluate=lambda _: record("dom")),
+            "context": SimpleNamespace(close=lambda: record("context")),
+            "browser": SimpleNamespace(close=lambda: record("browser")),
+        }}
+        return threading.get_ident()
+
+    setup._zeuz_thread_affine = True
+    owner = sequential_actions._run_action_with_timeout(setup, [])
+    assert owner != threading.get_ident()
+    assert sequential_actions._run_action_with_timeout(playwright_actions.get_dom, []) == "dom"
+    assert sequential_actions._run_action_with_timeout(playwright_actions.Tear_Down_Selenium, []) == "passed"
+    assert calls == [(name, owner) for name in ("dom", "context", "browser")]
+
+
+@pytest.mark.parametrize("value", ["yes", "true", "ok", "1", "enable", "enabled"])
+def test_legacy_locator_options(monkeypatch, value):
+    monkeypatch.setattr(LocateElement, "_driver_type", lambda _: "selenium")
+    monkeypatch.setattr(LocateElement, "_switch", lambda _: None)
+    monkeypatch.setattr(LocateElement, "_construct_query", lambda *_: ("//div", "xpath"))
+    seen = []
+    monkeypatch.setattr(LocateElement, "_get_xpath_or_css_element",
+                        lambda *args: seen.append(args[4]) or "zeuz_failed")
+    monkeypatch.setattr(LocateElement, "text_filter", lambda *_: "filtered")
+    driver = SimpleNamespace(find_elements=lambda *_: [])
+    for option in ("allow hidden", "allow disable"):
+        assert LocateElement.Get_Element([
+            ("tag", "element parameter", "div"),
+            (option, "optional parameter", value),
+            ("text filter", "optional parameter", value),
+        ], driver, element_wait=0) == "filtered"
+        assert seen[-1] == option
+
+
+@pytest.mark.parametrize("mode,wanted,actual,matched", [
+    ("text", "Hello World", "Hello\xa0World", True),
+    ("text", "Hello\xa0World", "Hello World", True),
+    ("text", "Hello World", "prefix Hello\xa0World", False),
+    ("*text", "Hello World", "prefix Hello\xa0World", True),
+    ("*text", "hello World", "Hello\xa0World", False),
+    ("**text", "hello world", "prefix HELLO\xa0WORLD", True),
+    ("text", "Hello World", "Hello  World", False),
+    ("text", "Hello World", "Hello\nWorld", False),
+])
+def test_text_filter_backend_parity(monkeypatch, mode, wanted, actual, matched):
+    element = SimpleNamespace(text=actual, inner_text=lambda: actual)
+    monkeypatch.setattr(LocateElement, "_construct_query", lambda *_: ("//div", "xpath"))
+    monkeypatch.setattr(LocateElement, "_get_xpath_or_css_element", lambda *_: [element])
+    def candidates(rows, *_args, **_kwargs):
+        assert (mode, "element parameter", wanted) not in rows
+        assert ("text", "parent parameter", "Parent") in rows
+        return [element]
+    monkeypatch.setattr(LocateElement, "_playwright_get_element", candidates)
+    rows = [("tag", "element parameter", "div"),
+            (mode, "element parameter", wanted), ("text", "parent parameter", "Parent")]
+    for root in (None, object()):
+        assert LocateElement.text_filter(rows, "", 0, True, playwright_root=root) == (
+            [element] if matched else [])
+
+
 @pytest.mark.parametrize("name", ["css", "css selector", "css_selector"])
 def test_raw_css_locator_names(name):
     assert LocateElement._construct_query([
@@ -1381,6 +1455,48 @@ def page():
 def test_locator_grammar(page, rows, expected):
     element = LocateElement.Get_Element(rows, page, element_wait=0.5)
     assert element.inner_text() == expected
+
+
+def test_text_filter_fallback_preserves_normal_lookup(page, monkeypatch):
+    saved = {}
+    monkeypatch.setattr(LocateElement.sr, "Set_Shared_Variables", lambda key, value: saved.__setitem__(key, value))
+    test_page = page.context.browser.new_page()
+    try:
+        test_page.set_content('''
+            <section><button id="nbsp">Hello&nbsp;World</button>
+            <button id="exact">Hello World</button>
+            <button id="partial">prefix HELLO&nbsp;WORLD suffix</button>
+            <button id="hidden-text" hidden>Hello&nbsp;World</button></section>
+        ''')
+        option = ("text filter", "optional parameter", "enabled")
+        text = ("text", "element parameter", "Hello World")
+        def locate(rows, **kwargs):
+            return LocateElement.Get_Element(rows, test_page, element_wait=0, **kwargs)
+
+        # A successful exact lookup must not broaden to include the NBSP candidate.
+        assert locate([("tag", "element parameter", "button"), text, option]).get_attribute("id") == "exact"
+        rows = [("id", "element parameter", "nbsp"), text]
+        assert locate(rows) == "zeuz_failed"
+        assert locate(rows + [option]).get_attribute("id") == "nbsp"
+        # Selenium returns an empty list directly, without invoking its fallback.
+        assert locate(rows + [option], return_all_elements=True) == []
+        assert locate([("id", "element parameter", "partial"), text, option]) == "zeuz_failed"
+        assert locate([("id", "element parameter", "partial"),
+                       ("**text", "element parameter", "hello world"), option]).get_attribute("id") == "partial"
+        # Raw CSS takes precedence over text in the normal Selenium query.
+        assert locate([("css", "element parameter", "#partial"), text, option]).get_attribute("id") == "partial"
+        for value in ("1", "enable", "enabled"):
+            assert locate([("id", "element parameter", "hidden-text"), text, option,
+                           ("allow hidden", "optional parameter", value)]).get_attribute("id") == "hidden-text"
+        test_page.set_content('<div><button id="first">Hello&nbsp;World</button>'
+                              '<button id="second">Hello&nbsp;World</button></div>')
+        indexed = [("tag", "element parameter", "button"), text, option,
+                   ("index", "element parameter", "-1"), ("chosen", "save parameter", "")]
+        assert locate(indexed).get_attribute("id") == "second"
+        assert saved["chosen"].get_attribute("id") == "second"
+        assert saved["zeuz_element"].get_attribute("id") == "second"
+    finally:
+        test_page.close()
 
 
 def test_evaluator_text_does_not_reselect_existing_user(page, monkeypatch):

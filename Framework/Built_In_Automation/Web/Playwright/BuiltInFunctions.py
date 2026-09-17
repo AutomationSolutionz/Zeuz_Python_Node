@@ -1619,6 +1619,8 @@ def cleanup_network_captures(data_set=()):
 
 
 cleanup_network_captures._zeuz_thread_affine = True
+get_dom._zeuz_thread_affine = True
+Tear_Down_Selenium._zeuz_thread_affine = True
 
 
 def capture_network_log(data_set):

@@ -320,11 +320,11 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 left = row[0].strip().lower()
                 right = row[2].strip().lower()
                 if left in ("allow hidden", "allow disable"):
-                    Filter = left if right in ("yes", "true", "ok") else Filter
+                    Filter = left if right in ("yes", "true", "ok", "1", "enable", "enabled") else Filter
                 elif left == "wait":
                     element_wait = float(right)
                 elif left == "text filter":
-                    text_filter_cond = right in ("yes", "true", "ok", "enable")
+                    text_filter_cond = right in ("yes", "true", "ok", "enable", "1", "enabled")
             elif row[1].strip().lower().startswith("sr"):
                 shadow_root_ds.append([row[0], row[1], row[2]])
             else:
@@ -418,7 +418,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def text_filter(step_data_set, Filter, element_wait, return_all_elements):
+def text_filter(step_data_set, Filter, element_wait, return_all_elements, playwright_root=None):
     """
     suppose dom has <div>Hello &nbsp;World</div>
     the text will be converted to "<something unknown>Hello  world<something unknown>"
@@ -454,26 +454,31 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
 
         index_number = _locate_index_number(temp_dataset)
         index_number = index_number if index_number is not None else 0
-        element_query, query_type = _construct_query(temp_dataset)
         CommonUtil.ExecLog(sModuleInfo, f"No Element found. Now we are trying to handle &nbsp; and <space>", 1)
-        CommonUtil.ExecLog(sModuleInfo, f"To locate the Element we used {query_type}:\n{element_query}", 5)
-
-        if query_type in ("xpath", "css", "unique"):
-            result = _get_xpath_or_css_element(element_query, query_type, temp_dataset, None, Filter, True, element_wait)
+        if playwright_root is not None:
+            result = _playwright_get_element(
+                temp_dataset + [("allow hidden", "optional parameter", str(Filter == "allow hidden"))],
+                playwright_root, return_all_elements=True, element_wait=element_wait,
+            )
         else:
-            return "zeuz_failed"
+            element_query, query_type = _construct_query(temp_dataset)
+            CommonUtil.ExecLog(sModuleInfo, f"To locate the Element we used {query_type}:\n{element_query}", 5)
+            if query_type not in ("xpath", "css", "unique"):
+                return "zeuz_failed"
+            result = _get_xpath_or_css_element(element_query, query_type, temp_dataset, None, Filter, True, element_wait)
 
         tmp_results = []
         similar_texts = []
         for element in result:
+            actual_text = element.inner_text().strip() if playwright_root is not None else element.text
             for f in filters:
-                if element.text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub(r'\s+', '', element.text.lower().replace("\xa0", "")):
-                    similar_texts.append(element.text)
-                if f[0].startswith("**") and f[2].lower().replace("\xa0", " ") in element.text.lower().replace("\xa0", " "):
+                if actual_text not in similar_texts and f[2].lower().replace("\xa0", "").replace(" ", "") in re.sub(r'\s+', '', actual_text.lower().replace("\xa0", "")):
+                    similar_texts.append(actual_text)
+                if f[0].startswith("**") and f[2].lower().replace("\xa0", " ") in actual_text.lower().replace("\xa0", " "):
                     break
-                elif f[0].startswith("*") and f[2].replace("\xa0", " ") in element.text.replace("\xa0", " "):
+                elif f[0].startswith("*") and f[2].replace("\xa0", " ") in actual_text.replace("\xa0", " "):
                     break
-                elif f[2].replace("\xa0", " ") == element.text.replace("\xa0", " "):
+                elif f[2].replace("\xa0", " ") == actual_text.replace("\xa0", " "):
                     break
             else:
                 continue
@@ -487,7 +492,9 @@ def text_filter(step_data_set, Filter, element_wait, return_all_elements):
             if len(similar_texts) > 0:
                 CommonUtil.ExecLog(sModuleInfo, f"These are the similar texts found in the HTML: {str(similar_texts)[1:-1]}", 3)
             return "zeuz_failed"
-        CommonUtil.ExecLog(sModuleInfo, f"Original text of the element is '{tmp_results[index_number].text}'", 1)
+        selected = tmp_results[index_number]
+        selected_text = selected.inner_text().strip() if playwright_root is not None else selected.text
+        CommonUtil.ExecLog(sModuleInfo, f"Original text of the element is '{selected_text}'", 1)
         if len(tmp_results) == index_number + 1 == 1:
             return tmp_results[index_number]
         else:
@@ -1479,7 +1486,7 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
             elif mid == "get parameter":
                 get_parameter = right.strip().strip("%").strip("|")
             elif mid in ("optional parameter", "optional option"):
-                enabled = right.strip().lower() in ("yes", "true", "ok", "enable", "1")
+                enabled = right.strip().lower() in ("yes", "true", "ok", "enable", "1", "enabled")
                 if key == "allow hidden":
                     allow_hidden = enabled
                 elif key == "wait":
@@ -1558,10 +1565,6 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
                         continue
                     if mode == "**text" and wanted_text.lower() not in actual_text.lower():
                         continue
-                if text_filter_enabled:
-                    wanted = next((r[2] for r in normal_rows if r[0].strip().lower().endswith("text")), None)
-                    if wanted is not None and wanted not in candidate.inner_text():
-                        continue
                 candidates.append(candidate)
             if candidates or time.monotonic() >= deadline:
                 break
@@ -1580,6 +1583,17 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
                 )
                 index = 0
             elif not candidates or not -len(candidates) <= index < len(candidates):
+                # Like Selenium, normalize text only after the ordinary lookup fails.
+                if text_filter_enabled and not shadow_rows:
+                    result = text_filter(
+                        normal_rows, "allow hidden" if allow_hidden else "",
+                        timeout, return_all_elements, playwright_root=root,
+                    )
+                    if result != "zeuz_failed":
+                        if save_parameter:
+                            sr.Set_Shared_Variables(save_parameter, result)
+                        sr.Set_Shared_Variables("zeuz_element", result)
+                        return result
                 CommonUtil.ExecLog(
                     MODULE_NAME,
                     f"Unable to locate your element with given data: {locator}; "
