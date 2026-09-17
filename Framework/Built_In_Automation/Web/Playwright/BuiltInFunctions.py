@@ -44,7 +44,7 @@ def _fail(message):
 
 def _rows(data_set):
     return [
-        (str(left).strip(), str(middle).strip().lower(), str(right).strip())
+        (str(left).strip(), str(middle).strip().lower(), str(right))
         for left, middle, right in data_set
     ]
 
@@ -63,7 +63,7 @@ def _action(data_set, default=""):
 def _driver_id(data_set, default=None):
     for left, _middle, right in _rows(data_set):
         if _key(left) in ("driverid", "drivertag"):
-            return right or "default"
+            return right.strip() or "default"
     return default or current_driver_id or "default"
 
 
@@ -330,7 +330,7 @@ def _launch(data_set):
                 "normal": "load",
                 "eager": "domcontentloaded",
                 "none": "commit",
-            }.get(right.lower(), "load")
+            }.get(right.strip().lower(), "load")
         elif key == "debuggeraddress":
             debugger = right
         elif key in ("chromeversion", "chrome:version"):
@@ -492,7 +492,7 @@ def Tear_Down_Selenium(data_set=()):
     try:
         requested = (
             _driver_id(data_set)
-            if any(_key(left) == "driverid" for left, _, _ in _rows(data_set))
+            if any(_key(left) in ("driverid", "drivertag") for left, _, _ in _rows(data_set))
             else None
         )
         ids = [requested] if requested else list(playwright_details)
@@ -545,7 +545,7 @@ def Get_Current_URL(data_set):
 
 
 def Navigate(data_set):
-    value = _action(data_set).lower()
+    value = _action(data_set).strip().lower()
     page = get_page()
     if value == "back":
         page.go_back()
@@ -576,7 +576,7 @@ def Click_Element(data_set):
                 "x": box["width"] / 2 * (1 + x / 100),
                 "y": box["height"] / 2 * (1 + y / 100),
             }
-        elif _key(left) == "usejs" and right.lower() in CommonUtil.affirmative_words:
+        elif _key(left) == "usejs" and right.strip().lower() in CommonUtil.affirmative_words:
             element.evaluate("element => element.click()")
             return "passed"
     element.click(**options)
@@ -685,6 +685,8 @@ def Keystroke_For_Element(data_set):
         else None
     )
     keyboard = get_page().keyboard
+    if element in failed_tag_list:
+        return "zeuz_failed"
     if "chars" in field:
         element.type(value) if element else keyboard.type(value)
     else:
@@ -692,6 +694,22 @@ def Keystroke_For_Element(data_set):
         combo = "+".join(
             _KEYS.get(_key(part).upper(), part.strip()) for part in key.split("+")
         )
+        paste_image = any(_key(left) == "pasteimage" and right.strip().lower() == "true"
+                          for left, _, right in _rows(data_set))
+        if paste_image and combo.lower() in ("control+v", "meta+v"):
+            combo = "Meta+v" if get_page().evaluate("/Mac/.test(navigator.platform)") else "Control+v"
+            try:
+                if element:
+                    element.focus()
+                keyboard.press(combo)
+            except Exception:
+                import pyperclip
+                text = pyperclip.paste()
+                if element:
+                    element.evaluate("(el, text) => { el.focus(); el.value = text; }", text)
+                else:
+                    get_page().evaluate("text => { document.activeElement.value += text; }", text)
+            return "passed"
         for _ in range(int(count or 1)):
             element.press(combo) if element else keyboard.press(combo)
     return "passed"
@@ -706,12 +724,22 @@ def Enter_Text_In_Text_Box(data_set):
         element.set_input_files(CommonUtil.path_parser(value))
         return "passed"
 
+    if any(_key(left) == "usejs" and right.strip().lower() in ("true", "yes", "1")
+           for left, _, right in _rows(data_set)):
+        element.evaluate("""(el, value) => {
+            el.click();
+            el.value = value;
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+            el.dispatchEvent(new Event('change', {bubbles: true}));
+            el.click();
+        }""", value)
+        return "passed"
     append = any(
-        _key(left) == "append" and right.lower() in CommonUtil.affirmative_words
+        _key(left) == "append" and right.strip().lower() in CommonUtil.affirmative_words
         for left, _, right in _rows(data_set)
     )
     clear = not any(
-        _key(left) == "clear" and right.lower() in ("no", "false")
+        _key(left) == "clear" and right.strip().lower() in ("no", "false")
         for left, _, right in _rows(data_set)
     )
     delay = next(
@@ -738,12 +766,17 @@ def Validate_Text(data_set):
     )
     actual = element.inner_text().strip()
     ignore_case = any(
-        _key(left) == "ignorecase" and right.lower() in CommonUtil.affirmative_words
+        _key(left) == "ignorecase" and right.strip().lower() in CommonUtil.affirmative_words
         for left, _, right in _rows(data_set)
     )
     if ignore_case:
         actual, expected = actual.lower(), expected.lower()
-    valid = expected in actual if "partial" in name else expected in actual.splitlines()
+    lines = [line for line in actual.split("\n") if line != ""]
+    for left, middle, right in _rows(data_set):
+        if middle == "text classifier offset":
+            from Framework.AI.NLP import binary_classification
+            return binary_classification(" ".join(lines), [left], float(right))["status"]
+    valid = any(expected in line for line in lines) if "partial" in name else expected in lines
     return (
         "passed"
         if valid
@@ -857,10 +890,25 @@ def switch_window_or_tab(data_set):
 
 def close_tab(data_set):
     state = _state()
-    page = _find_page(data_set)
-    if page is None:
+    tabs = next((_parse(right) for left, _, right in _rows(data_set) if _key(left) == "tabs"), None)
+    pages = list(state["context"].pages)
+    if tabs is not None:
+        if not isinstance(tabs, list):
+            return _fail("tabs must be a list of titles or indices")
+        selected = []
+        for tab in tabs:
+            page = pages[tab] if isinstance(tab, int) else next(
+                (page for page in pages if page.title().lower() == str(tab).strip().lower()), None)
+            if page is None:
+                return _fail("Requested tab/window was not found")
+            if page not in selected:
+                selected.append(page)
+    else:
+        selected = [_find_page(data_set)]
+    if None in selected:
         return _fail("Requested tab/window was not found")
-    page.close()
+    for page in selected:
+        page.close()
     if state["context"].pages:
         _wire_page(state, state["context"].pages[-1])
         _set_active(current_driver_id)
@@ -1103,11 +1151,32 @@ def _target_specs(data_set):
             continue
         spec = {}
         for item in right.replace(",\n", ",").split(","):
+            item = item.strip()
+            if "(" in item and item.split("(", 1)[0].strip() in ("return_contains", "return_does_not_contain"):
+                key, value = item.split("(", 1)
+                spec.setdefault(key.strip(), []).append(value.rstrip(")"))
+                continue
             if "=" in item:
                 key, value = item.split("=", 1)
                 spec.setdefault(key.strip(), []).append(value.strip().strip('"'))
         specs.append(spec)
     return specs
+
+
+def _return_attribute(element, attribute):
+    if attribute == "text":
+        return element.inner_text().strip()
+    if attribute == "tag":
+        return element.evaluate("el => el.tagName.toLowerCase()")
+    if attribute == "checked":
+        return str(element.evaluate("el => Boolean(el.checked || el.selected)"))
+    return element.get_attribute(attribute)
+
+
+def _return_matches(value, contains, excludes):
+    return (not contains or any(not isinstance(value, str) or not part or part in value
+                                for part in contains)) and not any(
+        isinstance(value, str) and part and part in value for part in excludes)
 
 
 def save_attribute_values_in_list(data_set):
@@ -1124,20 +1193,9 @@ def save_attribute_values_in_list(data_set):
         values = []
         for element in _element(rows, all_elements=True, root=parent):
             attribute = spec.get("return", ["text"])[0]
-            value = (
-                element.inner_text().strip()
-                if attribute == "text"
-                else element.input_value()
-                if attribute == "value"
-                else element.get_attribute(attribute)
-            )
-            if all(
-                part in (value or "") for part in spec.get("return_contains", [])
-            ) and not any(
-                part in (value or "")
-                for part in spec.get("return_does_not_contain", [])
-            ):
-                values.append(value)
+            value = _return_attribute(element, attribute)
+            values.append(value if _return_matches(value, spec.get("return_contains", []),
+                                                   spec.get("return_does_not_contain", [])) else None)
         result.append(values)
     name = next(
         (
@@ -1147,7 +1205,16 @@ def save_attribute_values_in_list(data_set):
         ),
         "",
     )
-    return sr.Set_Shared_Variables(name, result[0] if len(result) == 1 else result)
+    paired = not any(_key(left) == "paired" and right.strip().lower() == "no"
+                     for left, _, right in _rows(data_set))
+    if len(result) == 1:
+        result = result[0]
+    else:
+        result = [[group[index] for group in result if index < len(group)]
+                  for index in range(max(map(len, result), default=0))]
+        if not paired:
+            result = list(map(list, zip(*result)))
+    return sr.Set_Shared_Variables(name, result)
 
 
 def Extract_Table_Data(data_set):
@@ -1155,7 +1222,7 @@ def Extract_Table_Data(data_set):
     if table in failed_tag_list:
         return "zeuz_failed"
     values = table.locator("tr").evaluate_all(
-        "rows => rows.map(r => [...r.querySelectorAll('th,td')].map(c => c.textContent.trim()))"
+        "rows => rows.map(r => [...r.querySelectorAll('td')].map(c => c.textContent.trim()))"
     )
     row = next(
         (right for left, _, right in _rows(data_set) if "row" in left.lower()), ""
@@ -1201,6 +1268,22 @@ def save_web_elements_in_list(data_set):
             if not key.startswith("return")
         ]
         elements = _element(rows, all_elements=True, root=root)
+        if elements in failed_tag_list:
+            return "zeuz_failed"
+        for filter_name in ("return_contains", "return_does_not_contain"):
+            filters = spec.get(filter_name, [])
+            if not filters:
+                continue
+            retained = []
+            for element in elements:
+                matches = []
+                for rule in filters:
+                    attribute, expected = rule.split("=", 1)
+                    value = _return_attribute(element, attribute.strip().strip('"'))
+                    matches.append(value is None or expected.strip().strip('"') in value)
+                if any(matches) == (filter_name == "return_contains"):
+                    retained.append(element)
+            elements = retained
         groups.append(elements)
     value = groups[0] if len(groups) == 1 else groups
     return sr.Set_Shared_Variables(name, value)
@@ -1216,7 +1299,7 @@ def take_screenshot_selenium(data_set):
         "%Y_%m_%d_%H-%M-%S",
     )
     full_page = any(
-        "fullscreen" in left.lower() and right.lower() in CommonUtil.affirmative_words
+        "fullscreen" in left.lower() and right.strip().lower() in CommonUtil.affirmative_words
         for left, _, right in _rows(data_set)
     )
     folder = ConfigModule.get_config_value(
@@ -1257,7 +1340,7 @@ def execute_javascript(data_set):
 
 
 def Scroll(data_set):
-    direction = _action(data_set).lower()
+    direction = _action(data_set).strip().lower()
     pixels = next(
         (int(right) for left, _, right in _rows(data_set) if left.lower() == "pixels"),
         750,
@@ -1282,7 +1365,41 @@ def scroll_to_element(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
-    element.scroll_into_view_if_needed()
+    method, align, additional = "js", True, 0.1
+    direction = ""
+    for left, _, right in _rows(data_set):
+        key, value = _key(left), right.strip().lower()
+        if key == "usejs":
+            method = "js" if value in ("true", "yes", "1") else "action chain"
+        elif key == "method":
+            method = value
+        elif key == "aligntotop":
+            align = value in ("true", "yes", "1")
+        elif key.startswith("additionalscroll"):
+            additional = float(value)
+            direction = key.removeprefix("additionalscroll")
+    page = get_page()
+    before = page.evaluate("[window.scrollX, window.scrollY]")
+    if method == "js":
+        element.evaluate("(el, align) => el.scrollIntoView(align)", align)
+    elif method == "webdriver":
+        element.evaluate("el => el.scrollIntoView(true)")
+    else:
+        element.hover()
+    if additional > 0:
+        after = page.evaluate("[window.scrollX, window.scrollY]")
+        if not direction:
+            dx, dy = after[0] - before[0], after[1] - before[1]
+            direction = "down" if dy > 0 else "up" if dy < 0 else "right" if dx > 0 else "left" if dx < 0 else ""
+            if (method in ("js", "webdriver") and align and direction in ("down", "right")) or (not align and direction in ("up", "left")):
+                direction = ""
+        if direction:
+            page.evaluate("""({direction, fraction}) => {
+                const x = direction === 'right' ? 1 : direction === 'left' ? -1 : 0;
+                const y = direction === 'down' ? 1 : direction === 'up' ? -1 : 0;
+                window.scrollBy(x * Math.round(window.innerWidth * fraction),
+                                y * Math.round(window.innerHeight * fraction));
+            }""", {"direction": direction, "fraction": additional})
     return "passed"
 
 
@@ -1291,12 +1408,22 @@ def scroll_to_top(data_set):
     return "passed"
 
 
+def _set_checked(element, checked, data_set):
+    if any(_key(left) == "usejs" and right.strip().lower() in ("true", "yes", "ok")
+           for left, _, right in _rows(data_set)):
+        element.evaluate("""(el, checked) => {
+            if (Boolean(el.checked || el.selected) !== checked) el.click();
+        }""", checked)
+    else:
+        element.check() if checked else element.uncheck()
+
+
 def check_uncheck(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
-    command = _action(data_set).lower()
-    element.uncheck() if "uncheck" in command else element.check()
+    command = _action(data_set).strip().lower()
+    _set_checked(element, "uncheck" not in command, data_set)
     return "passed"
 
 
@@ -1312,7 +1439,7 @@ def check_uncheck_all(data_set):
     elements = _element(targets, all_elements=True, root=parent)
     uncheck = "uncheck" in _action(data_set).lower()
     for element in elements:
-        element.uncheck() if uncheck else element.check()
+        _set_checked(element, not uncheck, data_set)
     return "passed"
 
 
@@ -1326,7 +1453,7 @@ def multiple_check_uncheck(data_set):
         for attribute, value, command in _parse("[" + right + "]"):
             element = _element([(attribute, "element parameter", value)], root=parent)
             if element not in failed_tag_list:
-                element.uncheck() if "uncheck" in command.lower() else element.check()
+                _set_checked(element, "uncheck" not in command.lower(), data_set)
     return "passed"
 
 
@@ -1489,7 +1616,7 @@ cleanup_network_captures._zeuz_thread_affine = True
 
 def capture_network_log(data_set):
     state = _state()
-    command = _action(data_set).lower()
+    command = _action(data_set).strip().lower()
     if command == "start":
         _stop_network_capture(state)
         state["capturing_network"] = True
@@ -1532,7 +1659,7 @@ def capture_network_log(data_set):
                 statuses.update(range(bounds[0], bounds[-1] + 1))
         include_body = any(
             _key(left) == "includeresponsebody"
-            and right.lower() in CommonUtil.affirmative_words
+            and right.strip().lower() in CommonUtil.affirmative_words
             for left, _, right in _rows(data_set)
         )
         static = (
@@ -1548,12 +1675,18 @@ def capture_network_log(data_set):
             ".woff2",
             ".ttf",
             ".map",
+            ".txt",
+            ".webp",
+            ".eot",
         )
         logs = []
         for captured in captured_network:
             if captured.get("type") == "request" or captured["url"].lower().endswith(
                 static
-            ):
+            ) or captured.get("mimeType", "").startswith((
+                "image/", "font/", "text/css", "application/javascript",
+                "text/javascript", "application/font-", "application/x-font-",
+            )):
                 continue
             if domains and not any(domain in captured["url"] for domain in domains):
                 continue
@@ -1601,6 +1734,8 @@ def if_element_exists(data_set):
 
 
 def copy_image_into_browser(data_set):
+    image_variable = next((right.strip() for left, _, right in _rows(data_set)
+                           if _key(left) == "imagevariable"), "")
     path = next(
         (
             right
@@ -1609,6 +1744,8 @@ def copy_image_into_browser(data_set):
         ),
         "",
     )
+    if not path and image_variable:
+        path = image_variable if Path(image_variable).is_file() else sr.Get_Shared_Variables(image_variable)
     path = CommonUtil.path_parser(path)
     if not path or not Path(path).is_file():
         return _fail("Image file was not found")

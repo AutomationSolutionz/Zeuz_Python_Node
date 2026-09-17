@@ -49,6 +49,229 @@ def test_playwright_module_loads():
     assert sequential_actions.playwright is playwright_actions
 
 
+def test_review_routing_and_selenium_ownership(monkeypatch):
+    monkeypatch.setattr(playwright_actions.sr, "Test_Shared_Variables", lambda name: name == "dependency")
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: {"Browser": "Chrome"})
+    from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
+
+    values = {"zeuz_browser_driver": "playwright", "zeuz_active_browser_backend": "playwright"}
+    monkeypatch.setattr(sequential_actions.sr, "Get_Shared_Variables", lambda name, **_: values.get(name))
+    monkeypatch.setattr(sequential_actions.sr, "Set_Shared_Variables", lambda name, value, **_: values.__setitem__(name, value))
+    monkeypatch.setattr(sequential_actions.sr, "Shared_Variable_Export", lambda: values)
+    screenshots = []
+    monkeypatch.setattr(sequential_actions.CommonUtil, "set_screenshot_vars", lambda values: screenshots.append(values.copy()))
+    driver = object()
+    monkeypatch.setattr(selenium, "selenium_details", {"web": {"driver": driver}})
+    monkeypatch.setattr(selenium, "selenium_driver", None)
+    monkeypatch.setattr(selenium, "current_driver_id", None)
+    for backend in ("selenium", "playwright"):
+        for subfield in ("selenium action", "playwright action"):
+            assert sequential_actions._route_playwright_action("click", subfield, [
+                ("browser driver", "optional parameter", backend)
+            ]) == backend + " action"
+    assert selenium.Switch_Browser([("driver_id", "optional parameter", "web")]) == "passed"
+    assert values["zeuz_browser_backends"] == {"web": "selenium"}
+    assert screenshots[-1]["common_driver"] is driver
+    assert screenshots[-1]["zeuz_active_browser_backend"] == "selenium"
+    assert sequential_actions._route_playwright_action("switch browser", "selenium action", [
+        ("driver_id", "optional parameter", "web")
+    ]) == "selenium action"
+
+
+def test_review_extension_failure_and_xpath_case(monkeypatch):
+    monkeypatch.setattr(playwright_actions.sr, "Test_Shared_Variables", lambda name: name == "dependency")
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: {"Browser": "Chrome"})
+    from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
+
+    monkeypatch.setattr(selenium, "ChromeExtensionDownloader", lambda **_: SimpleNamespace(
+        setup_chrome_extension_download=lambda **_: None))
+    assert selenium.parse_and_verify_datatype("addextension", repr(["a" * 32])) == []
+    assert LocateElement._construct_query([("XPath", "element parameter", "//button")]) == ("//button", "xpath")
+
+
+def test_review_text_classifier_and_image_paste(monkeypatch):
+    import pyperclip
+    from Framework.AI import NLP
+
+    seen = []
+    element = SimpleNamespace(inner_text=lambda: "  success  \n\nnext", focus=lambda: seen.append("focus"),
+                              evaluate=lambda script, value: seen.append(value))
+    monkeypatch.setattr(playwright_actions, "_element", lambda *_args, **_: element)
+    monkeypatch.setattr(NLP, "binary_classification", lambda message, labels, confidence: seen.append(
+        (message, labels, confidence)) or {"status": "passed"})
+    assert playwright_actions.Validate_Text([
+        ("validate full text", "action", "unused"), ("success", "text classifier offset", "0.8")
+    ]) == "passed"
+    assert seen[-1] == ("success   next", ["success"], 0.8)
+    def failed_press(combo):
+        seen.append(combo)
+        raise RuntimeError("paste failed")
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: SimpleNamespace(
+        keyboard=SimpleNamespace(press=failed_press), evaluate=lambda _: True))
+    monkeypatch.setattr(pyperclip, "paste", lambda: "fallback")
+    assert playwright_actions.Keystroke_For_Element([
+        ("id", "element parameter", "input"), ("keystroke keys", "action", "CTRL+V"),
+        ("paste image", "optional parameter", "true")
+    ]) == "passed"
+    assert seen[-3:] == ["focus", "Meta+v", "fallback"]
+
+
+def test_review_network_static_filters(monkeypatch):
+    logs = []
+    state = {"capturing_network": True, "network": [
+        {"url": "https://example.test/" + suffix, "status": 200, "method": "GET", "mimeType": mime}
+        for suffix, mime in [("a.txt", "text/plain"), ("a.webp", ""), ("a.eot", ""),
+                             ("image?id=1", "image/png"), ("font", "application/x-font-ttf"),
+                             ("api", "application/json")]
+    ]}
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda _, value: logs.extend(value))
+    assert playwright_actions.capture_network_log([
+        ("capture network log", "action", "stop"), ("save", "input parameter", "logs")
+    ]) == "passed"
+    assert [item["url"] for item in logs] == ["https://example.test/api"]
+
+
+def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
+    image = tmp_path / "image.png"
+    image.write_bytes(b"image bytes")
+    captured = []
+    context = SimpleNamespace(pages=[], grant_permissions=lambda *args, **kwargs: None)
+    state = {"context": context}
+    class Page:
+        url = "https://example.test"
+        def __init__(self, title):
+            self.name = title
+        def title(self):
+            return self.name
+        def close(self):
+            context.pages.remove(self)
+        def evaluate(self, script, value):
+            captured.append(value)
+    pages = [Page(name) for name in ("first", "second", "third")]
+    context.pages = pages.copy()
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: pages[0])
+    monkeypatch.setattr(playwright_actions, "_wire_page", lambda *_: None)
+    monkeypatch.setattr(playwright_actions, "_set_active", lambda *_: None)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name: str(image))
+    for value in (str(image), "image_variable"):
+        assert playwright_actions.copy_image_into_browser([
+            ("image variable", "input parameter", value)
+        ]) == "passed"
+        assert captured[-1] == {"data": "aW1hZ2UgYnl0ZXM=", "mime": "image/png"}
+    assert playwright_actions.close_tab([("tabs", "optional parameter", "[0, 2]")]) == "passed"
+    assert context.pages == [pages[1]]
+    context.pages = pages.copy()
+    assert playwright_actions.close_tab([("tabs", "optional parameter", "['first', 'third']")]) == "passed"
+    assert context.pages == [pages[1]]
+
+
+def test_review_electron_ports(monkeypatch):
+    import socket
+    monkeypatch.setattr(playwright_actions.sr, "Test_Shared_Variables", lambda name: name == "dependency")
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: {"Browser": "Chrome"})
+    from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
+
+    sockets, ports = [], []
+    def launch(**kwargs):
+        port = int(next(arg.split("=", 1)[1] for arg in kwargs["options"].arguments
+                        if arg.startswith("--remote-debugging-port=")))
+        sock = socket.socket()
+        sockets.append(sock)
+        sock.bind(("127.0.0.1", port))
+        ports.append(port)
+        return SimpleNamespace(implicitly_wait=lambda _: None)
+    monkeypatch.setenv("WDM_ARCHITECTURE", "x64")
+    monkeypatch.setattr(selenium.webdriver, "Chrome", launch)
+    monkeypatch.setattr(selenium, "ChromeDriverManager", lambda **_: SimpleNamespace(install=lambda: "/tmp/chromedriver"))
+    monkeypatch.setattr(selenium.ConfigModule, "get_config_value", lambda *_: "/tmp/chromedriver")
+    monkeypatch.setattr(selenium, "_publish_active_browser", lambda: None)
+    monkeypatch.setattr(selenium.Shared_Resources, "Set_Shared_Variables", lambda *_: None)
+    monkeypatch.setattr(selenium.CommonUtil, "set_screenshot_vars", lambda *_: None)
+    monkeypatch.setattr(selenium, "selenium_details", {})
+    monkeypatch.setattr(selenium, "selenium_driver", None)
+    monkeypatch.setattr(selenium, "current_driver_id", None)
+    try:
+        for driver_id in ("one", "two"):
+            assert selenium.Open_Electron_App([
+                (selenium.platform.system().lower(), "input parameter", "/tmp/electron"),
+                ("driverid", "optional parameter", driver_id)
+            ]) == "passed"
+            assert selenium.selenium_details[driver_id]["remote-debugging-port"] == ports[-1]
+        assert ports[0] != ports[1]
+    finally:
+        for sock in sockets:
+            sock.close()
+
+
+def test_review_browser_action_parity(page, monkeypatch):
+    context = page.context.browser.new_context()
+    tab = context.new_page()
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    saved = {}
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda name, value: saved.__setitem__(name, value) or "passed")
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_args, **_: 0)
+    try:
+        tab.set_content('''<input id="text" readonly><input id="check" type="checkbox" style="pointer-events:none">
+            <div id="root"><span class="item" value="one">keep</span><span class="item" value="two">drop</span></div>
+            <table><tr><th>heading</th></tr><tr><td>cell</td></tr></table>
+            <div style="height:2000px"></div><div id="bottom">bottom</div><div style="height:2000px"></div>
+            <script>window.events=[]; document.querySelector('#text').addEventListener('input', () => events.push('input'));
+            document.querySelector('#text').addEventListener('change', () => events.push('change'));</script>''')
+        text = "  text ` ${literal}  "
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "text"), ("text", "action", text), ("use js", "optional parameter", "true")
+        ]) == "passed"
+        assert tab.locator("#text").input_value() == text
+        assert tab.evaluate("events") == ["input", "change"]
+        assert playwright_actions.check_uncheck([
+            ("id", "element parameter", "check"), ("check uncheck", "action", "check"), ("use js", "optional parameter", "yes")
+        ]) == "passed"
+        assert tab.locator("#check").is_checked()
+        assert playwright_actions._return_attribute(tab.locator("#check"), "checked") == "True"
+        assert playwright_actions._return_attribute(tab.locator(".item").first, "tag") == "span"
+        assert playwright_actions._return_attribute(tab.locator(".item").first, "value") == "one"
+        rows = [("id", "element parameter", "root"),
+                ("attributes", "target parameter", 'class="item", return="text", return_contains="keep"'),
+                ("attributes", "target parameter", 'class="item", return="value"'),
+                ("save attribute values in list", "action", "values")]
+        assert playwright_actions.save_attribute_values_in_list(rows) == "passed"
+        assert saved["values"] == [["keep", "one"], [None, "two"]]
+        assert playwright_actions.save_attribute_values_in_list(rows + [("paired", "optional parameter", "no")]) == "passed"
+        assert saved["values"] == [["keep", None], ["one", "two"]]
+        assert playwright_actions.save_web_elements_in_list([
+            ("id", "element parameter", "root"),
+            ("attributes", "target parameter", 'class="item", return_contains(text="keep"), return_does_not_contain(value="two")'),
+            ("save web elements in list", "action", "elements")
+        ]) == "passed"
+        assert [element.inner_text() for element in saved["elements"]] == ["keep"]
+        assert playwright_actions.Extract_Table_Data([
+            ("tag", "element parameter", "table"), ("extract table data", "action", "table")
+        ]) == "passed"
+        assert saved["table"] == [[], ["cell"]]
+        rows = [("id", "element parameter", "bottom"), ("scroll element to top", "action", ""),
+                ("additional scroll", "optional parameter", "0")]
+        assert playwright_actions.scroll_to_element(rows) == "passed"
+        assert abs(tab.locator("#bottom").bounding_box()["y"]) < 1
+        assert playwright_actions.scroll_to_element(rows + [("align to top", "optional parameter", "false")]) == "passed"
+        box = tab.locator("#bottom").bounding_box()
+        assert abs(box["y"] + box["height"] - tab.evaluate("innerHeight")) < 1
+        # The synchronous click completes because the next action handles its dialog immediately.
+        state = {}
+        monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+        monkeypatch.setattr(playwright_actions.CommonUtil, "current_action_no", "1")
+        monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_args, **_: [[], [
+            ("handle alert", "action", "send text=answer")]])
+        tab.on("dialog", lambda dialog: playwright_actions._on_dialog(state, dialog))
+        assert tab.evaluate("prompt('question')") == "answer"
+        assert playwright_actions.Handle_Browser_Alert([("handle alert", "action", "get text=alert")]) == "passed"
+        assert saved["alert"] == "question"
+    finally:
+        context.close()
+
+
 def test_backend_routing(monkeypatch):
     values = {}
     monkeypatch.setattr(
@@ -378,7 +601,7 @@ def test_go_to_link_v2_retains_driver_tag(monkeypatch):
     monkeypatch.setattr(
         playwright_actions.sr,
         "Get_Shared_Variables",
-        lambda name: {"Browser": "Chrome"} if name == "dependency" else None,
+        lambda name, **_: {"Browser": "Chrome"} if name == "dependency" else None,
     )
     from Framework.Built_In_Automation.Web.Selenium import (
         BuiltInFunctions as selenium_actions,

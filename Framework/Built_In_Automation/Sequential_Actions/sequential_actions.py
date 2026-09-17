@@ -2691,10 +2691,20 @@ def _browser_owners():
 def _route_playwright_action(action_name, action_subfield, data_set):
     """Keep old Selenium routing unless Playwright was explicitly selected."""
     words = action_subfield.lower().split()
+    if not {"selenium", "playwright"}.intersection(words):
+        return action_subfield
+    override = next((right.strip().lower() for left, middle, right in data_set
+                     if left.strip().lower() == "browser driver" and "optional" in middle.lower()), None)
+    if override in ("selenium", "playwright") and action_name not in ("open electron app", "accessibility test"):
+        return re.sub("selenium|playwright", override, action_subfield, flags=re.IGNORECASE)
     if action_name == "open electron app" and "playwright" in words:
         return re.sub("playwright", "selenium", action_subfield, flags=re.IGNORECASE)
     if action_name == "accessibility test" and "playwright" in words:
         return re.sub("playwright", "selenium", action_subfield, flags=re.IGNORECASE)
+    owners = _browser_owners()
+    selected = _row_driver_id(data_set, default="")
+    if selected in owners and action_name in ("switch browser", "tear down browser", "teardown"):
+        return re.sub("selenium|playwright", owners[selected], action_subfield, flags=re.IGNORECASE)
     if "playwright" in words or "selenium" not in words:
         return action_subfield
     try:
@@ -2717,23 +2727,26 @@ def _route_playwright_action(action_name, action_subfield, data_set):
 
 def _record_selenium_browser(action_name, data_set, result):
     if result in failed_tag_list or action_name not in (
-        "open electron app", "switch browser", "tear down browser", "teardown"
+        "open browser", "go to link", "open electron app", "switch browser", "tear down browser", "teardown"
     ):
         return
     owners = _browser_owners()
     driver_id = _row_driver_id(data_set)
-    if action_name == "open electron app":
+    if action_name in ("open browser", "go to link", "open electron app", "switch browser"):
+        driver_id = selenium.current_driver_id or driver_id
         owners[driver_id] = "selenium"
         sr.Set_Shared_Variables("zeuz_active_browser_backend", "selenium")
-    elif action_name == "switch browser" and owners.get(driver_id) == "selenium":
-        sr.Set_Shared_Variables("zeuz_active_browser_backend", "selenium")
     elif action_name in ("tear down browser", "teardown"):
-        if any(left.replace(" ", "").lower() == "driverid" for left, _, _ in data_set):
+        if _row_driver_id(data_set, default=""):
             owners.pop(driver_id, None)
         else:
             owners = {key: value for key, value in owners.items() if value != "selenium"}
-        sr.Set_Shared_Variables("zeuz_active_browser_backend", "playwright")
+        if selenium.selenium_details:
+            selenium._publish_active_browser()
+        else:
+            sr.Set_Shared_Variables("zeuz_active_browser_backend", "playwright")
     sr.Set_Shared_Variables("zeuz_browser_backends", owners)
+    CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
 
 '''if 49 pass

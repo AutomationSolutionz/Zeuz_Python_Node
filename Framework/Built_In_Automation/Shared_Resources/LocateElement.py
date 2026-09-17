@@ -584,7 +584,7 @@ def _construct_query(step_data_set, web_element_object=False):
         elif has_raw_xpath and not has_raw_css:
             # return the raw xpath command with xpath as type. We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw xpath query
-            return ([x for x in step_data_set if "xpath" in x[0]][0][2]), "xpath"
+            return next(x[2] for x in step_data_set if x[0].strip().lower() == "xpath"), "xpath"
         elif (
             not child_ref_exits
             and parent_ref_exits

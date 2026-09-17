@@ -79,6 +79,18 @@ from .utils import ChromeForTesting, ChromeExtensionDownloader
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
+
+def _publish_active_browser():
+    Shared_Resources.Set_Shared_Variables("common_driver", selenium_driver)
+    Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+    Shared_Resources.Set_Shared_Variables("zeuz_active_browser_backend", "selenium")
+    owners = Shared_Resources.Get_Shared_Variables("zeuz_browser_backends", log=False)
+    owners = owners if isinstance(owners, dict) else {}
+    owners[current_driver_id] = "selenium"
+    Shared_Resources.Set_Shared_Variables("zeuz_browser_backends", owners)
+    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+
+
 temp_config = os.path.join(
     os.path.join(
         os.path.abspath(__file__).split("Framework")[0],
@@ -487,7 +499,10 @@ def Open_Electron_App(data_set):
 
             opts = Options()
             opts.binary_location = desktop_app_path
-            opts.add_argument("--remote-debugging-port=9222")
+            with socket.socket() as sock:
+                sock.bind(("127.0.0.1", 0))
+                electron_port = sock.getsockname()[1]
+            opts.add_argument(f"--remote-debugging-port={electron_port}")
             # service = Service(executable_path=electron_chrome_path)
             arch = platform.machine().lower()
             if platform.system() == "Darwin" and arch == "arm64":
@@ -512,8 +527,9 @@ def Open_Electron_App(data_set):
         if driver_id in selenium_details:
             pass  # we need to decide later based on the situation
         else:
-            selenium_details[driver_id] = {"driver": selenium_driver}
+            selenium_details[driver_id] = {"driver": selenium_driver, "remote-debugging-port": electron_port}
         current_driver_id = driver_id
+        _publish_active_browser()
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -876,7 +892,7 @@ def Go_To_Link_V2(step_data):
 
     selenium_driver.maximize_window()
     Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
-    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+    _publish_active_browser()
     return "passed"
 
 
@@ -907,7 +923,7 @@ def parse_and_verify_datatype(left: str, right: str, chrome_version=None):
             for ext_id in extension_ids:
                 downloader = ChromeExtensionDownloader(chrome_version=chrome_version)
                 result = downloader.setup_chrome_extension_download(extension_id=ext_id)
-                if result.get("crx_path"):
+                if result and result.get("crx_path"):
                     extension_crxs.append(result["crx_path"])
 
             return extension_crxs
@@ -1170,6 +1186,7 @@ def Go_To_Link(dataset: Dataset) -> ReturnType:
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
         current_driver_id = driver_id
+        _publish_active_browser()
     except Exception:
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
@@ -3501,6 +3518,7 @@ def Switch_Browser(step_data):
             selenium_driver = selenium_details[driver_id]["driver"]
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             current_driver_id = driver_id
+            _publish_active_browser()
             CommonUtil.ExecLog(
                 sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1
             )
