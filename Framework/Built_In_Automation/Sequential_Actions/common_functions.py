@@ -6,6 +6,7 @@
 """
 
 import difflib
+import asyncio
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
 import itertools
 import platform
@@ -723,7 +724,8 @@ def Save_Text(data_set):
 
     try:
         # !!! Seems like a really round about way of just removing \n. Why not use replace()?
-        list_of_element_text = Element.text.split("\n")  # Split multi-line text
+        element_text = Element.inner_text() if type(Element).__module__.startswith("playwright.") else Element.text
+        list_of_element_text = element_text.split("\n")  # Split multi-line text
         visible_list_of_element_text = ""
         for each_text_item in list_of_element_text:  # For each line of text
             if each_text_item != "":
@@ -3723,7 +3725,7 @@ def _print(*args, sep=' ', end='\n', file=None, dont_send=False):
 
 
 @logger
-async def execute_python_code(data_set):
+def execute_python_code(data_set):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         inp, out_var, main_function, Code, filepath_code = "", "", "", "", ""
@@ -3749,31 +3751,14 @@ async def execute_python_code(data_set):
 
         Code = filepath_code if filepath_code else Code
         sr.shared_variables["print"] = _print
-        try:
-            from Framework.Built_In_Automation.Web import utils as WebUtils
-
-            await WebUtils.hydrate_browser_compatibility_globals(data_set)
-        except Exception:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Could not hydrate browser compatibility globals before executing python code",
-                2,
-            )
-            CommonUtil.Exception_Handler(sys.exc_info())
         previous_vars = set(sr.shared_variables)
 
         try:
-            compiled_code = compile(
-                Code,
-                "<execute_python_code>",
-                "exec",
-                flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT,
-            )
-            exec_result = eval(compiled_code, sr.shared_variables)
-            if inspect.isawaitable(exec_result):
-                await exec_result
-        except:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+            compiled = compile(Code, "<execute_python_code>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+            result = eval(compiled, sr.shared_variables)
+            if inspect.iscoroutine(result):
+                asyncio.run(result)
+        except: return CommonUtil.Exception_Handler(sys.exc_info())
 
         try:
             current_vars = set(sr.shared_variables)
