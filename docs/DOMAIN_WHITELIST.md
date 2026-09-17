@@ -101,6 +101,18 @@ Referenced repos:
 
 WebDriver Manager also uses GitHub releases for GeckoDriver (covered by `github.com` above).
 
+### Playwright Browser Downloads
+
+| Domain | Purpose |
+|--------|---------|
+| `cdn.playwright.dev` | Firefox and WebKit browser downloads |
+| `playwright.download.prss.microsoft.com` | Browser download mirror |
+
+Required by `playwright install firefox webkit`. Hosts are defined in the
+[Playwright download registry](https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/index.ts).
+If you configure `PLAYWRIGHT_DOWNLOAD_HOST` or a browser-specific download host,
+allow that host instead.
+
 ### Browser Installers (install_handler)
 
 | Domain | Purpose |
@@ -293,6 +305,10 @@ googlechromelabs.github.io
 storage.googleapis.com
 edgedl.me.gvt1.com
 msedgedriver.azureedge.net
+
+# Playwright browser downloads
+cdn.playwright.dev
+playwright.download.prss.microsoft.com
 
 # ── Browser Installers ───────────────────────────────────────
 go.microsoft.com

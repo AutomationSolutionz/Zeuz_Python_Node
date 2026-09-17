@@ -174,7 +174,7 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-async def destroy_session():
+def destroy_session():
     """
     Destroy session file.
     """
@@ -1399,7 +1399,7 @@ async def main():
     asyncio.create_task(start_server())
     start_ui_dump_uploads()
     asyncio.create_task(delete_old_automationlog_folders())
-    await destroy_session()
+    destroy_session()
 
     console = Console()
 
@@ -1443,7 +1443,7 @@ async def main():
             STATE.target_server = server_name or None
             STATE.connection_state = "authenticating" if server_name and api_key else "disconnected"
             STATE.last_connect_error = None
-            await destroy_session()
+            destroy_session()
             await set_new_credentials(server=server_name, api_key=api_key)
 
             STATE.reconnect_with_credentials = None

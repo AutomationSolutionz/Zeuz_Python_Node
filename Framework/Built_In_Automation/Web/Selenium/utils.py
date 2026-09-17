@@ -252,7 +252,7 @@ class ChromeForTesting:
     def get_latest_version(self, channel="Stable", force_check=False):
         """Get the latest Chrome version with caching"""
         info = self._load_info()
-        latest_info = info.get("latest", {})
+        latest_info = info.get("latest", {}).get(channel, {})
         cached_version = latest_info.get("version", "")
         last_check_str = latest_info.get("last_check", "")
 
@@ -287,7 +287,7 @@ class ChromeForTesting:
         new_version = data["channels"][channel]["version"]
 
         # Update info
-        info["latest"] = {
+        info.setdefault("latest", {})[channel] = {
             "version": new_version,
             "last_check": datetime.date.today().isoformat(),
         }
