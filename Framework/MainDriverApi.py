@@ -2044,9 +2044,9 @@ def main(device_dict, all_run_id_info):
                 final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
 
             if final_run_params != {}:
-                shared.Set_Shared_Variables("run_time_params", final_run_params, protected=True)
+                shared.Set_Shared_Variables("run_time_params", final_run_params, protected=True, mask_sensitive=True)
                 for run_time_params_name in final_run_params:
-                    shared.Set_Shared_Variables(run_time_params_name, final_run_params[run_time_params_name])
+                    shared.Set_Shared_Variables(run_time_params_name, final_run_params[run_time_params_name], mask_sensitive=True)
 
             if not shared.Test_Shared_Variables("zeuz_auto_teardown"):
                 shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
