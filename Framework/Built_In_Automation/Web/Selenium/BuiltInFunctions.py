@@ -57,7 +57,7 @@ import selenium
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 
-from Framework.Utilities import CommonUtil, ConfigModule
+from Framework.Utilities import CommonUtil, ConfigModule, x11_utils
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
@@ -538,14 +538,38 @@ def Open_Electron_App(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def _stop_vdisplay():
+    """Stop the node's Xvfb display, if one is running."""
+    global vdisplay
+    if not vdisplay:
+        return
+    pid = vdisplay.proc.pid if vdisplay.proc is not None else None
+    try:
+        vdisplay.stop()
+    finally:
+        vdisplay = None
+        if pid is not None:
+            x11_utils.forget_xvfb(pid)
+
+
 @logger
 def use_xvfb_or_headless(callback):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     if platform.system() == "Linux":
+        global vdisplay
+        # Headless browsers share one Xvfb display. Starting a new one for every
+        # browser leaked the previous ones, since only the last was ever stopped.
+        if vdisplay and vdisplay.proc is not None and vdisplay.proc.poll() is None:
+            os.environ["DISPLAY"] = ":%s" % vdisplay.new_display
+            return
         try:
-            global vdisplay
+            _stop_vdisplay()  # clean up a display whose Xvfb has exited
+        except Exception:
+            pass
+        try:
             vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
             vdisplay.start()
+            x11_utils.remember_xvfb(vdisplay.proc.pid, vdisplay.new_display)
         except:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2763,6 +2787,15 @@ def save_attribute_values_in_list(step_data):
                 j = j + 1
             i = i + 1
         if target_index == 1:
+            if not variable_value:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "No element matched the target parameter, so there are no values to save in '%s'. "
+                    'Hidden elements are skipped unless the target parameter has allow_hidden="yes".'
+                    % variable_name,
+                    3,
+                )
+                return "zeuz_failed"
             variable_value = list(map(list, zip(*variable_value)))[0]
         elif not paired:
             variable_value = list(map(list, zip(*variable_value)))
@@ -3481,10 +3514,8 @@ def Tear_Down_Selenium(step_data=[]):
                 selenium_driver = None
                 current_driver_id = driver_id
 
-        global vdisplay
-        if vdisplay:
-            vdisplay.stop()
-            vdisplay = None
+        if not selenium_details:  # other browsers may still be using the shared display
+            _stop_vdisplay()
 
         return "passed"
     except Exception:

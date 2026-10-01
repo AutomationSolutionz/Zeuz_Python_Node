@@ -8,6 +8,7 @@ import os, os.path, threading
 import ast
 import json, time
 import logging
+from Framework.Utilities.x11_utils import enable_xlib_threading
 from Framework.Utilities import ConfigModule
 import datetime
 from Framework.Utilities import FileUtilities as FL
@@ -50,6 +51,10 @@ except:
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
 import traceback
+
+# Before anything can import pyautogui and create an Xlib display. node_cli.py
+# already does this at startup; this covers other entry points.
+enable_xlib_threading()
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)

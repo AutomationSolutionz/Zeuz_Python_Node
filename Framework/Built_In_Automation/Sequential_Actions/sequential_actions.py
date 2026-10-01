@@ -48,7 +48,7 @@ from . import common_functions as common, performance_action  # Functions that a
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
-from Framework.Utilities import CommonUtil
+from Framework.Utilities import CommonUtil, node_health, x11_utils
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -97,6 +97,8 @@ step_exit_pass_called = False
 # thread that is stuck inside a blocking call, so on timeout we stop waiting,
 # abandon the worker (it is a daemon thread, so it never blocks node shutdown),
 # spin up a fresh worker for the next action, and report the step as failed.
+# The abandoned worker exits once its action returns. If it never does, the
+# node restarts itself after the run (see node_health and node_cli.py).
 _DEFAULT_ACTION_TIMEOUT = 1800
 _action_worker = None
 _action_worker_local = threading.local()
@@ -109,6 +111,9 @@ class _ActionTimeoutWorker:
         self._in_q = queue.Queue()
         self._out_q = queue.Queue()
         self._job_id = 0
+        self._state_lock = threading.Lock()
+        self._running_job = None
+        self._timed_out_jobs = set()
         self.thread = threading.Thread(
             target=self._loop, name="zeuz_action_worker", daemon=True
         )
@@ -119,11 +124,29 @@ class _ActionTimeoutWorker:
         # instead of submitting back to the worker and deadlocking on it.
         _action_worker_local.in_worker = True
         while True:
-            job_id, func, args = self._in_q.get()
+            item = self._in_q.get()
+            if item is None:  # retired: exit once the late action has finished
+                return
+            job_id, func, args = item
+            with self._state_lock:
+                self._running_job = job_id
             try:
                 self._out_q.put((job_id, "ok", func(*args)))
             except BaseException:  # propagate any error to the calling thread
                 self._out_q.put((job_id, "err", sys.exc_info()))
+            finally:
+                with self._state_lock:
+                    self._running_job = None
+                    self._timed_out_jobs.discard(job_id)
+
+    def is_stuck(self):
+        """True while the worker is still running an action that timed out."""
+        with self._state_lock:
+            return self._running_job is not None and self._running_job in self._timed_out_jobs
+
+    def retire(self):
+        """Let the thread exit as soon as its current action returns."""
+        self._in_q.put(None)
 
     def run(self, func, args, timeout):
         """Run func(*args), waiting at most `timeout` seconds.
@@ -141,6 +164,8 @@ class _ActionTimeoutWorker:
                 wait = None if deadline is None else max(0, deadline - time.monotonic())
                 completed_id, kind, payload = self._out_q.get(timeout=wait)
             except queue.Empty:
+                with self._state_lock:
+                    self._timed_out_jobs.add(job_id)
                 raise TimeoutError()
             if completed_id == job_id:
                 break
@@ -249,6 +274,10 @@ def _run_action_with_timeout(run_function, data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global _action_worker
 
+    # A desktop action on a dead X connection would hang until the timeout.
+    for message, level in x11_utils.ensure_pyautogui_display():
+        CommonUtil.ExecLog(sModuleInfo, message, level)
+
     timeout = _get_action_timeout()
 
     thread_affine = getattr(run_function, "_zeuz_thread_affine", False)
@@ -266,9 +295,12 @@ def _run_action_with_timeout(run_function, data_set):
     try:
         return _action_worker.run(run_function, (data_set,), timeout if timeout > 0 else None)
     except TimeoutError:
+        timed_out_worker = _action_worker
         # Keep thread-affine sessions on their owning worker if the call finishes late.
         if not thread_affine:
             _action_worker = None
+            timed_out_worker.retire()
+        node_health.track_timed_out_worker(timed_out_worker)
         _force_kill_hung_browser_sessions()
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -276,6 +308,8 @@ def _run_action_with_timeout(run_function, data_set):
             "Marking the step as failed." % timeout,
             3,
         )
+        for message, level in x11_utils.recover_x11_for_hung_thread(timed_out_worker.thread):
+            CommonUtil.ExecLog(sModuleInfo, message, level)
         return "zeuz_failed"
 def _get_conditional_element(args):
     data_set, module, wait = args
