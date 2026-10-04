@@ -286,7 +286,7 @@ def _wire_page(state, page):
 
 
 def _launch(data_set):
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import Error, sync_playwright
 
     rows = _rows(data_set)
     for left, _middle, right in rows:
@@ -300,8 +300,34 @@ def _launch(data_set):
 
     driver_id = _driver_id(data_set, "default")
     if driver_id in _browser_state.playwright_details:
-        _set_active(driver_id)
-        return _browser_state.playwright_details[driver_id]
+        state = _browser_state.playwright_details[driver_id]
+        page = state["page"]
+        try:
+            # A live request also processes close events queued while Python or
+            # Selenium actions were running outside the Playwright thread.
+            page.title()
+        except Error:
+            browser, context = state["browser"], state["context"]
+            if not browser.is_connected() or context not in browser.contexts:
+                Tear_Down_Selenium([("driver id", "optional parameter", driver_id)])
+                state = None
+            elif page.is_closed():
+                pages = [page for page in context.pages if not page.is_closed()]
+                page = pages[-1] if pages else context.new_page()
+                _wire_page(state, page)
+            else:
+                raise
+        if state is not None:
+            bridge = state.get("selenium_bridge")
+            if bridge is not None:
+                session = state["context"].new_cdp_session(state["page"])
+                try:
+                    target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+                finally:
+                    session.detach()
+                bridge.switch_to.window(target_id)
+            _set_active(driver_id)
+            return state
 
     if _browser_state._playwright is None:
         _browser_state._playwright = sync_playwright().start()

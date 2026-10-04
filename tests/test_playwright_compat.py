@@ -581,7 +581,7 @@ def test_open_new_tab_makes_new_page_active(monkeypatch):
 
 
 def test_reused_browser_applies_element_wait(monkeypatch):
-    state = {"page": object()}
+    state = {"page": SimpleNamespace(title=lambda: "Existing page")}
     shared = {}
     monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"default": state})
     monkeypatch.setattr(playwright_actions, "_set_active", lambda _driver_id: None)
@@ -602,6 +602,115 @@ def test_reused_browser_applies_element_wait(monkeypatch):
         ("wait time to appear element", "optional parameter", "60"),
     ]) is state
     assert shared["element_wait"] == 60.0
+
+
+@pytest.mark.parametrize("closed_target", ["active", "popup", "last_page", "context", "browser"])
+def test_go_to_link_recovers_closed_cached_target(page, monkeypatch, closed_target):
+    browser_type = page.context.browser.browser_type
+    browser = browser_type.launch(channel="chrome", headless=True)
+    context = browser.new_context()
+    context.add_cookies([{
+        "name": "login", "value": "retained", "domain": "example.test", "path": "/",
+    }])
+    original = context.new_page()
+    bridge_calls = []
+    bridge = SimpleNamespace(
+        switch_to=SimpleNamespace(window=bridge_calls.append),
+        quit=lambda: bridge_calls.append("quit"),
+    )
+    state = {
+        "browser": browser, "context": context, "page": original,
+        "wait_until": "load", "downloads": [], "capturing_network": False,
+        "selenium_bridge": bridge,
+    }
+    other = {"page": object()}
+    shared = {"dependency": {"Browser": "Chromium Headless"}}
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {
+        "portal": state, "other": other,
+    })
+    monkeypatch.setattr(playwright_actions._browser_state, "current_driver_id", None)
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_page", None)
+    monkeypatch.setattr(playwright_actions._browser_state, "_playwright", SimpleNamespace(
+        chromium=browser_type,
+    ))
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: shared.get(name))
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda name, value, **_: shared.__setitem__(name, value))
+    monkeypatch.setattr(playwright_actions.sr, "Remove_From_Shared_Variables", lambda name: shared.pop(name, None))
+    monkeypatch.setattr(playwright_actions.sr, "Shared_Variable_Export", lambda: shared)
+    monkeypatch.setattr(playwright_actions.CommonUtil, "set_screenshot_vars", lambda _: None)
+    monkeypatch.setattr(playwright_actions, "_publish_selenium_bridge", lambda _: None)
+    monkeypatch.setattr(playwright_actions, "_attach_selenium_bridge", lambda *_: None)
+    url = "data:text/html,<title>login</title>"
+    try:
+        playwright_actions._wire_page(state, original)
+        target = context.new_page()
+        assert state["page"] is target
+        playwright_actions._set_active("portal")
+        if closed_target == "popup":
+            target.close()
+        elif closed_target == "last_page":
+            original.close()
+            target.close()
+        elif closed_target == "context":
+            context.close()
+        elif closed_target == "browser":
+            browser.close()
+
+        assert playwright_actions.Go_To_Link([
+            ("driver id", "optional parameter", "portal"),
+            ("go to link", "selenium action", url),
+        ]) == "passed"
+        recovered = playwright_actions._browser_state.playwright_details["portal"]
+        assert not recovered["page"].is_closed()
+        assert recovered["page"].title() == "login"
+        assert recovered["page"].url == url
+        assert playwright_actions._browser_state.current_driver_id == "portal"
+        assert shared["playwright_page"] is recovered["page"]
+        assert shared["common_driver"] is recovered["page"]
+        assert playwright_actions._browser_state.playwright_details["other"] is other
+        if closed_target in ("active", "popup", "last_page"):
+            assert recovered is state
+            assert recovered["context"] is context
+            assert context.cookies()[0]["value"] == "retained"
+            session = context.new_cdp_session(recovered["page"])
+            try:
+                target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+            finally:
+                session.detach()
+            assert bridge_calls == [target_id]
+            if closed_target == "popup":
+                assert recovered["page"] is original
+        else:
+            assert recovered is not state
+            assert not browser.is_connected()
+            assert recovered["browser"].is_connected()
+            assert bridge_calls == ["quit"]
+    finally:
+        recovered = playwright_actions._browser_state.playwright_details.get("portal")
+        if recovered is not None and recovered["browser"] is not browser:
+            recovered["browser"].close()
+        browser.close()
+
+
+def test_cached_browser_preserves_non_closure_errors(monkeypatch):
+    from playwright.sync_api import Error
+
+    context = object()
+
+    def fail_title():
+        raise Error("Page crashed")
+
+    state = {
+        "page": SimpleNamespace(title=fail_title, is_closed=lambda: False),
+        "context": context,
+        "browser": SimpleNamespace(is_connected=lambda: True, contexts=[context]),
+    }
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"default": state})
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda _: {"Browser": "Chrome"})
+
+    with pytest.raises(Error, match="Page crashed"):
+        playwright_actions._launch([])
+    assert playwright_actions._browser_state.playwright_details["default"] is state
 
 
 def test_go_to_link_v2_retains_driver_tag(monkeypatch):
