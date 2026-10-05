@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Literal, Optional
 
-from .web import chrome_for_testing, edge, mozilla
+from .web import chrome_for_testing, edge, mozilla, playwright_browsers
 from .android import (
     adb,
     node_js_22,
@@ -180,6 +180,17 @@ services = [
                 "status_function": edge.check_status,
                 "install_function": edge.install,
                 "user_password": True,
+            },
+            {
+                "name": "Playwright Firefox and WebKit",
+                "status": "none",
+                "comment": "Bundled browser binaries used by Playwright Firefox and Safari automation.",
+                "check_text": "Check status",
+                "install_text": "Install",
+                "os": ["windows", "linux", "darwin"],
+                "status_function": playwright_browsers.check_status,
+                "install_function": playwright_browsers.install,
+                "user_password": False,
             },
         ],
     },

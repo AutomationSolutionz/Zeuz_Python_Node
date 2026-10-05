@@ -48,7 +48,6 @@ Zeuz Node is a **cross-platform test automation execution client** that:
 - **Python 3.11+** - Core language
 - **Selenium 4.21+** - Web automation
 - **Appium 4.2+** - Mobile automation
-- **Playwright 1.52+** - Modern web automation (being added)
 - **FastAPI** - Local server component
 - **PyAutoGUI** - Desktop automation
 
@@ -312,7 +311,6 @@ def _driver_type(query_debug):
         return "xml"
     elif "pyautogui" in driver_string:
         return "pyautogui"
-    # NOTE: Add "playwright" here for Playwright support
     return None
 ```
 
@@ -753,14 +751,14 @@ selenium_details = {}               # All drivers: {"id": {"driver": obj, "remot
 
 #### Common Optional Parameters (Selenium)
 
-| Parameter | Used In | Playwright Equivalent |
-|-----------|---------|----------------------|
-| `use js` | Click, Text, Checkbox | `force: true` or `evaluate()` |
-| `delay` | Text input | `type({delay: ms})` |
-| `clear` | Text input | `locator.clear()` |
-| `offset` | Click | `click({position: {x, y}})` |
-| `allow hidden` | Multiple | `force: true` |
-| `wait` | Multiple | `timeout` option |
+| Parameter | Used In |
+|-----------|---------|
+| `use js` | Click, Text, Checkbox |
+| `delay` | Text input |
+| `clear` | Text input |
+| `offset` | Click |
+| `allow hidden` | Multiple |
+| `wait` | Multiple |
 
 ### Appium Module (`Mobile/CrossPlatform/Appium/BuiltInFunctions.py`)
 
@@ -887,12 +885,12 @@ def My_Action(step_data):
 
 ## 12. Adding New Modules
 
-### Steps to Add a New Module (e.g., Playwright)
+### Steps to Add a New Module
 
 #### 1. Create Directory Structure
 
 ```
-Framework/Built_In_Automation/Web/Playwright/
+Framework/Built_In_Automation/<Platform>/<Module>/
 ├── __init__.py
 ├── BuiltInFunctions.py
 └── utils.py (optional)
@@ -901,7 +899,7 @@ Framework/Built_In_Automation/Web/Playwright/
 #### 2. Create Action Declarations
 
 ```python
-# action_declarations/playwright.py
+# action_declarations/<module>.py
 declarations = (
     {"name": "open browser", "function": "Open_Browser", "screenshot": "none"},
     {"name": "click", "function": "Click_Element", "screenshot": "web"},
@@ -914,7 +912,7 @@ declarations = (
 
 ```python
 # action_declarations/info.py
-from . import playwright  # Add import
+from . import module_name  # Add import
 
 # Add to modules list
 ```
@@ -925,8 +923,8 @@ from . import playwright  # Add import
 # sequential_actions.py
 def load_sa_modules(module):
     # ... existing modules ...
-    elif module == "playwright":
-        from Framework.Built_In_Automation.Web.Playwright import BuiltInFunctions
+    elif module == "module_name":
+        from Framework.Built_In_Automation.<Platform>.<Module> import BuiltInFunctions
         return BuiltInFunctions
 ```
 

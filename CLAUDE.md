@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Zeuz Node is a cross-platform test automation client that connects to Zeuz Server to receive and execute test cases. It supports Web (Selenium/Playwright), Mobile (Appium), Desktop (PyAutoGUI), Database, REST/SOAP APIs, and Performance testing.
+Zeuz Node is a cross-platform test automation client that connects to Zeuz Server to receive and execute test cases. It supports Web (Selenium), Mobile (Appium), Desktop (PyAutoGUI), Database, REST/SOAP APIs, and Performance testing.
 
 ## Build & Development Commands
 
@@ -51,10 +51,10 @@ Zeuz Server → long_poll_handler.py → adapter.py → MainDriverApi.py
                                                           ↓
                                                   sequential_actions.py
                                                           ↓
-                                    ┌──────────────┬──────────────┬──────────────┐
-                                    ↓              ↓              ↓              ↓
-                              Selenium       Playwright      Appium        Desktop
-                          BuiltInFunctions BuiltInFunctions BuiltInFunctions  ...
+                                    ┌──────────────┬──────────────┐
+                                    ↓              ↓              ↓
+                              Selenium       Appium        Desktop
+                          BuiltInFunctions BuiltInFunctions  ...
 ```
 
 ### Key Files
@@ -77,7 +77,7 @@ Built_In_Automation/<Platform>/
 
 Action declarations are in `Sequential_Actions/action_declarations/`:
 - `info.py` - Master registry that loads all declarations
-- `selenium.py`, `playwright.py`, `appium.py`, etc. - Module-specific action definitions
+- `selenium.py`, `appium.py`, etc. - Module-specific action definitions
 
 ## Code Patterns
 
@@ -149,7 +149,6 @@ Variables use `%|variable_name|%` syntax:
 ### Element Location
 The unified `LocateElement.Get_Element()` supports:
 - Selenium WebDriver
-- Playwright Page objects
 - Appium drivers
 - Auto-detects driver type from string representation
 

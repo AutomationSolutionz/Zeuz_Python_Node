@@ -4252,188 +4252,208 @@ def Save_Text(data_set):
 
 
 # Validating text from an element given information regarding the expected text
+def get_element_text_appium(element):
+    """Return the readable text of an Appium element.
+
+    Elements located through accessibility attributes (content-desc on Android,
+    name/label/value on iOS) usually expose an empty 'text' property, so fall
+    back to those attributes before reporting the element as having no text.
+    """
+
+    try:
+        element_text = element.text or ""
+    except Exception:
+        element_text = ""
+
+    if element_text.strip() != "":
+        return element_text
+
+    for attribute in ("content-desc", "name", "label", "value"):
+        try:
+            attribute_value = element.get_attribute(attribute)
+        except Exception:
+            continue
+        if attribute_value and str(attribute_value).strip() != "":
+            return str(attribute_value)
+
+    return ""
+
+
 @logger
 def Validate_Text_Appium(data_set):
     """
+    This action validates the text of the located element(s) against the expected text.
 
-    @sreejoy, this will need your review
+    - "validate partial text": passes when the expected text is contained in the text of any located element.
+    - "validate full text": passes when the expected text matches the text of any located element exactly.
+    - "validate screen text": passes when every expected text is found on the screen.
 
-    This needs more time to fix.
-    Should be a lot more simple design
+    Multiple expected values can be provided in a single Value field separated by "||",
+    in which case a match on any one of them passes the validation.
     """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if not skip_or_not:
         return "passed"
 
-    data_set = [data_set]
     try:
-        for each_step_data_item in data_set[0]:
-            if (
-                "optional parameter" in each_step_data_item[1]
-                or each_step_data_item[1] == "element parameter"
-            ) and each_step_data_item[2] == "":
-                Element = appium_driver.find_elements_by_xpath(
-                    "//*[@%s]" % each_step_data_item[0]
-                )
-            if (
-                "optional parameter" in each_step_data_item[1]
-                or each_step_data_item[1] == "element parameter"
-            ) and each_step_data_item[2] != "":
-                Element = LocateElement.Get_Element(data_set[0], appium_driver)
-                Element = [Element]
+        validation_type = ""
+        expected_text_data = []
+        attribute_only_rows = []  # Element parameters with no value: match any element having that attribute
+        locator_provided = False
 
-        if Element == "zeuz_failed":
+        for each_step_data_item in data_set:
+            left = each_step_data_item[0].strip()
+            mid = each_step_data_item[1].strip().lower()
+            right = each_step_data_item[2]
+
+            if mid == "element parameter" or "optional parameter" in mid:
+                if right.strip() == "":
+                    attribute_only_rows.append(left)
+                else:
+                    locator_provided = True
+            elif mid == "action":
+                validation_type = left.lower()
+                # Split the separator in case multiple strings are provided in the same data set
+                expected_text_data = [
+                    each_expected.strip() for each_expected in right.split("||") if each_expected.strip() != ""
+                ]
+
+        if validation_type not in ("validate partial text", "validate full text", "validate screen text"):
+            CommonUtil.ExecLog(
+                sModuleInfo, "Incorrect validation type '%s'. Please check step data" % validation_type, 3
+            )
+            return "zeuz_failed"
+
+        if not expected_text_data:
+            CommonUtil.ExecLog(sModuleInfo, "Expected text was not provided in the step data", 3)
+            return "zeuz_failed"
+
+        # Locate the element(s)
+        Element = []
+        if locator_provided:
+            located = LocateElement.Get_Element(data_set, appium_driver)
+            if located in failed_tag_list or located is None or located == []:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Unable to locate your element with given data.", 3
+                )
+                return "zeuz_failed"
+            Element = located if isinstance(located, list) else [located]
+        else:
+            for each_attribute in attribute_only_rows:
+                Element += appium_driver.find_elements(AppiumBy.XPATH, "//*[@%s]" % each_attribute)
+
+        if len(Element) == 0:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
             return "zeuz_failed"
 
-        # Get the 'action' parameter and 'value' from step data
-        for each_step_data_item in data_set[0]:
-            if each_step_data_item[1] == "action":
-                expected_text_data = each_step_data_item[2].split(
-                    "||"
-                )  # Split the separator in case multiple string provided in the same data_set
-                validation_type = each_step_data_item[0]
+        # Get the text for a single and multiple element(s)
+        list_of_element_text = []  # Full text of each element
+        visible_list_of_element_text = []  # Each visible line of each element
+        for each_element in Element:
+            each_element_text = get_element_text_appium(each_element)
+            if each_element_text.strip() == "":
+                continue
+            list_of_element_text.append(each_element_text)
+            for each_line in each_element_text.split("\n"):
+                if each_line.strip() != "":
+                    visible_list_of_element_text.append(each_line)
 
-        # Get the string for a single and multiple element(s)
-        list_of_element_text = []
-        list_of_element = []
-        if len(Element) == 0:
-            return False
-        elif len(Element) == 1:
-            for each_text in Element:
-                list_of_element = each_text.text  # Extract the text element
-                list_of_element_text.append(list_of_element)
-        elif len(Element) > 1:
-            for each_text in Element:
-                list_of_element = each_text.text.split("\n")  # Extract the text elements
-                list_of_element_text.append(list_of_element[0])
-        else:
+        if not list_of_element_text:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "The located element(s) do not expose any text. Check the element parameter(s) in the step data.",
+                3,
+            )
             return "zeuz_failed"
 
-        # Extract only the visible element(s)
-        visible_list_of_element_text = []
-        for each_text_item in list_of_element_text:
-            if each_text_item != "":
-                visible_list_of_element_text.append(each_text_item)
+        # Every string we are allowed to compare against: full element texts and their individual lines
+        actual_text_data = list_of_element_text + [
+            each_line for each_line in visible_list_of_element_text if each_line not in list_of_element_text
+        ]
+
+        CommonUtil.ExecLog(sModuleInfo, "Expected Text: %s" % expected_text_data, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Actual Text: %s" % actual_text_data, 1)
 
         # Validate the partial text/string provided in the step data with the text obtained from the device
         if validation_type == "validate partial text":
-            actual_text_data = visible_list_of_element_text
+            for each_expected_text_data_item in expected_text_data:
+                for each_actual_text_data_item in actual_text_data:
+                    if each_expected_text_data_item in each_actual_text_data_item:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "The text '%s' has been validated by a partial match against '%s'."
+                            % (each_expected_text_data_item, each_actual_text_data_item),
+                            1,
+                        )
+                        return "passed"
+
             CommonUtil.ExecLog(
-                sModuleInfo, ">>>>>> Expected Text: %s" % expected_text_data, 0
+                sModuleInfo,
+                "Unable to validate the text element %s. Check the text element(s) in step_data(s) and/or in screen text."
+                % actual_text_data,
+                3,
             )
-            #             print (">>>>>> Expected Text: %s" %expected_text_data)
-            CommonUtil.ExecLog(
-                sModuleInfo, ">>>>>>>> Actual Text: %s" % actual_text_data, 0
-            )
-            #             print (">>>>>>>> Actual Text: %s" %actual_text_data)
-            for each_actual_text_data_item in actual_text_data:
-                if expected_text_data[0] in each_actual_text_data_item:  # index [0] used to remove the unicode 'u' from the text string
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Validate the text element %s using partial match."
-                        % visible_list_of_element_text,
-                        0,
-                    )
-                    return "passed"
-                else:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to validate the text element %s. Check the text element(s) in step_data(s) and/or in screen text."
-                        % visible_list_of_element_text,
-                        3,
-                    )
-                    return "zeuz_failed"
+            return "zeuz_failed"
 
         # Validate the full text/string provided in the step data with the text obtained from the device
         if validation_type == "validate full text":
-            actual_text_data = visible_list_of_element_text
-            CommonUtil.ExecLog(
-                sModuleInfo, ">>>>>> Expected Text: %s" % expected_text_data, 0
-            )
-            #             print (">>>>>> Expected Text: %s" %expected_text_data)
-            CommonUtil.ExecLog(
-                sModuleInfo, ">>>>>>>> Actual Text: %s" % actual_text_data, 0
-            )
-            #             print (">>>>>>>> Actual Text: %s" %actual_text_data)
-            if (
-                expected_text_data[0] == actual_text_data[0]
-            ):  # index [0] used to remove the unicode 'u' from the text string
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Validate the text element %s using complete match."
-                    % visible_list_of_element_text,
-                    0,
-                )
-                return "passed"
-            else:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Unable to validate the text element %s. Check the text element(s) in step_data(s) and/or in screen text."
-                    % visible_list_of_element_text,
-                    3,
-                )
-                return "zeuz_failed"
+            for each_expected_text_data_item in expected_text_data:
+                for each_actual_text_data_item in actual_text_data:
+                    if each_expected_text_data_item == each_actual_text_data_item.strip():
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "The text '%s' has been validated by a complete match."
+                            % each_expected_text_data_item,
+                            1,
+                        )
+                        return "passed"
 
-        # Validate all the text/string provided in the step data with the text obtained from the device
-        if validation_type == "validate screen text":
-            CommonUtil.ExecLog(
-                sModuleInfo, ">>>>>> Expected Text: %s" % expected_text_data, 0
-            )
-            #             print (">>>>>> Expected Text: %s" %expected_text_data)
             CommonUtil.ExecLog(
                 sModuleInfo,
-                ">>>>>>>> Actual Text: %s" % visible_list_of_element_text,
-                0,
+                "Unable to validate the text element %s. Check the text element(s) in step_data(s) and/or in screen text."
+                % actual_text_data,
+                3,
             )
-            #             print (">>>>>>>> Actual Text: %s" %visible_list_of_element_text)
-            i = 0
-            for x in range(0, len(visible_list_of_element_text)):
-                if (
-                    visible_list_of_element_text[x] == expected_text_data[i]
-                ):  # Validate the matching string
+            return "zeuz_failed"
+
+        # Validate that all the text/string provided in the step data is present in the text obtained from the device
+        missing_text_data = []
+        for each_expected_text_data_item in expected_text_data:
+            for each_actual_text_data_item in actual_text_data:
+                if each_expected_text_data_item == each_actual_text_data_item.strip():
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "The text element '%s' has been validated by using complete match."
-                        % visible_list_of_element_text[x],
+                        % each_expected_text_data_item,
                         1,
                     )
-                    i += 1
-                    return "passed"
-                else:
-                    visible_elem = [
-                        ve for ve in visible_list_of_element_text[x].split()
-                    ]
-                    expected_elem = [ee for ee in expected_text_data[i].split()]
-                    for elem in visible_elem:  # Validate the matching word
-                        if elem in expected_elem:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Validate the text element '%s' using element match."
-                                % elem,
-                                1,
-                            )
-                            return "passed"
-                        else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Unable to validate the text element '%s'. Check the text element(s) in step_data(s) and/or in screen text."
-                                % elem,
-                                1,
-                            )
-                            return "zeuz_failed"
-                    if visible_elem[0] in expected_elem:
-                        i += 1
+                    break
+                if each_expected_text_data_item in each_actual_text_data_item:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "The text element '%s' has been validated by using partial match."
+                        % each_expected_text_data_item,
+                        1,
+                    )
+                    break
+            else:
+                missing_text_data.append(each_expected_text_data_item)
 
-        else:
+        if missing_text_data:
             CommonUtil.ExecLog(
-                sModuleInfo, "Incorrect validation type. Please check step data", 3
+                sModuleInfo,
+                "Unable to validate the text element(s) %s. Check the text element(s) in step_data(s) and/or in screen text."
+                % missing_text_data,
+                3,
             )
             return "zeuz_failed"
+
+        return "passed"
 
     except Exception:
         errMsg = "Could not compare text as requested."

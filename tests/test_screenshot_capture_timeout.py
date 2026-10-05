@@ -5,7 +5,6 @@ TakeScreenShot runs outside _run_action_with_timeout, so a wedged browser used t
 park the whole run on the "Capturing Screenshot" line indefinitely.
 """
 
-import asyncio
 import os
 import sys
 import threading
@@ -40,15 +39,10 @@ def test_wedged_capture_times_out_instead_of_hanging(short_timeout, logs):
     def wedged_browser():
         release.wait()  # never released while we are timing
 
-    async def scenario():
-        start = time.perf_counter()
-        ok = await CommonUtil._capture_with_timeout(
-            wedged_browser, "mod", "Sleep", "web"
-        )
-        return ok, time.perf_counter() - start
-
+    start = time.perf_counter()
     try:
-        ok, elapsed = asyncio.run(scenario())
+        ok = CommonUtil._capture_with_timeout(wedged_browser, "mod", "Sleep", "web")
+        elapsed = time.perf_counter() - start
     finally:
         release.set()
 
@@ -58,38 +52,23 @@ def test_wedged_capture_times_out_instead_of_hanging(short_timeout, logs):
     assert not any(lvl == 3 for lvl, _ in logs)
 
 
-def test_event_loop_stays_responsive_while_a_capture_is_stuck(short_timeout, logs):
-    """The capture must not run on the event loop -- other tasks keep working."""
+def test_abandoned_capture_cannot_hold_up_node_shutdown(short_timeout, logs):
+    """The capture runs on a daemon thread, so an abandoned one never blocks exit."""
     release = threading.Event()
-    ticks = []
-
-    async def scenario():
-        async def heartbeat():
-            while True:
-                await asyncio.sleep(0.05)
-                ticks.append(1)
-
-        hb = asyncio.create_task(heartbeat())
-        await CommonUtil._capture_with_timeout(release.wait, "mod", "Sleep", "web")
-        hb.cancel()
-
     try:
-        asyncio.run(scenario())
+        assert CommonUtil._capture_with_timeout(release.wait, "mod", "Sleep", "web") is False
+        stuck = [t for t in threading.enumerate() if t.name == "zeuz_screenshot_capture"]
+        assert stuck and all(t.daemon for t in stuck)
     finally:
         release.set()
-
-    assert ticks, "event loop was blocked by the capture"
 
 
 def test_successful_capture_returns_true(short_timeout, logs):
     calls = []
 
-    async def scenario():
-        return await CommonUtil._capture_with_timeout(
-            lambda: calls.append("captured"), "mod", "Go_To_Link", "web"
-        )
+    ok = CommonUtil._capture_with_timeout(lambda: calls.append("captured"), "mod", "Go_To_Link", "web")
 
-    assert asyncio.run(scenario()) is True
+    assert ok is True
     assert calls == ["captured"]
     assert not any("did not finish" in msg for _, msg in logs)
 
@@ -100,30 +79,42 @@ def test_capture_errors_still_propagate(short_timeout, logs):
     def broken_driver():
         raise RuntimeError("browser went away")
 
-    async def scenario():
-        return await CommonUtil._capture_with_timeout(
-            broken_driver, "mod", "Sleep", "web"
-        )
-
     with pytest.raises(RuntimeError, match="browser went away"):
-        asyncio.run(scenario())
+        CommonUtil._capture_with_timeout(broken_driver, "mod", "Sleep", "web")
 
 
-def test_awaitable_capture_is_bounded_too(short_timeout, logs):
-    """Playwright captures are coroutines, not callables."""
+def test_thread_screenshot_does_not_hang_on_a_wedged_selenium_driver(short_timeout, logs, tmp_path):
+    release = threading.Event()
 
-    async def slow_playwright_screenshot():
-        await asyncio.sleep(30)
+    class WedgedSeleniumDriver:
+        def get_screenshot_as_file(self, path):
+            release.wait()
 
-    async def scenario():
-        start = time.perf_counter()
-        ok = await CommonUtil._capture_with_timeout(
-            slow_playwright_screenshot(), "mod", "Sleep", "web"
-        )
-        return ok, time.perf_counter() - start
+    start = time.perf_counter()
+    try:
+        CommonUtil.Thread_ScreenShot("Sleep", str(tmp_path), "web", WedgedSeleniumDriver(), "shot", skip_delay=True)
+        elapsed = time.perf_counter() - start
+    finally:
+        release.set()
 
-    ok, elapsed = asyncio.run(scenario())
-
-    assert ok is False
     assert elapsed < 10
     assert any(lvl == 2 and "did not finish" in msg for lvl, msg in logs)
+
+
+def test_playwright_screenshot_uses_its_own_timeout_on_its_own_thread(short_timeout, logs, tmp_path):
+    """Playwright pages must stay on their thread, so they get Playwright's timeout instead."""
+    calls = []
+
+    class FakePage:
+        def screenshot(self, **kwargs):
+            calls.append((threading.current_thread().name, kwargs))
+
+    FakePage.__module__ = "playwright.sync_api._generated"
+
+    CommonUtil.Thread_ScreenShot("Sleep", str(tmp_path), "web", FakePage(), "shot", skip_delay=True)
+
+    assert len(calls) == 1
+    thread_name, kwargs = calls[0]
+    assert thread_name == threading.current_thread().name
+    assert kwargs["timeout"] == 1 * 1000
+    assert kwargs["path"].endswith("shot.png")

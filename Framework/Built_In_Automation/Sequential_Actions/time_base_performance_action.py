@@ -1,9 +1,8 @@
-import asyncio
 import time
 import threading
 import inspect
 from concurrent import futures
-from typing import Awaitable, Callable, List, Tuple, Union, Any
+from typing import Callable, List, Tuple, Union, Any
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 from Framework.Utilities import CommonUtil
@@ -52,7 +51,7 @@ class TimeLoadShape(LoadShape):
 
 def time_base_performance_action_handler(
     data_set: List[List[str]],
-    run_sequential_actions: Callable[[List[int]], Awaitable[Tuple[str, List[int]]]],
+    run_sequential_actions: Callable[[List[int]], None],
     timestamp_func: Callable[[], str],
 ) -> Tuple[str, List[int]]:
     spawn_rate = 1
@@ -127,7 +126,7 @@ def time_base_performance_action_handler(
 
         timestamp = timestamp_func()
         start_time = time.perf_counter_ns()
-        result = asyncio.run(run_sequential_actions(actions_to_execute))
+        result = run_sequential_actions(actions_to_execute)
         end_time = time.perf_counter_ns()
         alive_task_count -= 1
 

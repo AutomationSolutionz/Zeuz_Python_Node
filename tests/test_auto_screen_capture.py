@@ -36,7 +36,7 @@ def test_auto_resolves_to_web_for_playwright(monkeypatch):
 
     CommonUtil.set_screenshot_vars({
         "screen_capture": "auto",
-        "active_web_driver_type": "playwright",
+        "zeuz_active_browser_backend": "playwright",
         "playwright_page": page,
     })
 

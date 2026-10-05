@@ -3,12 +3,12 @@
 
 import selenium
 import sys
-import asyncio
 import inspect
 import os, os.path, threading
 import ast
 import json, time
 import logging
+from Framework.Utilities.x11_utils import enable_xlib_threading
 from Framework.Utilities import ConfigModule
 import datetime
 from Framework.Utilities import FileUtilities as FL
@@ -51,6 +51,10 @@ except:
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
 import traceback
+
+# Before anything can import pyautogui and create an Xlib display. node_cli.py
+# already does this at startup; this covers other entry points.
+enable_xlib_threading()
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
@@ -167,7 +171,6 @@ all_threads = {}
 AUTO_SCREENSHOT_DEBUG_DELAY_SECONDS = 3
 AUTO_SCREENSHOT_DEBUG_DELAY_POLL_SECONDS = 0.25
 CANCELLED_RUN_STATUS = "Cancelled"
-PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY = 70
 
 # Metrics variables
 browser_perf = {}
@@ -867,19 +870,20 @@ def set_screenshot_vars(shared_variables):
                 screen_capture_driver = appium_details[device_id][
                     "driver"
                 ]  # Driver for selected device
-        if screen_capture_type == "web":  # Selenium or Playwright driver object
-            if shared_variables.get("active_web_driver_type") == "playwright" and "playwright_page" in shared_variables:
+        if screen_capture_type == "web":  # Selenium driver object
+            if (
+                shared_variables.get("zeuz_active_browser_backend") == "playwright"
+                and "playwright_page" in shared_variables
+            ):
                 screen_capture_driver = shared_variables["playwright_page"]
             elif "selenium_driver" in shared_variables:
                 screen_capture_driver = shared_variables["selenium_driver"]
-            elif "playwright_page" in shared_variables:
-                screen_capture_driver = shared_variables["playwright_page"]
     except:
         ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
 
 
-async def TakeScreenShot(function_name, local_run=False, pre_action=False):
-    """Capture an action screenshot.
+def TakeScreenShot(function_name, local_run=False, pre_action=False):
+    """ Puts TakeScreenShot into a thread, so it doesn't block test case execution.
 
     When pre_action=True, captures the screen state *before* the action runs so the
     debug/chatbot validator can compare BEFORE vs AFTER. The pre-action capture only
@@ -960,12 +964,16 @@ async def TakeScreenShot(function_name, local_run=False, pre_action=False):
             # Capture synchronously and without the settle delay so the BEFORE frame is
             # streamed over live_log before the action executes (and before the AFTER
             # frame), keeping the two distinguishable in order on the consumer side.
-            await Thread_ScreenShot(
+            Thread_ScreenShot(
                 function_name, image_folder, Method, Driver, image_name + "_pre", skip_delay=True
             )
             return
 
-        await Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name)
+        if Driver is not None and type(Driver).__module__.startswith("playwright."):
+            Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name)
+            return
+        thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
+        SaveThread("screenshot", thread)
 
     except:
         return Exception_Handler(sys.exc_info())
@@ -1056,27 +1064,6 @@ def _get_window_screenshot_bbox():
     return None
 
 
-def _is_playwright_page(driver):
-    return driver.__class__.__module__.startswith("playwright.") and hasattr(driver, "screenshot")
-
-
-def _screenshot_path(image_folder, image_name, extension="png"):
-    chars_to_remove = [
-        r"?",
-        r"*",
-        r'"',
-        r"<",
-        r">",
-        r"|",
-        r"\\",
-        r"\/",
-        r":",
-    ]
-    trans_table = str.maketrans(dict.fromkeys("".join(chars_to_remove)))
-    safe_name = (image_name.translate(trans_table)).strip().replace(" ", "_")
-    return os.path.join(image_folder, safe_name + "." + extension.lstrip("."))
-
-
 _linux_capture_screenshot = None  # None = not resolved yet, False = resolution failed
 
 
@@ -1112,7 +1099,6 @@ def _get_linux_capture_screenshot():
 
 
 SCREENSHOT_CAPTURE_TIMEOUT_SECONDS = 60
-SCREENSHOT_CAPTURE_POLL_SECONDS = 0.05
 
 
 def _log_capture_timeout(sModuleInfo, function_name, Method):
@@ -1125,34 +1111,25 @@ def _log_capture_timeout(sModuleInfo, function_name, Method):
     )
 
 
-async def _capture_with_timeout(capture, sModuleInfo, function_name, Method):
-    """Run one screen capture bounded by a timeout, without blocking the loop.
+def _capture_with_timeout(capture, sModuleInfo, function_name, Method):
+    """Run one blocking screen capture, waiting at most SCREENSHOT_CAPTURE_TIMEOUT_SECONDS.
 
     Selenium and Appium screenshots are synchronous HTTP calls with no read
     timeout of their own -- `RemoteConnection._timeout` defaults to
     `socket._GLOBAL_DEFAULT_TIMEOUT`, so urllib3 waits forever -- and
     `TakeScreenShot` runs outside `_run_action_with_timeout`. A wedged browser
-    therefore blocked the event loop indefinitely, parking the run on the
-    "Capturing Screenshot" log line with no timeout able to recover it.
+    therefore blocked the capture (and the test case's final join on it)
+    indefinitely, with no timeout able to recover it.
 
-    The sync capture runs on a *daemon* thread and is simply abandoned on
-    timeout -- the same trade-off `_ActionTimeoutWorker` makes for a hung
-    action. It must be a daemon (and must not use the default executor, whose
-    threads `loop.shutdown_default_executor()` joins) so an abandoned capture
-    can never hold up node shutdown. Any exception is re-raised on this thread
-    so the existing handlers in `Thread_ScreenShot` still see it.
+    The capture runs on a *daemon* thread and is simply abandoned on timeout --
+    the same trade-off `_ActionTimeoutWorker` makes for a hung action -- so an
+    abandoned capture can never hold up node shutdown. Any exception is
+    re-raised on the calling thread so the existing handlers in
+    `Thread_ScreenShot` still see it. Playwright pages are not passed here:
+    they must stay on their own thread, and use Playwright's own timeout.
 
-    `capture` is a plain callable (Selenium/Appium/desktop) or an awaitable
-    (Playwright, already async). Returns True when it finished in time.
+    Returns True when the capture finished in time.
     """
-    if inspect.isawaitable(capture):
-        try:
-            await asyncio.wait_for(capture, timeout=SCREENSHOT_CAPTURE_TIMEOUT_SECONDS)
-            return True
-        except (asyncio.TimeoutError, TimeoutError):
-            _log_capture_timeout(sModuleInfo, function_name, Method)
-            return False
-
     done = threading.Event()
     failure = {}
 
@@ -1166,28 +1143,43 @@ async def _capture_with_timeout(capture, sModuleInfo, function_name, Method):
 
     threading.Thread(target=runner, name="zeuz_screenshot_capture", daemon=True).start()
 
-    deadline = time.monotonic() + SCREENSHOT_CAPTURE_TIMEOUT_SECONDS
-    while not done.is_set():
-        if time.monotonic() >= deadline:
-            _log_capture_timeout(sModuleInfo, function_name, Method)
-            return False
-        await asyncio.sleep(SCREENSHOT_CAPTURE_POLL_SECONDS)
+    if not done.wait(SCREENSHOT_CAPTURE_TIMEOUT_SECONDS):
+        _log_capture_timeout(sModuleInfo, function_name, Method)
+        return False
 
     if "exc_info" in failure:
         raise failure["exc_info"][1].with_traceback(failure["exc_info"][2])
     return True
 
 
-async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name, skip_delay=False):
-    """Capture screen of mobile, desktop, Selenium, or Playwright."""
+def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name, skip_delay=False):
+    """ Capture screen of mobile or desktop.
+
+    skip_delay=True bypasses the debug settle delay — used for pre-action (BEFORE)
+    captures, where the current on-screen state must be grabbed immediately rather than
+    after waiting for the UI to settle (which only makes sense for AFTER captures).
+    """
     if performance_testing: return
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    chars_to_remove = [
+        r"?",
+        r"*",
+        r'"',
+        r"<",
+        r">",
+        r"|",
+        r"\\",
+        r"\/",
+        r":",
+    ]  # Symbols that can't be used in filename
     picture_quality = 100  # Quality of picture
     picture_size = 1920, 1080  # Size of image (for reduction in file size)
-    is_playwright_page = Method == "web" and Driver is not None and _is_playwright_page(Driver)
 
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
-    ImageName = _screenshot_path(image_folder, image_name, "jpg" if is_playwright_page else "png")
+    trans_table = str.maketrans(
+        dict.fromkeys("".join(chars_to_remove))
+    )  # python3 version of translate
+    ImageName = os.path.join(image_folder, (image_name.translate(trans_table)).strip().replace(" ", "_") + ".png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(Method), str(Driver), ImageName), 0)
     try:
         should_delay_before_capture = Method == "desktop" and sys.platform in ("linux2", "win32", "darwin")
@@ -1222,34 +1214,29 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
                         3,
                     )
                     return
-                if not await _capture_with_timeout(
+                if not _capture_with_timeout(
                     lambda: linux_capture_screenshot(ImageName), sModuleInfo, function_name, Method
                 ):
                     return
             elif sys.platform == "win32" or sys.platform == "darwin":
-                if not await _capture_with_timeout(_desktop_grab, sModuleInfo, function_name, Method):
+                if not _capture_with_timeout(_desktop_grab, sModuleInfo, function_name, Method):
                     return
 
         # Capture screenshot of web browser
         elif Method == "web":
-            # Check if it's a Playwright page or Selenium driver
-            if is_playwright_page:
-                captured = await _capture_with_timeout(
-                    Driver.screenshot(path=ImageName, type="jpeg", quality=PLAYWRIGHT_AUTO_SCREENSHOT_QUALITY),
-                    sModuleInfo, function_name, Method,
-                )
-            else:  # Selenium driver
-                # Must be .png, otherwise an exception occurs
-                captured = await _capture_with_timeout(
-                    lambda: Driver.get_screenshot_as_file(ImageName), sModuleInfo, function_name, Method
-                )
-            if not captured:
+            if type(Driver).__module__.startswith("playwright."):
+                # Playwright objects must stay on their own thread; bound it with its own timeout.
+                Driver.screenshot(path=ImageName, timeout=SCREENSHOT_CAPTURE_TIMEOUT_SECONDS * 1000)
+            elif not _capture_with_timeout(
+                lambda: Driver.get_screenshot_as_file(ImageName),  # Must be .png, otherwise an exception occurs
+                sModuleInfo, function_name, Method,
+            ):
                 return
 
         # Capture screenshot of mobile
         elif Method == "mobile":
             # Must be .png, otherwise an exception occurs
-            if not await _capture_with_timeout(
+            if not _capture_with_timeout(
                 lambda: Driver.save_screenshot(ImageName), sModuleInfo, function_name, Method
             ):
                 return
@@ -1262,15 +1249,14 @@ async def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_n
             )
         # Lower the picture quality
         if os.path.exists(ImageName):  # Make sure image was saved
-            if not is_playwright_page:
-                image = Image.open(ImageName)  # Re-open in standard format
-                image.thumbnail(picture_size, Image.LANCZOS)  # Resize picture to lower file size
-                image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
+            image = Image.open(ImageName)  # Re-open in standard format
+            image.thumbnail(picture_size, Image.LANCZOS)  # Resize picture to lower file size
+            image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
 
             if debug_status:
                 # Convert image to bytearray and send it to live_log_service for streaming.
-                image = Image.open(ImageName)  # Re-open in standard format
                 image_byte_array = pil_image_to_bytearray(image)
+
                 live_log_service.binary(image_byte_array)
         else:
             ExecLog(

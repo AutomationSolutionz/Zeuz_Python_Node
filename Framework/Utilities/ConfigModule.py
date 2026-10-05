@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 from filelock import FileLock
-import configparser, os
+import configparser, os, threading
 from . import FileUtilities as FL
 from pathlib import Path
 from datetime import date
@@ -19,6 +19,54 @@ remote_config = {
     "debug_mode": False,
     "upload_log_file_only_for_fail": True,
 }
+
+# Parsed config files, reused while the file on disk is unchanged. Config values
+# are read many times per log line, and re-reading the file under the file lock
+# every time made logging very slow. Every write in this module clears the cache;
+# the file signature catches changes made by other processes.
+_config_cache = {}  # absolute path -> (file signature, ConfigParser)
+_config_cache_lock = threading.Lock()
+
+
+def _file_signature(path):
+    try:
+        st = os.stat(path)
+    except OSError:
+        return None
+    return (st.st_mtime_ns, st.st_size, st.st_ino)
+
+
+def _clear_config_cache():
+    with _config_cache_lock:
+        _config_cache.clear()
+
+
+def _read_config(_file_name, location):
+    """Return the parsed config file, from the cache when the file is unchanged."""
+    path = os.path.abspath(os.fspath(_file_name))
+    signature = _file_signature(path)
+    if signature is not None:
+        with _config_cache_lock:
+            cached = _config_cache.get(path)
+        if cached is not None and cached[0] == signature:
+            return cached[1]
+
+    with settings_file_lock:
+        # Taken before reading: if the file changes while it is read, the next
+        # call sees a different signature and reads it again.
+        signature = _file_signature(path)
+        config = configparser.ConfigParser()
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
+        try:
+            config.read(_file_name)  # Read current configuration, if the file exists
+        except Exception:
+            FL.DeleteFile(location)
+            config.read(_file_name)
+            signature = None  # the file was replaced; don't cache this read
+        if signature is not None:
+            with _config_cache_lock:
+                _config_cache[path] = (signature, config)
+    return config
 
 @settings_file_lock
 def create_settings_config_file():
@@ -38,6 +86,7 @@ def create_settings_config_file():
         "_file": "temp_config.ini",
         "_file_upload_path": "TestExecutionLog",
         "stop_live_log": False,
+        "take_screenshot": "",
     }
     config["Inspector"] = {
         "Window": "",
@@ -46,7 +95,10 @@ def create_settings_config_file():
     }
     config["server"] = {"port": 0}
     config.filename = str(settings_conf_path)
-    config.write()
+    try:
+        config.write()
+    finally:
+        _clear_config_cache()
     print(f"Created settings.conf at {settings_conf_path}")
 
 def remove_settings_lock_file():
@@ -59,7 +111,6 @@ def remove_settings_lock_file():
     except Exception:
         traceback.print_exc()
 
-@settings_file_lock
 def get_config_value(section, key, location: os.PathLike | None = None):
     """
     :param section: name of section
@@ -68,20 +119,14 @@ def get_config_value(section, key, location: os.PathLike | None = None):
     """
     try:
         global remote_config
-        if key in remote_config:
+        if section == "RunDefinition" and key in remote_config:
             return str(remote_config[key])
 
-        config = configparser.ConfigParser()
-        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd().split("Framework")[0] + os.sep + "Framework" + os.sep + file_name
         else:
             _file_name = location
-        try:
-            config.read(_file_name)  # Read current configuration, if the file exists
-        except Exception:
-            FL.DeleteFile(location)
-            config.read(_file_name)
+        config = _read_config(_file_name, location)
         return config.get(section, key)
     except configparser.NoSectionError:
         # print "No section in that name: %s"%section
@@ -112,6 +157,8 @@ def remove_config_value(section, value, location=False):
     except configparser.NoSectionError:
         # print "No section in that name: %s"%section
         return ""
+    finally:
+        _clear_config_cache()
 
 @settings_file_lock
 def add_config_value(section, key, value, location: os.PathLike | None = None):
@@ -150,6 +197,8 @@ def add_config_value(section, key, value, location: os.PathLike | None = None):
         return ""
     except configparser.NoOptionError:
         return ""
+    finally:
+        _clear_config_cache()
 
 
 def add_section(section_name, location: os.PathLike | None = None):
@@ -180,6 +229,8 @@ def add_section(section_name, location: os.PathLike | None = None):
     except configparser.NoOptionError as e:
         print("Found no options on the section %s" % section_name)
         return []
+    finally:
+        _clear_config_cache()
 
 
 def clean_config_file(location: os.PathLike | None = None):
@@ -200,3 +251,5 @@ def clean_config_file(location: os.PathLike | None = None):
     except Exception as e:
         print(e)
         return False
+    finally:
+        _clear_config_cache()

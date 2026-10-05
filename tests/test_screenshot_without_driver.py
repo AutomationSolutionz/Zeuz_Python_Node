@@ -1,5 +1,3 @@
-import asyncio
-
 from Framework.Utilities import CommonUtil
 
 
@@ -27,12 +25,12 @@ def test_post_action_screenshot_is_skipped_when_mobile_driver_was_not_created(
         lambda module, message, level, *args, **kwargs: logs.append((message, level)),
     )
 
-    async def thread_screenshot(*args, **kwargs):
+    def thread_screenshot(*args, **kwargs):
         thread_calls.append((args, kwargs))
 
     monkeypatch.setattr(CommonUtil, "Thread_ScreenShot", thread_screenshot)
 
-    asyncio.run(CommonUtil.TakeScreenShot("launch_application"))
+    CommonUtil.TakeScreenShot("launch_application")
 
     assert thread_calls == []
     assert any("driver is not available" in message for message, _ in logs)

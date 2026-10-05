@@ -42,6 +42,10 @@ To run Zeuz Node in daemon mode (as a background process), execute the
 
 ## FAQ
 
+**Q.** Why does a long Playwright run use more memory or stop with an OOM kill?
+> See [network capture memory retention and the Firefox/WebKit limitation](docs/PLAYWRIGHT_ACTIONS.md#network-capture-firefoxwebkit-memory-retention-and-oom),
+> especially when retaining browser sessions with `zeuz_auto_teardown=False`.
+
 **Q.** I have Python 3.9+ installed. Can I use ZeuZ Node with it?
 > Our recommended Python version at the moment is Python 3.8. We have tested all
 > the internal modules with this version. However, if you are not doing
@@ -95,4 +99,3 @@ stateDiagram-v2
 
 ## Attributions
 - [axe-selenium-python](https://github.com/axe-selenium-python/axe-selenium-python)
-

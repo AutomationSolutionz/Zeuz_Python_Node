@@ -26,6 +26,34 @@ attachment_variables = {}
 MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
 
+# Parts of a key name (lowercase, letters and digits only) that mark its value
+# as a credential, e.g. "password", "API_KEY", "clientSecret", "auth-token".
+_SENSITIVE_KEY_PARTS = (
+    "password", "passwd", "passphrase", "pwd", "secret", "token",
+    "apikey", "accesskey", "privatekey", "authorization", "credential",
+)
+_MASK = "*****"
+
+
+def _is_sensitive_key(key):
+    normalized = re.sub(r"[^a-z0-9]", "", str(key).lower())
+    return any(part in normalized for part in _SENSITIVE_KEY_PARTS)
+
+
+def mask_sensitive_values(value, key=None):
+    """Return a copy of `value` for printing, with credential-like entries masked.
+
+    An entry is masked when its key (or `key`, for the value itself) looks like
+    a credential. Dicts and lists are masked recursively; `value` is not modified.
+    """
+    if key is not None and _is_sensitive_key(key):
+        return _MASK
+    if isinstance(value, dict):
+        return {k: mask_sensitive_values(v, k) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [mask_sensitive_values(v) for v in value]
+    return value
+
 
 def Set_Shared_Variables(
     key,
@@ -35,6 +63,7 @@ def Set_Shared_Variables(
     print_variable=True,
     pretty=True,
     print_raw=False,
+    mask_sensitive=False,
 ):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -90,16 +119,18 @@ def Set_Shared_Variables(
                 CommonUtil.zeuz_disable_var_print[key] = value
 
         if print_variable:
+            # Only what is printed is masked; the stored value stays intact.
+            printed_value = mask_sensitive_values(value, key) if mask_sensitive else value
             if print_raw:
                 try:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Raw variable data: %s" % value, 4,
+                        sModuleInfo, "Raw variable data: %s" % printed_value, 4,
                     )
                 except:
                     pass
 
-            try: val = json.dumps(value, indent=2)
-            except: val = str(value)
+            try: val = json.dumps(printed_value, indent=2)
+            except: val = str(printed_value)
 
             CommonUtil.ExecLog(
                 sModuleInfo, "Saved variable: %s" % key, 1,

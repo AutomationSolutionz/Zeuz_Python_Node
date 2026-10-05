@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import os
-import socket
 import sys
+
+# Must be the first Framework import (captures startup state, see the module).
+from Framework.Utilities import node_bootstrap
+import socket
 import shutil
 import subprocess
 from pathlib import Path
@@ -106,6 +109,8 @@ def kill_old_process(pid_file_path: os.PathLike):
     try:
         with open(pid_file_path, "r") as f:
             pid_number = int(f.read().strip())
+            if pid_number == os.getpid():
+                raise ProcessLookupError  # restarted in place (same pid); not an old process
             process = psutil.Process(pid_number)
             process.terminate()
             process.wait(
@@ -140,6 +145,8 @@ from Framework.Utilities import (  # noqa: E402
     RequestFormatter,
     CommonUtil,
     All_Device_Info,
+    node_health,
+    x11_utils,
 )
 from Framework import MainDriverApi  # noqa: E402
 
@@ -174,7 +181,63 @@ def signal_handler(sig, frame):
     os._exit(0)
 
 
-def _destroy_session_file():
+def restart_node_process():
+    """Replace this process with a fresh node, keeping the same pid.
+
+    Keeping the pid means whatever launched the node (the ZeuZ_Node launcher,
+    uv, a service manager or a monitor script) still sees it running.
+    Only returns if the restart could not be done.
+    """
+    try:
+        cli_args = node_health.restart_cli_args(_build_arg_parser().parse_args(sys.argv[1:]))
+        argv = node_health.restart_command(
+            sys.executable, sys.orig_argv, sys.argv, node_bootstrap.STARTUP_SCRIPT, cli_args
+        )
+    except BaseException as e:  # argparse exits on errors; never let that stop the node
+        print(Fore.RED + f"[health] Could not restart ZeuZ Node automatically: {e!r}")
+        print(Fore.RED + "[health] Please restart ZeuZ Node manually.")
+        return
+    kill_child_processes()  # browsers, drivers and Xvfb of this run, like on quit
+    sys.stdout.flush()
+    sys.stderr.flush()
+    cwd = os.getcwd()
+    try:
+        os.chdir(node_bootstrap.STARTUP_CWD)
+        os.execve(sys.executable, argv, node_bootstrap.STARTUP_ENV)
+    except Exception as e:
+        os.chdir(cwd)
+        print(Fore.RED + f"[health] Could not restart ZeuZ Node automatically: {e}")
+        print(Fore.RED + "[health] Please restart ZeuZ Node manually.")
+
+
+def restart_if_actions_are_stuck():
+    """Restart the node after a run if an action thread never finished.
+
+    Such a thread (one that exceeded action_timeout) keeps holding whatever it
+    was blocked on and can slow down or hang every later run.
+    """
+    stuck = node_health.stuck_threads()
+    if not stuck:
+        return
+    print(
+        Fore.YELLOW
+        + f"[health] {len(stuck)} action thread(s) are still running after exceeding action_timeout."
+    )
+    if CommonUtil.debug_status:
+        print(Fore.YELLOW + "[health] Not restarting during a debug session. Restart ZeuZ Node when you are done.")
+        return
+    if os.name != "posix":
+        print(Fore.YELLOW + "[health] Please restart ZeuZ Node to release them.")
+        return
+    print(Fore.YELLOW + "[health] Restarting ZeuZ Node to recover...")
+    restart_node_process()
+
+
+def destroy_session():
+    """
+    Destroy session file.
+    """
+
     # Remove session file if prompted for new authentication
     session_bin_path = Path(RequestFormatter.SESSION_FILE_NAME)
     if session_bin_path.exists():
@@ -184,18 +247,11 @@ def _destroy_session_file():
             print("[ERROR] failed to remove session file")
 
 
-async def destroy_session():
-    """
-    Destroy session file.
-    """
-    _destroy_session_file()
-
-
 def zeuz_authentication_prompts_for_cli():
     """
     Prompts user for inputting new credentials.
     """
-    _destroy_session_file()
+    destroy_session()
     prompts = ["server_address", "api-key"]
     values = []
     for prompt in prompts:
@@ -468,10 +524,19 @@ async def RunProcess(node_id, log_dir=None):
             # 3. Call MainDriver
             device_info = All_Device_Info.get_all_connected_device_info()
             await install_handler.cancel_run()
-            await MainDriverApi.main(
-                device_dict=device_info,
-                all_run_id_info=node_json,
-            )
+            loop = asyncio.get_running_loop()
+            try:
+                await loop.run_in_executor(
+                    None,
+                    lambda: MainDriverApi.main(
+                        device_dict=device_info,
+                        all_run_id_info=node_json,
+                    ),
+                )
+            finally:
+                # The run is over (reports uploaded, or it ended with an
+                # error), so a restart loses nothing.
+                restart_if_actions_are_stuck()
 
         async def on_connect_callback(reconnected: bool):
             node_server_state.STATE.state = "idle"
@@ -1008,60 +1073,7 @@ async def delete_old_automationlog_folders():
         await asyncio.sleep(60 * 60 * 5)
 
 
-async def command_line_args() -> tuple[Path | None, bool]:
-    """
-    This function handles command line arguments for configuring and running Zeuz Node.
-
-    Returns:
-      `log_dir` - Path object for custom log directory if specified, otherwise None
-      `disable_mobile_install` - True if startup mobile install should be skipped
-
-    Example 1 - Basic usage:
-    python node_cli.py
-
-    Example 2 - Authentication:
-    python node_cli.py -s https://zeuz.zeuz.ai -k YOUR_API_KEY
-
-    Example 3 - Custom node ID:
-    python node_cli.py -n custom_node_name
-
-    Example 4 - Run once and exit:
-    python node_cli.py -o
-
-    Example 5 - Custom log directory:
-    python node_cli.py -d /path/to/logs
-
-
-    Example 7 - Logout:
-    python node_cli.py -l
-
-    Example 8 - GitHub integration:
-    python node_cli.py -gh YOUR_GITHUB_TOKEN
-
-    Example 9 - Advanced options:
-    python node_cli.py -spu -sbl -slg
-
-    Example 10 - Generate RSA private key:
-    python node_cli.py -gpk
-
-    Example 11 - Add existing RSA private key:
-    python node_cli.py -apk /path/to/private_key.pem
-
-    Example 12 - Show existing RSA keys and their public keys:
-    python node_cli.py -spk
-
-    Example 13 - Share all RSA private keys (generates a share code):
-    python node_cli.py -sh
-
-    Example 14 - Fetch shared RSA private keys using a share code:
-    python node_cli.py -fe AkEf-B910
-
-    Example 15 - Install Linux desktop automation dependencies:
-    python node_cli.py -ild
-
-    Use -h or --help to see full documentation of all available arguments.
-    """
-    # try:
+def _build_arg_parser() -> argparse.ArgumentParser:
     parser_object = argparse.ArgumentParser("node_cli parser")
     parser_object.add_argument(
         "-s", "--server", action="store", help="Enter server address", metavar=""
@@ -1185,6 +1197,64 @@ async def command_line_args() -> tuple[Path | None, bool]:
         help="Skip Node.js/Appium setup at startup",
     )
 
+    return parser_object
+
+
+async def command_line_args() -> tuple[Path | None, bool]:
+    """
+    This function handles command line arguments for configuring and running Zeuz Node.
+
+    Returns:
+      `log_dir` - Path object for custom log directory if specified, otherwise None
+      `disable_mobile_install` - True if startup mobile install should be skipped
+
+    Example 1 - Basic usage:
+    python node_cli.py
+
+    Example 2 - Authentication:
+    python node_cli.py -s https://zeuz.zeuz.ai -k YOUR_API_KEY
+
+    Example 3 - Custom node ID:
+    python node_cli.py -n custom_node_name
+
+    Example 4 - Run once and exit:
+    python node_cli.py -o
+
+    Example 5 - Custom log directory:
+    python node_cli.py -d /path/to/logs
+
+
+    Example 7 - Logout:
+    python node_cli.py -l
+
+    Example 8 - GitHub integration:
+    python node_cli.py -gh YOUR_GITHUB_TOKEN
+
+    Example 9 - Advanced options:
+    python node_cli.py -spu -sbl -slg
+
+    Example 10 - Generate RSA private key:
+    python node_cli.py -gpk
+
+    Example 11 - Add existing RSA private key:
+    python node_cli.py -apk /path/to/private_key.pem
+
+    Example 12 - Show existing RSA keys and their public keys:
+    python node_cli.py -spk
+
+    Example 13 - Share all RSA private keys (generates a share code):
+    python node_cli.py -sh
+
+    Example 14 - Fetch shared RSA private keys using a share code:
+    python node_cli.py -fe AkEf-B910
+
+    Example 15 - Install Linux desktop automation dependencies:
+    python node_cli.py -ild
+
+    Use -h or --help to see full documentation of all available arguments.
+    """
+    # try:
+    parser_object = _build_arg_parser()
     all_arguments = parser_object.parse_args()
 
     server = all_arguments.server
@@ -1373,6 +1443,9 @@ async def main():
     colorama_init(autoreset=True)
 
     kill_old_process(Path.cwd().parent / "pid.txt")
+    stale_xvfb = x11_utils.cleanup_orphaned_xvfb()
+    if stale_xvfb:
+        print(f"Stopped {len(stale_xvfb)} Xvfb display(s) left behind by a previous run of this node.")
     check_min_python_version(min_python_version="3.11", show_warning=True)
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -1398,7 +1471,7 @@ async def main():
     asyncio.create_task(start_server())
     start_ui_dump_uploads()
     asyncio.create_task(delete_old_automationlog_folders())
-    await destroy_session()
+    destroy_session()
 
     console = Console()
 
@@ -1442,7 +1515,7 @@ async def main():
             STATE.target_server = server_name or None
             STATE.connection_state = "authenticating" if server_name and api_key else "disconnected"
             STATE.last_connect_error = None
-            await destroy_session()
+            destroy_session()
             await set_new_credentials(server=server_name, api_key=api_key)
 
             STATE.reconnect_with_credentials = None
