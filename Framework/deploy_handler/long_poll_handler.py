@@ -6,6 +6,7 @@ import asyncio
 import random
 import json
 import httpx
+import requests
 from colorama import Fore
 from pathlib import Path
 from urllib.parse import urlparse
