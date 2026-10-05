@@ -1,6 +1,6 @@
 declarations = (
     { "name": "step result",                                 "function": "step_result",                           "screenshot": "none" },
-    { "name": "sleep",                                       "function": "Sleep",                                 "screenshot": "none" },
+    { "name": "sleep",                                       "function": "Sleep",                                 "screenshot": "auto" },
     { "name": "wait",                                        "function": "Wait_For_Element",                      "screenshot": "none" },
     { "name": "wait disable",                                "function": "Wait_For_Element",                      "screenshot": "none" },
     { "name": "save text",                                   "function": "Save_Text",                             "screenshot": "none" },

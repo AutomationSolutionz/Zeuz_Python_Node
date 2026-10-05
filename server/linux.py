@@ -49,8 +49,8 @@ def inspect(app_name: str | None = None, window_id: str | None = None):
     window of the app (an app may have multiple windows; see /linux/apps).
     """
     from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
-    if BuiltInFunctions is None:
-        return InspectorResponse(status="error", error="Linux automation module not available")
+    if not BuiltInFunctions.is_atspi_available():
+        return InspectorResponse(status="error", error=BuiltInFunctions.atspi_unavailable_message())
 
     try:
         # Determine app name
@@ -94,7 +94,7 @@ def inspect(app_name: str | None = None, window_id: str | None = None):
 def get_apps():
     """Return available Linux applications visible to AT-SPI."""
     from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
-    if BuiltInFunctions is None:
+    if not BuiltInFunctions.is_atspi_available():
         return []
 
     try:
@@ -117,7 +117,7 @@ def get_apps():
 async def upload_linux_ui_dump():
     """Continuously upload Linux UI dump if changed."""
     from Framework.Built_In_Automation.Desktop.Linux import BuiltInFunctions
-    if BuiltInFunctions is None:
+    if not BuiltInFunctions.is_atspi_available():
         return
 
     prev_xml_hash = ""
