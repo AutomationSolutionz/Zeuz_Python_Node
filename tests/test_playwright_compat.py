@@ -136,7 +136,8 @@ def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
     image = tmp_path / "image.png"
     image.write_bytes(b"image bytes")
     captured = []
-    context = SimpleNamespace(pages=[], grant_permissions=lambda *args, **kwargs: None)
+    context = SimpleNamespace(pages=[], grant_permissions=lambda *args, **kwargs: None,
+                              wait_for_event=lambda *args, **kwargs: None)
     state = {"context": context}
     class Page:
         url = "https://example.test"
@@ -144,6 +145,8 @@ def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
             self.name = title
         def title(self):
             return self.name
+        def is_closed(self):
+            return False
         def close(self):
             context.pages.remove(self)
         def evaluate(self, script, value):
@@ -604,6 +607,118 @@ def test_reused_browser_applies_element_wait(monkeypatch):
     assert shared["element_wait"] == 60.0
 
 
+@pytest.mark.parametrize("scenario", [
+    "delayed_index", "queued_title", "queued_index_zero", "delayed_title",
+    "trimmed_title", "partial_title", "negative_index", "missing_title", "missing_index",
+])
+def test_switch_tab_keeps_requested_page_and_bridge(page, monkeypatch, scenario):
+    context = page.context.browser.new_context()
+    original = context.new_page()
+    original.set_content("<title>Original</title>")
+    bridge_calls = []
+    state = {
+        "context": context, "page": original, "downloads": [], "capturing_network": False,
+        "selenium_bridge": SimpleNamespace(switch_to=SimpleNamespace(window=bridge_calls.append)),
+    }
+    shared = {}
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"tabs": state})
+    monkeypatch.setattr(playwright_actions._browser_state, "current_driver_id", "tabs")
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_page", None)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: shared.get(name))
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda name, value, **_: shared.__setitem__(name, value))
+    monkeypatch.setattr(playwright_actions.sr, "Shared_Variable_Export", lambda: shared)
+    monkeypatch.setattr(playwright_actions.CommonUtil, "set_screenshot_vars", lambda _: None)
+    monkeypatch.setattr(playwright_actions, "_publish_selenium_bridge", lambda _: None)
+    try:
+        playwright_actions._wire_page(state, original)
+        playwright_actions._set_active("tabs")
+        bridge_calls.clear()
+        frame = object()
+        state["frame"], state["frame_stack"] = frame, [frame]
+        field, value = "tab title", "Target"
+        if scenario in ("delayed_index", "queued_title", "queued_index_zero"):
+            original.evaluate("""() => setTimeout(() => {
+                const popup = window.open('about:blank');
+                popup.document.title = 'Target';
+            }, 300)""")
+            if scenario.startswith("queued"):
+                # Model a Selenium/Python action: the browser runs while events queue.
+                time.sleep(0.7)
+                assert len(context.pages) == 1
+            if scenario == "delayed_index":
+                field, value = "window index", "1"
+            elif scenario == "queued_index_zero":
+                field, value = "tab index", "0"
+        elif scenario.startswith("missing"):
+            if scenario == "missing_index":
+                field, value = "tab index", "99"
+        else:
+            target = context.new_page()
+            assert state["page"] is original and state["frame"] is frame
+            assert state["frame_stack"] == [frame]
+            target.set_content("<title>Target</title>")
+            if scenario == "delayed_title":
+                target.evaluate("""() => {
+                    document.title = 'Loading';
+                    setTimeout(() => document.title = 'Target', 300);
+                }""")
+            elif scenario == "trimmed_title":
+                field, value = "window title", " Target "
+            elif scenario == "partial_title":
+                field, value = "*tab title", " ARG "
+            elif scenario == "negative_index":
+                field, value = "tab index", "-1"
+
+        rows = [(field, "input parameter", value),
+                ("wait", "optional parameter", "0.05" if scenario.startswith("missing") else "2"),
+                ("switch window/tab", "selenium action", "switch window or frame")]
+        shared["zeuz_browser_driver"] = "playwright"
+        routed = sequential_actions._route_playwright_action(rows[-1][0], rows[-1][1], rows)
+        assert sequential_actions.common.get_module_and_function(rows[-1][0], routed)[:2] == (
+            "playwright", "switch_window_or_tab",
+        )
+        result = playwright_actions.switch_window_or_tab(rows)
+        if scenario.startswith("missing"):
+            assert result == "zeuz_failed"
+            assert state["page"] is original and state["frame"] is frame
+            assert state["frame_stack"] == [frame]
+            assert shared["playwright_page"] is original
+            assert bridge_calls == []
+            return
+
+        assert result == "passed"
+        selected = original if scenario == "queued_index_zero" else context.pages[-1]
+        assert state["page"] is selected
+        assert playwright_actions.get_driver() is selected
+        assert state["frame"] is None and state["frame_stack"] == []
+        assert shared["playwright_page"] is shared["common_driver"] is selected
+        session = context.new_cdp_session(selected)
+        try:
+            target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+        finally:
+            session.detach()
+        assert bridge_calls == [target_id]
+
+        # The same selection helper and bridge alignment serve tab closing/opening.
+        if scenario == "trimmed_title":
+            assert playwright_actions.close_tab([("tabs", "optional parameter", "[1]")]) == "passed"
+            assert playwright_actions.get_page() is original
+            assert shared["playwright_page"] is original
+            assert len(bridge_calls) == 2 and bridge_calls[-1] != target_id
+            assert playwright_actions.open_new_tab([("open new tab", "action", "open new tab")]) == "passed"
+            assert playwright_actions.get_page() is context.pages[-1]
+            assert len(bridge_calls) == 3
+    finally:
+        context.close()
+
+
+def test_tab_wait_rejects_invalid_values(monkeypatch):
+    monkeypatch.setattr(playwright_actions, "_state", lambda: {"context": object()})
+    for value in ("-1", "nan", "inf", "invalid"):
+        with pytest.raises(ValueError):
+            playwright_actions._find_page([("timeout", "optional parameter", value)])
+
+
 @pytest.mark.parametrize("closed_target", ["active", "popup", "last_page", "context", "browser"])
 def test_go_to_link_recovers_closed_cached_target(page, monkeypatch, closed_target):
     browser_type = page.context.browser.browser_type
@@ -644,8 +759,11 @@ def test_go_to_link_recovers_closed_cached_target(page, monkeypatch, closed_targ
     try:
         playwright_actions._wire_page(state, original)
         target = context.new_page()
+        assert state["page"] is original
+        playwright_actions._wire_page(state, target)
         assert state["page"] is target
         playwright_actions._set_active("portal")
+        bridge_calls.clear()
         if closed_target == "popup":
             target.close()
         elif closed_target == "last_page":
@@ -677,7 +795,7 @@ def test_go_to_link_recovers_closed_cached_target(page, monkeypatch, closed_targ
                 target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
             finally:
                 session.detach()
-            assert bridge_calls == [target_id]
+            assert bridge_calls == [target_id, target_id]
             if closed_target == "popup":
                 assert recovered["page"] is original
         else:

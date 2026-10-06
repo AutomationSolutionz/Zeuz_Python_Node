@@ -112,6 +112,14 @@ def _element(data_set, all_elements=False, root=None):
 def _set_active(driver_id):
     _browser_state.current_driver_id = driver_id
     state = _browser_state.playwright_details[driver_id]
+    bridge = state.get("selenium_bridge")
+    if bridge is not None:
+        session = state["context"].new_cdp_session(state["page"])
+        try:
+            target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+        finally:
+            session.detach()
+        bridge.switch_to.window(target_id)
     _browser_state.playwright_page = state["page"]
     sr.Set_Shared_Variables("playwright_page", _browser_state.playwright_page)
     sr.Set_Shared_Variables("common_driver", state.get("frame") or _browser_state.playwright_page)
@@ -268,10 +276,11 @@ def _on_dialog(state, dialog):
         dialog.dismiss()
 
 
-def _wire_page(state, page):
-    state["page"] = page
-    state["frame"] = None
-    state["frame_stack"] = []
+def _wire_page(state, page, activate=True):
+    if activate:
+        state["page"] = page
+        state["frame"] = None
+        state["frame_stack"] = []
     wired_pages = state.setdefault("wired_pages", set())
     if id(page) in wired_pages:
         return
@@ -281,7 +290,7 @@ def _wire_page(state, page):
     if state["capturing_network"]:
         _capture_network_page(state, page)
     if not state.get("page_listener"):
-        page.context.on("page", lambda new_page: _wire_page(state, new_page))
+        page.context.on("page", lambda new_page: _wire_page(state, new_page, activate=False))
         state["page_listener"] = True
 
 
@@ -318,14 +327,6 @@ def _launch(data_set):
             else:
                 raise
         if state is not None:
-            bridge = state.get("selenium_bridge")
-            if bridge is not None:
-                session = state["context"].new_cdp_session(state["page"])
-                try:
-                    target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
-                finally:
-                    session.detach()
-                bridge.switch_to.window(target_id)
             _set_active(driver_id)
             return state
 
@@ -899,35 +900,49 @@ def open_new_tab(data_set):
 
 
 def _find_page(data_set):
-    pages = _state()["context"].pages
-    for left, _middle, right in _rows(data_set):
-        partial = left.strip().startswith("*")
-        key = _key(left).lstrip("*")
-        if key in ("tabindex", "windowindex", "index"):
-            return pages[int(right)]
-        if key in ("tabtitle", "windowtitle", "title"):
-            return next(
-                (
-                    page
-                    for page in pages
-                    if (
-                        right.lower() in page.title().lower()
-                        if partial
-                        else right.lower() == page.title().lower()
-                    )
-                ),
-                None,
-            )
-        if key in ("url", "taburl", "windowurl"):
-            return next(
-                (
-                    page
-                    for page in pages
-                    if (right in page.url if partial else right == page.url)
-                ),
-                None,
-            )
-    return pages[-1] if pages else None
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    context = _state()["context"]
+    rows = _rows(data_set)
+    timeout = next((float(right) for left, middle, right in rows
+                    if middle == "optional parameter" and _key(left) in ("wait", "timeout")), 10)
+    if not 0 <= timeout < float("inf"):
+        raise ValueError("Tab wait must be a finite, non-negative number")
+    deadline = time.monotonic() + timeout
+    interval = 1
+    while True:
+        # Pump queued page/close events before reading Playwright's cached pages.
+        try:
+            context.wait_for_event("page", timeout=interval)
+        except PlaywrightTimeoutError:
+            pass
+        pages = [page for page in context.pages if not page.is_closed()]
+        for left, _middle, right in rows:
+            right = right.strip()
+            partial = left.startswith("*")
+            key = _key(left).lstrip("*")
+            if key in ("tabindex", "windowindex", "index"):
+                index = int(right)
+                page = pages[index] if -len(pages) <= index < len(pages) else None
+                break
+            if key in ("tabtitle", "windowtitle", "title"):
+                page = next((page for page in pages if (
+                    right.lower() in page.title().lower() if partial
+                    else right.lower() == page.title().lower()
+                )), None)
+                break
+            if key in ("url", "taburl", "windowurl"):
+                page = next((page for page in pages
+                             if (right in page.url if partial else right == page.url)), None)
+                break
+        else:
+            page = pages[-1] if pages else None
+        if page is not None:
+            return page
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None
+        interval = min(100, remaining * 1000)
 
 
 def switch_window_or_tab(data_set):
@@ -943,14 +958,13 @@ def switch_window_or_tab(data_set):
 def close_tab(data_set):
     state = _state()
     tabs = next((_parse(right) for left, _, right in _rows(data_set) if _key(left) == "tabs"), None)
-    pages = list(state["context"].pages)
     if tabs is not None:
         if not isinstance(tabs, list):
             return _fail("tabs must be a list of titles or indices")
         selected = []
         for tab in tabs:
-            page = pages[tab] if isinstance(tab, int) else next(
-                (page for page in pages if page.title().lower() == str(tab).strip().lower()), None)
+            field = "tab index" if isinstance(tab, int) else "tab title"
+            page = _find_page([(field, "input parameter", str(tab))] + list(data_set))
             if page is None:
                 return _fail("Requested tab/window was not found")
             if page not in selected:
