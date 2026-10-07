@@ -786,9 +786,17 @@ def Enter_Text_In_Text_Box(data_set):
         (float(right) * 1000 for left, _, right in _rows(data_set) if _key(left) == "delay"),
         0,
     )
-    if clear and not append:
-        element.clear()
-    element.press_sequentially(value, **({"delay": delay} if delay else {}))
+    # Clicking/clearing can change attributes used by the locator (e.g. ng-pristine).
+    handle = element.element_handle()
+    try:
+        handle.click()
+        if clear and not append:
+            handle.fill("")
+        else:
+            handle.press("ControlOrMeta+End")
+        handle.type(value, delay=delay)
+    finally:
+        handle.dispose()
     return "passed"
 
 
@@ -1239,6 +1247,16 @@ def _return_attribute(element, attribute):
     return element.get_attribute(attribute)
 
 
+def _target_rows(spec):
+    return [
+        ("allow hidden", "optional parameter", values[0])
+        if _key(key) in ("allowhidden", "allowdisable")
+        else (key, "element parameter", values[0])
+        for key, values in spec.items()
+        if not key.startswith("return")
+    ]
+
+
 def _return_matches(value, contains, excludes):
     return (not contains or any(not isinstance(value, str) or not part or part in value
                                 for part in contains)) and not any(
@@ -1251,13 +1269,11 @@ def save_attribute_values_in_list(data_set):
         return "zeuz_failed"
     result = []
     for spec in _target_specs(data_set):
-        rows = [
-            (key, "element parameter", value[0])
-            for key, value in spec.items()
-            if not key.startswith("return")
-        ]
+        elements = _element(_target_rows(spec), all_elements=True, root=parent)
+        if elements in failed_tag_list:
+            return "zeuz_failed"
         values = []
-        for element in _element(rows, all_elements=True, root=parent):
+        for element in elements:
             attribute = spec.get("return", ["text"])[0]
             value = _return_attribute(element, attribute)
             values.append(value if _return_matches(value, spec.get("return_contains", []),
@@ -1328,12 +1344,7 @@ def save_web_elements_in_list(data_set):
         return "zeuz_failed"
     groups = []
     for spec in _target_specs(data_set):
-        rows = [
-            (key, "element parameter", values[0])
-            for key, values in spec.items()
-            if not key.startswith("return")
-        ]
-        elements = _element(rows, all_elements=True, root=root)
+        elements = _element(_target_rows(spec), all_elements=True, root=root)
         if elements in failed_tag_list:
             return "zeuz_failed"
         for filter_name in ("return_contains", "return_does_not_contain"):

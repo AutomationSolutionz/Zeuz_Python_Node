@@ -1387,12 +1387,17 @@ def test_raw_css_locator_names(name):
     ]) == (".target", "css")
 
 
-def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
+def test_text_clicks_clears_and_types_with_delay(monkeypatch):
     events = []
+    handle = SimpleNamespace(
+        click=lambda: events.append("click"),
+        fill=lambda value: events.append(("fill", value)),
+        type=lambda value, **options: events.append((value, options)),
+        dispose=lambda: events.append("dispose"),
+    )
     element = SimpleNamespace(
         get_attribute=lambda _name: "password",
-        clear=lambda: events.append("clear"),
-        press_sequentially=lambda value, **options: events.append((value, options)),
+        element_handle=lambda: handle,
     )
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
 
@@ -1401,7 +1406,7 @@ def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
         ("delay", "optional parameter", "0.05"),
         ("text", "playwright action", "secret"),
     ]) == "passed"
-    assert events == ["clear", ("secret", {"delay": 50})]
+    assert events == ["click", ("fill", ""), ("secret", {"delay": 50}), "dispose"]
 
 
 @pytest.mark.parametrize(
@@ -1413,10 +1418,15 @@ def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
 )
 def test_text_preserves_existing_value_when_requested(monkeypatch, option):
     events = []
+    handle = SimpleNamespace(
+        click=lambda: events.append("click"),
+        press=lambda key: events.append(key),
+        type=lambda value, **options: events.append((value, options)),
+        dispose=lambda: events.append("dispose"),
+    )
     element = SimpleNamespace(
         get_attribute=lambda _name: "text",
-        clear=lambda: events.append("clear"),
-        press_sequentially=lambda value, **options: events.append((value, options)),
+        element_handle=lambda: handle,
     )
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
 
@@ -1425,7 +1435,21 @@ def test_text_preserves_existing_value_when_requested(monkeypatch, option):
         option,
         ("text", "playwright action", "more"),
     ]) == "passed"
-    assert events == [("more", {})]
+    assert events == ["click", "ControlOrMeta+End", ("more", {"delay": 0}), "dispose"]
+
+
+def test_attribute_list_stops_on_target_lookup_failure(monkeypatch):
+    monkeypatch.setattr(playwright_actions, "_element",
+                        lambda _rows, **kwargs: "zeuz_failed" if kwargs else object())
+    extracted = []
+    monkeypatch.setattr(playwright_actions, "_return_attribute",
+                        lambda element, _attribute: extracted.append(element))
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    assert playwright_actions.save_attribute_values_in_list([
+        ("attributes", "target parameter", 'tag="button", return="text"'),
+        ("save attribute values in list", "action", "values"),
+    ]) == "zeuz_failed"
+    assert extracted == []
 
 
 def test_file_inputs_work_through_text_and_locator_free_upload(monkeypatch, tmp_path):
@@ -1734,6 +1758,75 @@ def test_text_filter_fallback_preserves_normal_lookup(page, monkeypatch):
         assert saved["zeuz_element"].get_attribute("id") == "second"
     finally:
         test_page.close()
+
+
+def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    tab.set_default_timeout(1000)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <button id="toggle" onclick="panel.hidden=!panel.hidden">Dropdown</button>
+            <div id="panel" hidden>Incomplete</div>
+            <textarea id="text" class="ng-pristine"
+                onclick="this.className='ng-touched'"
+                oninput="this.className='ng-dirty'">old value</textarea>
+            <script>
+                window.keys = [];
+                document.addEventListener('keydown', e => keys.push(e.key));
+                document.addEventListener('click', e => {
+                    if (e.target.id !== 'toggle') panel.hidden = true;
+                });
+            </script>
+        ''')
+        tab.locator('#toggle').click()
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("class", "element parameter", "ng-pristine"),
+            ("text", "action", "new"),
+        ]) == "passed"
+        assert tab.locator('#text').input_value() == "new"
+        assert tab.evaluate('keys')[-3:] == ['n', 'e', 'w']
+        assert not tab.locator('#panel').is_visible()
+        tab.locator('#toggle').click()
+        assert tab.locator('#panel').is_visible()
+        for option in [("append", "optional parameter", "true"),
+                       ("clear", "optional parameter", "false")]:
+            tab.locator('#text').fill('first\nlast')
+            assert playwright_actions.Enter_Text_In_Text_Box([
+                ("id", "element parameter", "text"),
+                ("text", "action", " more"), option,
+            ]) == "passed"
+            assert tab.locator('#text').input_value() == 'first\nlast more'
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("option", ["allow hidden", "allow_hidden", "allow disable", "allow_disable"])
+def test_target_options_in_both_list_actions(page, monkeypatch, option):
+    tab = page.context.browser.new_page()
+    saved = {}
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables",
+                        lambda name, value: saved.__setitem__(name, value) or "passed")
+    try:
+        tab.set_content('<section id="root"><button id="shown">Shown</button>'
+                        '<button id="hidden" hidden>Hidden</button></section>')
+        for value, expected in [("yes", ["shown", "hidden"]), ("no", ["shown"])]:
+            rows = [("id", "element parameter", "root"),
+                    ("attributes", "target parameter", f'tag="button", {option}="{value}", return="id"')]
+            assert playwright_actions.save_attribute_values_in_list(rows + [
+                ("save attribute values in list", "action", "values"),
+            ]) == "passed"
+            assert saved["values"] == expected
+            assert playwright_actions.save_web_elements_in_list(rows + [
+                ("save web elements in list", "action", "elements"),
+            ]) == "passed"
+            assert [element.get_attribute('id') for element in saved["elements"]] == expected
+    finally:
+        tab.close()
 
 
 def test_evaluator_text_does_not_reselect_existing_user(page, monkeypatch):
