@@ -16,6 +16,25 @@ Locators accept exact attributes and text (`id`, `name`, `text`), partial matche
 
 `wait`, `allow hidden`, `allow disable`, and `text filter` are optional rows. `save parameter` stores a locator; `get parameter` retrieves one. Locator roots may be saved elements, frames, nested elements, and open shadow roots using numbered `sr ... parameter` rows. Closed shadow roots are not accessible.
 
+## Targeted diagnostics
+
+Set the runtime shared variable `zeuz_playwright_diagnostics` to `true` for all
+test cases, or a comma-separated list such as `TEST-0390,TEST-0391,TEST-0392`.
+It is disabled by default. Use the same deployment mechanism as
+`zeuz_browser_driver`.
+
+The console and action logs receive JSON records prefixed with `PW_DIAGNOSTIC`
+around clicks, text entry, attribute readbacks, and screenshots. Records include
+case/step/action IDs, target attributes and bounds, elements at the target's
+center in its frame and the main page, active/hovered elements, visible overlays,
+and the latest 30 pointer, focus, input, and change events per frame. Input values
+and key characters are omitted; non-password input lengths are recorded.
+
+These records supplement the existing error tracebacks; they do not create
+Playwright `trace.zip` files. Send the complete console log after the rerun.
+Collection errors do not change action results. Enabled diagnostics add browser
+round trips and logging, so leave them disabled for timing comparisons.
+
 ## Browser launch mapping
 
 | ZeuZ browser | Playwright engine |

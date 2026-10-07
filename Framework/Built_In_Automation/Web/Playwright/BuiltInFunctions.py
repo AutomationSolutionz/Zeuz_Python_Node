@@ -4,6 +4,7 @@ import ast
 import base64
 import functools
 import inspect
+import json
 import socket
 import sys
 import time
@@ -50,6 +51,85 @@ def _log(message, level=1):
 def _fail(message):
     _log(message, 3)
     return "zeuz_failed"
+
+
+_DIAGNOSTIC_SNAPSHOT = """element => {
+    const describe = el => {
+        if (!el || el.nodeType !== 1) return null;
+        const info = {};
+        for (const name of ['id', 'class', 'type', 'role', 'aria-expanded', 'aria-label'])
+            info[name] = (el.getAttribute(name) || '').slice(0, 200);
+        info.tag = el.tagName;
+        if ('value' in el && el.type !== 'password') info.value_length = el.value.length;
+        return info;
+    };
+    if (!window.__zeuzPlaywrightDiagnostics) {
+        const events = [];
+        window.__zeuzPlaywrightDiagnostics = events;
+        for (const type of ['pointerdown', 'click', 'focusin', 'focusout', 'input', 'change'])
+            document.addEventListener(type, event => {
+                events.push({time: Date.now(), type, target: describe(event.target),
+                             parent: describe(event.target.parentElement),
+                             trusted: event.isTrusted, input_type: event.inputType || null});
+                if (events.length > 30) events.shift();
+            }, true);
+    }
+    const rect = element ? element.getBoundingClientRect() : null;
+    const overlays = [...document.querySelectorAll(
+        '[role="dialog"], [role="listbox"], .p-overlaypanel, .popover'
+    )].filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+    return {
+        time: Date.now(), frame: location.origin + location.pathname,
+        viewport: {width: innerWidth, height: innerHeight, scroll_x: scrollX, scroll_y: scrollY},
+        target: describe(element), parent: describe(element && element.parentElement),
+        rect: rect ? rect.toJSON() : null,
+        hit_at_center: rect ? describe(document.elementFromPoint(
+            rect.x + rect.width / 2, rect.y + rect.height / 2)) : null,
+        active: describe(document.activeElement),
+        hovered: [...document.querySelectorAll(':hover')].slice(-5).map(describe),
+        overlay_count: overlays.length, overlays: overlays.slice(0, 10).map(describe),
+        events: window.__zeuzPlaywrightDiagnostics
+    };
+}"""
+
+
+def _diagnostic(stage, element=None):
+    """Opt in with zeuz_playwright_diagnostics=true or comma-separated test case IDs."""
+    try:
+        setting = str(sr.Get_Shared_Variables("zeuz_playwright_diagnostics", log=False)).strip()
+        if (setting.lower() not in CommonUtil.affirmative_words
+                and (not CommonUtil.current_tc_no
+                     or CommonUtil.current_tc_no not in [case.strip() for case in setting.split(",")])):
+            return
+        record = {"stage": stage, "case": CommonUtil.current_tc_no,
+                  "step_id": CommonUtil.current_step_id, "step": CommonUtil.current_step_no,
+                  "action": CommonUtil.current_action_no}
+        if hasattr(element, "evaluate"):
+            try:
+                if LocateElement._is_playwright_locator(element):
+                    record["target"] = (element.evaluate(_DIAGNOSTIC_SNAPSHOT, timeout=500)
+                                        if element.count() else {"missing": True})
+                else:
+                    record["target"] = element.evaluate(_DIAGNOSTIC_SNAPSHOT)
+                box = (element.bounding_box(timeout=500) if LocateElement._is_playwright_locator(element)
+                       else element.bounding_box())
+                if box:
+                    record["main_hit_at_center"] = get_page().evaluate("""point => {
+                        const el = document.elementFromPoint(point.x, point.y);
+                        return el ? {tag: el.tagName, id: el.id, class: el.getAttribute('class')} : null;
+                    }""", {"x": box["x"] + box["width"] / 2, "y": box["y"] + box["height"] / 2})
+            except Exception as error:
+                record["target"] = {"unavailable": type(error).__name__}
+        record["frames"] = []
+        for frame in get_page().frames:
+            try:
+                record["frames"].append(frame.evaluate(_DIAGNOSTIC_SNAPSHOT))
+            except Exception as error:
+                record["frames"].append({"unavailable": type(error).__name__})
+        _log("PW_DIAGNOSTIC " + json.dumps(record, ensure_ascii=False))
+    except Exception:
+        # Diagnostics must never change the action result, including during teardown.
+        pass
 
 
 def _rows(data_set):
@@ -602,6 +682,7 @@ def Click_Element(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
+    _diagnostic("click.target", element)
     options = {}
     for left, middle, right in _rows(data_set):
         if (
@@ -759,6 +840,7 @@ def Enter_Text_In_Text_Box(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
+    _diagnostic("text.target", element)
     value = _action(data_set)
     if (element.get_attribute("type") or "").lower() == "file":
         element.set_input_files(CommonUtil.path_parser(value))
@@ -1205,6 +1287,7 @@ def Save_Attribute(data_set):
     element = _element(clean)
     if element in failed_tag_list or not variable:
         return "zeuz_failed"
+    _diagnostic("attribute.target", element)
     if attribute == "text":
         value = element.inner_text().strip()
     elif attribute == "tag":
@@ -1853,9 +1936,15 @@ def _action_guard(function):
     @functools.wraps(function)
     def guarded(data_set=()):
         try:
-            return function(data_set)
+            result = function(data_set)
         except Exception:
+            if function.__name__ in ("Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute"):
+                _diagnostic(function.__name__ + ".error")
             return CommonUtil.Exception_Handler(sys.exc_info())
+        if function.__name__ in ("Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute",
+                                 "take_screenshot_selenium"):
+            _diagnostic(function.__name__ + ".after")
+        return result
 
     return guarded
 

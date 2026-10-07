@@ -1,3 +1,4 @@
+import json
 import shutil
 import threading
 import time
@@ -1452,6 +1453,32 @@ def test_attribute_list_stops_on_target_lookup_failure(monkeypatch):
     assert extracted == []
 
 
+@pytest.mark.parametrize("setting", ["zeuz_failed", "", "false", "TEST-OTHER"])
+def test_diagnostics_only_touch_browser_when_enabled(monkeypatch, setting):
+    monkeypatch.setattr(playwright_actions.CommonUtil, "current_tc_no", "TEST-DIAG")
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_, **__: setting)
+    touched = []
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: touched.append("browser"))
+    monkeypatch.setattr(playwright_actions, "_log", lambda *_: touched.append("log"))
+    playwright_actions._diagnostic("test")
+    assert touched == []
+
+
+def test_diagnostic_failure_preserves_original_exception(monkeypatch):
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_, **__: "true")
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: None)
+    original = ValueError("action error")
+    captured = []
+    monkeypatch.setattr(playwright_actions.CommonUtil, "Exception_Handler",
+                        lambda info: captured.append(info[1]) or "zeuz_failed")
+
+    def Click_Element(_data):
+        raise original
+
+    assert playwright_actions._action_guard(Click_Element)([]) == "zeuz_failed"
+    assert captured == [original]
+
+
 def test_file_inputs_work_through_text_and_locator_free_upload(monkeypatch, tmp_path):
     file_path = tmp_path / "upload.txt"
     file_path.write_text("content")
@@ -1758,6 +1785,68 @@ def test_text_filter_fallback_preserves_normal_lookup(page, monkeypatch):
         assert saved["zeuz_element"].get_attribute("id") == "second"
     finally:
         test_page.close()
+
+
+def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    tab.set_default_timeout(200)
+    logs = []
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
+    monkeypatch.setattr(playwright_actions.CommonUtil, "current_tc_no", "TEST-DIAG")
+    monkeypatch.setattr(playwright_actions.CommonUtil, "current_step_id", 1234)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables",
+                        lambda name, **_: "TEST-OTHER, TEST-DIAG" if name == "zeuz_playwright_diagnostics" else 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <button id="target" style="position:absolute;left:8px;top:8px;width:100px;height:30px">Edit</button>
+            <div id="cover" style="position:absolute;left:8px;top:8px;width:100px;height:30px">Cover</div>
+            <input id="text" style="margin-top:100px">
+            <input type="password" value="do-not-log-password">
+            <div role="dialog" id="overlay">Dialog</div>
+            <iframe style="position:absolute;left:8px;top:200px;width:200px;height:100px"
+                    srcdoc="<button id='inside'>Inside</button>"></iframe>
+            <div id="frame-cover" style="position:absolute;left:8px;top:200px;width:210px;height:110px"></div>
+        ''')
+        click = [("id", "element parameter", "target"), ("click", "action", "click")]
+        assert playwright_actions.Click_Element(click + [("use js", "optional parameter", "true")]) == "passed"
+        before = json.loads(logs[0].removeprefix("PW_DIAGNOSTIC "))
+        assert before["case"] == "TEST-DIAG" and before["step_id"] == 1234
+        assert before["target"]["target"]["id"] == "target"
+        assert before["target"]["hit_at_center"]["id"] == "cover"
+        assert any(overlay["id"] == "overlay" for overlay in before["frames"][0]["overlays"])
+        assert len(before["frames"]) == 2
+        after = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert any(event["type"] == "click" and event["target"]["id"] == "target"
+                   for event in after["frames"][0]["events"])
+        playwright_actions._diagnostic("iframe.target", tab.frame_locator('iframe').locator('#inside'))
+        iframe = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert iframe["target"]["hit_at_center"]["id"] == "inside"
+        assert iframe["main_hit_at_center"]["id"] == "frame-cover"
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "text"), ("text", "action", "do-not-log-input"),
+        ]) == "passed"
+        after = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert after["frames"][0]["active"]["id"] == "text"
+        assert after["frames"][0]["active"]["value_length"] == len("do-not-log-input")
+        assert any(event["type"] == "input" for event in after["frames"][0]["events"])
+        tab.locator('#text').evaluate("el => { for(let i=0; i<40; i++) el.dispatchEvent(new Event('input', {bubbles:true})); }")
+        playwright_actions._diagnostic("bounded")
+        assert len(json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))["frames"][0]["events"]) == 30
+        assert "do-not-log-input" not in "\n".join(logs)
+        assert "do-not-log-password" not in "\n".join(logs)
+        assert playwright_actions.Click_Element(click) == "zeuz_failed"
+        assert json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))["stage"] == "Click_Element.error"
+
+        def broken_log(*_):
+            raise OSError("diagnostic log unavailable")
+
+        monkeypatch.setattr(playwright_actions, "_log", broken_log)
+        assert playwright_actions.Click_Element(click + [("use js", "optional parameter", "true")]) == "passed"
+    finally:
+        tab.close()
 
 
 def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch):
