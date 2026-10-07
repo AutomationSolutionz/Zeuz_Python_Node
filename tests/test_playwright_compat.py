@@ -1222,7 +1222,7 @@ def test_visible_disabled_element_is_located_and_its_live_value_saved(monkeypatc
         is_enabled=lambda: False,
         locator=lambda _selector: SimpleNamespace(count=lambda: 0),
         get_attribute=lambda _name: None,
-        input_value=lambda: "user@example.test",
+        evaluate=lambda _script: "user@example.test",
     )
     matches = SimpleNamespace(count=lambda: 1, nth=lambda _index: element)
     root = SimpleNamespace(locator=lambda _selector: matches)
@@ -1391,7 +1391,7 @@ def test_raw_css_locator_names(name):
 def test_text_clicks_clears_and_types_with_delay(monkeypatch):
     events = []
     handle = SimpleNamespace(
-        click=lambda: events.append("click"),
+        click=lambda **options: events.append(("click", options)),
         fill=lambda value: events.append(("fill", value)),
         type=lambda value, **options: events.append((value, options)),
         dispose=lambda: events.append("dispose"),
@@ -1407,7 +1407,8 @@ def test_text_clicks_clears_and_types_with_delay(monkeypatch):
         ("delay", "optional parameter", "0.05"),
         ("text", "playwright action", "secret"),
     ]) == "passed"
-    assert events == ["click", ("fill", ""), ("secret", {"delay": 50}), "dispose"]
+    assert events == [("click", {"timeout": 5000}), ("fill", ""),
+                      ("secret", {"delay": 50}), "dispose"]
 
 
 @pytest.mark.parametrize(
@@ -1420,7 +1421,7 @@ def test_text_clicks_clears_and_types_with_delay(monkeypatch):
 def test_text_preserves_existing_value_when_requested(monkeypatch, option):
     events = []
     handle = SimpleNamespace(
-        click=lambda: events.append("click"),
+        click=lambda **options: events.append(("click", options)),
         press=lambda key: events.append(key),
         type=lambda value, **options: events.append((value, options)),
         dispose=lambda: events.append("dispose"),
@@ -1436,7 +1437,8 @@ def test_text_preserves_existing_value_when_requested(monkeypatch, option):
         option,
         ("text", "playwright action", "more"),
     ]) == "passed"
-    assert events == ["click", "ControlOrMeta+End", ("more", {"delay": 0}), "dispose"]
+    assert events == [("click", {"timeout": 5000}), "ControlOrMeta+End",
+                      ("more", {"delay": 0}), "dispose"]
 
 
 def test_attribute_list_stops_on_target_lookup_failure(monkeypatch):
@@ -1845,6 +1847,62 @@ def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monke
 
         monkeypatch.setattr(playwright_actions, "_log", broken_log)
         assert playwright_actions.Click_Element(click + [("use js", "optional parameter", "true")]) == "passed"
+    finally:
+        tab.close()
+
+
+def test_save_value_uses_live_property_or_attribute(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    saved = {}
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables",
+                        lambda name, value: saved.__setitem__(name, value) or "passed")
+    try:
+        tab.set_content('''
+            <span id="theme" aria-label="Select a theme">Select a theme</span>
+            <span id="attribute" value="custom">Custom</span>
+            <input id="input" value="initial">
+            <textarea id="textarea">initial</textarea>
+            <select id="select"><option value="initial">Initial</option>
+                <option value="selected">Selected</option></select>
+        ''')
+        tab.locator('#input').fill('')
+        tab.locator('#textarea').fill('edited')
+        tab.locator('#select').select_option('selected')
+        for target, expected in [('theme', None), ('attribute', 'custom'),
+                                 ('input', ''), ('textarea', 'edited'), ('select', 'selected')]:
+            assert playwright_actions.Save_Attribute([
+                ("id", "element parameter", target),
+                ("value", "save parameter", "value"),
+            ]) == "passed"
+            assert saved['value'] == expected
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("append", [False, True])
+def test_text_continues_when_focused_frame_input_is_outside_viewport(page, monkeypatch, append):
+    tab = page.context.browser.new_page()
+    tab.set_default_timeout(200)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''<iframe style="position:fixed;top:-200px;height:300px"
+            srcdoc="<input id='search' value='old'>"></iframe>''')
+        frame = tab.frames[1]
+        monkeypatch.setattr(playwright_actions, "get_driver", lambda: frame)
+        field = frame.locator('#search')
+        field.focus()
+        assert field.bounding_box()['y'] < 0
+        assert field.evaluate('el => el === document.activeElement')
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "search"),
+            ("allow hidden", "optional parameter", "yes"),
+            ("append", "optional parameter", str(append).lower()),
+            ("text", "action", "agents"),
+        ]) == "passed"
+        assert field.input_value() == ('oldagents' if append else 'agents')
     finally:
         tab.close()
 

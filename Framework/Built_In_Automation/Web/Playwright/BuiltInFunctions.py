@@ -869,9 +869,14 @@ def Enter_Text_In_Text_Box(data_set):
         0,
     )
     # Clicking/clearing can change attributes used by the locator (e.g. ng-pristine).
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
     handle = element.element_handle()
     try:
-        handle.click()
+        try:
+            handle.click(timeout=5000)
+        except PlaywrightTimeoutError:
+            _log("Entering text without clicking the element", 2)
         if clear and not append:
             handle.fill("")
         else:
@@ -1295,7 +1300,7 @@ def Save_Attribute(data_set):
     elif attribute == "checked":
         value = element.is_checked()
     elif attribute == "value":
-        value = element.input_value()
+        value = element.evaluate("el => el.value ?? el.getAttribute('value')")
     else:
         value = element.get_attribute(attribute)
     return sr.Set_Shared_Variables(variable, value)
