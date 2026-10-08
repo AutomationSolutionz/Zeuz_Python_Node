@@ -1,6 +1,7 @@
 """Synchronous Playwright counterparts for ZeuZ Selenium actions."""
 
 import ast
+import asyncio
 import base64
 import functools
 import inspect
@@ -57,20 +58,23 @@ _DIAGNOSTIC_SNAPSHOT = """element => {
     const describe = el => {
         if (!el || el.nodeType !== 1) return null;
         const info = {};
-        for (const name of ['id', 'class', 'type', 'role', 'aria-expanded', 'aria-label'])
+        for (const name of ['id', 'class', 'type', 'role', 'aria-expanded', 'aria-label',
+                            'aria-selected', 'aria-checked', 'aria-busy'])
             info[name] = (el.getAttribute(name) || '').slice(0, 200);
         info.tag = el.tagName;
+        if ('checked' in el) info.checked = el.checked;
         if ('value' in el && el.type !== 'password') info.value_length = el.value.length;
         return info;
     };
     if (!window.__zeuzPlaywrightDiagnostics) {
         const events = [];
         window.__zeuzPlaywrightDiagnostics = events;
-        for (const type of ['pointerdown', 'click', 'focusin', 'focusout', 'input', 'change'])
+        for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click', 'dblclick', 'focusin', 'focusout', 'input', 'change'])
             document.addEventListener(type, event => {
                 events.push({time: Date.now(), type, target: describe(event.target),
                              parent: describe(event.target.parentElement),
-                             trusted: event.isTrusted, input_type: event.inputType || null});
+                             trusted: event.isTrusted, detail: event.detail,
+                             input_type: event.inputType || null});
                 if (events.length > 30) events.shift();
             }, true);
     }
@@ -88,6 +92,9 @@ _DIAGNOSTIC_SNAPSHOT = """element => {
         active: describe(document.activeElement),
         hovered: [...document.querySelectorAll(':hover')].slice(-5).map(describe),
         overlay_count: overlays.length, overlays: overlays.slice(0, 10).map(describe),
+        controls: [...document.querySelectorAll(
+            'input[type="checkbox"], [role="switch"], [aria-busy="true"]'
+        )].slice(0, 30).map(describe),
         events: window.__zeuzPlaywrightDiagnostics
     };
 }"""
@@ -699,7 +706,13 @@ def Click_Element(data_set):
                 "y": box["height"] / 2 * (1 + y / 100),
             }
         elif _key(left) == "usejs" and right.strip().lower() in CommonUtil.affirmative_words:
-            element.evaluate("element => element.click()")
+            # Match Selenium's explicit JS click, including mouse-dependent widgets.
+            element.evaluate("""element => {
+                for (const type of ['mousedown', 'mouseup', 'click'])
+                    element.dispatchEvent(new MouseEvent(type, {
+                        bubbles: true, cancelable: true, view: window, buttons: 1
+                    }));
+            }""")
             return "passed"
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
@@ -785,6 +798,7 @@ def Double_Click_Element(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
+    _diagnostic("double_click.target", element)
     element.dblclick()
     return "passed"
 
@@ -841,7 +855,7 @@ def Keystroke_For_Element(data_set):
     if element in failed_tag_list:
         return "zeuz_failed"
     if "chars" in field:
-        element.type(value) if element else keyboard.type(value)
+        _type_text(element, value)
     else:
         key, _, count = value.partition(",")
         combo = "+".join(
@@ -866,6 +880,41 @@ def Keystroke_For_Element(data_set):
         for _ in range(int(count or 1)):
             element.press(combo) if element else keyboard.press(combo)
     return "passed"
+
+
+def _type_text(element, value, delay=0):
+    if delay or not value:
+        (element if element is not None else get_page().keyboard).type(value, delay=delay)
+        return
+
+    if element is None:
+        keyboard = get_page().keyboard
+    else:
+        element.type("")  # Preserve native typing's focus and caret placement.
+        page = element.page if LocateElement._is_playwright_locator(element) else element.owner_frame().page
+        keyboard = page.keyboard
+
+    async def send_keys():
+        commands = []
+        for char in value:
+            # Match Playwright's US-layout keys and insertText for other characters.
+            if " " <= char <= "~" or char in "\n\r":
+                commands.extend((keyboard._impl_obj.down(char), keyboard._impl_obj.up(char)))
+            else:
+                commands.append(keyboard._impl_obj.insert_text(char))
+        commands = [asyncio.create_task(command) for command in commands]
+        # Reuse the action's call site; collecting a stack per key delays dispatch.
+        for command in commands:
+            command.__pw_stack_trace__ = asyncio.current_task().__pw_stack_trace__
+        results = await asyncio.gather(*commands, return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+
+    # Queue native events like ChromeDriver send_keys, without per-event round trips.
+    # ponytail: sync/async bridge uses Playwright internals; replace when a public
+    # batched-key API exists. Browser event-parity tests cover dependency upgrades.
+    keyboard._sync(keyboard._impl_obj._channel._connection.wrap_api_call(send_keys))
 
 
 def Enter_Text_In_Text_Box(data_set):
@@ -900,8 +949,10 @@ def Enter_Text_In_Text_Box(data_set):
         (float(right) * 1000 for left, _, right in _rows(data_set) if _key(left) == "delay"),
         0,
     )
+    if not 0 <= delay < float("inf"):
+        return _fail("Typing delay must be a finite, non-negative number of seconds")
     # Clicking/clearing can change attributes used by the locator (e.g. ng-pristine).
-    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+    from playwright.sync_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
 
     handle = element.element_handle()
     try:
@@ -910,10 +961,20 @@ def Enter_Text_In_Text_Box(data_set):
         except PlaywrightTimeoutError:
             _log("Entering text without clicking the element", 2)
         if clear and not append:
-            handle.fill("")
+            try:
+                handle.press("ControlOrMeta+A")
+                handle.press("Delete")
+                if handle.evaluate("el => el.isContentEditable ? el.textContent : el.value"):
+                    handle.fill("")
+            except PlaywrightError:
+                pass  # Selenium treats clearing as best effort before send_keys.
         else:
             handle.press("ControlOrMeta+End")
-        handle.type(value, delay=delay)
+        _type_text(handle, value, delay=delay)
+        try:
+            handle.click(timeout=5000)
+        except PlaywrightError:
+            pass  # Match Selenium's best-effort click after typing.
     finally:
         handle.dispose()
     return "passed"
@@ -1975,10 +2036,10 @@ def _action_guard(function):
         try:
             result = function(data_set)
         except Exception:
-            if function.__name__ in ("Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute"):
+            if function.__name__ in ("Click_Element", "Double_Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute"):
                 _diagnostic(function.__name__ + ".error")
             return CommonUtil.Exception_Handler(sys.exc_info())
-        if function.__name__ in ("Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute",
+        if function.__name__ in ("Click_Element", "Double_Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute",
                                  "take_screenshot_selenium"):
             _diagnostic(function.__name__ + ".after")
         return result

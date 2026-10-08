@@ -1,3 +1,4 @@
+import asyncio
 import json
 import shutil
 import threading
@@ -1392,6 +1393,8 @@ def test_text_clicks_clears_and_types_with_delay(monkeypatch):
     events = []
     handle = SimpleNamespace(
         click=lambda **options: events.append(("click", options)),
+        press=lambda key: events.append(key),
+        evaluate=lambda _: "uncleared value",
         fill=lambda value: events.append(("fill", value)),
         type=lambda value, **options: events.append((value, options)),
         dispose=lambda: events.append("dispose"),
@@ -1407,8 +1410,8 @@ def test_text_clicks_clears_and_types_with_delay(monkeypatch):
         ("delay", "optional parameter", "0.05"),
         ("text", "playwright action", "secret"),
     ]) == "passed"
-    assert events == [("click", {"timeout": 5000}), ("fill", ""),
-                      ("secret", {"delay": 50}), "dispose"]
+    assert events == [("click", {"timeout": 5000}), "ControlOrMeta+A", "Delete", ("fill", ""),
+                      ("secret", {"delay": 50}), ("click", {"timeout": 5000}), "dispose"]
 
 
 @pytest.mark.parametrize(
@@ -1431,6 +1434,8 @@ def test_text_preserves_existing_value_when_requested(monkeypatch, option):
         element_handle=lambda: handle,
     )
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
+    monkeypatch.setattr(playwright_actions, "_type_text",
+                        lambda element, value, delay: element.type(value, delay=delay))
 
     assert playwright_actions.Enter_Text_In_Text_Box([
         ("id", "element parameter", "name"),
@@ -1438,7 +1443,7 @@ def test_text_preserves_existing_value_when_requested(monkeypatch, option):
         ("text", "playwright action", "more"),
     ]) == "passed"
     assert events == [("click", {"timeout": 5000}), "ControlOrMeta+End",
-                      ("more", {"delay": 0}), "dispose"]
+                      ("more", {"delay": 0}), ("click", {"timeout": 5000}), "dispose"]
 
 
 def test_attribute_list_stops_on_target_lookup_failure(monkeypatch):
@@ -1789,6 +1794,32 @@ def test_text_filter_fallback_preserves_normal_lookup(page, monkeypatch):
         test_page.close()
 
 
+def test_js_click_selects_widget_that_requires_mouse_down_and_up(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <div id="grid"><button id="row">Conversation</button></div>
+            <div id="details" hidden>Selected conversation</div>
+            <script>
+                let down = false, up = false;
+                grid.addEventListener('mousedown', e => down = e.buttons === 1 && e.view === window);
+                grid.addEventListener('mouseup', () => up = down);
+                grid.addEventListener('click', () => details.hidden = !(down && up));
+            </script>
+        ''')
+        assert playwright_actions.Click_Element([
+            ("id", "element parameter", "row"),
+            ("use js", "optional parameter", "yes"),
+            ("click", "action", "click"),
+        ]) == "passed"
+        assert tab.locator('#details').is_visible()
+    finally:
+        tab.close()
+
+
 def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monkeypatch):
     tab = page.context.browser.new_page()
     tab.set_default_timeout(200)
@@ -1807,6 +1838,7 @@ def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monke
             <div id="cover" style="position:absolute;left:8px;top:8px;width:100px;height:30px">Cover</div>
             <input id="text" style="margin-top:100px">
             <input type="password" value="do-not-log-password">
+            <input type="checkbox" id="selected" checked>
             <div role="dialog" id="overlay">Dialog</div>
             <iframe style="position:absolute;left:8px;top:200px;width:200px;height:100px"
                     srcdoc="<button id='inside'>Inside</button>"></iframe>
@@ -1828,6 +1860,26 @@ def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monke
         assert iframe["target"]["hit_at_center"]["id"] == "inside"
         assert iframe["main_hit_at_center"]["id"] == "frame-cover"
         assert iframe["main_rect"]["y"] > iframe["target"]["rect"]["y"]
+        tab.locator('#cover').evaluate("el => el.remove()")
+        tab.locator('#target').evaluate("""el => el.addEventListener('dblclick', () => {
+            el.setAttribute('aria-selected', 'true');
+            document.querySelector('#selected').checked = false;
+        })""")
+        assert playwright_actions.Double_Click_Element([
+            ("id", "element parameter", "target"), ("double click", "action", "double click"),
+        ]) == "passed"
+        before_double = json.loads(logs[-2].removeprefix("PW_DIAGNOSTIC "))
+        assert before_double["stage"] == "double_click.target"
+        assert next(control for control in before_double["frames"][0]["controls"]
+                    if control["id"] == "selected")["checked"] is True
+        after_double = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert after_double["stage"] == "Double_Click_Element.after"
+        double_event = next(event for event in after_double["frames"][0]["events"]
+                            if event["type"] == "dblclick")
+        assert double_event["detail"] == 2 and double_event["trusted"] is True
+        assert after_double["frames"][0]["active"]["aria-selected"] == "true"
+        assert next(control for control in after_double["frames"][0]["controls"]
+                    if control["id"] == "selected")["checked"] is False
         assert playwright_actions.Enter_Text_In_Text_Box([
             ("id", "element parameter", "text"), ("text", "action", "do-not-log-input"),
         ]) == "passed"
@@ -2047,7 +2099,7 @@ def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch
             <div id="panel" hidden>Incomplete</div>
             <textarea id="text" class="ng-pristine"
                 onclick="this.className='ng-touched'"
-                oninput="this.className='ng-dirty'">old value</textarea>
+                oninput="this.className='ng-dirty';panel.hidden=false">old value</textarea>
             <script>
                 window.keys = [];
                 document.addEventListener('keydown', e => keys.push(e.key));
@@ -2062,6 +2114,7 @@ def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch
             ("text", "action", "new"),
         ]) == "passed"
         assert tab.locator('#text').input_value() == "new"
+        assert 'Delete' in tab.evaluate('keys')
         assert tab.evaluate('keys')[-3:] == ['n', 'e', 'w']
         assert not tab.locator('#panel').is_visible()
         tab.locator('#toggle').click()
@@ -2076,6 +2129,115 @@ def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch
             assert tab.locator('#text').input_value() == 'first\nlast more'
     finally:
         tab.close()
+
+
+@pytest.mark.parametrize("in_frame,shift,tag", [
+    (False, False, "textarea"), (True, False, "textarea"),
+    (False, True, "textarea"), (False, False, "input"),
+])
+def test_batched_text_preserves_native_keyboard_events(page, in_frame, shift, tag):
+    tab = page.context.browser.new_page()
+    try:
+        tab.set_content(f'<{tag} id="field"></{tag}><button id="other">Other</button>'
+                        f'<iframe srcdoc="<{tag} id=field></{tag}>"></iframe>')
+        frame = tab.frames[1] if in_frame else tab.main_frame
+        field = frame.locator('#field')
+        frame.evaluate('''() => {
+            window.events = [];
+            const field = document.querySelector('#field');
+            field.addEventListener('keydown', e => { if (e.key.toLowerCase() === 'x') e.preventDefault(); });
+            for (const type of ['keydown', 'keypress', 'beforeinput', 'input', 'keyup'])
+                field.addEventListener(type, e => events.push([
+                    type, e.key, e.code, e.inputType, e.data, e.isTrusted,
+                    e.shiftKey, e.ctrlKey, e.repeat
+                ]));
+        }''')
+        value = 'aAx9!+;é🙂\n中\t'
+        outcomes = []
+        for batched in (False, True):
+            field.fill('')
+            if tag == "input":
+                field.fill('seed')
+                tab.locator('#other').click()
+            if shift:
+                tab.keyboard.down('Shift')
+            frame.evaluate('events = []')
+            if batched:
+                handle = field.element_handle()
+                try:
+                    playwright_actions._type_text(handle, value)
+                finally:
+                    handle.dispose()
+            else:
+                field.type(value)
+            outcomes.append((field.input_value(), frame.evaluate('events')))
+            if shift:
+                tab.keyboard.up('Shift')
+        assert outcomes[0] == outcomes[1]
+        assert all(event[5] for event in outcomes[1][1])  # Native, trusted events.
+        assert 'x' not in outcomes[1][0].lower()  # Keydown cancellation is respected.
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("action,value,targeted", [
+    ("text", "test capture feedback", True),
+    ("text", "test action item", True),
+    ("keystroke chars", "test capture feedback", True),
+    ("keystroke chars", "test action item", False),
+])
+def test_text_with_deferred_model_updates_keeps_all_characters(page, monkeypatch, action, value, targeted):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''<textarea id="field"></textarea><script>
+            window.pending = 0;
+            document.querySelector('#field').addEventListener('input', async event => {
+                const field = event.target;
+                let value = field.value;
+                if (value.length > 1) {
+                    value = await Promise.resolve(value);
+                    window.pending++;
+                    setTimeout(() => { field.value = value; window.pending--; }, 10);
+                }
+            });
+        </script>''')
+        for _ in range(3):
+            tab.locator('#field').fill('')
+            rows = [("id", "element parameter", "field")] if targeted else []
+            rows.append((action, "action", value))
+            run = (playwright_actions.Enter_Text_In_Text_Box if action == "text"
+                   else playwright_actions.Keystroke_For_Element)
+            assert run(rows) == "passed"
+            tab.wait_for_function('pending === 0')
+            assert tab.locator('#field').input_value() == value
+    finally:
+        tab.close()
+
+
+def test_batched_text_drains_queued_keys_before_reporting_error(page, monkeypatch):
+    finished = []
+
+    async def down(key):
+        await asyncio.sleep(0)
+        if key == 'a':
+            raise ValueError('key dispatch failed')
+
+    async def up(key):
+        for _ in range(3):
+            await asyncio.sleep(0)
+        finished.append(key)
+
+    monkeypatch.setattr(page.keyboard._impl_obj, "down", down)
+    monkeypatch.setattr(page.keyboard._impl_obj, "up", up)
+    element = SimpleNamespace(type=lambda _: None,
+                              owner_frame=lambda: page.main_frame)
+    with pytest.raises(ValueError, match='key dispatch failed'):
+        playwright_actions._type_text(element, 'ab')
+    assert finished == ['a', 'b']
 
 
 @pytest.mark.parametrize("option", ["allow hidden", "allow_hidden", "allow disable", "allow_disable"])
