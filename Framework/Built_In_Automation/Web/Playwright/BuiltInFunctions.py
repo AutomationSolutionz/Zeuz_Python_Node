@@ -1092,6 +1092,8 @@ def _find_page(data_set):
 
     context = _state()["context"]
     rows = _rows(data_set)
+    partial_title = any(left.startswith("*") and _key(left).lstrip("*") in ("tabtitle", "windowtitle", "title")
+                        for left, _, _ in rows)
     timeout = next((float(right) for left, middle, right in rows
                     if middle == "optional parameter" and _key(left) in ("wait", "timeout")), 10)
     if not 0 <= timeout < float("inf"):
@@ -1105,7 +1107,8 @@ def _find_page(data_set):
         except PlaywrightTimeoutError:
             pass
         pages = [page for page in context.pages if not page.is_closed()]
-        for left, _middle, right in rows:
+        # Selenium lets later title/index rows override earlier ones.
+        for left, _middle, right in reversed(rows):
             right = right.strip()
             partial = left.startswith("*")
             key = _key(left).lstrip("*")
@@ -1115,7 +1118,7 @@ def _find_page(data_set):
                 break
             if key in ("tabtitle", "windowtitle", "title"):
                 page = next((page for page in pages if (
-                    right.lower() in page.title().lower() if partial
+                    right.lower() in page.title().lower() if partial_title
                     else right.lower() == page.title().lower()
                 )), None)
                 break
@@ -1152,7 +1155,9 @@ def close_tab(data_set):
         selected = []
         for tab in tabs:
             field = "tab index" if isinstance(tab, int) else "tab title"
-            page = _find_page([(field, "input parameter", str(tab))] + list(data_set))
+            page = _find_page([(field, "input parameter", str(tab))] + [
+                row for row in data_set if _key(row[0]) in ("wait", "timeout")
+            ])
             if page is None:
                 return _fail("Requested tab/window was not found")
             if page not in selected:

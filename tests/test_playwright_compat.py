@@ -170,6 +170,14 @@ def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
     context.pages = pages.copy()
     assert playwright_actions.close_tab([("tabs", "optional parameter", "['first', 'third']")]) == "passed"
     assert context.pages == [pages[1]]
+    context.pages = pages.copy()
+    pages[0].name = "third backup"
+    assert playwright_actions.close_tab([
+        ("*window title", "element parameter", "third"),
+        ("window index", "element parameter", "0"),
+        ("tabs", "optional parameter", "['third']"),
+    ]) == "passed"
+    assert context.pages == pages[:2]
 
 
 def test_review_electron_ports(monkeypatch):
@@ -612,6 +620,8 @@ def test_reused_browser_applies_element_wait(monkeypatch):
 @pytest.mark.parametrize("scenario", [
     "delayed_index", "queued_title", "queued_index_zero", "delayed_title",
     "trimmed_title", "partial_title", "negative_index", "missing_title", "missing_index",
+    "mixed_title_index", "mixed_title_index_legacy_flag", "mixed_index_title",
+    "repeated_index", "repeated_title", "partial_then_exact",
 ])
 def test_switch_tab_keeps_requested_page_and_bridge(page, monkeypatch, scenario):
     context = page.context.browser.new_context()
@@ -674,6 +684,24 @@ def test_switch_tab_keeps_requested_page_and_bridge(page, monkeypatch, scenario)
         rows = [(field, "input parameter", value),
                 ("wait", "optional parameter", "0.05" if scenario.startswith("missing") else "2"),
                 ("switch window/tab", "selenium action", "switch window or frame")]
+        if scenario in ("mixed_title_index", "mixed_title_index_legacy_flag"):
+            target.set_content("<title>SuccessKPI</title>")
+            if scenario == "mixed_title_index":
+                original.set_content("<title>SuccessKPI</title>")
+            rows = [("window title", "element parameter", "SuccessKPI"),
+                    ("window index", "element parameter", "0" if scenario.endswith("legacy_flag") else "1"),
+                    ("switch window/tab", "selenium action", "switch window/tab")]
+            if scenario.endswith("legacy_flag"):
+                rows.insert(0, ("playwright", "optional parameter", "true"))
+        elif scenario in ("mixed_index_title", "repeated_index"):
+            rows.insert(0, ("window index", "element parameter", "0"))
+            if scenario == "repeated_index":
+                rows[1] = ("window index", "element parameter", "1")
+        elif scenario == "repeated_title":
+            rows.insert(0, ("window title", "element parameter", "Original"))
+        elif scenario == "partial_then_exact":
+            rows[0] = ("window title", "element parameter", "get")
+            rows.insert(0, ("*window title", "element parameter", "Unused"))
         shared["zeuz_browser_driver"] = "playwright"
         routed = sequential_actions._route_playwright_action(rows[-1][0], rows[-1][1], rows)
         assert sequential_actions.common.get_module_and_function(rows[-1][0], routed)[:2] == (
@@ -689,7 +717,7 @@ def test_switch_tab_keeps_requested_page_and_bridge(page, monkeypatch, scenario)
             return
 
         assert result == "passed"
-        selected = original if scenario == "queued_index_zero" else context.pages[-1]
+        selected = original if scenario in ("queued_index_zero", "mixed_title_index_legacy_flag") else context.pages[-1]
         assert state["page"] is selected
         assert playwright_actions.get_driver() is selected
         assert state["frame"] is None and state["frame_stack"] == []
