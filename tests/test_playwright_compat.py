@@ -1,3 +1,5 @@
+import asyncio
+import json
 import shutil
 import threading
 import time
@@ -136,7 +138,8 @@ def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
     image = tmp_path / "image.png"
     image.write_bytes(b"image bytes")
     captured = []
-    context = SimpleNamespace(pages=[], grant_permissions=lambda *args, **kwargs: None)
+    context = SimpleNamespace(pages=[], grant_permissions=lambda *args, **kwargs: None,
+                              wait_for_event=lambda *args, **kwargs: None)
     state = {"context": context}
     class Page:
         url = "https://example.test"
@@ -144,6 +147,8 @@ def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
             self.name = title
         def title(self):
             return self.name
+        def is_closed(self):
+            return False
         def close(self):
             context.pages.remove(self)
         def evaluate(self, script, value):
@@ -165,6 +170,14 @@ def test_review_clipboard_variable_and_multiple_tabs(monkeypatch, tmp_path):
     context.pages = pages.copy()
     assert playwright_actions.close_tab([("tabs", "optional parameter", "['first', 'third']")]) == "passed"
     assert context.pages == [pages[1]]
+    context.pages = pages.copy()
+    pages[0].name = "third backup"
+    assert playwright_actions.close_tab([
+        ("*window title", "element parameter", "third"),
+        ("window index", "element parameter", "0"),
+        ("tabs", "optional parameter", "['third']"),
+    ]) == "passed"
+    assert context.pages == pages[:2]
 
 
 def test_review_electron_ports(monkeypatch):
@@ -581,7 +594,7 @@ def test_open_new_tab_makes_new_page_active(monkeypatch):
 
 
 def test_reused_browser_applies_element_wait(monkeypatch):
-    state = {"page": object()}
+    state = {"page": SimpleNamespace(title=lambda: "Existing page")}
     shared = {}
     monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"default": state})
     monkeypatch.setattr(playwright_actions, "_set_active", lambda _driver_id: None)
@@ -602,6 +615,250 @@ def test_reused_browser_applies_element_wait(monkeypatch):
         ("wait time to appear element", "optional parameter", "60"),
     ]) is state
     assert shared["element_wait"] == 60.0
+
+
+@pytest.mark.parametrize("scenario", [
+    "delayed_index", "queued_title", "queued_index_zero", "delayed_title",
+    "trimmed_title", "partial_title", "negative_index", "missing_title", "missing_index",
+    "mixed_title_index", "mixed_title_index_legacy_flag", "mixed_index_title",
+    "repeated_index", "repeated_title", "partial_then_exact",
+])
+def test_switch_tab_keeps_requested_page_and_bridge(page, monkeypatch, scenario):
+    context = page.context.browser.new_context()
+    original = context.new_page()
+    original.set_content("<title>Original</title>")
+    bridge_calls = []
+    state = {
+        "context": context, "page": original, "downloads": [], "capturing_network": False,
+        "selenium_bridge": SimpleNamespace(switch_to=SimpleNamespace(window=bridge_calls.append)),
+    }
+    shared = {}
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"tabs": state})
+    monkeypatch.setattr(playwright_actions._browser_state, "current_driver_id", "tabs")
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_page", None)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: shared.get(name))
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda name, value, **_: shared.__setitem__(name, value))
+    monkeypatch.setattr(playwright_actions.sr, "Shared_Variable_Export", lambda: shared)
+    monkeypatch.setattr(playwright_actions.CommonUtil, "set_screenshot_vars", lambda _: None)
+    monkeypatch.setattr(playwright_actions, "_publish_selenium_bridge", lambda _: None)
+    try:
+        playwright_actions._wire_page(state, original)
+        playwright_actions._set_active("tabs")
+        bridge_calls.clear()
+        frame = object()
+        state["frame"], state["frame_stack"] = frame, [frame]
+        field, value = "tab title", "Target"
+        if scenario in ("delayed_index", "queued_title", "queued_index_zero"):
+            original.evaluate("""() => setTimeout(() => {
+                const popup = window.open('about:blank');
+                popup.document.title = 'Target';
+            }, 300)""")
+            if scenario.startswith("queued"):
+                # Model a Selenium/Python action: the browser runs while events queue.
+                time.sleep(0.7)
+                assert len(context.pages) == 1
+            if scenario == "delayed_index":
+                field, value = "window index", "1"
+            elif scenario == "queued_index_zero":
+                field, value = "tab index", "0"
+        elif scenario.startswith("missing"):
+            if scenario == "missing_index":
+                field, value = "tab index", "99"
+        else:
+            target = context.new_page()
+            assert state["page"] is original and state["frame"] is frame
+            assert state["frame_stack"] == [frame]
+            target.set_content("<title>Target</title>")
+            if scenario == "delayed_title":
+                target.evaluate("""() => {
+                    document.title = 'Loading';
+                    setTimeout(() => document.title = 'Target', 300);
+                }""")
+            elif scenario == "trimmed_title":
+                field, value = "window title", " Target "
+            elif scenario == "partial_title":
+                field, value = "*tab title", " ARG "
+            elif scenario == "negative_index":
+                field, value = "tab index", "-1"
+
+        rows = [(field, "input parameter", value),
+                ("wait", "optional parameter", "0.05" if scenario.startswith("missing") else "2"),
+                ("switch window/tab", "selenium action", "switch window or frame")]
+        if scenario in ("mixed_title_index", "mixed_title_index_legacy_flag"):
+            target.set_content("<title>SuccessKPI</title>")
+            if scenario == "mixed_title_index":
+                original.set_content("<title>SuccessKPI</title>")
+            rows = [("window title", "element parameter", "SuccessKPI"),
+                    ("window index", "element parameter", "0" if scenario.endswith("legacy_flag") else "1"),
+                    ("switch window/tab", "selenium action", "switch window/tab")]
+            if scenario.endswith("legacy_flag"):
+                rows.insert(0, ("playwright", "optional parameter", "true"))
+        elif scenario in ("mixed_index_title", "repeated_index"):
+            rows.insert(0, ("window index", "element parameter", "0"))
+            if scenario == "repeated_index":
+                rows[1] = ("window index", "element parameter", "1")
+        elif scenario == "repeated_title":
+            rows.insert(0, ("window title", "element parameter", "Original"))
+        elif scenario == "partial_then_exact":
+            rows[0] = ("window title", "element parameter", "get")
+            rows.insert(0, ("*window title", "element parameter", "Unused"))
+        shared["zeuz_browser_driver"] = "playwright"
+        routed = sequential_actions._route_playwright_action(rows[-1][0], rows[-1][1], rows)
+        assert sequential_actions.common.get_module_and_function(rows[-1][0], routed)[:2] == (
+            "playwright", "switch_window_or_tab",
+        )
+        result = playwright_actions.switch_window_or_tab(rows)
+        if scenario.startswith("missing"):
+            assert result == "zeuz_failed"
+            assert state["page"] is original and state["frame"] is frame
+            assert state["frame_stack"] == [frame]
+            assert shared["playwright_page"] is original
+            assert bridge_calls == []
+            return
+
+        assert result == "passed"
+        selected = original if scenario in ("queued_index_zero", "mixed_title_index_legacy_flag") else context.pages[-1]
+        assert state["page"] is selected
+        assert playwright_actions.get_driver() is selected
+        assert state["frame"] is None and state["frame_stack"] == []
+        assert shared["playwright_page"] is shared["common_driver"] is selected
+        session = context.new_cdp_session(selected)
+        try:
+            target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+        finally:
+            session.detach()
+        assert bridge_calls == [target_id]
+
+        # The same selection helper and bridge alignment serve tab closing/opening.
+        if scenario == "trimmed_title":
+            assert playwright_actions.close_tab([("tabs", "optional parameter", "[1]")]) == "passed"
+            assert playwright_actions.get_page() is original
+            assert shared["playwright_page"] is original
+            assert len(bridge_calls) == 2 and bridge_calls[-1] != target_id
+            assert playwright_actions.open_new_tab([("open new tab", "action", "open new tab")]) == "passed"
+            assert playwright_actions.get_page() is context.pages[-1]
+            assert len(bridge_calls) == 3
+    finally:
+        context.close()
+
+
+def test_tab_wait_rejects_invalid_values(monkeypatch):
+    monkeypatch.setattr(playwright_actions, "_state", lambda: {"context": object()})
+    for value in ("-1", "nan", "inf", "invalid"):
+        with pytest.raises(ValueError):
+            playwright_actions._find_page([("timeout", "optional parameter", value)])
+
+
+@pytest.mark.parametrize("closed_target", ["active", "popup", "last_page", "context", "browser"])
+def test_go_to_link_recovers_closed_cached_target(page, monkeypatch, closed_target):
+    browser_type = page.context.browser.browser_type
+    browser = browser_type.launch(channel="chrome", headless=True)
+    context = browser.new_context()
+    context.add_cookies([{
+        "name": "login", "value": "retained", "domain": "example.test", "path": "/",
+    }])
+    original = context.new_page()
+    bridge_calls = []
+    bridge = SimpleNamespace(
+        switch_to=SimpleNamespace(window=bridge_calls.append),
+        quit=lambda: bridge_calls.append("quit"),
+    )
+    state = {
+        "browser": browser, "context": context, "page": original,
+        "wait_until": "load", "downloads": [], "capturing_network": False,
+        "selenium_bridge": bridge,
+    }
+    other = {"page": object()}
+    shared = {"dependency": {"Browser": "Chromium Headless"}}
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {
+        "portal": state, "other": other,
+    })
+    monkeypatch.setattr(playwright_actions._browser_state, "current_driver_id", None)
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_page", None)
+    monkeypatch.setattr(playwright_actions._browser_state, "_playwright", SimpleNamespace(
+        chromium=browser_type,
+    ))
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: shared.get(name))
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda name, value, **_: shared.__setitem__(name, value))
+    monkeypatch.setattr(playwright_actions.sr, "Remove_From_Shared_Variables", lambda name: shared.pop(name, None))
+    monkeypatch.setattr(playwright_actions.sr, "Shared_Variable_Export", lambda: shared)
+    monkeypatch.setattr(playwright_actions.CommonUtil, "set_screenshot_vars", lambda _: None)
+    monkeypatch.setattr(playwright_actions, "_publish_selenium_bridge", lambda _: None)
+    monkeypatch.setattr(playwright_actions, "_attach_selenium_bridge", lambda *_: None)
+    url = "data:text/html,<title>login</title>"
+    try:
+        playwright_actions._wire_page(state, original)
+        target = context.new_page()
+        assert state["page"] is original
+        playwright_actions._wire_page(state, target)
+        assert state["page"] is target
+        playwright_actions._set_active("portal")
+        bridge_calls.clear()
+        if closed_target == "popup":
+            target.close()
+        elif closed_target == "last_page":
+            original.close()
+            target.close()
+        elif closed_target == "context":
+            context.close()
+        elif closed_target == "browser":
+            browser.close()
+
+        assert playwright_actions.Go_To_Link([
+            ("driver id", "optional parameter", "portal"),
+            ("go to link", "selenium action", url),
+        ]) == "passed"
+        recovered = playwright_actions._browser_state.playwright_details["portal"]
+        assert not recovered["page"].is_closed()
+        assert recovered["page"].title() == "login"
+        assert recovered["page"].url == url
+        assert playwright_actions._browser_state.current_driver_id == "portal"
+        assert shared["playwright_page"] is recovered["page"]
+        assert shared["common_driver"] is recovered["page"]
+        assert playwright_actions._browser_state.playwright_details["other"] is other
+        if closed_target in ("active", "popup", "last_page"):
+            assert recovered is state
+            assert recovered["context"] is context
+            assert context.cookies()[0]["value"] == "retained"
+            session = context.new_cdp_session(recovered["page"])
+            try:
+                target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+            finally:
+                session.detach()
+            assert bridge_calls == [target_id, target_id]
+            if closed_target == "popup":
+                assert recovered["page"] is original
+        else:
+            assert recovered is not state
+            assert not browser.is_connected()
+            assert recovered["browser"].is_connected()
+            assert bridge_calls == ["quit"]
+    finally:
+        recovered = playwright_actions._browser_state.playwright_details.get("portal")
+        if recovered is not None and recovered["browser"] is not browser:
+            recovered["browser"].close()
+        browser.close()
+
+
+def test_cached_browser_preserves_non_closure_errors(monkeypatch):
+    from playwright.sync_api import Error
+
+    context = object()
+
+    def fail_title():
+        raise Error("Page crashed")
+
+    state = {
+        "page": SimpleNamespace(title=fail_title, is_closed=lambda: False),
+        "context": context,
+        "browser": SimpleNamespace(is_connected=lambda: True, contexts=[context]),
+    }
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {"default": state})
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda _: {"Browser": "Chrome"})
+
+    with pytest.raises(Error, match="Page crashed"):
+        playwright_actions._launch([])
+    assert playwright_actions._browser_state.playwright_details["default"] is state
 
 
 def test_go_to_link_v2_retains_driver_tag(monkeypatch):
@@ -994,7 +1251,7 @@ def test_visible_disabled_element_is_located_and_its_live_value_saved(monkeypatc
         is_enabled=lambda: False,
         locator=lambda _selector: SimpleNamespace(count=lambda: 0),
         get_attribute=lambda _name: None,
-        input_value=lambda: "user@example.test",
+        evaluate=lambda _script: "user@example.test",
     )
     matches = SimpleNamespace(count=lambda: 1, nth=lambda _index: element)
     root = SimpleNamespace(locator=lambda _selector: matches)
@@ -1160,12 +1417,19 @@ def test_raw_css_locator_names(name):
     ]) == (".target", "css")
 
 
-def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
+def test_text_clicks_clears_and_types_with_delay(monkeypatch):
     events = []
+    handle = SimpleNamespace(
+        click=lambda **options: events.append(("click", options)),
+        press=lambda key: events.append(key),
+        evaluate=lambda _: "uncleared value",
+        fill=lambda value: events.append(("fill", value)),
+        type=lambda value, **options: events.append((value, options)),
+        dispose=lambda: events.append("dispose"),
+    )
     element = SimpleNamespace(
         get_attribute=lambda _name: "password",
-        clear=lambda: events.append("clear"),
-        press_sequentially=lambda value, **options: events.append((value, options)),
+        element_handle=lambda: handle,
     )
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
 
@@ -1174,7 +1438,8 @@ def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
         ("delay", "optional parameter", "0.05"),
         ("text", "playwright action", "secret"),
     ]) == "passed"
-    assert events == ["clear", ("secret", {"delay": 50})]
+    assert events == [("click", {"timeout": 5000}), "ControlOrMeta+A", "Delete", ("fill", ""),
+                      ("secret", {"delay": 50}), ("click", {"timeout": 5000}), "dispose"]
 
 
 @pytest.mark.parametrize(
@@ -1186,19 +1451,67 @@ def test_text_clears_then_presses_sequentially_with_delay(monkeypatch):
 )
 def test_text_preserves_existing_value_when_requested(monkeypatch, option):
     events = []
+    handle = SimpleNamespace(
+        click=lambda **options: events.append(("click", options)),
+        press=lambda key: events.append(key),
+        type=lambda value, **options: events.append((value, options)),
+        dispose=lambda: events.append("dispose"),
+    )
     element = SimpleNamespace(
         get_attribute=lambda _name: "text",
-        clear=lambda: events.append("clear"),
-        press_sequentially=lambda value, **options: events.append((value, options)),
+        element_handle=lambda: handle,
     )
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
+    monkeypatch.setattr(playwright_actions, "_type_text",
+                        lambda element, value, delay: element.type(value, delay=delay))
 
     assert playwright_actions.Enter_Text_In_Text_Box([
         ("id", "element parameter", "name"),
         option,
         ("text", "playwright action", "more"),
     ]) == "passed"
-    assert events == [("more", {})]
+    assert events == [("click", {"timeout": 5000}), "ControlOrMeta+End",
+                      ("more", {"delay": 0}), ("click", {"timeout": 5000}), "dispose"]
+
+
+def test_attribute_list_stops_on_target_lookup_failure(monkeypatch):
+    monkeypatch.setattr(playwright_actions, "_element",
+                        lambda _rows, **kwargs: "zeuz_failed" if kwargs else object())
+    extracted = []
+    monkeypatch.setattr(playwright_actions, "_return_attribute",
+                        lambda element, _attribute: extracted.append(element))
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    assert playwright_actions.save_attribute_values_in_list([
+        ("attributes", "target parameter", 'tag="button", return="text"'),
+        ("save attribute values in list", "action", "values"),
+    ]) == "zeuz_failed"
+    assert extracted == []
+
+
+@pytest.mark.parametrize("setting", ["zeuz_failed", "", "false", "TEST-OTHER"])
+def test_diagnostics_only_touch_browser_when_enabled(monkeypatch, setting):
+    monkeypatch.setattr(playwright_actions.CommonUtil, "current_tc_no", "TEST-DIAG")
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_, **__: setting)
+    touched = []
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: touched.append("browser"))
+    monkeypatch.setattr(playwright_actions, "_log", lambda *_: touched.append("log"))
+    playwright_actions._diagnostic("test")
+    assert touched == []
+
+
+def test_diagnostic_failure_preserves_original_exception(monkeypatch):
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_, **__: "true")
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: None)
+    original = ValueError("action error")
+    captured = []
+    monkeypatch.setattr(playwright_actions.CommonUtil, "Exception_Handler",
+                        lambda info: captured.append(info[1]) or "zeuz_failed")
+
+    def Click_Element(_data):
+        raise original
+
+    assert playwright_actions._action_guard(Click_Element)([]) == "zeuz_failed"
+    assert captured == [original]
 
 
 def test_file_inputs_work_through_text_and_locator_free_upload(monkeypatch, tmp_path):
@@ -1507,6 +1820,478 @@ def test_text_filter_fallback_preserves_normal_lookup(page, monkeypatch):
         assert saved["zeuz_element"].get_attribute("id") == "second"
     finally:
         test_page.close()
+
+
+def test_js_click_selects_widget_that_requires_mouse_down_and_up(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <div id="grid"><button id="row">Conversation</button></div>
+            <div id="details" hidden>Selected conversation</div>
+            <script>
+                let down = false, up = false;
+                grid.addEventListener('mousedown', e => down = e.buttons === 1 && e.view === window);
+                grid.addEventListener('mouseup', () => up = down);
+                grid.addEventListener('click', () => details.hidden = !(down && up));
+            </script>
+        ''')
+        assert playwright_actions.Click_Element([
+            ("id", "element parameter", "row"),
+            ("use js", "optional parameter", "yes"),
+            ("click", "action", "click"),
+        ]) == "passed"
+        assert tab.locator('#details').is_visible()
+    finally:
+        tab.close()
+
+
+def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    tab.set_default_timeout(200)
+    logs = []
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
+    monkeypatch.setattr(playwright_actions.CommonUtil, "current_tc_no", "TEST-DIAG")
+    monkeypatch.setattr(playwright_actions.CommonUtil, "current_step_id", 1234)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables",
+                        lambda name, **_: "TEST-OTHER, TEST-DIAG" if name == "zeuz_playwright_diagnostics" else 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <button id="target" style="position:absolute;left:8px;top:8px;width:100px;height:30px">Edit</button>
+            <div id="cover" style="position:absolute;left:8px;top:8px;width:100px;height:30px">Cover</div>
+            <input id="text" style="margin-top:100px">
+            <input type="password" value="do-not-log-password">
+            <input type="checkbox" id="selected" checked>
+            <div role="dialog" id="overlay">Dialog</div>
+            <iframe style="position:absolute;left:8px;top:200px;width:200px;height:100px"
+                    srcdoc="<button id='inside'>Inside</button>"></iframe>
+            <div id="frame-cover" style="position:absolute;left:8px;top:200px;width:210px;height:110px"></div>
+        ''')
+        click = [("id", "element parameter", "target"), ("click", "action", "click")]
+        assert playwright_actions.Click_Element(click + [("use js", "optional parameter", "true")]) == "passed"
+        before = json.loads(logs[0].removeprefix("PW_DIAGNOSTIC "))
+        assert before["case"] == "TEST-DIAG" and before["step_id"] == 1234
+        assert before["target"]["target"]["id"] == "target"
+        assert before["target"]["hit_at_center"]["id"] == "cover"
+        assert any(overlay["id"] == "overlay" for overlay in before["frames"][0]["overlays"])
+        assert len(before["frames"]) == 2
+        after = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert any(event["type"] == "click" and event["target"]["id"] == "target"
+                   for event in after["frames"][0]["events"])
+        playwright_actions._diagnostic("iframe.target", tab.frame_locator('iframe').locator('#inside'))
+        iframe = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert iframe["target"]["hit_at_center"]["id"] == "inside"
+        assert iframe["main_hit_at_center"]["id"] == "frame-cover"
+        assert iframe["main_rect"]["y"] > iframe["target"]["rect"]["y"]
+        tab.locator('#cover').evaluate("el => el.remove()")
+        tab.locator('#target').evaluate("""el => el.addEventListener('dblclick', () => {
+            el.setAttribute('aria-selected', 'true');
+            document.querySelector('#selected').checked = false;
+        })""")
+        assert playwright_actions.Double_Click_Element([
+            ("id", "element parameter", "target"), ("double click", "action", "double click"),
+        ]) == "passed"
+        before_double = json.loads(logs[-2].removeprefix("PW_DIAGNOSTIC "))
+        assert before_double["stage"] == "double_click.target"
+        assert next(control for control in before_double["frames"][0]["controls"]
+                    if control["id"] == "selected")["checked"] is True
+        after_double = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert after_double["stage"] == "Double_Click_Element.after"
+        double_event = next(event for event in after_double["frames"][0]["events"]
+                            if event["type"] == "dblclick")
+        assert double_event["detail"] == 2 and double_event["trusted"] is True
+        assert after_double["frames"][0]["active"]["aria-selected"] == "true"
+        assert next(control for control in after_double["frames"][0]["controls"]
+                    if control["id"] == "selected")["checked"] is False
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "text"), ("text", "action", "do-not-log-input"),
+        ]) == "passed"
+        after = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
+        assert after["frames"][0]["active"]["id"] == "text"
+        assert after["frames"][0]["active"]["value_length"] == len("do-not-log-input")
+        assert any(event["type"] == "input" for event in after["frames"][0]["events"])
+        tab.locator('#text').evaluate("el => { for(let i=0; i<40; i++) el.dispatchEvent(new Event('input', {bubbles:true})); }")
+        playwright_actions._diagnostic("bounded")
+        assert len(json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))["frames"][0]["events"]) == 30
+        assert "do-not-log-input" not in "\n".join(logs)
+        assert "do-not-log-password" not in "\n".join(logs)
+        tab.locator('#target').evaluate("el => el.disabled = true")
+        assert playwright_actions.Click_Element(click) == "zeuz_failed"
+        assert json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))["stage"] == "Click_Element.error"
+
+        def broken_log(*_):
+            raise OSError("diagnostic log unavailable")
+
+        monkeypatch.setattr(playwright_actions, "_log", broken_log)
+        assert playwright_actions.Click_Element(click + [("use js", "optional parameter", "true")]) == "passed"
+    finally:
+        tab.close()
+
+
+def test_click_recovers_from_parent_header_covering_iframe_checkbox(page, monkeypatch):
+    tab = page.context.browser.new_page(viewport={"width": 1920, "height": 1080})
+    tab.set_default_timeout(250)
+    logs = []
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab.frame_locator('iframe'))
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <style>body{margin:0}header{position:fixed;top:0;height:100px;width:100%;
+                background:gray;z-index:10}iframe{position:fixed;top:0;width:1000px;height:463px;border:0}</style>
+            <header>Navigation</header>
+            <iframe sandbox="allow-scripts" srcdoc="<style>body{margin:0}
+                #queue{position:absolute;top:0}#choice{position:absolute;top:83px}</style>
+                <button id='queue'>Queue</button>
+                <label id='choice'><input id='check' type='checkbox'>agents</label>"></iframe>
+            <div style="height:1500px"></div>
+        ''')
+        assert playwright_actions.scroll_to_element([
+            ("id", "element parameter", "queue"), ("scroll to element", "action", "scroll"),
+        ]) == "passed"
+        frame = tab.frame_locator('iframe')
+        box = frame.locator('#choice').bounding_box()
+        assert tab.evaluate("box => document.elementFromPoint(box.x + box.width/2, box.y + box.height/2).tagName", box) == "HEADER"
+        assert playwright_actions.Click_Element([
+            ("id", "element parameter", "choice"), ("click", "action", "click"),
+        ]) == "passed"
+        assert frame.locator('#check').is_checked()
+        assert any('JavaScript' in message for message in logs)
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("reason,visible,enabled,offset", [
+    ("element is not stable", True, True, False),
+    ("element is outside of the viewport", True, True, True),
+    ("intercepts pointer events", False, True, False),
+    ("intercepts pointer events", True, False, False),
+    ("intercepts pointer events", True, True, True),
+])
+def test_click_fallback_preserves_other_failures(monkeypatch, reason, visible, enabled, offset):
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    error = PlaywrightTimeoutError(reason)
+    captured, scripts = [], []
+
+    def fail_click(**_):
+        raise error
+
+    element = SimpleNamespace(click=fail_click, is_visible=lambda: visible,
+                              is_enabled=lambda: enabled,
+                              bounding_box=lambda: {"width": 100, "height": 20},
+                              evaluate=lambda script: scripts.append(script))
+    monkeypatch.setattr(playwright_actions, "_element", lambda _: element)
+    monkeypatch.setattr(playwright_actions, "_diagnostic", lambda *_: None)
+    monkeypatch.setattr(playwright_actions.CommonUtil, "Exception_Handler",
+                        lambda info: captured.append(info[1]) or "zeuz_failed")
+    rows = [("click", "action", "click")]
+    if offset:
+        rows.append(("offset", "optional parameter", "0,0"))
+    assert playwright_actions.Click_Element(rows) == "zeuz_failed"
+    assert captured == [error]
+    assert scripts == []
+
+
+@pytest.mark.parametrize("fixed,child_scroll_noop", [(False, False), (False, True), (True, True)])
+def test_click_recenters_offscreen_iframe_target_and_retries_once(page, monkeypatch, fixed, child_scroll_noop):
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    tab = page.context.browser.new_page(viewport={"width": 1920, "height": 1080})
+    tab.set_default_timeout(250)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    logs = []
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
+    try:
+        tab.set_content('''
+            <style>body{margin:0}header{position:fixed;top:0;height:100px;width:100%;
+                background:gray;z-index:10}iframe{margin-top:200px;width:1000px;height:463px;border:0}</style>
+            <header>Navigation</header>
+            <iframe sandbox="allow-scripts" srcdoc="<style>body{margin:0}
+                #choice{position:absolute;top:83px}</style>
+                <label id='choice'><input id='check' type='checkbox'>Y</label>"></iframe>
+            <div style="height:1500px"></div>
+        ''')
+        if fixed:
+            tab.locator('iframe').evaluate("el => el.style.cssText += ';position:fixed;top:-400px'")
+        else:
+            tab.evaluate('scrollTo(0, 395)')
+        frame = tab.frame_locator('iframe')
+        target = frame.locator('#choice')
+        assert target.bounding_box()['y'] < 0
+        target.evaluate("el => el.addEventListener('click', e => window.clickTrusted = e.isTrusted)")
+        if child_scroll_noop:
+            # Model the deployed iframe: its scrollIntoView leaves the parent still scrolled.
+            target.evaluate("el => el.scrollIntoView = () => {}")
+        native_click = target.click
+        attempts = []
+
+        def click(**options):
+            attempts.append(options)
+            if not fixed and len(attempts) == 1:
+                # Reproduce the deployed browser's failed automatic scroll. The
+                # recovery scroll and subsequent click use the real browser.
+                raise PlaywrightTimeoutError('element is outside of the viewport')
+            if not fixed:
+                assert target.bounding_box()['y'] >= 100
+            return native_click(**options)
+
+        monkeypatch.setattr(target, 'click', click)
+        monkeypatch.setattr(playwright_actions, '_element', lambda _: target)
+        result = playwright_actions.Click_Element([('click', 'action', 'click')])
+        assert len(attempts) == 2
+        assert result == ('zeuz_failed' if fixed else 'passed')
+        assert frame.locator('#check').is_checked() == (not fixed)
+        if not fixed:
+            box = target.bounding_box()
+            assert box['y'] >= 100
+            assert target.evaluate('() => window.clickTrusted') is True
+        assert not any('using JavaScript' in message for message in logs)
+    finally:
+        tab.close()
+
+
+def test_save_value_uses_live_property_or_attribute(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    saved = {}
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables",
+                        lambda name, value: saved.__setitem__(name, value) or "passed")
+    try:
+        tab.set_content('''
+            <span id="theme" aria-label="Select a theme">Select a theme</span>
+            <span id="attribute" value="custom">Custom</span>
+            <input id="input" value="initial">
+            <textarea id="textarea">initial</textarea>
+            <select id="select"><option value="initial">Initial</option>
+                <option value="selected">Selected</option></select>
+        ''')
+        tab.locator('#input').fill('')
+        tab.locator('#textarea').fill('edited')
+        tab.locator('#select').select_option('selected')
+        for target, expected in [('theme', None), ('attribute', 'custom'),
+                                 ('input', ''), ('textarea', 'edited'), ('select', 'selected')]:
+            assert playwright_actions.Save_Attribute([
+                ("id", "element parameter", target),
+                ("value", "save parameter", "value"),
+            ]) == "passed"
+            assert saved['value'] == expected
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("append", [False, True])
+def test_text_continues_when_focused_frame_input_is_outside_viewport(page, monkeypatch, append):
+    tab = page.context.browser.new_page()
+    tab.set_default_timeout(200)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''<iframe style="position:fixed;top:-200px;height:300px"
+            srcdoc="<input id='search' value='old'>"></iframe>''')
+        frame = tab.frames[1]
+        monkeypatch.setattr(playwright_actions, "get_driver", lambda: frame)
+        field = frame.locator('#search')
+        field.focus()
+        assert field.bounding_box()['y'] < 0
+        assert field.evaluate('el => el === document.activeElement')
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "search"),
+            ("allow hidden", "optional parameter", "yes"),
+            ("append", "optional parameter", str(append).lower()),
+            ("text", "action", "agents"),
+        ]) == "passed"
+        assert field.input_value() == ('oldagents' if append else 'agents')
+    finally:
+        tab.close()
+
+
+def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    tab.set_default_timeout(1000)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <button id="toggle" onclick="panel.hidden=!panel.hidden">Dropdown</button>
+            <div id="panel" hidden>Incomplete</div>
+            <textarea id="text" class="ng-pristine"
+                onclick="this.className='ng-touched'"
+                oninput="this.className='ng-dirty';panel.hidden=false">old value</textarea>
+            <script>
+                window.keys = [];
+                document.addEventListener('keydown', e => keys.push(e.key));
+                document.addEventListener('click', e => {
+                    if (e.target.id !== 'toggle') panel.hidden = true;
+                });
+            </script>
+        ''')
+        tab.locator('#toggle').click()
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("class", "element parameter", "ng-pristine"),
+            ("text", "action", "new"),
+        ]) == "passed"
+        assert tab.locator('#text').input_value() == "new"
+        assert 'Delete' in tab.evaluate('keys')
+        assert tab.evaluate('keys')[-3:] == ['n', 'e', 'w']
+        assert not tab.locator('#panel').is_visible()
+        tab.locator('#toggle').click()
+        assert tab.locator('#panel').is_visible()
+        for option in [("append", "optional parameter", "true"),
+                       ("clear", "optional parameter", "false")]:
+            tab.locator('#text').fill('first\nlast')
+            assert playwright_actions.Enter_Text_In_Text_Box([
+                ("id", "element parameter", "text"),
+                ("text", "action", " more"), option,
+            ]) == "passed"
+            assert tab.locator('#text').input_value() == 'first\nlast more'
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("in_frame,shift,tag", [
+    (False, False, "textarea"), (True, False, "textarea"),
+    (False, True, "textarea"), (False, False, "input"),
+])
+def test_batched_text_preserves_native_keyboard_events(page, in_frame, shift, tag):
+    tab = page.context.browser.new_page()
+    try:
+        tab.set_content(f'<{tag} id="field"></{tag}><button id="other">Other</button>'
+                        f'<iframe srcdoc="<{tag} id=field></{tag}>"></iframe>')
+        frame = tab.frames[1] if in_frame else tab.main_frame
+        field = frame.locator('#field')
+        frame.evaluate('''() => {
+            window.events = [];
+            const field = document.querySelector('#field');
+            field.addEventListener('keydown', e => { if (e.key.toLowerCase() === 'x') e.preventDefault(); });
+            for (const type of ['keydown', 'keypress', 'beforeinput', 'input', 'keyup'])
+                field.addEventListener(type, e => events.push([
+                    type, e.key, e.code, e.inputType, e.data, e.isTrusted,
+                    e.shiftKey, e.ctrlKey, e.repeat
+                ]));
+        }''')
+        value = 'aAx9!+;é🙂\n中\t'
+        outcomes = []
+        for batched in (False, True):
+            field.fill('')
+            if tag == "input":
+                field.fill('seed')
+                tab.locator('#other').click()
+            if shift:
+                tab.keyboard.down('Shift')
+            frame.evaluate('events = []')
+            if batched:
+                handle = field.element_handle()
+                try:
+                    playwright_actions._type_text(handle, value)
+                finally:
+                    handle.dispose()
+            else:
+                field.type(value)
+            outcomes.append((field.input_value(), frame.evaluate('events')))
+            if shift:
+                tab.keyboard.up('Shift')
+        assert outcomes[0] == outcomes[1]
+        assert all(event[5] for event in outcomes[1][1])  # Native, trusted events.
+        assert 'x' not in outcomes[1][0].lower()  # Keydown cancellation is respected.
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("action,value,targeted", [
+    ("text", "test capture feedback", True),
+    ("text", "test action item", True),
+    ("keystroke chars", "test capture feedback", True),
+    ("keystroke chars", "test action item", False),
+])
+def test_text_with_deferred_model_updates_keeps_all_characters(page, monkeypatch, action, value, targeted):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''<textarea id="field"></textarea><script>
+            window.pending = 0;
+            document.querySelector('#field').addEventListener('input', async event => {
+                const field = event.target;
+                let value = field.value;
+                if (value.length > 1) {
+                    value = await Promise.resolve(value);
+                    window.pending++;
+                    setTimeout(() => { field.value = value; window.pending--; }, 10);
+                }
+            });
+        </script>''')
+        for _ in range(3):
+            tab.locator('#field').fill('')
+            rows = [("id", "element parameter", "field")] if targeted else []
+            rows.append((action, "action", value))
+            run = (playwright_actions.Enter_Text_In_Text_Box if action == "text"
+                   else playwright_actions.Keystroke_For_Element)
+            assert run(rows) == "passed"
+            tab.wait_for_function('pending === 0')
+            assert tab.locator('#field').input_value() == value
+    finally:
+        tab.close()
+
+
+def test_batched_text_drains_queued_keys_before_reporting_error(page, monkeypatch):
+    finished = []
+
+    async def down(key):
+        await asyncio.sleep(0)
+        if key == 'a':
+            raise ValueError('key dispatch failed')
+
+    async def up(key):
+        for _ in range(3):
+            await asyncio.sleep(0)
+        finished.append(key)
+
+    monkeypatch.setattr(page.keyboard._impl_obj, "down", down)
+    monkeypatch.setattr(page.keyboard._impl_obj, "up", up)
+    element = SimpleNamespace(type=lambda _: None,
+                              owner_frame=lambda: page.main_frame)
+    with pytest.raises(ValueError, match='key dispatch failed'):
+        playwright_actions._type_text(element, 'ab')
+    assert finished == ['a', 'b']
+
+
+@pytest.mark.parametrize("option", ["allow hidden", "allow_hidden", "allow disable", "allow_disable"])
+def test_target_options_in_both_list_actions(page, monkeypatch, option):
+    tab = page.context.browser.new_page()
+    saved = {}
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables",
+                        lambda name, value: saved.__setitem__(name, value) or "passed")
+    try:
+        tab.set_content('<section id="root"><button id="shown">Shown</button>'
+                        '<button id="hidden" hidden>Hidden</button></section>')
+        for value, expected in [("yes", ["shown", "hidden"]), ("no", ["shown"])]:
+            rows = [("id", "element parameter", "root"),
+                    ("attributes", "target parameter", f'tag="button", {option}="{value}", return="id"')]
+            assert playwright_actions.save_attribute_values_in_list(rows + [
+                ("save attribute values in list", "action", "values"),
+            ]) == "passed"
+            assert saved["values"] == expected
+            assert playwright_actions.save_web_elements_in_list(rows + [
+                ("save web elements in list", "action", "elements"),
+            ]) == "passed"
+            assert [element.get_attribute('id') for element in saved["elements"]] == expected
+    finally:
+        tab.close()
 
 
 def test_evaluator_text_does_not_reselect_existing_user(page, monkeypatch):

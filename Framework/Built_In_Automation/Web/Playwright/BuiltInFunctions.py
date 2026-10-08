@@ -1,9 +1,11 @@
 """Synchronous Playwright counterparts for ZeuZ Selenium actions."""
 
 import ast
+import asyncio
 import base64
 import functools
 import inspect
+import json
 import socket
 import sys
 import time
@@ -50,6 +52,92 @@ def _log(message, level=1):
 def _fail(message):
     _log(message, 3)
     return "zeuz_failed"
+
+
+_DIAGNOSTIC_SNAPSHOT = """element => {
+    const describe = el => {
+        if (!el || el.nodeType !== 1) return null;
+        const info = {};
+        for (const name of ['id', 'class', 'type', 'role', 'aria-expanded', 'aria-label',
+                            'aria-selected', 'aria-checked', 'aria-busy'])
+            info[name] = (el.getAttribute(name) || '').slice(0, 200);
+        info.tag = el.tagName;
+        if ('checked' in el) info.checked = el.checked;
+        if ('value' in el && el.type !== 'password') info.value_length = el.value.length;
+        return info;
+    };
+    if (!window.__zeuzPlaywrightDiagnostics) {
+        const events = [];
+        window.__zeuzPlaywrightDiagnostics = events;
+        for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click', 'dblclick', 'focusin', 'focusout', 'input', 'change'])
+            document.addEventListener(type, event => {
+                events.push({time: Date.now(), type, target: describe(event.target),
+                             parent: describe(event.target.parentElement),
+                             trusted: event.isTrusted, detail: event.detail,
+                             input_type: event.inputType || null});
+                if (events.length > 30) events.shift();
+            }, true);
+    }
+    const rect = element ? element.getBoundingClientRect() : null;
+    const overlays = [...document.querySelectorAll(
+        '[role="dialog"], [role="listbox"], .p-overlaypanel, .popover'
+    )].filter(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+    return {
+        time: Date.now(), frame: location.origin + location.pathname,
+        viewport: {width: innerWidth, height: innerHeight, scroll_x: scrollX, scroll_y: scrollY},
+        target: describe(element), parent: describe(element && element.parentElement),
+        rect: rect ? rect.toJSON() : null,
+        hit_at_center: rect ? describe(document.elementFromPoint(
+            rect.x + rect.width / 2, rect.y + rect.height / 2)) : null,
+        active: describe(document.activeElement),
+        hovered: [...document.querySelectorAll(':hover')].slice(-5).map(describe),
+        overlay_count: overlays.length, overlays: overlays.slice(0, 10).map(describe),
+        controls: [...document.querySelectorAll(
+            'input[type="checkbox"], [role="switch"], [aria-busy="true"]'
+        )].slice(0, 30).map(describe),
+        events: window.__zeuzPlaywrightDiagnostics
+    };
+}"""
+
+
+def _diagnostic(stage, element=None):
+    """Opt in with zeuz_playwright_diagnostics=true or comma-separated test case IDs."""
+    try:
+        setting = str(sr.Get_Shared_Variables("zeuz_playwright_diagnostics", log=False)).strip()
+        if (setting.lower() not in CommonUtil.affirmative_words
+                and (not CommonUtil.current_tc_no
+                     or CommonUtil.current_tc_no not in [case.strip() for case in setting.split(",")])):
+            return
+        record = {"stage": stage, "case": CommonUtil.current_tc_no,
+                  "step_id": CommonUtil.current_step_id, "step": CommonUtil.current_step_no,
+                  "action": CommonUtil.current_action_no}
+        if hasattr(element, "evaluate"):
+            try:
+                if LocateElement._is_playwright_locator(element):
+                    record["target"] = (element.evaluate(_DIAGNOSTIC_SNAPSHOT, timeout=500)
+                                        if element.count() else {"missing": True})
+                else:
+                    record["target"] = element.evaluate(_DIAGNOSTIC_SNAPSHOT)
+                box = (element.bounding_box(timeout=500) if LocateElement._is_playwright_locator(element)
+                       else element.bounding_box())
+                record["main_rect"] = box
+                if box:
+                    record["main_hit_at_center"] = get_page().evaluate("""point => {
+                        const el = document.elementFromPoint(point.x, point.y);
+                        return el ? {tag: el.tagName, id: el.id, class: el.getAttribute('class')} : null;
+                    }""", {"x": box["x"] + box["width"] / 2, "y": box["y"] + box["height"] / 2})
+            except Exception as error:
+                record["target"] = {"unavailable": type(error).__name__}
+        record["frames"] = []
+        for frame in get_page().frames:
+            try:
+                record["frames"].append(frame.evaluate(_DIAGNOSTIC_SNAPSHOT))
+            except Exception as error:
+                record["frames"].append({"unavailable": type(error).__name__})
+        _log("PW_DIAGNOSTIC " + json.dumps(record, ensure_ascii=False))
+    except Exception:
+        # Diagnostics must never change the action result, including during teardown.
+        pass
 
 
 def _rows(data_set):
@@ -112,6 +200,14 @@ def _element(data_set, all_elements=False, root=None):
 def _set_active(driver_id):
     _browser_state.current_driver_id = driver_id
     state = _browser_state.playwright_details[driver_id]
+    bridge = state.get("selenium_bridge")
+    if bridge is not None:
+        session = state["context"].new_cdp_session(state["page"])
+        try:
+            target_id = session.send("Target.getTargetInfo")["targetInfo"]["targetId"]
+        finally:
+            session.detach()
+        bridge.switch_to.window(target_id)
     _browser_state.playwright_page = state["page"]
     sr.Set_Shared_Variables("playwright_page", _browser_state.playwright_page)
     sr.Set_Shared_Variables("common_driver", state.get("frame") or _browser_state.playwright_page)
@@ -268,10 +364,11 @@ def _on_dialog(state, dialog):
         dialog.dismiss()
 
 
-def _wire_page(state, page):
-    state["page"] = page
-    state["frame"] = None
-    state["frame_stack"] = []
+def _wire_page(state, page, activate=True):
+    if activate:
+        state["page"] = page
+        state["frame"] = None
+        state["frame_stack"] = []
     wired_pages = state.setdefault("wired_pages", set())
     if id(page) in wired_pages:
         return
@@ -281,12 +378,12 @@ def _wire_page(state, page):
     if state["capturing_network"]:
         _capture_network_page(state, page)
     if not state.get("page_listener"):
-        page.context.on("page", lambda new_page: _wire_page(state, new_page))
+        page.context.on("page", lambda new_page: _wire_page(state, new_page, activate=False))
         state["page_listener"] = True
 
 
 def _launch(data_set):
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import Error, sync_playwright
 
     rows = _rows(data_set)
     for left, _middle, right in rows:
@@ -300,8 +397,26 @@ def _launch(data_set):
 
     driver_id = _driver_id(data_set, "default")
     if driver_id in _browser_state.playwright_details:
-        _set_active(driver_id)
-        return _browser_state.playwright_details[driver_id]
+        state = _browser_state.playwright_details[driver_id]
+        page = state["page"]
+        try:
+            # A live request also processes close events queued while Python or
+            # Selenium actions were running outside the Playwright thread.
+            page.title()
+        except Error:
+            browser, context = state["browser"], state["context"]
+            if not browser.is_connected() or context not in browser.contexts:
+                Tear_Down_Selenium([("driver id", "optional parameter", driver_id)])
+                state = None
+            elif page.is_closed():
+                pages = [page for page in context.pages if not page.is_closed()]
+                page = pages[-1] if pages else context.new_page()
+                _wire_page(state, page)
+            else:
+                raise
+        if state is not None:
+            _set_active(driver_id)
+            return state
 
     if _browser_state._playwright is None:
         _browser_state._playwright = sync_playwright().start()
@@ -575,6 +690,7 @@ def Click_Element(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
+    _diagnostic("click.target", element)
     options = {}
     for left, middle, right in _rows(data_set):
         if (
@@ -590,9 +706,46 @@ def Click_Element(data_set):
                 "y": box["height"] / 2 * (1 + y / 100),
             }
         elif _key(left) == "usejs" and right.strip().lower() in CommonUtil.affirmative_words:
-            element.evaluate("element => element.click()")
+            # Match Selenium's explicit JS click, including mouse-dependent widgets.
+            element.evaluate("""element => {
+                for (const type of ['mousedown', 'mouseup', 'click'])
+                    element.dispatchEvent(new MouseEvent(type, {
+                        bubbles: true, cancelable: true, view: window, buttons: 1
+                    }));
+            }""")
             return "passed"
-    element.click(**options)
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    for attempt in range(2):
+        try:
+            element.click(**options)
+            break
+        except PlaywrightTimeoutError as error:
+            outside = "outside of the viewport" in str(error)
+            intercepted = "intercepts pointer events" in str(error)
+            if (options or not (outside or intercepted)
+                    or not element.is_visible() or not element.is_enabled()):
+                raise
+            if outside and attempt == 0:
+                element.evaluate("el => el.scrollIntoView({block: 'center', inline: 'center'})")
+                # An iframe-local scroll may leave the outer page unchanged.
+                # Playwright bounding boxes use main-frame viewport coordinates.
+                box = element.bounding_box()
+                if box:
+                    get_page().evaluate("""box => window.scrollBy({
+                        left: box.x + box.width / 2 - window.innerWidth / 2,
+                        top: box.y + box.height / 2 - window.innerHeight / 2,
+                        behavior: 'instant'
+                    })""", box)
+                _log("Requested parent-page scroll for offscreen target; retrying the click", 2)
+                _diagnostic("click.repositioned", element)
+                continue
+            # Match Selenium's intercepted-click fallback, not unrelated timeouts.
+            if not intercepted:
+                raise
+            element.evaluate("element => element.click()")
+            _log("Element click was intercepted; clicked the element using JavaScript", 2)
+            break
     return "passed"
 
 
@@ -645,6 +798,7 @@ def Double_Click_Element(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
+    _diagnostic("double_click.target", element)
     element.dblclick()
     return "passed"
 
@@ -701,7 +855,7 @@ def Keystroke_For_Element(data_set):
     if element in failed_tag_list:
         return "zeuz_failed"
     if "chars" in field:
-        element.type(value) if element else keyboard.type(value)
+        _type_text(element, value)
     else:
         key, _, count = value.partition(",")
         combo = "+".join(
@@ -728,10 +882,46 @@ def Keystroke_For_Element(data_set):
     return "passed"
 
 
+def _type_text(element, value, delay=0):
+    if delay or not value:
+        (element if element is not None else get_page().keyboard).type(value, delay=delay)
+        return
+
+    if element is None:
+        keyboard = get_page().keyboard
+    else:
+        element.type("")  # Preserve native typing's focus and caret placement.
+        page = element.page if LocateElement._is_playwright_locator(element) else element.owner_frame().page
+        keyboard = page.keyboard
+
+    async def send_keys():
+        commands = []
+        for char in value:
+            # Match Playwright's US-layout keys and insertText for other characters.
+            if " " <= char <= "~" or char in "\n\r":
+                commands.extend((keyboard._impl_obj.down(char), keyboard._impl_obj.up(char)))
+            else:
+                commands.append(keyboard._impl_obj.insert_text(char))
+        commands = [asyncio.create_task(command) for command in commands]
+        # Reuse the action's call site; collecting a stack per key delays dispatch.
+        for command in commands:
+            command.__pw_stack_trace__ = asyncio.current_task().__pw_stack_trace__
+        results = await asyncio.gather(*commands, return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                raise result
+
+    # Queue native events like ChromeDriver send_keys, without per-event round trips.
+    # ponytail: sync/async bridge uses Playwright internals; replace when a public
+    # batched-key API exists. Browser event-parity tests cover dependency upgrades.
+    keyboard._sync(keyboard._impl_obj._channel._connection.wrap_api_call(send_keys))
+
+
 def Enter_Text_In_Text_Box(data_set):
     element = _element(data_set)
     if element in failed_tag_list:
         return "zeuz_failed"
+    _diagnostic("text.target", element)
     value = _action(data_set)
     if (element.get_attribute("type") or "").lower() == "file":
         element.set_input_files(CommonUtil.path_parser(value))
@@ -759,9 +949,34 @@ def Enter_Text_In_Text_Box(data_set):
         (float(right) * 1000 for left, _, right in _rows(data_set) if _key(left) == "delay"),
         0,
     )
-    if clear and not append:
-        element.clear()
-    element.press_sequentially(value, **({"delay": delay} if delay else {}))
+    if not 0 <= delay < float("inf"):
+        return _fail("Typing delay must be a finite, non-negative number of seconds")
+    # Clicking/clearing can change attributes used by the locator (e.g. ng-pristine).
+    from playwright.sync_api import Error as PlaywrightError, TimeoutError as PlaywrightTimeoutError
+
+    handle = element.element_handle()
+    try:
+        try:
+            handle.click(timeout=5000)
+        except PlaywrightTimeoutError:
+            _log("Entering text without clicking the element", 2)
+        if clear and not append:
+            try:
+                handle.press("ControlOrMeta+A")
+                handle.press("Delete")
+                if handle.evaluate("el => el.isContentEditable ? el.textContent : el.value"):
+                    handle.fill("")
+            except PlaywrightError:
+                pass  # Selenium treats clearing as best effort before send_keys.
+        else:
+            handle.press("ControlOrMeta+End")
+        _type_text(handle, value, delay=delay)
+        try:
+            handle.click(timeout=5000)
+        except PlaywrightError:
+            pass  # Match Selenium's best-effort click after typing.
+    finally:
+        handle.dispose()
     return "passed"
 
 
@@ -873,35 +1088,52 @@ def open_new_tab(data_set):
 
 
 def _find_page(data_set):
-    pages = _state()["context"].pages
-    for left, _middle, right in _rows(data_set):
-        partial = left.strip().startswith("*")
-        key = _key(left).lstrip("*")
-        if key in ("tabindex", "windowindex", "index"):
-            return pages[int(right)]
-        if key in ("tabtitle", "windowtitle", "title"):
-            return next(
-                (
-                    page
-                    for page in pages
-                    if (
-                        right.lower() in page.title().lower()
-                        if partial
-                        else right.lower() == page.title().lower()
-                    )
-                ),
-                None,
-            )
-        if key in ("url", "taburl", "windowurl"):
-            return next(
-                (
-                    page
-                    for page in pages
-                    if (right in page.url if partial else right == page.url)
-                ),
-                None,
-            )
-    return pages[-1] if pages else None
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    context = _state()["context"]
+    rows = _rows(data_set)
+    partial_title = any(left.startswith("*") and _key(left).lstrip("*") in ("tabtitle", "windowtitle", "title")
+                        for left, _, _ in rows)
+    timeout = next((float(right) for left, middle, right in rows
+                    if middle == "optional parameter" and _key(left) in ("wait", "timeout")), 10)
+    if not 0 <= timeout < float("inf"):
+        raise ValueError("Tab wait must be a finite, non-negative number")
+    deadline = time.monotonic() + timeout
+    interval = 1
+    while True:
+        # Pump queued page/close events before reading Playwright's cached pages.
+        try:
+            context.wait_for_event("page", timeout=interval)
+        except PlaywrightTimeoutError:
+            pass
+        pages = [page for page in context.pages if not page.is_closed()]
+        # Selenium lets later title/index rows override earlier ones.
+        for left, _middle, right in reversed(rows):
+            right = right.strip()
+            partial = left.startswith("*")
+            key = _key(left).lstrip("*")
+            if key in ("tabindex", "windowindex", "index"):
+                index = int(right)
+                page = pages[index] if -len(pages) <= index < len(pages) else None
+                break
+            if key in ("tabtitle", "windowtitle", "title"):
+                page = next((page for page in pages if (
+                    right.lower() in page.title().lower() if partial_title
+                    else right.lower() == page.title().lower()
+                )), None)
+                break
+            if key in ("url", "taburl", "windowurl"):
+                page = next((page for page in pages
+                             if (right in page.url if partial else right == page.url)), None)
+                break
+        else:
+            page = pages[-1] if pages else None
+        if page is not None:
+            return page
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None
+        interval = min(100, remaining * 1000)
 
 
 def switch_window_or_tab(data_set):
@@ -917,14 +1149,15 @@ def switch_window_or_tab(data_set):
 def close_tab(data_set):
     state = _state()
     tabs = next((_parse(right) for left, _, right in _rows(data_set) if _key(left) == "tabs"), None)
-    pages = list(state["context"].pages)
     if tabs is not None:
         if not isinstance(tabs, list):
             return _fail("tabs must be a list of titles or indices")
         selected = []
         for tab in tabs:
-            page = pages[tab] if isinstance(tab, int) else next(
-                (page for page in pages if page.title().lower() == str(tab).strip().lower()), None)
+            field = "tab index" if isinstance(tab, int) else "tab title"
+            page = _find_page([(field, "input parameter", str(tab))] + [
+                row for row in data_set if _key(row[0]) in ("wait", "timeout")
+            ])
             if page is None:
                 return _fail("Requested tab/window was not found")
             if page not in selected:
@@ -1157,6 +1390,7 @@ def Save_Attribute(data_set):
     element = _element(clean)
     if element in failed_tag_list or not variable:
         return "zeuz_failed"
+    _diagnostic("attribute.target", element)
     if attribute == "text":
         value = element.inner_text().strip()
     elif attribute == "tag":
@@ -1164,7 +1398,7 @@ def Save_Attribute(data_set):
     elif attribute == "checked":
         value = element.is_checked()
     elif attribute == "value":
-        value = element.input_value()
+        value = element.evaluate("el => el.value ?? el.getAttribute('value')")
     else:
         value = element.get_attribute(attribute)
     return sr.Set_Shared_Variables(variable, value)
@@ -1199,6 +1433,16 @@ def _return_attribute(element, attribute):
     return element.get_attribute(attribute)
 
 
+def _target_rows(spec):
+    return [
+        ("allow hidden", "optional parameter", values[0])
+        if _key(key) in ("allowhidden", "allowdisable")
+        else (key, "element parameter", values[0])
+        for key, values in spec.items()
+        if not key.startswith("return")
+    ]
+
+
 def _return_matches(value, contains, excludes):
     return (not contains or any(not isinstance(value, str) or not part or part in value
                                 for part in contains)) and not any(
@@ -1211,13 +1455,11 @@ def save_attribute_values_in_list(data_set):
         return "zeuz_failed"
     result = []
     for spec in _target_specs(data_set):
-        rows = [
-            (key, "element parameter", value[0])
-            for key, value in spec.items()
-            if not key.startswith("return")
-        ]
+        elements = _element(_target_rows(spec), all_elements=True, root=parent)
+        if elements in failed_tag_list:
+            return "zeuz_failed"
         values = []
-        for element in _element(rows, all_elements=True, root=parent):
+        for element in elements:
             attribute = spec.get("return", ["text"])[0]
             value = _return_attribute(element, attribute)
             values.append(value if _return_matches(value, spec.get("return_contains", []),
@@ -1288,12 +1530,7 @@ def save_web_elements_in_list(data_set):
         return "zeuz_failed"
     groups = []
     for spec in _target_specs(data_set):
-        rows = [
-            (key, "element parameter", values[0])
-            for key, values in spec.items()
-            if not key.startswith("return")
-        ]
-        elements = _element(rows, all_elements=True, root=root)
+        elements = _element(_target_rows(spec), all_elements=True, root=root)
         if elements in failed_tag_list:
             return "zeuz_failed"
         for filter_name in ("return_contains", "return_does_not_contain"):
@@ -1802,9 +2039,15 @@ def _action_guard(function):
     @functools.wraps(function)
     def guarded(data_set=()):
         try:
-            return function(data_set)
+            result = function(data_set)
         except Exception:
+            if function.__name__ in ("Click_Element", "Double_Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute"):
+                _diagnostic(function.__name__ + ".error")
             return CommonUtil.Exception_Handler(sys.exc_info())
+        if function.__name__ in ("Click_Element", "Double_Click_Element", "Enter_Text_In_Text_Box", "Save_Attribute",
+                                 "take_screenshot_selenium"):
+            _diagnostic(function.__name__ + ".after")
+        return result
 
     return guarded
 

@@ -10,11 +10,47 @@ The Playwright declaration set contains exactly these 55 Selenium-compatible act
 
 Action values and supplemental rows retain their Selenium meanings. Common examples are `driver id`, `resolution`, `wait for element`, `wait time to page load`, `offset`, `use js`, `ignore case`, `variable`, `fullscreen`, `tab title`, `tab index`, `row`, `column`, `pixels`, `wait for download`, and `folder path`. Files, downloads, screenshots, saved elements, extracted values, URLs, dialog text, and network logs use the existing shared-variable contracts.
 
+A normal `click` that times out because a visible, enabled target is outside the viewport requests centered scrolling inside the target's frame, then explicitly scrolls the main page using the target's page-relative bounds and retries the normal click once. Like Selenium, persistent pointer interception falls back to a JavaScript click. Both recoveries log a warning and exclude offset clicks and unrelated timeout causes; an element that remains outside the viewport still fails.
+
+An explicit `use js` click dispatches `mousedown`, `mouseup`, and `click`, matching
+the Selenium action. Normal text entry uses select-all/delete to clear, types the
+requested text, and attempts a final click on the same element, as Selenium does.
+Without an action-level typing `delay`, native key-down/key-up events are queued
+together, like ChromeDriver's `send_keys`, instead of awaiting each event before
+sending the next. Keyboard handlers, including cancellation, still run normally;
+non-US-layout characters retain Playwright's native text insertion behavior.
+`keystroke chars` uses the same event delivery, including when no element is given.
+An explicit nonzero text-action `delay` retains ordinary sequential typing. No deployment
+delay variables or screenshots are required by this implementation.
+Batching uses Playwright's internal sync/async bridge; run the compatibility tests
+when upgrading Playwright.
+
 ## Locator grammar
 
 Locators accept exact attributes and text (`id`, `name`, `text`), partial matches (`*id`, `*text`), case-insensitive partial matches (`**id`, `**text`), `tag`, raw `css`/`css selector`, raw `xpath`, and positive or negative `index` rows. The relationship subfields are `parent parameter`, `child parameter`, `sibling parameter`, `preceding parameter`, and `following parameter`, including their numbered forms.
 
 `wait`, `allow hidden`, `allow disable`, and `text filter` are optional rows. `save parameter` stores a locator; `get parameter` retrieves one. Locator roots may be saved elements, frames, nested elements, and open shadow roots using numbered `sr ... parameter` rows. Closed shadow roots are not accessible.
+
+## Targeted diagnostics
+
+Set the runtime shared variable `zeuz_playwright_diagnostics` to `true` for all
+test cases, or a comma-separated list such as `TEST-0390,TEST-0391,TEST-0392`.
+It is disabled by default. Use the same deployment mechanism as
+`zeuz_browser_driver`.
+
+The console and action logs receive JSON records prefixed with `PW_DIAGNOSTIC`
+around clicks, double-clicks, text entry, attribute readbacks, and screenshots. Records include
+case/step/action IDs, target attributes and bounds (`main_rect` uses main-page viewport coordinates), elements at the target's
+center in its frame and the main page, active/hovered elements, visible overlays,
+and the latest 30 pointer, focus, input, and change events per frame. Input values
+and key characters are omitted; non-password input lengths are recorded.
+Click events include their click count (`detail`). Selection attributes and up to
+30 checkbox, switch, or busy controls per frame help diagnose selection changes.
+
+These records supplement the existing error tracebacks; they do not create
+Playwright `trace.zip` files. Send the complete console log after the rerun.
+Collection errors do not change action results. Enabled diagnostics add browser
+round trips and logging, so leave them disabled for timing comparisons.
 
 ## Browser launch mapping
 
