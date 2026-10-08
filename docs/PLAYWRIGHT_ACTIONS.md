@@ -10,6 +10,8 @@ The Playwright declaration set contains exactly these 55 Selenium-compatible act
 
 Action values and supplemental rows retain their Selenium meanings. Common examples are `driver id`, `resolution`, `wait for element`, `wait time to page load`, `offset`, `use js`, `ignore case`, `variable`, `fullscreen`, `tab title`, `tab index`, `row`, `column`, `pixels`, `wait for download`, and `folder path`. Files, downloads, screenshots, saved elements, extracted values, URLs, dialog text, and network logs use the existing shared-variable contracts.
 
+Like Selenium, a normal `click` falls back to a JavaScript click when pointer interception persists until the click timeout and the target remains visible and enabled. The fallback logs a warning and does not apply to offset clicks or other timeout causes.
+
 ## Locator grammar
 
 Locators accept exact attributes and text (`id`, `name`, `text`), partial matches (`*id`, `*text`), case-insensitive partial matches (`**id`, `**text`), `tag`, raw `css`/`css selector`, raw `xpath`, and positive or negative `index` rows. The relationship subfields are `parent parameter`, `child parameter`, `sibling parameter`, `preceding parameter`, and `following parameter`, including their numbered forms.

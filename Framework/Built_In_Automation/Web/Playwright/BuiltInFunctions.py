@@ -700,7 +700,17 @@ def Click_Element(data_set):
         elif _key(left) == "usejs" and right.strip().lower() in CommonUtil.affirmative_words:
             element.evaluate("element => element.click()")
             return "passed"
-    element.click(**options)
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    try:
+        element.click(**options)
+    except PlaywrightTimeoutError as error:
+        # Match Selenium's intercepted-click fallback, not unrelated timeouts.
+        if (options or "intercepts pointer events" not in str(error)
+                or not element.is_visible() or not element.is_enabled()):
+            raise
+        element.evaluate("element => element.click()")
+        _log("Element click was intercepted; clicked the element using JavaScript", 2)
     return "passed"
 
 

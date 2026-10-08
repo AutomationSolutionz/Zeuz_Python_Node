@@ -1839,6 +1839,7 @@ def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monke
         assert len(json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))["frames"][0]["events"]) == 30
         assert "do-not-log-input" not in "\n".join(logs)
         assert "do-not-log-password" not in "\n".join(logs)
+        tab.locator('#target').evaluate("el => el.disabled = true")
         assert playwright_actions.Click_Element(click) == "zeuz_failed"
         assert json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))["stage"] == "Click_Element.error"
 
@@ -1849,6 +1850,72 @@ def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monke
         assert playwright_actions.Click_Element(click + [("use js", "optional parameter", "true")]) == "passed"
     finally:
         tab.close()
+
+
+def test_click_recovers_from_parent_header_covering_iframe_checkbox(page, monkeypatch):
+    tab = page.context.browser.new_page(viewport={"width": 1920, "height": 1080})
+    tab.set_default_timeout(250)
+    logs = []
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab.frame_locator('iframe'))
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_: "passed")
+    try:
+        tab.set_content('''
+            <style>body{margin:0}header{position:fixed;top:0;height:100px;width:100%;
+                background:gray;z-index:10}iframe{position:fixed;top:0;width:1000px;height:463px;border:0}</style>
+            <header>Navigation</header>
+            <iframe sandbox="allow-scripts" srcdoc="<style>body{margin:0}
+                #queue{position:absolute;top:0}#choice{position:absolute;top:83px}</style>
+                <button id='queue'>Queue</button>
+                <label id='choice'><input id='check' type='checkbox'>agents</label>"></iframe>
+            <div style="height:1500px"></div>
+        ''')
+        assert playwright_actions.scroll_to_element([
+            ("id", "element parameter", "queue"), ("scroll to element", "action", "scroll"),
+        ]) == "passed"
+        frame = tab.frame_locator('iframe')
+        box = frame.locator('#choice').bounding_box()
+        assert tab.evaluate("box => document.elementFromPoint(box.x + box.width/2, box.y + box.height/2).tagName", box) == "HEADER"
+        assert playwright_actions.Click_Element([
+            ("id", "element parameter", "choice"), ("click", "action", "click"),
+        ]) == "passed"
+        assert frame.locator('#check').is_checked()
+        assert any('JavaScript' in message for message in logs)
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("reason,visible,enabled,offset", [
+    ("element is outside of the viewport", True, True, False),
+    ("intercepts pointer events", False, True, False),
+    ("intercepts pointer events", True, False, False),
+    ("intercepts pointer events", True, True, True),
+])
+def test_click_fallback_preserves_other_failures(monkeypatch, reason, visible, enabled, offset):
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    error = PlaywrightTimeoutError(reason)
+    captured, scripts = [], []
+
+    def fail_click(**_):
+        raise error
+
+    element = SimpleNamespace(click=fail_click, is_visible=lambda: visible,
+                              is_enabled=lambda: enabled,
+                              bounding_box=lambda: {"width": 100, "height": 20},
+                              evaluate=lambda script: scripts.append(script))
+    monkeypatch.setattr(playwright_actions, "_element", lambda _: element)
+    monkeypatch.setattr(playwright_actions, "_diagnostic", lambda *_: None)
+    monkeypatch.setattr(playwright_actions.CommonUtil, "Exception_Handler",
+                        lambda info: captured.append(info[1]) or "zeuz_failed")
+    rows = [("click", "action", "click")]
+    if offset:
+        rows.append(("offset", "optional parameter", "0,0"))
+    assert playwright_actions.Click_Element(rows) == "zeuz_failed"
+    assert captured == [error]
+    assert scripts == []
 
 
 def test_save_value_uses_live_property_or_attribute(page, monkeypatch):
