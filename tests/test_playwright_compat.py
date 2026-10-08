@@ -1888,7 +1888,8 @@ def test_click_recovers_from_parent_header_covering_iframe_checkbox(page, monkey
 
 
 @pytest.mark.parametrize("reason,visible,enabled,offset", [
-    ("element is outside of the viewport", True, True, False),
+    ("element is not stable", True, True, False),
+    ("element is outside of the viewport", True, True, True),
     ("intercepts pointer events", False, True, False),
     ("intercepts pointer events", True, False, False),
     ("intercepts pointer events", True, True, True),
@@ -1916,6 +1917,59 @@ def test_click_fallback_preserves_other_failures(monkeypatch, reason, visible, e
     assert playwright_actions.Click_Element(rows) == "zeuz_failed"
     assert captured == [error]
     assert scripts == []
+
+
+@pytest.mark.parametrize("fixed", [False, True])
+def test_click_recenters_offscreen_iframe_target_and_retries_once(page, monkeypatch, fixed):
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    tab = page.context.browser.new_page(viewport={"width": 1920, "height": 1080})
+    tab.set_default_timeout(250)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
+    logs = []
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
+    try:
+        tab.set_content('''
+            <style>body{margin:0}header{position:fixed;top:0;height:100px;width:100%;
+                background:gray;z-index:10}iframe{margin-top:200px;width:1000px;height:463px;border:0}</style>
+            <header>Navigation</header>
+            <iframe sandbox="allow-scripts" srcdoc="<style>body{margin:0}
+                #choice{position:absolute;top:83px}</style>
+                <label id='choice'><input id='check' type='checkbox'>Y</label>"></iframe>
+            <div style="height:1500px"></div>
+        ''')
+        if fixed:
+            tab.locator('iframe').evaluate("el => el.style.cssText += ';position:fixed;top:-400px'")
+        else:
+            tab.evaluate('scrollTo(0, 395)')
+        frame = tab.frame_locator('iframe')
+        target = frame.locator('#choice')
+        assert target.bounding_box()['y'] < 0
+        target.evaluate("el => el.addEventListener('click', e => window.clickTrusted = e.isTrusted)")
+        native_click = target.click
+        attempts = []
+
+        def click(**options):
+            attempts.append(options)
+            if not fixed and len(attempts) == 1:
+                # Reproduce the deployed browser's failed automatic scroll. The
+                # recovery scroll and subsequent click use the real browser.
+                raise PlaywrightTimeoutError('element is outside of the viewport')
+            return native_click(**options)
+
+        monkeypatch.setattr(target, 'click', click)
+        monkeypatch.setattr(playwright_actions, '_element', lambda _: target)
+        result = playwright_actions.Click_Element([('click', 'action', 'click')])
+        assert len(attempts) == 2
+        assert result == ('zeuz_failed' if fixed else 'passed')
+        assert frame.locator('#check').is_checked() == (not fixed)
+        if not fixed:
+            box = target.bounding_box()
+            assert box['y'] >= 100
+            assert target.evaluate('() => window.clickTrusted') is True
+        assert not any('using JavaScript' in message for message in logs)
+    finally:
+        tab.close()
 
 
 def test_save_value_uses_live_property_or_attribute(page, monkeypatch):

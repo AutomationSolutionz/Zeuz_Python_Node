@@ -10,7 +10,7 @@ The Playwright declaration set contains exactly these 55 Selenium-compatible act
 
 Action values and supplemental rows retain their Selenium meanings. Common examples are `driver id`, `resolution`, `wait for element`, `wait time to page load`, `offset`, `use js`, `ignore case`, `variable`, `fullscreen`, `tab title`, `tab index`, `row`, `column`, `pixels`, `wait for download`, and `folder path`. Files, downloads, screenshots, saved elements, extracted values, URLs, dialog text, and network logs use the existing shared-variable contracts.
 
-Like Selenium, a normal `click` falls back to a JavaScript click when pointer interception persists until the click timeout and the target remains visible and enabled. The fallback logs a warning and does not apply to offset clicks or other timeout causes.
+A normal `click` that times out because a visible, enabled target is outside the viewport centers the target through its ancestor frames and retries the normal click once. Like Selenium, persistent pointer interception falls back to a JavaScript click. Both recoveries log a warning and exclude offset clicks and unrelated timeout causes; an element that remains outside the viewport still fails.
 
 ## Locator grammar
 

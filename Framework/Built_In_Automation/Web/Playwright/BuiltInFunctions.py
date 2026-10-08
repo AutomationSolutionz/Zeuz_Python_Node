@@ -702,15 +702,28 @@ def Click_Element(data_set):
             return "passed"
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-    try:
-        element.click(**options)
-    except PlaywrightTimeoutError as error:
-        # Match Selenium's intercepted-click fallback, not unrelated timeouts.
-        if (options or "intercepts pointer events" not in str(error)
-                or not element.is_visible() or not element.is_enabled()):
-            raise
-        element.evaluate("element => element.click()")
-        _log("Element click was intercepted; clicked the element using JavaScript", 2)
+    for attempt in range(2):
+        try:
+            element.click(**options)
+            break
+        except PlaywrightTimeoutError as error:
+            outside = "outside of the viewport" in str(error)
+            intercepted = "intercepts pointer events" in str(error)
+            if (options or not (outside or intercepted)
+                    or not element.is_visible() or not element.is_enabled()):
+                raise
+            if outside and attempt == 0:
+                # Center through ancestor frames when automatic scrolling fails.
+                element.evaluate("el => el.scrollIntoView({block: 'center', inline: 'center'})")
+                _log("Element was outside the viewport; centered it and retrying the click", 2)
+                _diagnostic("click.repositioned", element)
+                continue
+            # Match Selenium's intercepted-click fallback, not unrelated timeouts.
+            if not intercepted:
+                raise
+            element.evaluate("element => element.click()")
+            _log("Element click was intercepted; clicked the element using JavaScript", 2)
+            break
     return "passed"
 
 
