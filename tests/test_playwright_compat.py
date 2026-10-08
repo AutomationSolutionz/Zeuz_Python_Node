@@ -1827,6 +1827,7 @@ def test_diagnostics_capture_clicks_focus_and_lengths_without_values(page, monke
         iframe = json.loads(logs[-1].removeprefix("PW_DIAGNOSTIC "))
         assert iframe["target"]["hit_at_center"]["id"] == "inside"
         assert iframe["main_hit_at_center"]["id"] == "frame-cover"
+        assert iframe["main_rect"]["y"] > iframe["target"]["rect"]["y"]
         assert playwright_actions.Enter_Text_In_Text_Box([
             ("id", "element parameter", "text"), ("text", "action", "do-not-log-input"),
         ]) == "passed"
@@ -1919,12 +1920,13 @@ def test_click_fallback_preserves_other_failures(monkeypatch, reason, visible, e
     assert scripts == []
 
 
-@pytest.mark.parametrize("fixed", [False, True])
-def test_click_recenters_offscreen_iframe_target_and_retries_once(page, monkeypatch, fixed):
+@pytest.mark.parametrize("fixed,child_scroll_noop", [(False, False), (False, True), (True, True)])
+def test_click_recenters_offscreen_iframe_target_and_retries_once(page, monkeypatch, fixed, child_scroll_noop):
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
     tab = page.context.browser.new_page(viewport={"width": 1920, "height": 1080})
     tab.set_default_timeout(250)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
     monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_: 0)
     logs = []
     monkeypatch.setattr(playwright_actions, "_log", lambda message, *_: logs.append(message))
@@ -1946,6 +1948,9 @@ def test_click_recenters_offscreen_iframe_target_and_retries_once(page, monkeypa
         target = frame.locator('#choice')
         assert target.bounding_box()['y'] < 0
         target.evaluate("el => el.addEventListener('click', e => window.clickTrusted = e.isTrusted)")
+        if child_scroll_noop:
+            # Model the deployed iframe: its scrollIntoView leaves the parent still scrolled.
+            target.evaluate("el => el.scrollIntoView = () => {}")
         native_click = target.click
         attempts = []
 
@@ -1955,6 +1960,8 @@ def test_click_recenters_offscreen_iframe_target_and_retries_once(page, monkeypa
                 # Reproduce the deployed browser's failed automatic scroll. The
                 # recovery scroll and subsequent click use the real browser.
                 raise PlaywrightTimeoutError('element is outside of the viewport')
+            if not fixed:
+                assert target.bounding_box()['y'] >= 100
             return native_click(**options)
 
         monkeypatch.setattr(target, 'click', click)

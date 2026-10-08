@@ -113,6 +113,7 @@ def _diagnostic(stage, element=None):
                     record["target"] = element.evaluate(_DIAGNOSTIC_SNAPSHOT)
                 box = (element.bounding_box(timeout=500) if LocateElement._is_playwright_locator(element)
                        else element.bounding_box())
+                record["main_rect"] = box
                 if box:
                     record["main_hit_at_center"] = get_page().evaluate("""point => {
                         const el = document.elementFromPoint(point.x, point.y);
@@ -713,9 +714,17 @@ def Click_Element(data_set):
                     or not element.is_visible() or not element.is_enabled()):
                 raise
             if outside and attempt == 0:
-                # Center through ancestor frames when automatic scrolling fails.
                 element.evaluate("el => el.scrollIntoView({block: 'center', inline: 'center'})")
-                _log("Element was outside the viewport; centered it and retrying the click", 2)
+                # An iframe-local scroll may leave the outer page unchanged.
+                # Playwright bounding boxes use main-frame viewport coordinates.
+                box = element.bounding_box()
+                if box:
+                    get_page().evaluate("""box => window.scrollBy({
+                        left: box.x + box.width / 2 - window.innerWidth / 2,
+                        top: box.y + box.height / 2 - window.innerHeight / 2,
+                        behavior: 'instant'
+                    })""", box)
+                _log("Requested parent-page scroll for offscreen target; retrying the click", 2)
                 _diagnostic("click.repositioned", element)
                 continue
             # Match Selenium's intercepted-click fallback, not unrelated timeouts.

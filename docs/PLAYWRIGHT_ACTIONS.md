@@ -10,7 +10,7 @@ The Playwright declaration set contains exactly these 55 Selenium-compatible act
 
 Action values and supplemental rows retain their Selenium meanings. Common examples are `driver id`, `resolution`, `wait for element`, `wait time to page load`, `offset`, `use js`, `ignore case`, `variable`, `fullscreen`, `tab title`, `tab index`, `row`, `column`, `pixels`, `wait for download`, and `folder path`. Files, downloads, screenshots, saved elements, extracted values, URLs, dialog text, and network logs use the existing shared-variable contracts.
 
-A normal `click` that times out because a visible, enabled target is outside the viewport centers the target through its ancestor frames and retries the normal click once. Like Selenium, persistent pointer interception falls back to a JavaScript click. Both recoveries log a warning and exclude offset clicks and unrelated timeout causes; an element that remains outside the viewport still fails.
+A normal `click` that times out because a visible, enabled target is outside the viewport requests centered scrolling inside the target's frame, then explicitly scrolls the main page using the target's page-relative bounds and retries the normal click once. Like Selenium, persistent pointer interception falls back to a JavaScript click. Both recoveries log a warning and exclude offset clicks and unrelated timeout causes; an element that remains outside the viewport still fails.
 
 ## Locator grammar
 
@@ -27,7 +27,7 @@ It is disabled by default. Use the same deployment mechanism as
 
 The console and action logs receive JSON records prefixed with `PW_DIAGNOSTIC`
 around clicks, text entry, attribute readbacks, and screenshots. Records include
-case/step/action IDs, target attributes and bounds, elements at the target's
+case/step/action IDs, target attributes and bounds (`main_rect` uses main-page viewport coordinates), elements at the target's
 center in its frame and the main page, active/hovered elements, visible overlays,
 and the latest 30 pointer, focus, input, and change events per frame. Input values
 and key characters are omitted; non-password input lengths are recorded.
