@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  arachni:
+    image: arachni/arachni:latest
+    container_name: zeuz_arachni
+    ports:
+      - "9292:9292"  # Web UI port
+    environment:
+      - ARACHNI_UI_ADDRESS=0.0.0.0
+      - ARACHNI_UI_PORT=9292
+    restart: unless-stopped
+    # Increase memory limits to prevent crashes
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
