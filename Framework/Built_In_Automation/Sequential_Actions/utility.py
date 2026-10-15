@@ -24,6 +24,7 @@ import inspect
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
+from html import unescape as html_unescape
 
 # using IMAP protocol
 from Framework.Utilities.CommonUtil import MODULE_NAME
@@ -349,6 +350,12 @@ def save_mail(
 RANDOM_MAIL_TIMEOUT = 30  # seconds per request to the temporary email services
 
 
+def is_temporary_mail_error(e):
+    """True for a requests error worth retrying: rate limit (429), server error or network problem. False for a bad token or deleted mailbox"""
+    response = getattr(e, "response", None)
+    return response is None or response.status_code == 429 or response.status_code >= 500
+
+
 class RandomMailBoxExporter(ABC):
     """
     A temporary email service. Credentials are a dict of plain strings {"email": ..., "api_key": ...}
@@ -376,8 +383,19 @@ def _random_mail_username():
     return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
 
 
+_HTML_BLOCK_TAGS = [
+    "br", "p", "div", "pre", "table", "tr", "td", "th", "ul", "ol", "li", "hr", "blockquote",
+    "h1", "h2", "h3", "h4", "h5", "h6", "header", "footer", "section", "article",
+]
+
+
 def _html_to_text(html):
-    return BeautifulSoup(html, 'html.parser').get_text(separator="\n").strip()
+    # Only block tags break the line, so "code is <b>123456</b>" stays "code is 123456"
+    soup = BeautifulSoup(html, 'html.parser')
+    for tag in soup.find_all(_HTML_BLOCK_TAGS):
+        tag.insert_after("\n")
+    text = "\n".join(line.strip() for line in soup.get_text().splitlines())
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 class TempEmailMailTm(RandomMailBoxExporter):
@@ -450,8 +468,9 @@ class TempEmailGuerrillaMail(RandomMailBoxExporter):
             timestamp = int(msg.get("mail_timestamp") or 0)
             var_mails.append({
                 'id': str(msg["mail_id"]),
-                'sender': msg.get("mail_from") or "",
-                'subject': msg.get("mail_subject") or "",
+                # Guerrilla Mail html-escapes these, e.g. "ü" comes as "&uuml;"
+                'sender': html_unescape(msg.get("mail_from") or ""),
+                'subject': html_unescape(msg.get("mail_subject") or ""),
                 'date': time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(timestamp)) if timestamp else "",
                 'body': body,
                 'content': _html_to_text(body),

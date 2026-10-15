@@ -57,7 +57,7 @@ import time
 from datetime import datetime
 
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory, is_temporary_mail_error
 import re
 import subprocess
 months = [
@@ -4571,7 +4571,15 @@ def random_email_read(data_set):
             mail_fac = sr.Get_Shared_Variables("random_email_factory")
             if isinstance(var_email,str):
                 var_email = eval(var_email)
-            res = mail_fac.checkMails(var_email)
+            try:
+                res = mail_fac.checkMails(var_email)
+            except requests.exceptions.RequestException as e:
+                if is_temporary_mail_error(e) and time.time() < start + wait:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not check mails, will retry: %s" % e, 2)
+                    time.sleep(5)  # rate limited or a network blip, give the service a moment
+                    continue
+                CommonUtil.ExecLog(sModuleInfo, "Could not check mails for '%s': %s" % (var_email['email'], e), 3)
+                return "zeuz_failed"
             if len(res[var_email['email']]) > 0:
                 break
             if start + wait < time.time():
