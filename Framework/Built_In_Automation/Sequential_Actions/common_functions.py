@@ -4513,11 +4513,10 @@ def random_email_generator(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
             return "zeuz_failed"
         mail_fac = random_mail_factory()
-        var_email_creds = mail_fac.connection_creds #return random email address
-
-        if var_email_creds == {}:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
+        if mail_fac is None:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox. None of the temporary email services are reachable", 3)
             return "zeuz_failed"
+        var_email_creds = mail_fac.connection_creds #return random email address
 
         CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
         sr.Set_Shared_Variables("random_email_factory", mail_fac)
@@ -4578,6 +4577,7 @@ def random_email_read(data_set):
             if start + wait < time.time():
                 CommonUtil.ExecLog(sModuleInfo, "No email found  for '%s' after waiting %s seconds. You may need to increase wait time" % (var_email, wait), 1)
                 return sr.Set_Shared_Variables(var_variable, res)  # saved in shared variable inside variable key
+            time.sleep(2)  # don't hammer the mail service, mail.tm rate limits per IP
 
         CommonUtil.ExecLog(sModuleInfo, "Mails are received at '%s' after waiting for %d seconds" % (var_email, int(time.time()-start)), 1)
         return sr.Set_Shared_Variables(var_variable, res)   # saved in shared variable inside variable key
