@@ -57,7 +57,7 @@ import time
 from datetime import datetime
 
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail,random_mail_factory, is_temporary_mail_error
 import re
 import subprocess
 months = [
@@ -4513,11 +4513,10 @@ def random_email_generator(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
             return "zeuz_failed"
         mail_fac = random_mail_factory()
-        var_email_creds = mail_fac.connection_creds #return random email address
-
-        if var_email_creds == {}:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox", 3)
+        if mail_fac is None:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to create random mailbox. None of the temporary email services are reachable", 3)
             return "zeuz_failed"
+        var_email_creds = mail_fac.connection_creds #return random email address
 
         CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email_creds), 1)
         sr.Set_Shared_Variables("random_email_factory", mail_fac)
@@ -4572,12 +4571,21 @@ def random_email_read(data_set):
             mail_fac = sr.Get_Shared_Variables("random_email_factory")
             if isinstance(var_email,str):
                 var_email = eval(var_email)
-            res = mail_fac.checkMails(var_email)
+            try:
+                res = mail_fac.checkMails(var_email)
+            except requests.exceptions.RequestException as e:
+                if is_temporary_mail_error(e) and time.time() < start + wait:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not check mails, will retry: %s" % e, 2)
+                    time.sleep(5)  # rate limited or a network blip, give the service a moment
+                    continue
+                CommonUtil.ExecLog(sModuleInfo, "Could not check mails for '%s': %s" % (var_email['email'], e), 3)
+                return "zeuz_failed"
             if len(res[var_email['email']]) > 0:
                 break
             if start + wait < time.time():
                 CommonUtil.ExecLog(sModuleInfo, "No email found  for '%s' after waiting %s seconds. You may need to increase wait time" % (var_email, wait), 1)
                 return sr.Set_Shared_Variables(var_variable, res)  # saved in shared variable inside variable key
+            time.sleep(2)  # don't hammer the mail service, mail.tm rate limits per IP
 
         CommonUtil.ExecLog(sModuleInfo, "Mails are received at '%s' after waiting for %d seconds" % (var_email, int(time.time()-start)), 1)
         return sr.Set_Shared_Variables(var_variable, res)   # saved in shared variable inside variable key

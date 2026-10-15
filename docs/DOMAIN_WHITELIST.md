@@ -202,8 +202,8 @@ Used by the `utility.py` random/temporary email actions during test execution.
 
 | Domain | Purpose |
 |--------|---------|
-| `www.1secmail.com` | 1secmail temporary email API |
-| `www.developermail.com` | DeveloperMail temporary email API |
+| `api.mail.tm` | mail.tm temporary email API (primary) |
+| `api.guerrillamail.com` | Guerrilla Mail temporary email API (fallback) |
 
 These are only needed if your test cases use the temporary email actions.
 
@@ -333,8 +333,8 @@ www.googleapis.com
 download.pytorch.org
 
 # ── Temp Email (test runtime, optional) ───────────────────────
-www.1secmail.com
-www.developermail.com
+api.mail.tm
+api.guerrillamail.com
 
 # ── Chrome Extensions (test runtime, optional) ────────────────
 clients2.google.com
