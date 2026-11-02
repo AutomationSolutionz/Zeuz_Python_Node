@@ -53,12 +53,16 @@ class Recorder {
         let frameLocation = ""
         while (currentWindow !== window.top) {
             currentParentWindow = currentWindow.parent;
+            let foundInParent = false;
             for (let idx = 0; idx < currentParentWindow.frames.length; idx++)
                 if (currentParentWindow.frames[idx] === currentWindow) {
                     frameLocation = ":" + idx + frameLocation;
                     currentWindow = currentParentWindow;
+                    foundInParent = true;
                     break;
                 }
+            // Chrome's PDF viewer frames are absent from parent.frames; without this the walk never ends.
+            if (!foundInParent) break;
         }
         return frameLocation = "root" + frameLocation;
     }
