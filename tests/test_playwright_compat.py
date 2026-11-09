@@ -3,6 +3,7 @@ import json
 import shutil
 import threading
 import time
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -1432,14 +1433,16 @@ def test_text_clicks_clears_and_types_with_delay(monkeypatch):
         element_handle=lambda: handle,
     )
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
+    monkeypatch.setattr(playwright_actions.time, "sleep", lambda seconds: events.append(("sleep", seconds)))
 
     assert playwright_actions.Enter_Text_In_Text_Box([
         ("id", "element parameter", "password"),
         ("delay", "optional parameter", "0.05"),
         ("text", "playwright action", "secret"),
     ]) == "passed"
+    typed = [event for char in "secret" for event in ((char, {}), ("sleep", 0.05))]
     assert events == [("click", {"timeout": 5000}), "ControlOrMeta+A", "Delete", ("fill", ""),
-                      ("secret", {"delay": 50}), ("click", {"timeout": 5000}), "dispose"]
+                      *typed, ("click", {"timeout": 5000}), "dispose"]
 
 
 @pytest.mark.parametrize(
@@ -1628,12 +1631,21 @@ def test_drag_and_drop_uses_native_offset_and_shared_locator_options(monkeypatch
     assert dragged == [(target, {"target_position": {"x": 150, "y": 0}})]
 
 
-def test_drag_and_drop_delay_releases_mouse(monkeypatch):
+@pytest.mark.parametrize("fail_hover", [False, True])
+def test_drag_and_drop_delay_releases_mouse(monkeypatch, fail_hover):
     events = []
     source = SimpleNamespace(hover=lambda: events.append("source hover"))
+
+    def hover(**options):
+        events.append(("target hover", options))
+        if fail_hover:
+            raise RuntimeError("hover failed")
+
     target = SimpleNamespace(
-        hover=lambda **options: events.append(("target hover", options))
+        hover=hover,
+        dispose=lambda: events.append("dispose target"),
     )
+    target.element_handle = lambda: target
     elements = iter((source, target))
     page = SimpleNamespace(
         mouse=SimpleNamespace(
@@ -1645,19 +1657,59 @@ def test_drag_and_drop_delay_releases_mouse(monkeypatch):
     monkeypatch.setattr(playwright_actions, "_element", lambda _rows: next(elements))
     monkeypatch.setattr(playwright_actions, "get_page", lambda: page)
 
-    assert playwright_actions.drag_and_drop([
+    result = playwright_actions.drag_and_drop([
         ("id", "src element parameter", "source"),
         ("id", "dst element parameter", "target"),
         ("delay", "optional parameter", "0.25"),
-    ]) == "passed"
-    assert events == [
+    ])
+    assert result == ("zeuz_failed" if fail_hover else "passed")
+    expected = [
         "source hover",
         "mouse down",
         ("target hover", {}),
-        ("target hover", {}),
-        ("wait", 250),
-        "mouse up",
     ]
+    if not fail_hover:
+        expected.extend([("wait", 250), ("target hover", {})])
+    expected.extend(["mouse up", "dispose target"])
+    assert events == expected
+
+
+def test_delayed_drag_keeps_original_destination_after_reordering(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_args: "passed")
+    try:
+        tab.set_content('''<style>div { width:100px; height:60px; }</style>
+            <div id="source">source</div><section>
+                <div class="target" id="first">first</div>
+                <div class="target" id="second">second</div>
+            </section><script>
+                window.targets = [];
+                let held = false;
+                document.addEventListener('mousedown', () => { held = true; });
+                document.addEventListener('mousemove', event => {
+                    if (!held || !event.target.classList.contains('target')) return;
+                    targets.push(event.target.id);
+                    if (targets.length === 1)
+                        event.target.parentElement.append(event.target);
+                });
+                document.addEventListener('mouseup', event => {
+                    if (held) window.droppedOn = event.target.id;
+                    held = false;
+                });
+            </script>''')
+        assert playwright_actions.drag_and_drop([
+            ("id", "src element parameter", "source"),
+            ("class", "dst element parameter", "target"),
+            ("index", "dst element parameter", "0"),
+            ("delay", "optional parameter", "0.01"),
+        ]) == "passed"
+        assert tab.evaluate("targets") == ["first", "first"]
+        assert tab.evaluate("droppedOn") == "first"
+    finally:
+        tab.close()
 
 
 def test_selenium_bridge_attach_publish_and_close(monkeypatch):
@@ -2244,6 +2296,96 @@ def test_text_with_deferred_model_updates_keeps_all_characters(page, monkeypatch
             assert tab.locator('#field').input_value() == value
     finally:
         tab.close()
+
+
+def test_delayed_text_releases_each_key_before_waiting(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_args: "passed")
+    try:
+        tab.set_content('''<textarea id="field"></textarea><script>
+            window.heldKeys = [];
+            const field = document.querySelector('#field');
+            let held = false;
+            field.addEventListener('keydown', event => {
+                if (event.key.length !== 1 || event.ctrlKey || event.metaKey) return;
+                held = true;
+                setTimeout(() => heldKeys.push(held), 25);
+            });
+            field.addEventListener('keyup', () => { held = false; });
+        </script>''')
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "field"),
+            ("delay", "optional parameter", "0.1"),
+            ("text", "action", "ab"),
+        ]) == "passed"
+        tab.wait_for_function("heldKeys.length === 2")
+        assert tab.locator('#field').input_value() == "ab"
+        assert tab.evaluate("heldKeys") == [False, False]
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("destination", ["default", "directory", "file", "collision", "duplicate"])
+def test_download_uses_run_folder_and_preserves_existing_files(page, monkeypatch, tmp_path, destination):
+    tab = page.context.browser.new_page()
+    initial = tmp_path / "initial_download_folder"
+    initial.mkdir()
+    target = tmp_path / "downloads"
+    target.mkdir()
+    original = initial / "template.json"
+    if destination == "duplicate":
+        original.write_text("original download")
+    if destination == "collision":
+        (target / "template.json").write_text("existing destination")
+    monkeypatch.setattr(playwright_actions, "get_driver", lambda: tab)
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    monkeypatch.setattr(playwright_actions.ConfigModule, "get_config_value", lambda *_args: str(initial))
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda *_args, **_kwargs: 0)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_args: "passed")
+    try:
+        tab.set_content('''<a id="download" download="template.json"
+            href='data:application/json,{"codes":[]}'>Download</a>''')
+        rows = [("id", "element parameter", "download"), ("click and download", "action", "")]
+        if destination in ("directory", "collision"):
+            rows.append(("folder path", "optional parameter", str(target)))
+        elif destination == "file":
+            rows.append(("filepath", "optional parameter", str(target / "renamed.json")))
+        result = playwright_actions.Click_and_Download(rows)
+        if destination == "collision":
+            assert result == "zeuz_failed"
+            assert (target / "template.json").read_text() == "existing destination"
+            assert json.loads(original.read_text()) == {"codes": []}
+        else:
+            assert result == "passed"
+            if destination == "duplicate":
+                assert original.read_text() == "original download"
+                downloaded = initial / "template (1).json"
+            elif destination == "default":
+                downloaded = original
+            else:
+                downloaded = target / ("renamed.json" if destination == "file" else "template.json")
+                assert not original.exists()
+            assert json.loads(downloaded.read_text()) == {"codes": []}
+    finally:
+        tab.close()
+
+
+def test_failed_download_removes_only_its_reserved_file(tmp_path):
+    existing = tmp_path / "template.json"
+    existing.write_text("existing download")
+
+    def fail_save(path):
+        Path(path).write_text("partial download")
+        raise RuntimeError("download interrupted")
+
+    download = SimpleNamespace(suggested_filename="template.json", save_as=fail_save)
+    with pytest.raises(RuntimeError, match="download interrupted"):
+        playwright_actions._save_download(download, tmp_path)
+    assert list(tmp_path.iterdir()) == [existing]
+    assert existing.read_text() == "existing download"
 
 
 def test_batched_text_drains_queued_keys_before_reporting_error(page, monkeypatch):

@@ -20,10 +20,19 @@ together, like ChromeDriver's `send_keys`, instead of awaiting each event before
 sending the next. Keyboard handlers, including cancellation, still run normally;
 non-US-layout characters retain Playwright's native text insertion behavior.
 `keystroke chars` uses the same event delivery, including when no element is given.
-An explicit nonzero text-action `delay` retains ordinary sequential typing. No deployment
+An explicit nonzero text-action `delay` waits after each complete character, matching
+Selenium's per-character `send_keys` loop. No deployment
 delay variables or screenshots are required by this implementation.
 Batching uses Playwright's internal sync/async bridge; run the compatibility tests
 when upgrading Playwright.
+
+`click and download` saves to the run's configured `initial_download_folder` before
+moving the file to an optional destination. An existing same-named file in a
+destination directory fails the action and preserves both files, matching Selenium.
+Repeated downloads in the initial folder receive numbered filenames.
+
+Delayed `drag and drop` keeps the original destination element through list
+reordering and releases on that element after the requested pause, matching Selenium.
 
 ## Locator grammar
 

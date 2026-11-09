@@ -6,6 +6,7 @@ import base64
 import functools
 import inspect
 import json
+import shutil
 import socket
 import sys
 import time
@@ -749,6 +750,30 @@ def Click_Element(data_set):
     return "passed"
 
 
+def _save_download(download, folder):
+    directory = Path(folder)
+    directory.mkdir(parents=True, exist_ok=True)
+    filename = Path(download.suggested_filename).name
+    destination = directory / filename
+    number = 0
+    while True:
+        try:
+            # Reserve the name so concurrent downloads cannot overwrite each other.
+            with destination.open("xb"):
+                pass
+            break
+        except FileExistsError:
+            number += 1
+            name = Path(filename)
+            destination = directory / f"{name.stem} ({number}){name.suffix}"
+    try:
+        download.save_as(str(destination))
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
+    return destination
+
+
 def Click_and_Download(data_set):
     timeout = (
         next(
@@ -775,14 +800,23 @@ def Click_and_Download(data_set):
     if result in failed_tag_list:
         return result
     download = info.value
+    initial_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+    source = _save_download(download, initial_folder) if initial_folder else None
     if path:
         destination = Path(path)
         if destination.is_dir() or not destination.suffix:
             destination.mkdir(parents=True, exist_ok=True)
-            destination /= download.suggested_filename
         else:
             destination.parent.mkdir(parents=True, exist_ok=True)
-        download.save_as(str(destination))
+        if source is not None:
+            # Like Selenium, keep the original download when a destination collides.
+            shutil.move(str(source), str(destination))
+        else:
+            if destination.is_dir():
+                destination /= Path(download.suggested_filename).name
+            download.save_as(str(destination))
+    elif source is None:
+        return _fail("Initial download folder is not configured")
     return "passed"
 
 
@@ -883,7 +917,13 @@ def Keystroke_For_Element(data_set):
 
 
 def _type_text(element, value, delay=0):
-    if delay or not value:
+    if delay:
+        target = element if element is not None else get_page().keyboard
+        for char in value:
+            target.type(char)
+            time.sleep(delay / 1000)
+        return
+    if not value:
         (element if element is not None else get_page().keyboard).type(value, delay=delay)
         return
 
@@ -1353,16 +1393,21 @@ def drag_and_drop(data_set):
     if delay is None:
         src.drag_to(dst, **({"target_position": target_position} if target_position else {}))
     else:
-        src.hover()
-        page = get_page()
-        page.mouse.down()
+        # Keep Selenium's destination element when sorting changes an indexed locator.
+        destination = dst.element_handle()
         try:
-            hover_options = {"position": target_position} if target_position else {}
-            dst.hover(**hover_options)
-            dst.hover(**hover_options)
-            page.wait_for_timeout(delay * 1000)
+            src.hover()
+            page = get_page()
+            page.mouse.down()
+            try:
+                hover_options = {"position": target_position} if target_position else {}
+                destination.hover(**hover_options)
+                page.wait_for_timeout(delay * 1000)
+                destination.hover(**hover_options)
+            finally:
+                page.mouse.up()
         finally:
-            page.mouse.up()
+            destination.dispose()
     return "passed"
 
 
