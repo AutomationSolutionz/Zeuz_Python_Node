@@ -15,6 +15,9 @@ A normal `click` that times out because a visible, enabled target is outside the
 An explicit `use js` click dispatches `mousedown`, `mouseup`, and `click`, matching
 the Selenium action. Normal text entry uses select-all/delete to clear, types the
 requested text, and attempts a final click on the same element, as Selenium does.
+If the input is replaced during the initial click, the action resolves a fresh
+handle and retries once before clearing or typing. Connected inputs keep their
+original handle when focus changes attributes used by the locator.
 Without an action-level typing `delay`, native key-down/key-up events are queued
 together, like ChromeDriver's `send_keys`, instead of awaiting each event before
 sending the next. Keyboard handlers, including cancellation, still run normally;
@@ -74,7 +77,39 @@ Launch rows support raw browser arguments, page-load strategy, resolution/viewpo
 
 The viewport uses runtime `window_size_x` and `window_size_y` when both are set, otherwise it defaults to 1920×1080 to match Selenium's maximized/headless node behavior. An explicit `resolution` row takes precedence.
 
-Unknown Selenium capabilities, Chrome version pinning, experimental options, and extension sideloading on branded Chrome/Edge are logged and ignored because they do not have a safe equivalent. The installer exposes bundled Firefox and WebKit; branded Chrome and Edge continue through their existing installers.
+Existing `capabilities` / `shared capability` and `add_experimental_option` /
+`chromium option` rows accept their Selenium dictionaries. Legacy
+`add experimental option` / `optional option` rows also work. Supported settings are
+
+| Selenium setting | Playwright-mode behavior |
+|---|---|
+| `acceptInsecureCerts` | Sets the context's HTTPS error handling |
+| `pageLoadStrategy` | Maps `normal`, `eager`, and `none` to navigation wait states |
+| `goog:loggingPrefs`, `ms:loggingPrefs` | Configures the existing Chrome/Edge Selenium bridge, preserving raw `get_log(...)` callers |
+| `prefs.profile.default_content_setting_values.notifications` | Applies Chromium's context-scoped notification permission. `0` restores prompts, `1` grants, and `2` denies |
+| `prefs.profile.default_content_setting_values.popups` | Uses Chromium's popup blocker. `0` uses the browser default, `1` allows popups, and `2` enables blocking |
+
+Shared capabilities take precedence over equivalent launch-option rows, matching
+Selenium. Repeated capability or experimental-option dictionaries use the last row.
+Popup preferences require a newly launched browser. Notification
+preferences persist when tabs are replaced and preserve unrelated permissions.
+Explicit browser arguments retain Chromium's usual precedence over preferences.
+Launch settings are applied when a driver ID is created, so tear down a reused
+browser before changing them.
+
+Unknown capability, experimental-option, and preference keys are logged
+individually and ignored. This includes the pictured
+`profile.default_content_setting_values.redirects` preference. Ordinary browser
+redirects continue normally. Chromium preferences and WebDriver logging preferences
+are reported as unsupported on Firefox/WebKit. Raw WebDriver logging requires a
+working Selenium compatibility bridge. The existing `capture network log` action
+uses its Playwright implementation and drains an enabled WebDriver performance
+buffer at start/stop, matching Selenium's capture boundaries. Raw logging outside
+those captures retains WebDriver's buffer until `get_log(...)` reads it.
+
+Extension sideloading on branded Chrome/Edge is logged and ignored. The installer
+exposes bundled Firefox and WebKit. Branded Chrome and Edge continue through their
+existing installers.
 
 ## Execute Python compatibility
 

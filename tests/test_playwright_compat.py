@@ -949,7 +949,8 @@ def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
             return Page(self)
 
     class Browser:
-        def new_context(self, **_kwargs):
+        def new_context(self, **kwargs):
+            captured["context"] = kwargs
             return Context()
 
     class Chromium:
@@ -984,9 +985,17 @@ def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
         ChromeForTesting,
     )
 
-    playwright_actions._launch([
+    state = playwright_actions._launch([
         ("chrome:version", "optional parameter", "beta"),
         ("wait time to appear element", "optional parameter", "60"),
+        ("add_argument", "chromium option", '["--disable-popup-blocking"]'),
+        ("capabilities", "shared capability", json.dumps({
+            "acceptInsecureCerts": True, "pageLoadStrategy": "eager",
+            "goog:loggingPrefs": {"performance": "ALL"},
+        })),
+        ("add_experimental_option", "chromium option", json.dumps({"prefs": {
+            "profile.default_content_setting_values.popups": 2,
+        }})),
     ])
 
     assert captured["version"] is None
@@ -994,6 +1003,250 @@ def test_chrome_launch_uses_chrome_for_testing(monkeypatch):
     assert captured["launch"]["executable_path"] == "/tmp/chrome"
     assert "channel" not in captured["launch"]
     assert shared["element_wait"] == 60.0
+    assert captured["context"]["ignore_https_errors"] is True
+    assert "ignore_default_args" not in captured["launch"]
+    assert "--disable-popup-blocking" in captured["launch"]["args"]
+    assert state["wait_until"] == "domcontentloaded"
+    assert state["selenium_capabilities"]["goog:loggingPrefs"] == {"performance": "ALL"}
+
+
+@pytest.mark.parametrize("subfield", ["chromium option", "optional option"])
+def test_selenium_capability_and_preference_rows_keep_supported_settings(monkeypatch, subfield):
+    warnings = []
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, level=1: warnings.append(message))
+    capabilities, preferences = playwright_actions._selenium_launch_settings([
+        ("capabilities", "shared capability", json.dumps({
+            "goog:loggingPrefs": {"performance": "ALL"},
+            "acceptInsecureCerts": True, "pageLoadStrategy": "eager", "custom:unknown": True,
+        })),
+        ("add_experimental_option", subfield, json.dumps({
+            "prefs": {"profile.default_content_setting_values.popups": 1,
+                      "profile.default_content_setting_values.notifications": 1,
+                      "profile.default_content_setting_values.redirects": 1},
+            "unknownOption": True,
+        })),
+    ], "chromeheadless")
+    assert capabilities == {"goog:loggingPrefs": {"performance": "ALL"},
+                            "acceptInsecureCerts": True, "pageLoadStrategy": "eager"}
+    assert preferences == {"popups": 1, "notifications": 1}
+    assert len(warnings) == 3
+    assert "custom:unknown" in warnings[0]
+    assert "profile.default_content_setting_values.redirects" in warnings[1]
+    assert "unknownOption" in warnings[2]
+
+
+@pytest.mark.parametrize("row", [
+    ("capabilities", "shared capability", '[]'),
+    ("capabilities", "shared capability", '{"goog:loggingPrefs": []}'),
+    ("capabilities", "shared capability", '{"goog:loggingPrefs": {"performance": "bad"}}'),
+    ("capabilities", "shared capability", '{"acceptInsecureCerts": "true"}'),
+    ("capabilities", "shared capability", '{"pageLoadStrategy": "bad"}'),
+    ("add_experimental_option", "chromium option", '{"prefs": []}'),
+    ("add_experimental_option", "chromium option", '{"prefs": {"profile.default_content_setting_values.notifications": true}}'),
+    ("add_experimental_option", "chromium option", '{"prefs": {"profile.default_content_setting_values.popups": 3}}'),
+])
+def test_selenium_launch_settings_reject_invalid_values(row):
+    with pytest.raises(ValueError):
+        playwright_actions._selenium_launch_settings([row], "chromeheadless")
+
+
+def test_repeated_selenium_option_dictionaries_keep_the_last_row():
+    capabilities, preferences = playwright_actions._selenium_launch_settings([
+        ("capabilities", "shared capability", '{"goog:loggingPrefs": {"performance": "ALL"}}'),
+        ("capabilities", "shared capability", '{"acceptInsecureCerts": false}'),
+        ("add_experimental_option", "chromium option", '{"prefs": {"profile.default_content_setting_values.notifications": 1}}'),
+        ("add_experimental_option", "chromium option", '{"prefs": {"profile.default_content_setting_values.popups": 2}}'),
+    ], "chromeheadless")
+    assert capabilities == {"acceptInsecureCerts": False}
+    assert preferences == {"popups": 2}
+
+
+def test_chromium_settings_are_reported_individually_on_firefox(monkeypatch):
+    warnings = []
+    monkeypatch.setattr(playwright_actions, "_log", lambda message, level=1: warnings.append(message))
+    capabilities, preferences = playwright_actions._selenium_launch_settings([
+        ("capabilities", "shared capability", '{"goog:loggingPrefs": {"performance": "ALL"}}'),
+        ("add_experimental_option", "chromium option", '{"prefs": {"profile.default_content_setting_values.notifications": 1}}'),
+    ], "firefoxheadless")
+    assert capabilities == preferences == {}
+    assert len(warnings) == 2
+    assert "goog:loggingPrefs" in warnings[0]
+    assert "profile.default_content_setting_values.notifications" in warnings[1]
+
+
+@pytest.fixture(scope="module")
+def browser_policy_server():
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/start":
+                self.send_response(302)
+                self.send_header("Location", "/final")
+                body = b""
+            else:
+                self.send_response(200)
+                body = b'''<script>setTimeout(() => {
+                    window.opened = Boolean(window.open('/child'));
+                    window.attempted = true;
+                }, 0);</script>''' if self.path == "/final" else b"permissions"
+            self.send_header("Content-Type", "text/html")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *_args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join()
+
+
+@pytest.mark.parametrize("value, expected", [(0, "prompt"), (1, "granted"), (2, "denied")])
+def test_selenium_notification_preference_is_scoped_to_its_context(page, browser_policy_server, value, expected):
+    context = page.context.browser.new_context(permissions=["geolocation"])
+    other = page.context.browser.new_context(permissions=["notifications"])
+    try:
+        tab, untouched = context.new_page(), other.new_page()
+        session = playwright_actions._set_chromium_notifications(context, tab, value)
+        tab.goto(browser_policy_server)
+        untouched.goto(browser_policy_server)
+        notification = "navigator.permissions.query({name: 'notifications'}).then(p => p.state)"
+        assert tab.evaluate(notification) == expected
+        assert tab.evaluate("navigator.permissions.query({name: 'geolocation'}).then(p => p.state)") == "granted"
+        assert untouched.evaluate(notification) == "granted"
+        replacement = context.new_page()
+        tab.close()
+        replacement.goto(browser_policy_server)
+        assert replacement.evaluate(notification) == expected
+        session.detach()
+    finally:
+        context.close()
+        other.close()
+
+
+@pytest.mark.parametrize("popups, arguments, allowed", [
+    (0, [], False), (1, [], True), (2, [], False),
+    (2, ["--disable-popup-blocking"], True),
+])
+def test_selenium_launch_rows_apply_browser_policies(page, browser_policy_server, monkeypatch, popups, arguments, allowed):
+    monkeypatch.setattr(playwright_actions._browser_state, "_playwright", SimpleNamespace(
+        chromium=page.context.browser.browser_type))
+    monkeypatch.setattr(playwright_actions._browser_state, "playwright_details", {})
+    monkeypatch.setattr(playwright_actions.sr, "Get_Shared_Variables", lambda name, **_: {
+        "Browser": "ChromeHeadless"} if name == "dependency" else None)
+    monkeypatch.setattr(playwright_actions.sr, "Set_Shared_Variables", lambda *_args, **_kwargs: "passed")
+    monkeypatch.setattr(playwright_actions, "_attach_selenium_bridge", lambda *_args: None)
+    monkeypatch.setattr(playwright_actions, "_set_active", lambda *_args: None)
+    monkeypatch.setattr("Framework.Built_In_Automation.Web.Selenium.utils.ChromeForTesting", lambda: SimpleNamespace(
+        setup_chrome_for_testing=lambda *_args: (None, None)))
+    state = playwright_actions._launch([
+        ("capabilities", "shared capability", '{"goog:loggingPrefs": {"performance": "ALL"}}'),
+        ("add_argument", "chromium option", json.dumps(arguments)),
+        ("add_experimental_option", "chromium option", json.dumps({"prefs": {
+            "profile.default_content_setting_values.popups": popups,
+            "profile.default_content_setting_values.notifications": 1,
+            "profile.default_content_setting_values.redirects": 1,
+        }})),
+    ])
+    try:
+        tab = state["page"]
+        tab.goto(browser_policy_server + "/start")
+        tab.wait_for_function("window.attempted === true")
+        assert tab.url == browser_policy_server + "/final"
+        assert tab.evaluate("window.opened") is allowed
+        assert tab.evaluate("navigator.permissions.query({name: 'notifications'}).then(p => p.state)") == "granted"
+    finally:
+        state["browser"].close()
+
+
+def test_selenium_performance_capability_preserves_raw_get_log(page, browser_policy_server, monkeypatch):
+    driver_path = shutil.which("chromedriver")
+    if not driver_path:
+        pytest.skip("A matching ChromeDriver is required for the compatibility bridge")
+    port = playwright_actions._free_local_port()
+    browser = page.context.browser.browser_type.launch(channel="chrome", headless=True, args=[
+        f"--remote-debugging-port={port}", "--remote-debugging-address=127.0.0.1",
+    ])
+    state = {}
+    try:
+        tab = browser.new_page()
+        capabilities, preferences = playwright_actions._selenium_launch_settings([
+            ("capabilities", "shared capability", '{"goog:loggingPrefs": {"performance": "ALL"}}'),
+            ("add_experimental_option", "chromium option", '{"prefs": {"profile.default_content_setting_values.notifications": 1}}'),
+        ], "chromeheadless")
+        state["selenium_capabilities"] = capabilities
+        state["notification_session"] = playwright_actions._set_chromium_notifications(
+            tab.context, tab, preferences["notifications"])
+        playwright_actions._attach_selenium_bridge(state, "chrome", f"127.0.0.1:{port}", driver_path)
+        assert state["selenium_bridge"] is not None
+        tab.goto(browser_policy_server)
+        logs = state["selenium_bridge"].get_log("performance")
+        events = [json.loads(entry["message"])["message"] for entry in logs]
+        assert any(event["method"] == "Network.responseReceived" for event in events)
+        assert tab.url == browser_policy_server + "/"
+        assert tab.evaluate("navigator.permissions.query({name: 'notifications'}).then(p => p.state)") == "granted"
+        state.update(browser=browser, context=tab.context, page=tab, network=[], capturing_network=False)
+        monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+        drained = []
+        get_log = state["selenium_bridge"].get_log
+
+        def read_logs(name):
+            drained.append(name)
+            return get_log(name)
+
+        monkeypatch.setattr(state["selenium_bridge"], "get_log", read_logs)
+        for iteration in range(3):
+            assert playwright_actions.capture_network_log([
+                ("capture network log", "selenium action", "start"),
+            ]) == "passed"
+            tab.goto(browser_policy_server + f"/?capture={iteration}")
+            assert playwright_actions.capture_network_log([
+                ("capture network log", "selenium action", "stop"),
+            ]) == "passed"
+        assert drained == ["performance"] * 6
+        assert tab.evaluate("navigator.permissions.query({name: 'notifications'}).then(p => p.state)") == "granted"
+    finally:
+        playwright_actions._close_selenium_bridge(state)
+        browser.close()
+
+
+@pytest.mark.parametrize("level", ["ALL", "OFF", None])
+def test_native_capture_drains_only_requested_webdriver_performance_logs(monkeypatch, level):
+    calls = []
+    state = {"context": SimpleNamespace(pages=[]), "network": [], "capturing_network": False,
+             "selenium_bridge": SimpleNamespace(get_log=lambda name: calls.append(name))}
+    if level is not None:
+        state["selenium_capabilities"] = {"goog:loggingPrefs": {"performance": level}}
+    monkeypatch.setattr(playwright_actions, "_state", lambda: state)
+    for command in ("start", "stop"):
+        assert playwright_actions.capture_network_log([
+            ("capture network log", "selenium action", command),
+        ]) == "passed"
+    assert calls == (["performance", "performance"] if level == "ALL" else [])
+
+
+def test_notification_permission_failure_detaches_both_cdp_sessions():
+    detached = []
+
+    def fail_permission(*_args):
+        raise RuntimeError("permission command failed")
+
+    target = SimpleNamespace(send=lambda *_args: {"targetInfo": {"browserContextId": "context"}},
+                             detach=lambda: detached.append("target"))
+    permission = SimpleNamespace(send=fail_permission, detach=lambda: detached.append("permission"))
+    context = SimpleNamespace(new_cdp_session=lambda _page: target,
+                              browser=SimpleNamespace(new_browser_cdp_session=lambda: permission))
+    with pytest.raises(RuntimeError, match="permission command failed"):
+        playwright_actions._set_chromium_notifications(context, object(), 1)
+    assert detached == ["target", "permission"]
 
 
 def test_playwright_viewport_uses_runtime_size_or_selenium_default(monkeypatch):
@@ -1712,7 +1965,11 @@ def test_delayed_drag_keeps_original_destination_after_reordering(page, monkeypa
         tab.close()
 
 
-def test_selenium_bridge_attach_publish_and_close(monkeypatch):
+@pytest.mark.parametrize("browser_name, logging_key", [
+    ("chrome", "goog:loggingPrefs"),
+    ("microsoft edge chromium", "ms:loggingPrefs"),
+])
+def test_selenium_bridge_attach_publish_and_close(monkeypatch, browser_name, logging_key):
     from selenium import webdriver
 
     monkeypatch.setattr(
@@ -1736,6 +1993,7 @@ def test_selenium_bridge_attach_publish_and_close(monkeypatch):
         "Chrome",
         lambda **kwargs: captured.update(kwargs) or bridge,
     )
+    monkeypatch.setattr(webdriver, "Edge", lambda **kwargs: captured.update(kwargs) or bridge)
     monkeypatch.setattr(selenium_actions, "selenium_driver", None)
     monkeypatch.setattr(
         playwright_actions.sr,
@@ -1747,16 +2005,20 @@ def test_selenium_bridge_attach_publish_and_close(monkeypatch):
         "Remove_From_Shared_Variables",
         lambda name: captured.pop(name, None),
     )
-    state = {}
+    state = {"selenium_capabilities": {logging_key: {"performance": "ALL"}}}
 
     playwright_actions._attach_selenium_bridge(
-        state, "chrome", "127.0.0.1:32123", "/tmp/chromedriver"
+        state, browser_name, "127.0.0.1:32123", "/tmp/chromedriver"
     )
     playwright_actions._publish_selenium_bridge(state["selenium_bridge"])
 
     assert state["selenium_bridge"] is bridge
     assert captured["options"].debugger_address == "127.0.0.1:32123"
-    assert captured["service"].path == "/tmp/chromedriver"
+    assert captured["options"].to_capabilities()[logging_key] == {"performance": "ALL"}
+    if browser_name == "chrome":
+        assert captured["service"].path == "/tmp/chromedriver"
+    else:
+        assert captured["service"] is None
     assert captured["selenium_driver"] is bridge
     assert selenium_actions.selenium_driver is bridge
 
@@ -2165,6 +2427,69 @@ def test_text_continues_when_focused_frame_input_is_outside_viewport(page, monke
         assert field.input_value() == ('oldagents' if append else 'agents')
     finally:
         tab.close()
+
+
+def test_text_reacquires_input_replaced_during_initial_click(page, monkeypatch):
+    tab = page.context.browser.new_page()
+    monkeypatch.setattr(playwright_actions, "get_page", lambda: tab)
+    try:
+        tab.set_content('''<input id="search" value="old value">
+            <div id="overlay" style="position:fixed;inset:0;background:white;z-index:10"></div>
+            <script>window.typed = [];
+                document.addEventListener('input', event => {
+                    if (event.data) typed.push(event.data);
+                });
+            </script>''')
+        field = tab.locator('#search')
+        pin = field.element_handle
+        handles = []
+
+        def acquire():
+            handle = pin()
+            handles.append(handle)
+            if len(handles) == 1:
+                tab.evaluate('''setTimeout(() => {
+                    const input = document.querySelector('#search');
+                    input.replaceWith(input.cloneNode(true));
+                    document.querySelector('#overlay').remove();
+                }, 50)''')
+            return handle
+
+        monkeypatch.setattr(field, "element_handle", acquire)
+        monkeypatch.setattr(playwright_actions, "_element", lambda _rows: field)
+        monkeypatch.setattr(playwright_actions, "_diagnostic", lambda *_args: None)
+        value = "Automation Genesys Testing"
+        assert playwright_actions.Enter_Text_In_Text_Box([
+            ("id", "element parameter", "search"), ("text", "selenium action", value),
+        ]) == "passed"
+        assert len(handles) == 2
+        assert field.input_value() == value
+        assert tab.evaluate("typed.join('')") == value
+    finally:
+        tab.close()
+
+
+@pytest.mark.parametrize("connected", [False, True])
+def test_text_click_retry_is_bounded_and_preserves_other_errors(monkeypatch, connected):
+    from playwright.sync_api import Error as PlaywrightError
+
+    acquired, disposed = [], []
+
+    def fail_click(**_kwargs):
+        raise PlaywrightError("click failed")
+
+    def acquire():
+        number = len(acquired)
+        acquired.append(number)
+        return SimpleNamespace(click=fail_click, evaluate=lambda _script: connected,
+                               dispose=lambda: disposed.append(number))
+
+    element = SimpleNamespace(get_attribute=lambda _name: "text", element_handle=acquire)
+    monkeypatch.setattr(playwright_actions, "_element", lambda _rows: element)
+    monkeypatch.setattr(playwright_actions, "_diagnostic", lambda *_args: None)
+    monkeypatch.setattr(playwright_actions, "_type_text", lambda *_args, **_kwargs: pytest.fail("typing must not start"))
+    assert playwright_actions.Enter_Text_In_Text_Box([("text", "selenium action", "value")]) == "zeuz_failed"
+    assert acquired == disposed == ([0] if connected else [0, 1])
 
 
 def test_text_survives_changing_classes_and_dismisses_dropdown(page, monkeypatch):
