@@ -2143,6 +2143,44 @@ def test_locator_grammar(page, rows, expected):
     assert element.inner_text() == expected
 
 
+@pytest.mark.parametrize("parameter_type", ["optional parameter", "optional option"])
+@pytest.mark.parametrize("locator_name,base_selector", [
+    ("xpath", '//input[@type="PLACEHOLDER"]'),
+    ("css", 'input[type="PLACEHOLDER"]'),
+    ("css selector", 'input[type="PLACEHOLDER"]'),
+    ("css_selector", 'input[type="PLACEHOLDER"]'),
+])
+def test_optional_raw_locators_from_reusable_variables(
+    page, monkeypatch, parameter_type, locator_name, base_selector
+):
+    monkeypatch.setattr(LocateElement.sr, "shared_variables", {
+        "zeuz_enable_variable_logging": "False",
+    })
+    code = (
+        f"base_selector = {base_selector!r}\n"
+        "email_selector = base_selector.replace('PLACEHOLDER', 'email')"
+    )
+    assert sequential_actions.common.execute_python_code([
+        ("execute python code", "action", code),
+    ]) == "passed"
+    tab = page.context.browser.new_page()
+    try:
+        tab.set_content('<input id="email" type="email"><input id="password" type="password">')
+        for expression in (
+            "%|email_selector|%",
+            "%|base_selector.replace('PLACEHOLDER', 'email')|%",
+        ):
+            rows = sequential_actions.common.shared_variable_to_value([
+                (locator_name, parameter_type, expression),
+            ])
+            expected_selector = base_selector.replace("PLACEHOLDER", "email")
+            assert LocateElement._construct_query(rows)[0] == expected_selector
+            element = LocateElement.Get_Element(rows, tab, element_wait=0.2)
+            assert element.get_attribute("id") == "email"
+    finally:
+        tab.close()
+
+
 def test_text_filter_fallback_preserves_normal_lookup(page, monkeypatch):
     saved = {}
     monkeypatch.setattr(LocateElement.sr, "Set_Shared_Variables", lambda key, value: saved.__setitem__(key, value))
