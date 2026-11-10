@@ -423,6 +423,55 @@ def test_routed_common_wait_receives_normalized_action_row(monkeypatch):
     assert ("wait", "action", "30") in captured
 
 
+@pytest.mark.parametrize("timeout", [0, 5])
+def test_common_sleep_captures_on_playwright_worker(monkeypatch, timeout):
+    calls = []
+    values = {
+        "zeuz_browser_driver": "playwright",
+        "zeuz_active_browser_backend": "playwright",
+        "zeuz_prettify_limit": 500,
+    }
+
+    class FakePage:
+        pass
+
+    FakePage.__module__ = "playwright.sync_api._generated"
+    values["playwright_page"] = FakePage()
+    monkeypatch.setattr(sequential_actions, "_action_worker", None)
+    monkeypatch.setattr(sequential_actions, "_get_action_timeout", lambda: timeout)
+    monkeypatch.setattr(sequential_actions, "load_testing", False)
+    monkeypatch.setattr(sequential_actions.CommonUtil, "load_testing", False)
+    monkeypatch.setattr(sequential_actions.CommonUtil, "screen_capture_type", "none")
+    monkeypatch.setattr(sequential_actions.CommonUtil, "screen_capture_driver", None)
+    monkeypatch.setattr(sequential_actions.sr, "Get_Shared_Variables",
+                        lambda name, **_: values.get(name, "zeuz_failed"))
+    monkeypatch.setattr(sequential_actions.sr, "Set_Shared_Variables",
+                        lambda name, value, **_: values.__setitem__(name, value))
+    monkeypatch.setattr(sequential_actions.sr, "Shared_Variable_Export", lambda: values)
+    monkeypatch.setattr(sequential_actions, "load_sa_modules", lambda _: None)
+    monkeypatch.setattr(sequential_actions.common, "shared_variable_to_value", lambda rows: rows)
+    monkeypatch.setattr(sequential_actions.ConfigModule, "get_config_value", lambda *args: "true")
+
+    def record(stage):
+        calls.append((stage, threading.get_ident()))
+
+    monkeypatch.setattr(sequential_actions.common, "Sleep", lambda _: record("action") or "passed")
+    monkeypatch.setattr(sequential_actions.CommonUtil, "TakeScreenShot",
+                        lambda *args, pre_action=False: record("before" if pre_action else "after"))
+
+    def setup(_):
+        return threading.get_ident()
+
+    setup._zeuz_thread_affine = True
+    owner = sequential_actions._run_action_with_timeout(setup, [])
+    try:
+        rows = [("sleep", "common action", "0")]
+        assert sequential_actions.Action_Handler(rows, rows[-1], _bypass_bug=False) == "passed"
+        assert calls == [(stage, owner) for stage in ("before", "action", "after")]
+    finally:
+        sequential_actions._action_worker.retire()
+
+
 def test_selenium_conditional_uses_active_playwright_driver(monkeypatch):
     page = object()
     values = {"zeuz_browser_driver": "playwright"}
