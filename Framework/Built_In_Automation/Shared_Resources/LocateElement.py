@@ -1493,9 +1493,6 @@ def _playwright_get_element(step_data_set, root, return_all_elements=False, elem
                     element_wait = float(right)
                 elif key == "text filter":
                     text_filter_enabled = enabled
-                elif key in ("xpath", "css", "css selector", "css_selector"):
-                    # Selenium accepts raw selectors in optional-parameter rows too.
-                    normal_rows.append((left, middle, right))
             elif mid.startswith("sr "):
                 match = re.match(r"sr\s+(\d+)(?:\s+\w+)?\s+(?:parent|element)\s+parameter", mid)
                 if match:
