@@ -2597,7 +2597,6 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
             return "zeuz_failed" 
 
     module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute
-    is_playwright_action = module == "playwright" or original_module == "playwright"
     CommonUtil.prettify_limit = sr.Get_Shared_Variables("zeuz_prettify_limit")
 
     if module in failed_tag_list or module == "" or function == "":  # New, make sure we have a function
@@ -2657,6 +2656,11 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
 
     sr.Set_Shared_Variables("screen_capture", screenshot.lower().strip())
     CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
+    # Common actions can capture a Playwright page, which belongs to the browser worker.
+    use_playwright_worker = module == "playwright" or original_module == "playwright" or (
+        CommonUtil.screen_capture_type == "web"
+        and type(CommonUtil.screen_capture_driver).__module__.startswith("playwright.")
+    )
 
     # Convert shared variables to their string equivalent
     # if action_name not in skip_conversion_of_shared_variable_for_actions:
@@ -2674,14 +2678,14 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         run_function = getattr(eval(module), function)  # create a reference to the function
         # Capture the BEFORE-action screen (debug/chatbot only) so the validator can
         # compare it against the AFTER capture taken once the action completes.
-        if not is_playwright_action:
+        if not use_playwright_worker:
             CommonUtil.TakeScreenShot(function, pre_action=True)
         start_time = time.perf_counter()
         if pre_sleep:
             time.sleep(pre_sleep)
         elif module in CommonUtil.global_sleep and "_all_" in CommonUtil.global_sleep[module]:
             time.sleep(CommonUtil.global_sleep[module]["_all_"]["pre"])
-        if is_playwright_action:
+        if use_playwright_worker:
             def run_playwright_action(rows):
                 CommonUtil.TakeScreenShot(function, pre_action=True)
                 value = run_function(rows)
@@ -2712,7 +2716,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         compare_variable_names(False, [])
         if performance_action.zeuz_cycle != -1:
             CommonUtil.action_perf[-1]['cycle'] = performance_action.zeuz_cycle
-        if not is_playwright_action:
+        if not use_playwright_worker:
             CommonUtil.TakeScreenShot(function)
         CommonUtil.previous_action_name = CommonUtil.current_action_name
         if _bypass_bug:

@@ -6,6 +6,7 @@ import base64
 import functools
 import inspect
 import json
+import shutil
 import socket
 import sys
 import time
@@ -286,19 +287,19 @@ def _attach_selenium_bridge(state, browser_name, debugger_address, driver_path=N
         if "edge" in browser_name:
             from selenium.webdriver.edge.options import Options
 
-            options = Options()
-            options.debugger_address = debugger_address
-            driver = webdriver.Edge(options=options)
+            driver_class = webdriver.Edge
+            service = None
         else:
             from selenium.webdriver.chrome.options import Options
             from selenium.webdriver.chrome.service import Service
 
-            options = Options()
-            options.debugger_address = debugger_address
-            driver = webdriver.Chrome(
-                options=options,
-                service=Service(executable_path=driver_path) if driver_path else None,
-            )
+            driver_class = webdriver.Chrome
+            service = Service(executable_path=driver_path) if driver_path else None
+        options = Options()
+        options.debugger_address = debugger_address
+        for name, value in state.get("selenium_capabilities", {}).items():
+            options.set_capability(name, value)
+        driver = driver_class(options=options, service=service)
         state["selenium_bridge"] = driver
         _log("Attached Selenium compatibility bridge to Playwright browser", 1)
     except Exception as error:
@@ -382,6 +383,79 @@ def _wire_page(state, page, activate=True):
         state["page_listener"] = True
 
 
+def _selenium_launch_settings(rows, browser_name):
+    capabilities, preferences = {}, {}
+    chromium = any(name in browser_name for name in ("chrome", "edge", "chromium"))
+    for left, middle, value in rows:
+        key = _key(left)
+        if middle != "shared capability" and key not in ("setcapability", "addexperimentaloption"):
+            continue
+        value = _parse(value)
+        if not isinstance(value, dict):
+            raise ValueError(f"{left} must be a dictionary")
+        if key == "addexperimentaloption":
+            preferences = {}
+            for option, settings in value.items():
+                if option != "prefs":
+                    _log(f"Playwright ignores unsupported Selenium option '{option}'", 2)
+                    continue
+                if not isinstance(settings, dict):
+                    raise ValueError("Selenium prefs must be a dictionary")
+                for name, setting in settings.items():
+                    if chromium and name in (
+                        "profile.default_content_setting_values.notifications",
+                        "profile.default_content_setting_values.popups",
+                    ):
+                        if type(setting) is not int or setting not in (0, 1, 2):
+                            raise ValueError(f"Selenium preference '{name}' must be 0, 1, or 2")
+                        preferences[name.rsplit(".", 1)[-1]] = setting
+                    else:
+                        _log(f"Playwright ignores unsupported Selenium preference '{name}'", 2)
+        else:
+            capabilities = {}
+            for name, setting in value.items():
+                if name == "acceptInsecureCerts":
+                    if not isinstance(setting, bool):
+                        raise ValueError("acceptInsecureCerts must be a boolean")
+                elif name == "pageLoadStrategy":
+                    if setting not in ("normal", "eager", "none"):
+                        raise ValueError("pageLoadStrategy must be normal, eager, or none")
+                elif chromium and name in ("goog:loggingPrefs", "ms:loggingPrefs"):
+                    if not isinstance(setting, dict) or any(
+                        not isinstance(log_type, str) or not isinstance(level, str)
+                        or level not in ("ALL", "DEBUG", "INFO", "WARNING", "SEVERE", "OFF")
+                        for log_type, level in setting.items()
+                    ):
+                        raise ValueError(f"{name} must map log types to WebDriver log levels")
+                else:
+                    _log(f"Playwright ignores unsupported Selenium capability '{name}'", 2)
+                    continue
+                capabilities[name] = setting
+    return capabilities, preferences
+
+
+def _set_chromium_notifications(context, page, value):
+    target_session = context.new_cdp_session(page)
+    try:
+        target = target_session.send("Target.getTargetInfo")["targetInfo"]
+    finally:
+        target_session.detach()
+    session = context.browser.new_browser_cdp_session()
+    try:
+        parameters = {
+            "permission": {"name": "notifications"},
+            "setting": {0: "prompt", 1: "granted", 2: "denied"}[value],
+        }
+        if "browserContextId" in target:
+            parameters["browserContextId"] = target["browserContextId"]
+        session.send("Browser.setPermission", parameters)
+    except Exception:
+        session.detach()
+        raise
+    # Chromium resets permission overrides when their CDP session detaches.
+    return session
+
+
 def _launch(data_set):
     from playwright.sync_api import Error, sync_playwright
 
@@ -418,6 +492,7 @@ def _launch(data_set):
             _set_active(driver_id)
             return state
 
+    capabilities, preferences = _selenium_launch_settings(rows, browser_name)
     if _browser_state._playwright is None:
         _browser_state._playwright = sync_playwright().start()
 
@@ -488,13 +563,23 @@ def _launch(data_set):
         elif key in (
             "addextension",
             "addencodedextension",
-            "setcapability",
-            "addexperimentaloption",
         ):
             _log(f"Playwright ignores unsupported Selenium option '{left}'", 2)
-        elif middle == "shared capability":
-            _log(f"Playwright ignores unsupported Selenium capability '{left}'", 2)
 
+    if "acceptInsecureCerts" in capabilities:
+        context_options["ignore_https_errors"] = capabilities["acceptInsecureCerts"]
+    if "pageLoadStrategy" in capabilities:
+        wait_until = {"normal": "load", "eager": "domcontentloaded", "none": "commit"}[
+            capabilities["pageLoadStrategy"]
+        ]
+    if "popups" in preferences:
+        if debugger:
+            raise ValueError("Selenium popup preferences require a newly launched Chromium browser")
+        if preferences["popups"] == 1:
+            if "--disable-popup-blocking" not in arguments:
+                arguments.append("--disable-popup-blocking")
+        elif "--disable-popup-blocking" not in arguments:
+            launch["ignore_default_args"] = ["--disable-popup-blocking"]
     selenium_cdp_address = _selenium_cdp_address(browser_name, debugger, arguments)
     launch["args"] = arguments
     if firefox_prefs:
@@ -511,6 +596,7 @@ def _launch(data_set):
         "capturing_network": False,
         "wait_until": wait_until,
         "selenium_bridge": None,
+        "selenium_capabilities": capabilities,
     }
 
     if debugger:
@@ -569,6 +655,14 @@ def _launch(data_set):
 
     state["browser"], state["context"] = browser, context
     page = context.pages[-1] if context.pages else context.new_page()
+    if "notifications" in preferences:
+        try:
+            state["notification_session"] = _set_chromium_notifications(
+                context, page, preferences["notifications"])
+        except Exception:
+            if not debugger:
+                browser.close()
+            raise
     _wire_page(state, page)
     _attach_selenium_bridge(
         state, browser_name, selenium_cdp_address, chrome_driver_path
@@ -749,6 +843,30 @@ def Click_Element(data_set):
     return "passed"
 
 
+def _save_download(download, folder):
+    directory = Path(folder)
+    directory.mkdir(parents=True, exist_ok=True)
+    filename = Path(download.suggested_filename).name
+    destination = directory / filename
+    number = 0
+    while True:
+        try:
+            # Reserve the name so concurrent downloads cannot overwrite each other.
+            with destination.open("xb"):
+                pass
+            break
+        except FileExistsError:
+            number += 1
+            name = Path(filename)
+            destination = directory / f"{name.stem} ({number}){name.suffix}"
+    try:
+        download.save_as(str(destination))
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
+    return destination
+
+
 def Click_and_Download(data_set):
     timeout = (
         next(
@@ -775,14 +893,23 @@ def Click_and_Download(data_set):
     if result in failed_tag_list:
         return result
     download = info.value
+    initial_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+    source = _save_download(download, initial_folder) if initial_folder else None
     if path:
         destination = Path(path)
         if destination.is_dir() or not destination.suffix:
             destination.mkdir(parents=True, exist_ok=True)
-            destination /= download.suggested_filename
         else:
             destination.parent.mkdir(parents=True, exist_ok=True)
-        download.save_as(str(destination))
+        if source is not None:
+            # Like Selenium, keep the original download when a destination collides.
+            shutil.move(str(source), str(destination))
+        else:
+            if destination.is_dir():
+                destination /= Path(download.suggested_filename).name
+            download.save_as(str(destination))
+    elif source is None:
+        return _fail("Initial download folder is not configured")
     return "passed"
 
 
@@ -883,7 +1010,13 @@ def Keystroke_For_Element(data_set):
 
 
 def _type_text(element, value, delay=0):
-    if delay or not value:
+    if delay:
+        target = element if element is not None else get_page().keyboard
+        for char in value:
+            target.type(char)
+            time.sleep(delay / 1000)
+        return
+    if not value:
         (element if element is not None else get_page().keyboard).type(value, delay=delay)
         return
 
@@ -956,10 +1089,20 @@ def Enter_Text_In_Text_Box(data_set):
 
     handle = element.element_handle()
     try:
-        try:
-            handle.click(timeout=5000)
-        except PlaywrightTimeoutError:
-            _log("Entering text without clicking the element", 2)
+        for attempt in range(2):
+            try:
+                handle.click(timeout=5000)
+                break
+            except PlaywrightTimeoutError:
+                _log("Entering text without clicking the element", 2)
+                break
+            except PlaywrightError:
+                if attempt or handle.evaluate("el => el.isConnected"):
+                    raise
+                previous_handle = handle
+                handle = element.element_handle()
+                previous_handle.dispose()
+                _log("Input was replaced during the initial click; retrying before entering text", 2)
         if clear and not append:
             try:
                 handle.press("ControlOrMeta+A")
@@ -1353,16 +1496,21 @@ def drag_and_drop(data_set):
     if delay is None:
         src.drag_to(dst, **({"target_position": target_position} if target_position else {}))
     else:
-        src.hover()
-        page = get_page()
-        page.mouse.down()
+        # Keep Selenium's destination element when sorting changes an indexed locator.
+        destination = dst.element_handle()
         try:
-            hover_options = {"position": target_position} if target_position else {}
-            dst.hover(**hover_options)
-            dst.hover(**hover_options)
-            page.wait_for_timeout(delay * 1000)
+            src.hover()
+            page = get_page()
+            page.mouse.down()
+            try:
+                hover_options = {"position": target_position} if target_position else {}
+                destination.hover(**hover_options)
+                page.wait_for_timeout(delay * 1000)
+                destination.hover(**hover_options)
+            finally:
+                page.mouse.up()
         finally:
-            page.mouse.up()
+            destination.dispose()
     return "passed"
 
 
@@ -1882,6 +2030,17 @@ Tear_Down_Selenium._zeuz_thread_affine = True
 def capture_network_log(data_set):
     state = _state()
     command = _action(data_set).strip().lower()
+    capabilities = state.get("selenium_capabilities", {})
+    performance_logging = any(
+        capabilities.get(name, {}).get("performance", "OFF") != "OFF"
+        for name in ("goog:loggingPrefs", "ms:loggingPrefs")
+    )
+    if state.get("selenium_bridge") is not None and performance_logging:
+        try:
+            # Selenium's capture action drains this buffer at both boundaries.
+            state["selenium_bridge"].get_log("performance")
+        except Exception as error:
+            _log(f"Could not clear WebDriver performance logs: {error}", 2)
     if command == "start":
         _stop_network_capture(state)
         state["capturing_network"] = True
