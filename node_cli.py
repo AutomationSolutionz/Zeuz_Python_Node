@@ -146,6 +146,7 @@ from Framework.Utilities import (  # noqa: E402
     CommonUtil,
     All_Device_Info,
     node_health,
+    node_watchdog,
     x11_utils,
 )
 from Framework import MainDriverApi  # noqa: E402
@@ -208,6 +209,84 @@ def restart_node_process():
         os.chdir(cwd)
         print(Fore.RED + f"[health] Could not restart ZeuZ Node automatically: {e}")
         print(Fore.RED + "[health] Please restart ZeuZ Node manually.")
+
+
+def _kill_child_processes_briefly(seconds=15):
+    """kill_child_processes(), but never wait on it for longer than `seconds`."""
+    worker = threading.Thread(target=kill_child_processes, name="zeuz_kill_children", daemon=True)
+    worker.start()
+    worker.join(seconds)
+
+
+def on_test_case_stuck(stall):
+    """Called by node_watchdog when the running test case made no progress for too long.
+
+    The stack dump and the reason are already saved. Restarting is what frees
+    the node: the test case is then reported as Blocked on startup and the node
+    carries on with the rest of the run.
+    """
+    print(
+        Fore.RED
+        + "[watchdog] %s %s made no progress for %d seconds (last activity: %s)."
+        % (stall["testcase_no"], stall["title"], stall["quiet_seconds"], stall["last_activity"] or "unknown")
+    )
+    if stall["stack_dump"]:
+        print(Fore.RED + f"[watchdog] Thread dump saved to {stall['stack_dump']}")
+    if stall["debug"]:
+        print(Fore.YELLOW + "[watchdog] Not restarting during a debug session. Restart ZeuZ Node when you are done.")
+        return
+    if os.name != "posix":
+        print(Fore.YELLOW + "[watchdog] Please restart ZeuZ Node to recover.")
+        return
+    print(Fore.YELLOW + "[watchdog] Restarting ZeuZ Node to recover...")
+    sys.stdout.flush()
+    # The run thread is stuck, so cleanup must not be able to hold this thread too.
+    _kill_child_processes_briefly()
+    restart_node_process()
+    # Only reached if the restart could not be done. Staying up would leave a
+    # node that looks online and does nothing, so let whatever supervises the
+    # node (launcher, service manager, monitor script) start a fresh one.
+    print(Fore.RED + "[watchdog] Could not restart in place. Exiting so ZeuZ Node can be started again.")
+    sys.stdout.flush()
+    os._exit(1)
+
+
+def report_interrupted_test_case():
+    """Tell the server about a test case the node took but produced no result for.
+
+    That is the test case that was running when the node last stopped, or one
+    the node just failed to process. Without this the server keeps waiting for
+    its result, and the run it belongs to can never complete.
+    """
+    marker = node_watchdog.read_interrupted()
+    if marker is None:
+        return
+    label = f"{marker['testcase_no']} of run {marker['run_id']}"
+    if node_watchdog.interrupted_is_too_old(marker):
+        print(Fore.YELLOW + f"[watchdog] {label} was interrupted too long ago to report. Skipping.")
+        node_watchdog.clear_interrupted()
+        return
+    print(Fore.YELLOW + f"[watchdog] {label} has no result on the server. Reporting it as Blocked.")
+    report = node_watchdog.interrupted_report(marker)
+    for attempt in range(3):
+        try:
+            res = RequestFormatter.request(
+                "post",
+                RequestFormatter.form_uri("create_report_log_api/"),
+                data={"execution_report": json.dumps(report)},
+                timeout=60,
+            )
+            if res.status_code == 200:
+                print(Fore.GREEN + f"[watchdog] Reported {label}.")
+                node_watchdog.clear_interrupted()
+                return
+            print(Fore.YELLOW + f"[watchdog] Server answered {res.status_code} while reporting {label}.")
+        except Exception as e:
+            print(Fore.YELLOW + f"[watchdog] Could not report {label}: {e}")
+        if attempt < 2:
+            time.sleep(4)
+    # Left in place: the next start tries again.
+    print(Fore.YELLOW + f"[watchdog] {label} will be reported the next time ZeuZ Node starts.")
 
 
 def restart_if_actions_are_stuck():
@@ -452,6 +531,25 @@ def notify_complete(message="Run completed"):
         print("Failed to send notification")
 
 
+def _watch_delivered_test_case(response, node_id):
+    """Start the watchdog for the test case the server just delivered.
+
+    Reads only the run id and the test case id from the delivery, and tolerates
+    anything missing: this must work even for a delivery the node then fails to
+    process, so that failure can still be reported against the right test case.
+    """
+    run_id, testcase_no, title = "", "", ""
+    try:
+        delivery = json.loads(response)
+        run_id = delivery.get("runId") or ""
+        detail = (delivery.get("testCases") or [{}])[0].get("testCaseDetail") or {}
+        testcase_no = detail.get("id") or ""
+        title = detail.get("name") or ""
+    except Exception:
+        pass
+    node_watchdog.begin_test_case(run_id, testcase_no, title, node_id)
+
+
 async def RunProcess(node_id, log_dir=None):
     try:
         # --- START websocket service connections --- #
@@ -475,6 +573,11 @@ async def RunProcess(node_id, log_dir=None):
 
         # Connect to the live log service.
         live_log_service.connect(live_log_service_addr())
+
+        # A test case that was cut short by the previous stop of this node has
+        # no result on the server yet. Report it before taking new work.
+        await asyncio.get_running_loop().run_in_executor(None, report_interrupted_test_case)
+        node_watchdog.start(on_test_case_stuck)
 
         # WARNING: For local development only.
         # if "localhost" in host:
@@ -505,27 +608,33 @@ async def RunProcess(node_id, log_dir=None):
             except Exception:
                 pass
 
-            # 1. Adapt the proto response to appropriate json format
-            node_json = adapter.adapt(response, node_id)
-
-            # 2. Save the json for MainDriver to find
-            # Ensure that the parent dirs actually exist before writing to the json file.
+            # The server has handed this test case over and now waits for its
+            # result. From here on the watchdog expects regular progress (and
+            # restarts the node if there is none), and whatever happens the
+            # server is told the outcome.
+            _watch_delivered_test_case(response, node_id)
+            failure = None
             try:
-                with open(
-                    save_path / f"deploy-tc.zeuz.json", "w", encoding="utf-8"
-                ) as f:
-                    f.write(json.dumps(node_json))
-            except Exception:
-                print(Fore.RED + "ERROR failed to save test case json into file")
-                print(Fore.YELLOW + "JSON CONTENT:")
-                print(node_json)
-                traceback.print_exc()
+                # 1. Adapt the proto response to appropriate json format
+                node_json = adapter.adapt(response, node_id)
 
-            # 3. Call MainDriver
-            device_info = All_Device_Info.get_all_connected_device_info()
-            await install_handler.cancel_run()
-            loop = asyncio.get_running_loop()
-            try:
+                # 2. Save the json for MainDriver to find
+                # Ensure that the parent dirs actually exist before writing to the json file.
+                try:
+                    with open(
+                        save_path / f"deploy-tc.zeuz.json", "w", encoding="utf-8"
+                    ) as f:
+                        f.write(json.dumps(node_json))
+                except Exception:
+                    print(Fore.RED + "ERROR failed to save test case json into file")
+                    print(Fore.YELLOW + "JSON CONTENT:")
+                    print(node_json)
+                    traceback.print_exc()
+
+                # 3. Call MainDriver
+                device_info = All_Device_Info.get_all_connected_device_info()
+                await install_handler.cancel_run()
+                loop = asyncio.get_running_loop()
                 await loop.run_in_executor(
                     None,
                     lambda: MainDriverApi.main(
@@ -533,7 +642,14 @@ async def RunProcess(node_id, log_dir=None):
                         all_run_id_info=node_json,
                     ),
                 )
+            except Exception as e:
+                failure = f"{type(e).__name__}: {e}"
+                raise
             finally:
+                if node_watchdog.end_test_case(failure):
+                    # No result was produced. Report the test case as Blocked
+                    # now, so its run is not left waiting for it.
+                    await asyncio.get_running_loop().run_in_executor(None, report_interrupted_test_case)
                 # The run is over (reports uploaded, or it ended with an
                 # error), so a restart loses nothing.
                 restart_if_actions_are_stuck()

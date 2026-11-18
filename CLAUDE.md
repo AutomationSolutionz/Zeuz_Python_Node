@@ -65,6 +65,7 @@ Zeuz Server → long_poll_handler.py → adapter.py → MainDriverApi.py
 - `Framework/Built_In_Automation/Shared_Resources/BuiltInFunctionSharedResources.py` - Shared variables
 - `Framework/Utilities/CommonUtil.py` - Logging and exceptions
 - `Framework/Utilities/decorators.py` - @logger, @deprecated decorators
+- `Framework/Utilities/node_watchdog.py` - Restarts a node stuck inside a test case and reports that test case
 
 ### Module Structure
 Each automation module follows this pattern:
@@ -267,6 +268,31 @@ all_logs_json = [{
 Generated via `reporting/junit_report.py` after test completion:
 - Output: `<zip_dir>/junitreport.xml`
 - Standard JUnit XML format with test suite and test case elements
+
+## Node Watchdog
+
+`action_timeout` only covers actions. `Framework/Utilities/node_watchdog.py` covers
+everything else: it runs on its own thread and expects signs of progress while a
+test case is running (every `CommonUtil.ExecLog` call is one).
+
+- No progress for 20 minutes (or `action_timeout` + 5 minutes inside an action,
+  whichever is longer) means the test case is stuck. The watchdog writes every
+  thread's stack to `AutomationLog/watchdog/stall_*.txt` and the node restarts
+  itself in place (`node_cli.on_test_case_stuck`). No restart in debug sessions
+  or on Windows; the dump is still written.
+- `AutomationLog/interrupted_test_case.json` names the test case that is running,
+  with its last activity, refreshed every minute. If it is still there when the
+  node starts (watchdog restart, `kill -9`, reboot), or a delivered test case
+  ends without a result, `node_cli.report_interrupted_test_case` reports it to the
+  server as Blocked with the reason, so its run can complete.
+- Work that is legitimately silent for long must say so:
+  `with node_watchdog.allow_quiet("what", seconds):` (`None` = no limit). Actions,
+  report/log uploads and performance runs already do.
+- `ZEUZ_NODE_WATCHDOG_SECONDS` changes the 20 minutes; `0` turns the watchdog off.
+- On Linux, if the interpreter itself is frozen for 15 minutes (not even the
+  watchdog thread runs), the process dumps its stacks to
+  `AutomationLog/watchdog/interpreter_frozen.txt` and exits, so whatever
+  supervises the node can start it again.
 
 ## Adding New Modules
 

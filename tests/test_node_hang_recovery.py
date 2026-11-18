@@ -16,7 +16,7 @@ import pytest
 
 from Framework.Built_In_Automation.Sequential_Actions import sequential_actions
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
-from Framework.Utilities import ConfigModule, node_health, x11_utils
+from Framework.Utilities import ConfigModule, node_health, node_watchdog, x11_utils
 
 NODE_CLI = Path(__file__).resolve().parents[1] / "node_cli.py"
 
@@ -157,6 +157,49 @@ def test_thread_affine_timeout_keeps_its_worker_and_recovers(fast_action_timeout
     assert _wait_until(lambda: node_health.stuck_threads() == [])
     assert worker.thread.is_alive()
     assert sequential_actions._run_action_with_timeout(lambda _: "passed", []) == "passed"
+
+
+def test_actions_behind_a_stuck_thread_affine_worker_fail_at_once(fast_action_timeout, monkeypatch):
+    """One hung browser action must not cost a full action_timeout for every action after it."""
+    monkeypatch.setattr(sequential_actions, "_get_action_timeout", lambda: 1.0)
+    release = threading.Event()
+    ran = []
+
+    def hung_affine_action(_):
+        release.wait(30)
+        return "passed"
+
+    hung_affine_action._zeuz_thread_affine = True
+    assert sequential_actions._run_action_with_timeout(hung_affine_action, []) == "zeuz_failed"
+
+    started = time.monotonic()
+    for _ in range(5):
+        assert sequential_actions._run_action_with_timeout(lambda _: ran.append(1) or "passed", []) == "zeuz_failed"
+    assert time.monotonic() - started < 1.0  # waiting behind the hung action would take 5 seconds
+    assert ran == []  # and none of them was left queued to run later
+
+    release.set()
+    assert _wait_until(lambda: node_health.stuck_threads() == [])
+    assert sequential_actions._run_action_with_timeout(lambda _: "passed", []) == "passed"
+
+
+def test_node_watchdog_gives_each_action_its_own_time_limit(fast_action_timeout, monkeypatch):
+    seen = []
+    real = node_watchdog.allow_quiet_for_action
+
+    def recording(action_timeout):
+        seen.append(action_timeout)
+        return real(action_timeout)
+
+    monkeypatch.setattr(node_watchdog, "allow_quiet_for_action", recording)
+
+    assert sequential_actions._run_action_with_timeout(lambda _: "passed", []) == "passed"
+    assert seen == [0.3]
+
+    # With action_timeout turned off the action has no limit, so the watchdog applies none either.
+    monkeypatch.setattr(sequential_actions, "_get_action_timeout", lambda: 0)
+    assert sequential_actions._run_action_with_timeout(lambda _: "passed", []) == "passed"
+    assert seen == [0.3, None]
 
 
 def test_actions_that_finish_in_time_are_never_tracked(fast_action_timeout):
