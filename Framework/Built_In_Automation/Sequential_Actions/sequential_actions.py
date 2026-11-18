@@ -48,7 +48,7 @@ from . import common_functions as common, performance_action  # Functions that a
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
-from Framework.Utilities import CommonUtil, node_health, x11_utils
+from Framework.Utilities import CommonUtil, node_health, node_watchdog, x11_utils
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -287,13 +287,29 @@ def _run_action_with_timeout(run_function, data_set):
         load_testing or getattr(CommonUtil, "load_testing", False)
         or (not thread_affine and timeout <= 0)
     ):
-        return run_function(data_set)
+        # No time limit applies here, so the node watchdog must not apply one either.
+        with node_watchdog.allow_quiet_for_action(None):
+            return run_function(data_set)
 
     if _action_worker is None:
         _action_worker = _ActionTimeoutWorker()
 
+    if _action_worker.is_stuck():
+        # Only a worker that owns a browser session is kept after a timeout
+        # (see below). While its timed-out action is still running, this action
+        # could only wait behind it for the whole action_timeout and then fail
+        # the same way, for every remaining action of the test case.
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "An earlier action exceeded the action_timeout and is still running, so this action "
+            "cannot start. Marking the step as failed.",
+            3,
+        )
+        return "zeuz_failed"
+
     try:
-        return _action_worker.run(run_function, (data_set,), timeout if timeout > 0 else None)
+        with node_watchdog.allow_quiet_for_action(timeout):
+            return _action_worker.run(run_function, (data_set,), timeout if timeout > 0 else None)
     except TimeoutError:
         timed_out_worker = _action_worker
         # Keep thread-affine sessions on their owning worker if the call finishes late.

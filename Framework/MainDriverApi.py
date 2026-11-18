@@ -31,7 +31,7 @@ import pytz
 from threading import Timer
 from Framework.attachment_db import AttachmentDB, GlobalAttachment
 from Framework.Built_In_Automation import Shared_Resources
-from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
+from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter, node_watchdog
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
@@ -1031,6 +1031,8 @@ def run_test_case(
         test_case = str(TestCaseID).replace("#", "no")
         CommonUtil.current_tc_no = test_case
         CommonUtil.current_tc_name = testcase_info['title']
+        # If the node stops during this test case, this is the one to report.
+        node_watchdog.set_test_case(testcase_info.get("testcase_no", test_case), testcase_info.get("title", ""))
         CommonUtil.load_testing = False
         CommonUtil.clear_performance_metrics()
         CommonUtil.global_sleep = {"selenium":{}, "appium":{}, "windows":{}, "desktop":{}}
@@ -1577,13 +1579,28 @@ def upload_step_report(run_id: str, tc_id: str, step_seq: int, step_id: int, exe
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
+# How long uploading a run's report and logs may stay silent. Every request in
+# it has its own socket timeout; this only has to outlast a large upload on a
+# slow connection.
+UPLOAD_QUIET_SECONDS = 2 * 60 * 60
+
+
 def upload_reports_and_zips(temp_ini_file, run_id):
+    with node_watchdog.allow_quiet("uploading the report and logs", UPLOAD_QUIET_SECONDS):
+        return _upload_reports_and_zips(temp_ini_file, run_id)
+
+
+def _upload_reports_and_zips(temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status:
             return
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
+
+        if not (ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG):
+            # A local or cancelled run uploads nothing, so the server expects no result.
+            node_watchdog.result_handled()
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
             # FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
@@ -1622,6 +1639,7 @@ def upload_reports_and_zips(temp_ini_file, run_id):
 
                     if res.status_code == 200:
                         CommonUtil.ExecLog(sModuleInfo, f"Successfully uploaded the execution report of run_id {run_id}", 1)
+                        node_watchdog.result_handled()
                         break
                     else:
                         CommonUtil.ExecLog(sModuleInfo, f"Failed to upload the execution report of run_id {run_id}\nStatus: {res.json()}\nRetrying...", 3)
@@ -1661,6 +1679,8 @@ def upload_reports_and_zips(temp_ini_file, run_id):
                     failed_report_json_path = failed_run_id_dir / "report.json"
                     with open(failed_report_json_path, 'w') as file:
                         file.write(json.dumps(failed_report_json))
+                    # Kept on disk and uploaded again later, so the result is not lost.
+                    node_watchdog.result_handled()
                 except:
                     CommonUtil.ExecLog(sModuleInfo, "Could not save the report to retry later of run_id '%s'" % run_id, 3)
                 CommonUtil.ExecLog(sModuleInfo, "Could not Upload the report to server of run_id '%s'" % run_id, 3)
@@ -2190,7 +2210,9 @@ def main(device_dict, all_run_id_info):
                                 my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
                                 try:
                                     my_timer.start()  # start timer
-                                    stdout, stderr = process.communicate()  # process communicate
+                                    # Silent for as long as the load lasts; the timer above bounds it.
+                                    with node_watchdog.allow_quiet("performance test", None):
+                                        stdout, stderr = process.communicate()  # process communicate
                                 finally:
                                     my_timer.cancel()  # cancel timer
                             except Exception as e:
@@ -2302,7 +2324,9 @@ def main(device_dict, all_run_id_info):
             post_runid_cleanup()
 
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
-                input("[Local run] Press any key to finish")
+                # Waiting for a person is not the node being stuck.
+                with node_watchdog.allow_quiet("waiting for a key press", None):
+                    input("[Local run] Press any key to finish")
 
         return "pass"
     except:

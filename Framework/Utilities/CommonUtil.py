@@ -28,6 +28,7 @@ ws_ss_log = True    # todo: Always keep it True
 from Framework.Utilities import (
     RequestFormatter,
     live_log_service,
+    node_watchdog,
 )
 import concurrent.futures
 from typing import Dict, List
@@ -571,6 +572,9 @@ def AddVariableToLog(
 def ExecLog(
     sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None, print_Execlog=True
 ):
+    # Every log call shows the run is still moving, whether or not it is printed.
+    node_watchdog.progress(sModuleInfo)
+
     # Do not log anything if load testing is going on and we're not forced to write logs
     if show_log == False and iLogLevel != 3:
         return
