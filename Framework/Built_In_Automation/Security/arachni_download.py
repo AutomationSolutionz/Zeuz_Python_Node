@@ -1,6 +1,8 @@
 import requests
 import tarfile
 import shutil
+import subprocess
+import sys
 from tqdm import tqdm
 from pathlib import Path
 
@@ -8,6 +10,54 @@ CURRENT_DIR = Path(__file__).resolve().parent
 BASE_DIR = CURRENT_DIR.parents[2]
 ARACHNI_DIR = BASE_DIR / "tools" / "security" / "arachni"
 RELEASES_API = "https://api.github.com/repos/Arachni/arachni/releases/latest"
+
+def check_docker_available():
+    """Check if Docker is available and running."""
+    try:
+        result = subprocess.run(['docker', '--version'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            # Check if Docker daemon is running
+            result = subprocess.run(['docker', 'info'], 
+                                  capture_output=True, text=True, timeout=10)
+            return result.returncode == 0
+        return False
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
+def start_arachni_container():
+    """Start the Arachni Docker container."""
+    try:
+        print("Starting Arachni Docker container...")
+        
+        # Check if container is already running
+        result = subprocess.run(['docker', 'ps', '--filter', 'name=zeuz_arachni', '--format', '{{.Names}}'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if 'zeuz_arachni' in result.stdout:
+            print("Arachni container is already running")
+            return True
+        
+        # Start the container using docker-compose
+        compose_file = BASE_DIR / "docker-compose.yml"
+        if not compose_file.exists():
+            print("Docker Compose file not found. Please ensure docker-compose.yml exists in project root.")
+            return False
+        
+        result = subprocess.run(['docker-compose', 'up', '-d'], 
+                              cwd=BASE_DIR, 
+                              capture_output=True, text=True, timeout=120)
+        
+        if result.returncode == 0:
+            print("Arachni container started successfully")
+            return True
+        else:
+            print(f"Failed to start container: {result.stderr}")
+            return False
+            
+    except Exception as e:
+        print(f"Error starting Arachni container: {e}")
+        return False
 
 def download_file_with_progress(url, destination):
     """Download a file with a progress bar."""
@@ -56,32 +106,19 @@ def get_latest_release_url():
 
 
 def check_and_install_arachni():
-    """Check if Arachni is installed; if not, download and install the latest version."""
-    try:
-        if ARACHNI_DIR.exists():
-            print(f"Arachni is already installed at {ARACHNI_DIR}")
+    """Check if Arachni is available via Docker; if not, start the container."""
+    if check_docker_available():
+        print("Docker detected. Using Arachni container...")
+        
+        # Start the container if not running
+        if start_arachni_container():
+            print("Arachni is ready via Docker container")
             return True
-
-        print("Arachni not found. Proceeding with download and installation...")
-        download_url = get_latest_release_url()
-        if not download_url:
-            print("Failed to fetch the download URL.")
+        else:
+            print("Failed to start Arachni container")
             return False
-        print(f"Download URL: {download_url}")
-        download_path = Path("/tmp/arachni.tar.gz")
-        if not download_file_with_progress(download_url, download_path):
-            print("Failed to download Arachni.")
-            return False
-        print("Extracting Arachni...")
-        with tarfile.open(download_path, "r:gz") as tar:
-            tar.extractall(path=Path("/tmp"))
-        extracted_folder = next(name for name in Path("/tmp").iterdir() if name.name.startswith("arachni"))
-        shutil.move(str(extracted_folder), ARACHNI_DIR)
-        print(f"Arachni installed to {ARACHNI_DIR}")
-        download_path.unlink()
-        print("Installation complete.")
-        return True
-    except Exception as e:
-        print(f"Error during installation: {e}")
+    else:
+        print("Docker not available. Please install Docker first.")
+        print("Download from: https://www.docker.com/products/docker-desktop")
         return False
     
