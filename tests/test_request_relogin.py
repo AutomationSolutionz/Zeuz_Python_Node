@@ -47,6 +47,15 @@ class FakeZsvc:
         with self.lock:
             return token in self.sessions
 
+    def rotate(self, token):
+        """Like zsvc's renew: the old session ends and a new one is issued.
+        Returns None when the old session is unknown."""
+        with self.lock:
+            if token not in self.sessions:
+                return None
+            self.sessions.discard(token)
+        return self.new_session()
+
 
 def make_handler(server_state: FakeZsvc):
     class Handler(BaseHTTPRequestHandler):
@@ -95,11 +104,11 @@ def make_handler(server_state: FakeZsvc):
             if self.path == "/zsvc/auth/v1/renew":
                 with server_state.lock:
                     server_state.renews += 1
-                token = self._token()
-                if not server_state.valid(token):
+                new_token = server_state.rotate(self._token())
+                if new_token is None:
                     return self._reply(403, {"error": "session does not exist"})
                 return self._reply(
-                    200, {"access_token_expires_at": self._expires()}, cookie=token
+                    200, {"access_token_expires_at": self._expires()}, cookie=new_token
                 )
             if not server_state.valid(self._token()):
                 return self._reply(401)

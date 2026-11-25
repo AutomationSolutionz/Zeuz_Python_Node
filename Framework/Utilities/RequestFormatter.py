@@ -101,9 +101,7 @@ def renew_token_with_expiry_check():
         _renewal_failed_at = None
         return
 
-    if status_code in SESSION_REJECTED_STATUSES and relogin(
-        f"renewing the session returned {status_code}"
-    ):
+    if status_code in SESSION_REJECTED_STATUSES and relogin("renewing the session was refused"):
         _renewal_failed_at = None
         return
 
@@ -150,17 +148,23 @@ def relogin(reason: str) -> bool:
             return False
 
         _last_relogin_attempt = time.monotonic()
+        # The messages below are fixed text on purpose: nothing that comes back
+        # from the login request (which carries the API key) is printed.
         try:
-            _, status_code = login()
-        except Exception as e:
-            print(Fore.RED + f"[RequestFormatter] Could not log in again ({reason}): {e}")
-            return False
-
-        if status_code != 200:
+            logged_in = login()[1] == 200
+        except Exception:
             print(
                 Fore.RED
-                + f"[RequestFormatter] The server no longer accepts this node's session ({reason}) "
-                + f"and logging in again with the API key returned {status_code}. "
+                + "[RequestFormatter] The server no longer accepts this node's session and "
+                + "logging in again failed: the server could not be reached. Will try again."
+            )
+            return False
+
+        if not logged_in:
+            print(
+                Fore.RED
+                + "[RequestFormatter] The server no longer accepts this node's session and "
+                + "logging in again with the API key was refused. "
                 + "Check the API key and the server address."
             )
             return False
