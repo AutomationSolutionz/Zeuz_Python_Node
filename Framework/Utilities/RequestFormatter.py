@@ -8,7 +8,6 @@ import json
 import pickle
 import threading
 import time
-from urllib.parse import urlparse
 from urllib3.exceptions import InsecureRequestWarning
 from colorama import Fore
 from datetime import datetime, timedelta, timezone
@@ -172,7 +171,7 @@ def relogin(reason: str) -> bool:
         _last_relogin_success = time.monotonic()
         print(
             Fore.YELLOW
-            + f"[RequestFormatter] The server no longer accepted this node's session ({reason}). "
+            + "[RequestFormatter] The server no longer accepted this node's session. "
             + "Logged in again with the API key."
         )
         return True
@@ -221,18 +220,12 @@ def _send(method: str, url: str, **kwargs) -> requests.Response:
     if response.status_code != 401:
         return response
 
-    if not relogin(f"{method.upper()} {_path_of(url)} returned 401"):
+    if not relogin("a request was answered with 401"):
         return response
     if not _rewind_request_body(kwargs):
         return response
     return session.request(method, url, **kwargs)
 
-
-def _path_of(url) -> str:
-    try:
-        return urlparse(str(url)).path or str(url)
-    except Exception:
-        return str(url)
 
 
 def renew_token():
