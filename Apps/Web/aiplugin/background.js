@@ -179,7 +179,10 @@ browserAppData.runtime.onMessage.addListener(
             _aiContentTimers[tabId] = setTimeout(async () => {
                 delete _aiContentTimers[tabId];
 
-                const contentObj = { "dom": request.dom, "page_map": request.page_map, "page_map_json": request.page_map_json };
+                // page_map / page_map_json are sent as null on purpose: the server
+                // merges each upload into the stored one, so leaving them out
+                // would keep an old page's map next to the new DOM.
+                const contentObj = { "dom": request.dom, "page_map": null, "page_map_json": null };
                 const contentStr = JSON.stringify(contentObj);
 
                 let hash = '';

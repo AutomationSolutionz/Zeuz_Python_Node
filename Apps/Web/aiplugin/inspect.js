@@ -31,20 +31,12 @@ setInterval(() => {
 	//The following code removes non-unicode characters except newline and tab
 	var result = html.outerHTML.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
 
-	let mapData = { page_map_json: null, page_map: "" };
-	if (typeof extractPageMapData === 'function') {
-		try {
-			mapData = extractPageMapData();
-		} catch (e) {
-			console.error("Error extracting page map:", e);
-		}
-	}
-
+	// No page map is built here any more. Building it every 5 seconds walked
+	// every element of the page and, on large pages, kept the page busy without
+	// a break, so Selenium waited forever and the test run froze.
 	browserAppData.runtime.sendMessage({
 		apiName: 'node_ai_contents',
-		dom: result,
-		page_map: mapData.page_map,
-		page_map_json: mapData.page_map_json
+		dom: result
 	})
 
 }, 5000);
