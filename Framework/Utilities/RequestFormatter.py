@@ -6,6 +6,9 @@ import os
 import requests
 import json
 import pickle
+import threading
+import time
+from urllib.parse import urlparse
 from urllib3.exceptions import InsecureRequestWarning
 from colorama import Fore
 from datetime import datetime, timedelta, timezone
@@ -82,11 +85,150 @@ def is_less_than_N_minutes_away(target_datetime, n):
 
 
 def renew_token_with_expiry_check():
-    global ACCESS_TOKEN_EXPIRES_AT
+    global _renewal_failed_at
     if not is_less_than_N_minutes_away(ACCESS_TOKEN_EXPIRES_AT, 10):
         return
+    if (
+        _renewal_failed_at is not None
+        and time.monotonic() - _renewal_failed_at < RELOGIN_MIN_INTERVAL_SECONDS
+    ):
+        # Renewing and logging in both failed a moment ago. Trying again on
+        # every request would only flood the server.
+        return
 
-    renew_token()
+    _, status_code = renew_token()
+    if status_code == 200:
+        _renewal_failed_at = None
+        return
+
+    if status_code in SESSION_REJECTED_STATUSES and relogin(
+        f"renewing the session returned {status_code}"
+    ):
+        _renewal_failed_at = None
+        return
+
+    _renewal_failed_at = time.monotonic()
+
+
+# Statuses with which the server says it no longer accepts this node's session
+# (missing, expired, or unknown to it -- after a server upgrade or a Redis
+# flush, for example). Logging in again with the API key fixes all of them.
+SESSION_REJECTED_STATUSES = (400, 401, 403)
+
+# Minimum seconds between two attempts to log in again. Stops a revoked API key
+# from turning into a login request every few seconds.
+RELOGIN_MIN_INTERVAL_SECONDS = 30
+
+_relogin_lock = threading.Lock()
+_last_relogin_attempt = None  # time.monotonic() of the last attempt
+_last_relogin_success = None  # time.monotonic() of the last success
+_renewal_failed_at = None  # time.monotonic() of the last failed renew + relogin
+
+
+def relogin(reason: str) -> bool:
+    """Gets a new session with the API key after the server stopped accepting
+    the current one.
+
+    Before this, a node whose session was lost (server upgrade, Redis flush)
+    kept sending the dead session forever and the server answered 401 to every
+    request until someone restarted the node by hand.
+
+    Returns True when the node holds a working session afterwards. Safe to call
+    from several threads at once: only one logs in, the others reuse its result.
+    """
+    global _last_relogin_attempt, _last_relogin_success
+
+    called_at = time.monotonic()
+    with _relogin_lock:
+        if _last_relogin_success is not None and _last_relogin_success >= called_at:
+            # Another thread logged in while this one waited for the lock.
+            return True
+        if (
+            _last_relogin_attempt is not None
+            and called_at - _last_relogin_attempt < RELOGIN_MIN_INTERVAL_SECONDS
+        ):
+            return False
+
+        _last_relogin_attempt = time.monotonic()
+        try:
+            _, status_code = login()
+        except Exception as e:
+            print(Fore.RED + f"[RequestFormatter] Could not log in again ({reason}): {e}")
+            return False
+
+        if status_code != 200:
+            print(
+                Fore.RED
+                + f"[RequestFormatter] The server no longer accepts this node's session ({reason}) "
+                + f"and logging in again with the API key returned {status_code}. "
+                + "Check the API key and the server address."
+            )
+            return False
+
+        _last_relogin_success = time.monotonic()
+        print(
+            Fore.YELLOW
+            + f"[RequestFormatter] The server no longer accepted this node's session ({reason}). "
+            + "Logged in again with the API key."
+        )
+        return True
+
+
+def _rewind_request_body(kwargs) -> bool:
+    """Moves file objects in a request back to their start so the request can
+    be sent again. Returns False when one of them cannot be rewound."""
+
+    candidates = []
+    files = kwargs.get("files")
+    if isinstance(files, dict):
+        candidates.extend(files.values())
+    elif files:
+        candidates.extend(
+            item[1] if isinstance(item, (tuple, list)) and len(item) > 1 else item
+            for item in files
+        )
+    candidates.append(kwargs.get("data"))
+
+    for candidate in candidates:
+        fileobj = (
+            candidate[1]
+            if isinstance(candidate, (tuple, list)) and len(candidate) > 1
+            else candidate
+        )
+        if fileobj is None or isinstance(fileobj, (str, bytes, bytearray, dict, list, tuple)):
+            continue
+        if hasattr(fileobj, "seek"):
+            try:
+                fileobj.seek(0)
+                continue
+            except Exception:
+                return False
+        if hasattr(fileobj, "read") or hasattr(fileobj, "__next__"):
+            # A stream or generator that was already consumed.
+            return False
+    return True
+
+
+def _send(method: str, url: str, **kwargs) -> requests.Response:
+    """Sends one request. If the server rejects the session (401), logs in
+    again with the API key and sends the request once more."""
+
+    response = session.request(method, url, **kwargs)
+    if response.status_code != 401:
+        return response
+
+    if not relogin(f"{method.upper()} {_path_of(url)} returned 401"):
+        return response
+    if not _rewind_request_body(kwargs):
+        return response
+    return session.request(method, url, **kwargs)
+
+
+def _path_of(url) -> str:
+    try:
+        return urlparse(str(url)).path or str(url)
+    except Exception:
+        return str(url)
 
 
 def renew_token():
@@ -180,9 +322,14 @@ def request(*args, **kwargs):
         kwargs["verify"] = False
     if "timeout" not in kwargs:
         kwargs["timeout"] = 70
-    
 
-    return session.request(*args, **kwargs)
+    args = list(args)
+    method = args.pop(0) if args else kwargs.pop("method")
+    url = args.pop(0) if args else kwargs.pop("url")
+    if args:
+        # Positional request options are passed through as they always were.
+        return session.request(method, url, *args, **kwargs)
+    return _send(method, url, **kwargs)
 
 # async wrapper
 async def async_request(*args, **kwargs):
@@ -199,7 +346,8 @@ def Post(resource_path, payload=None, **kwargs):
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        resp = session.post(
+        resp = _send(
+            "post",
             form_uri(resource_path + "/"),
             data=json.dumps(payload),
             verify=False,
@@ -218,7 +366,8 @@ def Get(resource_path, payload=None, **kwargs):
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return session.get(
+        return _send(
+            "get",
             form_uri(resource_path),
             params=json.dumps(payload),
             timeout=REQUEST_TIMEOUT,
@@ -242,7 +391,8 @@ def UpdatedGet(resource_path, payload=None, **kwargs):
         payload = {}
     try:
         kwargs = add_api_key_to_headers(kwargs)
-        return session.get(
+        return _send(
+            "get",
             form_uri(resource_path + "/"),
             params=payload,
             timeout=REQUEST_TIMEOUT,

@@ -66,6 +66,7 @@ Zeuz Server → long_poll_handler.py → adapter.py → MainDriverApi.py
 - `Framework/Utilities/CommonUtil.py` - Logging and exceptions
 - `Framework/Utilities/decorators.py` - @logger, @deprecated decorators
 - `Framework/Utilities/node_watchdog.py` - Restarts a node stuck inside a test case and reports that test case
+- `Framework/Utilities/RequestFormatter.py` - Server session; logs in again by itself when the server drops it
 
 ### Module Structure
 Each automation module follows this pattern:
@@ -293,6 +294,27 @@ test case is running (every `CommonUtil.ExecLog` call is one).
   watchdog thread runs), the process dumps its stacks to
   `AutomationLog/watchdog/interpreter_frozen.txt` and exits, so whatever
   supervises the node can start it again.
+
+## Server Session
+
+The node logs in once with its API key and then holds a cookie session that it
+renews before the access token expires (`Framework/Utilities/RequestFormatter.py`).
+The server keeps those sessions in Redis, so a server upgrade or a Redis flush
+drops every node's session at once.
+
+- Every request goes through `_send`: on a 401 it calls `relogin()` (login with
+  the API key) and sends the request once more, with any uploaded files rewound.
+  A failed renew (400/401/403) also falls back to `relogin()`.
+- `relogin()` is thread-safe (one login for many threads that hit 401 together)
+  and tries at most once per `RELOGIN_MIN_INTERVAL_SECONDS` (30), so a revoked API
+  key, or an endpoint that answers 401 for another reason, cannot turn into a
+  login on every request.
+- Before this, a node whose session was lost answered every poll with
+  `[deploy] Request Error, status code: 401 | reconnecting` forever and had to be
+  restarted by hand. `node_cli.Login` also returned right after logging in when
+  `session.bin` held a stale session, so a restarted node never started polling.
+- Tests: `tests/test_request_relogin.py` runs the real module against a local
+  server that behaves like zsvc (login, renew, a flush that forgets sessions).
 
 ## Adding New Modules
 
