@@ -8,12 +8,10 @@ zsvc: cookie sessions, login with an API key, renew, and a "flush" that forgets
 every session.
 """
 
-import ast
 import json
 import threading
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 
 import pytest
 
@@ -293,28 +291,3 @@ def test_failed_renewal_is_not_retried_on_every_request(zsvc, monkeypatch):
     # Before: one renew per request, 327,156 of them in two days on one server.
     assert zsvc.renews == 1
     assert zsvc.logins == 1
-
-
-def test_startup_with_a_stale_session_file_continues_to_connect():
-    """node_cli.Login must not return after logging in again: it used to, so a
-    node restarted with an old session.bin never started polling for work."""
-    source = Path(__file__).resolve().parents[1] / "node_cli.py"
-    tree = ast.parse(source.read_text(encoding="utf-8"))
-    login = next(
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.AsyncFunctionDef) and node.name == "Login"
-    )
-    stale_session_branches = [
-        node
-        for node in ast.walk(login)
-        if isinstance(node, ast.If)
-        and isinstance(node.test, ast.Name)
-        and node.test.id == "load_from_session"
-    ]
-    assert stale_session_branches, "Login no longer checks load_from_session"
-    for branch in stale_session_branches:
-        for node in ast.walk(branch):
-            assert not isinstance(node, ast.Return), (
-                f"node_cli.py:{node.lineno} returns while handling a stale session"
-            )

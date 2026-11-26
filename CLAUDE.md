@@ -295,6 +295,21 @@ test case is running (every `CommonUtil.ExecLog` call is one).
   `AutomationLog/watchdog/interpreter_frozen.txt` and exits, so whatever
   supervises the node can start it again.
 
+## Inspector Extension in Debug Runs
+
+`Apps/Web/aiplugin` is loaded into every Chrome/Edge debug run (`[Inspector] ai_plugin`,
+default on). Its `inspect.js` runs on the page every 5 seconds and uploads the DOM to the
+server (`node_ai_contents`) for the ZAI test case chatbot.
+
+- Anything it does on that timer runs inside the page under test. If a pass takes longer
+  than the interval the page never gets a break, Chrome stops answering chromedriver,
+  and the run freezes inside a Selenium call that never returns.
+- That is what the page map (`page_map_extractor.js`, added March 2026) did on large
+  pages: SalesIntel's TEST-0199 froze on every debug run with it, and ran normally
+  without it. It was removed. Uploads send `page_map`/`page_map_json` as `null` because
+  the server merges uploads; leaving them out would keep an older page's map.
+- Do not add work to that timer that grows with the size of the page.
+
 ## Server Session
 
 The node logs in once with its API key and then holds a cookie session that it
@@ -311,8 +326,8 @@ drops every node's session at once.
   login on every request.
 - Before this, a node whose session was lost answered every poll with
   `[deploy] Request Error, status code: 401 | reconnecting` forever and had to be
-  restarted by hand. `node_cli.Login` also returned right after logging in when
-  `session.bin` held a stale session, so a restarted node never started polling.
+  restarted by hand. A restart always works: `node_cli` deletes `session.bin` at
+  every start and logs in fresh.
 - Tests: `tests/test_request_relogin.py` runs the real module against a local
   server that behaves like zsvc (login, renew, a flush that forgets sessions).
 

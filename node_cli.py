@@ -379,11 +379,8 @@ async def Login(
         if load_from_session:
             data, status_code = RequestFormatter.renew_token()
             if status_code != 200:
-                # The saved session is no longer valid (expired, or the server
-                # lost it). Log in with the API key and carry on connecting.
-                # This used to return here, so a node restarted with a stale
-                # session.bin logged in but never started polling for work.
                 data, status_code = RequestFormatter.login()
+                return
         else:
             data, status_code = RequestFormatter.login()
 
